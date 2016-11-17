@@ -1,9 +1,9 @@
 package io.mycat.route.function;
 
+import java.io.Serializable;
+
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.rule.RuleAlgorithm;
-
-import java.io.Serializable;
 
 /**
  * 路由分片函数抽象类
@@ -13,6 +13,8 @@ import java.io.Serializable;
  *
  */
 public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm ,Serializable {
+
+	private static final long serialVersionUID = -532594213256935577L;
 
 	@Override
 	public void init() {

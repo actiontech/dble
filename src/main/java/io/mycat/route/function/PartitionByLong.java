@@ -27,6 +27,7 @@ import io.mycat.config.model.rule.RuleAlgorithm;
 import io.mycat.route.util.PartitionUtil;
 
 public final class PartitionByLong extends AbstractPartitionAlgorithm implements RuleAlgorithm {
+	private static final long serialVersionUID = -4712399083043025898L;
 	protected int[] count;
 	protected int[] length;
 	protected PartitionUtil partitionUtil;
@@ -56,7 +57,6 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
 	@Override
 	public Integer calculate(String columnValue)  {
-//		columnValue = NumberParseUtil.eliminateQoute(columnValue);
 		try {
 			long key = Long.parseLong(columnValue);
 			return partitionUtil.partition(key);

@@ -23,6 +23,27 @@
  */
 package io.mycat.server.handler;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.sql.SQLNonTransientException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
@@ -54,18 +75,6 @@ import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
 import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
-
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * mysql命令行客户端也需要启用local file权限，加参数--local-infile=1
@@ -329,9 +338,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
                 String dataNode = dataNodes.get(i);
                 RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, sql);
                 rrsNodes[i]=rrNode;
-                if(rrs.getDataNodeSlotMap().containsKey(dataNode)){
-                    rrsNodes[i].setSlot(rrs.getDataNodeSlotMap().get(dataNode));
-                }
                 rrsNodes[i].setSource(rrs);
             }
 

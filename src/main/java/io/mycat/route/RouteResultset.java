@@ -23,20 +23,18 @@
  */
 package io.mycat.route;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-
-import io.mycat.MycatServer;
-import io.mycat.config.MycatConfig;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.route.parser.util.PageSQLUtil;
-import io.mycat.sqlengine.mpp.HavingCols;
-import io.mycat.util.FormatUtil;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import com.alibaba.druid.sql.ast.SQLStatement;
+
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.route.parser.util.PageSQLUtil;
+import io.mycat.sqlengine.mpp.HavingCols;
+import io.mycat.util.FormatUtil;
 
 /**
  * @author mycat
@@ -78,16 +76,7 @@ public final class RouteResultset implements Serializable {
     // 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
     private Boolean runOnSlave = null;	// 默认null表示不施加影响
 
-       //key=dataNode    value=slot
-    private Map<String,Integer>   dataNodeSlotMap=new HashMap<>();
-
-    public Map<String, Integer> getDataNodeSlotMap() {
-        return dataNodeSlotMap;
-    }
-
-    public void setDataNodeSlotMap(Map<String, Integer> dataNodeSlotMap) {
-        this.dataNodeSlotMap = dataNodeSlotMap;
-    }
+     
 
     public Boolean getRunOnSlave() {
 		return runOnSlave;

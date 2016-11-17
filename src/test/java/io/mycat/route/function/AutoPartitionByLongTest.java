@@ -23,14 +23,14 @@
  */
 package io.mycat.route.function;
 
-import junit.framework.Assert;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class AutoPartitionByLongTest {
 
 	@Test
-	public void test()  {
+	public void test1()  {
 		AutoPartitionByLong autoPartition=new AutoPartitionByLong();
 		autoPartition.setMapFile("autopartition-long.txt");
 		autoPartition.init();
@@ -48,5 +48,19 @@ public class AutoPartitionByLongTest {
 		
 		idVal="4000001";
 		Assert.assertEquals(true, 2==autoPartition.calculate(idVal)); 
+		idVal="6000000";
+		Assert.assertEquals(true, 2==autoPartition.calculate(idVal)); 
+		idVal="6000001";
+		Assert.assertEquals(true, null==autoPartition.calculate(idVal)); 
+	}
+	
+	@Test
+	public void test2()  {
+		AutoPartitionByLong autoPartition=new AutoPartitionByLong();
+		autoPartition.setMapFile("autopartition-long.txt");
+		autoPartition.setDefaultNode(0);
+		autoPartition.init();
+		String idVal="6000001";
+		Assert.assertEquals(true, 0==autoPartition.calculate(idVal)); 
 	}
 }

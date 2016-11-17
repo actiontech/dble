@@ -27,11 +27,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import io.mycat.config.model.rule.RuleConfig;
-import io.mycat.route.function.TableRuleAware;
-import io.mycat.util.ObjectUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -366,28 +371,13 @@ public class XMLSchemaLoader implements SchemaLoader {
 			
 			for (int j = 0; j < tableNames.length; j++) {
 
-				String tableName = tableNames[j];
-				TableRuleConfig	tableRuleConfig=tableRule ;
-				  if(tableRuleConfig!=null) {
-				  	//对于实现TableRuleAware的function进行特殊处理  根据每个表新建个实例
-					  RuleConfig rule= tableRuleConfig.getRule();
-					  if(rule.getRuleAlgorithm() instanceof TableRuleAware)  {
-						  tableRuleConfig = (TableRuleConfig) ObjectUtil.copyObject(tableRuleConfig);
-						  tableRules.remove(tableRuleConfig.getName())   ;
-						  String newRuleName = tableRuleConfig.getName() + "_" + tableName;
-						  tableRuleConfig. setName(newRuleName);
-						  TableRuleAware tableRuleAware= (TableRuleAware) tableRuleConfig.getRule().getRuleAlgorithm();
-						  tableRuleAware.setRuleName(newRuleName);
-						  tableRuleAware.setTableName(tableName);
-						  tableRuleConfig.getRule().getRuleAlgorithm().init();
-						  tableRules.put(newRuleName,tableRuleConfig);
-					  }
-				  }
+				String tableName = tableNames[j]; 
+				  
 
 				TableConfig table = new TableConfig(tableName, primaryKey,
 						autoIncrement, needAddLimit, tableType, dataNode,
 						getDbType(dataNode),
-						(tableRuleConfig != null) ? tableRuleConfig.getRule() : null,
+						(tableRule != null) ? tableRule.getRule() : null,
 						ruleRequired, null, false, null, null,subTables);
 				
 				checkDataNodeExists(table.getDataNodes());
@@ -462,16 +452,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 		return dbTypes;
 	}
 
-	private Set<String> getDataNodeDbTypeMap(String dataNode) {
-		Set<String> dbTypes = new HashSet<>();
-		String[] dataNodeArr = SplitUtil.split(dataNode, ',', '$', '-');
-		for (String node : dataNodeArr) {
-			DataNodeConfig datanode = dataNodes.get(node);
-			DataHostConfig datahost = dataHosts.get(datanode.getDataHost());
-			dbTypes.add(datahost.getDbType());
-		}
-		return dbTypes;
-	}
+	
 
 	private boolean isHasMultiDbType(TableConfig table) {
 		Set<String> dbTypes = table.getDbTypes();

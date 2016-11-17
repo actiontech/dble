@@ -13,16 +13,25 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
 import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLValuableExpr;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
+import com.alibaba.druid.sql.ast.statement.SQLCallStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
-import io.mycat.route.*;
+import io.mycat.route.Procedure;
+import io.mycat.route.ProcedureParameter;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.RouteResultsetNode;
+import io.mycat.route.RouteStrategy;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
@@ -53,7 +62,6 @@ public class HintSQLHandler implements HintHandler {
 		for (int i = 0; i < newRrsNodes.length; i++) {
 			newRrsNodes[i] = new RouteResultsetNode(oldRsNodes[i].getName(),
 					oldRsNodes[i].getSqlType(), realSQL);
-            newRrsNodes[i].setSlot(oldRsNodes[i].getSlot());
 		}
 		rrs.setNodes(newRrsNodes);
 

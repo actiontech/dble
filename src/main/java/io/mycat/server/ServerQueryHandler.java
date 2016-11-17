@@ -23,12 +23,22 @@
  */
 package io.mycat.server;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.net.handler.FrontendQueryHandler;
 import io.mycat.net.mysql.OkPacket;
-import io.mycat.server.handler.*;
+import io.mycat.server.handler.BeginHandler;
+import io.mycat.server.handler.Explain2Handler;
+import io.mycat.server.handler.ExplainHandler;
+import io.mycat.server.handler.KillHandler;
+import io.mycat.server.handler.SavepointHandler;
+import io.mycat.server.handler.SelectHandler;
+import io.mycat.server.handler.SetHandler;
+import io.mycat.server.handler.ShowHandler;
+import io.mycat.server.handler.StartHandler;
+import io.mycat.server.handler.UseHandler;
 import io.mycat.server.parser.ServerParse;
 
 /**
@@ -118,9 +128,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         case ServerParse.LOAD_DATA_INFILE_SQL:
             c.loadDataInfileStart(sql);
             break;
-		case ServerParse.MIGRATE:
-			MigrateHandler.handle(sql,c);
-			break;
 		case ServerParse.LOCK:
         	c.lockTable(sql);
         	break;

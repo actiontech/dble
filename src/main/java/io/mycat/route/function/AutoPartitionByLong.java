@@ -37,6 +37,7 @@ import io.mycat.config.model.rule.RuleAlgorithm;
  */
 public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements RuleAlgorithm{
 
+	private static final long serialVersionUID = 5752372920655270639L;
 	private String mapFile;
 	private LongRange[] longRongs;
 	

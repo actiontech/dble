@@ -38,7 +38,7 @@ import io.mycat.config.model.rule.RuleAlgorithm;
  * @author mycat
  */
 public class PartitionByFileMap extends AbstractPartitionAlgorithm implements RuleAlgorithm {
-
+	private static final long serialVersionUID = 1884866019947627284L;
 	private String mapFile;
 	private Map<Object, Integer> app2Partition;
 	/**

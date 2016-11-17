@@ -2,9 +2,14 @@ package io.mycat.route.function;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.config.model.rule.RuleAlgorithm;
 
@@ -15,6 +20,8 @@ import io.mycat.config.model.rule.RuleAlgorithm;
  * 
  */
 public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleAlgorithm {
+	private static final long serialVersionUID = 4966421543458534122L;
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByDate.class);
 
 	private String sBeginDate;
@@ -26,7 +33,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	private long partionTime;
 	private long endDate;
 	private int nCount;
-
+	private int defaultNode = -1;
 	private ThreadLocal<SimpleDateFormat> formatter;
 	
 	private static final long oneDay = 86400000;
@@ -57,8 +64,11 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	public Integer calculate(String columnValue)  {
 		try {
 			long targetTime = formatter.get().parse(columnValue).getTime();
+			if (targetTime < beginDate) {
+				return (defaultNode >= 0) && (nCount != 0) ? defaultNode : null;
+			}
 			int targetPartition = (int) ((targetTime - beginDate) / partionTime);
-
+			
 			if(targetTime>endDate && nCount!=0){
 				targetPartition = targetPartition%nCount;
 			}
@@ -120,5 +130,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	public void setsEndDate(String sEndDate) {
 		this.sEndDate = sEndDate;
 	}
-
+	public void setDefaultNode(int defaultNode) {
+		this.defaultNode = defaultNode;
+	}
 }

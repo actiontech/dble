@@ -25,7 +25,6 @@ package io.mycat.route;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 
 import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
@@ -58,8 +57,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	
 	private String subTableName; // 分表的表名
 
-	//迁移算法用     -2代表不是slot分片  ，-1代表扫描所有分片
-	private int slot=-2;
 	
 	public RouteResultsetNode(String name, int sqlType, String srcStatement) {
 		this.name = name;
@@ -132,13 +129,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
         return procedure;
     }
 
-	public int getSlot() {
-		return slot;
-	}
-
-	public void setSlot(int slot) {
-		this.slot = slot;
-	}
 
 	public void setProcedure(Procedure procedure)
     {

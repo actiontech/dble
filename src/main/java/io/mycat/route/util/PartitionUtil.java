@@ -32,21 +32,23 @@ import io.mycat.util.StringUtil;
  */
 public final class PartitionUtil {
 
+	private static final int MAX_PARTITION_LENGTH = 1024;
     // 分区长度:数据段分布定义，其中取模的数一定要是2^n， 因为这里使用x % 2^n == x & (2^n - 1)等式，来优化性能。
-    private static final int PARTITION_LENGTH = 1024;
+    private int partitionLength ;
 
     // %转换为&操作的换算数值
-    private static final long AND_VALUE = PARTITION_LENGTH - 1;
+    private long addValue ;
 
     // 分区线段
-    private final int[] segment = new int[PARTITION_LENGTH];
+    private  int[] segment ;
 
+    private boolean canProfile = false;
     /**
      * <pre>
      * @param count 表示定义的分区数
      * @param length 表示对应每个分区的取值长度
      * 注意：其中count,length两个数组的长度必须是一致的。
-     * 约束：1024 = sum((count[i]*length[i])). count和length两个向量的点积恒等于1024
+     * 约束：1024 = sum((count[i]*length[i])). count和length两个向量的点积恒最大为1024
      * </pre>
      */
     public PartitionUtil(int[] count, int[] length) {
@@ -55,6 +57,9 @@ public final class PartitionUtil {
         }
         int segmentLength = 0;
         for (int i = 0; i < count.length; i++) {
+        	if(count[i]<=0){
+        		throw new RuntimeException("error,check your scope at least 1.");
+        	}
             segmentLength += count[i];
         }
         int[] ai = new int[segmentLength + 1];
@@ -65,8 +70,14 @@ public final class PartitionUtil {
                 ai[++index] = ai[index - 1] + length[i];
             }
         }
-        if (ai[ai.length - 1] != PARTITION_LENGTH) {
-            throw new RuntimeException("error,check your partitionScope definition.");
+        partitionLength = ai[ai.length - 1];
+        addValue = partitionLength-1;
+        segment = new int[partitionLength];
+        if (partitionLength > MAX_PARTITION_LENGTH) {
+            throw new RuntimeException("error,check your partitionScope definition.MAX(sum(count*length[i]) must be less then 1024 ");
+        }
+        if((partitionLength & addValue) == 0){
+        	canProfile = true;
         }
 
         // 数据映射操作
@@ -78,7 +89,15 @@ public final class PartitionUtil {
     }
 
     public int partition(long hash) {
-        return segment[(int) (hash & AND_VALUE)];
+    	if(canProfile){
+    		return segment[(int) (hash & addValue)];
+    	}else {
+    		int mod = (int) (hash % partitionLength);
+    		if(mod<0){
+    			mod+=partitionLength;
+    		}
+    		return segment[mod]; 
+    	}
     }
 
     public int partition(String key, int start, int end) {

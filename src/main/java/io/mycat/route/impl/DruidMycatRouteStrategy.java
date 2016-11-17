@@ -2,18 +2,11 @@ package io.mycat.route.impl;
 
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
-import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import io.mycat.config.model.rule.RuleConfig;
-import io.mycat.route.function.AbstractPartitionAlgorithm;
-import io.mycat.route.function.SlotFunction;
-import io.mycat.route.parser.util.ParseUtil;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -118,12 +111,6 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		int i = 0;
 		for (RouteResultsetNode aNodeSet : nodeSet) {
 			nodes[i] = aNodeSet;
-			  if(statement instanceof MySqlInsertStatement &&ctx.getTables().size()==1&&schema.getTables().containsKey(ctx.getTables().get(0))) {
-				  RuleConfig rule = schema.getTables().get(ctx.getTables().get(0)).getRule();
-				  if(rule!=null&&  rule.getRuleAlgorithm() instanceof SlotFunction){
-					 aNodeSet.setStatement(ParseUtil.changeInsertAddSlot(aNodeSet.getStatement(),aNodeSet.getSlot()));
-				  }
-			  }
 			i++;
 		}		
 		rrs.setNodes(nodes);		

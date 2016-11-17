@@ -33,7 +33,8 @@ import io.mycat.util.StringUtil;
  */
 public final class PartitionByString extends AbstractPartitionAlgorithm implements RuleAlgorithm  {
   
-    private int hashSliceStart = 0;
+    private static final long serialVersionUID = 3777423001153345948L;
+	private int hashSliceStart = 0;
     /** 0 means str.length(), -1 means str.length()-1 */
     private int hashSliceEnd = 8;
     protected int[] count;

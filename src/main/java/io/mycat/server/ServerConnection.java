@@ -54,6 +54,7 @@ public class ServerConnection extends FrontendConnection {
 
 	private volatile int txIsolation;
 	private volatile boolean autocommit;
+	private volatile boolean txstart;
 	private volatile boolean txInterrupted;
 	private volatile String txInterrputMsg = "";
 	private long lastInsertId;
@@ -104,6 +105,13 @@ public class ServerConnection extends FrontendConnection {
 		this.lastInsertId = lastInsertId;
 	}
 
+	public boolean isTxstart() {
+		return txstart;
+	}
+
+	public void setTxstart(boolean txstart) {
+		this.txstart = txstart;
+	}
 	/**
 	 * 设置是否需要中断当前事务
 	 */

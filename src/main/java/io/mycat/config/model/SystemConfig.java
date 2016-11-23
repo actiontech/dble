@@ -157,8 +157,6 @@ public final class SystemConfig {
 	// 使用HandshakeV10Packet为的是兼容高版本的jdbc驱动, 后期稳定下来考虑全部采用HandshakeV10Packet来通讯
 	private int useHandshakeV10 = 0;
 
-	//处理分布式事务开关，默认为不过滤分布式事务
-	private int handleDistributedTransactions = 0;
 
 	private int checkTableConsistency = 0;
 	private long checkTableConsistencyPeriod = CHECKTABLECONSISTENCYPERIOD;
@@ -913,13 +911,6 @@ public final class SystemConfig {
 		this.processorBufferPoolType = processorBufferPoolType;
 	}
 
-	public int getHandleDistributedTransactions() {
-		return handleDistributedTransactions;
-	}
-
-	public void setHandleDistributedTransactions(int handleDistributedTransactions) {
-		this.handleDistributedTransactions = handleDistributedTransactions;
-	}
 
 	public int getUseHandshakeV10() {
 		return useHandshakeV10;

@@ -36,7 +36,8 @@ import static io.mycat.server.parser.ServerParseSet.TX_SERIALIZABLE;
 import static io.mycat.server.parser.ServerParseSet.XA_FLAG_OFF;
 import static io.mycat.server.parser.ServerParseSet.XA_FLAG_ON;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Isolations;
@@ -67,6 +68,7 @@ public final class SetHandler {
 				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			} else {
 				c.commit();
+				c.setTxstart(false);
 				c.setAutocommit(true);
 			}
 			break;

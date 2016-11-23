@@ -1,5 +1,16 @@
 package io.mycat.backend.postgresql;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson.JSON;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.backend.postgresql.PostgreSQLBackendConnection.BackendConnectionState;
@@ -31,17 +42,6 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSON;
 
 public class PostgreSQLBackendConnectionHandler extends BackendAsyncHandler {
 	static class SelectResponse {
@@ -202,7 +202,7 @@ public class PostgreSQLBackendConnectionHandler extends BackendAsyncHandler {
 			err.errno = ErrorCode.ERR_NOT_SUPPORTED;
 			ResponseHandler respHand = con.getResponseHandler();
 			if (respHand != null) {
-				respHand.errorResponse(err.writeToBytes(), con);
+				respHand.errorResponse(err.toBytes(), con);
 			} else {
 			 LOGGER.error("{},respHand 为空",this);
 			}
@@ -297,7 +297,7 @@ public class PostgreSQLBackendConnectionHandler extends BackendAsyncHandler {
 			okPck.packetId = ++packetId;
 			okPck.message = commandComplete.getCommandResponse().trim()
 					.getBytes();
-			con.getResponseHandler().okResponse(okPck.writeToBytes(), con);
+			con.getResponseHandler().okResponse(okPck.toBytes(), con);
 		}
 	}
 
@@ -330,7 +330,7 @@ public class PostgreSQLBackendConnectionHandler extends BackendAsyncHandler {
 		err.message = errorResponse.getErrMsg().trim().replaceAll("\0", " ")
 				.getBytes();
 		err.errno = ErrorCode.ER_UNKNOWN_ERROR;
-		con.getResponseHandler().errorResponse(err.writeToBytes(), con);
+		con.getResponseHandler().errorResponse(err.toBytes(), con);
 
 	}
 

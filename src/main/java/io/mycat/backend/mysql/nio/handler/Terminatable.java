@@ -27,5 +27,5 @@ package io.mycat.backend.mysql.nio.handler;
  * @author mycat
  */
 public interface Terminatable {
-    void terminate(Runnable runnable);
+    void terminate();
 }

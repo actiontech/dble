@@ -25,12 +25,13 @@ package io.mycat.backend.mysql.nio.handler;
 
 import java.util.List;
 
-import io.mycat.backend.mysql.xa.TxState;
-import io.mycat.config.ErrorCode;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
+import io.mycat.backend.mysql.xa.TxState;
+import io.mycat.config.ErrorCode;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.ServerConnection;
@@ -42,13 +43,15 @@ public class CommitNodeHandler implements ResponseHandler {
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger(CommitNodeHandler.class);
 	private final NonBlockingSession session;
-
+	private ResponseHandler responsehandler = CommitNodeHandler.this;
 	public CommitNodeHandler(NonBlockingSession session) {
 		this.session = session;
 	}
-
+	public void setResponseHandler(ResponseHandler responsehandler){
+		this.responsehandler=responsehandler;
+	}
 	public void commit(BackendConnection conn) {
-		conn.setResponseHandler(CommitNodeHandler.this);
+		conn.setResponseHandler(responsehandler);
 		boolean isClosed=conn.isClosedOrQuit();
 		if(isClosed)
 		{
@@ -159,4 +162,7 @@ public class CommitNodeHandler implements ResponseHandler {
 
 	}
 
+	public void clearResources() {
+		responsehandler = CommitNodeHandler.this;
+	}
 }

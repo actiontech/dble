@@ -25,11 +25,12 @@ package io.mycat.backend.mysql.nio.handler;
 
 import java.util.List;
 
-import io.mycat.backend.mysql.nio.MySQLConnection;
-import io.mycat.config.ErrorCode;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.backend.mysql.nio.MySQLConnection;
+import io.mycat.config.ErrorCode;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 
@@ -39,11 +40,14 @@ import io.mycat.server.NonBlockingSession;
 public class RollbackNodeHandler extends MultiNodeHandler {
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger(RollbackNodeHandler.class);
-
+	private ResponseHandler responsehandler = RollbackNodeHandler.this;
 	public RollbackNodeHandler(NonBlockingSession session) {
 		super(session);
 	}
 
+	public void setResponseHandler(ResponseHandler responsehandler) {
+		this.responsehandler = responsehandler;
+	}
 	public void rollback() {
 		final int initCount = session.getTargetCount();
 		lock.lock();
@@ -68,32 +72,30 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 			final BackendConnection conn = session.getTarget(node);
 
 			if (conn != null) {
-				boolean isClosed=conn.isClosedOrQuit();
-				    if(isClosed)
-					{
-						session.getSource().writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR,
-								"receive rollback,but find backend con is closed or quit");
-						LOGGER.error( conn+"receive rollback,but fond backend con is closed or quit");
-					}
+				boolean isClosed = conn.isClosedOrQuit();
+				if (isClosed) {
+					session.getSource().writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR,
+							"receive rollback,but find backend con is closed or quit");
+					LOGGER.error(conn + "receive rollback,but fond backend con is closed or quit");
+				}
 				if (LOGGER.isDebugEnabled()) {
 					LOGGER.debug("rollback job run for " + conn);
 				}
 				if (clearIfSessionClosed(session)) {
 					return;
 				}
-				conn.setResponseHandler(RollbackNodeHandler.this);
+				conn.setResponseHandler(responsehandler);
 
-				//support the XA rollback
+				// support the XA rollback
 				MySQLConnection mysqlCon = (MySQLConnection) conn;
-				if(session.getXaTXID()!=null) {
+				if (session.getXaTXID() != null) {
 					String xaTxId = session.getXaTXID();
-					//exeBatch cmd issue : the 2nd package can not receive the response
+					// exeBatch cmd issue : the 2nd package can not receive the response
 					mysqlCon.execCmd("XA END " + xaTxId + ";");
 					mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
-				}else {
+				} else {
 					conn.rollback();
 				}
-
 
 				++started;
 			}
@@ -152,5 +154,8 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 	public void writeQueueAvailable() {
 
 	}
-
+	@Override
+	public void clearResources() {
+		responsehandler = RollbackNodeHandler.this;
+	}
 }

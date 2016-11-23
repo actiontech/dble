@@ -23,28 +23,33 @@
  */
 package io.mycat.backend.mysql.nio;
 
-import io.mycat.backend.mysql.xa.TxState;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
-import io.mycat.MycatServer;
-import io.mycat.backend.mysql.CharsetUtil;
-import io.mycat.backend.mysql.SecurityUtil;
-import io.mycat.backend.mysql.nio.handler.ResponseHandler;
-import io.mycat.config.Capabilities;
-import io.mycat.config.Isolations;
-import io.mycat.net.BackendAIOConnection;
-import io.mycat.net.mysql.*;
-import io.mycat.route.RouteResultsetNode;
-import io.mycat.server.ServerConnection;
-import io.mycat.server.parser.ServerParse;
-import io.mycat.util.TimeUtil;
-import io.mycat.util.exception.UnknownTxIsolationException;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.MycatServer;
+import io.mycat.backend.mysql.CharsetUtil;
+import io.mycat.backend.mysql.SecurityUtil;
+import io.mycat.backend.mysql.nio.handler.ResponseHandler;
+import io.mycat.backend.mysql.xa.TxState;
+import io.mycat.config.Capabilities;
+import io.mycat.config.Isolations;
+import io.mycat.net.BackendAIOConnection;
+import io.mycat.net.mysql.AuthPacket;
+import io.mycat.net.mysql.CommandPacket;
+import io.mycat.net.mysql.HandshakePacket;
+import io.mycat.net.mysql.MySQLPacket;
+import io.mycat.net.mysql.QuitPacket;
+import io.mycat.route.RouteResultsetNode;
+import io.mycat.server.ServerConnection;
+import io.mycat.server.parser.ServerParse;
+import io.mycat.util.TimeUtil;
+import io.mycat.util.exception.UnknownTxIsolationException;
 
 /**
  * @author mycat
@@ -389,20 +394,16 @@ public class MySQLConnection extends BackendAIOConnection {
 			modifiedSQLExecuted = true;
 		}
 		String xaTXID = sc.getSession2().getXaTXID();
-		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(),
-				autocommit);
+		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(),autocommit);
 	}
 
 	private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
 			int clientCharSetIndex, int clientTxIsoLation,
-			boolean clientAutoCommit) {
+			boolean expectAutocommit) {
 		String xaCmd = null;
 
 		boolean conAutoComit = this.autocommit;
 		String conSchema = this.schema;
-		// never executed modify sql,so auto commit
-		boolean expectAutocommit = !modifiedSQLExecuted || isFromSlaveDB()
-				|| clientAutoCommit;
 		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
 			//clientTxIsoLation = Isolations.SERIALIZABLE;
 			xaCmd = "XA START " + xaTxID + ';';
@@ -562,7 +563,6 @@ public class MySQLConnection extends BackendAIOConnection {
 		metaDataSyned = true;
 		attachment = null;
 		statusSync = null;
-		modifiedSQLExecuted = false;
 		setResponseHandler(null);
 		pool.releaseChannel(this);
 	}
@@ -643,15 +643,11 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	@Override
 	public String toString() {
-		return "MySQLConnection [id=" + id + ", lastTime=" + lastTime
-				+ ", user=" + user
-				+ ", schema=" + schema + ", old shema=" + oldSchema
-				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
-				+ ", threadId=" + threadId + ", charset=" + charset
-				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
-				+ ", attachment=" + attachment + ", respHandler=" + respHandler
-				+ ", host=" + host + ", port=" + port + ", statusSync="
-				+ statusSync + ", writeQueue=" + this.getWriteQueue().size()
+		return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema
+				+ ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId="
+				+ threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
+				+ ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port
+				+ ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size()
 				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}
 

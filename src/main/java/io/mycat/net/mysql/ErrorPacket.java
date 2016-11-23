@@ -23,9 +23,9 @@
  */
 package io.mycat.net.mysql;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
+import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.net.FrontendConnection;
@@ -93,7 +93,7 @@ public class ErrorPacket extends MySQLPacket {
 		c.recycle(buffer);
 		return data;
 	}
-	public byte[] writeToBytes() {
+	public byte[] toBytes() {
 		ByteBuffer buffer = ByteBuffer.allocate(calcPacketSize()+4);
 		int size = calcPacketSize();
 		BufferUtil.writeUB3(buffer, size);
@@ -108,7 +108,7 @@ public class ErrorPacket extends MySQLPacket {
 		buffer.flip();
 		byte[] data = new byte[buffer.limit()];
 		buffer.get(data);
-
+		MycatServer.getInstance().getBufferPool().recycle(buffer);
 		return data;
 	}
 	@Override

@@ -61,6 +61,8 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		 */
 		try {
 			statement = parser.parseStatement();
+			//TODO:MultiQueries
+			//parser.parseStatementList();
             visitor = new MycatSchemaStatVisitor();
 		} catch (Exception t) {
 	        LOGGER.error("DruidMycatRouteStrategyError", t);

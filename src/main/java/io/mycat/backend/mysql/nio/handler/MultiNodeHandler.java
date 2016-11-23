@@ -26,7 +26,8 @@ package io.mycat.backend.mysql.nio.handler;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.config.ErrorCode;
@@ -37,7 +38,7 @@ import io.mycat.util.StringUtil;
 /**
  * @author mycat
  */
-abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
+abstract class MultiNodeHandler implements ResponseHandler {
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger(MultiNodeHandler.class);
 	protected final ReentrantLock lock = new ReentrantLock();
@@ -63,27 +64,11 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		return isFailed.get();
 	}
 
-	private int nodeCount;
+	protected int nodeCount;
 
 	private Runnable terminateCallBack;
 
-	@Override
-	public void terminate(Runnable terminateCallBack) {
-		boolean zeroReached = false;
-		lock.lock();
-		try {
-			if (nodeCount > 0) {
-				this.terminateCallBack = terminateCallBack;
-			} else {
-				zeroReached = true;
-			}
-		} finally {
-			lock.unlock();
-		}
-		if (zeroReached) {
-			terminateCallBack.run();
-		}
-	}
+
 
 	protected boolean canClose(BackendConnection conn, boolean tryErrorFinish) {
 

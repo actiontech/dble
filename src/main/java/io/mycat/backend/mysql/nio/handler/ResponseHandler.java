@@ -83,5 +83,4 @@ public interface ResponseHandler {
 	 */
 	void connectionClose(BackendConnection conn, String reason);
 
-	
 }

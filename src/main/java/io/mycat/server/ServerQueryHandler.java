@@ -30,9 +30,11 @@ import io.mycat.config.ErrorCode;
 import io.mycat.net.handler.FrontendQueryHandler;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.handler.BeginHandler;
+import io.mycat.server.handler.CommitHandler;
 import io.mycat.server.handler.Explain2Handler;
 import io.mycat.server.handler.ExplainHandler;
 import io.mycat.server.handler.KillHandler;
+import io.mycat.server.handler.RollBackHandler;
 import io.mycat.server.handler.SavepointHandler;
 import io.mycat.server.handler.SelectHandler;
 import io.mycat.server.handler.SetHandler;
@@ -110,10 +112,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 			UseHandler.handle(sql, c, rs >>> 8);
 			break;
 		case ServerParse.COMMIT:
-			c.commit();
+			CommitHandler.handle(c);
 			break;
 		case ServerParse.ROLLBACK:
-			c.rollback();
+			RollBackHandler.handle(c);
 			break;
 		case ServerParse.HELP:
 			LOGGER.warn(new StringBuilder().append("Unsupported command:").append(sql).toString());

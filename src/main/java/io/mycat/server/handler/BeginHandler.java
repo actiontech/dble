@@ -23,23 +23,18 @@
  */
 package io.mycat.server.handler;
 
+import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 
-/**
- * @author mycat
- */
 public final class BeginHandler {
-    private static final byte[] AC_OFF = new byte[] { 7, 0, 0, 1, 0, 0, 0, 0,
-            0, 0, 0 };
     public static void handle(String stmt, ServerConnection c) {
-        if (c.isAutocommit())
-        {
-            c.setAutocommit(false);
-            c.write(c.writeToBuffer(AC_OFF, c.allocate()));
-        }else
-        {
-            c.getSession2().commit() ;
-        }
+		if (c.isTxstart() || !c.isAutocommit()) {
+			c.setTxstart(true);
+			c.commit();
+		} else {
+			c.setTxstart(true);
+			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+		}
     }
 
 }

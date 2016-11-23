@@ -98,7 +98,7 @@ public class OkPacket extends MySQLPacket {
 		return data;
 	}
 
-	private ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
+	public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
 
 		int size = calcPacketSize();
 		buffer = c.checkWriteBuffer(buffer, c.getPacketHeaderSize() + size,
@@ -140,25 +140,24 @@ public class OkPacket extends MySQLPacket {
 		return "MySQL OK Packet";
 	}
 
-	 public byte[] writeToBytes() {
-	
-	   int totalSize = calcPacketSize() + packetHeaderSize;
-        ByteBuffer buffer=MycatServer.getInstance().getBufferPool().allocate(totalSize);
-        BufferUtil.writeUB3(buffer, calcPacketSize());
-        buffer.put(packetId);
-        buffer.put(fieldCount);
-        BufferUtil.writeLength(buffer, affectedRows);
-        BufferUtil.writeLength(buffer, insertId);
-        BufferUtil.writeUB2(buffer, serverStatus);
-        BufferUtil.writeUB2(buffer, warningCount);
-        if (message != null) {
-            BufferUtil.writeWithLength(buffer, message);
-        }
-        buffer.flip();
-        byte[] data = new byte[buffer.limit()];
-        buffer.get(data);
-		 MycatServer.getInstance().getBufferPool().recycle(buffer);
-		 return data;
-    }
+	public byte[] toBytes() {
+		int totalSize = calcPacketSize() + packetHeaderSize;
+		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(totalSize);
+		BufferUtil.writeUB3(buffer, calcPacketSize());
+		buffer.put(packetId);
+		buffer.put(fieldCount);
+		BufferUtil.writeLength(buffer, affectedRows);
+		BufferUtil.writeLength(buffer, insertId);
+		BufferUtil.writeUB2(buffer, serverStatus);
+		BufferUtil.writeUB2(buffer, warningCount);
+		if (message != null) {
+			BufferUtil.writeWithLength(buffer, message);
+		}
+		buffer.flip();
+		byte[] data = new byte[buffer.limit()];
+		buffer.get(data);
+		MycatServer.getInstance().getBufferPool().recycle(buffer);
+		return data;
+	}
 
 }

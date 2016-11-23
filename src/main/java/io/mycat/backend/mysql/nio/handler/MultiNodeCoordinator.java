@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.backend.mysql.xa.CoordinatorLogEntry;
 import io.mycat.backend.mysql.xa.ParticipantLogEntry;
@@ -11,9 +15,6 @@ import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.recovery.Repository;
 import io.mycat.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import io.mycat.backend.mysql.xa.recovery.impl.InMemoryRepository;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
-import io.mycat.backend.BackendConnection;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.sqlcmd.SQLCtrlCommand;
@@ -29,11 +30,13 @@ public class MultiNodeCoordinator implements ResponseHandler {
 	private final NonBlockingSession session;
 	private SQLCtrlCommand cmdHandler;
 	private final AtomicBoolean failed = new AtomicBoolean(false);
-
+	private ResponseHandler responsehandler = MultiNodeCoordinator.this;
 	public MultiNodeCoordinator(NonBlockingSession session) {
 		this.session = session;
 	}
-
+	public void setResponseHandler(ResponseHandler responsehandler){
+		this.responsehandler=responsehandler;
+	}
 	/** Multi-nodes 1pc Commit Handle **/
 	public void executeBatchNodeCmd(SQLCtrlCommand cmdHandler) {
 		this.cmdHandler = cmdHandler;
@@ -54,7 +57,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 			}
 			final BackendConnection conn = session.getTarget(rrn);
 			if (conn != null) {
-				conn.setResponseHandler(this);
+				conn.setResponseHandler(responsehandler);
 				//process the XA_END XA_PREPARE Command
 				MySQLConnection mysqlCon = (MySQLConnection) conn;
 				String xaTxId = session.getXaTXID();
@@ -231,5 +234,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 	public void connectionClose(BackendConnection conn, String reason) {
 
 	}
-
+	public void clearResources() {
+		responsehandler = MultiNodeCoordinator.this;
+	}
 }

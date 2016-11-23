@@ -23,21 +23,6 @@
  */
 package io.mycat.server;
 
-import io.mycat.MycatServer;
-import io.mycat.backend.BackendConnection;
-import io.mycat.backend.datasource.PhysicalDBNode;
-import io.mycat.backend.mysql.nio.handler.*;
-import io.mycat.config.ErrorCode;
-import io.mycat.config.MycatConfig;
-import io.mycat.net.FrontendConnection;
-import io.mycat.net.mysql.OkPacket;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.RouteResultsetNode;
-import io.mycat.server.parser.ServerParse;
-import io.mycat.server.sqlcmd.SQLCmdConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,8 +32,31 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.MycatServer;
+import io.mycat.backend.BackendConnection;
+import io.mycat.backend.datasource.PhysicalDBNode;
+import io.mycat.backend.mysql.nio.handler.CommitNodeHandler;
+import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
+import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
+import io.mycat.backend.mysql.nio.handler.MultiNodeCoordinator;
+import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
+import io.mycat.backend.mysql.nio.handler.ResponseHandler;
+import io.mycat.backend.mysql.nio.handler.RollbackNodeHandler;
+import io.mycat.backend.mysql.nio.handler.RollbackReleaseHandler;
+import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
+import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
+import io.mycat.config.ErrorCode;
+import io.mycat.config.MycatConfig;
+import io.mycat.net.FrontendConnection;
+import io.mycat.net.mysql.OkPacket;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.RouteResultsetNode;
+import io.mycat.server.sqlcmd.SQLCmdConstant;
+
 /**
- * @author mycat
  * @author mycat
  */
 public class NonBlockingSession implements Session {
@@ -72,6 +80,7 @@ public class NonBlockingSession implements Session {
         this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 0.75f);
         multiNodeCoordinator = new MultiNodeCoordinator(this);
         commitHandler = new CommitNodeHandler(this);
+        rollbackHandler = new RollbackNodeHandler(this);
     }
 
     @Override
@@ -102,7 +111,6 @@ public class NonBlockingSession implements Session {
     
     @Override
     public void execute(RouteResultset rrs, int type) {
-
         // clear prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
@@ -117,97 +125,40 @@ public class NonBlockingSession implements Session {
                     "No dataNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
-        boolean autocommit = source.isAutocommit();
-        final int initCount = target.size();
-        if (nodes.length == 1) {
-            singleNodeHandler = new SingleNodeHandler(rrs, this);
-            if (this.isPrepared()) {
-                singleNodeHandler.setPrepared(true);
-            }
+		if (nodes.length == 1) {
+			singleNodeHandler = new SingleNodeHandler(rrs, this);
+			if (this.isPrepared()) {
+				singleNodeHandler.setPrepared(true);
+			}
+			try {
+				singleNodeHandler.execute();
+			} catch (Exception e) {
+				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+			}
+		} else {
+			multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
+			if (this.isPrepared()) {
+				multiNodeHandler.setPrepared(true);
+			}
+			try {
+				multiNodeHandler.execute();
+			} catch (Exception e) {
+				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+			}
+		}
 
-            try {
-                if(initCount > 1){
-                    checkDistriTransaxAndExecute(rrs,1,autocommit);
-                }else{
-                    singleNodeHandler.execute();
-                }
-            } catch (Exception e) {
-                LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-            }
-
-        } else {
-
-            multiNodeHandler = new MultiNodeQueryHandler(type, rrs, autocommit, this);
-            if (this.isPrepared()) {
-                multiNodeHandler.setPrepared(true);
-            }
-            try {
-                if(((type == ServerParse.DELETE || type == ServerParse.INSERT || type == ServerParse.UPDATE) && !rrs.isGlobalTable() && nodes.length > 1)||initCount > 1) {
-                    checkDistriTransaxAndExecute(rrs,2,autocommit);
-                } else {
-                    multiNodeHandler.execute();
-                }
-
-            } catch (Exception e) {
-                LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-            }
-        }
-
-        if (this.isPrepared()) {
-            this.setPrepared(false);
-        }
+		if (this.isPrepared()) {
+			this.setPrepared(false);
+		}
     }
 
-    private void checkDistriTransaxAndExecute(RouteResultset rrs, int type,boolean autocommit) throws Exception {
-        switch(MycatServer.getInstance().getConfig().getSystem().getHandleDistributedTransactions()) {
-            case 1:
-                source.writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Distributed transaction is disabled!");
-                if(!autocommit){
-                    source.setTxInterrupt("Distributed transaction is disabled!");
-                }
-                break;
-            case 2:
-                LOGGER.warn("Distributed transaction detected! RRS:" + rrs);
-                if(type == 1){
-                    singleNodeHandler.execute();
-                }
-                else{
-                    multiNodeHandler.execute();
-                }
-                break;
-            default:
-                if(type == 1){
-                    singleNodeHandler.execute();
-                }
-                else{
-                    multiNodeHandler.execute();
-                }
-        }
-    }
-
-    private void checkDistriTransaxAndExecute() {
-        if(!isALLGlobal()){
-            switch(MycatServer.getInstance().getConfig().getSystem().getHandleDistributedTransactions()) {
-                case 1:
-//                        rollback();
-                    source.writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Distributed transaction is disabled!Please rollback!");
-                    source.setTxInterrupt("Distributed transaction is disabled!");
-                    break;
-                case 2:
-                    multiNodeCoordinator.executeBatchNodeCmd(SQLCmdConstant.COMMIT_CMD);
-                    LOGGER.warn("Distributed transaction detected! Targets:" + target);
-                    break;
-                default:
-                    multiNodeCoordinator.executeBatchNodeCmd(SQLCmdConstant.COMMIT_CMD);
-                    LOGGER.warn("DEFAULT:Distributed transaction detected! Targets:" + target);
-            }
-        } else {
-            multiNodeCoordinator.executeBatchNodeCmd(SQLCmdConstant.COMMIT_CMD);
-        }
-    }
-
+	public void commit(ResponseHandler responsehandler) {
+		commitHandler.setResponseHandler(responsehandler);
+		multiNodeCoordinator.setResponseHandler(responsehandler);
+		commit();
+	}
     public void commit() {
         final int initCount = target.size();
         if (initCount <= 0) {
@@ -218,29 +169,19 @@ public class NonBlockingSession implements Session {
         } else if (initCount == 1) {
             BackendConnection con = target.elements().nextElement();
             commitHandler.commit(con);
-
         } else {
-
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("multi node commit to send ,total " + initCount);
             }
-            checkDistriTransaxAndExecute();
+            multiNodeCoordinator.executeBatchNodeCmd(SQLCmdConstant.COMMIT_CMD);
         }
 
     }
 
-    private boolean isALLGlobal(){
-        for(RouteResultsetNode routeResultsetNode:target.keySet()){
-            if(routeResultsetNode.getSource()==null){
-                return false;
-            }
-            else if(!routeResultsetNode.getSource().isGlobalTable()){
-                return false;
-            }
-        }
-        return true;
-    }
-
+	public void rollback(ResponseHandler responsehandler) {
+		rollbackHandler.setResponseHandler(responsehandler);
+		rollback();
+	}
     public void rollback() {
         final int initCount = target.size();
         if (initCount <= 0) {
@@ -253,7 +194,6 @@ public class NonBlockingSession implements Session {
             return;
         }
 
-        rollbackHandler = new RollbackNodeHandler(this);
         rollbackHandler.rollback();
     }
 
@@ -318,16 +258,13 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
-    public void releaseConnectionIfSafe(BackendConnection conn, boolean debug,
-                                        boolean needRollback) {
+    public void releaseConnectionIfSafe(BackendConnection conn, boolean debug, boolean needRollback) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
-
         if (node != null) {
             if (node.isDisctTable()) {
                 return;
             }
-            if ((this.source.isAutocommit() || conn.isFromSlaveDB()
-                    || !conn.isModifiedSQLExecuted()) && !this.source.isLocked()) {
+            if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isLocked()) {
                 releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollback);
             }
         }
@@ -348,14 +285,14 @@ public class NonBlockingSession implements Session {
                 if (c.isAutocommit()) {
                     c.release();
                 } else
-                //if (needRollback)
+                if (needRollback)
                 {
                     c.setResponseHandler(new RollbackReleaseHandler());
                     c.rollback();
                 }
-                //else {
-				//	c.release();
-				//}
+                else {
+					c.release();
+				}
             }
         }
     }
@@ -502,6 +439,9 @@ public class NonBlockingSession implements Session {
             multiHandler.clearResources();
             multiNodeHandler = null;
         }
+        rollbackHandler.clearResources();
+        multiNodeCoordinator.clearResources();
+        commitHandler.clearResources();
     }
 
     public void clearResources(final boolean needRollback) {

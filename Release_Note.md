@@ -19,4 +19,4 @@ sum((count[i]*length[i])) 不受乘积为1024的限制，改为不大于1024的�
 
 其余配置见rule_template.xml  
 
-###2.支持insert 不带columns
+### 2.支持insert 不带columns

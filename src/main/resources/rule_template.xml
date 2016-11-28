@@ -9,76 +9,52 @@
 	under the License. -->
 <!DOCTYPE mycat:rule SYSTEM "rule.dtd">
 <mycat:rule xmlns:mycat="http://io.mycat/">
-	<tableRule name="rule1">
+	<tableRule name="sharding-by-enum">
 		<rule>
 			<columns>id</columns>
-			<algorithm>func1</algorithm>
+			<algorithm>enum</algorithm>
+		</rule>
+	</tableRule>
+	
+	<tableRule name="sharding-by-range">
+		<rule>
+			<columns>id</columns>
+			<algorithm>rangeLong</algorithm>
+		</rule>
+	</tableRule>
+	
+	<tableRule name="sharding-by-hash">
+		<rule>
+			<columns>id</columns>
+			<algorithm>hashLong</algorithm>
 		</rule>
 	</tableRule>
 
-	<tableRule name="rule2">
+	<tableRule name="sharding-by-mod">
 		<rule>
-			<columns>user_id</columns>
-			<algorithm>func1</algorithm>
+			<columns>id</columns>
+			<algorithm>hashmod</algorithm>
+		</rule>
+	</tableRule>
+	
+	<tableRule name="sharding-by-hash-str">
+		<rule>
+			<columns>id</columns>
+			<algorithm>hashSting</algorithm>
 		</rule>
 	</tableRule>
 
-	<tableRule name="sharding-by-intfile">
-		<rule>
-			<columns>sharding_id</columns>
-			<algorithm>hash-int</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="auto-sharding-long">
-		<rule>
-			<columns>id</columns>
-			<algorithm>rang-long</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="mod-long">
-		<rule>
-			<columns>id</columns>
-			<algorithm>mod-long</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="sharding-by-murmur">
-		<rule>
-			<columns>id</columns>
-			<algorithm>murmur</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="crc32slot">
-		<rule>
-			<columns>id</columns>
-			<algorithm>crc32slot</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="sharding-by-month">
-		<rule>
-			<columns>create_time</columns>
-			<algorithm>partbymonth</algorithm>
-		</rule>
-	</tableRule>
-	<tableRule name="latest-month-calldate">
+	 
+	 
+	<tableRule name="sharding-by-date">
 		<rule>
 			<columns>calldate</columns>
-			<algorithm>latestMonth</algorithm>
+			<algorithm>partbydate</algorithm>
 		</rule>
 	</tableRule>
 	
-	<tableRule name="auto-sharding-rang-mod">
-		<rule>
-			<columns>id</columns>
-			<algorithm>rang-mod</algorithm>
-		</rule>
-	</tableRule>
 	
-	<tableRule name="jch">
-		<rule>
-			<columns>id</columns>
-			<algorithm>jump-consistent-hash</algorithm>
-		</rule>
-	</tableRule>
+	 
 
 	 
 	<!-- 枚举方式分区 --> 
@@ -90,23 +66,29 @@
 	</function>
 	
 	<!-- 数字范围方式分区 -->
-	<function name="rang-long"
+	<function name="rangeLong"
 		class="io.mycat.route.function.AutoPartitionByLong">
 		<property name="mapFile">autopartition-long.txt</property>
 		<property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
 	</function> 
 	
 	<!-- 固定Hash 分区,当partitionLength全为1时，退化为求模分区-->
-	<!--MAX(sum(count*length[i]) must be less then 1024-->
-	<function name="func1" class="io.mycat.route.function.PartitionByLong">
+	<!--MAX(sum(count*length[i]) must not more then 1024-->
+	<function name="hashLong" class="io.mycat.route.function.PartitionByLong">
 		<property name="partitionCount">8</property>
 		<property name="partitionLength">128</property>
 		<!-- <property name="partitionCount">2,3</property>
 		<property name="partitionLength">4,5</property>-->
 	</function> 
+	 
+	 <!-- 对8求模-->
+	<function name="hashmod" class="io.mycat.route.function.PartitionByLong">
+		<property name="partitionCount">8</property>
+		<property name="partitionLength">1</property>
+	</function>
 	
 	<!-- 固定Hash 分区 ，string 类型-->
-	<function name="func1" class="io.mycat.route.function.PartitionByString">
+	<function name="hashSting" class="io.mycat.route.function.PartitionByString">
 		<property name="partitionCount">8</property>
 		<property name="partitionLength">128</property> 
 		<property name="hashSlice">0:2</property> 
@@ -120,7 +102,7 @@
 		<property name="sBeginDate">2015-01-01</property>
 		<property name="sEndDate">2015-01-31</property> 
 		<property name="sPartionDay">10</property>
-		<property name="defaultNode">0</property><!--默认为-1 ,小于sBeginDate日期直接报错 -->
+		<property name="defaultNode">0</property><!--默认为-1 ,若为-1 时,小于sBeginDate日期直接报错 -->
 	</function>
 	
 	 

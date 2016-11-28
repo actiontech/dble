@@ -23,7 +23,34 @@
  */
 package io.mycat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
@@ -44,9 +71,10 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.config.table.structure.MySQLTableStructureDetector;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
+import io.mycat.meta.MySQLTableStructureDetector;
+import io.mycat.meta.ProxyMetaManager;
 import io.mycat.net.AIOAcceptor;
 import io.mycat.net.AIOConnector;
 import io.mycat.net.NIOAcceptor;
@@ -70,26 +98,7 @@ import io.mycat.statistic.stat.UserStatAnalyzer;
 import io.mycat.util.ExecutorUtil;
 import io.mycat.util.NameableExecutor;
 import io.mycat.util.TimeUtil;
-
-import java.io.*;
-import java.nio.channels.AsynchronousChannelGroup;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import io.mycat.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author mycat
@@ -108,6 +117,7 @@ public class MycatServer {
 	private final RouteService routerService;
 	private final CacheService cacheService;
 	private Properties dnIndexProperties;
+	private ProxyMetaManager tmManager;
 	
 	//AIO连接群组
 	private AsynchronousChannelGroup[] asyncChannelGroups;
@@ -181,7 +191,7 @@ public class MycatServer {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
 		//catlet加载器
 		catletClassLoader = new DynaClassLoader(SystemConfig.getHomePath()
 				+ File.separator + "catlet", config.getSystem().getCatletClassCheckSeconds());
@@ -268,7 +278,6 @@ public class MycatServer {
 	}
 
 	public void startup() throws IOException {
-
 		SystemConfig system = config.getSystem();
 		int processorCount = system.getProcessors();
 
@@ -402,6 +411,9 @@ public class MycatServer {
 			server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
 					+ "Server", system.getBindIp(), system.getServerPort(), sf, reactorPool);
 		}
+		tmManager = new ProxyMetaManager();
+		tmManager.init();
+
 		// manager start
 		manager.start();
 		LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
@@ -722,6 +734,10 @@ public class MycatServer {
 
 	public void online() {
 		isOnline.set(true);
+	}
+
+	public ProxyMetaManager getTmManager() {
+		return tmManager;
 	}
 
 	// 系统时间定时更新任务

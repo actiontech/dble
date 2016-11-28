@@ -1,0 +1,65 @@
+package io.mycat.meta.protocol;
+
+option java_package = "io.mycat.meta.protocol";
+option java_outer_classname = "MyCatMeta";
+option optimize_for = SPEED;
+
+enum MySqlDataType {
+    DECIMAL               = 0;
+    TINY                  = 1;
+    SHORT                 = 2;
+    LONG                  = 3;
+    FLOAT                 = 4;
+    DOUBLE                = 5;
+    NULL                  = 6;
+    TIMESTAMP             = 7;
+    LONGLONG              = 8;
+    INT24                 = 9;
+    DATE                  = 10;
+    TIME                  = 11;
+    DATETIME              = 12;
+    YEAR                  = 13;
+    NEWDATE               = 14;
+    VARCHAR               = 15;
+    BIT                   = 16;
+    TIMESTAMP2            = 17;
+    DATETIME2             = 18;
+    TIME2                 = 19;
+    NEWDECIMAL            = 246;
+    ENUM                  = 247;
+    SET                   = 248;
+    TINYBLOB              = 249;
+    MEDIUMBLOB            = 250;
+    LONGBLOB              = 251;
+    BLOB                  = 252;
+    VARSTRING             = 253;
+    STRING                = 254;
+    GEOMETRY              = 255;
+}
+
+message ColumnMeta{
+	optional string            tableName      = 1;
+	optional string            name           = 2;
+	optional MySqlDataType     dataType       = 3;
+	optional int32             length         = 4;
+	optional int32             precision      = 5;
+	optional int32             scale          = 6;
+	optional bool              canNull        = 7;
+	optional string            sdefault       = 8;
+	optional bool              auto_incre     = 9;
+	optional bool              isUnsigned     = 10;
+	optional string            key            = 11[default = ""];//有pri，unique
+	optional string            charsetname    = 12 [default = "utf8"];
+}
+
+message TableMeta{
+	optional string            catalog        = 1;
+	optional string            tableName      = 2;//不带dbname的表名:如table1
+	repeated ColumnMeta        allColumns     = 3;//所有的列属性，有序
+	optional bool              isView         = 4[default = false];
+	optional string            createSql      = 5;
+	optional int64             version        = 6;
+	optional int64             aiOffset       = 7[default=-1];
+	optional int32             type           = 8;
+	optional int32             aiColPos       = 9[default=-1];
+}

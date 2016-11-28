@@ -23,12 +23,15 @@
  */
 package io.mycat.config.model;
 
-import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+
 import io.mycat.config.model.rule.RuleConfig;
 import io.mycat.util.SplitUtil;
 

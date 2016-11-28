@@ -3,8 +3,8 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.mycat</groupId>
-	<artifactId>Mycat-server</artifactId>
-	<version>1.6.5-DEV</version>
+	<artifactId>Action_Mycat</artifactId>
+	<version>0.1.1-DEV</version>
 	<packaging>jar</packaging>
 	<name>Mycat-server</name>
 	<description>The project of Mycat-server</description>
@@ -17,8 +17,11 @@
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
 		<version.template.file>version.txt.template</version.template.file>
 		<version.file>version.txt</version.file>
+		<project.build.sourceEncoding>
+            UTF-8
+        </project.build.sourceEncoding>
 	</properties>
-	<scm>
+	 <scm>
 		<connection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</connection>
 		<developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</developerConnection>
 		<url>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</url>
@@ -45,6 +48,11 @@
 	<dependencies>
 		<!-- <dependency> <groupId>com.google.guava</groupId> <artifactId>guava-parent</artifactId> 
 			<version>18.0</version> </dependency> -->
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>2.6.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongo-java-driver</artifactId>
@@ -535,7 +543,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-scm-plugin</artifactId>
@@ -553,7 +560,6 @@
 					</dependency>
 				</dependencies>
 			</plugin>
-
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>

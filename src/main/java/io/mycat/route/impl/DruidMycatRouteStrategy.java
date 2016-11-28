@@ -120,7 +120,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		//分表
 		/**
 		 *  subTables="t_order$1-2,t_order3"
-		 *目前分表 1.6 开始支持 幵丏 dataNode 在分表条件下只能配置一个，分表条件下不支持join。
+		 *目前分表 1.6 开始支持dataNode 在分表条件下只能配置一个，分表条件下不支持join。
 		 */
 		if(rrs.isDistTable()){
 			return this.routeDisTable(statement,rrs);

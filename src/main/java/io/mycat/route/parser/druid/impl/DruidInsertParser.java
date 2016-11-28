@@ -1,7 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,14 +14,15 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
+import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
@@ -50,8 +50,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
-			String msg = "can't find table define in schema "
-					+ tableName + " schema:" + schema.getName();
+			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		} else {
@@ -63,17 +62,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 			
 			String partitionColumn = tc.getPartitionColumn();
 			
-			if(partitionColumn != null) {//分片表
-				//拆分表必须给出column list,否则无法寻找分片字段的值
-				if(insert.getColumns() == null || insert.getColumns().size() == 0) {
-					throw new SQLSyntaxErrorException("partition table, insert must provide ColumnList");
-				}
-				
+			if(partitionColumn != null) {
 				//批量insert
 				if(isMultiInsert(insert)) {
-//					String msg = "multi insert not provided" ;
-//					LOGGER.warn(msg);
-//					throw new SQLNonTransientException(msg);
 					parserBatchInsert(schema, rrs, partitionColumn, tableName, insert);
 				} else {
 					parserSingleInsert(schema, rrs, partitionColumn, tableName, insert);
@@ -164,26 +155,37 @@ public class DruidInsertParser extends DefaultDruidParser {
 	 */
 	private void parserSingleInsert(SchemaConfig schema, RouteResultset rrs, String partitionColumn,
 			String tableName, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
-		boolean isFound = false;
-		for(int i = 0; i < insertStmt.getColumns().size(); i++) {
-			if(partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString()))) {//找到分片字段
-				isFound = true;
-				String column = StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString());
-				
-				String value = StringUtil.removeBackquote(insertStmt.getValues().getValues().get(i).toString());
-				
-				RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-				routeCalculateUnit.addShardingExpr(tableName, column, value);
-				ctx.addRouteCalculateUnit(routeCalculateUnit);
-				//mycat是单分片键，找到了就返回
-				break;
-			}
-		}
-		if(!isFound) {//分片表的
+		int shardingColIndex = getShardingColIndex(schema, insertStmt, partitionColumn);
+		if(shardingColIndex == -1) {
 			String msg = "bad insert sql (sharding column:"+ partitionColumn + " not provided," + insertStmt;
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
+
+		SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
+		String shardingValue = null;
+		if(valueExpr instanceof SQLIntegerExpr) {
+			SQLIntegerExpr intExpr = (SQLIntegerExpr)valueExpr;
+			shardingValue = intExpr.getNumber() + "";
+		} else if (valueExpr instanceof SQLCharExpr) {
+			SQLCharExpr charExpr = (SQLCharExpr)valueExpr;
+			shardingValue = charExpr.getText();
+		}
+		TableConfig tableConfig = schema.getTables().get(tableName);
+		AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+		Integer nodeIndex = algorithm.calculate(shardingValue);
+		//没找到插入的分片
+		if(nodeIndex == null) {
+			String msg = "can't find any valid datanode :" + tableName 
+					+ " -> " + partitionColumn + " -> " + shardingValue;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
+		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
+				insertStmt.toString());
+		nodes[0].setSource(rrs);
+
 		// insert into .... on duplicateKey 
 		//such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b); 
 		//INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE c=c+1;
@@ -199,6 +201,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 				}
 			}
 		}
+		rrs.setNodes(nodes);
+		rrs.setFinishedRoute(true);
 	}
 	
 	/**
@@ -213,8 +217,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 		//insert into table() values (),(),....
 		if(insertStmt.getValuesList().size() > 1) {
 			//字段列数
-			int columnNum = insertStmt.getColumns().size();
-			int shardingColIndex = getShardingColIndex(insertStmt, partitionColumn);
+			int columnNum = getTableColumns(schema, insertStmt);
+			int shardingColIndex = getShardingColIndex(schema, insertStmt, partitionColumn);
 			if(shardingColIndex == -1) {
 				String msg = "bad insert sql (sharding column:"+ partitionColumn + " not provided," + insertStmt;
 				LOGGER.warn(msg);
@@ -284,14 +288,40 @@ public class DruidInsertParser extends DefaultDruidParser {
 	 * @param partitionColumn
 	 * @return
 	 */
-	private int getShardingColIndex(MySqlInsertStatement insertStmt,String partitionColumn) {
+	private int getShardingColIndex(SchemaConfig schema, MySqlInsertStatement insertStmt, String partitionColumn) {
 		int shardingColIndex = -1;
-		for(int i = 0; i < insertStmt.getColumns().size(); i++) {
-			if(partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString()))) {//找到分片字段
-				shardingColIndex = i;
-				return shardingColIndex;
+		if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
+			String table = StringUtil.removeBackquote(insertStmt.getTableName().getSimpleName()).toUpperCase();
+			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schema.getName(), table);
+			if (tbMeta != null) {
+				for (int i = 0; i < tbMeta.getAllColumnsCount(); i++) {
+					if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(tbMeta.getAllColumns(i).getName()))) {
+						return i;
+					}
+				}
+			}
+			return shardingColIndex;
+		}
+		for (int i = 0; i < insertStmt.getColumns().size(); i++) {
+			if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString()))) {
+				return i;
 			}
 		}
 		return shardingColIndex;
+	}
+
+	private int getTableColumns(SchemaConfig schema, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
+		if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
+			String table = StringUtil.removeBackquote(insertStmt.getTableName().getSimpleName()).toUpperCase();
+			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schema.getName(), table);
+			if (tbMeta == null) {
+				String msg = "can't find table [" + table + "] define in schema:" + schema.getName();
+				LOGGER.warn(msg);
+				throw new SQLNonTransientException(msg);
+			}
+			return tbMeta.getAllColumnsCount();
+		} else {
+			return insertStmt.getColumns().size();
+		}
 	}
 }

@@ -65,12 +65,12 @@ public class ProxyMetaManager {
 		return this.catalogs.containsKey(schema);
 	}
 
-	public void addIndex(String schema, IndexMeta indexMeta) {
-		String name = indexMeta.getName() + "." + indexMeta.getTable();
-		SchemaMeta schemaMeta = catalogs.get(schema);
-		if (schemaMeta != null) {
-			schemaMeta.addIndexMeta(name, indexMeta);
-		}
+	public boolean checkTableExists(String schema, String strTable) {
+		if(!checkDbExists(schema))
+			return false;
+		if (strTable == null)
+			return false;
+		return this.catalogs.get(schema).getTableMetas().containsKey(strTable);
 	}
 
 	public List<String> getTableNames(String schema) {
@@ -87,13 +87,6 @@ public class ProxyMetaManager {
 		catalogs.remove(schema);
 	}
 
-//	private boolean containTable(String schema, String tbName) {
-//		SchemaMeta schemaMeta = catalogs.get(schema);
-//		if (schemaMeta == null)
-//			return false;
-//		return schemaMeta.getTableMetas().containsKey(tbName);
-//	}
-
 	public void addTable(String schema, TableMeta tm) {
 		String tbName = tm.getTableName();
 		SchemaMeta schemaMeta = catalogs.get(schema);
@@ -102,12 +95,19 @@ public class ProxyMetaManager {
 		}
 	}
 
-	public void flushTable(String schema, TableMeta tm) {
-		String table = tm.getTableName();
+	public boolean flushTable(String schema, TableMeta tm) {
+		String tbName = tm.getTableName();
 		SchemaMeta schemaMeta = catalogs.get(schema);
 		if (schemaMeta != null) {
-			schemaMeta.addTableMeta(table, tm);
+			TableMeta oldTm = schemaMeta.addTableMetaIfAbsent(tbName, tm);
+			if (oldTm != null) {
+				TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
+				if (!oldTm.equals(tblMetaTmp)) {
+					return schemaMeta.flushTableMeta(tbName, oldTm, tm);
+				}
+			}
 		}
+		return true;
 	}
 
 //	private void dropTable(String schema, String tbName) {

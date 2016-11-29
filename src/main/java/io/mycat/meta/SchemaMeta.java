@@ -10,15 +10,15 @@ import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 public class SchemaMeta {
 
 	/** <table,tableMeta> */
-	private final Map<String, TableMeta> tableMetas;
+	private final ConcurrentHashMap<String, TableMeta> tableMetas;
 //	private final Map<String, ViewMeta> viewMetas;
 	/** <table+'.'+indexName,IndexMeta> */
-	private final Map<String, IndexMeta> indexMetas;
+//	private final Map<String, IndexMeta> indexMetas;
 
 	public SchemaMeta() {
 		this.tableMetas = new ConcurrentHashMap<String, TableMeta>();
 //		this.viewMetas = new ConcurrentHashMap<String, ViewMeta>();
-		this.indexMetas = new ConcurrentHashMap<String, IndexMeta>();
+//		this.indexMetas = new ConcurrentHashMap<String, IndexMeta>();
 	}
 
 	public Map<String, TableMeta> getTableMetas() {
@@ -32,7 +32,13 @@ public class SchemaMeta {
 	public void addTableMeta(String tbName, TableMeta tblMeta) {
 		this.tableMetas.put(tbName, tblMeta);
 	}
+	public TableMeta addTableMetaIfAbsent(String tbName, TableMeta tblMeta) {
+		return this.tableMetas.putIfAbsent(tbName, tblMeta);
+	}
 
+	public boolean flushTableMeta(String tbName, TableMeta oldMeta, TableMeta newMeta) {
+		return this.tableMetas.replace(tbName, oldMeta, newMeta);
+	}
 	public TableMeta dropTable(String tbName) {
 		return this.tableMetas.remove(tbName);
 	}
@@ -57,13 +63,13 @@ public class SchemaMeta {
 //		return this.viewMetas.get(viewName);
 //	}
 
-	public void addIndexMeta(String name, IndexMeta indexMeta) {
-		this.indexMetas.put(name, indexMeta);
-	}
-
-	public IndexMeta getIndexMeta(String name) {
-		return this.indexMetas.get(name);
-	}
+//	public void addIndexMeta(String name, IndexMeta indexMeta) {
+//		this.indexMetas.put(name, indexMeta);
+//	}
+//
+//	public IndexMeta getIndexMeta(String name) {
+//		return this.indexMetas.get(name);
+//	}
 
 	public List<String> getTables() {
 		List<String> tbList = new ArrayList<String>();

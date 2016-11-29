@@ -8,338 +8,884 @@ public final class MyCatMeta {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface IndexMetaOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:io.mycat.meta.protocol.IndexMeta)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>required string name = 1;</code>
+     */
+    boolean hasName();
+    /**
+     * <code>required string name = 1;</code>
+     */
+    java.lang.String getName();
+    /**
+     * <code>required string name = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getNameBytes();
+
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    boolean hasType();
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    java.lang.String getType();
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    com.google.protobuf.ByteString
+        getTypeBytes();
+
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    com.google.protobuf.ProtocolStringList
+        getColumnsList();
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    int getColumnsCount();
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    java.lang.String getColumns(int index);
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getColumnsBytes(int index);
+  }
   /**
-   * Protobuf enum {@code io.mycat.meta.protocol.MySqlDataType}
+   * Protobuf type {@code io.mycat.meta.protocol.IndexMeta}
    */
-  public enum MySqlDataType
-      implements com.google.protobuf.ProtocolMessageEnum {
-    /**
-     * <code>DECIMAL = 0;</code>
-     */
-    DECIMAL(0, 0),
-    /**
-     * <code>TINY = 1;</code>
-     */
-    TINY(1, 1),
-    /**
-     * <code>SHORT = 2;</code>
-     */
-    SHORT(2, 2),
-    /**
-     * <code>LONG = 3;</code>
-     */
-    LONG(3, 3),
-    /**
-     * <code>FLOAT = 4;</code>
-     */
-    FLOAT(4, 4),
-    /**
-     * <code>DOUBLE = 5;</code>
-     */
-    DOUBLE(5, 5),
-    /**
-     * <code>NULL = 6;</code>
-     */
-    NULL(6, 6),
-    /**
-     * <code>TIMESTAMP = 7;</code>
-     */
-    TIMESTAMP(7, 7),
-    /**
-     * <code>LONGLONG = 8;</code>
-     */
-    LONGLONG(8, 8),
-    /**
-     * <code>INT24 = 9;</code>
-     */
-    INT24(9, 9),
-    /**
-     * <code>DATE = 10;</code>
-     */
-    DATE(10, 10),
-    /**
-     * <code>TIME = 11;</code>
-     */
-    TIME(11, 11),
-    /**
-     * <code>DATETIME = 12;</code>
-     */
-    DATETIME(12, 12),
-    /**
-     * <code>YEAR = 13;</code>
-     */
-    YEAR(13, 13),
-    /**
-     * <code>NEWDATE = 14;</code>
-     */
-    NEWDATE(14, 14),
-    /**
-     * <code>VARCHAR = 15;</code>
-     */
-    VARCHAR(15, 15),
-    /**
-     * <code>BIT = 16;</code>
-     */
-    BIT(16, 16),
-    /**
-     * <code>TIMESTAMP2 = 17;</code>
-     */
-    TIMESTAMP2(17, 17),
-    /**
-     * <code>DATETIME2 = 18;</code>
-     */
-    DATETIME2(18, 18),
-    /**
-     * <code>TIME2 = 19;</code>
-     */
-    TIME2(19, 19),
-    /**
-     * <code>NEWDECIMAL = 246;</code>
-     */
-    NEWDECIMAL(20, 246),
-    /**
-     * <code>ENUM = 247;</code>
-     */
-    ENUM(21, 247),
-    /**
-     * <code>SET = 248;</code>
-     */
-    SET(22, 248),
-    /**
-     * <code>TINYBLOB = 249;</code>
-     */
-    TINYBLOB(23, 249),
-    /**
-     * <code>MEDIUMBLOB = 250;</code>
-     */
-    MEDIUMBLOB(24, 250),
-    /**
-     * <code>LONGBLOB = 251;</code>
-     */
-    LONGBLOB(25, 251),
-    /**
-     * <code>BLOB = 252;</code>
-     */
-    BLOB(26, 252),
-    /**
-     * <code>VARSTRING = 253;</code>
-     */
-    VARSTRING(27, 253),
-    /**
-     * <code>STRING = 254;</code>
-     */
-    STRING(28, 254),
-    /**
-     * <code>GEOMETRY = 255;</code>
-     */
-    GEOMETRY(29, 255),
-    ;
+  public static final class IndexMeta extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:io.mycat.meta.protocol.IndexMeta)
+      IndexMetaOrBuilder {
+    // Use IndexMeta.newBuilder() to construct.
+    private IndexMeta(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private IndexMeta(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-    /**
-     * <code>DECIMAL = 0;</code>
-     */
-    public static final int DECIMAL_VALUE = 0;
-    /**
-     * <code>TINY = 1;</code>
-     */
-    public static final int TINY_VALUE = 1;
-    /**
-     * <code>SHORT = 2;</code>
-     */
-    public static final int SHORT_VALUE = 2;
-    /**
-     * <code>LONG = 3;</code>
-     */
-    public static final int LONG_VALUE = 3;
-    /**
-     * <code>FLOAT = 4;</code>
-     */
-    public static final int FLOAT_VALUE = 4;
-    /**
-     * <code>DOUBLE = 5;</code>
-     */
-    public static final int DOUBLE_VALUE = 5;
-    /**
-     * <code>NULL = 6;</code>
-     */
-    public static final int NULL_VALUE = 6;
-    /**
-     * <code>TIMESTAMP = 7;</code>
-     */
-    public static final int TIMESTAMP_VALUE = 7;
-    /**
-     * <code>LONGLONG = 8;</code>
-     */
-    public static final int LONGLONG_VALUE = 8;
-    /**
-     * <code>INT24 = 9;</code>
-     */
-    public static final int INT24_VALUE = 9;
-    /**
-     * <code>DATE = 10;</code>
-     */
-    public static final int DATE_VALUE = 10;
-    /**
-     * <code>TIME = 11;</code>
-     */
-    public static final int TIME_VALUE = 11;
-    /**
-     * <code>DATETIME = 12;</code>
-     */
-    public static final int DATETIME_VALUE = 12;
-    /**
-     * <code>YEAR = 13;</code>
-     */
-    public static final int YEAR_VALUE = 13;
-    /**
-     * <code>NEWDATE = 14;</code>
-     */
-    public static final int NEWDATE_VALUE = 14;
-    /**
-     * <code>VARCHAR = 15;</code>
-     */
-    public static final int VARCHAR_VALUE = 15;
-    /**
-     * <code>BIT = 16;</code>
-     */
-    public static final int BIT_VALUE = 16;
-    /**
-     * <code>TIMESTAMP2 = 17;</code>
-     */
-    public static final int TIMESTAMP2_VALUE = 17;
-    /**
-     * <code>DATETIME2 = 18;</code>
-     */
-    public static final int DATETIME2_VALUE = 18;
-    /**
-     * <code>TIME2 = 19;</code>
-     */
-    public static final int TIME2_VALUE = 19;
-    /**
-     * <code>NEWDECIMAL = 246;</code>
-     */
-    public static final int NEWDECIMAL_VALUE = 246;
-    /**
-     * <code>ENUM = 247;</code>
-     */
-    public static final int ENUM_VALUE = 247;
-    /**
-     * <code>SET = 248;</code>
-     */
-    public static final int SET_VALUE = 248;
-    /**
-     * <code>TINYBLOB = 249;</code>
-     */
-    public static final int TINYBLOB_VALUE = 249;
-    /**
-     * <code>MEDIUMBLOB = 250;</code>
-     */
-    public static final int MEDIUMBLOB_VALUE = 250;
-    /**
-     * <code>LONGBLOB = 251;</code>
-     */
-    public static final int LONGBLOB_VALUE = 251;
-    /**
-     * <code>BLOB = 252;</code>
-     */
-    public static final int BLOB_VALUE = 252;
-    /**
-     * <code>VARSTRING = 253;</code>
-     */
-    public static final int VARSTRING_VALUE = 253;
-    /**
-     * <code>STRING = 254;</code>
-     */
-    public static final int STRING_VALUE = 254;
-    /**
-     * <code>GEOMETRY = 255;</code>
-     */
-    public static final int GEOMETRY_VALUE = 255;
-
-
-    public final int getNumber() { return value; }
-
-    public static MySqlDataType valueOf(int value) {
-      switch (value) {
-        case 0: return DECIMAL;
-        case 1: return TINY;
-        case 2: return SHORT;
-        case 3: return LONG;
-        case 4: return FLOAT;
-        case 5: return DOUBLE;
-        case 6: return NULL;
-        case 7: return TIMESTAMP;
-        case 8: return LONGLONG;
-        case 9: return INT24;
-        case 10: return DATE;
-        case 11: return TIME;
-        case 12: return DATETIME;
-        case 13: return YEAR;
-        case 14: return NEWDATE;
-        case 15: return VARCHAR;
-        case 16: return BIT;
-        case 17: return TIMESTAMP2;
-        case 18: return DATETIME2;
-        case 19: return TIME2;
-        case 246: return NEWDECIMAL;
-        case 247: return ENUM;
-        case 248: return SET;
-        case 249: return TINYBLOB;
-        case 250: return MEDIUMBLOB;
-        case 251: return LONGBLOB;
-        case 252: return BLOB;
-        case 253: return VARSTRING;
-        case 254: return STRING;
-        case 255: return GEOMETRY;
-        default: return null;
-      }
+    private static final IndexMeta defaultInstance;
+    public static IndexMeta getDefaultInstance() {
+      return defaultInstance;
     }
 
-    public static com.google.protobuf.Internal.EnumLiteMap<MySqlDataType>
-        internalGetValueMap() {
-      return internalValueMap;
+    public IndexMeta getDefaultInstanceForType() {
+      return defaultInstance;
     }
-    private static com.google.protobuf.Internal.EnumLiteMap<MySqlDataType>
-        internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<MySqlDataType>() {
-            public MySqlDataType findValueByNumber(int number) {
-              return MySqlDataType.valueOf(number);
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private IndexMeta(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
             }
-          };
-
-    public final com.google.protobuf.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
-      return getDescriptor().getValues().get(index);
-    }
-    public final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptorForType() {
-      return getDescriptor();
-    }
-    public static final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptor() {
-      return io.mycat.meta.protocol.MyCatMeta.getDescriptor().getEnumTypes().get(0);
-    }
-
-    private static final MySqlDataType[] VALUES = values();
-
-    public static MySqlDataType valueOf(
-        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-      if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+            case 10: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000001;
+              name_ = bs;
+              break;
+            }
+            case 18: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000002;
+              type_ = bs;
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                columns_ = new com.google.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000004;
+              }
+              columns_.add(bs);
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+          columns_ = columns_.getUnmodifiableView();
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
       }
-      return VALUES[desc.getIndex()];
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return io.mycat.meta.protocol.MyCatMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
     }
 
-    private final int index;
-    private final int value;
-
-    private MySqlDataType(int index, int value) {
-      this.index = index;
-      this.value = value;
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return io.mycat.meta.protocol.MyCatMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta.class, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder.class);
     }
 
-    // @@protoc_insertion_point(enum_scope:io.mycat.meta.protocol.MySqlDataType)
+    public static com.google.protobuf.Parser<IndexMeta> PARSER =
+        new com.google.protobuf.AbstractParser<IndexMeta>() {
+      public IndexMeta parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new IndexMeta(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<IndexMeta> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    public static final int NAME_FIELD_NUMBER = 1;
+    private java.lang.Object name_;
+    /**
+     * <code>required string name = 1;</code>
+     */
+    public boolean hasName() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required string name = 1;</code>
+     */
+    public java.lang.String getName() {
+      java.lang.Object ref = name_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          name_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string name = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getNameBytes() {
+      java.lang.Object ref = name_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        name_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int TYPE_FIELD_NUMBER = 2;
+    private java.lang.Object type_;
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    public java.lang.String getType() {
+      java.lang.Object ref = type_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          type_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string type = 2;</code>
+     *
+     * <pre>
+     *PRI,UNI,MUI
+     * </pre>
+     */
+    public com.google.protobuf.ByteString
+        getTypeBytes() {
+      java.lang.Object ref = type_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        type_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int COLUMNS_FIELD_NUMBER = 3;
+    private com.google.protobuf.LazyStringList columns_;
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    public com.google.protobuf.ProtocolStringList
+        getColumnsList() {
+      return columns_;
+    }
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    public int getColumnsCount() {
+      return columns_.size();
+    }
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    public java.lang.String getColumns(int index) {
+      return columns_.get(index);
+    }
+    /**
+     * <code>repeated string columns = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getColumnsBytes(int index) {
+      return columns_.getByteString(index);
+    }
+
+    private void initFields() {
+      name_ = "";
+      type_ = "";
+      columns_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasName()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getNameBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getTypeBytes());
+      }
+      for (int i = 0; i < columns_.size(); i++) {
+        output.writeBytes(3, columns_.getByteString(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(1, getNameBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, getTypeBytes());
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < columns_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(columns_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getColumnsList().size();
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static io.mycat.meta.protocol.MyCatMeta.IndexMeta parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(io.mycat.meta.protocol.MyCatMeta.IndexMeta prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code io.mycat.meta.protocol.IndexMeta}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.IndexMeta)
+        io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return io.mycat.meta.protocol.MyCatMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return io.mycat.meta.protocol.MyCatMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                io.mycat.meta.protocol.MyCatMeta.IndexMeta.class, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder.class);
+      }
+
+      // Construct using io.mycat.meta.protocol.MyCatMeta.IndexMeta.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        name_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        type_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        columns_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return io.mycat.meta.protocol.MyCatMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
+      }
+
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta getDefaultInstanceForType() {
+        return io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance();
+      }
+
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta build() {
+        io.mycat.meta.protocol.MyCatMeta.IndexMeta result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta buildPartial() {
+        io.mycat.meta.protocol.MyCatMeta.IndexMeta result = new io.mycat.meta.protocol.MyCatMeta.IndexMeta(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.name_ = name_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.type_ = type_;
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          columns_ = columns_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000004);
+        }
+        result.columns_ = columns_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof io.mycat.meta.protocol.MyCatMeta.IndexMeta) {
+          return mergeFrom((io.mycat.meta.protocol.MyCatMeta.IndexMeta)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(io.mycat.meta.protocol.MyCatMeta.IndexMeta other) {
+        if (other == io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance()) return this;
+        if (other.hasName()) {
+          bitField0_ |= 0x00000001;
+          name_ = other.name_;
+          onChanged();
+        }
+        if (other.hasType()) {
+          bitField0_ |= 0x00000002;
+          type_ = other.type_;
+          onChanged();
+        }
+        if (!other.columns_.isEmpty()) {
+          if (columns_.isEmpty()) {
+            columns_ = other.columns_;
+            bitField0_ = (bitField0_ & ~0x00000004);
+          } else {
+            ensureColumnsIsMutable();
+            columns_.addAll(other.columns_);
+          }
+          onChanged();
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasName()) {
+          
+          return false;
+        }
+        if (!hasType()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        io.mycat.meta.protocol.MyCatMeta.IndexMeta parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (io.mycat.meta.protocol.MyCatMeta.IndexMeta) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.lang.Object name_ = "";
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public boolean hasName() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public java.lang.String getName() {
+        java.lang.Object ref = name_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            name_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getNameBytes() {
+        java.lang.Object ref = name_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          name_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public Builder setName(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        name_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public Builder clearName() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        name_ = getDefaultInstance().getName();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public Builder setNameBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        name_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object type_ = "";
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public java.lang.String getType() {
+        java.lang.Object ref = type_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            type_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public com.google.protobuf.ByteString
+          getTypeBytes() {
+        java.lang.Object ref = type_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          type_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public Builder setType(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public Builder clearType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        type_ = getDefaultInstance().getType();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string type = 2;</code>
+       *
+       * <pre>
+       *PRI,UNI,MUI
+       * </pre>
+       */
+      public Builder setTypeBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+
+      private com.google.protobuf.LazyStringList columns_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureColumnsIsMutable() {
+        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+          columns_ = new com.google.protobuf.LazyStringArrayList(columns_);
+          bitField0_ |= 0x00000004;
+         }
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public com.google.protobuf.ProtocolStringList
+          getColumnsList() {
+        return columns_.getUnmodifiableView();
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public int getColumnsCount() {
+        return columns_.size();
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public java.lang.String getColumns(int index) {
+        return columns_.get(index);
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getColumnsBytes(int index) {
+        return columns_.getByteString(index);
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public Builder setColumns(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureColumnsIsMutable();
+        columns_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public Builder addColumns(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureColumnsIsMutable();
+        columns_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public Builder addAllColumns(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureColumnsIsMutable();
+        com.google.protobuf.AbstractMessageLite.Builder.addAll(
+            values, columns_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public Builder clearColumns() {
+        columns_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string columns = 3;</code>
+       */
+      public Builder addColumnsBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureColumnsIsMutable();
+        columns_.add(value);
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:io.mycat.meta.protocol.IndexMeta)
+    }
+
+    static {
+      defaultInstance = new IndexMeta(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:io.mycat.meta.protocol.IndexMeta)
   }
 
   public interface ColumnMetaOrBuilder extends
@@ -347,41 +893,41 @@ public final class MyCatMeta {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional string tableName = 1;</code>
-     */
-    boolean hasTableName();
-    /**
-     * <code>optional string tableName = 1;</code>
-     */
-    java.lang.String getTableName();
-    /**
-     * <code>optional string tableName = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getTableNameBytes();
-
-    /**
-     * <code>optional string name = 2;</code>
+     * <code>required string name = 1;</code>
      */
     boolean hasName();
     /**
-     * <code>optional string name = 2;</code>
+     * <code>required string name = 1;</code>
      */
     java.lang.String getName();
     /**
-     * <code>optional string name = 2;</code>
+     * <code>required string name = 1;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
 
     /**
-     * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+     * <code>required string dataType = 2;</code>
      */
     boolean hasDataType();
     /**
-     * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+     * <code>required string dataType = 2;</code>
      */
-    io.mycat.meta.protocol.MyCatMeta.MySqlDataType getDataType();
+    java.lang.String getDataType();
+    /**
+     * <code>required string dataType = 2;</code>
+     */
+    com.google.protobuf.ByteString
+        getDataTypeBytes();
+
+    /**
+     * <code>optional bool isUnsigned = 3;</code>
+     */
+    boolean hasIsUnsigned();
+    /**
+     * <code>optional bool isUnsigned = 3;</code>
+     */
+    boolean getIsUnsigned();
 
     /**
      * <code>optional int32 length = 4;</code>
@@ -443,50 +989,39 @@ public final class MyCatMeta {
     boolean getAutoIncre();
 
     /**
-     * <code>optional bool isUnsigned = 10;</code>
-     */
-    boolean hasIsUnsigned();
-    /**
-     * <code>optional bool isUnsigned = 10;</code>
-     */
-    boolean getIsUnsigned();
-
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
      *
      * <pre>
-     *有pri，unique
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
      * </pre>
-     */
-    boolean hasKey();
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
-     *
-     * <pre>
-     *有pri，unique
-     * </pre>
-     */
-    java.lang.String getKey();
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
-     *
-     * <pre>
-     *有pri，unique
-     * </pre>
-     */
-    com.google.protobuf.ByteString
-        getKeyBytes();
-
-    /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
      */
     boolean hasCharsetname();
     /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
+     *
+     * <pre>
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
+     * </pre>
      */
     java.lang.String getCharsetname();
     /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
+     *
+     * <pre>
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
+     * </pre>
      */
     com.google.protobuf.ByteString
         getCharsetnameBytes();
@@ -525,8 +1060,7 @@ public final class MyCatMeta {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      @SuppressWarnings("unused")
-	int mutable_bitField0_ = 0;
+      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
@@ -547,24 +1081,18 @@ public final class MyCatMeta {
             case 10: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              tableName_ = bs;
+              name_ = bs;
               break;
             }
             case 18: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              name_ = bs;
+              dataType_ = bs;
               break;
             }
             case 24: {
-              int rawValue = input.readEnum();
-              io.mycat.meta.protocol.MyCatMeta.MySqlDataType value = io.mycat.meta.protocol.MyCatMeta.MySqlDataType.valueOf(rawValue);
-              if (value == null) {
-                unknownFields.mergeVarintField(3, rawValue);
-              } else {
-                bitField0_ |= 0x00000004;
-                dataType_ = value;
-              }
+              bitField0_ |= 0x00000004;
+              isUnsigned_ = input.readBool();
               break;
             }
             case 32: {
@@ -598,20 +1126,9 @@ public final class MyCatMeta {
               autoIncre_ = input.readBool();
               break;
             }
-            case 80: {
+            case 82: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000200;
-              isUnsigned_ = input.readBool();
-              break;
-            }
-            case 90: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000400;
-              key_ = bs;
-              break;
-            }
-            case 98: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000800;
               charsetname_ = bs;
               break;
             }
@@ -655,58 +1172,16 @@ public final class MyCatMeta {
     }
 
     private int bitField0_;
-    public static final int TABLENAME_FIELD_NUMBER = 1;
-    private java.lang.Object tableName_;
+    public static final int NAME_FIELD_NUMBER = 1;
+    private java.lang.Object name_;
     /**
-     * <code>optional string tableName = 1;</code>
+     * <code>required string name = 1;</code>
      */
-    public boolean hasTableName() {
+    public boolean hasName() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>optional string tableName = 1;</code>
-     */
-    public java.lang.String getTableName() {
-      java.lang.Object ref = tableName_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          tableName_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string tableName = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getTableNameBytes() {
-      java.lang.Object ref = tableName_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        tableName_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int NAME_FIELD_NUMBER = 2;
-    private java.lang.Object name_;
-    /**
-     * <code>optional string name = 2;</code>
-     */
-    public boolean hasName() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>optional string name = 2;</code>
+     * <code>required string name = 1;</code>
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -723,7 +1198,7 @@ public final class MyCatMeta {
       }
     }
     /**
-     * <code>optional string name = 2;</code>
+     * <code>required string name = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -739,19 +1214,61 @@ public final class MyCatMeta {
       }
     }
 
-    public static final int DATATYPE_FIELD_NUMBER = 3;
-    private io.mycat.meta.protocol.MyCatMeta.MySqlDataType dataType_;
+    public static final int DATATYPE_FIELD_NUMBER = 2;
+    private java.lang.Object dataType_;
     /**
-     * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+     * <code>required string dataType = 2;</code>
      */
     public boolean hasDataType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required string dataType = 2;</code>
+     */
+    public java.lang.String getDataType() {
+      java.lang.Object ref = dataType_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          dataType_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string dataType = 2;</code>
+     */
+    public com.google.protobuf.ByteString
+        getDataTypeBytes() {
+      java.lang.Object ref = dataType_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        dataType_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int ISUNSIGNED_FIELD_NUMBER = 3;
+    private boolean isUnsigned_;
+    /**
+     * <code>optional bool isUnsigned = 3;</code>
+     */
+    public boolean hasIsUnsigned() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+     * <code>optional bool isUnsigned = 3;</code>
      */
-    public io.mycat.meta.protocol.MyCatMeta.MySqlDataType getDataType() {
-      return dataType_;
+    public boolean getIsUnsigned() {
+      return isUnsigned_;
     }
 
     public static final int LENGTH_FIELD_NUMBER = 4;
@@ -871,85 +1388,32 @@ public final class MyCatMeta {
       return autoIncre_;
     }
 
-    public static final int ISUNSIGNED_FIELD_NUMBER = 10;
-    private boolean isUnsigned_;
+    public static final int CHARSETNAME_FIELD_NUMBER = 10;
+    private java.lang.Object charsetname_;
     /**
-     * <code>optional bool isUnsigned = 10;</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
+     *
+     * <pre>
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
+     * </pre>
      */
-    public boolean hasIsUnsigned() {
+    public boolean hasCharsetname() {
       return ((bitField0_ & 0x00000200) == 0x00000200);
     }
     /**
-     * <code>optional bool isUnsigned = 10;</code>
-     */
-    public boolean getIsUnsigned() {
-      return isUnsigned_;
-    }
-
-    public static final int KEY_FIELD_NUMBER = 11;
-    private java.lang.Object key_;
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
      *
      * <pre>
-     *有pri，unique
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
      * </pre>
-     */
-    public boolean hasKey() {
-      return ((bitField0_ & 0x00000400) == 0x00000400);
-    }
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
-     *
-     * <pre>
-     *有pri，unique
-     * </pre>
-     */
-    public java.lang.String getKey() {
-      java.lang.Object ref = key_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          key_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string key = 11 [default = ""];</code>
-     *
-     * <pre>
-     *有pri，unique
-     * </pre>
-     */
-    public com.google.protobuf.ByteString
-        getKeyBytes() {
-      java.lang.Object ref = key_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        key_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int CHARSETNAME_FIELD_NUMBER = 12;
-    private java.lang.Object charsetname_;
-    /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
-     */
-    public boolean hasCharsetname() {
-      return ((bitField0_ & 0x00000800) == 0x00000800);
-    }
-    /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
      */
     public java.lang.String getCharsetname() {
       java.lang.Object ref = charsetname_;
@@ -966,7 +1430,15 @@ public final class MyCatMeta {
       }
     }
     /**
-     * <code>optional string charsetname = 12 [default = "utf8"];</code>
+     * <code>optional string charsetname = 10 [default = "utf8"];</code>
+     *
+     * <pre>
+     *[COMMENT 'string']
+     *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+     *[STORAGE {DISK|MEMORY|DEFAULT}]
+     *[reference_definition]
+     *[GENERATED ALWAYS] AS (expression)
+     * </pre>
      */
     public com.google.protobuf.ByteString
         getCharsetnameBytes() {
@@ -983,17 +1455,15 @@ public final class MyCatMeta {
     }
 
     private void initFields() {
-      tableName_ = "";
       name_ = "";
-      dataType_ = io.mycat.meta.protocol.MyCatMeta.MySqlDataType.DECIMAL;
+      dataType_ = "";
+      isUnsigned_ = false;
       length_ = 0;
       precision_ = 0;
       scale_ = 0;
       canNull_ = false;
       sdefault_ = "";
       autoIncre_ = false;
-      isUnsigned_ = false;
-      key_ = "";
       charsetname_ = "utf8";
     }
     private byte memoizedIsInitialized = -1;
@@ -1002,6 +1472,14 @@ public final class MyCatMeta {
       if (isInitialized == 1) return true;
       if (isInitialized == 0) return false;
 
+      if (!hasName()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasDataType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -1010,13 +1488,13 @@ public final class MyCatMeta {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getTableNameBytes());
+        output.writeBytes(1, getNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getNameBytes());
+        output.writeBytes(2, getDataTypeBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeEnum(3, dataType_.getNumber());
+        output.writeBool(3, isUnsigned_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeInt32(4, length_);
@@ -1037,13 +1515,7 @@ public final class MyCatMeta {
         output.writeBool(9, autoIncre_);
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        output.writeBool(10, isUnsigned_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        output.writeBytes(11, getKeyBytes());
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        output.writeBytes(12, getCharsetnameBytes());
+        output.writeBytes(10, getCharsetnameBytes());
       }
       getUnknownFields().writeTo(output);
     }
@@ -1056,15 +1528,15 @@ public final class MyCatMeta {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getTableNameBytes());
+          .computeBytesSize(1, getNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getNameBytes());
+          .computeBytesSize(2, getDataTypeBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(3, dataType_.getNumber());
+          .computeBoolSize(3, isUnsigned_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1092,15 +1564,7 @@ public final class MyCatMeta {
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(10, isUnsigned_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(11, getKeyBytes());
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(12, getCharsetnameBytes());
+          .computeBytesSize(10, getCharsetnameBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1219,11 +1683,11 @@ public final class MyCatMeta {
 
       public Builder clear() {
         super.clear();
-        tableName_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         name_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        dataType_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        dataType_ = io.mycat.meta.protocol.MyCatMeta.MySqlDataType.DECIMAL;
+        isUnsigned_ = false;
         bitField0_ = (bitField0_ & ~0x00000004);
         length_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1237,12 +1701,8 @@ public final class MyCatMeta {
         bitField0_ = (bitField0_ & ~0x00000080);
         autoIncre_ = false;
         bitField0_ = (bitField0_ & ~0x00000100);
-        isUnsigned_ = false;
-        bitField0_ = (bitField0_ & ~0x00000200);
-        key_ = "";
-        bitField0_ = (bitField0_ & ~0x00000400);
         charsetname_ = "utf8";
-        bitField0_ = (bitField0_ & ~0x00000800);
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
 
@@ -1274,15 +1734,15 @@ public final class MyCatMeta {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.tableName_ = tableName_;
+        result.name_ = name_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.name_ = name_;
+        result.dataType_ = dataType_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.dataType_ = dataType_;
+        result.isUnsigned_ = isUnsigned_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
@@ -1310,14 +1770,6 @@ public final class MyCatMeta {
         if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
           to_bitField0_ |= 0x00000200;
         }
-        result.isUnsigned_ = isUnsigned_;
-        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
-          to_bitField0_ |= 0x00000400;
-        }
-        result.key_ = key_;
-        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
-          to_bitField0_ |= 0x00000800;
-        }
         result.charsetname_ = charsetname_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -1335,18 +1787,18 @@ public final class MyCatMeta {
 
       public Builder mergeFrom(io.mycat.meta.protocol.MyCatMeta.ColumnMeta other) {
         if (other == io.mycat.meta.protocol.MyCatMeta.ColumnMeta.getDefaultInstance()) return this;
-        if (other.hasTableName()) {
-          bitField0_ |= 0x00000001;
-          tableName_ = other.tableName_;
-          onChanged();
-        }
         if (other.hasName()) {
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000001;
           name_ = other.name_;
           onChanged();
         }
         if (other.hasDataType()) {
-          setDataType(other.getDataType());
+          bitField0_ |= 0x00000002;
+          dataType_ = other.dataType_;
+          onChanged();
+        }
+        if (other.hasIsUnsigned()) {
+          setIsUnsigned(other.getIsUnsigned());
         }
         if (other.hasLength()) {
           setLength(other.getLength());
@@ -1368,16 +1820,8 @@ public final class MyCatMeta {
         if (other.hasAutoIncre()) {
           setAutoIncre(other.getAutoIncre());
         }
-        if (other.hasIsUnsigned()) {
-          setIsUnsigned(other.getIsUnsigned());
-        }
-        if (other.hasKey()) {
-          bitField0_ |= 0x00000400;
-          key_ = other.key_;
-          onChanged();
-        }
         if (other.hasCharsetname()) {
-          bitField0_ |= 0x00000800;
+          bitField0_ |= 0x00000200;
           charsetname_ = other.charsetname_;
           onChanged();
         }
@@ -1386,6 +1830,14 @@ public final class MyCatMeta {
       }
 
       public final boolean isInitialized() {
+        if (!hasName()) {
+          
+          return false;
+        }
+        if (!hasDataType()) {
+          
+          return false;
+        }
         return true;
       }
 
@@ -1408,91 +1860,15 @@ public final class MyCatMeta {
       }
       private int bitField0_;
 
-      private java.lang.Object tableName_ = "";
+      private java.lang.Object name_ = "";
       /**
-       * <code>optional string tableName = 1;</code>
+       * <code>required string name = 1;</code>
        */
-      public boolean hasTableName() {
+      public boolean hasName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>optional string tableName = 1;</code>
-       */
-      public java.lang.String getTableName() {
-        java.lang.Object ref = tableName_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            tableName_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string tableName = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getTableNameBytes() {
-        java.lang.Object ref = tableName_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          tableName_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string tableName = 1;</code>
-       */
-      public Builder setTableName(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        tableName_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string tableName = 1;</code>
-       */
-      public Builder clearTableName() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        tableName_ = getDefaultInstance().getTableName();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string tableName = 1;</code>
-       */
-      public Builder setTableNameBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        tableName_ = value;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object name_ = "";
-      /**
-       * <code>optional string name = 2;</code>
-       */
-      public boolean hasName() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>optional string name = 2;</code>
+       * <code>required string name = 1;</code>
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -1509,7 +1885,7 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string name = 2;</code>
+       * <code>required string name = 1;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -1525,72 +1901,145 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string name = 2;</code>
+       * <code>required string name = 1;</code>
        */
       public Builder setName(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         name_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string name = 2;</code>
+       * <code>required string name = 1;</code>
        */
       public Builder clearName() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         name_ = getDefaultInstance().getName();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string name = 2;</code>
+       * <code>required string name = 1;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         name_ = value;
         onChanged();
         return this;
       }
 
-      private io.mycat.meta.protocol.MyCatMeta.MySqlDataType dataType_ = io.mycat.meta.protocol.MyCatMeta.MySqlDataType.DECIMAL;
+      private java.lang.Object dataType_ = "";
       /**
-       * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+       * <code>required string dataType = 2;</code>
        */
       public boolean hasDataType() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+       * <code>required string dataType = 2;</code>
        */
-      public io.mycat.meta.protocol.MyCatMeta.MySqlDataType getDataType() {
-        return dataType_;
-      }
-      /**
-       * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
-       */
-      public Builder setDataType(io.mycat.meta.protocol.MyCatMeta.MySqlDataType value) {
-        if (value == null) {
-          throw new NullPointerException();
+      public java.lang.String getDataType() {
+        java.lang.Object ref = dataType_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            dataType_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
         }
-        bitField0_ |= 0x00000004;
+      }
+      /**
+       * <code>required string dataType = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getDataTypeBytes() {
+        java.lang.Object ref = dataType_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          dataType_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string dataType = 2;</code>
+       */
+      public Builder setDataType(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
         dataType_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional .io.mycat.meta.protocol.MySqlDataType dataType = 3;</code>
+       * <code>required string dataType = 2;</code>
        */
       public Builder clearDataType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        dataType_ = getDefaultInstance().getDataType();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string dataType = 2;</code>
+       */
+      public Builder setDataTypeBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        dataType_ = value;
+        onChanged();
+        return this;
+      }
+
+      private boolean isUnsigned_ ;
+      /**
+       * <code>optional bool isUnsigned = 3;</code>
+       */
+      public boolean hasIsUnsigned() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional bool isUnsigned = 3;</code>
+       */
+      public boolean getIsUnsigned() {
+        return isUnsigned_;
+      }
+      /**
+       * <code>optional bool isUnsigned = 3;</code>
+       */
+      public Builder setIsUnsigned(boolean value) {
+        bitField0_ |= 0x00000004;
+        isUnsigned_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool isUnsigned = 3;</code>
+       */
+      public Builder clearIsUnsigned() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        dataType_ = io.mycat.meta.protocol.MyCatMeta.MySqlDataType.DECIMAL;
+        isUnsigned_ = false;
         onChanged();
         return this;
       }
@@ -1831,147 +2280,31 @@ public final class MyCatMeta {
         return this;
       }
 
-      private boolean isUnsigned_ ;
+      private java.lang.Object charsetname_ = "utf8";
       /**
-       * <code>optional bool isUnsigned = 10;</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
+       *
+       * <pre>
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
+       * </pre>
        */
-      public boolean hasIsUnsigned() {
+      public boolean hasCharsetname() {
         return ((bitField0_ & 0x00000200) == 0x00000200);
       }
       /**
-       * <code>optional bool isUnsigned = 10;</code>
-       */
-      public boolean getIsUnsigned() {
-        return isUnsigned_;
-      }
-      /**
-       * <code>optional bool isUnsigned = 10;</code>
-       */
-      public Builder setIsUnsigned(boolean value) {
-        bitField0_ |= 0x00000200;
-        isUnsigned_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional bool isUnsigned = 10;</code>
-       */
-      public Builder clearIsUnsigned() {
-        bitField0_ = (bitField0_ & ~0x00000200);
-        isUnsigned_ = false;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object key_ = "";
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
        *
        * <pre>
-       *有pri，unique
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
        * </pre>
-       */
-      public boolean hasKey() {
-        return ((bitField0_ & 0x00000400) == 0x00000400);
-      }
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
-       *
-       * <pre>
-       *有pri，unique
-       * </pre>
-       */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            key_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
-       *
-       * <pre>
-       *有pri，unique
-       * </pre>
-       */
-      public com.google.protobuf.ByteString
-          getKeyBytes() {
-        java.lang.Object ref = key_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          key_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
-       *
-       * <pre>
-       *有pri，unique
-       * </pre>
-       */
-      public Builder setKey(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
-        key_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
-       *
-       * <pre>
-       *有pri，unique
-       * </pre>
-       */
-      public Builder clearKey() {
-        bitField0_ = (bitField0_ & ~0x00000400);
-        key_ = getDefaultInstance().getKey();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string key = 11 [default = ""];</code>
-       *
-       * <pre>
-       *有pri，unique
-       * </pre>
-       */
-      public Builder setKeyBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
-        key_ = value;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object charsetname_ = "utf8";
-      /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
-       */
-      public boolean hasCharsetname() {
-        return ((bitField0_ & 0x00000800) == 0x00000800);
-      }
-      /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
        */
       public java.lang.String getCharsetname() {
         java.lang.Object ref = charsetname_;
@@ -1988,7 +2321,15 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
+       *
+       * <pre>
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
+       * </pre>
        */
       public com.google.protobuf.ByteString
           getCharsetnameBytes() {
@@ -2004,36 +2345,60 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
+       *
+       * <pre>
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
+       * </pre>
        */
       public Builder setCharsetname(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000800;
+  bitField0_ |= 0x00000200;
         charsetname_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
+       *
+       * <pre>
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
+       * </pre>
        */
       public Builder clearCharsetname() {
-        bitField0_ = (bitField0_ & ~0x00000800);
+        bitField0_ = (bitField0_ & ~0x00000200);
         charsetname_ = getDefaultInstance().getCharsetname();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string charsetname = 12 [default = "utf8"];</code>
+       * <code>optional string charsetname = 10 [default = "utf8"];</code>
+       *
+       * <pre>
+       *[COMMENT 'string']
+       *[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+       *[STORAGE {DISK|MEMORY|DEFAULT}]
+       *[reference_definition]
+       *[GENERATED ALWAYS] AS (expression)
+       * </pre>
        */
       public Builder setCharsetnameBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000800;
+  bitField0_ |= 0x00000200;
         charsetname_ = value;
         onChanged();
         return this;
@@ -2055,21 +2420,7 @@ public final class MyCatMeta {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional string catalog = 1;</code>
-     */
-    boolean hasCatalog();
-    /**
-     * <code>optional string catalog = 1;</code>
-     */
-    java.lang.String getCatalog();
-    /**
-     * <code>optional string catalog = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getCatalogBytes();
-
-    /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
@@ -2077,7 +2428,7 @@ public final class MyCatMeta {
      */
     boolean hasTableName();
     /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
@@ -2085,7 +2436,7 @@ public final class MyCatMeta {
      */
     java.lang.String getTableName();
     /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
@@ -2095,107 +2446,168 @@ public final class MyCatMeta {
         getTableNameBytes();
 
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
     java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> 
-        getAllColumnsList();
+        getColumnsList();
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    io.mycat.meta.protocol.MyCatMeta.ColumnMeta getAllColumns(int index);
+    io.mycat.meta.protocol.MyCatMeta.ColumnMeta getColumns(int index);
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    int getAllColumnsCount();
+    int getColumnsCount();
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
     java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> 
-        getAllColumnsOrBuilderList();
+        getColumnsOrBuilderList();
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getAllColumnsOrBuilder(
+    io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
         int index);
 
     /**
-     * <code>optional bool isView = 4 [default = false];</code>
+     * <code>optional bool isView = 3 [default = false];</code>
      */
     boolean hasIsView();
     /**
-     * <code>optional bool isView = 4 [default = false];</code>
+     * <code>optional bool isView = 3 [default = false];</code>
      */
     boolean getIsView();
 
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     boolean hasCreateSql();
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     java.lang.String getCreateSql();
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     com.google.protobuf.ByteString
         getCreateSqlBytes();
 
     /**
-     * <code>optional int64 version = 6;</code>
+     * <code>optional int64 version = 5;</code>
      */
     boolean hasVersion();
     /**
-     * <code>optional int64 version = 6;</code>
+     * <code>optional int64 version = 5;</code>
      */
     long getVersion();
 
     /**
-     * <code>optional int64 aiOffset = 7 [default = -1];</code>
+     * <code>optional int64 aiOffset = 6 [default = -1];</code>
      */
     boolean hasAiOffset();
     /**
-     * <code>optional int64 aiOffset = 7 [default = -1];</code>
+     * <code>optional int64 aiOffset = 6 [default = -1];</code>
      */
     long getAiOffset();
 
     /**
-     * <code>optional int32 type = 8;</code>
+     * <code>optional int32 type = 7;</code>
      */
     boolean hasType();
     /**
-     * <code>optional int32 type = 8;</code>
+     * <code>optional int32 type = 7;</code>
      */
     int getType();
 
     /**
-     * <code>optional int32 aiColPos = 9 [default = -1];</code>
+     * <code>optional int32 aiColPos = 8 [default = -1];</code>
      */
     boolean hasAiColPos();
     /**
-     * <code>optional int32 aiColPos = 9 [default = -1];</code>
+     * <code>optional int32 aiColPos = 8 [default = -1];</code>
      */
     int getAiColPos();
+
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    boolean hasPrimary();
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMeta getPrimary();
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getPrimaryOrBuilder();
+
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> 
+        getUniIndexList();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMeta getUniIndex(int index);
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    int getUniIndexCount();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+        getUniIndexOrBuilderList();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getUniIndexOrBuilder(
+        int index);
+
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> 
+        getIndexList();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMeta getIndex(int index);
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    int getIndexCount();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+        getIndexOrBuilderList();
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getIndexOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code io.mycat.meta.protocol.TableMeta}
@@ -2252,52 +2664,75 @@ public final class MyCatMeta {
             case 10: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              catalog_ = bs;
-              break;
-            }
-            case 18: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000002;
               tableName_ = bs;
               break;
             }
-            case 26: {
-              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-                allColumns_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.ColumnMeta>();
-                mutable_bitField0_ |= 0x00000004;
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                columns_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.ColumnMeta>();
+                mutable_bitField0_ |= 0x00000002;
               }
-              allColumns_.add(input.readMessage(io.mycat.meta.protocol.MyCatMeta.ColumnMeta.PARSER, extensionRegistry));
+              columns_.add(input.readMessage(io.mycat.meta.protocol.MyCatMeta.ColumnMeta.PARSER, extensionRegistry));
               break;
             }
-            case 32: {
-              bitField0_ |= 0x00000004;
+            case 24: {
+              bitField0_ |= 0x00000002;
               isView_ = input.readBool();
               break;
             }
-            case 42: {
+            case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000008;
+              bitField0_ |= 0x00000004;
               createSql_ = bs;
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000008;
+              version_ = input.readInt64();
               break;
             }
             case 48: {
               bitField0_ |= 0x00000010;
-              version_ = input.readInt64();
+              aiOffset_ = input.readInt64();
               break;
             }
             case 56: {
               bitField0_ |= 0x00000020;
-              aiOffset_ = input.readInt64();
+              type_ = input.readInt32();
               break;
             }
             case 64: {
               bitField0_ |= 0x00000040;
-              type_ = input.readInt32();
+              aiColPos_ = input.readInt32();
               break;
             }
-            case 72: {
+            case 74: {
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                subBuilder = primary_.toBuilder();
+              }
+              primary_ = input.readMessage(io.mycat.meta.protocol.MyCatMeta.IndexMeta.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(primary_);
+                primary_ = subBuilder.buildPartial();
+              }
               bitField0_ |= 0x00000080;
-              aiColPos_ = input.readInt32();
+              break;
+            }
+            case 82: {
+              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+                uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.IndexMeta>();
+                mutable_bitField0_ |= 0x00000200;
+              }
+              uniIndex_.add(input.readMessage(io.mycat.meta.protocol.MyCatMeta.IndexMeta.PARSER, extensionRegistry));
+              break;
+            }
+            case 90: {
+              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                index_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.IndexMeta>();
+                mutable_bitField0_ |= 0x00000400;
+              }
+              index_.add(input.readMessage(io.mycat.meta.protocol.MyCatMeta.IndexMeta.PARSER, extensionRegistry));
               break;
             }
           }
@@ -2308,8 +2743,14 @@ public final class MyCatMeta {
         throw new com.google.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-          allColumns_ = java.util.Collections.unmodifiableList(allColumns_);
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          columns_ = java.util.Collections.unmodifiableList(columns_);
+        }
+        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+          uniIndex_ = java.util.Collections.unmodifiableList(uniIndex_);
+        }
+        if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+          index_ = java.util.Collections.unmodifiableList(index_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -2343,62 +2784,20 @@ public final class MyCatMeta {
     }
 
     private int bitField0_;
-    public static final int CATALOG_FIELD_NUMBER = 1;
-    private java.lang.Object catalog_;
-    /**
-     * <code>optional string catalog = 1;</code>
-     */
-    public boolean hasCatalog() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>optional string catalog = 1;</code>
-     */
-    public java.lang.String getCatalog() {
-      java.lang.Object ref = catalog_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          catalog_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string catalog = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getCatalogBytes() {
-      java.lang.Object ref = catalog_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        catalog_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int TABLENAME_FIELD_NUMBER = 2;
+    public static final int TABLENAME_FIELD_NUMBER = 1;
     private java.lang.Object tableName_;
     /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
      * </pre>
      */
     public boolean hasTableName() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
@@ -2419,7 +2818,7 @@ public final class MyCatMeta {
       }
     }
     /**
-     * <code>optional string tableName = 2;</code>
+     * <code>optional string tableName = 1;</code>
      *
      * <pre>
      *不带dbname的表名:如table1
@@ -2439,86 +2838,86 @@ public final class MyCatMeta {
       }
     }
 
-    public static final int ALLCOLUMNS_FIELD_NUMBER = 3;
-    private java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> allColumns_;
+    public static final int COLUMNS_FIELD_NUMBER = 2;
+    private java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> columns_;
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    public java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> getAllColumnsList() {
-      return allColumns_;
+    public java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> getColumnsList() {
+      return columns_;
     }
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
     public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> 
-        getAllColumnsOrBuilderList() {
-      return allColumns_;
+        getColumnsOrBuilderList() {
+      return columns_;
     }
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    public int getAllColumnsCount() {
-      return allColumns_.size();
+    public int getColumnsCount() {
+      return columns_.size();
     }
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    public io.mycat.meta.protocol.MyCatMeta.ColumnMeta getAllColumns(int index) {
-      return allColumns_.get(index);
+    public io.mycat.meta.protocol.MyCatMeta.ColumnMeta getColumns(int index) {
+      return columns_.get(index);
     }
     /**
-     * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+     * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
      *
      * <pre>
      *所有的列属性，有序
      * </pre>
      */
-    public io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getAllColumnsOrBuilder(
+    public io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
         int index) {
-      return allColumns_.get(index);
+      return columns_.get(index);
     }
 
-    public static final int ISVIEW_FIELD_NUMBER = 4;
+    public static final int ISVIEW_FIELD_NUMBER = 3;
     private boolean isView_;
     /**
-     * <code>optional bool isView = 4 [default = false];</code>
+     * <code>optional bool isView = 3 [default = false];</code>
      */
     public boolean hasIsView() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional bool isView = 4 [default = false];</code>
+     * <code>optional bool isView = 3 [default = false];</code>
      */
     public boolean getIsView() {
       return isView_;
     }
 
-    public static final int CREATESQL_FIELD_NUMBER = 5;
+    public static final int CREATESQL_FIELD_NUMBER = 4;
     private java.lang.Object createSql_;
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     public boolean hasCreateSql() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     public java.lang.String getCreateSql() {
       java.lang.Object ref = createSql_;
@@ -2535,7 +2934,7 @@ public final class MyCatMeta {
       }
     }
     /**
-     * <code>optional string createSql = 5;</code>
+     * <code>optional string createSql = 4;</code>
      */
     public com.google.protobuf.ByteString
         getCreateSqlBytes() {
@@ -2551,76 +2950,169 @@ public final class MyCatMeta {
       }
     }
 
-    public static final int VERSION_FIELD_NUMBER = 6;
+    public static final int VERSION_FIELD_NUMBER = 5;
     private long version_;
     /**
-     * <code>optional int64 version = 6;</code>
+     * <code>optional int64 version = 5;</code>
      */
     public boolean hasVersion() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional int64 version = 6;</code>
+     * <code>optional int64 version = 5;</code>
      */
     public long getVersion() {
       return version_;
     }
 
-    public static final int AIOFFSET_FIELD_NUMBER = 7;
+    public static final int AIOFFSET_FIELD_NUMBER = 6;
     private long aiOffset_;
     /**
-     * <code>optional int64 aiOffset = 7 [default = -1];</code>
+     * <code>optional int64 aiOffset = 6 [default = -1];</code>
      */
     public boolean hasAiOffset() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional int64 aiOffset = 7 [default = -1];</code>
+     * <code>optional int64 aiOffset = 6 [default = -1];</code>
      */
     public long getAiOffset() {
       return aiOffset_;
     }
 
-    public static final int TYPE_FIELD_NUMBER = 8;
+    public static final int TYPE_FIELD_NUMBER = 7;
     private int type_;
     /**
-     * <code>optional int32 type = 8;</code>
+     * <code>optional int32 type = 7;</code>
      */
     public boolean hasType() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
+      return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     /**
-     * <code>optional int32 type = 8;</code>
+     * <code>optional int32 type = 7;</code>
      */
     public int getType() {
       return type_;
     }
 
-    public static final int AICOLPOS_FIELD_NUMBER = 9;
+    public static final int AICOLPOS_FIELD_NUMBER = 8;
     private int aiColPos_;
     /**
-     * <code>optional int32 aiColPos = 9 [default = -1];</code>
+     * <code>optional int32 aiColPos = 8 [default = -1];</code>
      */
     public boolean hasAiColPos() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
+      return ((bitField0_ & 0x00000040) == 0x00000040);
     }
     /**
-     * <code>optional int32 aiColPos = 9 [default = -1];</code>
+     * <code>optional int32 aiColPos = 8 [default = -1];</code>
      */
     public int getAiColPos() {
       return aiColPos_;
     }
 
+    public static final int PRIMARY_FIELD_NUMBER = 9;
+    private io.mycat.meta.protocol.MyCatMeta.IndexMeta primary_;
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    public boolean hasPrimary() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMeta getPrimary() {
+      return primary_;
+    }
+    /**
+     * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getPrimaryOrBuilder() {
+      return primary_;
+    }
+
+    public static final int UNIINDEX_FIELD_NUMBER = 10;
+    private java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> uniIndex_;
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> getUniIndexList() {
+      return uniIndex_;
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+        getUniIndexOrBuilderList() {
+      return uniIndex_;
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    public int getUniIndexCount() {
+      return uniIndex_.size();
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMeta getUniIndex(int index) {
+      return uniIndex_.get(index);
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getUniIndexOrBuilder(
+        int index) {
+      return uniIndex_.get(index);
+    }
+
+    public static final int INDEX_FIELD_NUMBER = 11;
+    private java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> index_;
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> getIndexList() {
+      return index_;
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+        getIndexOrBuilderList() {
+      return index_;
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    public int getIndexCount() {
+      return index_.size();
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMeta getIndex(int index) {
+      return index_.get(index);
+    }
+    /**
+     * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+     */
+    public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getIndexOrBuilder(
+        int index) {
+      return index_.get(index);
+    }
+
     private void initFields() {
-      catalog_ = "";
       tableName_ = "";
-      allColumns_ = java.util.Collections.emptyList();
+      columns_ = java.util.Collections.emptyList();
       isView_ = false;
       createSql_ = "";
       version_ = 0L;
       aiOffset_ = -1L;
       type_ = 0;
       aiColPos_ = -1;
+      primary_ = io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance();
+      uniIndex_ = java.util.Collections.emptyList();
+      index_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -2628,6 +3120,30 @@ public final class MyCatMeta {
       if (isInitialized == 1) return true;
       if (isInitialized == 0) return false;
 
+      for (int i = 0; i < getColumnsCount(); i++) {
+        if (!getColumns(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasPrimary()) {
+        if (!getPrimary().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      for (int i = 0; i < getUniIndexCount(); i++) {
+        if (!getUniIndex(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      for (int i = 0; i < getIndexCount(); i++) {
+        if (!getIndex(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -2636,31 +3152,37 @@ public final class MyCatMeta {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getCatalogBytes());
+        output.writeBytes(1, getTableNameBytes());
+      }
+      for (int i = 0; i < columns_.size(); i++) {
+        output.writeMessage(2, columns_.get(i));
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getTableNameBytes());
-      }
-      for (int i = 0; i < allColumns_.size(); i++) {
-        output.writeMessage(3, allColumns_.get(i));
+        output.writeBool(3, isView_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBool(4, isView_);
+        output.writeBytes(4, getCreateSqlBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(5, getCreateSqlBytes());
+        output.writeInt64(5, version_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt64(6, version_);
+        output.writeInt64(6, aiOffset_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeInt64(7, aiOffset_);
+        output.writeInt32(7, type_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeInt32(8, type_);
+        output.writeInt32(8, aiColPos_);
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeInt32(9, aiColPos_);
+        output.writeMessage(9, primary_);
+      }
+      for (int i = 0; i < uniIndex_.size(); i++) {
+        output.writeMessage(10, uniIndex_.get(i));
+      }
+      for (int i = 0; i < index_.size(); i++) {
+        output.writeMessage(11, index_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -2673,39 +3195,47 @@ public final class MyCatMeta {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getCatalogBytes());
+          .computeBytesSize(1, getTableNameBytes());
+      }
+      for (int i = 0; i < columns_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, columns_.get(i));
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getTableNameBytes());
-      }
-      for (int i = 0; i < allColumns_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, allColumns_.get(i));
+          .computeBoolSize(3, isView_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(4, isView_);
+          .computeBytesSize(4, getCreateSqlBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getCreateSqlBytes());
+          .computeInt64Size(5, version_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(6, version_);
+          .computeInt64Size(6, aiOffset_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(7, aiOffset_);
+          .computeInt32Size(7, type_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(8, type_);
+          .computeInt32Size(8, aiColPos_);
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(9, aiColPos_);
+          .computeMessageSize(9, primary_);
+      }
+      for (int i = 0; i < uniIndex_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(10, uniIndex_.get(i));
+      }
+      for (int i = 0; i < index_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(11, index_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2816,7 +3346,10 @@ public final class MyCatMeta {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          getAllColumnsFieldBuilder();
+          getColumnsFieldBuilder();
+          getPrimaryFieldBuilder();
+          getUniIndexFieldBuilder();
+          getIndexFieldBuilder();
         }
       }
       private static Builder create() {
@@ -2825,28 +3358,44 @@ public final class MyCatMeta {
 
       public Builder clear() {
         super.clear();
-        catalog_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         tableName_ = "";
-        bitField0_ = (bitField0_ & ~0x00000002);
-        if (allColumnsBuilder_ == null) {
-          allColumns_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (columnsBuilder_ == null) {
+          columns_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000002);
         } else {
-          allColumnsBuilder_.clear();
+          columnsBuilder_.clear();
         }
         isView_ = false;
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         createSql_ = "";
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000008);
         version_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         aiOffset_ = -1L;
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         type_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000040);
         aiColPos_ = -1;
+        bitField0_ = (bitField0_ & ~0x00000080);
+        if (primaryBuilder_ == null) {
+          primary_ = io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance();
+        } else {
+          primaryBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000100);
+        if (uniIndexBuilder_ == null) {
+          uniIndex_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000200);
+        } else {
+          uniIndexBuilder_.clear();
+        }
+        if (indexBuilder_ == null) {
+          index_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000400);
+        } else {
+          indexBuilder_.clear();
+        }
         return this;
       }
 
@@ -2878,44 +3427,66 @@ public final class MyCatMeta {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.catalog_ = catalog_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        result.tableName_ = tableName_;
+        if (columnsBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)) {
+            columns_ = java.util.Collections.unmodifiableList(columns_);
+            bitField0_ = (bitField0_ & ~0x00000002);
+          }
+          result.columns_ = columns_;
+        } else {
+          result.columns_ = columnsBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.tableName_ = tableName_;
-        if (allColumnsBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004)) {
-            allColumns_ = java.util.Collections.unmodifiableList(allColumns_);
-            bitField0_ = (bitField0_ & ~0x00000004);
-          }
-          result.allColumns_ = allColumns_;
-        } else {
-          result.allColumns_ = allColumnsBuilder_.build();
-        }
+        result.isView_ = isView_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.isView_ = isView_;
+        result.createSql_ = createSql_;
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.createSql_ = createSql_;
+        result.version_ = version_;
         if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.version_ = version_;
+        result.aiOffset_ = aiOffset_;
         if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
           to_bitField0_ |= 0x00000020;
         }
-        result.aiOffset_ = aiOffset_;
+        result.type_ = type_;
         if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
           to_bitField0_ |= 0x00000040;
         }
-        result.type_ = type_;
+        result.aiColPos_ = aiColPos_;
         if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
           to_bitField0_ |= 0x00000080;
         }
-        result.aiColPos_ = aiColPos_;
+        if (primaryBuilder_ == null) {
+          result.primary_ = primary_;
+        } else {
+          result.primary_ = primaryBuilder_.build();
+        }
+        if (uniIndexBuilder_ == null) {
+          if (((bitField0_ & 0x00000200) == 0x00000200)) {
+            uniIndex_ = java.util.Collections.unmodifiableList(uniIndex_);
+            bitField0_ = (bitField0_ & ~0x00000200);
+          }
+          result.uniIndex_ = uniIndex_;
+        } else {
+          result.uniIndex_ = uniIndexBuilder_.build();
+        }
+        if (indexBuilder_ == null) {
+          if (((bitField0_ & 0x00000400) == 0x00000400)) {
+            index_ = java.util.Collections.unmodifiableList(index_);
+            bitField0_ = (bitField0_ & ~0x00000400);
+          }
+          result.index_ = index_;
+        } else {
+          result.index_ = indexBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2932,39 +3503,34 @@ public final class MyCatMeta {
 
       public Builder mergeFrom(io.mycat.meta.protocol.MyCatMeta.TableMeta other) {
         if (other == io.mycat.meta.protocol.MyCatMeta.TableMeta.getDefaultInstance()) return this;
-        if (other.hasCatalog()) {
-          bitField0_ |= 0x00000001;
-          catalog_ = other.catalog_;
-          onChanged();
-        }
         if (other.hasTableName()) {
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000001;
           tableName_ = other.tableName_;
           onChanged();
         }
-        if (allColumnsBuilder_ == null) {
-          if (!other.allColumns_.isEmpty()) {
-            if (allColumns_.isEmpty()) {
-              allColumns_ = other.allColumns_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+        if (columnsBuilder_ == null) {
+          if (!other.columns_.isEmpty()) {
+            if (columns_.isEmpty()) {
+              columns_ = other.columns_;
+              bitField0_ = (bitField0_ & ~0x00000002);
             } else {
-              ensureAllColumnsIsMutable();
-              allColumns_.addAll(other.allColumns_);
+              ensureColumnsIsMutable();
+              columns_.addAll(other.columns_);
             }
             onChanged();
           }
         } else {
-          if (!other.allColumns_.isEmpty()) {
-            if (allColumnsBuilder_.isEmpty()) {
-              allColumnsBuilder_.dispose();
-              allColumnsBuilder_ = null;
-              allColumns_ = other.allColumns_;
-              bitField0_ = (bitField0_ & ~0x00000004);
-              allColumnsBuilder_ = 
+          if (!other.columns_.isEmpty()) {
+            if (columnsBuilder_.isEmpty()) {
+              columnsBuilder_.dispose();
+              columnsBuilder_ = null;
+              columns_ = other.columns_;
+              bitField0_ = (bitField0_ & ~0x00000002);
+              columnsBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getAllColumnsFieldBuilder() : null;
+                   getColumnsFieldBuilder() : null;
             } else {
-              allColumnsBuilder_.addAllMessages(other.allColumns_);
+              columnsBuilder_.addAllMessages(other.columns_);
             }
           }
         }
@@ -2972,7 +3538,7 @@ public final class MyCatMeta {
           setIsView(other.getIsView());
         }
         if (other.hasCreateSql()) {
-          bitField0_ |= 0x00000010;
+          bitField0_ |= 0x00000008;
           createSql_ = other.createSql_;
           onChanged();
         }
@@ -2988,11 +3554,90 @@ public final class MyCatMeta {
         if (other.hasAiColPos()) {
           setAiColPos(other.getAiColPos());
         }
+        if (other.hasPrimary()) {
+          mergePrimary(other.getPrimary());
+        }
+        if (uniIndexBuilder_ == null) {
+          if (!other.uniIndex_.isEmpty()) {
+            if (uniIndex_.isEmpty()) {
+              uniIndex_ = other.uniIndex_;
+              bitField0_ = (bitField0_ & ~0x00000200);
+            } else {
+              ensureUniIndexIsMutable();
+              uniIndex_.addAll(other.uniIndex_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.uniIndex_.isEmpty()) {
+            if (uniIndexBuilder_.isEmpty()) {
+              uniIndexBuilder_.dispose();
+              uniIndexBuilder_ = null;
+              uniIndex_ = other.uniIndex_;
+              bitField0_ = (bitField0_ & ~0x00000200);
+              uniIndexBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getUniIndexFieldBuilder() : null;
+            } else {
+              uniIndexBuilder_.addAllMessages(other.uniIndex_);
+            }
+          }
+        }
+        if (indexBuilder_ == null) {
+          if (!other.index_.isEmpty()) {
+            if (index_.isEmpty()) {
+              index_ = other.index_;
+              bitField0_ = (bitField0_ & ~0x00000400);
+            } else {
+              ensureIndexIsMutable();
+              index_.addAll(other.index_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.index_.isEmpty()) {
+            if (indexBuilder_.isEmpty()) {
+              indexBuilder_.dispose();
+              indexBuilder_ = null;
+              index_ = other.index_;
+              bitField0_ = (bitField0_ & ~0x00000400);
+              indexBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getIndexFieldBuilder() : null;
+            } else {
+              indexBuilder_.addAllMessages(other.index_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
 
       public final boolean isInitialized() {
+        for (int i = 0; i < getColumnsCount(); i++) {
+          if (!getColumns(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasPrimary()) {
+          if (!getPrimary().isInitialized()) {
+            
+            return false;
+          }
+        }
+        for (int i = 0; i < getUniIndexCount(); i++) {
+          if (!getUniIndex(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        for (int i = 0; i < getIndexCount(); i++) {
+          if (!getIndex(i).isInitialized()) {
+            
+            return false;
+          }
+        }
         return true;
       }
 
@@ -3015,95 +3660,19 @@ public final class MyCatMeta {
       }
       private int bitField0_;
 
-      private java.lang.Object catalog_ = "";
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public boolean hasCatalog() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public java.lang.String getCatalog() {
-        java.lang.Object ref = catalog_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            catalog_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getCatalogBytes() {
-        java.lang.Object ref = catalog_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          catalog_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public Builder setCatalog(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        catalog_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public Builder clearCatalog() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        catalog_ = getDefaultInstance().getCatalog();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string catalog = 1;</code>
-       */
-      public Builder setCatalogBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        catalog_ = value;
-        onChanged();
-        return this;
-      }
-
       private java.lang.Object tableName_ = "";
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
        * </pre>
        */
       public boolean hasTableName() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
@@ -3124,7 +3693,7 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
@@ -3144,7 +3713,7 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
@@ -3155,26 +3724,26 @@ public final class MyCatMeta {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         tableName_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
        * </pre>
        */
       public Builder clearTableName() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         tableName_ = getDefaultInstance().getTableName();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string tableName = 2;</code>
+       * <code>optional string tableName = 1;</code>
        *
        * <pre>
        *不带dbname的表名:如table1
@@ -3185,351 +3754,351 @@ public final class MyCatMeta {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         tableName_ = value;
         onChanged();
         return this;
       }
 
-      private java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> allColumns_ =
+      private java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> columns_ =
         java.util.Collections.emptyList();
-      private void ensureAllColumnsIsMutable() {
-        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-          allColumns_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.ColumnMeta>(allColumns_);
-          bitField0_ |= 0x00000004;
+      private void ensureColumnsIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          columns_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.ColumnMeta>(columns_);
+          bitField0_ |= 0x00000002;
          }
       }
 
       private com.google.protobuf.RepeatedFieldBuilder<
-          io.mycat.meta.protocol.MyCatMeta.ColumnMeta, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder, io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> allColumnsBuilder_;
+          io.mycat.meta.protocol.MyCatMeta.ColumnMeta, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder, io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> columnsBuilder_;
 
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> getAllColumnsList() {
-        if (allColumnsBuilder_ == null) {
-          return java.util.Collections.unmodifiableList(allColumns_);
+      public java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta> getColumnsList() {
+        if (columnsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(columns_);
         } else {
-          return allColumnsBuilder_.getMessageList();
+          return columnsBuilder_.getMessageList();
         }
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public int getAllColumnsCount() {
-        if (allColumnsBuilder_ == null) {
-          return allColumns_.size();
+      public int getColumnsCount() {
+        if (columnsBuilder_ == null) {
+          return columns_.size();
         } else {
-          return allColumnsBuilder_.getCount();
+          return columnsBuilder_.getCount();
         }
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta getAllColumns(int index) {
-        if (allColumnsBuilder_ == null) {
-          return allColumns_.get(index);
+      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta getColumns(int index) {
+        if (columnsBuilder_ == null) {
+          return columns_.get(index);
         } else {
-          return allColumnsBuilder_.getMessage(index);
+          return columnsBuilder_.getMessage(index);
         }
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder setAllColumns(
+      public Builder setColumns(
           int index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta value) {
-        if (allColumnsBuilder_ == null) {
+        if (columnsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureAllColumnsIsMutable();
-          allColumns_.set(index, value);
+          ensureColumnsIsMutable();
+          columns_.set(index, value);
           onChanged();
         } else {
-          allColumnsBuilder_.setMessage(index, value);
+          columnsBuilder_.setMessage(index, value);
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder setAllColumns(
+      public Builder setColumns(
           int index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder builderForValue) {
-        if (allColumnsBuilder_ == null) {
-          ensureAllColumnsIsMutable();
-          allColumns_.set(index, builderForValue.build());
+        if (columnsBuilder_ == null) {
+          ensureColumnsIsMutable();
+          columns_.set(index, builderForValue.build());
           onChanged();
         } else {
-          allColumnsBuilder_.setMessage(index, builderForValue.build());
+          columnsBuilder_.setMessage(index, builderForValue.build());
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder addAllColumns(io.mycat.meta.protocol.MyCatMeta.ColumnMeta value) {
-        if (allColumnsBuilder_ == null) {
+      public Builder addColumns(io.mycat.meta.protocol.MyCatMeta.ColumnMeta value) {
+        if (columnsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureAllColumnsIsMutable();
-          allColumns_.add(value);
+          ensureColumnsIsMutable();
+          columns_.add(value);
           onChanged();
         } else {
-          allColumnsBuilder_.addMessage(value);
+          columnsBuilder_.addMessage(value);
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder addAllColumns(
+      public Builder addColumns(
           int index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta value) {
-        if (allColumnsBuilder_ == null) {
+        if (columnsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureAllColumnsIsMutable();
-          allColumns_.add(index, value);
+          ensureColumnsIsMutable();
+          columns_.add(index, value);
           onChanged();
         } else {
-          allColumnsBuilder_.addMessage(index, value);
+          columnsBuilder_.addMessage(index, value);
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder addAllColumns(
+      public Builder addColumns(
           io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder builderForValue) {
-        if (allColumnsBuilder_ == null) {
-          ensureAllColumnsIsMutable();
-          allColumns_.add(builderForValue.build());
+        if (columnsBuilder_ == null) {
+          ensureColumnsIsMutable();
+          columns_.add(builderForValue.build());
           onChanged();
         } else {
-          allColumnsBuilder_.addMessage(builderForValue.build());
+          columnsBuilder_.addMessage(builderForValue.build());
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
+       *
+       * <pre>
+       *所有的列属性，有序
+       * </pre>
+       */
+      public Builder addColumns(
+          int index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder builderForValue) {
+        if (columnsBuilder_ == null) {
+          ensureColumnsIsMutable();
+          columns_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          columnsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
       public Builder addAllColumns(
-          int index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder builderForValue) {
-        if (allColumnsBuilder_ == null) {
-          ensureAllColumnsIsMutable();
-          allColumns_.add(index, builderForValue.build());
-          onChanged();
-        } else {
-          allColumnsBuilder_.addMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
-       *
-       * <pre>
-       *所有的列属性，有序
-       * </pre>
-       */
-      public Builder addAllAllColumns(
           java.lang.Iterable<? extends io.mycat.meta.protocol.MyCatMeta.ColumnMeta> values) {
-        if (allColumnsBuilder_ == null) {
-          ensureAllColumnsIsMutable();
+        if (columnsBuilder_ == null) {
+          ensureColumnsIsMutable();
           com.google.protobuf.AbstractMessageLite.Builder.addAll(
-              values, allColumns_);
+              values, columns_);
           onChanged();
         } else {
-          allColumnsBuilder_.addAllMessages(values);
+          columnsBuilder_.addAllMessages(values);
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder clearAllColumns() {
-        if (allColumnsBuilder_ == null) {
-          allColumns_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+      public Builder clearColumns() {
+        if (columnsBuilder_ == null) {
+          columns_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000002);
           onChanged();
         } else {
-          allColumnsBuilder_.clear();
+          columnsBuilder_.clear();
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public Builder removeAllColumns(int index) {
-        if (allColumnsBuilder_ == null) {
-          ensureAllColumnsIsMutable();
-          allColumns_.remove(index);
+      public Builder removeColumns(int index) {
+        if (columnsBuilder_ == null) {
+          ensureColumnsIsMutable();
+          columns_.remove(index);
           onChanged();
         } else {
-          allColumnsBuilder_.remove(index);
+          columnsBuilder_.remove(index);
         }
         return this;
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder getAllColumnsBuilder(
+      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder getColumnsBuilder(
           int index) {
-        return getAllColumnsFieldBuilder().getBuilder(index);
+        return getColumnsFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getAllColumnsOrBuilder(
+      public io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
           int index) {
-        if (allColumnsBuilder_ == null) {
-          return allColumns_.get(index);  } else {
-          return allColumnsBuilder_.getMessageOrBuilder(index);
+        if (columnsBuilder_ == null) {
+          return columns_.get(index);  } else {
+          return columnsBuilder_.getMessageOrBuilder(index);
         }
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
       public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> 
-           getAllColumnsOrBuilderList() {
-        if (allColumnsBuilder_ != null) {
-          return allColumnsBuilder_.getMessageOrBuilderList();
+           getColumnsOrBuilderList() {
+        if (columnsBuilder_ != null) {
+          return columnsBuilder_.getMessageOrBuilderList();
         } else {
-          return java.util.Collections.unmodifiableList(allColumns_);
+          return java.util.Collections.unmodifiableList(columns_);
         }
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder addAllColumnsBuilder() {
-        return getAllColumnsFieldBuilder().addBuilder(
+      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder addColumnsBuilder() {
+        return getColumnsFieldBuilder().addBuilder(
             io.mycat.meta.protocol.MyCatMeta.ColumnMeta.getDefaultInstance());
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
-      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder addAllColumnsBuilder(
+      public io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder addColumnsBuilder(
           int index) {
-        return getAllColumnsFieldBuilder().addBuilder(
+        return getColumnsFieldBuilder().addBuilder(
             index, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.getDefaultInstance());
       }
       /**
-       * <code>repeated .io.mycat.meta.protocol.ColumnMeta allColumns = 3;</code>
+       * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
        *
        * <pre>
        *所有的列属性，有序
        * </pre>
        */
       public java.util.List<io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder> 
-           getAllColumnsBuilderList() {
-        return getAllColumnsFieldBuilder().getBuilderList();
+           getColumnsBuilderList() {
+        return getColumnsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
           io.mycat.meta.protocol.MyCatMeta.ColumnMeta, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder, io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder> 
-          getAllColumnsFieldBuilder() {
-        if (allColumnsBuilder_ == null) {
-          allColumnsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          getColumnsFieldBuilder() {
+        if (columnsBuilder_ == null) {
+          columnsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               io.mycat.meta.protocol.MyCatMeta.ColumnMeta, io.mycat.meta.protocol.MyCatMeta.ColumnMeta.Builder, io.mycat.meta.protocol.MyCatMeta.ColumnMetaOrBuilder>(
-                  allColumns_,
-                  ((bitField0_ & 0x00000004) == 0x00000004),
+                  columns_,
+                  ((bitField0_ & 0x00000002) == 0x00000002),
                   getParentForChildren(),
                   isClean());
-          allColumns_ = null;
+          columns_ = null;
         }
-        return allColumnsBuilder_;
+        return columnsBuilder_;
       }
 
       private boolean isView_ ;
       /**
-       * <code>optional bool isView = 4 [default = false];</code>
+       * <code>optional bool isView = 3 [default = false];</code>
        */
       public boolean hasIsView() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional bool isView = 4 [default = false];</code>
+       * <code>optional bool isView = 3 [default = false];</code>
        */
       public boolean getIsView() {
         return isView_;
       }
       /**
-       * <code>optional bool isView = 4 [default = false];</code>
+       * <code>optional bool isView = 3 [default = false];</code>
        */
       public Builder setIsView(boolean value) {
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000004;
         isView_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional bool isView = 4 [default = false];</code>
+       * <code>optional bool isView = 3 [default = false];</code>
        */
       public Builder clearIsView() {
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         isView_ = false;
         onChanged();
         return this;
@@ -3537,13 +4106,13 @@ public final class MyCatMeta {
 
       private java.lang.Object createSql_ = "";
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public boolean hasCreateSql() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public java.lang.String getCreateSql() {
         java.lang.Object ref = createSql_;
@@ -3560,7 +4129,7 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public com.google.protobuf.ByteString
           getCreateSqlBytes() {
@@ -3576,36 +4145,36 @@ public final class MyCatMeta {
         }
       }
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public Builder setCreateSql(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000010;
+  bitField0_ |= 0x00000008;
         createSql_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public Builder clearCreateSql() {
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000008);
         createSql_ = getDefaultInstance().getCreateSql();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string createSql = 5;</code>
+       * <code>optional string createSql = 4;</code>
        */
       public Builder setCreateSqlBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000010;
+  bitField0_ |= 0x00000008;
         createSql_ = value;
         onChanged();
         return this;
@@ -3613,31 +4182,31 @@ public final class MyCatMeta {
 
       private long version_ ;
       /**
-       * <code>optional int64 version = 6;</code>
+       * <code>optional int64 version = 5;</code>
        */
       public boolean hasVersion() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>optional int64 version = 6;</code>
+       * <code>optional int64 version = 5;</code>
        */
       public long getVersion() {
         return version_;
       }
       /**
-       * <code>optional int64 version = 6;</code>
+       * <code>optional int64 version = 5;</code>
        */
       public Builder setVersion(long value) {
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         version_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 version = 6;</code>
+       * <code>optional int64 version = 5;</code>
        */
       public Builder clearVersion() {
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         version_ = 0L;
         onChanged();
         return this;
@@ -3645,31 +4214,31 @@ public final class MyCatMeta {
 
       private long aiOffset_ = -1L;
       /**
-       * <code>optional int64 aiOffset = 7 [default = -1];</code>
+       * <code>optional int64 aiOffset = 6 [default = -1];</code>
        */
       public boolean hasAiOffset() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>optional int64 aiOffset = 7 [default = -1];</code>
+       * <code>optional int64 aiOffset = 6 [default = -1];</code>
        */
       public long getAiOffset() {
         return aiOffset_;
       }
       /**
-       * <code>optional int64 aiOffset = 7 [default = -1];</code>
+       * <code>optional int64 aiOffset = 6 [default = -1];</code>
        */
       public Builder setAiOffset(long value) {
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000020;
         aiOffset_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 aiOffset = 7 [default = -1];</code>
+       * <code>optional int64 aiOffset = 6 [default = -1];</code>
        */
       public Builder clearAiOffset() {
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         aiOffset_ = -1L;
         onChanged();
         return this;
@@ -3677,31 +4246,31 @@ public final class MyCatMeta {
 
       private int type_ ;
       /**
-       * <code>optional int32 type = 8;</code>
+       * <code>optional int32 type = 7;</code>
        */
       public boolean hasType() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
+        return ((bitField0_ & 0x00000040) == 0x00000040);
       }
       /**
-       * <code>optional int32 type = 8;</code>
+       * <code>optional int32 type = 7;</code>
        */
       public int getType() {
         return type_;
       }
       /**
-       * <code>optional int32 type = 8;</code>
+       * <code>optional int32 type = 7;</code>
        */
       public Builder setType(int value) {
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000040;
         type_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int32 type = 8;</code>
+       * <code>optional int32 type = 7;</code>
        */
       public Builder clearType() {
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000040);
         type_ = 0;
         onChanged();
         return this;
@@ -3709,34 +4278,630 @@ public final class MyCatMeta {
 
       private int aiColPos_ = -1;
       /**
-       * <code>optional int32 aiColPos = 9 [default = -1];</code>
+       * <code>optional int32 aiColPos = 8 [default = -1];</code>
        */
       public boolean hasAiColPos() {
-        return ((bitField0_ & 0x00000100) == 0x00000100);
+        return ((bitField0_ & 0x00000080) == 0x00000080);
       }
       /**
-       * <code>optional int32 aiColPos = 9 [default = -1];</code>
+       * <code>optional int32 aiColPos = 8 [default = -1];</code>
        */
       public int getAiColPos() {
         return aiColPos_;
       }
       /**
-       * <code>optional int32 aiColPos = 9 [default = -1];</code>
+       * <code>optional int32 aiColPos = 8 [default = -1];</code>
        */
       public Builder setAiColPos(int value) {
-        bitField0_ |= 0x00000100;
+        bitField0_ |= 0x00000080;
         aiColPos_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int32 aiColPos = 9 [default = -1];</code>
+       * <code>optional int32 aiColPos = 8 [default = -1];</code>
        */
       public Builder clearAiColPos() {
-        bitField0_ = (bitField0_ & ~0x00000100);
+        bitField0_ = (bitField0_ & ~0x00000080);
         aiColPos_ = -1;
         onChanged();
         return this;
+      }
+
+      private io.mycat.meta.protocol.MyCatMeta.IndexMeta primary_ = io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> primaryBuilder_;
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public boolean hasPrimary() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta getPrimary() {
+        if (primaryBuilder_ == null) {
+          return primary_;
+        } else {
+          return primaryBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public Builder setPrimary(io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (primaryBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          primary_ = value;
+          onChanged();
+        } else {
+          primaryBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public Builder setPrimary(
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (primaryBuilder_ == null) {
+          primary_ = builderForValue.build();
+          onChanged();
+        } else {
+          primaryBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public Builder mergePrimary(io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (primaryBuilder_ == null) {
+          if (((bitField0_ & 0x00000100) == 0x00000100) &&
+              primary_ != io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance()) {
+            primary_ =
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta.newBuilder(primary_).mergeFrom(value).buildPartial();
+          } else {
+            primary_ = value;
+          }
+          onChanged();
+        } else {
+          primaryBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public Builder clearPrimary() {
+        if (primaryBuilder_ == null) {
+          primary_ = io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance();
+          onChanged();
+        } else {
+          primaryBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000100);
+        return this;
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder getPrimaryBuilder() {
+        bitField0_ |= 0x00000100;
+        onChanged();
+        return getPrimaryFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getPrimaryOrBuilder() {
+        if (primaryBuilder_ != null) {
+          return primaryBuilder_.getMessageOrBuilder();
+        } else {
+          return primary_;
+        }
+      }
+      /**
+       * <code>optional .io.mycat.meta.protocol.IndexMeta primary = 9;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+          getPrimaryFieldBuilder() {
+        if (primaryBuilder_ == null) {
+          primaryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder>(
+                  getPrimary(),
+                  getParentForChildren(),
+                  isClean());
+          primary_ = null;
+        }
+        return primaryBuilder_;
+      }
+
+      private java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> uniIndex_ =
+        java.util.Collections.emptyList();
+      private void ensureUniIndexIsMutable() {
+        if (!((bitField0_ & 0x00000200) == 0x00000200)) {
+          uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.IndexMeta>(uniIndex_);
+          bitField0_ |= 0x00000200;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> uniIndexBuilder_;
+
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> getUniIndexList() {
+        if (uniIndexBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(uniIndex_);
+        } else {
+          return uniIndexBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public int getUniIndexCount() {
+        if (uniIndexBuilder_ == null) {
+          return uniIndex_.size();
+        } else {
+          return uniIndexBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta getUniIndex(int index) {
+        if (uniIndexBuilder_ == null) {
+          return uniIndex_.get(index);
+        } else {
+          return uniIndexBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder setUniIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (uniIndexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUniIndexIsMutable();
+          uniIndex_.set(index, value);
+          onChanged();
+        } else {
+          uniIndexBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder setUniIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (uniIndexBuilder_ == null) {
+          ensureUniIndexIsMutable();
+          uniIndex_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          uniIndexBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder addUniIndex(io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (uniIndexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUniIndexIsMutable();
+          uniIndex_.add(value);
+          onChanged();
+        } else {
+          uniIndexBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder addUniIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (uniIndexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUniIndexIsMutable();
+          uniIndex_.add(index, value);
+          onChanged();
+        } else {
+          uniIndexBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder addUniIndex(
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (uniIndexBuilder_ == null) {
+          ensureUniIndexIsMutable();
+          uniIndex_.add(builderForValue.build());
+          onChanged();
+        } else {
+          uniIndexBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder addUniIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (uniIndexBuilder_ == null) {
+          ensureUniIndexIsMutable();
+          uniIndex_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          uniIndexBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder addAllUniIndex(
+          java.lang.Iterable<? extends io.mycat.meta.protocol.MyCatMeta.IndexMeta> values) {
+        if (uniIndexBuilder_ == null) {
+          ensureUniIndexIsMutable();
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+              values, uniIndex_);
+          onChanged();
+        } else {
+          uniIndexBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder clearUniIndex() {
+        if (uniIndexBuilder_ == null) {
+          uniIndex_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000200);
+          onChanged();
+        } else {
+          uniIndexBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public Builder removeUniIndex(int index) {
+        if (uniIndexBuilder_ == null) {
+          ensureUniIndexIsMutable();
+          uniIndex_.remove(index);
+          onChanged();
+        } else {
+          uniIndexBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder getUniIndexBuilder(
+          int index) {
+        return getUniIndexFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getUniIndexOrBuilder(
+          int index) {
+        if (uniIndexBuilder_ == null) {
+          return uniIndex_.get(index);  } else {
+          return uniIndexBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+           getUniIndexOrBuilderList() {
+        if (uniIndexBuilder_ != null) {
+          return uniIndexBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(uniIndex_);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder addUniIndexBuilder() {
+        return getUniIndexFieldBuilder().addBuilder(
+            io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder addUniIndexBuilder(
+          int index) {
+        return getUniIndexFieldBuilder().addBuilder(
+            index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta uniIndex = 10;</code>
+       */
+      public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder> 
+           getUniIndexBuilderList() {
+        return getUniIndexFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+          getUniIndexFieldBuilder() {
+        if (uniIndexBuilder_ == null) {
+          uniIndexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder>(
+                  uniIndex_,
+                  ((bitField0_ & 0x00000200) == 0x00000200),
+                  getParentForChildren(),
+                  isClean());
+          uniIndex_ = null;
+        }
+        return uniIndexBuilder_;
+      }
+
+      private java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> index_ =
+        java.util.Collections.emptyList();
+      private void ensureIndexIsMutable() {
+        if (!((bitField0_ & 0x00000400) == 0x00000400)) {
+          index_ = new java.util.ArrayList<io.mycat.meta.protocol.MyCatMeta.IndexMeta>(index_);
+          bitField0_ |= 0x00000400;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> indexBuilder_;
+
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta> getIndexList() {
+        if (indexBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(index_);
+        } else {
+          return indexBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public int getIndexCount() {
+        if (indexBuilder_ == null) {
+          return index_.size();
+        } else {
+          return indexBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta getIndex(int index) {
+        if (indexBuilder_ == null) {
+          return index_.get(index);
+        } else {
+          return indexBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder setIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (indexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureIndexIsMutable();
+          index_.set(index, value);
+          onChanged();
+        } else {
+          indexBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder setIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (indexBuilder_ == null) {
+          ensureIndexIsMutable();
+          index_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          indexBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder addIndex(io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (indexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureIndexIsMutable();
+          index_.add(value);
+          onChanged();
+        } else {
+          indexBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder addIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta value) {
+        if (indexBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureIndexIsMutable();
+          index_.add(index, value);
+          onChanged();
+        } else {
+          indexBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder addIndex(
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (indexBuilder_ == null) {
+          ensureIndexIsMutable();
+          index_.add(builderForValue.build());
+          onChanged();
+        } else {
+          indexBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder addIndex(
+          int index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder builderForValue) {
+        if (indexBuilder_ == null) {
+          ensureIndexIsMutable();
+          index_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          indexBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder addAllIndex(
+          java.lang.Iterable<? extends io.mycat.meta.protocol.MyCatMeta.IndexMeta> values) {
+        if (indexBuilder_ == null) {
+          ensureIndexIsMutable();
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+              values, index_);
+          onChanged();
+        } else {
+          indexBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder clearIndex() {
+        if (indexBuilder_ == null) {
+          index_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000400);
+          onChanged();
+        } else {
+          indexBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public Builder removeIndex(int index) {
+        if (indexBuilder_ == null) {
+          ensureIndexIsMutable();
+          index_.remove(index);
+          onChanged();
+        } else {
+          indexBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder getIndexBuilder(
+          int index) {
+        return getIndexFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder getIndexOrBuilder(
+          int index) {
+        if (indexBuilder_ == null) {
+          return index_.get(index);  } else {
+          return indexBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public java.util.List<? extends io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+           getIndexOrBuilderList() {
+        if (indexBuilder_ != null) {
+          return indexBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(index_);
+        }
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder addIndexBuilder() {
+        return getIndexFieldBuilder().addBuilder(
+            io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder addIndexBuilder(
+          int index) {
+        return getIndexFieldBuilder().addBuilder(
+            index, io.mycat.meta.protocol.MyCatMeta.IndexMeta.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .io.mycat.meta.protocol.IndexMeta index = 11;</code>
+       */
+      public java.util.List<io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder> 
+           getIndexBuilderList() {
+        return getIndexFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder> 
+          getIndexFieldBuilder() {
+        if (indexBuilder_ == null) {
+          indexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              io.mycat.meta.protocol.MyCatMeta.IndexMeta, io.mycat.meta.protocol.MyCatMeta.IndexMeta.Builder, io.mycat.meta.protocol.MyCatMeta.IndexMetaOrBuilder>(
+                  index_,
+                  ((bitField0_ & 0x00000400) == 0x00000400),
+                  getParentForChildren(),
+                  isClean());
+          index_ = null;
+        }
+        return indexBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:io.mycat.meta.protocol.TableMeta)
@@ -3750,6 +4915,11 @@ public final class MyCatMeta {
     // @@protoc_insertion_point(class_scope:io.mycat.meta.protocol.TableMeta)
   }
 
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable;
   private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
   private static
@@ -3770,30 +4940,23 @@ public final class MyCatMeta {
   static {
     java.lang.String[] descriptorData = {
       "\n\022MyCatMeta.protocol\022\026io.mycat.meta.prot" +
-      "ocol\"\215\002\n\nColumnMeta\022\021\n\ttableName\030\001 \001(\t\022\014" +
-      "\n\004name\030\002 \001(\t\0227\n\010dataType\030\003 \001(\0162%.io.myca" +
-      "t.meta.protocol.MySqlDataType\022\016\n\006length\030" +
-      "\004 \001(\005\022\021\n\tprecision\030\005 \001(\005\022\r\n\005scale\030\006 \001(\005\022" +
-      "\017\n\007canNull\030\007 \001(\010\022\020\n\010sdefault\030\010 \001(\t\022\022\n\nau" +
-      "to_incre\030\t \001(\010\022\022\n\nisUnsigned\030\n \001(\010\022\r\n\003ke" +
-      "y\030\013 \001(\t:\000\022\031\n\013charsetname\030\014 \001(\t:\004utf8\"\334\001\n" +
-      "\tTableMeta\022\017\n\007catalog\030\001 \001(\t\022\021\n\ttableName" +
-      "\030\002 \001(\t\0226\n\nallColumns\030\003 \003(\0132\".io.mycat.me",
-      "ta.protocol.ColumnMeta\022\025\n\006isView\030\004 \001(\010:\005" +
-      "false\022\021\n\tcreateSql\030\005 \001(\t\022\017\n\007version\030\006 \001(" +
-      "\003\022\024\n\010aiOffset\030\007 \001(\003:\002-1\022\014\n\004type\030\010 \001(\005\022\024\n" +
-      "\010aiColPos\030\t \001(\005:\002-1*\211\003\n\rMySqlDataType\022\013\n" +
-      "\007DECIMAL\020\000\022\010\n\004TINY\020\001\022\t\n\005SHORT\020\002\022\010\n\004LONG\020" +
-      "\003\022\t\n\005FLOAT\020\004\022\n\n\006DOUBLE\020\005\022\010\n\004NULL\020\006\022\r\n\tTI" +
-      "MESTAMP\020\007\022\014\n\010LONGLONG\020\010\022\t\n\005INT24\020\t\022\010\n\004DA" +
-      "TE\020\n\022\010\n\004TIME\020\013\022\014\n\010DATETIME\020\014\022\010\n\004YEAR\020\r\022\013" +
-      "\n\007NEWDATE\020\016\022\013\n\007VARCHAR\020\017\022\007\n\003BIT\020\020\022\016\n\nTIM" +
-      "ESTAMP2\020\021\022\r\n\tDATETIME2\020\022\022\t\n\005TIME2\020\023\022\017\n\nN",
-      "EWDECIMAL\020\366\001\022\t\n\004ENUM\020\367\001\022\010\n\003SET\020\370\001\022\r\n\010TIN" +
-      "YBLOB\020\371\001\022\017\n\nMEDIUMBLOB\020\372\001\022\r\n\010LONGBLOB\020\373\001" +
-      "\022\t\n\004BLOB\020\374\001\022\016\n\tVARSTRING\020\375\001\022\013\n\006STRING\020\376\001" +
-      "\022\r\n\010GEOMETRY\020\377\001B%\n\026io.mycat.meta.protoco" +
-      "lB\tMyCatMetaH\001"
+      "ocol\"8\n\tIndexMeta\022\014\n\004name\030\001 \002(\t\022\014\n\004type\030" +
+      "\002 \002(\t\022\017\n\007columns\030\003 \003(\t\"\304\001\n\nColumnMeta\022\014\n" +
+      "\004name\030\001 \002(\t\022\020\n\010dataType\030\002 \002(\t\022\022\n\nisUnsig" +
+      "ned\030\003 \001(\010\022\016\n\006length\030\004 \001(\005\022\021\n\tprecision\030\005" +
+      " \001(\005\022\r\n\005scale\030\006 \001(\005\022\017\n\007canNull\030\007 \001(\010\022\020\n\010" +
+      "sdefault\030\010 \001(\t\022\022\n\nauto_incre\030\t \001(\010\022\031\n\013ch" +
+      "arsetname\030\n \001(\t:\004utf8\"\343\002\n\tTableMeta\022\021\n\tt" +
+      "ableName\030\001 \001(\t\0223\n\007columns\030\002 \003(\0132\".io.myc" +
+      "at.meta.protocol.ColumnMeta\022\025\n\006isView\030\003 ",
+      "\001(\010:\005false\022\021\n\tcreateSql\030\004 \001(\t\022\017\n\007version" +
+      "\030\005 \001(\003\022\024\n\010aiOffset\030\006 \001(\003:\002-1\022\014\n\004type\030\007 \001" +
+      "(\005\022\024\n\010aiColPos\030\010 \001(\005:\002-1\0222\n\007primary\030\t \001(" +
+      "\0132!.io.mycat.meta.protocol.IndexMeta\0223\n\010" +
+      "uniIndex\030\n \003(\0132!.io.mycat.meta.protocol." +
+      "IndexMeta\0220\n\005index\030\013 \003(\0132!.io.mycat.meta" +
+      ".protocol.IndexMetaB%\n\026io.mycat.meta.pro" +
+      "tocolB\tMyCatMetaH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -3807,18 +4970,24 @@ public final class MyCatMeta {
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
-    internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor =
+    internal_static_io_mycat_meta_protocol_IndexMeta_descriptor =
       getDescriptor().getMessageTypes().get(0);
+    internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_io_mycat_meta_protocol_IndexMeta_descriptor,
+        new java.lang.String[] { "Name", "Type", "Columns", });
+    internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor =
+      getDescriptor().getMessageTypes().get(1);
     internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor,
-        new java.lang.String[] { "TableName", "Name", "DataType", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "IsUnsigned", "Key", "Charsetname", });
+        new java.lang.String[] { "Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname", });
     internal_static_io_mycat_meta_protocol_TableMeta_descriptor =
-      getDescriptor().getMessageTypes().get(1);
+      getDescriptor().getMessageTypes().get(2);
     internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_io_mycat_meta_protocol_TableMeta_descriptor,
-        new java.lang.String[] { "Catalog", "TableName", "AllColumns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", });
+        new java.lang.String[] { "TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

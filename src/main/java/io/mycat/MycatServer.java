@@ -73,7 +73,7 @@ import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
-import io.mycat.meta.MySQLTableStructureDetector;
+import io.mycat.meta.MySQLTableStructureCheck;
 import io.mycat.meta.ProxyMetaManager;
 import io.mycat.net.AIOAcceptor;
 import io.mycat.net.AIOConnector;
@@ -847,7 +847,7 @@ public class MycatServer {
 
 	//定时检查不同分片表结构一致性
 	private Runnable tableStructureCheck(){
-		return new MySQLTableStructureDetector();
+		return new MySQLTableStructureCheck();
 	}
 	
 	//  全局表一致性检查任务

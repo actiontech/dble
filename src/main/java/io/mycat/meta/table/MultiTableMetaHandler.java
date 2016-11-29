@@ -23,7 +23,7 @@ public class MultiTableMetaHandler {
 	public void execute() {
 		MycatServer.getInstance().getTmManager().createDatabase(schema);
 		for (Entry<String, TableConfig> entry : config.getTables().entrySet()) {
-			TableMetaHandler table = new TableMetaHandler(this, schema, entry.getValue());
+			AbstractTableMetaHandler table = new TableMetaInitHandler(this, schema, entry.getValue());
 			table.execute();
 		}
 	}

@@ -294,8 +294,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 			String table = StringUtil.removeBackquote(insertStmt.getTableName().getSimpleName()).toUpperCase();
 			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schema.getName(), table);
 			if (tbMeta != null) {
-				for (int i = 0; i < tbMeta.getAllColumnsCount(); i++) {
-					if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(tbMeta.getAllColumns(i).getName()))) {
+				for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+					if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(tbMeta.getColumns(i).getName()))) {
 						return i;
 					}
 				}
@@ -319,7 +319,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				LOGGER.warn(msg);
 				throw new SQLNonTransientException(msg);
 			}
-			return tbMeta.getAllColumnsCount();
+			return tbMeta.getColumnsCount();
 		} else {
 			return insertStmt.getColumns().size();
 		}

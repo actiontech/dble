@@ -3,63 +3,43 @@ package io.mycat.meta.protocol;
 option java_package = "io.mycat.meta.protocol";
 option java_outer_classname = "MyCatMeta";
 option optimize_for = SPEED;
+ 
 
-enum MySqlDataType {
-    DECIMAL               = 0;
-    TINY                  = 1;
-    SHORT                 = 2;
-    LONG                  = 3;
-    FLOAT                 = 4;
-    DOUBLE                = 5;
-    NULL                  = 6;
-    TIMESTAMP             = 7;
-    LONGLONG              = 8;
-    INT24                 = 9;
-    DATE                  = 10;
-    TIME                  = 11;
-    DATETIME              = 12;
-    YEAR                  = 13;
-    NEWDATE               = 14;
-    VARCHAR               = 15;
-    BIT                   = 16;
-    TIMESTAMP2            = 17;
-    DATETIME2             = 18;
-    TIME2                 = 19;
-    NEWDECIMAL            = 246;
-    ENUM                  = 247;
-    SET                   = 248;
-    TINYBLOB              = 249;
-    MEDIUMBLOB            = 250;
-    LONGBLOB              = 251;
-    BLOB                  = 252;
-    VARSTRING             = 253;
-    STRING                = 254;
-    GEOMETRY              = 255;
+message IndexMeta{
+	required string				name		= 1;
+	required string             type        = 2;//PRI,UNI,MUI
+	repeated string             columns      = 3;
+	
+	
 }
-
 message ColumnMeta{
-	optional string            tableName      = 1;
-	optional string            name           = 2;
-	optional MySqlDataType     dataType       = 3;
+	required string            name           = 1;
+	required string            dataType       = 2; 
+	optional bool              isUnsigned     = 3;
 	optional int32             length         = 4;
 	optional int32             precision      = 5;
 	optional int32             scale          = 6;
 	optional bool              canNull        = 7;
 	optional string            sdefault       = 8;
-	optional bool              auto_incre     = 9;
-	optional bool              isUnsigned     = 10;
-	optional string            key            = 11[default = ""];//有pri，unique
-	optional string            charsetname    = 12 [default = "utf8"];
+	optional bool              auto_incre     = 9; 
+	optional string            charsetname    = 10 [default = "utf8"];
+	//[COMMENT 'string']
+	//[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+    //[STORAGE {DISK|MEMORY|DEFAULT}]
+    //[reference_definition]
+    //[GENERATED ALWAYS] AS (expression)
 }
 
 message TableMeta{
-	optional string            catalog        = 1;
-	optional string            tableName      = 2;//不带dbname的表名:如table1
-	repeated ColumnMeta        allColumns     = 3;//所有的列属性，有序
-	optional bool              isView         = 4[default = false];
-	optional string            createSql      = 5;
-	optional int64             version        = 6;
-	optional int64             aiOffset       = 7[default=-1];
-	optional int32             type           = 8;
-	optional int32             aiColPos       = 9[default=-1];
+	optional string            tableName      = 1;//不带dbname的表名:如table1
+	repeated ColumnMeta        columns     = 2;//所有的列属性，有序
+	optional bool              isView         = 3[default = false];
+	optional string            createSql      = 4;
+	optional int64             version        = 5;
+	optional int64             aiOffset       = 6[default=-1];
+	optional int32             type           = 7;
+	optional int32             aiColPos       = 8[default=-1];
+	optional IndexMeta		   primary	      = 9;
+	repeated IndexMeta		   uniIndex		  = 10;
+	repeated IndexMeta		   index		  = 11;
 }

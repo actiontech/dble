@@ -23,6 +23,7 @@
  */
 package io.mycat.server.handler;
 
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
@@ -42,6 +43,7 @@ public final class StartHandler {
 				c.setTxstart(true);
 				c.writeToBuffer(OkPacket.OK, c.allocate());
 			}
+			TxnLogHelper.putTxnLog(c, stmt);
             break;
         default:
             c.execute(stmt, ServerParse.START);

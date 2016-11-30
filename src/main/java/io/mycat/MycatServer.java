@@ -71,6 +71,7 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.log.transaction.TxnLogProcessor;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
 import io.mycat.meta.MySQLTableStructureCheck;
@@ -118,6 +119,7 @@ public class MycatServer {
 	private final CacheService cacheService;
 	private Properties dnIndexProperties;
 	private ProxyMetaManager tmManager;
+	private TxnLogProcessor txnLogProcessor;
 	
 	//AIO连接群组
 	private AsynchronousChannelGroup[] asyncChannelGroups;
@@ -168,7 +170,7 @@ public class MycatServer {
 		
 		//SQL记录器
 		this.sqlRecorder = new SQLRecorder(config.getSystem().getSqlRecordCount());
-		
+
 		/**
 		 * 是否在线，MyCat manager中有命令控制
 		 * | offline | Change MyCat status to OFF |
@@ -410,6 +412,13 @@ public class MycatServer {
 
 			server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
 					+ "Server", system.getBindIp(), system.getServerPort(), sf, reactorPool);
+		}
+
+		// start transaction SQL log
+		if (config.getSystem().isRecordTxn()) {
+			txnLogProcessor = new TxnLogProcessor(bufferPool);
+			txnLogProcessor.setName("TxnLogProcessor");
+			txnLogProcessor.start();
 		}
 		tmManager = new ProxyMetaManager();
 		tmManager.init();
@@ -682,6 +691,10 @@ public class MycatServer {
 		boolean isUseZkSwitch=	mycatConfig.getSystem().isUseZKSwitch();
 		String loadZk=ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_FLAG);
 		return (isUseZkSwitch&&"true".equalsIgnoreCase(loadZk))   ;
+	}
+
+	public TxnLogProcessor getTxnLogProcessor() {
+		return txnLogProcessor;
 	}
 
 	public RouteService getRouterService() {

@@ -25,6 +25,7 @@ package io.mycat.server;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,12 +64,20 @@ public class ServerConnection extends FrontendConnection {
 	 * 标志是否执行了lock tables语句，并处于lock状态
 	 */
 	private volatile boolean isLocked = false;
+	private AtomicLong xid;
 
+	public long getAndIncrementXid(){
+		return xid.getAndIncrement();
+	}
+	public long getXid(){
+		return xid.get();
+	}
 	public ServerConnection(NetworkChannel channel)
 			throws IOException {
 		super(channel);
 		this.txInterrupted = false;
 		this.autocommit = true;
+		this.xid = new AtomicLong(1);
 	}
 
 	@Override

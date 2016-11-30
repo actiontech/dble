@@ -36,31 +36,33 @@ import io.mycat.config.Isolations;
 public final class SystemConfig {
 
 	public static final String SYS_HOME = "MYCAT_HOME";
+	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+	public static final int SEQUENCEHANDLER_LOCALFILE = 0;
+	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
+	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
+	public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
+	public static final int SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT = 4;
+	/*
+	 * 注意！！！ 目前mycat支持的MySQL版本，如果后续有新的MySQL版本,请添加到此数组， 对于MySQL的其他分支，
+	 * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
+	 */
+	public static final String[] MySQLVersions = { "5.5", "5.6", "5.7" };
+	public static final int MUTINODELIMIT_PATCH_SIZE = 100;
+	public static final int MUTINODELIMIT_SMALL_DATA = 0;
+	public static final int MUTINODELIMIT_LAR_DATA = 1;
+
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
 	private static final String DEFAULT_CHARSET = "utf8";
-
 	private static final String DEFAULT_SQL_PARSER = "druidparser";// fdbparser, druidparser
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512*1024*4;
 	private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
-	private int processorBufferLocalPercent;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-	private int frontSocketSoRcvbuf = 1024 * 1024;
-	private int frontSocketSoSndbuf = 4 * 1024 * 1024;
-	private int backSocketSoRcvbuf = 4 * 1024 * 1024;// mysql 5.6
-														// net_buffer_length
-														// defaut 4M
-    
 	private final  static String RESERVED_SYSTEM_MEMORY_BYTES = "384m";
 	private final static String MEMORY_PAGE_SIZE = "1m";
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
 	private final static String DATANODE_SORTED_TEMP_DIR = "datanode";
-	private int backSocketSoSndbuf = 1024 * 1024;
-	private int frontSocketNoDelay = 1; // 0=false
-	private int backSocketNoDelay = 1; // 1=true
-	public static final int DEFAULT_POOL_SIZE = 128;// 保持后端数据通道的默认最大值
-	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
@@ -73,6 +75,22 @@ public final class SystemConfig {
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
+	private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
+	private static final String DEFAULT_TRANSACTION_BASE_NAME = "mycat-tx";
+	private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
+	private final static long CHECKTABLECONSISTENCYPERIOD = 1 * 60 * 1000;
+	// 全局表一致性检测任务，默认24小时调度一次
+	private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
+
+	private int processorBufferPoolType = 0;
+	private int processorBufferLocalPercent;
+	private int frontSocketSoRcvbuf = 1024 * 1024;
+	private int frontSocketSoSndbuf = 4 * 1024 * 1024;
+	// mysql 5.6 net_buffer_length defaut 4M
+	private int backSocketSoRcvbuf = 4 * 1024 * 1024;
+	private int backSocketSoSndbuf = 1024 * 1024;
+	private int frontSocketNoDelay = 1; // 0=false
+	private int backSocketNoDelay = 1; // 1=true
 	private int maxStringLiteralLength = 65535;
 	private int frontWriteQueueSize = 2048;
 	private String bindIp = "0.0.0.0";
@@ -99,16 +117,13 @@ public final class SystemConfig {
 	private int txIsolation;
 	private int parserCommentVersion;
 	private int sqlRecordCount;
-
+	private boolean recordTxn = false;
 	// a page size
 	private int bufferPoolPageSize;
-
 	//minimum allocation unit
 	private short bufferPoolChunkSize;
-	
 	// buffer pool page number 
 	private short bufferPoolPageNumber;
-	
 	//大结果集阈值，默认512kb
 	private int maxResultSet=512*1024;
 	//大结果集拒绝策略次数过滤限制,默认10次
@@ -122,29 +137,13 @@ public final class SystemConfig {
 	private int  flowControlRejectStrategy=0;
 	//清理大结果集记录周期
 	private long clearBigSqLResultSetMapMs=10*60*1000;
-
 	private int defaultMaxLimit = DEFAULT_MAX_LIMIT;
-	public static final int SEQUENCEHANDLER_LOCALFILE = 0;
-	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
-	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
-	public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
-	public static final int SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT = 4;
-	/*
-	 * 注意！！！ 目前mycat支持的MySQL版本，如果后续有新的MySQL版本,请添加到此数组， 对于MySQL的其他分支，
-	 * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
-	 */
-	public static final String[] MySQLVersions = { "5.5", "5.6", "5.7" };
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
 	private String sqlInterceptor = "io.mycat.server.interceptor.impl.DefaultSqlInterceptor";
 	private String sqlInterceptorType = "select";
 	private String sqlInterceptorFile = System.getProperty("user.dir")+"/logs/sql.txt";
-	public static final int MUTINODELIMIT_SMALL_DATA = 0;
-	public static final int MUTINODELIMIT_LAR_DATA = 1;
 	private int mutiNodeLimitType = MUTINODELIMIT_SMALL_DATA;
-
-	public static final int MUTINODELIMIT_PATCH_SIZE = 100;
 	private int mutiNodePatchSize = MUTINODELIMIT_PATCH_SIZE;
-
 	private String defaultSqlParser = DEFAULT_SQL_PARSER;
 	private int usingAIO = 0;
 	private int packetHeaderSize = 4;
@@ -156,46 +155,30 @@ public final class SystemConfig {
 	// 是否使用HandshakeV10Packet来与client进行通讯, 1:是 , 0:否(使用HandshakePacket)
 	// 使用HandshakeV10Packet为的是兼容高版本的jdbc驱动, 后期稳定下来考虑全部采用HandshakeV10Packet来通讯
 	private int useHandshakeV10 = 0;
-
-
 	private int checkTableConsistency = 0;
 	private long checkTableConsistencyPeriod = CHECKTABLECONSISTENCYPERIOD;
-	private final static long CHECKTABLECONSISTENCYPERIOD = 1 * 60 * 1000;
-
-	private int processorBufferPoolType = 0;
-
-	// 全局表一致性检测任务，默认24小时调度一次
-	private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
 	private int useGlobleTableCheck = 1;	// 全局表一致性检查开关
-	
 	private long glableTableCheckPeriod;
-
 	/**
 	 * Mycat 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
 	 */
-
 
 	/**
 	 * 是否启用Off Heap for Merge  1-启用，0-不启用
 	 */
 	private int useOffHeapForMerge;
-
 	/**
 	 *页大小,对应MemoryBlock的大小，单位为M
 	 */
 	private String memoryPageSize;
-
-
 	/**
 	 * DiskRowWriter写磁盘是临时写Buffer，单位为K
 	 */
 	private String spillsFileBufferSize;
-
 	/**
 	 * 启用结果集流输出，不经过merge模块,
 	 */
 	private int useStreamOutput;
-
 	/**
 	 * 该变量仅在Merge使用On Heap
 	 * 内存方式时起作用，如果使用Off Heap内存方式
@@ -206,29 +189,20 @@ public final class SystemConfig {
 	 * 连接操作。
 	 */
 	private String systemReserveMemorySize;
-
 	private String XARecoveryLogBaseDir;
-
 	private String XARecoveryLogBaseName;
-
+	private String transactionLogBaseDir;
+	private String transactionLogBaseName;
+	private int transactionRatateSize;
 	/**
 	 * 排序时，内存不够时，将已经排序的结果集
 	 * 写入到临时目录
 	 */
 	private String dataNodeSortedTempDir;
-
 	/**
 	 * 是否启用zk切换
 	 */
 	private boolean	useZKSwitch=DEFAULT_USE_ZK_SWITCH;
-
-	public String getDefaultSqlParser() {
-		return defaultSqlParser;
-	}
-
-	public void setDefaultSqlParser(String defaultSqlParser) {
-		this.defaultSqlParser = defaultSqlParser;
-	}
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
@@ -269,8 +243,42 @@ public final class SystemConfig {
 		this.dataNodeSortedTempDir = System.getProperty("user.dir");
 		this.XARecoveryLogBaseDir = SystemConfig.getHomePath()+"/tmlogs/";
 		this.XARecoveryLogBaseName ="tmlog";
+		this.transactionLogBaseDir = SystemConfig.getHomePath()+File.separatorChar+DEFAULT_TRANSACTION_BASE_DIR;
+		this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
+		this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
 	}
 
+	public int getTransactionRatateSize() {
+		return transactionRatateSize;
+	}
+
+	public void setTransactionRatateSize(int transactionRatateSize) {
+		this.transactionRatateSize = transactionRatateSize;
+	}
+
+	public String getDefaultSqlParser() {
+		return defaultSqlParser;
+	}
+
+	public void setDefaultSqlParser(String defaultSqlParser) {
+		this.defaultSqlParser = defaultSqlParser;
+	}
+
+	public String getTransactionLogBaseDir() {
+		return transactionLogBaseDir;
+	}
+
+	public void setTransactionLogBaseDir(String transactionLogBaseDir) {
+		this.transactionLogBaseDir = transactionLogBaseDir;
+	}
+
+	public String getTransactionLogBaseName() {
+		return transactionLogBaseName;
+	}
+
+	public void setTransactionLogBaseName(String transactionLogBaseName) {
+		this.transactionLogBaseName = transactionLogBaseName;
+	}
 	public String getDataNodeSortedTempDir() {
 		return dataNodeSortedTempDir;
 	}
@@ -658,6 +666,13 @@ public final class SystemConfig {
 		this.sqlRecordCount = sqlRecordCount;
 	}
 
+	public boolean isRecordTxn(){
+		return recordTxn;
+	}
+
+	public void setRecordTxn(boolean recordTxn){
+		this.recordTxn = recordTxn;
+	}
 
 	public short getBufferPoolChunkSize() {
 		return bufferPoolChunkSize;

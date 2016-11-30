@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Isolations;
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParseSet;
@@ -68,13 +69,16 @@ public final class SetHandler {
 				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			} else {
 				c.commit();
+				TxnLogHelper.putTxnLog(c, "commit[because of "+stmt+"]");
 				c.setTxstart(false);
+				c.getAndIncrementXid();
 				c.setAutocommit(true);
 			}
 			break;
 		case AUTOCOMMIT_OFF: {
 			if (c.isAutocommit()) {
 				c.setAutocommit(false);
+				TxnLogHelper.putTxnLog(c, stmt);
 			}
 			c.write(c.writeToBuffer(AC_OFF, c.allocate()));
 			break;

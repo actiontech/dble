@@ -40,6 +40,7 @@ import io.mycat.backend.mysql.LoadDataUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.BinaryRowDataPacket;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.FieldPacket;
@@ -153,7 +154,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		}
 		conn.setResponseHandler(this);
 		try {
-			conn.execute(node, session.getSource(), session.getSource().isAutocommit()&&!session.getSource().isTxstart());
+			boolean isAutocommit = session.getSource().isAutocommit()&&!session.getSource().isTxstart();
+			if(!isAutocommit){
+				TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
+			}
+			conn.execute(node, session.getSource(), isAutocommit);
 		} catch (Exception e1) {
 			executeException(conn, e1);
 			return;

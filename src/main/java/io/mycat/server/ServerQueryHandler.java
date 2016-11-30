@@ -71,7 +71,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 		//
 		int rs = ServerParse.parse(sql);
 		int sqlType = rs & 0xff;
-		
 		switch (sqlType) {
 		//explain sql
 		case ServerParse.EXPLAIN:
@@ -112,10 +111,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 			UseHandler.handle(sql, c, rs >>> 8);
 			break;
 		case ServerParse.COMMIT:
-			CommitHandler.handle(c);
+			CommitHandler.handle(sql, c);
 			break;
 		case ServerParse.ROLLBACK:
-			RollBackHandler.handle(c);
+			RollBackHandler.handle(sql, c);
 			break;
 		case ServerParse.HELP:
 			LOGGER.warn(new StringBuilder().append("Unsupported command:").append(sql).toString());

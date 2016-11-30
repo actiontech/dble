@@ -23,6 +23,7 @@
  */
 package io.mycat.server.handler;
 
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 
@@ -31,10 +32,13 @@ public final class BeginHandler {
 		if (c.isTxstart() || !c.isAutocommit()) {
 			c.setTxstart(true);
 			c.commit();
+			TxnLogHelper.putTxnLog(c, "commit[because of begin]");
+			c.getAndIncrementXid();
 		} else {
 			c.setTxstart(true);
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 		}
+		TxnLogHelper.putTxnLog(c, stmt);
     }
 
 }

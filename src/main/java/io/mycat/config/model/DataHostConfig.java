@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.Iterables;
+
 import io.mycat.backend.datasource.PhysicalDBPool;
 
 /**
@@ -46,7 +47,7 @@ public class DataHostConfig {
     private static final Pattern pattern = Pattern.compile("\\s*show\\s+slave\\s+status\\s*",Pattern.CASE_INSENSITIVE);
     private static final Pattern patternCluster = Pattern.compile("\\s*show\\s+status\\s+like\\s+'wsrep%'",Pattern.CASE_INSENSITIVE);
 	private String name;
-	private int maxCon = SystemConfig.DEFAULT_POOL_SIZE;
+	private int maxCon = 128;// 保持后端数据通道的默认最大值
 	private int minCon = 10;
 	private int balance = PhysicalDBPool.BALANCE_NONE;
 	private int writeType = PhysicalDBPool.WRITE_ONLYONE_NODE;

@@ -45,6 +45,7 @@ import io.mycat.backend.mysql.nio.handler.TransactionHandler.TxOperation;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.net.mysql.BinaryRowDataPacket;
 import io.mycat.net.mysql.ErrorPacket;
@@ -168,7 +169,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 		startTime = System.currentTimeMillis();
 		LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
+		StringBuilder sb = new StringBuilder();
 		for (final RouteResultsetNode node : rrs.getNodes()) {
+			if(!autocommit||session.getSource().isTxstart()||node.isModifySQL()){
+				sb.append("["+node.getName()+"]"+node.getStatement()).append(";\n");
+			}
 			BackendConnection conn = session.getTarget(node);
 			if (session.tryExistsCon(conn, node)) {
 				LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
@@ -189,6 +194,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				// _execute(conn, node);
 			}
 
+		}
+		if(sb.length()>0){
+			TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
 		}
 	}
 

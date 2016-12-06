@@ -1,11 +1,11 @@
 package io.mycat.backend.mysql.xa;
 
-import io.mycat.backend.mysql.xa.recovery.DeserialisationException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.mycat.backend.mysql.xa.recovery.DeserialisationException;
 
 /**
  * Created by zhangchao on 2016/10/17.
@@ -101,7 +101,7 @@ public class Deserializer {
         }
 
         ParticipantLogEntry actual = new ParticipantLogEntry(coordinatorId,
-                content.get("uri"), Long.valueOf(content.get("expires")), content.get("resourceName"), Integer.parseInt(content.get("state")));
+                content.get("uri"), Long.valueOf(content.get("expires")), content.get("resourceName"), TxState.valueof(Integer.parseInt(content.get("state"))));
         return actual;
     }
 

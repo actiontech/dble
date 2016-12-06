@@ -28,17 +28,14 @@ import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 
 public final class BeginHandler {
-    public static void handle(String stmt, ServerConnection c) {
+	public static void handle(String stmt, ServerConnection c) {
 		if (c.isTxstart() || !c.isAutocommit()) {
 			c.setTxstart(true);
-			c.commit();
-			TxnLogHelper.putTxnLog(c, "commit[because of begin]");
-			c.getAndIncrementXid();
+			c.beginInTx(stmt);
 		} else {
 			c.setTxstart(true);
+			TxnLogHelper.putTxnLog(c, stmt);
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 		}
-		TxnLogHelper.putTxnLog(c, stmt);
-    }
-
+	}
 }

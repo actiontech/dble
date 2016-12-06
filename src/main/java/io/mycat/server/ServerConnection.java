@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import io.mycat.MycatServer;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.FrontendConnection;
 import io.mycat.route.RouteResultset;
 import io.mycat.server.handler.MysqlInformationSchemaHandler;
@@ -125,7 +126,7 @@ public class ServerConnection extends FrontendConnection {
 	 * 设置是否需要中断当前事务
 	 */
 	public void setTxInterrupt(String txInterrputMsg) {
-		if (!autocommit && !txInterrupted) {
+		if ((!autocommit||txstart) && !txInterrupted) {
 			txInterrupted = true;
 			this.txInterrputMsg = txInterrputMsg;
 		}
@@ -307,13 +308,29 @@ public class ServerConnection extends FrontendConnection {
 	}
 
 	/**
+	 * 事务沒有commit 直接begin
+	 */
+	public void beginInTx(String stmt) {
+		if (txInterrupted) {
+			writeErrMessage(ErrorCode.ER_YES, "Transaction error, need to rollback.");
+		} else {
+			TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
+			getAndIncrementXid();
+			TxnLogHelper.putTxnLog(this, stmt);
+			session.commit();
+		}
+	}
+	/**
 	 * 提交事务
 	 */
-	public void commit() {
+	public void commit(String logReason) {
 		if (txInterrupted) {
 			writeErrMessage(ErrorCode.ER_YES,
 					"Transaction error, need to rollback.");
 		} else {
+			TxnLogHelper.putTxnLog(this, logReason);
+			setTxstart(false);
+			getAndIncrementXid();
 			session.commit();
 		}
 	}

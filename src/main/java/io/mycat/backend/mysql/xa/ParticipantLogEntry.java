@@ -30,7 +30,7 @@ public class ParticipantLogEntry implements Serializable {
     /**
      * Best-known state of the participant.
      */
-    public int txState;
+    public TxState txState;
 
     /**
      * For diagnostic purposes, null if not relevant.
@@ -38,7 +38,7 @@ public class ParticipantLogEntry implements Serializable {
     public String resourceName;
 
     public ParticipantLogEntry(String coordinatorId, String uri,
-                               long expires, String resourceName, int txState) {
+                               long expires, String resourceName, TxState txState) {
         this.coordinatorId = coordinatorId;
         this.uri = uri;
         this.expires = expires;

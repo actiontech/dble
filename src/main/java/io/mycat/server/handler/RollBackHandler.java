@@ -5,8 +5,8 @@ import io.mycat.server.ServerConnection;
 
 public final class RollBackHandler {
 	public static void handle(String stmt, ServerConnection c) {
-		c.rollback();
 		c.setTxstart(false);
 		TxnLogHelper.putTxnLog(c, stmt);
+		c.rollback();
 	}
 }

@@ -38,23 +38,26 @@ import org.slf4j.LoggerFactory;
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
-import io.mycat.backend.mysql.nio.handler.CommitNodeHandler;
 import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
 import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
-import io.mycat.backend.mysql.nio.handler.MultiNodeCoordinator;
 import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
-import io.mycat.backend.mysql.nio.handler.RollbackNodeHandler;
 import io.mycat.backend.mysql.nio.handler.RollbackReleaseHandler;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.CommitNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
+import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
-import io.mycat.server.sqlcmd.SQLCmdConstant;
 
 /**
  * @author mycat
@@ -68,19 +71,15 @@ public class NonBlockingSession implements Session {
     // life-cycle: each sql execution
     private volatile SingleNodeHandler singleNodeHandler;
     private volatile MultiNodeQueryHandler multiNodeHandler;
-    private volatile RollbackNodeHandler rollbackHandler;
-    private final MultiNodeCoordinator multiNodeCoordinator;
-    private final CommitNodeHandler commitHandler;
+    private RollbackNodesHandler rollbackHandler;
+    private CommitNodesHandler commitHandler;
     private volatile String xaTXID;
-
-    private boolean prepared;
+    private volatile TxState xaState;
+	private boolean prepared;
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 0.75f);
-        multiNodeCoordinator = new MultiNodeCoordinator(this);
-        commitHandler = new CommitNodeHandler(this);
-        rollbackHandler = new RollbackNodeHandler(this);
     }
 
     @Override
@@ -108,6 +107,14 @@ public class NonBlockingSession implements Session {
     public BackendConnection removeTarget(RouteResultsetNode key) {
         return target.remove(key);
     }
+    public TxState getXaState() {
+		return xaState;
+	}
+
+	public void setXaState(TxState xaState) {
+		this.xaState = xaState;
+	}
+
     
     @Override
     public void execute(RouteResultset rrs, int type) {
@@ -117,7 +124,9 @@ public class NonBlockingSession implements Session {
             StringBuilder s = new StringBuilder();
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
-
+		if (xaTXID != null && !source.isTxstart()) {
+			source.setTxstart(true);
+		}
         // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
@@ -125,6 +134,9 @@ public class NonBlockingSession implements Session {
                     "No dataNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
+		if (this.getXaTXID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
+			this.xaState = TxState.TX_STARTED_STATE;
+		}
 		if (nodes.length == 1) {
 			singleNodeHandler = new SingleNodeHandler(rrs, this);
 			if (this.isPrepared()) {
@@ -154,9 +166,27 @@ public class NonBlockingSession implements Session {
 		}
     }
 
-	public void commit(ResponseHandler responsehandler) {
+    private CommitNodesHandler createCommitNodesHandler() {
+		if (commitHandler == null) {
+			if (this.getXaTXID() == null) {
+				commitHandler = new NormalCommitNodesHandler(this);
+			} else {
+				commitHandler = new XACommitNodesHandler(this);
+			}
+		} else {
+			if (this.getXaTXID() == null && (commitHandler instanceof XACommitNodesHandler)) {
+				commitHandler = new NormalCommitNodesHandler(this);
+			}
+			if (this.getXaTXID() != null && (commitHandler instanceof NormalCommitNodesHandler)) {
+				commitHandler = new XACommitNodesHandler(this);
+			}
+		}
+		return commitHandler;
+	}
+    
+    public void commit(ResponseHandler responsehandler) {
+    	createCommitNodesHandler();
 		commitHandler.setResponseHandler(responsehandler);
-		multiNodeCoordinator.setResponseHandler(responsehandler);
 		commit();
 	}
     public void commit() {
@@ -166,19 +196,31 @@ public class NonBlockingSession implements Session {
             buffer = source.writeToBuffer(OkPacket.OK, buffer);
             source.write(buffer);
             return;
-        } else if (initCount == 1) {
-            BackendConnection con = target.elements().nextElement();
-            commitHandler.commit(con);
-        } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("multi node commit to send ,total " + initCount);
-            }
-            multiNodeCoordinator.executeBatchNodeCmd(SQLCmdConstant.COMMIT_CMD);
-        }
+        } 
+        createCommitNodesHandler();
+        commitHandler.commit();
 
     }
-
+    	
+	private RollbackNodesHandler createRollbackNodesHandler() {
+		if (rollbackHandler == null) {
+			if (this.getXaTXID() == null) {
+				rollbackHandler = new NormalRollbackNodesHandler(this);
+			} else {
+				rollbackHandler = new XARollbackNodesHandler(this);
+			}
+		} else {
+			if (this.getXaTXID() == null && (rollbackHandler instanceof XARollbackNodesHandler)) {
+				rollbackHandler = new NormalRollbackNodesHandler(this);
+			}
+			if (this.getXaTXID() != null && (rollbackHandler instanceof NormalRollbackNodesHandler)) {
+				rollbackHandler = new XARollbackNodesHandler(this);
+			}
+		}
+		return rollbackHandler;
+	}
 	public void rollback(ResponseHandler responsehandler) {
+		createRollbackNodesHandler();
 		rollbackHandler.setResponseHandler(responsehandler);
 		rollback();
 	}
@@ -193,7 +235,7 @@ public class NonBlockingSession implements Session {
             source.write(buffer);
             return;
         }
-
+        createRollbackNodesHandler();
         rollbackHandler.rollback();
     }
 
@@ -258,20 +300,19 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
-    public void releaseConnectionIfSafe(BackendConnection conn, boolean debug, boolean needRollback) {
+    public void releaseConnectionIfSafe(BackendConnection conn, boolean debug, boolean needRollBack) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
             if (node.isDisctTable()) {
                 return;
             }
             if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isLocked()) {
-                releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollback);
+                releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollBack);
             }
         }
     }
 
-    public void releaseConnection(RouteResultsetNode rrn, boolean debug,
-                                  final boolean needRollback) {
+    public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needRollback) {
 
         BackendConnection c = target.remove(rrn);
         if (c != null) {
@@ -281,18 +322,16 @@ public class NonBlockingSession implements Session {
             if (c.getAttachment() != null) {
                 c.setAttachment(null);
             }
-            if (!c.isClosedOrQuit()) {
-                if (c.isAutocommit()) {
-                    c.release();
-                } else
-                if (needRollback)
-                {
-                    c.setResponseHandler(new RollbackReleaseHandler());
-                    c.rollback();
-                }
-                else {
+			if (!c.isClosedOrQuit()) {
+				if (c.isAutocommit()) {
+					c.release();
+				} else if (needRollback) {
+					c.setResponseHandler(new RollbackReleaseHandler());
+					c.rollback();
+				} else {
 					c.release();
 				}
+
             }
         }
     }
@@ -439,9 +478,14 @@ public class NonBlockingSession implements Session {
             multiHandler.clearResources();
             multiNodeHandler = null;
         }
-        rollbackHandler.clearResources();
-        multiNodeCoordinator.clearResources();
-        commitHandler.clearResources();
+        if (rollbackHandler != null) {
+        	rollbackHandler.resetResponseHandler();
+        }
+        if (commitHandler != null) {
+        	commitHandler.resetResponseHandler();
+        }
+//        multiNodeCoordinator.clearResources();
+//        commitHandler.clearResources();
     }
 
     public void clearResources(final boolean needRollback) {
@@ -460,14 +504,17 @@ public class NonBlockingSession implements Session {
         return MycatServer.getInstance().genXATXID();
     }
 
-    public void setXATXEnabled(boolean xaTXEnabled) {
-
-        LOGGER.info("XA Transaction enabled ,con " + this.getSource());
-        if (xaTXEnabled && this.xaTXID == null) {
-            xaTXID = genXATXID();
-
-        }
-    }
+	public void setXATXEnabled(boolean xaTXEnabled) {
+		if (xaTXEnabled && this.xaTXID == null) {
+			LOGGER.info("XA Transaction enabled ,con " + this.getSource());
+			xaTXID = genXATXID();
+			xaState = TxState.TX_INITIALIZE_STATE;
+		} else if (!xaTXEnabled && this.xaTXID != null) {
+			LOGGER.info("XA Transaction disabled ,con " + this.getSource());
+			xaTXID = null;
+			xaState =null;
+		}
+	}
 
     public String getXaTXID() {
         return xaTXID;

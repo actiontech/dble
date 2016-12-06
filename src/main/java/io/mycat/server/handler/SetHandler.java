@@ -68,10 +68,7 @@ public final class SetHandler {
 			if (c.isAutocommit()) {
 				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			} else {
-				c.commit();
-				TxnLogHelper.putTxnLog(c, "commit[because of "+stmt+"]");
-				c.setTxstart(false);
-				c.getAndIncrementXid();
+				c.commit("commit[because of " + stmt + "]");
 				c.setAutocommit(true);
 			}
 			break;
@@ -85,8 +82,11 @@ public final class SetHandler {
 		}
 		case XA_FLAG_ON: {
 			if (c.isAutocommit()) {
-				c.writeErrMessage(ErrorCode.ERR_WRONG_USED,
-						"set xa cmd on can't used in autocommit connection ");
+				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used in autocommit connection ");
+				return;
+			}
+			if (c.isTxstart() && c.getSession2().getXaTXID() == null) {
+				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before a transaction end");
 				return;
 			}
 			c.getSession2().setXATXEnabled(true);
@@ -94,8 +94,12 @@ public final class SetHandler {
 			break;
 		}
 		case XA_FLAG_OFF: {
-			c.writeErrMessage(ErrorCode.ERR_WRONG_USED,
-					"set xa cmd off not for external use ");
+			if (c.isTxstart() && c.getSession2().getXaTXID() != null) {
+				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before a transaction end");
+				return;
+			}
+			c.getSession2().setXATXEnabled(false);
+			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			return;
 		}
 		case TX_READ_UNCOMMITTED: {
@@ -167,5 +171,4 @@ public final class SetHandler {
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 		}
 	}
-
 }

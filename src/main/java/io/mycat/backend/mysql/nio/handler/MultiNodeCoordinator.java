@@ -121,11 +121,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 		if (this.cmdHandler.releaseConOnErr()) {
 			session.releaseConnection(conn);
 		} else {
-			
-			
-			
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(),
-					false);
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 		}
 		if (this.finished()) {
 			cmdHandler.errorResponse(session, err, this.nodeCount,
@@ -145,7 +141,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 			MySQLConnection mysqlCon = (MySQLConnection) conn;
 			switch (mysqlCon.getXaStatus())
 			{
-				case TxState.TX_STARTED_STATE:
+				case TX_STARTED_STATE:
 					//if there have many SQL execute wait the okResponse,will come to here one by one
 					//should be wait all nodes ready ,then send xa commit to all nodes.
 					if (mysqlCon.batchCmdFinished())
@@ -172,7 +168,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 						mysqlCon.execCmd(cmd);
 					}
 					return;
-				case TxState.TX_PREPARED_STATE:
+				case TX_PREPARED_STATE:
 				{
 					//recovery log
 					String xaTxId = session.getXaTXID();
@@ -197,8 +193,7 @@ public class MultiNodeCoordinator implements ResponseHandler {
 		if (this.cmdHandler.relaseConOnOK()) {
 			session.releaseConnection(conn);
 		} else {
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(),
-					false);
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 		}
 		if (this.finished()) {
 			cmdHandler.okResponse(session, ok);

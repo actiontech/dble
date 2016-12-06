@@ -112,7 +112,7 @@ hs_err_pid*
 .DS_Store
 /target/
 /tmlogs/
-/txlog/
+/txlogs/
 src/main/resources/server.xml
 src/main/resources/schema.xml 
 src/main/resources/rule.xml

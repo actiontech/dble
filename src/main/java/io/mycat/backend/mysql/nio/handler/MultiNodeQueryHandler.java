@@ -41,7 +41,8 @@ import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
-import io.mycat.backend.mysql.nio.handler.TransactionHandler.TxOperation;
+import io.mycat.backend.mysql.nio.handler.transaction.AutoTxHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.AutoTxHandler.TxOperation;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
@@ -174,6 +175,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			if(!autocommit||session.getSource().isTxstart()||node.isModifySQL()){
 				sb.append("["+node.getName()+"]"+node.getStatement()).append(";\n");
 			}
+		}
+		if(sb.length()>0){
+			TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
+		}
+		for (final RouteResultsetNode node : rrs.getNodes()) {
 			BackendConnection conn = session.getTarget(node);
 			if (session.tryExistsCon(conn, node)) {
 				LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
@@ -193,10 +199,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				// session.bindConnection(node, conn);
 				// _execute(conn, node);
 			}
-
-		}
-		if(sb.length()>0){
-			TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
 		}
 	}
 
@@ -790,7 +792,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		ServerConnection source = session.getSource();
 		if (source.isAutocommit() &&!source.isTxstart()&& conn.isModifiedSQLExecuted()) {
 			//隐式分布式事务
-			TransactionHandler txHandler = new TransactionHandler(rrs.getNodes(), errConnection, session, txOperation, closeReason);
+			AutoTxHandler txHandler = new AutoTxHandler(rrs.getNodes(), errConnection, session, txOperation, closeReason);
 			txHandler.execute(data);
 		} else {
 			boolean inTransaction = !source.isAutocommit() || source.isTxstart();

@@ -63,7 +63,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile String oldSchema;
 	private volatile boolean borrowed = false;
 	private volatile boolean modifiedSQLExecuted = false;
-	private volatile int batchCmdCount = 0;
+	private AtomicInteger batchCmdCount;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -148,7 +148,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	private final AtomicBoolean isQuit;
 	private volatile StatusSync statusSync;
 	private volatile boolean metaDataSyned = true;
-	private volatile int xaStatus = 0;
+	private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
 
 	public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB) {
 		super(channel);
@@ -161,11 +161,11 @@ public class MySQLConnection extends BackendAIOConnection {
 		this.txIsolation = MycatServer.getInstance().getConfig().getSystem().getTxIsolation();
 	}
 
-	public int getXaStatus() {
+	public TxState getXaStatus() {
 		return xaStatus;
 	}
 
-	public void setXaStatus(int xaStatus) {
+	public void setXaStatus(TxState xaStatus) {
 		this.xaStatus = xaStatus;
 	}
 
@@ -324,17 +324,18 @@ public class MySQLConnection extends BackendAIOConnection {
 		private final Integer txtIsolation;
 		private final Boolean autocommit;
 		private final AtomicInteger synCmdCount;
-		private final boolean xaStarted;
 
 		public StatusSync(boolean xaStarted, String schema,
 				Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
 				int synCount) {
 			super();
-			this.xaStarted = xaStarted;
 			this.schema = schema;
 			this.charsetIndex = charsetIndex;
 			this.txtIsolation = txtIsolation;
 			this.autocommit = autocommit;
+			if (xaStarted) {
+				synCount++;
+			}
 			this.synCmdCount = new AtomicInteger(synCount);
 		}
 
@@ -527,8 +528,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	}
 
 	public boolean batchCmdFinished() {
-		batchCmdCount--;
-		return (batchCmdCount == 0);
+		return (batchCmdCount.decrementAndGet() == 0);
 	}
 
 	public void execCmd(String cmd) {
@@ -537,7 +537,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	public void execBatchCmd(String[] batchCmds) {
 		// "XA END "+xaID+";"+"XA PREPARE "+xaID
-		this.batchCmdCount = batchCmds.length;
+		this.batchCmdCount = new AtomicInteger(batchCmds.length);
 		StringBuilder sb = new StringBuilder();
 		for (String sql : batchCmds) {
 			sb.append(sql).append(';');

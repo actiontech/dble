@@ -38,12 +38,12 @@ public final class StartHandler {
         case ServerParseStart.TRANSACTION:
 			if (c.isTxstart() || !c.isAutocommit()) {
 				c.setTxstart(true);
-				c.execute(stmt, ServerParse.START);
+				c.beginInTx(stmt);
 			} else {
 				c.setTxstart(true);
+				TxnLogHelper.putTxnLog(c, stmt);
 				c.writeToBuffer(OkPacket.OK, c.allocate());
 			}
-			TxnLogHelper.putTxnLog(c, stmt);
             break;
         default:
             c.execute(stmt, ServerParse.START);

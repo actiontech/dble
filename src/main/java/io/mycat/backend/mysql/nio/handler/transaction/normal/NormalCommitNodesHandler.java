@@ -40,7 +40,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler{
 		errPacket.read(err);
 		String errmsg = new String(errPacket.message);
 		this.setFail(errmsg);
-		conn.quit();
 		if (decrementCountBy(1)) {
 			cleanAndFeedback(errPacket.toBytes());
 		}
@@ -49,7 +48,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler{
 	public void connectionError(Throwable e, BackendConnection conn){
 		LOGGER.warn("backend connect", e);
 		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
-		this.setFail(errmsg); 
+		this.setFail(errmsg);
 		conn.quit();
 		if (decrementCountBy(1)) {
 			cleanAndFeedback(errmsg.getBytes());

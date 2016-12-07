@@ -41,8 +41,11 @@ import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
-import io.mycat.backend.mysql.nio.handler.transaction.AutoTxHandler;
-import io.mycat.backend.mysql.nio.handler.transaction.AutoTxHandler.TxOperation;
+import io.mycat.backend.mysql.nio.handler.transaction.AutoTxOperation;
+import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoCommitNodesHandler;
+import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
@@ -98,8 +101,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 	private int isOffHeapuseOffHeapForMerge = 1;
 	private ErrorPacket err;
-	private Set<BackendConnection> errConnection = new HashSet<BackendConnection>();
-	private String closeReason;
+	private Set<BackendConnection> errConnection;
 
 	public MultiNodeQueryHandler(int sqlType, RouteResultset rrs,
 			 NonBlockingSession session) {
@@ -224,11 +226,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		try {
 			if (!terminated) {
 				terminated = true;
-				closeReason = reason;
+			}
+			if (errConnection == null) {
+				errConnection = new HashSet<BackendConnection>();
 			}
 			errConnection.add(conn);
 			if (--nodeCount == 0) {
-				handleEndPacket(err.toBytes(), TxOperation.ROLLBACK, conn);
+				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
 			lock.unlock();
@@ -245,11 +249,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		try {
 			if (!terminated) {
 				terminated = true;
-				closeReason = "connection Error" + e.getMessage();
+			}
+			if (errConnection == null) {
+				errConnection = new HashSet<BackendConnection>();
 			}
 			errConnection.add(conn);
 			if (--nodeCount == 0) {
-				handleEndPacket(err.toBytes(), TxOperation.ROLLBACK, conn);
+				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
 			lock.unlock();
@@ -277,7 +283,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				setFail(err.toString());
 			if (--nodeCount > 0)
 				return;
-			handleEndPacket(err.toBytes(), TxOperation.ROLLBACK, conn);
+			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 		} finally {
 			lock.unlock();
 		}
@@ -317,7 +323,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				if(isFail()||terminated){
 //					if (route[0].isDDL())
 //						session.getSource().unlockTable();
-					handleEndPacket(err.toBytes(), TxOperation.ROLLBACK, conn);
+					handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 					return;
 				}
 				
@@ -338,7 +344,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 					ok.insertId = insertId;
 					source.setLastInsertId(insertId);
 				}
-				handleEndPacket(ok.toBytes(), TxOperation.COMMIT, conn); 
+				handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn); 
 			}finally {
 				lock.unlock();
 			}
@@ -788,12 +794,27 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	public void setPrepared(boolean prepared) {
 		this.prepared = prepared;
 	}
-	protected void handleEndPacket(byte[] data, TxOperation txOperation, BackendConnection conn) {
+	protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
 		ServerConnection source = session.getSource();
 		if (source.isAutocommit() &&!source.isTxstart()&& conn.isModifiedSQLExecuted()) {
-			//隐式分布式事务
-			AutoTxHandler txHandler = new AutoTxHandler(rrs.getNodes(), errConnection, session, txOperation, closeReason);
-			txHandler.execute(data);
+			if(txOperation==AutoTxOperation.COMMIT){
+				if(session.getXaState()==null){
+					NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
+					autoHandler.commit();
+				}else{
+					XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
+					autoHandler.commit();
+				}
+			}
+			else{
+				if(session.getXaState()==null){
+					NormalAutoRollbackNodesHandler  autoHandler = new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
+					autoHandler.rollback();
+				}else{
+					XAAutoRollbackNodesHandler  autoHandler = new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
+					autoHandler.rollback();
+				}
+			}
 		} else {
 			boolean inTransaction = !source.isAutocommit() || source.isTxstart();
 			if (!inTransaction) {
@@ -801,7 +822,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				session.releaseConnection(conn);
 			}
 			//显示分布式事务
-			if (inTransaction &&TxOperation.ROLLBACK.equals(txOperation)) {
+			if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
 				source.setTxInterrupt("ROLLBACK");
 			}
 			session.getSource().write(data);

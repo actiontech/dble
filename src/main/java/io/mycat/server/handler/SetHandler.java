@@ -86,7 +86,7 @@ public final class SetHandler {
 				return;
 			}
 			if (c.isTxstart() && c.getSession2().getXaTXID() == null) {
-				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before a transaction end");
+				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before ending a transaction");
 				return;
 			}
 			c.getSession2().setXATXEnabled(true);
@@ -95,7 +95,7 @@ public final class SetHandler {
 		}
 		case XA_FLAG_OFF: {
 			if (c.isTxstart() && c.getSession2().getXaTXID() != null) {
-				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before a transaction end");
+				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before ending a transaction");
 				return;
 			}
 			c.getSession2().setXATXEnabled(false);

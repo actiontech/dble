@@ -41,7 +41,6 @@ import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
 import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
 import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
-import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.backend.mysql.nio.handler.RollbackReleaseHandler;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
@@ -183,12 +182,7 @@ public class NonBlockingSession implements Session {
 		}
 		return commitHandler;
 	}
-    
-    public void commit(ResponseHandler responsehandler) {
-    	createCommitNodesHandler();
-		commitHandler.setResponseHandler(responsehandler);
-		commit();
-	}
+
     public void commit() {
         final int initCount = target.size();
         if (initCount <= 0) {
@@ -219,11 +213,7 @@ public class NonBlockingSession implements Session {
 		}
 		return rollbackHandler;
 	}
-	public void rollback(ResponseHandler responsehandler) {
-		createRollbackNodesHandler();
-		rollbackHandler.setResponseHandler(responsehandler);
-		rollback();
-	}
+
     public void rollback() {
         final int initCount = target.size();
         if (initCount <= 0) {

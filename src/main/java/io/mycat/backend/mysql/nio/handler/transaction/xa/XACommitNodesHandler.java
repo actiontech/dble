@@ -99,6 +99,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		LOGGER.warn("backend connect", e);
 		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
 		this.setFail(errmsg);
+		collectError(conn);
 		conn.quit();
 		if (conn instanceof MySQLConnection) {
 			MySQLConnection mysqlCon = (MySQLConnection) conn;
@@ -126,6 +127,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 	@Override
 	public void connectionClose(BackendConnection conn, String reason) {
 		this.setFail(reason);
+		collectError(conn);
 		if (conn instanceof MySQLConnection) {
 			MySQLConnection mysqlCon = (MySQLConnection) conn;
 			switch (mysqlCon.getXaStatus()) {
@@ -149,7 +151,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		}
 	}
 
-	private void realCommit(){
+	protected void realCommit(){
 		session.setXaState(TxState.TX_PREPARED_STATE);
 		if (this.isFail()){
 			session.getSource().setTxInterrupt(error);
@@ -157,5 +159,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		} else {
 			commit();
 		}
+	}
+	protected void collectError(BackendConnection conn){
 	}
 }

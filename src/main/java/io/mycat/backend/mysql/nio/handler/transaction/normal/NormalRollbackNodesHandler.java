@@ -66,7 +66,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		errPacket.read(err);
 		String errmsg = new String(errPacket.message);
 		this.setFail(errmsg);
-		conn.quit();
+		conn.quit();//quit to rollback
 		if (decrementCountBy(1)) {
 			cleanAndFeedback(errPacket.toBytes());
 		}
@@ -76,13 +76,14 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		LOGGER.warn("backend connect", e);
 		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
 		this.setFail(errmsg);
-		conn.quit();
+		conn.quit();//quit if not rollback
 		if (decrementCountBy(1)) {
 			cleanAndFeedback(errmsg.getBytes());
 		}
 	}
 	@Override
 	public void connectionClose(BackendConnection conn, String reason){
+		// quitted
 		this.setFail(reason);
 		if (decrementCountBy(1)) {
 			cleanAndFeedback(reason.getBytes());

@@ -81,10 +81,6 @@ public final class SetHandler {
 			break;
 		}
 		case XA_FLAG_ON: {
-			if (c.isAutocommit()) {
-				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used in autocommit connection ");
-				return;
-			}
 			if (c.isTxstart() && c.getSession2().getXaTXID() == null) {
 				c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before ending a transaction");
 				return;

@@ -155,7 +155,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		conn.setResponseHandler(this);
 		try {
 			boolean isAutocommit = session.getSource().isAutocommit()&&!session.getSource().isTxstart();
-			if(!isAutocommit){
+			if(!isAutocommit&& node.isModifySQL()){
 				TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
 			}
 			conn.execute(node, session.getSource(), isAutocommit);

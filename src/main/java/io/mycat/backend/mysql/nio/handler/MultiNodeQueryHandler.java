@@ -82,7 +82,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	private final NonBlockingSession session;
 	// private final CommitNodeHandler icHandler;
 	private final AbstractDataNodeMerge dataMergeSvr;
-	private final boolean autocommit;
+	private final boolean sessionAutocommit;
 	private String priamaryKeyTable = null;
 	private int primaryKeyIndex = -1;
 	private int fieldCount = 0;
@@ -133,7 +133,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		}
 		
 		isCallProcedure = rrs.isCallStatement();
-		this.autocommit = session.getSource().isAutocommit();
+		this.sessionAutocommit = session.getSource().isAutocommit();
 		this.session = session;
 		this.lock = new ReentrantLock();
 		if ((dataMergeSvr != null)
@@ -174,7 +174,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
 		StringBuilder sb = new StringBuilder();
 		for (final RouteResultsetNode node : rrs.getNodes()) {
-			if(!autocommit||session.getSource().isTxstart()||node.isModifySQL()){
+			if(node.isModifySQL()){
 				sb.append("["+node.getName()+"]"+node.getStatement()).append(";\n");
 			}
 		}
@@ -194,7 +194,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				node.setRunOnSlave(rrs.getRunOnSlave());	// 实现 master/slave注解
 				LOGGER.debug("node.getRunOnSlave()2-" + node.getRunOnSlave());
 				PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-				dn.getConnection(dn.getDatabase(), autocommit, node, this, node);
+				dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
 				// 注意该方法不仅仅是获取连接，获取新连接成功之后，会通过层层回调，最后回调到本类 的connectionAcquired
 				// 这是通过 上面方法的 this 参数的层层传递完成的。
 				// connectionAcquired 进行执行操作:
@@ -210,7 +210,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		}
 		conn.setResponseHandler(this);
 		try {
-			conn.execute(node, session.getSource(), autocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
+			conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
 		} catch (IOException e) {
 			connectionError(e, conn);
 		}
@@ -380,7 +380,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
 		if (decrementCountBy(1)) {
             if (!rrs.isCallStatement()||(rrs.isCallStatement()&&rrs.getProcedure().isResultSimpleValue())) {
-				if (this.autocommit && !session.getSource().isLocked()) {// clear all connections
+				if (this.sessionAutocommit && !session.getSource().isLocked()) {// clear all connections
 					session.releaseConnections(false);
 				}
 

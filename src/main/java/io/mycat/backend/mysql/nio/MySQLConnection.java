@@ -395,6 +395,9 @@ public class MySQLConnection extends BackendAIOConnection {
 			modifiedSQLExecuted = true;
 		}
 		String xaTXID = sc.getSession2().getXaTXID();
+		if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
+			sc.setTxstart(true);
+		}
 		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(),autocommit);
 	}
 
@@ -405,8 +408,9 @@ public class MySQLConnection extends BackendAIOConnection {
 
 		boolean conAutoComit = this.autocommit;
 		String conSchema = this.schema;
-		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
-			//clientTxIsoLation = Isolations.SERIALIZABLE;
+		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE
+				&& modifiedSQLExecuted) {
+			// clientTxIsoLation = Isolations.SERIALIZABLE;
 			xaCmd = "XA START " + xaTxID + ';';
 			this.xaStatus = TxState.TX_STARTED_STATE;
 		}

@@ -123,9 +123,6 @@ public class NonBlockingSession implements Session {
             StringBuilder s = new StringBuilder();
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
-		if (xaTXID != null && !source.isTxstart()) {
-			source.setTxstart(true);
-		}
         // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {

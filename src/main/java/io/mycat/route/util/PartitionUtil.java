@@ -36,14 +36,17 @@ public final class PartitionUtil {
     // 分区长度:数据段分布定义，其中取模的数一定要是2^n， 因为这里使用x % 2^n == x & (2^n - 1)等式，来优化性能。
     private int partitionLength ;
 
-    // %转换为&操作的换算数值
+	// %转换为&操作的换算数值
     private long addValue ;
 
     // 分区线段
     private  int[] segment ;
 
     private boolean canProfile = false;
-    /**
+
+	private int segmentLength = 0;
+
+	/**
      * <pre>
      * @param count 表示定义的分区数
      * @param length 表示对应每个分区的取值长度
@@ -55,7 +58,6 @@ public final class PartitionUtil {
         if (count == null || length == null || (count.length != length.length)) {
             throw new RuntimeException("error,check your scope & scopeLength definition.");
         }
-        int segmentLength = 0;
         for (int i = 0; i < count.length; i++) {
         	if(count[i]<=0){
         		throw new RuntimeException("error,check your scope at least 1.");
@@ -88,6 +90,15 @@ public final class PartitionUtil {
         }
     }
 
+	public boolean isSingleNode(long begin, long end) {
+		if (begin == end)
+			return true;
+		int mod = (int) (begin % partitionLength);
+		if (mod < 0) {
+			mod += partitionLength;
+		}
+		return begin - mod + addValue >= end;
+	}
     public int partition(long hash) {
     	if(canProfile){
     		return segment[(int) (hash & addValue)];
@@ -104,4 +115,12 @@ public final class PartitionUtil {
         return partition(StringUtil.hash(key, start, end));
     }
 
+
+    public int getPartitionLength() {
+		return partitionLength;
+	}
+
+    public int getSegmentLength() {
+		return segmentLength;
+	}
 }

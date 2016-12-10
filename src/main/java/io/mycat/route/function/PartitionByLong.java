@@ -53,13 +53,16 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 	public void init() {
 		partitionUtil = new PartitionUtil(count, length);
 
-	}
+	} 
 
+	private Integer calculate(long key) {
+		return partitionUtil.partition(key);
+	}
 	@Override
 	public Integer calculate(String columnValue)  {
 		try {
 			long key = Long.parseLong(columnValue);
-			return partitionUtil.partition(key);
+			return calculate(key);
 		} catch (NumberFormatException e){
 			throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(),e);
 		}
@@ -67,16 +70,42 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 	
 	@Override
 	public Integer[] calculateRange(String beginValue, String endValue)  {
-		return AbstractPartitionAlgorithm.calculateSequenceRange(this, beginValue, endValue);
-	}
+		long begin = Long.parseLong(beginValue);
+		long end = Long.parseLong(endValue);
+		int length = partitionUtil.getPartitionLength();
+		if (end - begin >= length || begin > end) {//TODO: optimize begin > end
+			return new Integer[0];
+		}
+		Integer beginNode = 0, endNode = 0;
+		beginNode = calculate(begin);
+		endNode = calculate(end);
 
-//	@Override
-//	public int getPartitionCount() {
-//		int nPartition = 0;
-//		for(int i = 0; i < count.length; i++) {
-//			nPartition += count[i];
-//		}
-//		return nPartition;
-//	}
-	
+		if (beginNode == null || endNode == null) {
+			return new Integer[0];
+		}
+		if (endNode > beginNode || (endNode == beginNode && partitionUtil.isSingleNode(begin, end))) {
+			int len = endNode - beginNode + 1;
+			Integer[] re = new Integer[len];
+
+			for (int i = 0; i < len; i++) {
+				re[i] = beginNode + i;
+			}
+			return re;
+		} else {
+			int split = partitionUtil.getSegmentLength() - beginNode;
+			int len = split + endNode + 1;
+			if (endNode == beginNode) {
+				//remove duplicate
+				len--;
+			}
+			Integer[] re = new Integer[len];
+			for (int i = 0; i < split; i++) {
+				re[i] = beginNode + i;
+			}
+			for (int i = split; i < len; i++) {
+				re[i] = i - split;
+			}
+			return re;
+		}
+	}
 }

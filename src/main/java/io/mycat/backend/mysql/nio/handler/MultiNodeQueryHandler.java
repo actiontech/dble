@@ -489,8 +489,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		} catch (Exception e) {
 			handleDataProcessException(e);
 		} finally {
-			lock.unlock();
 			dataMergeSvr.clear();
+			lock.unlock();
 		}
 	}
 	public void outputMergeResult(final ServerConnection source,
@@ -561,8 +561,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		} catch (Exception e) {
 			handleDataProcessException(e);
 		} finally {
-			lock.unlock();
 			dataMergeSvr.clear();
+			lock.unlock();
 		}
 	}
 
@@ -773,8 +773,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
 	@Override
 	public void clearResources() {
-		if (dataMergeSvr != null) {
-			dataMergeSvr.clear();
+		lock.lock();
+		try {
+			if (dataMergeSvr != null) {
+				dataMergeSvr.clear();
+			}
+		} finally {
+			lock.unlock();
 		}
 	}
 

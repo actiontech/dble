@@ -48,7 +48,7 @@ public class Deserializer {
             String jsonContent = coordinatorLogEntryStr.trim();
             validateJSONContent(jsonContent);
             Map<String, String> header = extractHeader(jsonContent);
-            String coordinatorId = header.get("id");
+            String coordinatorId = header.get(CoordinatorLogEntry.ID);
             String arrayContent = extractArrayPart(jsonContent);
             List<String> elements = tokenize(arrayContent);
 
@@ -57,9 +57,7 @@ public class Deserializer {
             for (int i = 0; i < participantLogEntries.length; i++) {
                 participantLogEntries[i]=recreateParticipantLogEntry(coordinatorId,elements.get(i));
             }
-
-
-            CoordinatorLogEntry actual = new CoordinatorLogEntry(header.get("id"),Boolean.valueOf(header.get("wasCommitted")),  participantLogEntries,header.get("superiorCoordinatorId"));
+            CoordinatorLogEntry actual = new CoordinatorLogEntry(coordinatorId,  participantLogEntries, TxState.valueof(Integer.parseInt(header.get(CoordinatorLogEntry.STATE))));
             return actual;
         } catch (Exception unexpectedEOF) {
             throw new DeserialisationException(coordinatorLogEntryStr);
@@ -101,7 +99,7 @@ public class Deserializer {
         }
 
         ParticipantLogEntry actual = new ParticipantLogEntry(coordinatorId,
-                content.get("uri"), Long.valueOf(content.get("expires")), content.get("resourceName"), TxState.valueof(Integer.parseInt(content.get("state"))));
+                content.get(CoordinatorLogEntry.P_HOST),Integer.valueOf(content.get(CoordinatorLogEntry.P_PORT)), Long.valueOf(content.get(CoordinatorLogEntry.P_EXPIRES)), content.get(CoordinatorLogEntry.P_SCHEMA), TxState.valueof(Integer.parseInt(content.get(CoordinatorLogEntry.P_STATE))));
         return actual;
     }
 

@@ -64,6 +64,8 @@ public final class SystemConfig {
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
 	private final static String DATANODE_SORTED_TEMP_DIR = "datanode";
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
+	private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1 * 1000L;
+	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_PERIOD = 5 * 1000L;
@@ -107,6 +109,8 @@ public final class SystemConfig {
 	// sql execute timeout (second)
 	private long sqlExecuteTimeout = 300;
 	private long processorCheckPeriod;
+	private long xaSessionCheckPeriod;
+	private long xaLogCleanPeriod;
 	private long dataNodeIdleCheckPeriod;
 	private long dataNodeHeartbeatPeriod;
 	private String clusterHeartbeatUser;
@@ -224,6 +228,8 @@ public final class SystemConfig {
 		this.timerExecutor = 2;
 		this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
 		this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
+		this.xaSessionCheckPeriod  = DEFAULT_XA_SESSION_CHECK_PERIOD;
+		this.xaLogCleanPeriod  = DEFAULT_XA_LOG_CLEAN_PERIOD;
 		this.dataNodeIdleCheckPeriod = DEFAULT_DATANODE_IDLE_CHECK_PERIOD;
 		this.dataNodeHeartbeatPeriod = DEFAULT_DATANODE_HEARTBEAT_PERIOD;
 		this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
@@ -562,6 +568,21 @@ public final class SystemConfig {
 		this.processorCheckPeriod = processorCheckPeriod;
 	}
 
+	public long getxaSessionCheckPeriod() {
+		return xaSessionCheckPeriod;
+	}
+
+	public void setxaSessionCheckPeriod(long xaSessionCheckPeriod) {
+		this.xaSessionCheckPeriod = xaSessionCheckPeriod;
+	}
+	public long getxaLogCleanPeriod() {
+		return xaLogCleanPeriod;
+	}
+
+	public void setxaLogCleanPeriod(long xaLogCleanPeriod) {
+		this.xaLogCleanPeriod = xaLogCleanPeriod;
+	}
+
 	public long getDataNodeIdleCheckPeriod() {
 		return dataNodeIdleCheckPeriod;
 	}
@@ -872,6 +893,10 @@ public final class SystemConfig {
 				+ ", processorCheckPeriod=" + processorCheckPeriod
 				+ ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod
 				+ ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod
+				+ ", xaSessionCheckPeriod=" + xaSessionCheckPeriod 
+				+ ", xaLogCleanPeriod=" + xaLogCleanPeriod
+				+ ", transactionLogBaseDir=" + transactionLogBaseDir 
+				+ ", transactionLogBaseName=" + transactionLogBaseName
 				+ ", clusterHeartbeatUser=" + clusterHeartbeatUser
 				+ ", clusterHeartbeatPass=" + clusterHeartbeatPass
 				+ ", clusterHeartbeatPeriod=" + clusterHeartbeatPeriod

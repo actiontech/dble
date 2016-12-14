@@ -7,70 +7,103 @@ import java.io.Serializable;
  */
 public class ParticipantLogEntry implements Serializable {
 
-    private static final long serialVersionUID = 1728296701394899871L;
+	private static final long serialVersionUID = 1728296701394899871L;
 
-    /**
-     * The ID of the global transaction as known by the transaction core.
-     */
+	/**
+	 * The ID of the global transaction as known by the transaction core.
+	 */
 
-    public String coordinatorId;
+	private String coordinatorId;
+	/**
+	 * Identifies the participant within the global transaction.
+	 */
 
-    /**
-     * Identifies the participant within the global transaction.
-     */
+	private String host;
 
-    public String uri;
+	private int port;
+	/**
+	 * When does this participant expire (expressed in millis since Jan 1,
+	 * 1970)?
+	 */
+	private long expires;
 
-    /**
-     * When does this participant expire (expressed in millis since Jan 1, 1970)?
-     */
+	/**
+	 * Best-known state of the participant.
+	 */
+	private TxState txState;
+	/**
+	 * For diagnostic purposes, null if not relevant.
+	 */
+	public String schema;
 
-    public long expires;
+	public ParticipantLogEntry(String coordinatorId, String host, int port, long expires, String schema,
+			TxState txState) {
+		this.coordinatorId = coordinatorId;
+		this.host = host;
+		this.port = port;
+		this.expires = expires;
+		this.schema = schema;
+		this.txState = txState;
+	}
 
-    /**
-     * Best-known state of the participant.
-     */
-    public TxState txState;
+	public boolean compareAddress(String host, int port, String schema) {
+		if (this.host.equals(host) && this.port == port && this.schema.equals(schema))
+			return true;
+		return false;
+	}
 
-    /**
-     * For diagnostic purposes, null if not relevant.
-     */
-    public String resourceName;
+	@Override
+	public String toString() {
+		return "ParticipantLogEntry [id=" + coordinatorId + ", host=" + host + ", port=" + port + ", expires=" + expires
+				+ ", state=" + txState + ", schema=" + schema + "]";
+	}
 
-    public ParticipantLogEntry(String coordinatorId, String uri,
-                               long expires, String resourceName, TxState txState) {
-        this.coordinatorId = coordinatorId;
-        this.uri = uri;
-        this.expires = expires;
-        this.resourceName = resourceName;
-        this.txState = txState;
-    }
+	public String getCoordinatorId() {
+		return coordinatorId;
+	}
 
+	public void setCoordinatorId(String coordinatorId) {
+		this.coordinatorId = coordinatorId;
+	}
 
+	public String getHost() {
+		return host;
+	}
 
-    @Override
-    public boolean equals(Object other) {
-        boolean ret = false;
-        if (other instanceof ParticipantLogEntry) {
-            ParticipantLogEntry o = (ParticipantLogEntry) other;
-            if (o.coordinatorId.equals(coordinatorId) && o.uri.equals(uri)) ret = true;
-        }
-        return ret;
-    }
+	public void setHost(String host) {
+		this.host = host;
+	}
 
-    @Override
-    public int hashCode() {
-        return coordinatorId.hashCode();
-    }
+	public int getPort() {
+		return port;
+	}
 
+	public void setPort(int port) {
+		this.port = port;
+	}
 
+	public long getExpires() {
+		return expires;
+	}
 
-    @Override
-    public String toString() {
-        return "ParticipantLogEntry [id=" + coordinatorId
-                + ", uri=" + uri + ", expires=" + expires
-                + ", state=" + txState + ", resourceName=" + resourceName + "]";
-    }
+	public void setExpires(long expires) {
+		this.expires = expires;
+	}
 
+	public TxState getTxState() {
+		return txState;
+	}
+
+	public void setTxState(TxState txState) {
+		this.txState = txState;
+	}
+
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
 
 }

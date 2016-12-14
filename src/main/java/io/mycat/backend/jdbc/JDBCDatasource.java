@@ -10,6 +10,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import io.mycat.MycatServer;
+import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.heartbeat.DBHeartbeat;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
@@ -120,5 +121,31 @@ public class JDBCDatasource extends PhysicalDatasource {
 		}
 		return connection;
     }
+
+	@Override
+	public BackendConnection retrunNewConnection(String schema) throws IOException {
+		DBHostConfig cfg = getConfig();
+		JDBCConnection c = new JDBCConnection();
+		c.setHost(cfg.getIp());
+		c.setPort(cfg.getPort());
+		c.setPool(this);
+		c.setSchema(schema);
+		c.setDbType(cfg.getDbType());
+		
+		NIOProcessor processor = (NIOProcessor) MycatServer.getInstance().nextProcessor();
+		c.setProcessor(processor);
+		c.setId(NIOConnector.ID_GENERATOR.getId());  //复用mysql的Backend的ID，需要在process中存储
+
+		processor.addBackend(c);
+		try {
+			Connection con = getConnection();
+			// c.setIdleTimeout(pool.getConfig().getIdleTimeout());
+			c.setCon(con); 
+		} catch (Exception e) {
+		}
+		return c;
+	}
+
+	
     
 }

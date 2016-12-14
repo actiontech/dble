@@ -1,20 +1,34 @@
 package io.mycat.backend.mysql.xa.recovery.impl;
 
-import io.mycat.MycatServer;
-import io.mycat.backend.mysql.xa.*;
-import io.mycat.backend.mysql.xa.recovery.*;
-import io.mycat.config.MycatConfig;
-import io.mycat.config.model.SystemConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectStreamException;
+import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.MycatServer;
+import io.mycat.backend.mysql.xa.CoordinatorLogEntry;
+import io.mycat.backend.mysql.xa.Deserializer;
+import io.mycat.backend.mysql.xa.Serializer;
+import io.mycat.backend.mysql.xa.VersionedFile;
+import io.mycat.backend.mysql.xa.recovery.DeserialisationException;
+import io.mycat.backend.mysql.xa.recovery.Repository;
+import io.mycat.config.MycatConfig;
+import io.mycat.config.model.SystemConfig;
 
 /**
  * Created by zhangchao on 2016/10/13.
@@ -90,11 +104,6 @@ public class FileSystemRepository implements Repository{
     }
 
     @Override
-    public Collection<CoordinatorLogEntry> findAllCommittingCoordinatorLogEntries() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
         FileInputStream fis = null;
         try {
@@ -134,7 +143,7 @@ public class FileSystemRepository implements Repository{
             String line;
             while ((line = br.readLine()) != null) {
                 CoordinatorLogEntry coordinatorLogEntry = deserialize(line);
-                coordinatorLogEntries.put(coordinatorLogEntry.id,
+                coordinatorLogEntries.put(coordinatorLogEntry.getId(),
                         coordinatorLogEntry);
             }
 
@@ -196,28 +205,24 @@ public class FileSystemRepository implements Repository{
         }
     }
 
-    @Override
-    public synchronized void writeCheckpoint(
-            Collection<CoordinatorLogEntry> checkpointContent)
-             {
-
-        try {
-            closeOutput();
-
-            rwChannel = file.openNewVersionForNioWriting();
-            for (CoordinatorLogEntry coordinatorLogEntry : checkpointContent) {
-                write(coordinatorLogEntry, false);
-            }
-            rwChannel.force(false);
-            file.discardBackupVersion();
-        } catch (FileNotFoundException firstStart) {
-            // the file could not be opened for reading;
-            // merely return the default empty vector
-        } catch (Exception e) {
-            logger.error("Failed to write checkpoint", e);
-        }
-
-    }
+	@Override
+	public synchronized void writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) {
+		try {
+			closeOutput();
+			file.rotateFileVersion();
+			rwChannel = file.openNewVersionForNioWriting();
+			for (CoordinatorLogEntry coordinatorLogEntry : checkpointContent) {
+				write(coordinatorLogEntry, false);
+			}
+			rwChannel.force(false);
+			file.discardBackupVersion();
+		} catch (FileNotFoundException firstStart) {
+			// the file could not be opened for reading;
+			// merely return the default empty vector
+		} catch (Exception e) {
+			logger.error("Failed to write checkpoint", e);
+		}
+	}
 
     /**
      * create the log base dir
@@ -229,5 +234,10 @@ public class FileSystemRepository implements Repository{
                 baseDirFolder.mkdirs();
         }
     }
+
+	@Override
+	public void remove(String id) {
+		throw new UnsupportedOperationException();
+	}
 
 }

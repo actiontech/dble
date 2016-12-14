@@ -31,13 +31,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.mycat.buffer.BufferPool;
-
-import org.slf4j.Logger; 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
+import io.mycat.backend.mysql.nio.MySQLConnection;
+import io.mycat.backend.mysql.xa.TxState;
+import io.mycat.buffer.BufferPool;
+import io.mycat.server.ServerConnection;
 import io.mycat.statistic.CommandCount;
 import io.mycat.util.NameableExecutor;
 import io.mycat.util.TimeUtil;
@@ -169,7 +171,6 @@ public final class NIOProcessor {
 				this.frontendsLength.decrementAndGet();
 				continue;
 			}
-
 			// 清理已关闭连接，否则空闲检查。
 			if (c.isClosed()) {
 				c.cleanup();
@@ -178,6 +179,18 @@ public final class NIOProcessor {
 			} else {
 				// very important ,for some data maybe not sent
 				checkConSendQueue(c);
+				if (c instanceof ServerConnection && c.isIdleTimeout()) {
+					ServerConnection s = (ServerConnection) c;
+					TxState state = s.getSession2().getXaState();
+					if (state != null && state != TxState.TX_INITIALIZE_STATE) {
+						if (state != TxState.TX_COMMIT_FAILED_STATE && state != TxState.TX_ROLLBACK_FAILED_STATE) {
+							// Active/IDLE/PREPARED XA FrontendS will be rollbacked
+							s.close("Idle Timeout");
+							MycatServer.getInstance().getXaSessionCheck().addRollbackSession(s.getSession2());
+						}
+						continue;
+					}
+				}
 				c.idleCheck();
 			}
 		}
@@ -202,6 +215,17 @@ public final class NIOProcessor {
 				it.remove();
 				continue;
 			}
+			//Active/IDLE/PREPARED XA backends will not be checked
+			if (c instanceof MySQLConnection) {
+				MySQLConnection m = (MySQLConnection) c;
+				if (m.isClosedOrQuit()) {
+					it.remove();
+					continue;
+				}
+				if (m.getXaStatus() != null && m.getXaStatus() != TxState.TX_INITIALIZE_STATE) {
+					continue;
+				}
+			}
 			// SQL执行超时的连接关闭
 			if (c.isBorrowed() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
 				LOGGER.warn("found backend connection SQL timeout ,close it " + c);
@@ -211,7 +235,6 @@ public final class NIOProcessor {
 			// 清理已关闭连接，否则空闲检查。
 			if (c.isClosed()) {
 				it.remove();
-
 			} else {
 				// very important ,for some data maybe not sent
 				if (c instanceof AbstractConnection) {

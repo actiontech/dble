@@ -63,7 +63,6 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile String oldSchema;
 	private volatile boolean borrowed = false;
 	private volatile boolean modifiedSQLExecuted = false;
-	private AtomicInteger batchCmdCount;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -531,22 +530,8 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	}
 
-	public boolean batchCmdFinished() {
-		return (batchCmdCount.decrementAndGet() == 0);
-	}
-
 	public void execCmd(String cmd) {
 		this.sendQueryCmd(cmd);
-	}
-
-	public void execBatchCmd(String[] batchCmds) {
-		// "XA END "+xaID+";"+"XA PREPARE "+xaID
-		this.batchCmdCount = new AtomicInteger(batchCmds.length);
-		StringBuilder sb = new StringBuilder();
-		for (String sql : batchCmds) {
-			sb.append(sql).append(';');
-		}
-		this.sendQueryCmd(sb.toString());
 	}
 
 	public void rollback() {
@@ -664,5 +649,4 @@ public class MySQLConnection extends BackendAIOConnection {
 	public int getTxIsolation() {
 		return txIsolation;
 	}
-
 }

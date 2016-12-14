@@ -1,6 +1,12 @@
 package io.mycat.backend.mysql.xa;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 /**
@@ -170,6 +176,13 @@ public class VersionedFile {
         //version++;
         randomAccessFile = new RandomAccessFile(getCurrentVersionFileName(), "rw");
         return randomAccessFile.getChannel();
+    }
+    public void rotateFileVersion(){
+    	File source = new File(getCurrentVersionFileName());
+    	if(source.exists()){
+	    	File dest = new File(getBackupVersionFileName());
+	    	source.renameTo(dest);
+    	}
     }
     /**
      * Discards the backup version (if any).

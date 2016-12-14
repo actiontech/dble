@@ -1,12 +1,8 @@
 package io.mycat.backend.mysql.nio.handler.transaction;
 
-import io.mycat.backend.mysql.nio.handler.ResponseHandler;
-
-public interface RollbackNodesHandler{
-
-	void setResponseHandler(ResponseHandler responsehandler);
+public interface RollbackNodesHandler {
 
 	void rollback();
 
-	void resetResponseHandler();
+	void clearResources();
 }

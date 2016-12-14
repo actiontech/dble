@@ -2,13 +2,15 @@ package io.mycat.sqlengine;
 
 import java.util.List;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.route.RouteResultsetNode;
@@ -123,23 +125,28 @@ public class SQLJob implements ResponseHandler, Runnable {
 		String errMsg = "error response errno:" + errPg.errno + ", " + new String(errPg.message)
 				+ " from of sql :" + sql + " at con:" + conn;
 		
-		// @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-		// ER_SPECIFIC_ACCESS_DENIED_ERROR
-		if ( errPg.errno == 1227  ) {
-			LOGGER.warn( errMsg );	
-			
-		}  else {
-			LOGGER.info( errMsg );
+		
+		if (errPg.errno == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
+			// @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
+			LOGGER.warn(errMsg);
+		} else if (errPg.errno == ErrorCode.ER_XAER_NOTA) {
+			// ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
+			conn.release();
+			doFinished(false);
+			return;
+		} else {
+			LOGGER.info(errMsg);
 		}
-		
-		
 		conn.release();
 		doFinished(true);
 	}
 
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {
-		conn.syncAndExcute();
+		if(conn.syncAndExcute()){
+			conn.release();
+			doFinished(false);
+		}
 	}
 
 	@Override
@@ -153,7 +160,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 	public void rowResponse(byte[] row, BackendConnection conn) {
 		boolean finsihed = jobHandler.onRowData(dataNodeOrDatabase, row);
 		if (finsihed) {
-			conn.close("not needed by user proc");
+			conn.release();
 			doFinished(false);
 		}
 

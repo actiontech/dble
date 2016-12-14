@@ -38,10 +38,11 @@ import org.slf4j.LoggerFactory;
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
+import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
 import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
 import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
-import io.mycat.backend.mysql.nio.handler.RollbackReleaseHandler;
+import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.CommitNodesHandler;
@@ -103,9 +104,6 @@ public class NonBlockingSession implements Session {
         return this.target;
     }
 
-    public BackendConnection removeTarget(RouteResultsetNode key) {
-        return target.remove(key);
-    }
     public TxState getXaState() {
 		return xaState;
 	}
@@ -272,14 +270,15 @@ public class NonBlockingSession implements Session {
      * {@link ServerConnection#isClosed()} must be true before invoking this
      */
     public void terminate() {
-        for (BackendConnection node : target.values()) {
-            node.close("client closed ");
-        }
-        target.clear();
-        clearHandlesResources();
+        closeAndClearResources("client closed ");
     }
 
     public void closeAndClearResources(String reason) {
+		if (source.isTxstart()) {
+			if (this.getXaState() == null || this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+				return;
+			}
+		}
         for (BackendConnection node : target.values()) {
             node.close(reason);
         }
@@ -293,7 +292,7 @@ public class NonBlockingSession implements Session {
             if (node.isDisctTable()) {
                 return;
             }
-            if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isLocked()) {
+            if ((this.source.isAutocommit() || conn.isFromSlaveDB())&&!this.source.isTxstart() && !this.source.isLocked()) {
                 releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollBack);
             }
         }
@@ -313,8 +312,9 @@ public class NonBlockingSession implements Session {
 				if (c.isAutocommit()) {
 					c.release();
 				} else if (needRollback) {
-					c.setResponseHandler(new RollbackReleaseHandler());
-					c.rollback();
+//					c.setResponseHandler(new RollbackReleaseHandler());
+//					c.rollback();
+					c.quit();
 				} else {
 					c.release();
 				}
@@ -465,14 +465,12 @@ public class NonBlockingSession implements Session {
             multiHandler.clearResources();
             multiNodeHandler = null;
         }
-        if (rollbackHandler != null) {
-        	rollbackHandler.resetResponseHandler();
-        }
-        if (commitHandler != null) {
-        	commitHandler.resetResponseHandler();
-        }
-//        multiNodeCoordinator.clearResources();
-//        commitHandler.clearResources();
+		if (rollbackHandler != null) {
+			rollbackHandler.clearResources();
+		}
+		if (commitHandler != null) {
+			commitHandler.clearResources();
+		}
     }
 
     public void clearResources(final boolean needRollback) {
@@ -481,10 +479,12 @@ public class NonBlockingSession implements Session {
         }
         this.releaseConnections(needRollback);
         clearHandlesResources();
+        source.setTxstart(false);
+        source.getAndIncrementXid();
     }
 
     public boolean closed() {
-        return source.isClosed();
+        return source.isClosed()&&!source.isTxstart();
     }
 
     private String genXATXID() {
@@ -515,4 +515,38 @@ public class NonBlockingSession implements Session {
         this.prepared = prepared;
     }
 
+	public MySQLConnection freshConn(MySQLConnection errConn, ResponseHandler queryHandler) {
+		for (final RouteResultsetNode node : this.getTargetKeys()) {
+			final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
+			if (errConn.equals(mysqlCon)) {
+				MycatConfig conf = MycatServer.getInstance().getConfig();
+				PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+				try {
+					MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(),errConn.isAutocommit());
+					newConn.setXaStatus(errConn.getXaStatus());
+					if(!newConn.setResponseHandler(queryHandler)){
+						return errConn;
+					}
+					this.getTargetMap().put(node, newConn);
+					return newConn;
+				} catch (Exception e) {
+					return errConn;
+				}
+			}
+		}
+		return errConn;
+	}
+
+	public MySQLConnection releaseExcept(TxState state) {
+		MySQLConnection errConn = null;
+		for (final RouteResultsetNode node : this.getTargetKeys()) {
+			final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
+			if (mysqlCon.getXaStatus() != state) {
+				this.releaseConnection(node, true, false);
+			} else {
+				errConn = mysqlCon;
+			}
+		}
+		return errConn;
+	}
 }

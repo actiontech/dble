@@ -80,7 +80,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
 	private final RouteResultset rrs;
 	private final NonBlockingSession session;
-	// private final CommitNodeHandler icHandler;
 	private final AbstractDataNodeMerge dataMergeSvr;
 	private final boolean sessionAutocommit;
 	private String priamaryKeyTable = null;

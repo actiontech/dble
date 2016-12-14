@@ -7,7 +7,6 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 
 public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler{
-	private byte[] sendData;
 	private RouteResultsetNode[] nodes;
 	private Set<BackendConnection> errConnection;
 	public NormalAutoRollbackNodesHandler(NonBlockingSession session, byte[] packet ,RouteResultsetNode[] nodes,Set<BackendConnection> errConnection) {
@@ -38,18 +37,5 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler{
 			errConnection.clear();
 		}
 		super.rollback();
-	}
-	@Override
-	protected void cleanAndFeedback(byte[] ok) {
-		// clear all resources
-		session.clearResources(false);
-		if (session.closed()) {
-			return;
-		}
-		if (this.isFail()) {
-			createErrPkg(error).write(session.getSource());
-		} else {
-			session.getSource().write(sendData);
-		}
 	}
 }

@@ -35,28 +35,26 @@ import io.mycat.util.StringUtil;
  * @author mycat
  */
 public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
+	protected byte[] sendData;
+	@Override
+	public void clearResources() {
+		sendData = null;
+	}
 	public NormalRollbackNodesHandler(NonBlockingSession session) {
 		super(session);
 	}
-
 	@Override
-	public void resetResponseHandler() {
-		responsehandler = NormalRollbackNodesHandler.this;
-	}
-	@Override
-	protected void endPhase(MySQLConnection mysqlCon) {
-		// no need, do nothing
-	}
-
-	@Override
-	protected void rollbackPhase(MySQLConnection mysqlCon) {
+	protected void executeRollback(MySQLConnection mysqlCon, int position) {
 		mysqlCon.rollback();
 	}
 
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(ok);
+			if (sendData == null) {
+				sendData = ok;
+			}
+			cleanAndFeedback();
 		}
 	}
 
@@ -68,7 +66,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		this.setFail(errmsg);
 		conn.quit();//quit to rollback
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(errPacket.toBytes());
+			cleanAndFeedback();
 		}
 	}
 	@Override
@@ -78,7 +76,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		this.setFail(errmsg);
 		conn.quit();//quit if not rollback
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(errmsg.getBytes());
+			cleanAndFeedback();
 		}
 	}
 	@Override
@@ -86,7 +84,21 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		// quitted
 		this.setFail(reason);
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(reason.getBytes());
+			cleanAndFeedback();
+		}
+	}
+
+	private void cleanAndFeedback() {
+		byte[] send = sendData;
+		// clear all resources
+		session.clearResources(false);
+		if (session.closed()) {
+			return;
+		}
+		if (this.isFail()) {
+			createErrPkg(error).write(session.getSource());
+		} else {
+			session.getSource().write(send);
 		}
 	}
 }

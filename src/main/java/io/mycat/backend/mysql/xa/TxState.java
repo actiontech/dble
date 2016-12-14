@@ -12,10 +12,25 @@ public enum TxState {
 	TX_ENDED_STATE(2),
 	/** XA is prepared **/
 	TX_PREPARED_STATE(3),
-	/** XA is commited **/
-	TX_COMMITED_STATE(4),
+	/** XA is prepare unconnect **/
+	TX_PREPARE_UNCONNECT_STATE(4),
+	/** XA is commit failed,must be commited again **/
+	TX_COMMIT_FAILED_STATE(5),
 	/** XA is rollbacked **/
-	TX_ROLLBACKED_STATE(5);
+	TX_ROLLBACK_FAILED_STATE(6),
+	/** XA conn is quit **/
+	TX_CONN_QUIT(7),
+	/** XA is commited, just for log  */
+	TX_COMMITED_STATE(8),
+	/** XA is commited, just for log  */
+	TX_ROLLBACKED_STATE(9),
+	/** XA is committing, just for log  */
+	TX_COMMITING_STATE(10),
+	/** XA is rollbacking, rollback after prepared ,just for log  */
+	TX_ROLLBACKING_STATE(11),
+	/** XA is rollbacking, rollback after prepared ,just for log  */
+	TX_PREPARING_STATE(12)
+	;
 	private int value = 0;
 
 	private TxState(int value) {
@@ -33,9 +48,23 @@ public enum TxState {
 		case 3:
 			return TX_PREPARED_STATE;
 		case 4:
-			return TX_COMMITED_STATE;
+			return TX_PREPARE_UNCONNECT_STATE;
 		case 5:
+			return TX_COMMIT_FAILED_STATE;
+		case 6:
+			return TX_ROLLBACK_FAILED_STATE;
+		case 7:
+			return TX_CONN_QUIT;
+		case 8:
+			return TX_COMMITED_STATE;
+		case 9:
 			return TX_ROLLBACKED_STATE;
+		case 10:
+			return TX_COMMITING_STATE;
+		case 11:
+			return TX_ROLLBACKING_STATE;
+		case 12:
+			return TX_PREPARING_STATE;
 		default:
 			return null;
 		}

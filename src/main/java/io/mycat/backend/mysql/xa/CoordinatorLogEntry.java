@@ -6,36 +6,39 @@ import java.io.Serializable;
  * Created by zhangchao on 2016/10/17.
  */
 public class CoordinatorLogEntry implements Serializable {
+	private static final long serialVersionUID = -919666492191340531L;
+	public static final String ID = "id";
+	public static final String STATE = "state";
+	public static final String PARTICIPANTS = "participants";
+	public static final String P_HOST = "host";
+	public static final String P_PORT = "port";
+	public static final String P_STATE = "p_state";
+	public static final String P_EXPIRES = "expires";
+	public static final String P_SCHEMA = "schema";
+	private final String id;
+	private final ParticipantLogEntry[] participants;
+	/* session TxState */
+	private TxState txState;
 
-    private static final long serialVersionUID = -919666492191340531L;
+	public CoordinatorLogEntry(String coordinatorId, ParticipantLogEntry[] participants, TxState txState) {
+		this.id = coordinatorId;
+		this.participants = participants;
+		this.txState = txState;
+	}
 
-    public final String id;
+	public TxState getTxState() {
+		return txState;
+	}
 
-//    public final boolean wasCommitted;
+	public void setTxState(TxState txState) {
+		this.txState = txState;
+	}
 
-    public final ParticipantLogEntry[] participants;
+	public String getId() {
+		return id;
+	}
 
-
-    public CoordinatorLogEntry(String coordinatorId,
-                               ParticipantLogEntry[] participantDetails) {
-        this(coordinatorId, false, participantDetails, null);
-    }
-
-    public CoordinatorLogEntry(String coordinatorId, boolean wasCommitted,
-                               ParticipantLogEntry[] participants) {
-        this.id = coordinatorId;
-//        this.wasCommitted = wasCommitted;
-        this.participants = participants;
-    }
-
-    public CoordinatorLogEntry(String coordinatorId, boolean wasCommitted,
-                               ParticipantLogEntry[] participants, String superiorCoordinatorId) {
-        this.id = coordinatorId;
-//        this.wasCommitted = wasCommitted;
-        this.participants = participants;
-    }
-
-
-
-
+	public ParticipantLogEntry[] getParticipants() {
+		return participants;
+	}
 }

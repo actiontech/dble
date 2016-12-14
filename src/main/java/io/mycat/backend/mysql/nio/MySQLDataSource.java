@@ -63,6 +63,10 @@ public class MySQLDataSource extends PhysicalDatasource {
 	}
 
 	@Override
+	public MySQLConnection retrunNewConnection(String schema) throws IOException {
+		return factory.make(this, null, schema);
+	}
+	@Override
 	public void createNewConnection(ResponseHandler handler,String schema) throws IOException {
 		factory.make(this, handler,schema);
 	}
@@ -205,6 +209,5 @@ public class MySQLDataSource extends PhysicalDatasource {
 	@Override
 	public DBHeartbeat createHeartBeat() {
 		return new MySQLHeartbeat(this);
-	}	
-
+	}
 }

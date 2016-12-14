@@ -30,7 +30,6 @@ import io.mycat.server.ServerConnection;
 public final class BeginHandler {
 	public static void handle(String stmt, ServerConnection c) {
 		if (c.isTxstart() || !c.isAutocommit()) {
-			c.setTxstart(true);
 			c.beginInTx(stmt);
 		} else {
 			c.setTxstart(true);

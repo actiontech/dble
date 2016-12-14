@@ -31,13 +31,14 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 
 import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.util.CompressUtil;
 import io.mycat.util.TimeUtil;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 /**
  * @author mycat

@@ -7,58 +7,89 @@ import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.util.StringUtil;
 
-public class NormalCommitNodesHandler extends AbstractCommitNodesHandler{
-
+public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
+	protected byte[] sendData;
+	@Override
+	public void clearResources() {
+		sendData = null;
+	}
 	public NormalCommitNodesHandler(NonBlockingSession session) {
 		super(session);
 	}
 
 	@Override
-	public void resetResponseHandler() {
-		responsehandler = NormalCommitNodesHandler.this;
-	}
-
-	@Override
-	protected void preparePhase(MySQLConnection mysqlCon) {
-		//need not prepare, do nothing
-	}
-
-	@Override
-	protected void commitPhase(MySQLConnection mysqlCon) {
+	protected void executeCommit(MySQLConnection mysqlCon, int position) {
 		mysqlCon.commit();
 	}
-
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {
-		if (decrementCountBy(1)) { 
-			cleanAndFeedback(ok);
+		if (decrementCountBy(1)) {
+			if (sendData == null) {
+				sendData = ok;
+			}
+			cleanAndFeedback();
 		}
 	}
+
 	@Override
-	public void errorResponse(byte[] err, BackendConnection conn){
+	public void errorResponse(byte[] err, BackendConnection conn) {
 		ErrorPacket errPacket = new ErrorPacket();
 		errPacket.read(err);
 		String errmsg = new String(errPacket.message);
 		this.setFail(errmsg);
+		conn.quit();
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(errPacket.toBytes());
+			cleanAndFeedback();
 		}
 	}
+
 	@Override
-	public void connectionError(Throwable e, BackendConnection conn){
+	public void connectionError(Throwable e, BackendConnection conn) {
 		LOGGER.warn("backend connect", e);
 		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
 		this.setFail(errmsg);
 		conn.quit();
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(errmsg.getBytes());
+			cleanAndFeedback();
 		}
 	}
+
 	@Override
-	public void connectionClose(BackendConnection conn, String reason){
+	public void connectionClose(BackendConnection conn, String reason) {
 		this.setFail(reason);
+		conn.quit();
 		if (decrementCountBy(1)) {
-			cleanAndFeedback(reason.getBytes());
+			cleanAndFeedback();
+		}
+	}
+
+//	@Override
+//	protected void cleanAndFeedback() {
+//		// clear all resources
+//		session.clearResources(false);
+//		if (session.closed()) {
+//			return;
+//		}
+//		if (this.isFail()) {
+//			session.getSource().setTxInterrupt(error);
+//			session.getSource().setTxstart(true);
+//			createErrPkg(error).write(session.getSource());
+//		} else {
+//			session.getSource().write(sendData);
+//		}
+//	}
+
+	private void cleanAndFeedback() {
+		byte[] send = sendData;
+		// clear all resources
+		session.clearResources(false);
+		if (session.closed()) {
+			return;
+		}
+		if (this.isFail()) {
+			createErrPkg(error).write(session.getSource());
+		} else {
+			session.getSource().write(send);
 		}
 	}
 }

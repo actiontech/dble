@@ -21,6 +21,7 @@ server.xml 文件中  system标签 下
 <property name="xaLogCleanPeriod">1000</property <!-- 使用XA时，已经完结的XA LOG 会定时移除，默认1000毫秒 -->
 <property name="checkTableConsistency">0</property><!-- 是否进行meta数据定时巡检，默认不启用 -->
 <property name="checkTableConsistencyPeriod"> 60000</property><!-- meta数据定时巡检周期，默认60000毫秒 -->
+<property name="recordTxn">false</property>  <!-- true为开启事务日志记录、false为关闭 ，以后改为 0,1 -->
 ```
 
 也可见server_template.xml 

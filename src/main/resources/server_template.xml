@@ -17,7 +17,7 @@
 	<property name="useHandshakeV10">1</property>
 	<property name="useSqlStat">0</property>  <!-- 1为开启实时统计、0为关闭 -->
 	<property name="useGlobleTableCheck">0</property>  <!-- 1为开启全加班一致性检测、0为关闭 -->
-
+<property name="recordTxn">false</property>  <!-- true为开启事务日志记录、false为关闭 ，以后改为 0,1 -->
 		<property name="sequnceHandlerType">2</property>
       <!--  <property name="useCompression">1</property>--> <!--1为开启mysql压缩协议-->
         <!--  <property name="fakeMySQLVersion">5.6.20</property>--> <!--设置模拟的MySQL版本号-->

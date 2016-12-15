@@ -48,6 +48,8 @@ public class SchemaConfig {
 	private final boolean checkSQLSchema;
 	private  boolean needSupportMultiDBType=false;
 	private  String defaultDataNodeDbType;
+	private final int lowerCase;
+
 	/**
 	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
 	 * ,then A is root table
@@ -59,12 +61,13 @@ public class SchemaConfig {
 
 	public SchemaConfig(String name, String dataNode,
 			Map<String, TableConfig> tables, int defaultMaxLimit,
-			boolean checkSQLschema) {
+			boolean checkSQLschema, int lowerCase) {
 		this.name = name;
 		this.dataNode = dataNode;
 		this.checkSQLSchema = checkSQLschema;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
+		this.lowerCase = lowerCase;
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
@@ -99,6 +102,9 @@ public class SchemaConfig {
 
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
+	}
+	public int getLowerCase() {
+		return lowerCase;
 	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {

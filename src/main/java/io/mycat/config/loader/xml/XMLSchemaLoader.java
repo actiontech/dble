@@ -195,7 +195,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 
 			SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
-					tables, sqlMaxLimit, "true".equalsIgnoreCase(checkSQLSchemaStr));
+					tables, sqlMaxLimit, "true".equalsIgnoreCase(checkSQLSchemaStr), lowerCase);
 
 			//设定DB类型，这对之后的sql语句路由解析有帮助
 			if (defaultDbType != null) {

@@ -430,7 +430,7 @@ public class MycatServer {
 		}
 
 		// start transaction SQL log
-		if (config.getSystem().isRecordTxn()) {
+		if (config.getSystem().getRecordTxn() == 1) {
 			txnLogProcessor = new TxnLogProcessor(bufferPool);
 			txnLogProcessor.setName("TxnLogProcessor");
 			txnLogProcessor.start();

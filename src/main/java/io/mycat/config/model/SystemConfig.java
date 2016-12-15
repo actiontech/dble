@@ -121,7 +121,7 @@ public final class SystemConfig {
 	private int txIsolation;
 	private int parserCommentVersion;
 	private int sqlRecordCount;
-	private boolean recordTxn = false;
+	private int recordTxn = 0;
 	// a page size
 	private int bufferPoolPageSize;
 	//minimum allocation unit
@@ -687,11 +687,11 @@ public final class SystemConfig {
 		this.sqlRecordCount = sqlRecordCount;
 	}
 
-	public boolean isRecordTxn(){
+	public int getRecordTxn(){
 		return recordTxn;
 	}
 
-	public void setRecordTxn(boolean recordTxn){
+	public void setRecordTxn(int recordTxn){
 		this.recordTxn = recordTxn;
 	}
 

@@ -156,12 +156,19 @@ public class XMLSchemaLoader implements SchemaLoader {
 			String dataNode = schemaElement.getAttribute("dataNode");
 			String checkSQLSchemaStr = schemaElement.getAttribute("checkSQLschema");
 			String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
+			String lowerCaseStr = schemaElement.getAttribute("lowerCase");
 			int sqlMaxLimit = -1;
 			//读取sql返回结果集限制
 			if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
 				sqlMaxLimit = Integer.parseInt(sqlMaxLimitStr);
 			}
-			
+			int lowerCase = 1;
+			if (lowerCaseStr != null && !lowerCaseStr.isEmpty()) {
+				lowerCase = Integer.parseInt(lowerCaseStr);
+			}
+			if (lowerCase != 0 && lowerCase != 1) {
+				throw new ConfigException("lowerCase can't be [" + lowerCase + "]!");
+			}
 			// check dataNode already exists or not,看schema标签中是否有datanode
 			String defaultDbType = null;
 			//校验检查并添加dataNode
@@ -175,7 +182,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 				dataNode = null;
 			}
 			//加载schema下所有tables
-			Map<String, TableConfig> tables = loadTables(schemaElement);
+			Map<String, TableConfig> tables = loadTables(schemaElement, lowerCase);
 			//判断schema是否重复
 			if (schemas.containsKey(name)) {
 				throw new ConfigException("schema " + name + " duplicated!");
@@ -237,7 +244,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 		String newTableName = tableNameElement;
 		
 		String[] params = tableNameSuffixElement.split(",");			
-		String suffixFormat = params[0].toUpperCase();		
+		String suffixFormat = params[0];
 		if ( suffixFormat.equals("YYYYMM") ) {
 			
 			//读取参数
@@ -300,7 +307,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 	}
 	
 
-	private Map<String, TableConfig> loadTables(Element node) {
+	private Map<String, TableConfig> loadTables(Element node, int lowerCase) {
 		
 		// Map<String, TableConfig> tables = new HashMap<String, TableConfig>();
 		
@@ -309,10 +316,16 @@ public class XMLSchemaLoader implements SchemaLoader {
 		NodeList nodeList = node.getElementsByTagName("table");
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Element tableElement = (Element) nodeList.item(i);
-			String tableNameElement = tableElement.getAttribute("name").toUpperCase();
+			String tableNameElement = tableElement.getAttribute("name");
+			if (lowerCase == 1) {
+				tableNameElement = tableNameElement.toUpperCase();
+			}
 
 			//TODO:路由, 增加对动态日期表的支持
-			String tableNameSuffixElement = tableElement.getAttribute("nameSuffix").toUpperCase();
+			String tableNameSuffixElement = tableElement.getAttribute("nameSuffix");
+			if (lowerCase == 1) {
+				tableNameSuffixElement = tableNameSuffixElement.toUpperCase();
+			}
 			if ( !"".equals( tableNameSuffixElement ) ) {				
 				
 				if( tableNameElement.split(",").length > 1 ) {
@@ -400,7 +413,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (tableNames.length == 1) {
 				TableConfig table = tables.get(tableNames[0]);
 				// process child tables
-				processChildTables(tables, table, dataNode, tableElement);
+				processChildTables(tables, table, dataNode, tableElement, lowerCase);
 			}
 		}
 		return tables;
@@ -465,7 +478,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 	}
 
 	private void processChildTables(Map<String, TableConfig> tables,
-			TableConfig parentTable, String dataNodes, Element tableNode) {
+			TableConfig parentTable, String dataNodes, Element tableNode, int lowerCase) {
 		
 		// parse child tables
 		NodeList childNodeList = tableNode.getChildNodes();
@@ -476,7 +489,10 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			Element childTbElement = (Element) theNode;
 			//读取子表信息
-			String cdTbName = childTbElement.getAttribute("name").toUpperCase();
+			String cdTbName = childTbElement.getAttribute("name");
+			if (lowerCase == 1) {
+				cdTbName = cdTbName.toUpperCase();
+			}
 			String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
 
 			boolean autoIncrement = false;
@@ -502,7 +518,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			tables.put(table.getName(), table);
 			//对于子表的子表，递归处理
-			processChildTables(tables, table, dataNodes, childTbElement);
+			processChildTables(tables, table, dataNodes, childTbElement, lowerCase);
 		}
 	}
 

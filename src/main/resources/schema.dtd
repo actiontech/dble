@@ -21,6 +21,7 @@
 <!ATTLIST schema checkSQLschema NMTOKEN #IMPLIED>
 <!ATTLIST schema dataNode CDATA #IMPLIED>
 <!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
+<!ATTLIST schema lowerCase CDATA #IMPLIED>
 
 <!ELEMENT table (property*,(childTable*))>
 <!ATTLIST table name CDATA #REQUIRED>

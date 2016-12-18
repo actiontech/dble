@@ -938,13 +938,13 @@ public class MycatServer {
 						continue;
 					}
 					finished =false;
-					xacmd = xacmd + coordinatorLogEntry.getId() + ';';
 					outloop: for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
 						for (TableConfig table : schema.getTables().values()) {
 							for (String dataNode : table.getDataNodes()) {
 								PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
 								if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
 									OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit?true:false, participantLogEntry));
+									xacmd = xacmd + coordinatorLogEntry.getId() + "."+dn.getDatabase();
 									SQLJob sqlJob = new SQLJob(xacmd, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
 									sqlJob.run();
 									LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xacmd, dn.getName(), dn.getDatabase()));

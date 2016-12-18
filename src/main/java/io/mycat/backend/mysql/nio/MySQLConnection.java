@@ -46,6 +46,7 @@ import io.mycat.net.mysql.HandshakePacket;
 import io.mycat.net.mysql.MySQLPacket;
 import io.mycat.net.mysql.QuitPacket;
 import io.mycat.route.RouteResultsetNode;
+import io.mycat.server.NonBlockingSession;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.TimeUtil;
@@ -393,13 +394,16 @@ public class MySQLConnection extends BackendAIOConnection {
 		if (!modifiedSQLExecuted && rrn.isModifySQL()) {
 			modifiedSQLExecuted = true;
 		}
-		String xaTXID = sc.getSession2().getXaTXID();
+		String xaTXID = getConnXID(sc.getSession2());
 		if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
 			sc.setTxstart(true);
 		}
 		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(),autocommit);
 	}
 
+	public String getConnXID(NonBlockingSession session) {
+		return session.getSessionXaID() + "." + this.schema;
+	}
 	private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
 			int clientCharSetIndex, int clientTxIsoLation,
 			boolean expectAutocommit) {

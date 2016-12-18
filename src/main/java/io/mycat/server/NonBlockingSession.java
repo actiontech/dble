@@ -128,7 +128,7 @@ public class NonBlockingSession implements Session {
                     "No dataNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
-		if (this.getXaTXID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
+		if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
 			this.xaState = TxState.TX_STARTED_STATE;
 		}
 		if (nodes.length == 1) {
@@ -162,16 +162,16 @@ public class NonBlockingSession implements Session {
 
     private CommitNodesHandler createCommitNodesHandler() {
 		if (commitHandler == null) {
-			if (this.getXaTXID() == null) {
+			if (this.getSessionXaID() == null) {
 				commitHandler = new NormalCommitNodesHandler(this);
 			} else {
 				commitHandler = new XACommitNodesHandler(this);
 			}
 		} else {
-			if (this.getXaTXID() == null && (commitHandler instanceof XACommitNodesHandler)) {
+			if (this.getSessionXaID() == null && (commitHandler instanceof XACommitNodesHandler)) {
 				commitHandler = new NormalCommitNodesHandler(this);
 			}
-			if (this.getXaTXID() != null && (commitHandler instanceof NormalCommitNodesHandler)) {
+			if (this.getSessionXaID() != null && (commitHandler instanceof NormalCommitNodesHandler)) {
 				commitHandler = new XACommitNodesHandler(this);
 			}
 		}
@@ -193,16 +193,16 @@ public class NonBlockingSession implements Session {
     	
 	private RollbackNodesHandler createRollbackNodesHandler() {
 		if (rollbackHandler == null) {
-			if (this.getXaTXID() == null) {
+			if (this.getSessionXaID() == null) {
 				rollbackHandler = new NormalRollbackNodesHandler(this);
 			} else {
 				rollbackHandler = new XARollbackNodesHandler(this);
 			}
 		} else {
-			if (this.getXaTXID() == null && (rollbackHandler instanceof XARollbackNodesHandler)) {
+			if (this.getSessionXaID() == null && (rollbackHandler instanceof XARollbackNodesHandler)) {
 				rollbackHandler = new NormalRollbackNodesHandler(this);
 			}
-			if (this.getXaTXID() != null && (rollbackHandler instanceof NormalRollbackNodesHandler)) {
+			if (this.getSessionXaID() != null && (rollbackHandler instanceof NormalRollbackNodesHandler)) {
 				rollbackHandler = new XARollbackNodesHandler(this);
 			}
 		}
@@ -503,7 +503,7 @@ public class NonBlockingSession implements Session {
 		}
 	}
 
-    public String getXaTXID() {
+    public String getSessionXaID() {
         return xaTXID;
     }
 

@@ -6,7 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
@@ -91,46 +92,42 @@ public class DefaultDruidParser implements DruidParser {
 	 * @param stmt
 	 */
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt,MycatSchemaStatVisitor visitor) throws SQLNonTransientException{
-
+	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+			throws SQLNonTransientException {
 		stmt.accept(visitor);
-		
 		List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-		if(visitor.hasOrCondition()) {//包含or语句
-			//TODO
-			//根据or拆分
+		if (visitor.hasOrCondition()) {// 包含or语句
+			// TODO
+			// 根据or拆分
 			mergedConditionList = visitor.splitConditions();
-		} else {//不包含OR语句
+		} else {// 不包含OR语句
 			mergedConditionList.add(visitor.getConditions());
 		}
-		
-		if(visitor.getAliasMap() != null) {
-			for(Map.Entry<String, String> entry : visitor.getAliasMap().entrySet()) {
+
+		if (visitor.getAliasMap() != null) {
+			for (Map.Entry<String, String> entry : visitor.getAliasMap().entrySet()) {
 				String key = entry.getKey();
 				String value = entry.getValue();
-				if(key != null && key.indexOf("`") >= 0) {
+				if (key != null && key.indexOf("`") >= 0) {
 					key = key.replaceAll("`", "");
 				}
-				if(value != null && value.indexOf("`") >= 0) {
+				if (value != null && value.indexOf("`") >= 0) {
 					value = value.replaceAll("`", "");
 				}
-				//表名前面带database的，去掉
-				if(key != null) {
+				// 表名前面带database的，去掉
+				if (key != null) {
 					int pos = key.indexOf(".");
-					if(pos> 0) {
+					if (pos > 0) {
 						key = key.substring(pos + 1);
 					}
-					if(key.equalsIgnoreCase(value)) {
+					if (key.equalsIgnoreCase(value)) {
 						ctx.addTable(key.toUpperCase());
 					}
 					tableAliasMap.put(key.toUpperCase(), value);
 				}
-				
-
-//				else {
-//					tableAliasMap.put(key, value);
-//				}
-
+				// else {
+				// tableAliasMap.put(key, value);
+				// }
 			}
 			visitor.getAliasMap().putAll(tableAliasMap);
 			ctx.setTableAliasMap(tableAliasMap);

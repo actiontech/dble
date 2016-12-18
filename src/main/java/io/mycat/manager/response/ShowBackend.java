@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
-import io.mycat.backend.jdbc.JDBCConnection;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.config.Fields;
@@ -130,9 +129,7 @@ public class ShowBackend {
 		if (c instanceof BackendAIOConnection) {
 			row.add(((BackendAIOConnection) c).getProcessor().getName()
 					.getBytes());
-		} else if(c instanceof JDBCConnection){
-		    row.add(((JDBCConnection)c).getProcessor().getName().getBytes());
-		}else{
+		} else{
 		    row.add("N/A".getBytes());
 		}
 		row.add(LongUtil.toBytes(c.getId()));

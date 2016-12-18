@@ -61,7 +61,7 @@ import io.mycat.util.TimeUtil;
 public final class ShowDataNode {
 
 	private static final NumberFormat nf = DecimalFormat.getInstance();
-	private static final int FIELD_COUNT = 12;
+	private static final int FIELD_COUNT = 11;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -169,12 +169,10 @@ public final class ShowDataNode {
 			int active = ds.getActiveCountForSchema(node.getDatabase());
 			int idle = ds.getIdleCountForSchema(node.getDatabase());
 			row.add(IntegerUtil.toBytes(pool.getActivedIndex()));
-			row.add(StringUtil.encode(ds.getConfig().getDbType(), charset));
 			row.add(IntegerUtil.toBytes(active));
 			row.add(IntegerUtil.toBytes(idle));
 			row.add(IntegerUtil.toBytes(ds.getSize()));
 		} else {
-			row.add(null);
 			row.add(null);
 			row.add(null);
 			row.add(null);

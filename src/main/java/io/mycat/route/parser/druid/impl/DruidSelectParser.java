@@ -12,12 +12,20 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
@@ -31,8 +39,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.util.JdbcConstants;
-import com.alibaba.druid.wall.spi.WallVisitorUtils;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -57,23 +63,23 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     @Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) {
-		SQLSelectStatement selectStmt = (SQLSelectStatement)stmt;
+		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-		if(sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock)selectStmt.getSelect().getQuery();
-
-				 parseOrderAggGroupMysql(schema, stmt,rrs, mysqlSelectQuery);
-				 //更改canRunInReadDB属性
-				 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && rrs.isAutocommit() == false)
-				 {
-					 rrs.setCanRunInReadDB(false);
-				 }
-
-		} else if (sqlSelectQuery instanceof MySqlUnionQuery) { 
-//			MySqlUnionQuery unionQuery = (MySqlUnionQuery)sqlSelectQuery;
-//			MySqlSelectQueryBlock left = (MySqlSelectQueryBlock)unionQuery.getLeft();
-//			MySqlSelectQueryBlock right = (MySqlSelectQueryBlock)unionQuery.getLeft();
-//			System.out.println();
+		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
+			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);
+			// 更改canRunInReadDB属性
+			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
+					&& rrs.isAutocommit() == false) {
+				rrs.setCanRunInReadDB(false);
+			}
+		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+			// MySqlUnionQuery unionQuery = (MySqlUnionQuery)sqlSelectQuery;
+			// MySqlSelectQueryBlock left =
+			// (MySqlSelectQueryBlock)unionQuery.getLeft();
+			// MySqlSelectQueryBlock right =
+			// (MySqlSelectQueryBlock)unionQuery.getLeft();
+			// System.out.println();
 		}
 	}
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery)
@@ -214,7 +220,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (isNeedChangeSql)
         {
             String sql = stmt.toString();
-            rrs.changeNodeSqlAfterAddLimit(schema,getCurentDbType(),sql,0,-1, false);
+            rrs.changeNodeSqlAfterAddLimit(schema,sql,0,-1 );
             getCtx().setSql(sql);
         }
 		return aliaColumns;
@@ -282,85 +288,80 @@ public class DruidSelectParser extends DefaultDruidParser {
 	 * 改写sql：需要加limit的加上
 	 */
 	@Override
-	public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,LayerCachePool cachePool) throws SQLNonTransientException {
+	public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
+			throws SQLNonTransientException {
 
 		tryRoute(schema, rrs, cachePool);
-
 		rrs.copyLimitToNodes();
-		
-		SQLSelectStatement selectStmt = (SQLSelectStatement)stmt;
+		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-		if(sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock)selectStmt.getSelect().getQuery();
+		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
 			int limitStart = 0;
 			int limitSize = schema.getDefaultMaxLimit();
 
-			//clear group having
+			// clear group having
 			SQLSelectGroupByClause groupByClause = mysqlSelectQuery.getGroupBy();
-			// Modified by winbill, 20160614, do NOT include having clause when routing to multiple nodes
-			if(groupByClause != null && groupByClause.getHaving() != null && isRoutMultiNode(schema,rrs)){
+			// Modified by winbill, 20160614, do NOT include having clause when
+			// routing to multiple nodes
+			if (groupByClause != null && groupByClause.getHaving() != null && isRoutMultiNode(schema, rrs)) {
 				groupByClause.setHaving(null);
 			}
-			
+
 			Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
 			boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);
-			if(isNeedAddLimit) {
+			if (isNeedAddLimit) {
 				Limit limit = new Limit();
 				limit.setRowCount(new SQLIntegerExpr(limitSize));
 				mysqlSelectQuery.setLimit(limit);
 				rrs.setLimitSize(limitSize);
-			    String sql= getSql(rrs, stmt, isNeedAddLimit);
-				rrs.changeNodeSqlAfterAddLimit(schema, getCurentDbType(), sql, 0, limitSize, true);
+				String sql = getSql(rrs, stmt, isNeedAddLimit);
+				rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitSize);
 
 			}
 			Limit limit = mysqlSelectQuery.getLimit();
-			if(limit != null&&!isNeedAddLimit) {
-				SQLIntegerExpr offset = (SQLIntegerExpr)limit.getOffset();
-				SQLIntegerExpr count = (SQLIntegerExpr)limit.getRowCount();
-				if(offset != null) {
+			if (limit != null && !isNeedAddLimit) {
+				SQLIntegerExpr offset = (SQLIntegerExpr) limit.getOffset();
+				SQLIntegerExpr count = (SQLIntegerExpr) limit.getRowCount();
+				if (offset != null) {
 					limitStart = offset.getNumber().intValue();
 					rrs.setLimitStart(limitStart);
-				} 
-				if(count != null) {
+				}
+				if (count != null) {
 					limitSize = count.getNumber().intValue();
 					rrs.setLimitSize(limitSize);
 				}
 
-				if(isNeedChangeLimit(rrs)) {
+				if (isNeedChangeLimit(rrs)) {
 					Limit changedLimit = new Limit();
 					changedLimit.setRowCount(new SQLIntegerExpr(limitStart + limitSize));
-					
-					if(offset != null) {
-						if(limitStart < 0) {
-							String msg = "You have an error in your SQL syntax; check the manual that " +
-									"corresponds to your MySQL server version for the right syntax to use near '" + limitStart + "'";
+
+					if (offset != null) {
+						if (limitStart < 0) {
+							String msg = "You have an error in your SQL syntax; check the manual that "
+									+ "corresponds to your MySQL server version for the right syntax to use near '"
+									+ limitStart + "'";
 							throw new SQLNonTransientException(ErrorCode.ER_PARSE_ERROR + " - " + msg);
 						} else {
 							changedLimit.setOffset(new SQLIntegerExpr(0));
-							
+
 						}
 					}
-					
+
 					mysqlSelectQuery.setLimit(changedLimit);
+					String sql = getSql(rrs, stmt, isNeedAddLimit);
+					rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitStart + limitSize);
 
-                    String sql= getSql(rrs, stmt, isNeedAddLimit);
-					rrs.changeNodeSqlAfterAddLimit(schema,getCurentDbType(),sql,0, limitStart + limitSize, true);
-
-					//设置改写后的sql
+					// 设置改写后的sql
 					ctx.setSql(sql);
-
-				}   else
-				{
-
-                        rrs.changeNodeSqlAfterAddLimit(schema,getCurentDbType(),getCtx().getSql(),rrs.getLimitStart(), rrs.getLimitSize(), true);
-					//	ctx.setSql(nativeSql);
-
+				} else {
+					rrs.changeNodeSqlAfterAddLimit(schema, getCtx().getSql(), rrs.getLimitStart(), rrs.getLimitSize());
+					// ctx.setSql(nativeSql);
 				}
-				
 
 			}
-			
-			if(rrs.isDistTable()){
+
+			if (rrs.isDistTable()) {
 				SQLTableSource from = mysqlSelectQuery.getFrom();
 
 				for (RouteResultsetNode node : rrs.getNodes()) {
@@ -370,12 +371,12 @@ public class DruidSelectParser extends DefaultDruidParser {
 					SQLExprTableSource from2 = new SQLExprTableSource(sqlIdentifierExpr);
 					mysqlSelectQuery.setFrom(from2);
 					node.setStatement(stmt.toString());
-	            }
+				}
 			}
-			
+
 			rrs.setCacheAble(isNeedCache(schema, rrs, mysqlSelectQuery, allConditions));
 		}
-		
+
 	}
 	
 	/**
@@ -449,25 +450,11 @@ public class DruidSelectParser extends DefaultDruidParser {
 		rrs.setFinishedRoute(true);
 	}
 
-
-	protected String getCurentDbType()
-	{
-		return JdbcConstants.MYSQL;
-	}
-
-
-
-
-	protected String getSql( RouteResultset rrs,SQLStatement stmt, boolean isNeedAddLimit)
-	{
-		if(getCurentDbType().equalsIgnoreCase("mysql")&&(isNeedChangeLimit(rrs)||isNeedAddLimit))
-		{
-
-				return stmt.toString();
-
+	protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit) {
+		if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
+			return stmt.toString();
 		}
-
-	 return getCtx().getSql();
+		return getCtx().getSql();
 	}
 
 
@@ -652,46 +639,5 @@ public class DruidSelectParser extends DefaultDruidParser {
 			map.put(col, type == SQLOrderingSpecification.ASC ? OrderCol.COL_ORDER_TYPE_ASC : OrderCol.COL_ORDER_TYPE_DESC);
 		}
 		return map;
-	}
-	
-	private boolean isConditionAlwaysTrue(SQLStatement statement) {
-		SQLSelectStatement selectStmt = (SQLSelectStatement)statement;
-		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-		if(sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock)selectStmt.getSelect().getQuery();
-			SQLExpr expr = mysqlSelectQuery.getWhere();
-			
-			Object o = WallVisitorUtils.getValue(expr);
-			if(Boolean.TRUE.equals(o)) {
-				return true;
-			}
-			return false;
-		} else {//union
-			return false;
-		}
-		
-	}
-
-	protected void setLimitIFChange(SQLStatement stmt, RouteResultset rrs, SchemaConfig schema, SQLBinaryOpExpr one, int firstrownum, int lastrownum)
-	{
-		rrs.setLimitStart(firstrownum);
-		rrs.setLimitSize(lastrownum - firstrownum);
-		LayerCachePool tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
-		try
-		{
-			tryRoute(schema, rrs, tableId2DataNodeCache);
-		} catch (SQLNonTransientException e)
-		{
-			throw new RuntimeException(e);
-		}
-		if (isNeedChangeLimit(rrs))
-		{
-			one.setRight(new SQLIntegerExpr(0));
-            String curentDbType ="db2".equalsIgnoreCase(this.getCurentDbType())?"oracle":getCurentDbType();
-            String sql =   SQLUtils.toSQLString(stmt, curentDbType);;
-			rrs.changeNodeSqlAfterAddLimit(schema,getCurentDbType(), sql,0,lastrownum, false);
-			//设置改写后的sql
-			getCtx().setSql(sql);
-		}
 	}
 }

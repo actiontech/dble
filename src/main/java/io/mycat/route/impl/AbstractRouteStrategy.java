@@ -3,7 +3,8 @@ package io.mycat.route.impl;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -23,9 +24,13 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	@Override
 	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String origSQL,
 			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLNonTransientException {
-
+		//TODO:yhq, TMP ,WILL DELETE
+		boolean isNeedCheckDB = true;
+		if (ServerParse.INSERT == sqlType || ServerParse.UPDATE == sqlType || ServerParse.DELETE == sqlType || ServerParse.DDL == sqlType) {
+			isNeedCheckDB = false;
+		}
 		//对应schema标签checkSQLschema属性，把表示schema的字符去掉
-		if (schema.isCheckSQLSchema()) {
+		if (isNeedCheckDB && schema.isCheckSQLSchema()) {
 			origSQL = RouterUtil.removeSchema(origSQL, schema.getName());
 		}
 
@@ -33,7 +38,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
      * 处理一些路由之前的逻辑
      * 全局序列号，父子表插入
      */
-		if ( beforeRouteProcess(schema, sqlType, origSQL, sc) ) {
+		if (isNeedCheckDB && beforeRouteProcess(schema, sqlType, origSQL, sc) ) {
 			return null;
 		}
 
@@ -64,13 +69,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		}
 
 		/**
-		 * DDL 语句的路由
-		 */
-		if (ServerParse.DDL == sqlType) {
-			return RouterUtil.routeToDDLNode(rrs, sqlType, stmt, schema);
-		}
-
-		/**
 		 * 检查是否有分片
 		 */
 		if (schema.isNoSharding() && ServerParse.SHOW != sqlType) {
@@ -91,7 +89,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	 */
 	private boolean beforeRouteProcess(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc)
 			throws SQLNonTransientException {
-		
 		return RouterUtil.processWithMycatSeq(schema, sqlType, origSQL, sc)
 				|| (sqlType == ServerParse.INSERT && RouterUtil.processERChildTable(schema, origSQL, sc))
 				|| (sqlType == ServerParse.INSERT && RouterUtil.processInsert(schema, sqlType, origSQL, sc));

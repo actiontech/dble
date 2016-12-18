@@ -297,14 +297,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 					+ executeResponse + " from " + conn);
 		}
 		if (executeResponse) {
-
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);
-            //TODO:DDL
-//			if (rrss.getDropDB() != null && StringUtil.equals(conn.getSchema(), rrss.getDropDB())) {
-//				conn.setSchema(null);
-//			}
 			lock.lock();
 			try {
 				// 判断是否是全局表，如果是，执行行数不做累加，以最后一次执行的为准。
@@ -326,6 +321,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 					return;
 				}
 				
+
+				session.handleSpecial(rrs, source.getSchema());
 				if (rrs.isLoadData()) {
 					byte lastPackId = source.getLoadDataInfileHandler()
 							.getLastPackId();

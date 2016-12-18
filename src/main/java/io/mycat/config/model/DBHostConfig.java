@@ -35,18 +35,9 @@ public class DBHostConfig {
     private final String encryptPassword; //密文
 	private int maxCon ;
 	private int minCon ;
-	private String dbType;
 	private String filters="mergeStat";
 	private long logTime = 300000;
 	private int weight;				
-
-	public String getDbType() {
-		return dbType;
-	}
-
-	public void setDbType(String dbType) {
-		this.dbType = dbType;
-	}
 
 	public DBHostConfig(String hostName, String ip, int port, String url,
 			String user, String password,String encryptPassword) {

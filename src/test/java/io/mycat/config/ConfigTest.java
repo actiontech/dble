@@ -8,7 +8,6 @@ import org.junit.Test;
 
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
-import io.mycat.backend.jdbc.JDBCDatasource;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
 import io.mycat.config.loader.ConfigLoader;
 import io.mycat.config.loader.xml.XMLConfigLoader;
@@ -19,7 +18,6 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.UserConfig;
-import io.mycat.config.util.ConfigException;
 import junit.framework.Assert;
 
 public class ConfigTest {
@@ -106,26 +104,12 @@ public class ConfigTest {
 	}
     
     private PhysicalDatasource[] createDataSource(DataHostConfig conf,
-			String hostName, String dbType, String dbDriver,
-			DBHostConfig[] nodes, boolean isRead) {
+			String hostName, DBHostConfig[] nodes, boolean isRead) {
 		PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
-		if (dbType.equals("mysql") && dbDriver.equals("native")) {
-			for (int i = 0; i < nodes.length; i++) {
-				nodes[i].setIdleTimeout(system.getIdleTimeout());
-				MySQLDataSource ds = new MySQLDataSource(nodes[i], conf, isRead);
-				dataSources[i] = ds;
-			}
-
-		} else if(dbDriver.equals("jdbc"))
-			{
-			for (int i = 0; i < nodes.length; i++) {
-				nodes[i].setIdleTimeout(system.getIdleTimeout());
-				JDBCDatasource ds = new JDBCDatasource(nodes[i], conf, isRead);
-				dataSources[i] = ds;
-			}
-			}
-		else {
-			throw new ConfigException("not supported yet !" + hostName);
+		for (int i = 0; i < nodes.length; i++) {
+			nodes[i].setIdleTimeout(system.getIdleTimeout());
+			MySQLDataSource ds = new MySQLDataSource(nodes[i], conf, isRead);
+			dataSources[i] = ds;
 		}
 		return dataSources;
 	}
@@ -133,16 +117,12 @@ public class ConfigTest {
 	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf,
 			ConfigLoader configLoader) {
 		String name = conf.getName();
-		String dbType = conf.getDbType();
-		String dbDriver = conf.getDbDriver();
-		PhysicalDatasource[] writeSources = createDataSource(conf, name,
-				dbType, dbDriver, conf.getWriteHosts(), false);
+		PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
 		Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(
 				readHostsMap.size());
 		for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
-			PhysicalDatasource[] readSources = createDataSource(conf, name,
-					dbType, dbDriver, entry.getValue(), true);
+			PhysicalDatasource[] readSources = createDataSource(conf, name, entry.getValue(), true);
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
 		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(),conf, writeSources,

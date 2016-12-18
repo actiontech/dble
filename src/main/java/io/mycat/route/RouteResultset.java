@@ -24,7 +24,6 @@
 package io.mycat.route;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +31,6 @@ import java.util.Set;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.route.parser.util.PageSQLUtil;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.util.FormatUtil;
 
@@ -308,37 +306,15 @@ public final class RouteResultset implements Serializable {
         }
     }
 
-    public void changeNodeSqlAfterAddLimit(SchemaConfig schemaConfig, String sourceDbType, String sql, int offset, int count, boolean isNeedConvert) {
-        if (nodes != null)
-        {
-
-            Map<String, String> dataNodeDbTypeMap = schemaConfig.getDataNodeDbTypeMap();
-            Map<String, String> sqlMapCache = new HashMap<>();
-            for (RouteResultsetNode node : nodes)
-            {
-                String dbType = dataNodeDbTypeMap.get(node.getName());
-                if (sourceDbType.equalsIgnoreCase("mysql"))
-                {
-                    node.setStatement(sql);   //mysql之前已经加好limit
-                } else if (sqlMapCache.containsKey(dbType))
-                {
-                    node.setStatement(sqlMapCache.get(dbType));
-                } else if(isNeedConvert)
-                {
-                    String nativeSql = PageSQLUtil.convertLimitToNativePageSql(dbType, sql, offset, count);
-                    sqlMapCache.put(dbType, nativeSql);
-                    node.setStatement(nativeSql);
-                }  else {
-                    node.setStatement(sql);
-                }
-
-                node.setLimitStart(offset);
-                node.setLimitSize(count);
-            }
-
-
-        }
-    }
+	public void changeNodeSqlAfterAddLimit(SchemaConfig schemaConfig, String sql, int offset, int count) {
+		if (nodes != null) {
+			for (RouteResultsetNode node : nodes) {
+				node.setStatement(sql);
+				node.setLimitStart(offset);
+				node.setLimitSize(count);
+			}
+		}
+	}
 
     public boolean isAutocommit() {
         return autocommit;

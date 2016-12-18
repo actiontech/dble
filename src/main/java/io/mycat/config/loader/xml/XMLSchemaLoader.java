@@ -25,17 +25,14 @@ package io.mycat.config.loader.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +53,6 @@ import io.mycat.config.util.ConfigException;
 import io.mycat.config.util.ConfigUtil;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.util.DecryptUtil;
-import io.mycat.util.SplitUtil;
 
 /**
  * @author mycat
@@ -169,15 +165,11 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (lowerCase != 0 && lowerCase != 1) {
 				throw new ConfigException("lowerCase can't be [" + lowerCase + "]!");
 			}
-			// check dataNode already exists or not,看schema标签中是否有datanode
-			String defaultDbType = null;
 			//校验检查并添加dataNode
 			if (dataNode != null && !dataNode.isEmpty()) {
 				List<String> dataNodeLst = new ArrayList<String>(1);
 				dataNodeLst.add(dataNode);
 				checkDataNodeExists(dataNodeLst);
-				String dataHost = dataNodes.get(dataNode).getDataHost();
-				defaultDbType = dataHosts.get(dataHost).getDbType();
 			} else {
 				dataNode = null;
 			}
@@ -193,37 +185,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 				throw new ConfigException(
 						"schema " + name + " didn't config tables,so you must set dataNode property!");
 			}
-
 			SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
-					tables, sqlMaxLimit, "true".equalsIgnoreCase(checkSQLSchemaStr), lowerCase);
-
-			//设定DB类型，这对之后的sql语句路由解析有帮助
-			if (defaultDbType != null) {
-				schemaConfig.setDefaultDataNodeDbType(defaultDbType);
-				if (!"mysql".equalsIgnoreCase(defaultDbType)) {
-					schemaConfig.setNeedSupportMultiDBType(true);
-				}
-			}
-
-			// 判断是否有不是mysql的数据库类型，方便解析判断是否启用多数据库分页语法解析
-			for (TableConfig tableConfig : tables.values()) {
-				if (isHasMultiDbType(tableConfig)) {
-					schemaConfig.setNeedSupportMultiDBType(true);
-					break;
-				}
-			}
-			//记录每种dataNode的DB类型
-			Map<String, String> dataNodeDbTypeMap = new HashMap<>();
-			for (String dataNodeName : dataNodes.keySet()) {
-				DataNodeConfig dataNodeConfig = dataNodes.get(dataNodeName);
-				String dataHost = dataNodeConfig.getDataHost();
-				DataHostConfig dataHostConfig = dataHosts.get(dataHost);
-				if (dataHostConfig != null) {
-					String dbType = dataHostConfig.getDbType();
-					dataNodeDbTypeMap.put(dataNodeName, dbType);
-				}
-			}
-			schemaConfig.setDataNodeDbTypeMap(dataNodeDbTypeMap);
+					tables, sqlMaxLimit, !"false".equalsIgnoreCase(checkSQLSchemaStr), lowerCase);
 			schemas.put(name, schemaConfig);
 		}
 	}
@@ -389,7 +352,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 
 				TableConfig table = new TableConfig(tableName, primaryKey,
 						autoIncrement, needAddLimit, tableType, dataNode,
-						getDbType(dataNode),
 						(tableRule != null) ? tableRule.getRule() : null,
 						ruleRequired, null, false, null, null,subTables);
 				
@@ -453,30 +415,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 		theDataNodes.addAll(result);
 	}
 
-	private Set<String> getDbType(String dataNode) {
-		Set<String> dbTypes = new HashSet<>();
-		String[] dataNodeArr = SplitUtil.split(dataNode, ',', '$', '-');
-		for (String node : dataNodeArr) {
-			DataNodeConfig datanode = dataNodes.get(node);
-			DataHostConfig datahost = dataHosts.get(datanode.getDataHost());
-			dbTypes.add(datahost.getDbType());
-		}
-
-		return dbTypes;
-	}
-
-	
-
-	private boolean isHasMultiDbType(TableConfig table) {
-		Set<String> dbTypes = table.getDbTypes();
-		for (String dbType : dbTypes) {
-			if (!"mysql".equalsIgnoreCase(dbType)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private void processChildTables(Map<String, TableConfig> tables,
 			TableConfig parentTable, String dataNodes, Element tableNode, int lowerCase) {
 		
@@ -509,8 +447,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
 			TableConfig table = new TableConfig(cdTbName, primaryKey,
 					autoIncrement, needAddLimit,
-					TableConfig.TYPE_GLOBAL_DEFAULT, dataNodes,
-					getDbType(dataNodes), null, false, parentTable, true,
+					TableConfig.TYPE_GLOBAL_DEFAULT, dataNodes, null, false, parentTable, true,
 					joinKey, parentKey, subTables);
 			
 			if (tables.containsKey(table.getName())) {
@@ -659,8 +596,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 		return dnName == null || dnName.length() == 0;
 	}
 
-	private DBHostConfig createDBHostConf(String dataHost, Element node,
-			String dbType, String dbDriver, int maxCon, int minCon, String filters, long logTime) {
+	private DBHostConfig createDBHostConf(String dataHost, Element node, int maxCon, int minCon, String filters, long logTime) {
 		
 		String nodeHost = node.getAttribute("host");
 		String nodeUrl = node.getAttribute("url");
@@ -681,23 +617,12 @@ public class XMLSchemaLoader implements SchemaLoader {
 							+ " define error,some attributes of this element is empty: "
 							+ nodeHost);
 		}
-		if ("native".equalsIgnoreCase(dbDriver)) {
-			int colonIndex = nodeUrl.indexOf(':');
-			ip = nodeUrl.substring(0, colonIndex).trim();
-			port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
-		} else {
-			URI url;
-			try {
-				url = new URI(nodeUrl.substring(5));
-			} catch (Exception e) {
-				throw new ConfigException("invalid jdbc url " + nodeUrl + " of " + dataHost);
-			}
-			ip = url.getHost();
-			port = url.getPort();
-		}
+
+		int colonIndex = nodeUrl.indexOf(':');
+		ip = nodeUrl.substring(0, colonIndex).trim();
+		port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
 
 		DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty,password);
-		conf.setDbType(dbType);
 		conf.setMaxCon(maxCon);
 		conf.setMinCon(minCon);
 		conf.setFilters(filters);
@@ -751,10 +676,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 			 */
 			String writeTypStr = element.getAttribute("writeType");
 			int writeType = "".equals(writeTypStr) ? PhysicalDBPool.WRITE_ONLYONE_NODE : Integer.parseInt(writeTypStr);
-
-
-			String dbDriver = element.getAttribute("dbDriver");
-			String dbType = element.getAttribute("dbType");
 			String filters = element.getAttribute("filters");
 			String logTimeStr = element.getAttribute("logTime");
 			String slaveIDs = element.getAttribute("slaveIDs");
@@ -773,20 +694,20 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<Integer, DBHostConfig[]>(2);
 			for (int w = 0; w < writeDbConfs.length; w++) {
 				Element writeNode = (Element) writeNodes.item(w);
-				writeDbConfs[w] = createDBHostConf(name, writeNode, dbType, dbDriver, maxCon, minCon,filters,logTime);
+				writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon,filters,logTime);
 				NodeList readNodes = writeNode.getElementsByTagName("readHost");
 				//读取对应的每一个readHost
 				if (readNodes.getLength() != 0) {
 					DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
 					for (int r = 0; r < readDbConfs.length; r++) {
 						Element readNode = (Element) readNodes.item(r);
-						readDbConfs[r] = createDBHostConf(name, readNode, dbType, dbDriver, maxCon, minCon,filters, logTime);
+						readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon,filters, logTime);
 					}
 					readHostsMap.put(w, readDbConfs);
 				}
 			}
 
-			DataHostConfig hostConf = new DataHostConfig(name, dbType, dbDriver, 
+			DataHostConfig hostConf = new DataHostConfig(name,
 					writeDbConfs, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);		
 			
 			hostConf.setMaxCon(maxCon);

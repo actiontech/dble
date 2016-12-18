@@ -55,7 +55,7 @@ import io.mycat.util.StringUtil;
  */
 public class ShowHeartbeatDetail {
 
-	private static final int FIELD_COUNT = 6;
+	private static final int FIELD_COUNT = 5;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
@@ -120,8 +120,6 @@ public class ShowHeartbeatDetail {
 	private static List<RowDataPacket> getRows(String name,String charset) {
 		List<RowDataPacket> list = new LinkedList<RowDataPacket>();
 		MycatConfig conf = MycatServer.getInstance().getConfig();
-		// host nodes
-		String type = "";
 		String ip = "";
 		int port = 0;
 		DBHeartbeat hb = null;
@@ -131,7 +129,6 @@ public class ShowHeartbeatDetail {
 			for (PhysicalDatasource ds : pool.getAllDataSources()) {
 				if(name.equals(ds.getName())){
 					hb = ds.getHeartbeat();
-					type = ds.getConfig().getDbType();
 					ip = ds.getConfig().getIp();
 					port = ds.getConfig().getPort();
 					break;
@@ -144,7 +141,6 @@ public class ShowHeartbeatDetail {
 			for(HeartbeatRecorder.Record record : heatbeartRecorders){
 				RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 				row.add(StringUtil.encode(name,charset));
-				row.add(StringUtil.encode(type,charset));
 				row.add(StringUtil.encode(ip,charset));
 				row.add(IntegerUtil.toBytes(port));
 				long time = record.getTime();
@@ -156,7 +152,6 @@ public class ShowHeartbeatDetail {
 			}
 		}else{
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-			row.add(null);
 			row.add(null);
 			row.add(null);
 			row.add(null);

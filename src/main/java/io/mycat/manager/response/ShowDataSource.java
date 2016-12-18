@@ -52,7 +52,7 @@ import io.mycat.util.StringUtil;
  */
 public final class ShowDataSource {
 
-	private static final int FIELD_COUNT = 12;
+	private static final int FIELD_COUNT = 11;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -163,7 +163,6 @@ public final class ShowDataSource {
 		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 		row.add(StringUtil.encode(dataNode, charset));
 		row.add(StringUtil.encode(ds.getName(), charset));
-		row.add(StringUtil.encode(ds.getConfig().getDbType(), charset));
 		row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
 		row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
 		row.add(StringUtil.encode(ds.isReadNode() ? "R" : "W", charset));

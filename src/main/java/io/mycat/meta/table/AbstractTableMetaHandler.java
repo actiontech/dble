@@ -11,26 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLNotNullConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLNullConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLTableElement;
-import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
-import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
-import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
@@ -62,7 +49,7 @@ public abstract class AbstractTableMetaHandler {
 			} finally {
 				tbConfig.getReentrantReadWriteLock().writeLock().unlock();
 			}
-			OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLMS, new MySQLTableStructureListener(dataNode,  System.currentTimeMillis()));
+			OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLMS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
 			resultHandler.setMark("Table Structure");
 			PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
 			SQLJob sqlJob = new SQLJob(sqlPrefix + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
@@ -139,66 +126,11 @@ public abstract class AbstractTableMetaHandler {
                 LOGGER.warn(stringBuilder.toString());
             }
         }
+
 		private TableMeta initTableMeta(String table, String sql, long timeStamp) {
-			TableMeta.Builder tmBuilder = TableMeta.newBuilder();
-			tmBuilder.setTableName(tbConfig.getName());
-			tmBuilder.setVersion(timeStamp);
 			SQLStatementParser parser = new MySqlStatementParser(sql);
 			SQLCreateTableStatement createStment = parser.parseCreateTable();
-			for (SQLTableElement tableElement : createStment.getTableElementList()) {
-				if (tableElement instanceof SQLColumnDefinition) {
-					addColumnMeta(tmBuilder, table, (SQLColumnDefinition) tableElement);
-				} else if (tableElement instanceof MySqlPrimaryKey) {
-					MySqlPrimaryKey primaryKey = (MySqlPrimaryKey) tableElement;
-					tmBuilder.setPrimary(makeIndexMeta("PRIMARY",  "PRI", primaryKey.getColumns()));
-				} else if (tableElement instanceof MySqlUnique) {
-					MySqlUnique unique = (MySqlUnique) tableElement;
-					tmBuilder.addUniIndex(makeIndexMeta(unique.getIndexName().getSimpleName(), "UNI", unique.getColumns()));
-				} else if (tableElement instanceof MySqlTableIndex) {
-					MySqlTableIndex index = (MySqlTableIndex) tableElement;
-					tmBuilder.addIndex(makeIndexMeta(index.getName().getSimpleName(), "MUL", index.getColumns()));
-				} else {
-					// ignore
-				}
-			}
-			return tmBuilder.build();
-		}
-
-		private IndexMeta makeIndexMeta(String index, String indexType, List<SQLExpr> columnExprs) {
-			IndexMeta.Builder indexBuilder = IndexMeta.newBuilder();
-			indexBuilder.setName(index);
-			indexBuilder.setType(indexType);
-			for (int i = 0; i < columnExprs.size(); i++) {
-				SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
-				indexBuilder.addColumns(column.getName()); 
-			}
-			return indexBuilder.build();
-		}
-
-		private void addColumnMeta(TableMeta.Builder tmBuilder, String table, SQLColumnDefinition column) {
-			ColumnMeta.Builder cmBuilder = ColumnMeta.newBuilder();
-			cmBuilder.setName(column.getName().getSimpleName());
-			cmBuilder.setDataType(column.getDataType().getName());
-			for (SQLColumnConstraint constraint : column.getConstraints()) {
-				if (constraint instanceof SQLNotNullConstraint) {
-					cmBuilder.setCanNull(false);
-				} else if (constraint instanceof SQLNullConstraint) {
-					cmBuilder.setCanNull(true);
-				} else {
-					// SQLColumnPrimaryKey ,SQLColumnUniqueKey will not happen in "show create table ..", ignore
-				}
-			}
-			if (column.getDefaultExpr() != null) {
-				StringBuilder builder = new StringBuilder();
-				MySqlOutputVisitor visitor = new MySqlOutputVisitor(builder);
-				column.getDefaultExpr().accept(visitor);
-				cmBuilder.setSdefault(builder.toString());
-			}
-			if (column.isAutoIncrement()) {
-				cmBuilder.setAutoIncre(true);
-				tmBuilder.setAiColPos(tmBuilder.getColumnsCount());
-			}
-			tmBuilder.addColumns(cmBuilder.build());
+			return MetaHelper.initTableMeta(table, createStment, timeStamp);
 		}
     }
 }

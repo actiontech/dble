@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -45,7 +44,6 @@ public class TableConfig {
 	private final String primaryKey;
 	private final boolean autoIncrement;
 	private final boolean needAddLimit;
-	private final Set<String> dbTypes;
 	private final int tableType;
 	private final ArrayList<String> dataNodes;
 	private final ArrayList<String> distTables;
@@ -69,7 +67,7 @@ public class TableConfig {
 
 
 	public TableConfig(String name, String primaryKey, boolean autoIncrement,boolean needAddLimit, int tableType,
-			String dataNode,Set<String> dbType, RuleConfig rule, boolean ruleRequired,
+			String dataNode, RuleConfig rule, boolean ruleRequired,
 			TableConfig parentTC, boolean isChildTable, String joinKey,
 			String parentKey,String subTables) {
 		if (name == null) {
@@ -81,7 +79,6 @@ public class TableConfig {
 		this.autoIncrement = autoIncrement;
 		this.needAddLimit=needAddLimit;
 		this.tableType = tableType;
-		this.dbTypes=dbType;
 		if (ruleRequired && rule == null) {
 			throw new IllegalArgumentException("ruleRequired but rule is null");
 		}
@@ -130,11 +127,6 @@ public class TableConfig {
 	public String getPrimaryKey() {
 		return primaryKey;
 	}
-
-    public Set<String> getDbTypes()
-    {
-        return dbTypes;
-    }
 
     public boolean isAutoIncrement() {
 		return autoIncrement;
@@ -235,7 +227,7 @@ public class TableConfig {
 	}
 
 	/**
-	 * @return upper-case
+	 * @return if low_case=1 upper-case
 	 */
 	public String getName() {
 		return name;

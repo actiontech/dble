@@ -13,10 +13,9 @@ public class DataNode{
 	private String userName;
 	private String pwd;
 	private String db;
-	private String dbType;
 	private int index;
 	
-	public DataNode(String name,String ip, int port, String userName, String pwd, String db,String dbType,int index) {
+	public DataNode(String name, String ip, int port, String userName, String pwd, String db, int index) {
 		super();
 		this.name = name;
 		this.ip = ip;
@@ -25,7 +24,6 @@ public class DataNode{
 		this.pwd = pwd;
 		this.db = db;
 		this.index = index;
-		this.dbType = dbType;
 	}
 
 	public String getIp() {
@@ -68,14 +66,6 @@ public class DataNode{
 		this.db = db;
 	}
 
-	public String getDbType() {
-		return dbType;
-	}
-
-	public void setDbType(String dbType) {
-		this.dbType = dbType;
-	}
-	
 	public String getName() {
 		return name;
 	}

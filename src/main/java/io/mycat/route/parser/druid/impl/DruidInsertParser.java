@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -25,6 +26,8 @@ import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
+import io.mycat.server.util.SchemaUtil;
+import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
 
 public class DruidInsertParser extends DefaultDruidParser {
@@ -39,8 +42,15 @@ public class DruidInsertParser extends DefaultDruidParser {
 	@Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
 		MySqlInsertStatement insert = (MySqlInsertStatement)stmt;
-		String tableName = StringUtil.removeBackquote(insert.getTableName().getSimpleName()).toUpperCase();
-
+		String schemaName = schema == null ? null : schema.getName();
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
+		if(schemaInfo == null){
+			String msg = "No MyCAT Database selected Or Define";
+			throw new SQLNonTransientException(msg);
+		}
+		schema = schemaInfo.schemaConfig;
+		String tableName = schemaInfo.table;
+		insert.setTableSource(new SQLIdentifierExpr(tableName));
 		ctx.addTable(tableName);
 		if(RouterUtil.isNoSharding(schema,tableName)) {//整个schema都不分库或者该表不拆分
 			RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
@@ -51,7 +61,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
 			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
-			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		} else {
 			//childTable的insert直接在解析过程中完成路由
@@ -182,8 +191,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			throw new SQLNonTransientException(msg);
 		}
 		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-				insertStmt.toString());
+		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), insertStmt.toString());
 		nodes[0].setSource(rrs);
 
 		// insert into .... on duplicateKey 

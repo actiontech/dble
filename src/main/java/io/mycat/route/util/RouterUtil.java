@@ -45,6 +45,7 @@ import io.mycat.route.parser.druid.DruidShardingParseInfo;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
+import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
 import io.mycat.sqlengine.mpp.LoadData;
 import io.mycat.util.StringUtil;
@@ -151,66 +152,26 @@ public class RouterUtil {
 	}
 
 
+	public static RouteResultset routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs, String stmt){
+		stmt = getFixedSql(removeSchema(stmt,schemaInfo.schema));
+		List<String> dataNodes = new ArrayList<>();
+		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
+		TableConfig tc = tables.get(schemaInfo.table);
+		if (tables != null && (tc != null)) {
+			dataNodes = tc.getDataNodes();
+		}
+		Iterator<String> iterator1 = dataNodes.iterator();
+		int nodeSize = dataNodes.size();
+		RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSize];
 
-	/**
-	 * 修复DDL路由
-	 *
-	 * @return RouteResultset
-	 * @author aStoneGod
-	 */
-	public static RouteResultset routeToDDLNode(RouteResultset rrs, int sqlType, String stmt,SchemaConfig schema) throws SQLSyntaxErrorException {
-		stmt = getFixedSql(stmt);
-		String tablename = "";		
-		final String upStmt = stmt.toUpperCase();
-		if(upStmt.startsWith("CREATE")){
-			if (upStmt.contains("CREATE INDEX ")){
-				tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateIndexPos(upStmt, 0));
-			}else {
-				tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateTablePos(upStmt, 0));
-			}
-		}else if(upStmt.startsWith("DROP")){
-			if (upStmt.contains("DROP INDEX ")){
-				tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropIndexPos(upStmt, 0));
-			}else {
-				tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropTablePos(upStmt, 0));
-			}
-		}else if(upStmt.startsWith("ALTER")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getAlterTablePos(upStmt, 0));
-		}else if (upStmt.startsWith("TRUNCATE")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getTruncateTablePos(upStmt, 0));
+		for (int i = 0; i < nodeSize; i++) {
+			String name = iterator1.next();
+			nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt);
+			nodes[i].setSource(rrs);
 		}
-		tablename = tablename.toUpperCase();
-		
-		if (schema.getTables().containsKey(tablename)){
-			if(ServerParse.DDL==sqlType){
-				List<String> dataNodes = new ArrayList<>();
-				Map<String, TableConfig> tables = schema.getTables();
-				TableConfig tc=tables.get(tablename);
-				if (tables != null && (tc  != null)) {
-					dataNodes = tc.getDataNodes();
-				}
-				Iterator<String> iterator1 = dataNodes.iterator();
-				int nodeSize = dataNodes.size();
-				RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSize];
-				
-				for(int i=0;i<nodeSize;i++){
-					String name = iterator1.next();
-					nodes[i] = new RouteResultsetNode(name, sqlType, stmt);
-					nodes[i].setSource(rrs);
-				}
-				rrs.setNodes(nodes);
-			}
-			return rrs;
-		}else if(schema.getDataNode()!=null){		//默认节点ddl
-			RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-			nodes[0] = new RouteResultsetNode(schema.getDataNode(), sqlType, stmt);
-			nodes[0].setSource(rrs);
-			rrs.setNodes(nodes);
-			return rrs;
-		}
-		//both tablename and defaultnode null
-		LOGGER.error("table not in schema----"+tablename);
-		throw new SQLSyntaxErrorException("op table not in schema----"+tablename);
+		rrs.setNodes(nodes);
+		rrs.setFinishedRoute(true);
+		return rrs;
 	}
 
 	
@@ -727,8 +688,6 @@ public class RouterUtil {
 	 */
 	private static String getMetaReadDataNode(SchemaConfig schema,
 			String table) {
-		// Table名字被转化为大写的，存储在schema
-		table = table.toUpperCase();
 		String dataNode = null;
 		Map<String, TableConfig> tables = schema.getTables();
 		TableConfig tc;
@@ -1034,7 +993,7 @@ public class RouterUtil {
 
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
-			String msg = "can't find table define in schema " + tableName + " schema:" + schema.getName();
+			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
@@ -1391,8 +1350,6 @@ public class RouterUtil {
 	 * @return
 	 */
 	public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) {
-		// Table名字被转化为大写的，存储在schema
-		tableName = tableName.toUpperCase();
 		if (schemaConfig.isNoSharding()) {
 			return true;
 		}

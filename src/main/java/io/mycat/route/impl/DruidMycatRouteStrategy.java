@@ -29,7 +29,6 @@ import io.mycat.route.parser.druid.DruidParser;
 import io.mycat.route.parser.druid.DruidParserFactory;
 import io.mycat.route.parser.druid.DruidShardingParseInfo;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.MycatStatementParser;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
@@ -42,17 +41,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
 			String stmt, RouteResultset rrs, String charset,
 			LayerCachePool cachePool) throws SQLNonTransientException {
-		
-		/**
-		 *  只有mysql时只支持mysql语法
-		 */
-		SQLStatementParser parser = null;
-		if (schema.isNeedSupportMultiDBType()) {
-			parser = new MycatStatementParser(stmt);
-		} else {
-			parser = new MySqlStatementParser(stmt); 
-		}
-
+		SQLStatementParser parser = new MySqlStatementParser(stmt);
 		MycatSchemaStatVisitor visitor = null;
 		SQLStatement statement;
 		

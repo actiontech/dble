@@ -3,8 +3,6 @@ package io.mycat.route;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
 
 import io.mycat.SimpleCachePool;
@@ -14,6 +12,7 @@ import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
+import junit.framework.Assert;
 
 /**
  * 修改内容

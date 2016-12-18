@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
@@ -15,14 +14,13 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableItem;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
@@ -511,22 +509,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 			whereUnit.addSplitedExpr(expr);
 		}
 	}
-	
-	@Override
-    public boolean visit(SQLAlterTableStatement x) {
-        String tableName = x.getName().toString();
-        TableStat stat = getTableStat(tableName,tableName);
-        stat.incrementAlterCount();
 
-        setCurrentTable(x, tableName);
-
-        for (SQLAlterTableItem item : x.getItems()) {
-            item.setParent(x);
-            item.accept(this);
-        }
-
-        return false;
-    }
     public boolean visit(MySqlInsertStatement x) {
         SQLName sqlName=  x.getTableName();
         if(sqlName!=null)

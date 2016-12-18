@@ -8,17 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
-import io.mycat.SimpleCachePool;
-import io.mycat.cache.LayerCachePool;
-import io.mycat.config.loader.SchemaLoader;
-import io.mycat.config.loader.xml.XMLSchemaLoader;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.route.parser.druid.DruidShardingParseInfo;
-import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.MycatStatementParser;
-import io.mycat.route.parser.druid.RouteCalculateUnit;
-import io.mycat.route.factory.RouteStrategyFactory;
-
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -26,6 +15,15 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 
+import io.mycat.SimpleCachePool;
+import io.mycat.cache.LayerCachePool;
+import io.mycat.config.loader.SchemaLoader;
+import io.mycat.config.loader.xml.XMLSchemaLoader;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.route.factory.RouteStrategyFactory;
+import io.mycat.route.parser.druid.DruidShardingParseInfo;
+import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
+import io.mycat.route.parser.druid.RouteCalculateUnit;
 import junit.framework.Assert;
 
 public class DQLRouteTest {
@@ -50,11 +48,8 @@ public class DQLRouteTest {
 		SchemaConfig schema = schemaMap.get("mysqldb");
 		RouteResultset rrs = new RouteResultset(stmt, 7);
 		SQLStatementParser parser = null;
-		if (schema.isNeedSupportMultiDBType()) {
-			parser = new MycatStatementParser(stmt);
-		} else {
-			parser = new MySqlStatementParser(stmt);
-		}
+		
+		parser = new MySqlStatementParser(stmt);
 		SQLStatement statement;
 		MycatSchemaStatVisitor visitor = null;
 

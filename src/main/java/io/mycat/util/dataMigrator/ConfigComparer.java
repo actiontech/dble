@@ -210,7 +210,6 @@ public class ConfigComparer {
 			String db = config.getDatabase();
 			String dataHost = config.getDataHost();
 			DataHostConfig dh = dhConfig.get(dataHost);
-			String dbType = dh.getDbType();
 			DBHostConfig[]  writeHosts = dh.getWriteHosts();
 			DBHostConfig currentWriteHost;
 			if(isAwaysUseMaster){
@@ -219,7 +218,7 @@ public class ConfigComparer {
 			    //迁移数据发生在当前切换后的数据源
 				currentWriteHost = writeHosts[Integer.valueOf(dnIndexProps.getProperty(dh.getName()))];
 			}
-			DataNode dn = new DataNode(name,currentWriteHost.getIp(), currentWriteHost.getPort(), currentWriteHost.getUser(), currentWriteHost.getPassword(), db, dbType,i++);
+			DataNode dn = new DataNode(name,currentWriteHost.getIp(), currentWriteHost.getPort(), currentWriteHost.getUser(), currentWriteHost.getPassword(), db,i++);
 			dataNodes.add(dn);
 		}
 		

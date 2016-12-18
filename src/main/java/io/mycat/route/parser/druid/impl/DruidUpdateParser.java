@@ -1,91 +1,89 @@
 package io.mycat.route.parser.druid.impl;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import java.sql.SQLNonTransientException;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.stat.TableStat;
-import com.alibaba.druid.stat.TableStat.Name;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.util.SchemaUtil;
+import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
-
-import java.sql.SQLNonTransientException;
-import java.util.List;
-import java.util.Map;
-
+/** 
+ * see http://dev.mysql.com/doc/refman/5.7/en/update.html
+ * @author huqing.yan
+ *
+ */
 public class DruidUpdateParser extends DefaultDruidParser {
     @Override
     public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
-        //这里限制了update分片表的个数只能有一个
-        if (ctx.getTables() != null && getUpdateTableCount() > 1 && !schema.isNoSharding()) {
-            String msg = "multi table related update not supported,tables:" + ctx.getTables();
-            LOGGER.warn(msg);
-            throw new SQLNonTransientException(msg);
-        }
         MySqlUpdateStatement update = (MySqlUpdateStatement) stmt;
-        String tableName = StringUtil.removeBackquote(update.getTableName().getSimpleName().toUpperCase());
+        SQLTableSource tableSource = update.getTableSource();
+        if (tableSource instanceof SQLJoinTableSource) {
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(schema.getName(), (SQLJoinTableSource) tableSource, stmt);
+			if (schemaInfo == null) {
+				String msg = "updating multiple tables is not supported, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			} else {
+				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
+				rrs.setFinishedRoute(true);
+				return;
+			}
+		} else {
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), (SQLExprTableSource) tableSource);
+			if (schemaInfo == null) {
+				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
+			schema = schemaInfo.schemaConfig;
+			String tableName = schemaInfo.table;
+			TableConfig tc = schema.getTables().get(tableName);
 
-        TableConfig tc = schema.getTables().get(tableName);
+	        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
+	            RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
+	            rrs.setFinishedRoute(true);
+	            return;
+	        }
 
-        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
-            RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
-            rrs.setFinishedRoute(true);
-            return;
-        }
+	        String partitionColumn = tc.getPartitionColumn();
+	        String joinKey = tc.getJoinKey();
+	        if (tc.isGlobalTable() || (partitionColumn == null && joinKey == null)) {
+	            //修改全局表 update 受影响的行数
+	            RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), rrs.getStatement(), tc.isGlobalTable());
+	            rrs.setFinishedRoute(true);
+	            return;
+	        }
+	        confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
 
-        String partitionColumn = tc.getPartitionColumn();
-        String joinKey = tc.getJoinKey();
-        if (tc.isGlobalTable() || (partitionColumn == null && joinKey == null)) {
-            //修改全局表 update 受影响的行数
-            RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), rrs.getStatement(), tc.isGlobalTable());
-            rrs.setFinishedRoute(true);
-            return;
-        }
-
-
-        confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
-
-//		if(ctx.getTablesAndConditions().size() > 0) {
-//			Map<String, Set<ColumnRoutePair>> map = ctx.getTablesAndConditions().get(tableName);
-//			if(map != null) {
-//				for(Map.Entry<String, Set<ColumnRoutePair>> entry : map.entrySet()) {
-//					String column = entry.getKey();
-//					Set<ColumnRoutePair> value = entry.getValue();
-//					if(column.toUpperCase().equals(anObject))
-//				}
-//			}
-//			
-//		}
-//		System.out.println();
-
-        if (schema.getTables().get(tableName).isGlobalTable() && ctx.getRouteCalculateUnit().getTablesAndConditions().size() > 1) {
-            throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
-        }
+	        if (schema.getTables().get(tableName).isGlobalTable() && ctx.getRouteCalculateUnit().getTablesAndConditions().size() > 1) {
+	            throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
+	        }
+			if (ctx.getTables().size() == 0) {
+				ctx.addTable(schemaInfo.table);
+			}
+			ctx.setSql(RouterUtil.getFixedSql(RouterUtil.removeSchema(ctx.getSql(),schemaInfo.schema)));
+		}
     }
-    
-    /**
-     * 获取更新的表数
-     * @author lian
-     * @date 2016年11月2日
-     * @return
-     */
-    private int getUpdateTableCount(){
-    	Map<Name, TableStat> tableMap = this.ctx.getVisitor().getTables();
-    	int updateTableCount = 0;
-    	for(Name _name : tableMap.keySet()){
-    		
-    		TableStat ts = tableMap.get(_name);
-    		updateTableCount += ts.getUpdateCount();
-    	}
-    	return updateTableCount;
-    }
+
     
     /*
     * 判断字段是否在SQL AST的节点中，比如 col 在 col = 'A' 中，这里要注意，一些子句中可能会在字段前加上表的别名，

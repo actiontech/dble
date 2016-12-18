@@ -29,7 +29,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -40,7 +41,6 @@ import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
-import io.mycat.backend.jdbc.JDBCConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.config.ConfigInitializer;
 import io.mycat.config.ErrorCode;
@@ -191,12 +191,6 @@ public final class ReloadConfig {
 								if ( mysqlCon.getPool() == ds) {
 									NIOProcessor.backends_old.add( con );									
 								}
-
-			                } else if (con instanceof JDBCConnection) {
-			                    JDBCConnection jdbcCon = (JDBCConnection) con;
-			                    if (jdbcCon.getPool() == ds) {
-			                    	NIOProcessor.backends_old.add( con );
-			                    }
 			                }
 			            }
 					}

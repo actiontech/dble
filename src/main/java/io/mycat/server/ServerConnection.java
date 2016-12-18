@@ -228,7 +228,7 @@ public class ServerConnection extends FrontendConnection {
 		 * 相关sql，已经在mysql客户端中验证。
 		 * 所以在此处增加关于sql中指定Schema方式的支持。
 		 */
-		if (isDefault && schema.isCheckSQLSchema() && isNormalSql(type)) {
+		if (isDefault && ServerParse.SELECT==type && schema.isCheckSQLSchema() ) {
 			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
 			if (schemaInfo != null && schemaInfo.schema != null && !schemaInfo.schema.equals(db)) {
 				SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
@@ -239,10 +239,6 @@ public class ServerConnection extends FrontendConnection {
 
 		routeEndExecuteSQL(sql, type, schema);
 
-	}
-	
-	private boolean isNormalSql(int type) {
-		return ServerParse.SELECT==type||ServerParse.INSERT==type||ServerParse.UPDATE==type||ServerParse.DELETE==type||ServerParse.DDL==type;
 	}
 
     public RouteResultset routeSQL(String sql, int type) {

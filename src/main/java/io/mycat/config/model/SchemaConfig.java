@@ -46,8 +46,6 @@ public class SchemaConfig {
 	 */
 	private final int defaultMaxLimit;
 	private final boolean checkSQLSchema;
-	private  boolean needSupportMultiDBType=false;
-	private  String defaultDataNodeDbType;
 	private final int lowerCase;
 
 	/**
@@ -56,8 +54,6 @@ public class SchemaConfig {
 	 */
 	private final Map<String, TableConfig> joinRel2TableMap = new HashMap<String, TableConfig>();
 	private final String[] allDataNodeStrArr;
-
-	private  Map<String,String> dataNodeDbTypeMap=new HashMap<>();
 
 	public SchemaConfig(String name, String dataNode,
 			Map<String, TableConfig> tables, int defaultMaxLimit,
@@ -84,16 +80,6 @@ public class SchemaConfig {
 		} else {
 			this.allDataNodeStrArr = null;
 		}
-	}
-
-	public String getDefaultDataNodeDbType()
-	{
-		return defaultDataNodeDbType;
-	}
-
-	public void setDefaultDataNodeDbType(String defaultDataNodeDbType)
-	{
-		this.defaultDataNodeDbType = defaultDataNodeDbType;
 	}
 
 	public boolean isCheckSQLSchema() {
@@ -128,16 +114,6 @@ public class SchemaConfig {
 
 	}
 
-	public boolean isNeedSupportMultiDBType()
-	{
-		return needSupportMultiDBType;
-	}
-
-	public void setNeedSupportMultiDBType(boolean needSupportMultiDBType)
-	{
-		this.needSupportMultiDBType = needSupportMultiDBType;
-	}
-
 	public Map<String, TableConfig> getJoinRel2TableMap() {
 		return joinRel2TableMap;
 	}
@@ -164,16 +140,6 @@ public class SchemaConfig {
 
 	public Set<String> getAllDataNodes() {
 		return allDataNodes;
-	}
-
-	public Map<String, String> getDataNodeDbTypeMap()
-	{
-		return dataNodeDbTypeMap;
-	}
-
-	public void setDataNodeDbTypeMap(Map<String, String> dataNodeDbTypeMap)
-	{
-		this.dataNodeDbTypeMap = dataNodeDbTypeMap;
 	}
 
 	public String getRandomDataNode() {

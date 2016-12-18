@@ -58,6 +58,7 @@ import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
+import io.mycat.server.parser.ServerParse;
 
 /**
  * @author mycat
@@ -550,5 +551,11 @@ public class NonBlockingSession implements Session {
 			}
 		}
 		return errConn;
+	}
+	public void handleSpecial(RouteResultset rrs, String schema){
+		if(rrs.getSqlType()==ServerParse.DDL){
+			String sql = rrs.getStatement();
+			MycatServer.getInstance().getTmManager().noticeSql(schema, sql);
+		}
 	}
 }

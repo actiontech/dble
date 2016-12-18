@@ -5,6 +5,8 @@ import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.util.dataMigrator.dataIOImpl.MysqlDataIO;
+
 
 /**
  * 数据迁移过程类
@@ -29,7 +31,7 @@ public  class DataMigrateRunner implements Runnable{
 		this.src = src;
 		this.target = target;
 		this.table = table;
-		dataIO = DataIOFactory.createDataIO(src.getDbType());
+		dataIO = new MysqlDataIO();
 	}
 
 	@Override

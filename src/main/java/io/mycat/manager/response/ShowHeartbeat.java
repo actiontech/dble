@@ -48,7 +48,7 @@ import io.mycat.util.LongUtil;
  */
 public class ShowHeartbeat {
 
-	private static final int FIELD_COUNT = 11;
+	private static final int FIELD_COUNT = 10;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
@@ -133,7 +133,6 @@ public class ShowHeartbeat {
 				DBHeartbeat hb = ds.getHeartbeat();
 				RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 				row.add(ds.getName().getBytes());
-				row.add(ds.getConfig().getDbType().getBytes());
 				if (hb != null) {
 					row.add(ds.getConfig().getIp().getBytes());
 					row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
@@ -146,7 +145,6 @@ public class ShowHeartbeat {
 					row.add(lat == null ? null : lat.getBytes());
 					row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
 				} else {
-					row.add(null);
 					row.add(null);
 					row.add(null);
 					row.add(null);

@@ -51,8 +51,6 @@ public class DataHostConfig {
 	private int minCon = 10;
 	private int balance = PhysicalDBPool.BALANCE_NONE;
 	private int writeType = PhysicalDBPool.WRITE_ONLYONE_NODE;
-	private final String dbType;
-	private final String dbDriver;
 	private final DBHostConfig[] writeHosts;
 	private final Map<Integer, DBHostConfig[]> readHosts;
 	private String hearbeatSQL;
@@ -67,12 +65,10 @@ public class DataHostConfig {
 	private final Set<String> dataNodes; //包含的所有dataNode名字
 	private String slaveIDs;
 
-	public DataHostConfig(String name, String dbType, String dbDriver,
+	public DataHostConfig(String name,
 			DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts,int switchType,int slaveThreshold, boolean tempReadHostAvailable) {
 		super();
 		this.name = name;
-		this.dbType = dbType;
-		this.dbDriver = dbDriver;
 		this.writeHosts = writeHosts;
 		this.readHosts = readHosts;
 		this.switchType=switchType;
@@ -158,14 +154,6 @@ public class DataHostConfig {
 
 	public void setBalance(int balance) {
 		this.balance = balance;
-	}
-
-	public String getDbType() {
-		return dbType;
-	}
-
-	public String getDbDriver() {
-		return dbDriver;
 	}
 
 	public DBHostConfig[] getWriteHosts() {

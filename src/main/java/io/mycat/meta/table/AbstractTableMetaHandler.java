@@ -153,7 +153,7 @@ public abstract class AbstractTableMetaHandler {
 					tmBuilder.setPrimary(makeIndexMeta("PRIMARY",  "PRI", primaryKey.getColumns()));
 				} else if (tableElement instanceof MySqlUnique) {
 					MySqlUnique unique = (MySqlUnique) tableElement;
-					tmBuilder.addUniIndex(makeIndexMeta(unique.getName().getSimpleName(), "UNI", unique.getColumns())); 
+					tmBuilder.addUniIndex(makeIndexMeta(unique.getIndexName().getSimpleName(), "UNI", unique.getColumns()));
 				} else if (tableElement instanceof MySqlTableIndex) {
 					MySqlTableIndex index = (MySqlTableIndex) tableElement;
 					tmBuilder.addIndex(makeIndexMeta(index.getName().getSimpleName(), "MUL", index.getColumns()));

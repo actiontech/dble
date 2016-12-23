@@ -203,8 +203,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn 
 				+ " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 		
-		if(!source.isTxstart())
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 		
 		source.setTxInterrupt(errmgs);
 		
@@ -260,9 +259,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			ok.serverStatus = source.isAutocommit() ? 2 : 1;
 			source.setLastInsertId(ok.insertId);
 			//handleSpecial
-			if (!source.isTxstart()) {
-				session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
-			}
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 			ok.write(source);
 			
 		}

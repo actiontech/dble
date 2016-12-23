@@ -398,11 +398,16 @@ public class MySQLConnection extends BackendAIOConnection {
 		if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
 			sc.setTxstart(true);
 		}
-		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(),autocommit);
+		synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), autocommit);
 	}
 
 	public String getConnXID(NonBlockingSession session) {
-		return session.getSessionXaID() + "." + this.schema;
+		if (session.getSessionXaID() == null)
+			return null;
+		else{
+			String sessionXaID = session.getSessionXaID();
+			return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + "'";
+		}
 	}
 	private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
 			int clientCharSetIndex, int clientTxIsoLation,
@@ -411,8 +416,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
 		boolean conAutoComit = this.autocommit;
 		String conSchema = this.schema;
-		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE
-				&& modifiedSQLExecuted) {
+		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
 			// clientTxIsoLation = Isolations.SERIALIZABLE;
 			xaCmd = "XA START " + xaTxID + ';';
 			this.xaStatus = TxState.TX_STARTED_STATE;

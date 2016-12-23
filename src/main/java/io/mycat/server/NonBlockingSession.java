@@ -178,18 +178,19 @@ public class NonBlockingSession implements Session {
 		return commitHandler;
 	}
 
-    public void commit() {
-        final int initCount = target.size();
-        if (initCount <= 0) {
-            ByteBuffer buffer = source.allocate();
-            buffer = source.writeToBuffer(OkPacket.OK, buffer);
-            source.write(buffer);
-            return;
-        } 
-        createCommitNodesHandler();
-        commitHandler.commit();
+	public void commit() {
+		final int initCount = target.size();
+		if (initCount <= 0) {
+			clearResources(false);
+			ByteBuffer buffer = source.allocate();
+			buffer = source.writeToBuffer(OkPacket.OK, buffer);
+			source.write(buffer);
+			return;
+		}
 
-    }
+		createCommitNodesHandler();
+		commitHandler.commit();
+	}
     	
 	private RollbackNodesHandler createRollbackNodesHandler() {
 		if (rollbackHandler == null) {
@@ -209,20 +210,21 @@ public class NonBlockingSession implements Session {
 		return rollbackHandler;
 	}
 
-    public void rollback() {
-        final int initCount = target.size();
-        if (initCount <= 0) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("no session bound connections found ,no need send rollback cmd ");
-            }
-            ByteBuffer buffer = source.allocate();
-            buffer = source.writeToBuffer(OkPacket.OK, buffer);
-            source.write(buffer);
-            return;
-        }
-        createRollbackNodesHandler();
-        rollbackHandler.rollback();
-    }
+	public void rollback() {
+		final int initCount = target.size();
+		if (initCount <= 0) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("no session bound connections found ,no need send rollback cmd ");
+			}
+			clearResources(false);
+			ByteBuffer buffer = source.allocate();
+			buffer = source.writeToBuffer(OkPacket.OK, buffer);
+			source.write(buffer);
+			return;
+		}
+		createRollbackNodesHandler();
+		rollbackHandler.rollback();
+	}
 
 	/**
 	 * 执行lock tables语句方法

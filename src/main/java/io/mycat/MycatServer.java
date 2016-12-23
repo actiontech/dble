@@ -75,7 +75,6 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.log.transaction.TxnLogProcessor;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
-import io.mycat.meta.MySQLTableStructureCheck;
 import io.mycat.meta.ProxyMetaManager;
 import io.mycat.net.AIOAcceptor;
 import io.mycat.net.AIOConnector;
@@ -475,11 +474,11 @@ public class MycatServer {
 		scheduler.schedule(catletClassClear(), 30000,TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getxaSessionCheckPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getxaLogCleanPeriod(),TimeUnit.MILLISECONDS);
-		if(system.getCheckTableConsistency()==1) {
+		if (system.getCheckTableConsistency() == 1) {
             scheduler.scheduleWithFixedDelay(tableStructureCheck(), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
         }
 		
-		if(system.getUseSqlStat()==1) {
+		if (system.getUseSqlStat() == 1) {
 			scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
 		}
 		
@@ -881,7 +880,11 @@ public class MycatServer {
 
 	//定时检查不同分片表结构一致性
 	private Runnable tableStructureCheck(){
-		return new MySQLTableStructureCheck();
+		return new Runnable() {
+			public void run() {
+				tmManager.tableStructureCheck();
+			}
+		};
 	}
 	
 	//  全局表一致性检查任务

@@ -36,12 +36,16 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import io.mycat.MycatServer;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
 import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.table.AbstractTableMetaHandler;
 import io.mycat.meta.table.MetaHelper;
 import io.mycat.meta.table.MetaHelper.INDEX_TYPE;
 import io.mycat.meta.table.SchemaMetaHandler;
+import io.mycat.meta.table.TableMetaCheckHandler;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
@@ -322,6 +326,21 @@ public class ProxyMetaManager {
 		handler.execute();
 	}
 
+	public synchronized void tableStructureCheck() {
+		for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
+			if (!checkDbExists(schema.getName())) {
+				continue;
+			}
+			for (TableConfig table : schema.getTables().values()) {
+				if (!checkTableExists(schema.getName(), table.getName())) {
+					continue;
+				}
+				AbstractTableMetaHandler handler = new TableMetaCheckHandler(schema.getName(), table);
+				handler.execute();
+			}
+		}
+	}
+
 	/**
 	 * 有sql语句执行了,需要查看是否有DDL语句
 	 * 
@@ -331,25 +350,24 @@ public class ProxyMetaManager {
 		// 是否是ddl语句，是ddl语句的okresponse则需要通知tmmanager
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLStatement statement = parser.parseStatement();
-		if(statement instanceof MySqlCreateTableStatement){
+		if (statement instanceof MySqlCreateTableStatement) {
 			createTable(schema, (MySqlCreateTableStatement) statement);
 		} else if (statement instanceof SQLDropTableStatement) {
 			dropTable(schema, (SQLDropTableStatement) statement);
 		} else if (statement instanceof SQLAlterTableStatement) {
 			alterTable(schema, (SQLAlterTableStatement) statement);
 		} else if (statement instanceof SQLTruncateStatement) {
-			//TODO:Sequence?
-		} else if(statement instanceof SQLCreateIndexStatement){
-			createIndex(schema,(SQLCreateIndexStatement)statement);
-		} else if(statement instanceof SQLDropIndexStatement){
+			// TODO:Sequence?
+		} else if (statement instanceof SQLCreateIndexStatement) {
+			createIndex(schema, (SQLCreateIndexStatement) statement);
+		} else if (statement instanceof SQLDropIndexStatement) {
 			dropIndex(schema, (SQLDropIndexStatement) statement);
-		} else{
-			//TODO: further
+		} else {
+			// TODO: further
 		}
 //		finally {
 //			c.unlockTable();
 //		}
-
 	}
 
 	private synchronized void createTable(String schema, MySqlCreateTableStatement statement) {
@@ -411,40 +429,39 @@ public class ProxyMetaManager {
 		TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
 		List<ColumnMeta> cols = new ArrayList<ColumnMeta>();
 		cols.addAll(orgTbMeta.getColumnsList());
-		int autoIndex = -1;
+		int autoColumnIndex = -1;
 		for (SQLAlterTableItem alterItem : alterStatement.getItems()) {
 			if (alterItem instanceof SQLAlterTableAddColumn) {
-				autoIndex = addColumn(cols, (SQLAlterTableAddColumn)alterItem);
+				autoColumnIndex = addColumn(cols, (SQLAlterTableAddColumn) alterItem);
 			} else if (alterItem instanceof SQLAlterTableAddIndex) {
-				addIndex(tmBuilder,(SQLAlterTableAddIndex) alterItem);
+				addIndex(tmBuilder, (SQLAlterTableAddIndex) alterItem);
 			} else if (alterItem instanceof SQLAlterTableAddConstraint) {
 				SQLAlterTableAddConstraint addConstraint = (SQLAlterTableAddConstraint) alterItem;
 				SQLConstraint constraint = addConstraint.getConstraint();
-				 if(constraint instanceof MySqlPrimaryKey){
-					MySqlPrimaryKey primaryKey = (MySqlPrimaryKey)constraint;
+				if (constraint instanceof MySqlPrimaryKey) {
+					MySqlPrimaryKey primaryKey = (MySqlPrimaryKey) constraint;
 					IndexMeta indexMeta = MetaHelper.makeIndexMeta(MetaHelper.PRIMARY, MetaHelper.INDEX_TYPE.PRI, primaryKey.getColumns());
 					tmBuilder.setPrimary(indexMeta);
-				}else {
-					// NOT SUPPORT
+				} else {// NOT SUPPORT
 				}
 			} else if (alterItem instanceof SQLAlterTableDropIndex) {
 				SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;
-				String dropName = ((SQLIdentifierExpr) dropIndex.getIndexName()).getName();
+				String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndex.getIndexName()).getName());
 				dropIndex(tmBuilder, dropName);
 			} else if (alterItem instanceof SQLAlterTableDropKey) {
 				SQLAlterTableDropKey dropIndex = (SQLAlterTableDropKey) alterItem;
-				String dropName = ((SQLIdentifierExpr) dropIndex.getKeyName()).getName();
+				String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndex.getKeyName()).getName());
 				dropIndex(tmBuilder, dropName);
 			} else if (alterItem instanceof MySqlAlterTableChangeColumn) {
-				autoIndex = changeColumn(cols,(MySqlAlterTableChangeColumn) alterItem);
+				autoColumnIndex = changeColumn(cols, (MySqlAlterTableChangeColumn) alterItem);
 			} else if (alterItem instanceof MySqlAlterTableModifyColumn) {
-				autoIndex = modifyColumn(cols, (MySqlAlterTableModifyColumn) alterItem);
+				autoColumnIndex = modifyColumn(cols, (MySqlAlterTableModifyColumn) alterItem);
 			} else if (alterItem instanceof SQLAlterTableDropColumnItem) {
-				dropColumn(cols,(SQLAlterTableDropColumnItem) alterItem);
+				dropColumn(cols, (SQLAlterTableDropColumnItem) alterItem);
 			} else if (alterItem instanceof SQLAlterTableDropPrimaryKey) {
 				tmBuilder.clearPrimary();
 			} else {
-				//TODO: further
+				// TODO: further
 			}
 		}
 		tmBuilder.clearColumns().addAllColumns(cols);
@@ -457,14 +474,14 @@ public class ProxyMetaManager {
 //			}
 //			tmBuilder.setAiOffset(offset);
 //		}
-		if(autoIndex!=-1){
-			tmBuilder.setAiColPos(autoIndex);
+		if (autoColumnIndex != -1) {
+			tmBuilder.setAiColPos(autoColumnIndex);
 		}
 		tmBuilder.setVersion(System.currentTimeMillis());
 		TableMeta newTblMeta = tmBuilder.build();
 		addTable(schema, newTblMeta);
 	}
-	private void createIndex(String schema, SQLCreateIndexStatement stament){
+	private synchronized void createIndex(String schema, SQLCreateIndexStatement stament){
 		SQLTableSource tableSource = stament.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
 			SQLExprTableSource exprTableSource = (SQLExprTableSource)tableSource;
@@ -498,7 +515,7 @@ public class ProxyMetaManager {
 		IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
 		tmBuilder.addIndex(indexMeta);
 	}
-	private void dropIndex(String schema, SQLDropIndexStatement dropIndexStatement){
+	private synchronized void dropIndex(String schema, SQLDropIndexStatement dropIndexStatement){
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, dropIndexStatement.getTableName());
 		TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
 		if (orgTbMeta == null)
@@ -524,7 +541,7 @@ public class ProxyMetaManager {
 	private boolean dropIndex(List<IndexMeta> indexs, String dropName) {
 		int index = -1;
 		for (int i = 0; i < indexs.size(); i++) {
-			String indexName = StringUtil.removeBackquote(indexs.get(i).getName());
+			String indexName = indexs.get(i).getName();
 			if (indexName.equalsIgnoreCase(dropName)) {
 				index = i;
 				break;
@@ -553,46 +570,46 @@ public class ProxyMetaManager {
 //	}
 
 	private int addColumn(List<ColumnMeta> columnMetas, SQLAlterTableAddColumn addColumn) {
-		int autoIndex = -1;
+		int autoColumnIndex = -1;
 		boolean isFirst = addColumn.isFirst();
 		SQLName afterColumn = addColumn.getAfterColumn();
-		if (afterColumn != null ||isFirst ) {
-			int index = -1;
-			if(isFirst){
-				index = 0;
-			}else  {
-				String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr)afterColumn).getName()); 
+		if (afterColumn != null || isFirst) {
+			int addIndex = -1;
+			if (isFirst) {
+				addIndex = 0;
+			} else {
+				String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
 				for (int i = 0; i < columnMetas.size(); i++) {
-					String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+					String colName = columnMetas.get(i).getName();
 					if (afterColName.equalsIgnoreCase(colName)) {
-						index = i + 1;
+						addIndex = i + 1;
 						break;
 					}
 				}
 			}
 			ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(addColumn.getColumns().get(0));
-			columnMetas.add(index, cmBuilder.build());
-			if(cmBuilder.getAutoIncre()){
-				autoIndex=index;
+			columnMetas.add(addIndex, cmBuilder.build());
+			if (cmBuilder.getAutoIncre()) {
+				autoColumnIndex = addIndex;
 			}
-		}else{
-			int index = columnMetas.size();
+		} else {
+			int addIndex = columnMetas.size();
 			for (SQLColumnDefinition columnDef : addColumn.getColumns()) {
 				ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(columnDef);
-				columnMetas.add(index, cmBuilder.build());
-				if(cmBuilder.getAutoIncre()){
-					autoIndex=index;
+				columnMetas.add(addIndex, cmBuilder.build());
+				if (cmBuilder.getAutoIncre()) {
+					autoColumnIndex = addIndex;
 				}
 			}
 		}
-		return autoIndex;
+		return autoColumnIndex;
 	}
 
 	private int changeColumn(List<ColumnMeta> columnMetas, MySqlAlterTableChangeColumn changeColumn) {
-		int autoIndex = -1;
+		int autoColumnIndex = -1;
 		String changeColName = StringUtil.removeBackquote(((SQLIdentifierExpr) changeColumn.getColumnName()).getName());
 		for (int i = 0; i < columnMetas.size(); i++) {
-			String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+			String colName = columnMetas.get(i).getName();
 			if (changeColName.equalsIgnoreCase(colName)) {
 				columnMetas.remove(i);
 				break;
@@ -600,34 +617,34 @@ public class ProxyMetaManager {
 		}
 		boolean isFirst = changeColumn.isFirst();
 		SQLExpr afterColumn = changeColumn.getAfterColumn();
-		int index = -1;
+		int changeIndex = -1;
 		if (isFirst) {
-			index = 0;
+			changeIndex = 0;
 		} else if (afterColumn != null) {
 			String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
 			for (int i = 0; i < columnMetas.size(); i++) {
-				String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+				String colName = columnMetas.get(i).getName();
 				if (afterColName.equalsIgnoreCase(colName)) {
-					index = i + 1;
+					changeIndex = i + 1;
 					break;
 				}
 			}
 		} else {
-			index = columnMetas.size();
+			changeIndex = columnMetas.size();
 		}
 		ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(changeColumn.getNewColumnDefinition());
-		columnMetas.add(index, cmBuilder.build());
+		columnMetas.add(changeIndex, cmBuilder.build());
 		if (cmBuilder.getAutoIncre()) {
-			autoIndex = index;
+			autoColumnIndex = changeIndex;
 		}
-		return autoIndex;
+		return autoColumnIndex;
 	}
 
 	private void dropColumn(List<ColumnMeta> columnMetas, SQLAlterTableDropColumnItem dropColumn) {
 		for (SQLName dropName : dropColumn.getColumns()) {
 			String dropColName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropName).getName());
 			for (int i = 0; i < columnMetas.size(); i++) {
-				String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+				String colName = columnMetas.get(i).getName();
 				if (dropColName.equalsIgnoreCase(colName)) {
 					columnMetas.remove(i);
 					break;
@@ -637,11 +654,11 @@ public class ProxyMetaManager {
 	}
 
 	private int modifyColumn(List<ColumnMeta> columnMetas, MySqlAlterTableModifyColumn modifyColumn) {
-		int autoIndex = -1;
+		int autoColumnIndex = -1;
 		SQLColumnDefinition modifyColDef = modifyColumn.getNewColumnDefinition();
 		String modifyColName = StringUtil.removeBackquote(modifyColDef.getName().getSimpleName());
 		for (int i = 0; i < columnMetas.size(); i++) {
-			String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+			String colName = columnMetas.get(i).getName();
 			if (modifyColName.equalsIgnoreCase(colName)) {
 				columnMetas.remove(i);
 				break;
@@ -649,27 +666,27 @@ public class ProxyMetaManager {
 		}
 		boolean isFirst = modifyColumn.isFirst();
 		SQLExpr afterColumn = modifyColumn.getAfterColumn();
-		int index = -1;
+		int modifyIndex = -1;
 		if (isFirst) {
-			index = 0;
+			modifyIndex = 0;
 		} else if (afterColumn != null) {
 			String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
 			for (int i = 0; i < columnMetas.size(); i++) {
-				String colName = StringUtil.removeBackquote(columnMetas.get(i).getName());
+				String colName = columnMetas.get(i).getName();
 				if (afterColName.equalsIgnoreCase(colName)) {
-					index = i + 1;
+					modifyIndex = i + 1;
 					break;
 				}
 			}
 		} else {
-			index = columnMetas.size();
+			modifyIndex = columnMetas.size();
 		}
 		ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(modifyColDef);
-		columnMetas.add(index, cmBuilder.build());
+		columnMetas.add(modifyIndex, cmBuilder.build());
 		if (cmBuilder.getAutoIncre()) {
-			autoIndex = index;
+			autoColumnIndex = modifyIndex;
 		}
-		return autoIndex;
+		return autoColumnIndex;
 	}
 
 //	private void onTableChange(String schema, String tbName) {

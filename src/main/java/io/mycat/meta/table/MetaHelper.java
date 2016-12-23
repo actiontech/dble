@@ -18,6 +18,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
 import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.util.StringUtil;
 
 public class MetaHelper {
 	public static enum INDEX_TYPE{
@@ -51,20 +52,27 @@ public class MetaHelper {
 		return tmBuilder.build();
 	}
 
+	/**
+	 * the "`" will be removed
+	 * @param indexName
+	 * @param indexType
+	 * @param columnExprs
+	 * @return
+	 */
 	public static IndexMeta makeIndexMeta(String indexName, INDEX_TYPE indexType, List<SQLExpr> columnExprs) {
 		IndexMeta.Builder indexBuilder = IndexMeta.newBuilder();
-		indexBuilder.setName(indexName);
+		indexBuilder.setName(StringUtil.removeBackquote(indexName));
 		indexBuilder.setType(indexType.toString());
 		for (int i = 0; i < columnExprs.size(); i++) {
 			SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
-			indexBuilder.addColumns(column.getName()); 
+			indexBuilder.addColumns(StringUtil.removeBackquote(column.getName()));
 		}
 		return indexBuilder.build();
 	}
 
 	public static ColumnMeta.Builder makeColumnMeta(SQLColumnDefinition column) {
 		ColumnMeta.Builder cmBuilder = ColumnMeta.newBuilder();
-		cmBuilder.setName(column.getName().getSimpleName());
+		cmBuilder.setName(StringUtil.removeBackquote(column.getName().getSimpleName()));
 		cmBuilder.setDataType(column.getDataType().getName());
 		for (SQLColumnConstraint constraint : column.getConstraints()) {
 			if (constraint instanceof SQLNotNullConstraint) {

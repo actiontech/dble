@@ -446,11 +446,11 @@ public class ProxyMetaManager {
 				}
 			} else if (alterItem instanceof SQLAlterTableDropIndex) {
 				SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;
-				String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndex.getIndexName()).getName());
+				String dropName = StringUtil.removeBackquote(dropIndex.getIndexName().getSimpleName());
 				dropIndex(tmBuilder, dropName);
 			} else if (alterItem instanceof SQLAlterTableDropKey) {
 				SQLAlterTableDropKey dropIndex = (SQLAlterTableDropKey) alterItem;
-				String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndex.getKeyName()).getName());
+				String dropName = StringUtil.removeBackquote(dropIndex.getKeyName().getSimpleName());
 				dropIndex(tmBuilder, dropName);
 			} else if (alterItem instanceof MySqlAlterTableChangeColumn) {
 				autoColumnIndex = changeColumn(cols, (MySqlAlterTableChangeColumn) alterItem);
@@ -489,7 +489,7 @@ public class ProxyMetaManager {
 			TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
 			if (orgTbMeta == null)
 				return;
-			String indexName = ((SQLIdentifierExpr) stament.getName()).getName();
+			String indexName = stament.getName().getSimpleName();
 			TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
 			if (stament.getType() == null) {
 				addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, stament.getItems());
@@ -499,7 +499,7 @@ public class ProxyMetaManager {
 		}
 	}
 	private void addIndex(TableMeta.Builder tmBuilder, SQLAlterTableAddIndex addIndex) {
-		String indexName = ((SQLIdentifierExpr) addIndex.getName()).getName();
+		String indexName = addIndex.getName().getSimpleName();
 		if (addIndex.isUnique()) {
 			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, addIndex.getItems());
 		} else {
@@ -521,7 +521,6 @@ public class ProxyMetaManager {
 		if (orgTbMeta == null)
 			return;
 		TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
-		dropIndexStatement.getIndexName();
 		String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndexStatement.getIndexName()).getName());
 		dropIndex(tmBuilder, dropName);
 	}
@@ -578,7 +577,7 @@ public class ProxyMetaManager {
 			if (isFirst) {
 				addIndex = 0;
 			} else {
-				String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
+				String afterColName = StringUtil.removeBackquote(afterColumn.getSimpleName());
 				for (int i = 0; i < columnMetas.size(); i++) {
 					String colName = columnMetas.get(i).getName();
 					if (afterColName.equalsIgnoreCase(colName)) {
@@ -607,7 +606,7 @@ public class ProxyMetaManager {
 
 	private int changeColumn(List<ColumnMeta> columnMetas, MySqlAlterTableChangeColumn changeColumn) {
 		int autoColumnIndex = -1;
-		String changeColName = StringUtil.removeBackquote(((SQLIdentifierExpr) changeColumn.getColumnName()).getName());
+		String changeColName = StringUtil.removeBackquote(changeColumn.getColumnName().getSimpleName());
 		for (int i = 0; i < columnMetas.size(); i++) {
 			String colName = columnMetas.get(i).getName();
 			if (changeColName.equalsIgnoreCase(colName)) {
@@ -642,7 +641,7 @@ public class ProxyMetaManager {
 
 	private void dropColumn(List<ColumnMeta> columnMetas, SQLAlterTableDropColumnItem dropColumn) {
 		for (SQLName dropName : dropColumn.getColumns()) {
-			String dropColName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropName).getName());
+			String dropColName = StringUtil.removeBackquote(dropName.getSimpleName());
 			for (int i = 0; i < columnMetas.size(); i++) {
 				String colName = columnMetas.get(i).getName();
 				if (dropColName.equalsIgnoreCase(colName)) {

@@ -22,10 +22,11 @@ public class DruidCreateIndexParser extends DefaultDruidParser {
 	
 	@Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
+		String schemaName = schema == null ? null : schema.getName();
 		SQLCreateIndexStatement createStmt = (SQLCreateIndexStatement) stmt;
 		SQLTableSource tableSource = createStmt.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), (SQLExprTableSource) tableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
 			if (schemaInfo == null) {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);

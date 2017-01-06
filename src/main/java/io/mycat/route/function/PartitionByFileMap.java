@@ -98,7 +98,11 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 			throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please check if the format satisfied.").toString(),e);
 		}
 	}
-	
+
+	@Override
+	public Integer[] calculateRange(String beginValue, String endValue) {
+		throw new IllegalArgumentException(new StringBuilder().append("you can't calculate range in algorithmic [PartitionByFileMap].").toString());
+	}
 	@Override
 	public int getPartitionNum() {
 		Set<Integer> set = new HashSet<Integer>(app2Partition.values());

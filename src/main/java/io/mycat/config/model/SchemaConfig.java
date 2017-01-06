@@ -67,8 +67,7 @@ public class SchemaConfig {
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
-			throw new RuntimeException(name
-					+ " in noSharding mode schema must have default dataNode ");
+			throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
 		}
 		this.metaDataNodes = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();

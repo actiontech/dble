@@ -33,12 +33,12 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		if (isNeedCheckDB && schema.isCheckSQLSchema()) {
 			origSQL = RouterUtil.removeSchema(origSQL, schema.getName());
 		}
-
-		/**
-     * 处理一些路由之前的逻辑
-     * 全局序列号，父子表插入
-     */
-		if (isNeedCheckDB && beforeRouteProcess(schema, sqlType, origSQL, sc) ) {
+ 
+		//TODO:seq should managerd by mycat
+		if(isNeedCheckDB && RouterUtil.processWithMycatSeq(schema, sqlType, origSQL, sc)){
+			return null;
+		}
+		if (sqlType == ServerParse.INSERT && RouterUtil.processInsert(schema, sqlType, origSQL, sc)) {
 			return null;
 		}
 
@@ -83,16 +83,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		return rrs;
 	}
 
-	/**
-	 * 路由之前必要的处理
-	 * 主要是全局序列号插入，还有子表插入
-	 */
-	private boolean beforeRouteProcess(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc)
-			throws SQLNonTransientException {
-		return RouterUtil.processWithMycatSeq(schema, sqlType, origSQL, sc)
-				|| (sqlType == ServerParse.INSERT && RouterUtil.processERChildTable(schema, origSQL, sc))
-				|| (sqlType == ServerParse.INSERT && RouterUtil.processInsert(schema, sqlType, origSQL, sc));
-	}
 
 	/**
 	 * 通过解析AST语法树类来寻找路由

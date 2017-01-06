@@ -1,5 +1,6 @@
 package io.mycat.server.interceptor.impl;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -8,14 +9,13 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.server.interceptor.SQLInterceptor;
 import io.mycat.server.parser.ServerParse;
-
-import java.io.File;
 
 public class StatisticsSqlInterceptor implements SQLInterceptor {
     

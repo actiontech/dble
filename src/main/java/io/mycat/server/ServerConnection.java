@@ -180,10 +180,6 @@ public class ServerConnection extends FrontendConnection {
 		boolean isDefault = true;
 		if (db == null) {
 			db = SchemaUtil.detectDefaultDb(sql, type);
-			if (db == null) {
-				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No MyCAT Database selected");
-				return;
-			}
 			isDefault = false;
 		}
 		
@@ -209,12 +205,13 @@ public class ServerConnection extends FrontendConnection {
 				return;
 			}
 		}
-		
-		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-		if (schema == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
-					"Unknown MyCAT Database '" + db + "'");
-			return;
+		SchemaConfig schema = null;
+		if (db != null){
+			schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
+			if (schema == null) {
+				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown MyCAT Database '" + db + "'");
+				return;
+			}
 		}
 
 		//fix navicat   SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ
@@ -228,7 +225,7 @@ public class ServerConnection extends FrontendConnection {
 		 * 相关sql，已经在mysql客户端中验证。
 		 * 所以在此处增加关于sql中指定Schema方式的支持。
 		 */
-		if (isDefault && ServerParse.SELECT==type && schema.isCheckSQLSchema() ) {
+		if (ServerParse.SELECT==type && isDefault && schema.isCheckSQLSchema() ) {
 			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
 			if (schemaInfo != null && schemaInfo.schema != null && !schemaInfo.schema.equals(db)) {
 				SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);

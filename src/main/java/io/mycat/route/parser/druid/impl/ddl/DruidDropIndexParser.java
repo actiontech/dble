@@ -28,8 +28,9 @@ public class DruidDropIndexParser extends DefaultDruidParser {
 	@Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
 			throws SQLNonTransientException {
+		String schemaName = schema == null ? null : schema.getName();
 		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement)stmt;
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), dropStmt.getTableName());
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, dropStmt.getTableName());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);

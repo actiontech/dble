@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
-import io.mycat.backend.ConnectionMeta;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.cache.CachePool;
 import io.mycat.config.MycatConfig;

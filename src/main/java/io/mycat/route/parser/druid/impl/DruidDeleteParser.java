@@ -24,6 +24,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 	@Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
 			throws SQLNonTransientException {
+		String schemaName = schema == null ? null : schema.getName();
 		MySqlDeleteStatement delete = (MySqlDeleteStatement) stmt;
 		SQLTableSource tableSource = delete.getTableSource();
 		SQLTableSource fromSource = delete.getFrom();
@@ -31,7 +32,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			tableSource = fromSource;
 		}
 		if (tableSource instanceof SQLJoinTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(schema.getName(), (SQLJoinTableSource) tableSource, stmt);
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(schemaName, (SQLJoinTableSource) tableSource, stmt);
 			if (schemaInfo == null) {
 				String msg = "deleting from multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
@@ -41,7 +42,6 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				return;
 			}
 		} else {
-			String schemaName = schema == null ? null : schema.getName();
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
 			if (schemaInfo == null) {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;

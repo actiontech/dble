@@ -25,12 +25,12 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 		String tbName = tm.getTableName();
 		SchemaMeta schemaMeta = MycatServer.getInstance().getTmManager().getSchema(schema);
 		if (schemaMeta == null) {
-			//may the DDL drop database;
+			//the DDL may drop database;
 			return false;
 		}
 		TableMeta oldTm = schemaMeta.getTableMeta(tbName);
 		if(oldTm == null ){
-			//may the DDL drop table;
+			//the DDL may drop table;
 			return false;
 		}
 		if(oldTm.getVersion()>=tm.getVersion()){
@@ -38,7 +38,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 			return false;
 		}
 		TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
-		// thread not safe ,but enough
+		//TODO: thread not safe
 		if (!oldTm.equals(tblMetaTmp) && oldTm.equals(schemaMeta.getTableMeta(tbName))) {
 			return true;
 		}

@@ -20,12 +20,13 @@ public class DruidDropTableParser extends DefaultDruidParser {
 	
 	@Override
 	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
+		String schemaName = schema == null ? null : schema.getName();
 		SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
 		if(dropTable.getTableSources().size()>1){
 			String msg = "dropping multi-tables is not supported, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), dropTable.getTableSources().get(0));
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, dropTable.getTableSources().get(0));
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);

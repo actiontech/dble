@@ -26,39 +26,7 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm ,Seria
 	 * 返回null表示没有节点被路由到
 	 */
 	@Override
-	public Integer[] calculateRange(String beginValue, String endValue)  {
-		return new Integer[0];
-	}
-	
-	/**
-	 * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
-	 * @param algorithm
-	 * @param beginValue
-	 * @param endValue
-	 * @return
-	 */
-	public static Integer[] calculateSequenceRange(AbstractPartitionAlgorithm algorithm, String beginValue, String endValue)  {
-		Integer begin = 0, end = 0;
-		begin = algorithm.calculate(beginValue);
-		end = algorithm.calculate(endValue);
-
-		if(begin == null || end == null){
-			return new Integer[0];
-		}
-		
-		if (end >= begin) {
-			int len = end-begin+1;
-			Integer [] re = new Integer[len];
-			
-			for(int i =0;i<len;i++){
-				re[i]=begin+i;
-			}
-			
-			return re;
-		}else{
-			return new Integer[0];
-		}
-	}
+	public abstract Integer[] calculateRange(String beginValue, String endValue);
 	
 	/**
 	 * 

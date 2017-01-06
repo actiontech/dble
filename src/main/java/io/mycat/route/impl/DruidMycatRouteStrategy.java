@@ -196,7 +196,6 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	@Override
 	public RouteResultset analyseShowSQL(SchemaConfig schema,
 			RouteResultset rrs, String stmt) throws SQLSyntaxErrorException {
-		
 		String upStmt = stmt.toUpperCase();
 		int tabInd = upStmt.indexOf(" TABLES");
 		if (tabInd > 0) {// show tables
@@ -209,11 +208,10 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
-          String defaultNode=  schema.getDataNode();
-            if(!Strings.isNullOrEmpty(defaultNode))
-            {
-             return    RouterUtil.routeToSingleNode(rrs, defaultNode, stmt);
-            }
+			String defaultNode = schema.getDataNode();
+			if (!Strings.isNullOrEmpty(defaultNode)) {
+				return RouterUtil.routeToSingleNode(rrs, defaultNode, stmt);
+			}
 			return RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes(), stmt);
 		}
 		

@@ -115,7 +115,10 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         long hash = StringUtil.hash(key, start, end);
         return partitionUtil.partition(hash);
 	}
-
+	@Override
+	public Integer[] calculateRange(String beginValue, String endValue)  {
+		throw new IllegalArgumentException(new StringBuilder().append("you can't calculate range in algorithmic [PartitionByString].").toString());
+	}
 	@Override
 	public int getPartitionNum() {
 		int nPartition = 0;

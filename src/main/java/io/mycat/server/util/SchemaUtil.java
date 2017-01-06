@@ -50,9 +50,7 @@ public class SchemaUtil
 					db = "information_schema";
 				}
 			}
-		} else if ((ServerParse.INSERT == type || ServerParse.UPDATE == type
-				|| ServerParse.DELETE == type || ServerParse.DDL == type
-				|| ServerParse.SHOW == type || ServerParse.USE == type || ServerParse.EXPLAIN == type
+		} else if ((ServerParse.SHOW == type || ServerParse.USE == type || ServerParse.EXPLAIN == type
 				|| ServerParse.SET == type || ServerParse.HELP == type || ServerParse.DESCRIBE == type)
 				&& !schemaConfigMap.isEmpty()) {
 			// 兼容mysql gui 不填默认database
@@ -105,6 +103,9 @@ public class SchemaUtil
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
 			schemaInfo.schema = schema;
 			schemaInfo.table = StringUtil.removeBackquote(identifierExpr.getName());
+		}
+		if (schemaInfo.schema == null) {
+			return null;
 		}
 		SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
 		if (schemaConfig == null) {

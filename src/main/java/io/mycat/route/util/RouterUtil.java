@@ -13,26 +13,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
-import com.google.common.base.Strings;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
-import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import io.mycat.cache.LayerCachePool;
-import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
@@ -477,7 +468,10 @@ public class RouterUtil {
 
 	public static boolean processInsert(SchemaConfig schema, int sqlType,
 	                                    String origSQL, ServerConnection sc) throws SQLNonTransientException {
-		String tableName = StringUtil.getTableName(origSQL).toUpperCase();
+		String tableName = StringUtil.getTableName(origSQL);
+		if (schema.getLowerCase() == 1) {
+			tableName = tableName.toUpperCase();
+		}
 		TableConfig tableConfig = schema.getTables().get(tableName);
 		boolean processedInsert=false;
 		//判断是有自增字段
@@ -515,6 +509,7 @@ public class RouterUtil {
 		return isPrimaryKeyInFields;
 	}
 
+	/*tableName has changed to UpperCase if LowerCase==1 */
 	public static boolean processInsert(ServerConnection sc,SchemaConfig schema,
 			int sqlType,String origSQL,String tableName,String primaryKey) throws SQLNonTransientException {
 
@@ -689,6 +684,9 @@ public class RouterUtil {
 	private static String getMetaReadDataNode(SchemaConfig schema,
 			String table) {
 		String dataNode = null;
+		if (schema.getLowerCase() == 1) {
+			table = table.toUpperCase();
+		}
 		Map<String, TableConfig> tables = schema.getTables();
 		TableConfig tc;
 		if (tables != null && (tc = tables.get(table)) != null) {
@@ -726,119 +724,27 @@ public class RouterUtil {
         return randomDn;
     }
 
-	/**
-	 * 根据 ER分片规则获取路由集合
-	 *
-	 * @param stmt            执行的语句
-	 * @param rrs      		     数据路由集合
-	 * @param tc	      	     表实体
-	 * @param joinKeyVal      连接属性
-	 * @return RouteResultset(数据路由集合)	 * 
-	 * @throws SQLNonTransientException，IllegalShardingColumnValueException
-	 * @author mycat
-	 */
-
-	public static RouteResultset routeByERParentKey(ServerConnection sc,SchemaConfig schema,
-                                                    int sqlType,String stmt,
-			RouteResultset rrs, TableConfig tc, String joinKeyVal)
-			throws SQLNonTransientException {
-		
-		// only has one parent level and ER parent key is parent
-		// table's partition key
-		if (tc.isSecondLevel()
-				//判断是否为二级子表（父表不再有父表）
-				&& tc.getParentTC().getPartitionColumn()
-						.equals(tc.getParentKey())) { // using
-														// parent
-														// rule to
-														// find
-														// datanode
-			Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(1);
-			ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
-			parentColVal.add(pair);
-			Set<String> dataNodeSet = ruleCalculate(tc.getParentTC(), parentColVal);
-			if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
-				throw new SQLNonTransientException(
-						"parent key can't find  valid datanode ,expect 1 but found: "
-								+ dataNodeSet.size());
-			}
-			String dn = dataNodeSet.iterator().next();
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  "
-						+ dn + " sql :" + stmt);
-			}
-			return RouterUtil.routeToSingleNode(rrs, dn, stmt);
-		}
-		return null;
-	}
-
-	/**
-	 * @return dataNodeIndex -&gt; [partitionKeysValueTuple+]
-	 */
 	public static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, TableConfig tc,
 			Set<ColumnRoutePair> colRoutePairSet) throws SQLNonTransientException {
-
-		String joinValue = "";
-
-		if(colRoutePairSet.size() > 1) {
-			LOGGER.warn("joinKey can't have multi Value");
-		} else {
-			Iterator<ColumnRoutePair> it = colRoutePairSet.iterator();
-			ColumnRoutePair joinCol = it.next();
-			joinValue = joinCol.colValue;
-		}
-
 		Set<String> retNodeSet = new LinkedHashSet<String>();
-
-		Set<String> nodeSet;
-		if (tc.isSecondLevel()
-				&& tc.getParentTC().getPartitionColumn()
-						.equals(tc.getParentKey())) { // using
-														// parent
-														// rule to
-														// find
-														// datanode
-
-			nodeSet = ruleCalculate(tc.getParentTC(),colRoutePairSet);
+		// using parent rule to find datanode
+		if (tc.isSecondLevel() && tc.getParentTC().getPartitionColumn().equals(tc.getParentKey())) {
+			Set<String> nodeSet = ruleCalculate(tc.getParentTC(), colRoutePairSet);
 			if (nodeSet.isEmpty()) {
-				throw new SQLNonTransientException(
-						"parent key can't find  valid datanode ,expect 1 but found: "
-								+ nodeSet.size());
+				throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + nodeSet.size());
 			}
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  "
-						+ nodeSet + " sql :" + rrs.getStatement());
+				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + nodeSet + " sql :" + rrs.getStatement());
 			}
 			retNodeSet.addAll(nodeSet);
-
-//			for(ColumnRoutePair pair : colRoutePairSet) {
-//				nodeSet = ruleCalculate(tc.getParentTC(),colRoutePairSet);
-//				if (nodeSet.isEmpty() || nodeSet.size() > 1) {//an exception would be thrown, if sql was executed on more than on sharding
-//					throw new SQLNonTransientException(
-//							"parent key can't find  valid datanode ,expect 1 but found: "
-//									+ nodeSet.size());
-//				}
-//				String dn = nodeSet.iterator().next();
-//				if (LOGGER.isDebugEnabled()) {
-//					LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  "
-//							+ dn + " sql :" + rrs.getStatement());
-//				}
-//				retNodeSet.addAll(nodeSet);
-//			}
 			return retNodeSet;
 		} else {
 			retNodeSet.addAll(tc.getParentTC().getDataNodes());
 		}
-
 		return retNodeSet;
 	}
 
-
-	/**
-	 * @return dataNodeIndex -&gt; [partitionKeysValueTuple+]
-	 */
-	public static Set<String> ruleCalculate(TableConfig tc,
-			Set<ColumnRoutePair> colRoutePairSet)  {
+	public static Set<String> ruleCalculate(TableConfig tc, Set<ColumnRoutePair> colRoutePairSet)  {
 		Set<String> routeNodeSet = new LinkedHashSet<String>();
 		String col = tc.getRule().getColumn();
 		RuleConfig rule = tc.getRule();
@@ -847,18 +753,14 @@ public class RouterUtil {
 			if (colPair.colValue != null) {
 				Integer nodeIndx = algorithm.calculate(colPair.colValue);
 				if (nodeIndx == null) {
-					throw new IllegalArgumentException(
-							"can't find datanode for sharding column:" + col
-									+ " val:" + colPair.colValue);
+					throw new IllegalArgumentException("can't find datanode for sharding column:" + col + " val:" + colPair.colValue);
 				} else {
 					String dataNode = tc.getDataNodes().get(nodeIndx);
 					routeNodeSet.add(dataNode);
 					colPair.setNodeId(nodeIndx);
 				}
 			} else if (colPair.rangeValue != null) {
-				Integer[] nodeRange = algorithm.calculateRange(
-						String.valueOf(colPair.rangeValue.beginValue),
-						String.valueOf(colPair.rangeValue.endValue));
+				Integer[] nodeRange = algorithm.calculateRange(String.valueOf(colPair.rangeValue.beginValue), String.valueOf(colPair.rangeValue.endValue));
 				if (nodeRange != null) {
 					/**
 					 * 不能确认 colPair的 nodeid是否会有其它影响
@@ -914,7 +816,10 @@ public class RouterUtil {
 
 		//为全局表和单库表找路由
 		for(String tableName : tables) {
-			TableConfig tableConfig = schema.getTables().get(tableName.toUpperCase());
+			if (schema.getLowerCase() == 1) {
+				tableName = tableName.toUpperCase();
+			}
+			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig == null) {
 				String msg = "can't find table define in schema "+ tableName + " schema:" + schema.getName();
 				LOGGER.warn(msg);
@@ -953,7 +858,10 @@ public class RouterUtil {
 
 		if(retNodesSet != null && retNodesSet.size() > 0) {
 			String tableName = tables.get(0);
-			TableConfig tableConfig = schema.getTables().get(tableName.toUpperCase());
+			if (schema.getLowerCase() == 1) {
+				tableName = tableName.toUpperCase();
+			}
+			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig.isDistTable()){
 				routeToDistTableNode(tableName,schema, rrs, ctx.getSql(), tablesAndConditions, cachePool, isSelect);
 				return rrs;
@@ -990,7 +898,9 @@ public class RouterUtil {
 		if (isNoSharding(schema, tableName)) {
 			return routeToSingleNode(rrs, schema.getDataNode(), ctx.getSql());
 		}
-
+		if (schema.getLowerCase() == 1) {
+			tableName = tableName.toUpperCase();
+		}
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
 			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
@@ -1037,7 +947,7 @@ public class RouterUtil {
 			}
 		}
 	}
-	
+	/*tableName has changed to UpperCase if LowerCase==1 */
 	private static RouteResultset routeToDistTableNode(String tableName, SchemaConfig schema, RouteResultset rrs,
 			String orgSql, Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
 			LayerCachePool cachePool, boolean isSelect) throws SQLNonTransientException {
@@ -1142,7 +1052,10 @@ public class RouterUtil {
 		
 		//为分库表找路由
 		for(Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
-			String tableName = entry.getKey().toUpperCase();
+			String tableName = entry.getKey();
+			if (schema.getLowerCase() == 1) {
+				tableName = tableName.toUpperCase();
+			}
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig == null) {
 				String msg = "can't find table define in schema "
@@ -1353,7 +1266,9 @@ public class RouterUtil {
 		if (schemaConfig.isNoSharding()) {
 			return true;
 		}
-		
+		if (schemaConfig.getLowerCase() == 1) {
+			tableName = tableName.toUpperCase();
+		}
 		if (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName)) {
 			return true;
 		}
@@ -1386,149 +1301,4 @@ public class RouterUtil {
 		}
 		return false;
 	}
-
-
-	public static boolean processERChildTable(final SchemaConfig schema, final String origSQL,
-	                                          final ServerConnection sc) throws SQLNonTransientException {
-		String tableName = StringUtil.getTableName(origSQL).toUpperCase();
-		final TableConfig tc = schema.getTables().get(tableName);
-		//判断是否为子表，如果不是，只会返回false
-		if (null != tc && tc.isChildTable()) {
-			final RouteResultset rrs = new RouteResultset(origSQL, ServerParse.INSERT);
-			String joinKey = tc.getJoinKey();
-			//因为是Insert语句，用MySqlInsertStatement进行parse
-			MySqlInsertStatement insertStmt = (MySqlInsertStatement) (new MySqlStatementParser(origSQL)).parseInsert();
-			//判断条件完整性，取得解析后语句列中的joinkey列的index
-			int joinKeyIndex = getJoinKeyIndex(insertStmt.getColumns(), joinKey);
-			if (joinKeyIndex == -1) {
-				String inf = "joinKey not provided :" + tc.getJoinKey() + "," + insertStmt;
-				LOGGER.warn(inf);
-				throw new SQLNonTransientException(inf);
-			}
-			//子表不支持批量插入
-			if (isMultiInsert(insertStmt)) {
-				String msg = "ChildTable multi insert not provided";
-				LOGGER.warn(msg);
-				throw new SQLNonTransientException(msg);
-			}
-			//取得joinkey的值
-			String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
-			//解决bug #938，当关联字段的值为char类型时，去掉前后"'"
-			String realVal = joinKeyVal;
-			if (joinKeyVal.startsWith("'") && joinKeyVal.endsWith("'") && joinKeyVal.length() > 2) {
-				realVal = joinKeyVal.substring(1, joinKeyVal.length() - 1);
-			}
-			
-			String sql = insertStmt.toString();
-
-			// try to route by ER parent partion key
-			//如果是二级子表（父表不再有父表）,并且分片字段正好是joinkey字段，调用routeByERParentKey
-			RouteResultset theRrs = RouterUtil.routeByERParentKey(sc, schema, ServerParse.INSERT, sql, rrs, tc, realVal);
-			if (theRrs != null) {
-				boolean processedInsert=false;
-				//判断是否需要全局序列号
-                if ( sc!=null && tc.isAutoIncrement()) {
-                    String primaryKey = tc.getPrimaryKey();
-                    processedInsert=processInsert(sc,schema,ServerParse.INSERT,sql,tc.getName(),primaryKey);
-                }
-                if(processedInsert==false){
-                	rrs.setFinishedRoute(true);
-                    sc.getSession2().execute(rrs, ServerParse.INSERT);
-                }
-				return true;
-			}
-
-			// route by sql query root parent's datanode
-			//如果不是二级子表或者分片字段不是joinKey字段结果为空，则启动异步线程去后台分片查询出datanode
-			//只要查询出上一级表的parentkey字段的对应值在哪个分片即可
-			final String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("find root parent's node sql " + findRootTBSql);
-			}
-
-			ListenableFuture<String> listenableFuture = MycatServer.getInstance().
-					getListeningExecutorService().submit(new Callable<String>() {
-				@Override
-				public String call() throws Exception {
-					FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
-					return fetchHandler.execute(schema.getName(), findRootTBSql, tc.getRootParent().getDataNodes());
-				}
-			});
-
-
-			Futures.addCallback(listenableFuture, new FutureCallback<String>() {
-				@Override
-				public void onSuccess(String result) {
-					//结果为空，证明上一级表中不存在那条记录，失败
-					if (Strings.isNullOrEmpty(result)) {
-						StringBuilder s = new StringBuilder();
-						LOGGER.warn(s.append(sc.getSession2()).append(origSQL).toString() +
-								" err:" + "can't find (root) parent sharding node for sql:" + origSQL);
-						sc.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "can't find (root) parent sharding node for sql:" + origSQL);
-						return;
-					}
-
-					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("found partion node for child table to insert " + result + " sql :" + origSQL);
-					}
-					//找到分片，进行插入（和其他的一样，需要判断是否需要全局自增ID）
-					boolean processedInsert=false;
-                    if ( sc!=null && tc.isAutoIncrement()) {
-                        try {
-                            String primaryKey = tc.getPrimaryKey();
-							processedInsert=processInsert(sc,schema,ServerParse.INSERT,origSQL,tc.getName(),primaryKey);
-						} catch (SQLNonTransientException e) {
-							LOGGER.warn("sequence processInsert error,",e);
-		                    sc.writeErrMessage(ErrorCode.ER_PARSE_ERROR , "sequence processInsert error," + e.getMessage());
-						}
-                    }
-                    if(processedInsert==false){
-                    	RouteResultset executeRrs = RouterUtil.routeToSingleNode(rrs, result, origSQL);
-    					sc.getSession2().execute(executeRrs, ServerParse.INSERT);
-                    }
-
-				}
-
-				@Override
-				public void onFailure(Throwable t) {
-					StringBuilder s = new StringBuilder();
-					LOGGER.warn(s.append(sc.getSession2()).append(origSQL).toString() +
-							" err:" + t.getMessage());
-					sc.writeErrMessage(ErrorCode.ER_PARSE_ERROR, t.getMessage() + " " + s.toString());
-				}
-			}, MycatServer.getInstance().
-					getListeningExecutorService());
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * 寻找joinKey的索引
-	 *
-	 * @param columns
-	 * @param joinKey
-	 * @return -1表示没找到，>=0表示找到了
-	 */
-	private static int getJoinKeyIndex(List<SQLExpr> columns, String joinKey) {
-		for (int i = 0; i < columns.size(); i++) {
-			String col = StringUtil.removeBackquote(columns.get(i).toString()).toUpperCase();
-			if (col.equals(joinKey)) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
-	/**
-	 * 是否为批量插入：insert into ...values (),()...或 insert into ...select.....
-	 *
-	 * @param insertStmt
-	 * @return
-	 */
-	private static boolean isMultiInsert(MySqlInsertStatement insertStmt) {
-		return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1)
-				|| insertStmt.getQuery() != null;
-	}
-
 }

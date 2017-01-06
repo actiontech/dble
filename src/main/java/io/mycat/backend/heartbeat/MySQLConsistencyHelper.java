@@ -23,11 +23,6 @@
  */
 package io.mycat.backend.heartbeat;
 
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
-import io.mycat.sqlengine.SQLJob;
-import io.mycat.sqlengine.SQLQueryResult;
-import io.mycat.sqlengine.SQLQueryResultListener;
-
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
+
+import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.sqlengine.SQLJob;
+import io.mycat.sqlengine.SQLQueryResult;
+import io.mycat.sqlengine.SQLQueryResultListener;
 
 /**
  * @author digdeep@126.com
@@ -66,8 +66,6 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
 
     @Override
     public void onResult(SQLQueryResult<Map<String, String>> result) {
-    	// {"dataNode":"db2","result":{"max_timestamp":"1450423751170"},"success":true}
-    	// {"dataNode":"db3","result":{"count(*)":"1"},"success":true}
     	LOGGER.debug("resultresultresultresult:" + JSON.toJSONString(result));
     	Map<String, String> rowMap = null;
     	String count = null; String innerCol = null;

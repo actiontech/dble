@@ -11,6 +11,8 @@ import io.mycat.server.ServerConnection;
 public interface BackendConnection extends ClosableConnection {
 	public boolean isModifiedSQLExecuted();
 
+	public boolean isDDL();
+
 	public boolean isFromSlaveDB();
 
 	public String getSchema();

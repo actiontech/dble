@@ -239,12 +239,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		//
 		this.netOutBytes += data.length;
 		
-		boolean executeResponse = conn.syncAndExcute();		
+		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
-			//TODO:DDL
-//			if (rrss.getDropDB() != null && StringUtil.equals(conn.getSchema(), rrss.getDropDB())) {
-//				conn.setSchema(null);
-//			}
 			session.handleSpecial(rrs,session.getSource().getSchema());
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();

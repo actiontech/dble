@@ -64,6 +64,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile String oldSchema;
 	private volatile boolean borrowed = false;
 	private volatile boolean modifiedSQLExecuted = false;
+	private volatile boolean isDDL = false;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -394,6 +395,9 @@ public class MySQLConnection extends BackendAIOConnection {
 		if (!modifiedSQLExecuted && rrn.isModifySQL()) {
 			modifiedSQLExecuted = true;
 		}
+		if (rrn.getSqlType() == ServerParse.DDL) {
+			isDDL = true;
+		}
 		String xaTXID = getConnXID(sc.getSession2());
 		if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
 			sc.setTxstart(true);
@@ -560,6 +564,8 @@ public class MySQLConnection extends BackendAIOConnection {
 		metaDataSyned = true;
 		attachment = null;
 		statusSync = null;
+		modifiedSQLExecuted = false;
+		isDDL = false;
 		setResponseHandler(null);
 		pool.releaseChannel(this);
 	}
@@ -651,6 +657,10 @@ public class MySQLConnection extends BackendAIOConnection {
 	@Override
 	public boolean isModifiedSQLExecuted() {
 		return modifiedSQLExecuted;
+	}
+
+	public boolean isDDL() {
+		return isDDL;
 	}
 
 	@Override

@@ -162,6 +162,7 @@ public class RouterUtil {
 		}
 		rrs.setNodes(nodes);
 		rrs.setFinishedRoute(true);
+		MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
 		return rrs;
 	}
 

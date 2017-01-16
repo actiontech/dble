@@ -1,5 +1,6 @@
 package io.mycat.server.interceptor.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.SQLQueryResult;
+import io.mycat.util.StringUtil;
 
 /**
  * @author digdeep@126.com
@@ -99,65 +101,70 @@ public class GlobalTableUtil{
 			}
 		}
 	}
-	//TODO:YHQ IT'S NOT A REAL CHECK,BUT SHOW INFO,bug when global is not all node in one dbsource
 	public static void consistencyCheck() {
 		MycatConfig config = MycatServer.getInstance().getConfig();
 		for(String key : globalTableMap.keySet()){
 			TableConfig table = globalTableMap.get(key);
+			Map<String, ArrayList<PhysicalDBNode>> executedMap = new HashMap<>();
 			// <table name="travelrecord" dataNode="dn1,dn2,dn3"
-			List<String> dataNodeList = table.getDataNodes();
-			
-			// 记录本次已经执行的datanode
-			// 多个 datanode 对应到同一个 PhysicalDatasource 只执行一次
-			Map<String, String> executedMap = new HashMap<>();
-			for(String nodeName : dataNodeList){	
+			for(String nodeName : table.getDataNodes()){
 				Map<String, PhysicalDBNode> map = config.getDataNodes();
 				for(String k2 : map.keySet()){
 					// <dataNode name="dn1" dataHost="localhost1" database="db1" />
 					PhysicalDBNode dBnode = map.get(k2);
 					if(nodeName.equals(dBnode.getName())){	// dn1,dn2,dn3
 						PhysicalDBPool pool = dBnode.getDbPool();
-						Collection<PhysicalDatasource> allDS = pool.genAllDataSources();
+						Collection<PhysicalDatasource> allDS = pool.getAllDataSources();
 						for(PhysicalDatasource pds : allDS){
 							if(pds instanceof MySQLDataSource){
-								MySQLDataSource mds = (MySQLDataSource)pds;
-								if(executedMap.get(pds.getName()) == null){
-									MySQLConsistencyChecker checker = new MySQLConsistencyChecker(mds, table.getName());
-									
-									isInnerColumnCheckFinished = 0;
-									checker.checkInnerColumnExist();
-									while(isInnerColumnCheckFinished <= 0){
-										LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
-										try {
-											TimeUnit.SECONDS.sleep(1);
-										} catch (InterruptedException e) {
-											LOGGER.warn(e.getMessage());
-										}
-									}
-									LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
-									
-									// 一种 check 完成之后，再进行另一种 check
-									checker = new MySQLConsistencyChecker(mds, table.getName());
-									isColumnCountCheckFinished = 0;
-									checker.checkRecordCout();
-									while(isColumnCountCheckFinished <= 0){
-										LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
-										try {
-											TimeUnit.SECONDS.sleep(1);
-										} catch (InterruptedException e) {
-											LOGGER.warn(e.getMessage());
-										}
-									}
-									LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
-									
-									
-									checker = new MySQLConsistencyChecker(mds, table.getName());
-									checker.checkMaxTimeStamp();
-									
-									executedMap.put(pds.getName(), nodeName);
+								ArrayList<PhysicalDBNode> nodes = executedMap.get(pds.getName());
+								if( nodes == null){
+									nodes = new ArrayList<PhysicalDBNode>();
 								}
+								nodes.add(dBnode);
+								executedMap.put(pds.getName(), nodes);
 							}
 						}
+					}
+				}
+			}
+			for(String sourceName:executedMap.keySet()){
+				ArrayList<PhysicalDBNode> nodes = executedMap.get(sourceName);
+				String[] schemas = new String[nodes.size()];
+				for(int index =0 ;index<nodes.size();index++){
+					schemas[index] = StringUtil.removeBackquote(nodes.get(index).getDatabase());
+				}
+				Collection<PhysicalDatasource> allDS = nodes.get(0).getDbPool().getAllDataSources();
+				for(PhysicalDatasource pds : allDS){
+					if(pds instanceof MySQLDataSource && sourceName.equals(pds.getName())){
+						MySQLDataSource mds = (MySQLDataSource)pds;
+						MySQLConsistencyChecker checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
+						isInnerColumnCheckFinished = 0;
+						checker.checkInnerColumnExist();
+						while(isInnerColumnCheckFinished <= 0){
+							LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
+							try {
+								TimeUnit.SECONDS.sleep(1);
+							} catch (InterruptedException e) {
+								LOGGER.warn(e.getMessage());
+							}
+						}
+						LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
+						// 一种 check 完成之后，再进行另一种 check
+						checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
+						isColumnCountCheckFinished = 0;
+						checker.checkRecordCout();
+						while(isColumnCountCheckFinished <= 0){
+							LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
+							try {
+								TimeUnit.SECONDS.sleep(1);
+							} catch (InterruptedException e) {
+								LOGGER.warn(e.getMessage());
+							}
+						}
+						LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
+						checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
+						checker.checkMaxTimeStamp();
 					}
 				}
 			}

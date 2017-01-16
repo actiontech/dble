@@ -23,17 +23,6 @@
  */
 package io.mycat.backend.heartbeat;
 
-import io.mycat.backend.mysql.nio.MySQLDataSource;
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
-import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
-import io.mycat.sqlengine.SQLJob;
-import io.mycat.sqlengine.SQLQueryResult;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSON;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +30,15 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.backend.mysql.nio.MySQLDataSource;
+import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
+import io.mycat.sqlengine.SQLJob;
+import io.mycat.sqlengine.SQLQueryResult;
 
 /**
  * @author digdeep@126.com
@@ -54,6 +52,7 @@ public class MySQLConsistencyChecker{
 	private String maxSQL;
 	private String tableName;	// global table name
 	private long beginTime;
+	private String[] physicalSchemas;
 //	private String columnExistSQL = "select count(*) as "+GlobalTableUtil.INNER_COLUMN
 //							+ " from information_schema.columns where column_name='"
 //							+ GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN + "' and table_name='";
@@ -66,8 +65,9 @@ public class MySQLConsistencyChecker{
 	private List<SQLQueryResult<Map<String, String>>> list = new ArrayList<>();
 
 	
-	public MySQLConsistencyChecker(MySQLDataSource source, String tableName) {
+	public MySQLConsistencyChecker(MySQLDataSource source, String[] physicalSchemas, String tableName) {
 		this.source = source;
+		this.physicalSchemas = physicalSchemas;
 		this.lock = new ReentrantLock(false);
 		this.tableName = tableName;
 		this.countSQL = " select count(*) as "+GlobalTableUtil.COUNT_COLUMN+" from " 
@@ -83,7 +83,6 @@ public class MySQLConsistencyChecker{
 		try{
 			this.jobCount.set(0);
 			beginTime = new Date().getTime();
-	        String[] physicalSchemas = source.getDbPool().getSchemas();
 	        for(String dbName : physicalSchemas){
 	        	MySQLConsistencyHelper detector = new MySQLConsistencyHelper(this, null);
 	        	OneRawSQLQueryResultHandler resultHandler = 
@@ -104,7 +103,6 @@ public class MySQLConsistencyChecker{
 		try{
 			this.jobCount.set(0);
 			beginTime = new Date().getTime();
-	        String[] physicalSchemas = source.getDbPool().getSchemas();
 	        for(String dbName : physicalSchemas){
 	        	MySQLConsistencyHelper detector = new MySQLConsistencyHelper(this, null);
 	        	OneRawSQLQueryResultHandler resultHandler = 
@@ -128,7 +126,6 @@ public class MySQLConsistencyChecker{
 		try{
 			this.jobCount.set(0);
 			beginTime = new Date().getTime();
-	        String[] physicalSchemas = source.getDbPool().getSchemas();
 	        for(String dbName : physicalSchemas){
 	        	MySQLConsistencyHelper detector = new MySQLConsistencyHelper(this, null, 1);
 	        	OneRawSQLQueryResultHandler resultHandler = 

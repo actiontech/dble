@@ -1,3 +1,20 @@
+date:2017/01/16 
+VERSION 0.2.3  
+CONTENT:  
+### 1.fix bugs
+issue 5.  
+isseu 6:  支持大小写敏感，粒度：schema。  
+方法:schema.xml中 标签schema下 添加lowerCase 属性 0 或者 1 ,默认不添加为为1大小写不敏感。  
+issue 7.  
+issue 8.  
+issue 10.  
+ISSUE 16.  
+
+### 2.移除对其他后端异构数据库的支持,以及对应的配置中的无用项。  
+### 3.不支持 between and 的枚举和 固定Hash 分区（string 类型）算法会提示警告。  
+### 4.DML(I/U/D)以及DDL的描述和限制
+参见http://10.186.18.11/confluence/pages/viewpage.action?pageId=3671908 
+
 
 date:2016/12/14 
 VERSION 0.2.1  

@@ -98,7 +98,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
     private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update){
 		String sql = update.toString();
 		String operationTimestamp = String.valueOf(new Date().getTime());
-		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schemaInfo.schema,
+		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
 			return sql;

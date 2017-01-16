@@ -2,7 +2,7 @@ package io.mycat.meta.table;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.SchemaMeta;
+import io.mycat.meta.ProxyMetaManager;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 
 public class TableMetaCheckHandler extends AbstractTableMetaHandler {
@@ -20,15 +20,12 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 		if(isTableModify(schema,tableMeta)){
 			LOGGER.warn("Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
 		}
+		LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
 	}
 	private boolean isTableModify(String schema, TableMeta tm){
 		String tbName = tm.getTableName();
-		SchemaMeta schemaMeta = MycatServer.getInstance().getTmManager().getSchema(schema);
-		if (schemaMeta == null) {
-			//the DDL may drop database;
-			return false;
-		}
-		TableMeta oldTm = schemaMeta.getTableMeta(tbName);
+		ProxyMetaManager manager = MycatServer.getInstance().getTmManager();
+		TableMeta oldTm = manager.getSyncTableMeta(schema, tbName);
 		if(oldTm == null ){
 			//the DDL may drop table;
 			return false;
@@ -39,7 +36,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 		}
 		TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
 		//TODO: thread not safe
-		if (!oldTm.equals(tblMetaTmp) && oldTm.equals(schemaMeta.getTableMeta(tbName))) {
+		if (!oldTm.equals(tblMetaTmp) && oldTm.equals(manager.getSyncTableMeta(schema, tbName))) {
 			return true;
 		}
 		return false;

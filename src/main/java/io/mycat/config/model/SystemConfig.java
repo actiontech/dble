@@ -80,7 +80,7 @@ public final class SystemConfig {
 	private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
 	private static final String DEFAULT_TRANSACTION_BASE_NAME = "mycat-tx";
 	private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
-	private final static long CHECKTABLECONSISTENCYPERIOD = 1 * 60 * 1000;
+	private final static long CHECKTABLECONSISTENCYPERIOD = 30 * 60 * 1000;
 	// 全局表一致性检测任务，默认24小时调度一次
 	private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
 

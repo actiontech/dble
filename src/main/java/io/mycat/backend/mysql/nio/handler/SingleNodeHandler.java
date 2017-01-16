@@ -206,6 +206,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 		
 		source.setTxInterrupt(errmgs);
+		session.handleSpecial(rrs,session.getSource().getSchema(), false);
 		
 		/**
 		 * TODO: 修复全版本BUG
@@ -241,7 +242,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
-			session.handleSpecial(rrs,session.getSource().getSchema());
+			session.handleSpecial(rrs,session.getSource().getSchema(), true);
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);

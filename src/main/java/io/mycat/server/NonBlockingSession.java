@@ -140,6 +140,7 @@ public class NonBlockingSession implements Session {
 			try {
 				singleNodeHandler.execute();
 			} catch (Exception e) {
+				handleSpecial(rrs, source.getSchema(), false);
 				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
 				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 			}
@@ -151,6 +152,7 @@ public class NonBlockingSession implements Session {
 			try {
 				multiNodeHandler.execute();
 			} catch (Exception e) {
+				handleSpecial(rrs, source.getSchema(), false);
 				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
 				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 			}
@@ -277,10 +279,9 @@ public class NonBlockingSession implements Session {
     }
 
     public void closeAndClearResources(String reason) {
-		if (source.isTxstart()) {
-			if (this.getXaState() == null || this.getXaState() != TxState.TX_INITIALIZE_STATE) {
-				return;
-			}
+		// XA MUST BE FINISHED
+		if (source.isTxstart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+			return;
 		}
         for (BackendConnection node : target.values()) {
             node.close(reason);
@@ -552,10 +553,14 @@ public class NonBlockingSession implements Session {
 		}
 		return errConn;
 	}
-	public void handleSpecial(RouteResultset rrs, String schema){
-		if(rrs.getSqlType()==ServerParse.DDL){
+	public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess){
+		if (rrs.getSqlType() == ServerParse.DDL) {
 			String sql = rrs.getStatement();
-			MycatServer.getInstance().getTmManager().noticeSql(schema, sql);
+			if (source.isTxstart()) {
+				source.setTxstart(false);
+				source.getAndIncrementXid();
+			}
+			MycatServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess);
 		}
 	}
 }

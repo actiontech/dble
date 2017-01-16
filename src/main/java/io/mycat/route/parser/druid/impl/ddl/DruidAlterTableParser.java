@@ -92,7 +92,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 
 	private String modifyColumnIfAlter(SchemaConfig schema, String sql, SQLAlterTableStatement alterStatement) throws SQLNonTransientException {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), alterStatement.getTableSource());
-		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schemaInfo.schema, schemaInfo.table);
+		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 		if (orgTbMeta == null)
 			return sql;
 		List<String> cols = new ArrayList<String>();

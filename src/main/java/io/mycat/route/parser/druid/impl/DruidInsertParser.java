@@ -306,7 +306,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getShardingColIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String partitionColumn) throws SQLNonTransientException {
 		int shardingColIndex = -1;
 		if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
-			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schemaInfo.schema, schemaInfo.table);
+			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 			if (tbMeta != null) {
 				for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
 					if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
@@ -332,7 +332,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getTableColumns(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt)
 			throws SQLNonTransientException {
 		if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
-			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schemaInfo.schema, schemaInfo.table);
+			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 			if (tbMeta == null) {
 				String msg = "can't find table [" + schemaInfo.table + "] define in schema:" + schemaInfo.schema;
 				LOGGER.warn(msg);
@@ -356,7 +356,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		return getShardingColIndex(schemaInfo, insertStmt, joinKey);
 	}
 	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert) throws SQLNonTransientException {
-		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getTableMeta(schemaInfo.schema,
+		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
 			return insert.toString();

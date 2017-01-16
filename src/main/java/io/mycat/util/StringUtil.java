@@ -23,14 +23,14 @@
  */
 package io.mycat.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.Random;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.sqlengine.mpp.LoadData;
-
-import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Random;
 
 /**
  * @author mycat
@@ -545,23 +545,20 @@ public class StringUtil {
 	}
 
 	/**
-	 * 移除`符号
+	 * 移除`符号, ```tablename` may not correct
 	 * @param str
 	 * @return
 	 */
 	public static String removeBackquote(String str){
 		//删除名字中的`tablename`和'value'
-		if (str.length() > 0) {
-			StringBuilder sb = new StringBuilder(str);
-			if (sb.charAt(0) == '`'||sb.charAt(0) == '\'') {
-				sb.deleteCharAt(0);
+		if (str.length() > 1) {
+			if ((str.charAt(0) == '`' || str.charAt(0) == '\'') && (str.charAt(0) == str.charAt(str.length() - 1))) {
+				return str.substring(1, str.length() - 1);
+			} else {
+				return str;
 			}
-			if (sb.charAt(sb.length() - 1) == '`'||sb.charAt(sb.length() - 1) == '\'') {
-				sb.deleteCharAt(sb.length() - 1);
-			}
-			return sb.toString();
 		}
-		return "";
+		return str;
 	}
 
 	public static void main(String[] args) {

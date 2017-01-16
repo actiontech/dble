@@ -231,6 +231,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			errConnection.add(conn);
 			if (--nodeCount == 0) {
+				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
@@ -254,6 +255,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			errConnection.add(conn);
 			if (--nodeCount == 0) {
+				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
@@ -282,6 +284,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				setFail(err.toString());
 			if (--nodeCount > 0)
 				return;
+			session.handleSpecial(rrs, session.getSource().getSchema(), false);
 			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 		} finally {
 			lock.unlock();
@@ -315,14 +318,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				if (--nodeCount > 0)
 					return;
 				if(isFail()||terminated){
-//					if (route[0].isDDL())
-//						session.getSource().unlockTable();
+					session.handleSpecial(rrs, source.getSchema(), false);
 					handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 					return;
 				}
-				
-
-				session.handleSpecial(rrs, source.getSchema());
+				session.handleSpecial(rrs, source.getSchema(), true);
 				if (rrs.isLoadData()) {
 					byte lastPackId = source.getLoadDataInfileHandler()
 							.getLastPackId();

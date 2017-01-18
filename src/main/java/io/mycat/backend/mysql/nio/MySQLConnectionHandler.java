@@ -26,7 +26,8 @@ package io.mycat.backend.mysql.nio;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.mysql.ByteUtil;
 import io.mycat.backend.mysql.nio.handler.LoadDataResponseHandler;
@@ -227,4 +228,12 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 		}
 	}
 
+	@Override
+	protected void handleDataError(Exception e) {
+		logger.warn(this.source.toString() + " handle data error:", e);
+		dataQueue.clear();
+		ResponseHandler handler = this.responseHandler;
+		if (handler != null)
+			handler.connectionError(e, this.source);
+	}
 }

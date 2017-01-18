@@ -23,7 +23,9 @@
  */
 package io.mycat.net.handler;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.mycat.net.NIOHandler;
 
@@ -31,19 +33,43 @@ import io.mycat.net.NIOHandler;
  * @author mycat
  */
 public abstract class BackendAsyncHandler implements NIOHandler {
+	protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<byte[]>();
+	protected final AtomicBoolean isHandling = new AtomicBoolean(false);
 
 	protected void offerData(byte[] data, Executor executor) {
-		handleData(data);
-
-		// if (dataQueue.offer(data)) {
-		// handleQueue(executor);
-		// } else {
-		// offerDataError();
-		// }
+		if (dataQueue.offer(data)) {
+			handleQueue(executor);
+		} else {
+			offerDataError();
+		}
 	}
 
+	protected void handleQueue(final Executor executor) {
+		if (isHandling.compareAndSet(false, true)) {
+			// 异步处理后端数据
+			executor.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						byte[] data = null;
+						while ((data = dataQueue.poll()) != null) {
+							handleData(data);
+						}
+					} catch (Exception e) {
+						handleDataError(e);
+					} finally {
+						isHandling.set(false);
+						if (dataQueue.size() > 0) {
+							handleQueue(executor);
+						}
+					}
+				}
+			});
+		}
+	}
 	protected abstract void offerDataError();
 
 	protected abstract void handleData(byte[] data);
 
+	protected abstract void handleDataError(Exception e);
 }

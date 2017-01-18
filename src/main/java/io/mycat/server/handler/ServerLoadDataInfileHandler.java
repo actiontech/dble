@@ -319,7 +319,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     private RouteResultset tryDirectRoute(String sql, String[] lineList)
     {
 
-        RouteResultset rrs = new RouteResultset(sql, ServerParse.INSERT);
+        RouteResultset rrs = new RouteResultset(sql, ServerParse.INSERT, serverConnection.getSession2());
         rrs.setLoadData(true);
         if (tableConfig == null && schema.getDataNode() != null)
         {
@@ -530,7 +530,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //默认druid会过滤掉路径的分隔符，所以这里重新设置下
         statement.setFileName(fn);
         String srcStatement = statement.toString();
-        RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL);
+        RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL, serverConnection.getSession2());
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
         rrs.setAutocommit(serverConnection.isAutocommit());

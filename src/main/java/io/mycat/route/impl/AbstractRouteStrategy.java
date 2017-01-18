@@ -51,7 +51,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		}
 
 
-		RouteResultset rrs = new RouteResultset(stmt, sqlType);
+		RouteResultset rrs = new RouteResultset(stmt, sqlType, sc.getSession2());
 
 		/**
 		 * 优化debug loaddata输出cache的日志会极大降低性能

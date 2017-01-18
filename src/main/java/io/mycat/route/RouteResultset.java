@@ -31,6 +31,7 @@ import java.util.Set;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.server.NonBlockingSession;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.util.FormatUtil;
 
@@ -38,7 +39,8 @@ import io.mycat.util.FormatUtil;
  * @author mycat
  */
 public final class RouteResultset implements Serializable {
-    private String statement; // 原始语句
+	private static final long serialVersionUID = 3906972758236875720L;
+	private String statement; // 原始语句
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
     private Set<String> subTables;
@@ -74,9 +76,14 @@ public final class RouteResultset implements Serializable {
     // 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
     private Boolean runOnSlave = null;	// 默认null表示不施加影响
 
+    private NonBlockingSession session;
      
 
-    public Boolean getRunOnSlave() {
+    public NonBlockingSession getSession() {
+		return session;
+	}
+
+	public Boolean getRunOnSlave() {
 		return runOnSlave;
 	}
 
@@ -121,10 +128,11 @@ public final class RouteResultset implements Serializable {
         this.globalTableFlag = globalTableFlag;
     }
 
-    public RouteResultset(String stmt, int sqlType) {
+    public RouteResultset(String stmt, int sqlType, NonBlockingSession session) {
         this.statement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
+        this.session = session;
     }
 
     public void resetNodes() {

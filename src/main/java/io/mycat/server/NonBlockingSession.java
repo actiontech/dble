@@ -488,7 +488,7 @@ public class NonBlockingSession implements Session {
     }
 
     public boolean closed() {
-        return source.isClosed()&&!source.isTxstart();
+        return source.isClosed();
     }
 
     private String genXATXID() {

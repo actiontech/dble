@@ -25,7 +25,8 @@ package io.mycat.server.handler;
 
 import java.nio.ByteBuffer;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
@@ -73,7 +74,7 @@ public class Explain2Handler {
 			}
 			
 			RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
-			RouteResultset	rrs =  new RouteResultset(sql, ServerParse.SELECT);
+			RouteResultset	rrs =  new RouteResultset(sql, ServerParse.SELECT, c.getSession2());
 			node.setSource(rrs);
 			EMPTY_ARRAY[0] = node; 
 			rrs.setNodes(EMPTY_ARRAY);

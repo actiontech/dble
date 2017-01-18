@@ -139,8 +139,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("find root parent's node sql " + findRootTBSql);
 		}
-		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
-		String dn = fetchHandler.execute(schema.getName(), findRootTBSql, tc.getRootParent().getDataNodes());
+		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, rrs.getSession());
+		String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
 		if (dn == null) {
 			throw new SQLNonTransientException("can't find (root) parent sharding node for sql:" + sql);
 		}

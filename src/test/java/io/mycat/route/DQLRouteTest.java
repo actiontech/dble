@@ -46,7 +46,7 @@ public class DQLRouteTest {
 	public void test() throws Exception {
 		String stmt = "select * from `offer` where id = 100";
 		SchemaConfig schema = schemaMap.get("mysqldb");
-		RouteResultset rrs = new RouteResultset(stmt, 7);
+		RouteResultset rrs = new RouteResultset(stmt, 7, null);
 		SQLStatementParser parser = null;
 		
 		parser = new MySqlStatementParser(stmt);

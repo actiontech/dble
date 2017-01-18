@@ -5,8 +5,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLOrderBy;
-import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
@@ -15,15 +13,14 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
@@ -94,86 +91,38 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			ctx.setSql(RouterUtil.getFixedSql(RouterUtil.removeSchema(ctx.getSql(),schemaInfo.schema)));
 		}
     }
-
     private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update){
-		String sql = update.toString();
-		String operationTimestamp = String.valueOf(new Date().getTime());
+		long opTimestamp = new Date().getTime();
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
-			return sql;
+			return update.toString();
 		if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-			return sql; // 没有内部列
-		StringBuilder sb = new StringBuilder(150);
-
-		SQLExpr se = update.getWhere();
-		// where中有子查询： update company set name='com' where id in (select id from
-		// xxx where ...)
-		if (se instanceof SQLInSubQueryExpr) {
-			// return sql;
-			int idx = sql.toUpperCase().indexOf(" SET ") + 5;
-			sb.append(sql.substring(0, idx)).append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN).append("=")
-					.append(operationTimestamp).append(",").append(sql.substring(idx));
-			return sb.toString();
-		}
-		String where = null;
-		if (update.getWhere() != null)
-			where = update.getWhere().toString();
-
-		SQLOrderBy orderBy = update.getOrderBy();
-		Limit limit = update.getLimit();
-
-		sb.append("update ").append(schemaInfo.table).append(" set ");
+			return update.toString(); // 没有内部列
 		List<SQLUpdateSetItem> items = update.getItems();
 		boolean flag = false;
 		for (int i = 0; i < items.size(); i++) {
 			SQLUpdateSetItem item = items.get(i);
 			String col = item.getColumn().toString();
-			String val = item.getValue().toString();
 
 			if (StringUtil.removeBackquote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
 				flag = true;
-				sb.append(col).append("=");
-				if (i != items.size() - 1)
-					sb.append(operationTimestamp).append(",");
-				else
-					sb.append(operationTimestamp);
-			} else {
-				sb.append(col).append("=");
-				if (i != items.size() - 1)
-					sb.append(val).append(",");
-				else
-					sb.append(val);
+				SQLUpdateSetItem newItem = new SQLUpdateSetItem();
+				newItem.setColumn(item.getColumn());
+				newItem.setValue(new SQLIntegerExpr(opTimestamp));
+				items.remove(item);
+				items.add(i, newItem);
 			}
 		}
-		if (!flag) {
-			sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN).append("=").append(operationTimestamp);
+		if(!flag){
+			SQLUpdateSetItem newItem = new SQLUpdateSetItem();
+			newItem.setColumn(new SQLIdentifierExpr(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN));
+			newItem.setValue(new SQLIntegerExpr(opTimestamp));
+			items.add(newItem);
 		}
-		sb.append(" where ").append(where);
-		if (orderBy != null && orderBy.getItems() != null && orderBy.getItems().size() > 0) {
-			sb.append(" order by ");
-			for (int i = 0; i < orderBy.getItems().size(); i++) {
-				SQLSelectOrderByItem item = orderBy.getItems().get(i);
-				SQLOrderingSpecification os = item.getType();
-				sb.append(item.getExpr().toString());
-				if (i < orderBy.getItems().size() - 1) {
-					if (os != null)
-						sb.append(" ").append(os.toString());
-					sb.append(",");
-				} else {
-					if (os != null)
-						sb.append(" ").append(os.toString());
-				}
-			}
-		}
-		if (limit != null) { // 分为两种情况： limit 10; limit 10,10;
-			sb.append(" limit ");
-			if (limit.getOffset() != null)
-				sb.append(limit.getOffset().toString()).append(",");
-			sb.append(limit.getRowCount().toString());
-		}
-		return sb.toString();
-	}
+		return update.toString();
+    }
+
     /*
     * 判断字段是否在SQL AST的节点中，比如 col 在 col = 'A' 中，这里要注意，一些子句中可能会在字段前加上表的别名，
     * 比如 t.col = 'A'，这两种情况， 操作符(=)左边被druid解析器解析成不同的对象SQLIdentifierExpr(无表别名)和

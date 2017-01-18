@@ -33,15 +33,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class NameableExecutor extends ThreadPoolExecutor {
 
-    protected String name;
+	protected String name;
 
-    public NameableExecutor(String name, int size, BlockingQueue<Runnable> queue, ThreadFactory factory) {
-        super(size, size, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue, factory);
-        this.name = name;
-    }
+	public NameableExecutor(String name, int size, int maximumPoolSize, long keepAliveTime,
+			BlockingQueue<Runnable> queue, ThreadFactory factory) {
+		super(size, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue, factory);
+		this.name = name;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
 }

@@ -23,13 +23,9 @@
  */
 package io.mycat.config.model;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.common.collect.Iterables;
 
 import io.mycat.backend.datasource.PhysicalDBPool;
 
@@ -62,7 +58,6 @@ public class DataHostConfig {
 	private String filters="mergeStat";
 	private long logTime=300000;
 	private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
-	private final Set<String> dataNodes; //包含的所有dataNode名字
 	private String slaveIDs;
 
 	public DataHostConfig(String name,
@@ -74,7 +69,6 @@ public class DataHostConfig {
 		this.switchType=switchType;
 		this.slaveThreshold=slaveThreshold;
 		this.tempReadHostAvailable = tempReadHostAvailable;
-		this.dataNodes = new HashSet<>();
 	}
 
 	public boolean isTempReadHostAvailable() {
@@ -201,17 +195,4 @@ public class DataHostConfig {
 	public void setLogTime(long logTime) {
 		this.logTime = logTime;
 	}
-
-	public void addDataNode(String name){
-		this.dataNodes.add(name);
-	}
-
-	public String getRandomDataNode() {
-		int index = (int) (Math.random() * dataNodes.size());
-		return Iterables.get(dataNodes,index);
-	}
-
-    public boolean containDataNode(String randomDn) {
-        return dataNodes.contains(randomDn);
-    }
 }

@@ -1,5 +1,16 @@
 package io.mycat.sqlengine.mpp;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
@@ -21,11 +32,6 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
-import org.apache.log4j.Logger;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -193,13 +199,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
             prefixComputer = new RowPrefixComputer(schema);
 
-            if(orderCols.length>0
-                    && orderCols[0].getOrderType()
-                    == OrderCol.COL_ORDER_TYPE_ASC){
-                prefixComparator = PrefixComparators.LONG;
-            }else {
-                prefixComparator = PrefixComparators.LONG_DESC;
-            }
+            prefixComparator = getPrefixComparator(orderCols);
 
             dataNodeMemoryManager =
                     new DataNodeMemoryManager(memoryManager,Thread.currentThread().getId());
@@ -257,6 +257,51 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     false/**不排序*/);
         }
     }
+
+	private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
+		PrefixComparator prefixComparator = null;
+		OrderCol firstOrderCol = orderCols[0];
+		int orderType = firstOrderCol.getOrderType();
+		int colType = firstOrderCol.colMeta.colType;
+
+		switch (colType) {
+		case ColMeta.COL_TYPE_INT:
+		case ColMeta.COL_TYPE_LONG:
+		case ColMeta.COL_TYPE_INT24:
+		case ColMeta.COL_TYPE_SHORT:
+		case ColMeta.COL_TYPE_LONGLONG:
+			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
+					: PrefixComparators.LONG_DESC);
+			break;
+		case ColMeta.COL_TYPE_FLOAT:
+		case ColMeta.COL_TYPE_DOUBLE:
+		case ColMeta.COL_TYPE_DECIMAL:
+		case ColMeta.COL_TYPE_NEWDECIMAL:
+			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.DOUBLE
+					: PrefixComparators.DOUBLE_DESC);
+			break;
+		case ColMeta.COL_TYPE_DATE:
+		case ColMeta.COL_TYPE_TIMSTAMP:
+		case ColMeta.COL_TYPE_TIME:
+		case ColMeta.COL_TYPE_YEAR:
+		case ColMeta.COL_TYPE_DATETIME:
+		case ColMeta.COL_TYPE_NEWDATE:
+		case ColMeta.COL_TYPE_BIT:
+		case ColMeta.COL_TYPE_VAR_STRING:
+		case ColMeta.COL_TYPE_STRING:
+		case ColMeta.COL_TYPE_ENUM:
+		case ColMeta.COL_TYPE_SET:
+			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.BINARY
+					: PrefixComparators.BINARY_DESC);
+			break;
+		default:
+			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
+					: PrefixComparators.LONG_DESC);
+			break;
+		}
+
+		return prefixComparator;
+	}
 
     @Override
     public List<RowDataPacket> getResults(byte[] eof) {

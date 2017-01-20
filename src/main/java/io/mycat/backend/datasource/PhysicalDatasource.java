@@ -23,17 +23,6 @@
  */
 package io.mycat.backend.datasource;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.ConMap;
@@ -48,6 +37,17 @@ import io.mycat.config.Alarms;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.DataHostConfig;
 import io.mycat.util.TimeUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PhysicalDatasource {
 	
@@ -70,8 +70,7 @@ public abstract class PhysicalDatasource {
 	// 添加DataSource写计数
 	private AtomicLong writeCount = new AtomicLong(0);
 
-	public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig,
-			boolean isReadNode) {
+	public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
 		this.size = config.getMaxCon();
 		this.config = config;
 		this.name = config.getHostName();
@@ -152,8 +151,7 @@ public abstract class PhysicalDatasource {
 	public int getIdleCountForSchema(String schema) {
 		ConQueue queue = conMap.getSchemaConQueue(schema);
 		int total = 0;
-		total += queue.getAutoCommitCons().size()
-				+ queue.getManCommitCons().size();
+		total += queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
 		return total;
 	}
 
@@ -164,22 +162,18 @@ public abstract class PhysicalDatasource {
 	public int getIdleCount() {
 		int total = 0;
 		for (ConQueue queue : conMap.getAllConQueue()) {
-			total += queue.getAutoCommitCons().size()
-					+ queue.getManCommitCons().size();
+			total += queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
 		}
 		return total;
 	}
 
 	private boolean validSchema(String schema) {
 		String theSchema = schema;
-		return theSchema != null && !"".equals(theSchema)
-				&& !"snyn...".equals(theSchema);
+		return theSchema != null && !"".equals(theSchema) && !"snyn...".equals(theSchema);
 	}
 
-	private void checkIfNeedHeartBeat(
-			LinkedList<BackendConnection> heartBeatCons, ConQueue queue,
-			ConcurrentLinkedQueue<BackendConnection> checkLis,
-			long hearBeatTime, long hearBeatTime2) {
+	private void checkIfNeedHeartBeat(LinkedList<BackendConnection> heartBeatCons, ConQueue queue,
+					  ConcurrentLinkedQueue<BackendConnection> checkLis, long hearBeatTime, long hearBeatTime2) {
 		int maxConsInOneCheck = 10;
 		Iterator<BackendConnection> checkListItor = checkLis.iterator();
 		while (checkListItor.hasNext()) {
@@ -189,22 +183,18 @@ public abstract class PhysicalDatasource {
 				continue;
 			}
 			if (validSchema(con.getSchema())) {
-				if (con.getLastTime() < hearBeatTime
-						&& heartBeatCons.size() < maxConsInOneCheck) {
+				if (con.getLastTime() < hearBeatTime && heartBeatCons.size() < maxConsInOneCheck) {
 					checkListItor.remove();
 					// Heart beat check
 					con.setBorrowed(true);
 					heartBeatCons.add(con);
 				}
 			} else if (con.getLastTime() < hearBeatTime2) {
-				// not valid schema conntion should close for idle
-				// exceed 2*conHeartBeatPeriod
+				// not valid schema conntion should close for idle exceed 2*conHeartBeatPeriod
 				checkListItor.remove();
 				con.close(" heart beate idle ");
 			}
-
 		}
-
 	}
 
 	public int getIndex() {
@@ -233,14 +223,11 @@ public abstract class PhysicalDatasource {
 		LinkedList<BackendConnection> heartBeatCons = new LinkedList<BackendConnection>();
 
 		long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
-		long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2
-				* conHeartBeatPeriod;
+		long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2 * conHeartBeatPeriod;
 		for (ConQueue queue : conMap.getAllConQueue()) {
-			checkIfNeedHeartBeat(heartBeatCons, queue,
-					queue.getAutoCommitCons(), hearBeatTime, hearBeatTime2);
+			checkIfNeedHeartBeat(heartBeatCons, queue, queue.getAutoCommitCons(), hearBeatTime, hearBeatTime2);
 			if (heartBeatCons.size() < maxConsInOneCheck) {
-				checkIfNeedHeartBeat(heartBeatCons, queue,
-						queue.getManCommitCons(), hearBeatTime, hearBeatTime2);
+				checkIfNeedHeartBeat(heartBeatCons, queue, queue.getManCommitCons(), hearBeatTime, hearBeatTime2);
 			} else if (heartBeatCons.size() >= maxConsInOneCheck) {
 				break;
 			}
@@ -248,8 +235,7 @@ public abstract class PhysicalDatasource {
 
 		if (!heartBeatCons.isEmpty()) {
 			for (BackendConnection con : heartBeatCons) {
-				conHeartBeatHanler
-						.doHeartBeat(con, hostConfig.getHearbeatSQL());
+				conHeartBeatHanler.doHeartBeat(con, hostConfig.getHearbeatSQL());
 			}
 		}
 
@@ -258,9 +244,9 @@ public abstract class PhysicalDatasource {
 		int idleCons = getIdleCount();
 		int activeCons = this.getActiveCount();
 		int createCount = (hostConfig.getMinCon() - idleCons) / 3;
+		
 		// create if idle too little
-		if ((createCount > 0) && (idleCons + activeCons < size)
-				&& (idleCons < hostConfig.getMinCon())) {
+		if ((createCount > 0) && (idleCons + activeCons < size)) {
 			createByIdleLitte(idleCons, createCount);
 		} else if (idleCons > hostConfig.getMinCon()) {
 			closeByIdleMany(idleCons - hostConfig.getMinCon());
@@ -268,8 +254,7 @@ public abstract class PhysicalDatasource {
 			int activeCount = this.getActiveCount();
 			if (activeCount > size) {
 				StringBuilder s = new StringBuilder();
-				s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=")
-						.append(name).append(",active=");
+				s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=").append(name).append(",active=");
 				s.append(activeCount).append(",size=").append(size).append(']');
 				LOGGER.warn(s.toString());
 			}
@@ -278,8 +263,7 @@ public abstract class PhysicalDatasource {
 
 	private void closeByIdleMany(int ildeCloseCount) {
 		LOGGER.info("too many ilde cons ,close some for datasouce  " + name);
-		List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(
-				ildeCloseCount);
+		List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(ildeCloseCount);
 		for (ConQueue queue : conMap.getAllConQueue()) {
 			readyCloseCons.addAll(queue.getIdleConsToClose(ildeCloseCount));
 			if (readyCloseCons.size() >= ildeCloseCount) {
@@ -297,11 +281,7 @@ public abstract class PhysicalDatasource {
 
 	private void createByIdleLitte(int idleCons, int createCount) {
 		LOGGER.info("create connections ,because idle connection not enough ,cur is "
-				+ idleCons
-				+ ", minCon is "
-				+ hostConfig.getMinCon()
-				+ " for "
-				+ name);
+			    + idleCons + ", minCon is " + hostConfig.getMinCon() + " for " + name);
 		NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
 
 		final String[] schemas = dbPool.getSchemas();
@@ -311,12 +291,10 @@ public abstract class PhysicalDatasource {
 			}
 			try {
 				// creat new connection
-				this.createNewConnection(simpleHandler, null, schemas[i
-						% schemas.length]);
+				this.createNewConnection(simpleHandler, null, schemas[i	% schemas.length]);
 			} catch (IOException e) {
 				LOGGER.warn("create connection err " + e);
 			}
-
 		}
 	}
 
@@ -351,17 +329,6 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
-	private BackendConnection takeCon(BackendConnection conn, String schema) {
-		conn.setBorrowed(true);
-		if (!conn.getSchema().equals(schema)) {
-			// need do schema syn in before sql send
-			conn.setSchema(schema);
-		}
-		ConQueue queue = conMap.getSchemaConQueue(schema);
-		queue.incExecuteCount();
-		conn.setLastTime(System.currentTimeMillis()); // 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
-		return conn;
-	}
 	private BackendConnection takeCon(BackendConnection conn,
 			final ResponseHandler handler, final Object attachment,
 			String schema) {
@@ -378,12 +345,13 @@ public abstract class PhysicalDatasource {
 		handler.connectionAcquired(conn);
 		return conn;
 	}
+
 	private void createNewConnection(final ResponseHandler handler,
-			final Object attachment, final String schema) throws IOException {		
+					 final Object attachment, final String schema) throws IOException {		
 		// aysn create connection
-		MycatServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+	    	MycatServer.getInstance().getBusinessExecutor().execute(new Runnable() {
 			public void run() {
-				try {
+			    	try {
 					createNewConnection(new DelegateResponseHandler(handler) {
 						@Override
 						public void connectionError(Throwable e, BackendConnection conn) {
@@ -392,50 +360,32 @@ public abstract class PhysicalDatasource {
 
 						@Override
 						public void connectionAcquired(BackendConnection conn) {
-							takeCon(conn, handler, attachment, schema);
+						    	takeCon(conn, handler, attachment, schema);
 						}
-					}, schema);
+					    }, schema);
 				} catch (IOException e) {
-					handler.connectionError(e, null);
+				    	handler.connectionError(e, null);
 				}
 			}
-		});
+		    });
 	}
 
-	public BackendConnection getConnection(String schema, boolean autocommit) throws IOException {
-		// 从当前连接map中拿取已建立好的后端连接
-		BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
-		if (con == null) {
-			int activeCons = this.getActiveCount();// 当前最大活动连接
-			if (activeCons + 1 > size) {// 下一个连接大于最大连接数
-				LOGGER.error("the max activeConnnections size can not be max than maxconnections");
-				throw new IOException("the max activeConnnections size can not be max than maxconnections");
-			} else { // create connection
-				LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-				con = retrunNewConnection(schema);
-			}
-		}
-		return takeCon(con, schema);
-	}
-	public void getConnection(String schema, boolean autocommit,
-			final ResponseHandler handler, final Object attachment)
-			throws IOException {
-		
+	public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
+				  final Object attachment) throws IOException {
+
 		// 从当前连接map中拿取已建立好的后端连接
 		BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
 		if (con != null) {
-			
 			//如果不为空，则绑定对应前端请求的handler
 			takeCon(con, handler, attachment, schema);
 			return;	
-			
 		} else {
 			int activeCons = this.getActiveCount();// 当前最大活动连接
 			if (activeCons + 1 > size) {// 下一个连接大于最大连接数
 				LOGGER.error("the max activeConnnections size can not be max than maxconnections");
 				throw new IOException("the max activeConnnections size can not be max than maxconnections");
 			} else { // create connection
-				LOGGER.info("no ilde connection in pool,create new connection for "	+ this.name + " of schema " + schema);
+				LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
 				createNewConnection(handler, attachment, schema);
 			}
 		}
@@ -478,10 +428,6 @@ public abstract class PhysicalDatasource {
 
 	}
 
-	/**
-	 * 创建新连接
-	 */
-	public abstract BackendConnection retrunNewConnection(String schema) throws IOException;
 	/**
 	 * 创建新连接
 	 */

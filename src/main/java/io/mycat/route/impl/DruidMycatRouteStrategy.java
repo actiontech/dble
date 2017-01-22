@@ -2,6 +2,7 @@ package io.mycat.route.impl;
 
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -49,9 +50,11 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		 * 解析出现问题统一抛SQL语法错误
 		 */
 		try {
-			statement = parser.parseStatement();
-			//TODO:yhq MultiQueries
-			//parser.parseStatementList();
+			List<SQLStatement> list = parser.parseStatementList();
+			if(list.size()>1){
+				throw new SQLSyntaxErrorException("MultiQueries is not supported,use single query instead ");
+			}
+			statement = list.get(0);
             visitor = new MycatSchemaStatVisitor();
 		} catch (Exception t) {
 	        LOGGER.error("DruidMycatRouteStrategyError", t);

@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDatasource;
-import io.mycat.backend.jdbc.JDBCConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.net.NIOProcessor;
 
@@ -73,14 +72,6 @@ public class ConMap {
 					    && mysqlCon.isBorrowed()) {
 					    	total++;
 					}
-				} else if (con instanceof JDBCConnection) {
-				    	JDBCConnection jdbcCon = (JDBCConnection) con;
-					
-					if (jdbcCon.getSchema().equals(schema)
-					    && jdbcCon.getPool() == dataSouce
-					    && jdbcCon.isBorrowed()) {
-					    	total++;
-					}
 				}
 			}
 		}
@@ -100,12 +91,6 @@ public class ConMap {
 							total++;
 					}
 
-				} else if (con instanceof JDBCConnection) {
-				    	JDBCConnection jdbcCon = (JDBCConnection) con;
-					if (jdbcCon.getPool() == dataSouce
-					    && jdbcCon.isBorrowed() && !jdbcCon.isClosed()) {
-					    	total++;
-					}
 				}
 			}
 		}
@@ -125,10 +110,6 @@ public class ConMap {
 					    	con.close(reason);
 						itor.remove();
 					}
-				} else if((con instanceof JDBCConnection)
-					  && (((JDBCConnection) con).getPool() == dataSouce)){
-				    	con.close(reason);
-					itor.remove();
 				}
 			}
 		}

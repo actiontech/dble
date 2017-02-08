@@ -23,6 +23,17 @@
  */
 package io.mycat.backend.datasource;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.ConMap;
@@ -37,17 +48,6 @@ import io.mycat.config.Alarms;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.DataHostConfig;
 import io.mycat.util.TimeUtil;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class PhysicalDatasource {
 	
@@ -329,6 +329,18 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
+	private BackendConnection takeCon(BackendConnection conn, String schema) {
+		conn.setBorrowed(true);
+		if (!conn.getSchema().equals(schema)) {
+			// need do schema syn in before sql send
+			conn.setSchema(schema);
+		}
+		ConQueue queue = conMap.getSchemaConQueue(schema);
+		queue.incExecuteCount();
+		conn.setLastTime(System.currentTimeMillis()); // 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
+		return conn;
+	}
+
 	private BackendConnection takeCon(BackendConnection conn,
 			final ResponseHandler handler, final Object attachment,
 			String schema) {
@@ -391,6 +403,22 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
+	public BackendConnection getConnection(String schema, boolean autocommit) throws IOException {
+		// 从当前连接map中拿取已建立好的后端连接
+		BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
+		if (con == null) {
+			int activeCons = this.getActiveCount();// 当前最大活动连接
+			if (activeCons + 1 > size) {// 下一个连接大于最大连接数
+				LOGGER.error("the max activeConnnections size can not be max than maxconnections");
+				throw new IOException("the max activeConnnections size can not be max than maxconnections");
+			} else { // create connection
+				LOGGER.info(
+						"no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
+				con = retrunNewConnection(schema);
+			}
+		}
+		return takeCon(con, schema);
+	}
 	private void returnCon(BackendConnection c) {
 		
 		c.setAttachment(null);
@@ -427,7 +455,10 @@ public abstract class PhysicalDatasource {
 		}
 
 	}
-
+	/**
+	 * 创建新连接
+	 */
+	public abstract BackendConnection retrunNewConnection(String schema) throws IOException;
 	/**
 	 * 创建新连接
 	 */

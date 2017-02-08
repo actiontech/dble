@@ -23,7 +23,8 @@
  */
 package io.mycat.backend.datasource;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
@@ -133,6 +134,17 @@ public class PhysicalDBNode {
 		}
 	}
 
+	public BackendConnection getConnection(String schema, boolean autoCommit) throws Exception {
+		checkRequest(schema);
+		if (dbPool.isInitSuccess()) {
+			PhysicalDatasource writeSource = dbPool.getSource();
+			// 记录写节点写负载值
+			writeSource.setWriteCount();
+			return writeSource.getConnection(schema, autoCommit);
+		} else {
+			throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActivedIndex());
+		}
+	}
 //	public void getConnection(String schema,boolean autoCommit, RouteResultsetNode rrs,
 //			ResponseHandler handler, Object attachment) throws Exception {
 //		checkRequest(schema);

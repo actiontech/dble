@@ -1,3 +1,23 @@
+date:2017/02/08 
+VERSION 0.2.4  
+CONTENT:  
+### 1.fix bugs
+issue 24,25,26,13 
+
+@maguoji:
+when multi writing masters and a writing master that is not the last don't have a slave, master don't correspond to its slaves
+
+### 2.合并官方bug 
+ 1126, 1125，1294,(1248,1251 and new $ bug//官方修复不完全正确 )
+参见 issue 27
+
+### 3.不支持  MultiQueries，会提示警告。  
+### 4.性能方面：
+Reactor 改为非阻塞  
+线程池增加cached  
+xa recover log 写入性能增强  
+
+
 date:2017/01/16 
 VERSION 0.2.3  
 CONTENT:  

@@ -992,7 +992,7 @@ public class MycatServer {
 				}
 				if (finished) {
 					XAStateLog.saveXARecoverylog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITED_STATE : TxState.TX_ROLLBACKED_STATE);
-					XAStateLog.writeCheckpoint();
+					XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
 				}
 			}
 		}

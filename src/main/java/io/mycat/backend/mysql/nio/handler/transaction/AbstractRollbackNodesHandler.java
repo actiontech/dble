@@ -18,7 +18,7 @@ public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler impl
 	public AbstractRollbackNodesHandler(NonBlockingSession session) {
 		super(session);
 	}
-	protected abstract void executeRollback(MySQLConnection mysqlCon, int position);
+	protected abstract boolean executeRollback(MySQLConnection mysqlCon, int position);
 	public void rollback() {
 		final int initCount = session.getTargetCount();
 		lock.lock();
@@ -32,7 +32,9 @@ public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler impl
 		for (final RouteResultsetNode node : session.getTargetKeys()) {
 			final BackendConnection conn = session.getTarget(node);
 			conn.setResponseHandler(this);
-			executeRollback((MySQLConnection) conn, position++);
+			if (!executeRollback((MySQLConnection) conn, position++)) {
+				break;
+			}
 		}
 	}
 

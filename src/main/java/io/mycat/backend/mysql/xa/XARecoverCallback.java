@@ -31,7 +31,7 @@ public class XARecoverCallback implements SQLQueryResultListener<SQLQueryResult<
 		if (result.isSuccess()) {
 			LOGGER.debug("[CALLBACK][XA " + operator + "] when Mycat start");
 			XAStateLog.updateXARecoverylog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), txState);
-			XAStateLog.writeCheckpoint();
+			XAStateLog.writeCheckpoint(logEntry.getCoordinatorId());
 		} else {
 			LOGGER.warn("[CALLBACK][XA " + operator + "] when Mycat start,but failed");
 		}

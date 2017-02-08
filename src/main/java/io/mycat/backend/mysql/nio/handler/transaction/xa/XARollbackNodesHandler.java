@@ -55,7 +55,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 		sendData = OkPacket.OK;
 	}
 	@Override
-	protected void executeRollback(MySQLConnection mysqlCon, int position) {
+	protected boolean executeRollback(MySQLConnection mysqlCon, int position) {
 		if(position==0 && participantLogEntry != null){
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
 		}
@@ -71,7 +71,11 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 			break;
 		case TX_PREPARED_STATE:
 			if(position==0){
-				XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKING_STATE);
+				if(!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKING_STATE)){
+					this.setFail("saveXARecoverylog error, the stage is TX_ROLLBACKING_STATE");
+					cleanAndFeedback();
+					return false;
+				}
 			}
 		case TX_ROLLBACK_FAILED_STATE:
 		case TX_PREPARE_UNCONNECT_STATE:
@@ -80,6 +84,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 			break;
 		default:
 		}
+		return true;
 	}
 	private void endPhase(MySQLConnection mysqlCon) {
 		switch (mysqlCon.getXaStatus()) {
@@ -339,7 +344,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 			break;
 		//partitionly commited,must commit again
 		case TX_ROLLBACK_FAILED_STATE:
-			MySQLConnection errConn = session.releaseExcept(TxState.TX_ROLLBACK_FAILED_STATE);
+		case TX_PREPARED_STATE:
+			MySQLConnection errConn = session.releaseExcept(session.getXaState());
 			if (errConn != null) {
 				XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
 				if (++try_rollback_times < ROLLBACK_TIMES) {
@@ -347,8 +353,13 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 					rollback();
 				}
 				else {
+					StringBuffer closeReason = new StringBuffer("ROLLBCAK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
+					if(error!= null){
+						closeReason.append(", the ERROR is ");
+						closeReason.append(error);
+					}
 					// 关session ,add to定时任务
-					session.getSource().close("ROLLBCAK FAILED but it shoule be ROLLBACK again!");
+					session.getSource().close(closeReason.toString());
 					MycatServer.getInstance().getXaSessionCheck().addRollbackSession(session);
 				}
 			} else {

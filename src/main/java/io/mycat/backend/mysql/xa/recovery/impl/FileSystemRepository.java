@@ -206,7 +206,7 @@ public class FileSystemRepository implements Repository{
     }
 
 	@Override
-	public synchronized void writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) {
+	public boolean writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) {
 		try {
 			closeOutput();
 			file.rotateFileVersion();
@@ -216,11 +216,14 @@ public class FileSystemRepository implements Repository{
 			}
 			rwChannel.force(false);
 			file.discardBackupVersion();
+			return true;
 		} catch (FileNotFoundException firstStart) {
 			// the file could not be opened for reading;
 			// merely return the default empty vector
+			return false;
 		} catch (Exception e) {
 			logger.error("Failed to write checkpoint", e);
+			return false;
 		}
 	}
 

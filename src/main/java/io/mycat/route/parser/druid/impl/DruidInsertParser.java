@@ -20,6 +20,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
@@ -51,6 +53,10 @@ public class DruidInsertParser extends DefaultDruidParser {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database selected Or Define";
+			throw new SQLNonTransientException(msg);
+		}
+		if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
+			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
 		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
@@ -86,7 +92,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 			} else {
 				parserSingleInsert(schemaInfo, rrs, partitionColumn, insert);
 			}
-
 		}
 	}
 	

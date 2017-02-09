@@ -8,6 +8,8 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.util.RouterUtil;
@@ -37,6 +39,10 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				String msg = "deleting from multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			} else {
+				if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
+					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+					throw new SQLNonTransientException(msg);
+				}
 				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
 				rrs.setFinishedRoute(true);
 				return;
@@ -45,6 +51,10 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
 			if (schemaInfo == null) {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
+			if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
+				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
 			schema = schemaInfo.schemaConfig;

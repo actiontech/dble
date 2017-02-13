@@ -5,7 +5,6 @@ import io.mycat.server.NonBlockingSession;
 
 public class XAAutoCommitNodesHandler extends XACommitNodesHandler {
 	private RouteResultsetNode[] nodes;
-//	private Set<BackendConnection> errConnection;
 	public XAAutoCommitNodesHandler(NonBlockingSession session, byte[] packet, RouteResultsetNode[] nodes){
 		super(session);
 		this.sendData = packet;

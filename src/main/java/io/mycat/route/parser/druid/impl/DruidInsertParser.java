@@ -139,8 +139,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("find root parent's node sql " + findRootTBSql);
 		}
-		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
-		String dn = fetchHandler.execute(schema.getName(), findRootTBSql, tc.getRootParent().getDataNodes());
+		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, rrs.getSession());
+		String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
 		if (dn == null) {
 			throw new SQLNonTransientException("can't find (root) parent sharding node for sql:" + sql);
 		}
@@ -426,18 +426,39 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 		List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
 		if (dku != null && dku.size() > 0) {
+			boolean flag = false;
 			sb.append(" on duplicate key update ");
 			for (int i = 0; i < dku.size(); i++) {
 				SQLExpr exp = dku.get(i);
-				if (exp != null) {
-					if (i < dku.size() - 1)
-						sb.append(exp.toString()).append(",");
-					else
-						sb.append(exp.toString());
+				if(!(exp instanceof SQLBinaryOpExpr)){
+					String msg = "not supported! on duplicate key update exp is "+exp.getClass();
+					LOGGER.warn(msg);
+					throw new SQLNonTransientException(msg);
 				}
+				SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr)exp;
+				if(!flag && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
+					flag = true;
+					onDuplicateGlobalColumn(sb);
+				} else {
+					sb.append(binaryOpExpr.toString());
+				}
+				if (i < dku.size() - 1) {
+					sb.append(",");
+				}
+			}
+			if (!flag) {
+				sb.append(",");
+				onDuplicateGlobalColumn(sb);
 			}
 		}
 		return sb.toString();
+	}
+
+	private static void onDuplicateGlobalColumn(StringBuilder sb){
+		sb.append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+		sb.append("=values(");
+		sb.append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+		sb.append(")");
 	}
 
 	private static StringBuilder appendValues(List<SQLExpr> valuse, StringBuilder sb, int idx, int colSize) {

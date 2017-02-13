@@ -218,6 +218,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	public void connectionClose(BackendConnection conn, String reason) {
 		LOGGER.warn("backend connect"+reason);
 		ErrorPacket errPacket = new ErrorPacket();
+		errPacket.packetId = ++packetId;
 		errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
 		errPacket.message =  StringUtil.encode(reason, session.getSource().getCharset());
 		err = errPacket;
@@ -242,6 +243,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	public void connectionError(Throwable e, BackendConnection conn) {
 		LOGGER.warn("backend connect", e);
 		ErrorPacket errPacket = new ErrorPacket();
+		errPacket.packetId = ++packetId;
 		errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
 		errPacket.message = StringUtil.encode(e.getMessage(), session.getSource().getCharset());
 		err = errPacket;

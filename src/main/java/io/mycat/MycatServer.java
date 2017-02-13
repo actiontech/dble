@@ -374,9 +374,9 @@ public class MycatServer {
 				LOGGER.error("Error",e);
 			}
 		}
-		businessExecutor = ExecutorUtil.create("BusinessExecutor",
+		businessExecutor = ExecutorUtil.createCached("BusinessExecutor",
 				threadPoolSize);
-		timerExecutor = ExecutorUtil.create("Timer", system.getTimerExecutor());
+		timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 
 		for (int i = 0; i < processors.length; i++) {
@@ -783,7 +783,12 @@ public class MycatServer {
 		return new Runnable() {
 			@Override
 			public void run() {
-				xaSessionCheck.checkSessions();
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						xaSessionCheck.checkSessions();
+					}
+				});
 			}
 		};
 	}
@@ -791,28 +796,44 @@ public class MycatServer {
 		return new Runnable() {
 			@Override
 			public void run() {
-				XAStateLog.cleanCompleteRecoverylog();
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						XAStateLog.cleanCompleteRecoverylog();
+					}
+				});
 			}
 		};
 	}
 	// 处理器定时检查任务
 	private Runnable processorCheck() {
 		return new Runnable() {
+			@Override
 			public void run() {
-				try {
-					for (NIOProcessor p : processors) {
-						p.checkBackendCons();
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							for (NIOProcessor p : processors) {
+								p.checkBackendCons();
+							}
+						} catch (Exception e) {
+							LOGGER.warn("checkBackendCons caught err:" + e);
+						}
 					}
-				} catch (Exception e) {
-					LOGGER.warn("checkBackendCons caught err:" + e);
-				}
-				try {
-					for (NIOProcessor p : processors) {
-						p.checkFrontCons();
+				});
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							for (NIOProcessor p : processors) {
+								p.checkFrontCons();
+							}
+						} catch (Exception e) {
+							LOGGER.warn("checkFrontCons caught err:" + e);
+						}
 					}
-				} catch (Exception e) {
-					LOGGER.warn("checkFrontCons caught err:" + e);
-				}
+				});
 			}
 		};
 	}
@@ -881,8 +902,14 @@ public class MycatServer {
 	//定时检查不同分片表结构一致性
 	private Runnable tableStructureCheck(){
 		return new Runnable() {
+			@Override
 			public void run() {
-				tmManager.tableStructureCheck();
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						tmManager.tableStructureCheck();
+					}
+				});
 			}
 		};
 	}
@@ -890,8 +917,14 @@ public class MycatServer {
 	//  全局表一致性检查任务
 	private Runnable glableTableConsistencyCheck() {
 		return new Runnable() {
+			@Override
 			public void run() {
-				GlobalTableUtil.consistencyCheck();
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						GlobalTableUtil.consistencyCheck();
+					}
+				});
 			}
 		};
 	}
@@ -959,7 +992,7 @@ public class MycatServer {
 				}
 				if (finished) {
 					XAStateLog.saveXARecoverylog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITED_STATE : TxState.TX_ROLLBACKED_STATE);
-					XAStateLog.writeCheckpoint();
+					XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
 				}
 			}
 		}

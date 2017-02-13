@@ -4,7 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.config.ErrorCode;
@@ -100,6 +101,7 @@ public class MyCATSequnceProcessor {
 		
 		public ExecuteThread() {
 			setDaemon(true); // 设置为后台线程,防止throw RuntimeExecption进程仍然存在的问题
+			setName("MyCATSequnceProcessor");
 		}
 		
 		public void run() {

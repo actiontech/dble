@@ -19,7 +19,7 @@ public interface Repository {
 
     Collection<CoordinatorLogEntry>  getAllCoordinatorLogEntries() ;
 
-    void writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) ;
+    boolean writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) ;
 
     void close();
 

@@ -23,6 +23,9 @@
  */
 package io.mycat.net.handler;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.config.ErrorCode;
 import io.mycat.net.FrontendConnection;
@@ -37,19 +40,22 @@ import io.mycat.statistic.CommandCount;
  */
 public class FrontendCommandHandler implements NIOHandler
 {
-
-    protected final FrontendConnection source;
-    protected final CommandCount commands;
+	protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<byte[]>();
+	protected final AtomicBoolean handleStatus;
+	protected final FrontendConnection source;
+	protected final CommandCount commands;
 
     public FrontendCommandHandler(FrontendConnection source)
     {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
+        this.handleStatus = new AtomicBoolean(false);
     }
 
     @Override
     public void handle(byte[] data)
     {
+		// TODO:YHQ: LOAD DATA NEED TO USE A NEW THRED????
         if(source.getLoadDataInfileHandler()!=null&&source.getLoadDataInfileHandler().isStartLoadData())
         {
             MySQLMessage mm = new MySQLMessage(data);
@@ -60,58 +66,87 @@ public class FrontendCommandHandler implements NIOHandler
             }
             return;
         }
-        switch (data[4])
-        {
-            case MySQLPacket.COM_INIT_DB:
-                commands.doInitDB();
-                source.initDB(data);
-                break;
-            case MySQLPacket.COM_QUERY:
-                commands.doQuery();
-                source.query(data);
-                break;
-            case MySQLPacket.COM_PING:
-                commands.doPing();
-                source.ping();
-                break;
-            case MySQLPacket.COM_QUIT:
-                commands.doQuit();
-                source.close("quit cmd");
-                break;
-            case MySQLPacket.COM_PROCESS_KILL:
-                commands.doKill();
-                source.kill(data);
-                break;
-            case MySQLPacket.COM_STMT_PREPARE:
-                commands.doStmtPrepare();
-                source.stmtPrepare(data);
-                break;
-            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
-            	commands.doStmtSendLongData();
-            	source.stmtSendLongData(data);
-            	break;
-            case MySQLPacket.COM_STMT_RESET:
-            	commands.doStmtReset();
-            	source.stmtReset(data);
-            	break;
-            case MySQLPacket.COM_STMT_EXECUTE:
-                commands.doStmtExecute();
-                source.stmtExecute(data);
-                break;
-            case MySQLPacket.COM_STMT_CLOSE:
-                commands.doStmtClose();
-                source.stmtClose(data);
-                break;
-            case MySQLPacket.COM_HEARTBEAT:
-                commands.doHeartbeat();
-                source.heartbeat(data);
-                break;
-            default:
-                     commands.doOther();
-                     source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR,
-                             "Unknown command");
 
-        }
+        if (dataQueue.offer(data)) {
+			handleQueue();
+		} else {
+			throw new RuntimeException("add data to queue error.");
+		}
+    }
+    private void handleData(byte[] data) {
+		switch (data[4]) {
+		case MySQLPacket.COM_INIT_DB:
+			commands.doInitDB();
+			source.initDB(data);
+			break;
+		case MySQLPacket.COM_QUERY:
+			commands.doQuery();
+			source.query(data);
+			break;
+		case MySQLPacket.COM_PING:
+			commands.doPing();
+			source.ping();
+			break;
+		case MySQLPacket.COM_QUIT:
+			commands.doQuit();
+			source.close("quit cmd");
+			break;
+		case MySQLPacket.COM_PROCESS_KILL:
+			commands.doKill();
+			source.kill(data);
+			break;
+		case MySQLPacket.COM_STMT_PREPARE:
+			commands.doStmtPrepare();
+			source.stmtPrepare(data);
+			break;
+		case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+			commands.doStmtSendLongData();
+			source.stmtSendLongData(data);
+			break;
+		case MySQLPacket.COM_STMT_RESET:
+			commands.doStmtReset();
+			source.stmtReset(data);
+			break;
+		case MySQLPacket.COM_STMT_EXECUTE:
+			commands.doStmtExecute();
+			source.stmtExecute(data);
+			break;
+		case MySQLPacket.COM_STMT_CLOSE:
+			commands.doStmtClose();
+			source.stmtClose(data);
+			break;
+		case MySQLPacket.COM_HEARTBEAT:
+			commands.doHeartbeat();
+			source.heartbeat(data);
+			break;
+		default:
+			commands.doOther();
+			source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+		}
     }
 
+	private void handleQueue() {
+		if (this.handleStatus.compareAndSet(false, true)) {
+			this.source.getProcessor().getExecutor().execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						byte[] data = null;
+						while ((data = dataQueue.poll()) != null) {
+							handleData(data);
+						}
+					} catch (Exception e) {
+						source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+						// QUESTION_TO 阻止当前线程继续工作
+						dataQueue.clear();
+					} finally {
+						handleStatus.set(false);
+						if (dataQueue.size() > 0) {
+							handleQueue();
+						}
+					}
+				}
+			});
+		}
+	}
 }

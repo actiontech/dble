@@ -38,7 +38,7 @@ public class M2 {
     private final BlockingQueue<TransferObject> y;
 
     public M2() {
-        this.x = ExecutorUtil.create("B", 1);
+        this.x = ExecutorUtil.createFixed("B", 1);
         this.y = new LinkedTransferQueue<TransferObject>();
     }
 

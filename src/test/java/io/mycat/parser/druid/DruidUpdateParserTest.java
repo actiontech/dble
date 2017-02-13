@@ -1,27 +1,28 @@
 package io.mycat.parser.druid;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.TableConfig;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.parser.druid.impl.DruidUpdateParser;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.parser.druid.impl.DruidUpdateParser;
 
 /**
  * @author Hash Zhang
@@ -91,7 +92,7 @@ public class DruidUpdateParserTest {
         when((schemaConfig).getTables()).thenReturn(tables);
         when(tables.get(tableName)).thenReturn(tableConfig);
         when(tableConfig.getParentTC()).thenReturn(null);
-        RouteResultset routeResultset = new RouteResultset(sql, 11);
+        RouteResultset routeResultset = new RouteResultset(sql, 11, null);
         Class c = DruidUpdateParser.class;
         Method method = c.getDeclaredMethod("confirmShardColumnNotUpdated", new Class[]{SQLUpdateStatement.class, SchemaConfig.class, String.class, String.class, String.class, RouteResultset.class});
         method.setAccessible(true);

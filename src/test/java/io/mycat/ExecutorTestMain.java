@@ -35,7 +35,7 @@ public class ExecutorTestMain {
 
     public static void main(String[] args) {
         final AtomicLong count = new AtomicLong(0L);
-        final ThreadPoolExecutor executor = ExecutorUtil.create("TestExecutor", 5);
+        final ThreadPoolExecutor executor = ExecutorUtil.createFixed("TestExecutor", 5);
 
         new Thread() {
             @Override

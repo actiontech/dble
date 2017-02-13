@@ -102,7 +102,6 @@ public final class SystemConfig {
 	private String charset;
 	private int processors;
 	private int processorExecutor;
-	private int timerExecutor;
 	private int managerExecutor;
 	private long idleTimeout;
 	private int catletClassCheckSeconds = 60;
@@ -225,7 +224,6 @@ public final class SystemConfig {
 		this.managerExecutor = 2;
 
 		this.processorBufferLocalPercent = 100;
-		this.timerExecutor = 2;
 		this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
 		this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
 		this.xaSessionCheckPeriod  = DEFAULT_XA_SESSION_CHECK_PERIOD;
@@ -542,14 +540,6 @@ public final class SystemConfig {
 
 	public void setManagerExecutor(int managerExecutor) {
 		this.managerExecutor = managerExecutor;
-	}
-
-	public int getTimerExecutor() {
-		return timerExecutor;
-	}
-
-	public void setTimerExecutor(int timerExecutor) {
-		this.timerExecutor = timerExecutor;
 	}
 
 	public long getIdleTimeout() {
@@ -886,7 +876,7 @@ public final class SystemConfig {
 				+ serverPort + ", managerPort=" + managerPort + ", charset="
 				+ charset + ", processors=" + processors
 				+ ", processorExecutor=" + processorExecutor
-				+ ", timerExecutor=" + timerExecutor + ", managerExecutor="
+				+ ", managerExecutor="
 				+ managerExecutor + ", idleTimeout=" + idleTimeout
 				+ ", catletClassCheckSeconds=" + catletClassCheckSeconds
 				+ ", sqlExecuteTimeout=" + sqlExecuteTimeout

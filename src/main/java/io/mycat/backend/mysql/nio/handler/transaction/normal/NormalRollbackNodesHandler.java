@@ -44,8 +44,9 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 		super(session);
 	}
 	@Override
-	protected void executeRollback(MySQLConnection mysqlCon, int position) {
+	protected boolean executeRollback(MySQLConnection mysqlCon, int position) {
 		mysqlCon.rollback();
+		return true;
 	}
 
 	@Override

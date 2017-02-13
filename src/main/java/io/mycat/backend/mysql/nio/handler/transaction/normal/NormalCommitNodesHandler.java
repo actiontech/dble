@@ -18,8 +18,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 	}
 
 	@Override
-	protected void executeCommit(MySQLConnection mysqlCon, int position) {
+	protected boolean executeCommit(MySQLConnection mysqlCon, int position) {
 		mysqlCon.commit();
+		return true;
 	}
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {

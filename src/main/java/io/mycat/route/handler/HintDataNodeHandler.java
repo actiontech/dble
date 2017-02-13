@@ -3,7 +3,8 @@ package io.mycat.route.handler;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
@@ -34,7 +35,7 @@ public class HintDataNodeHandler implements HintHandler {
 			LOGGER.debug("route datanode sql hint from " + stmt);
 		}
 		
-		RouteResultset rrs = new RouteResultset(stmt, sqlType);		
+		RouteResultset rrs = new RouteResultset(stmt, sqlType, sc.getSession2());
 		PhysicalDBNode dataNode = MycatServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
 		if (dataNode != null) {			
 			rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName(), stmt);

@@ -8,6 +8,7 @@ import io.mycat.backend.mysql.xa.CoordinatorLogEntry;
 import io.mycat.backend.mysql.xa.ParticipantLogEntry;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.XAStateLog;
+import io.mycat.config.ErrorCode;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.NonBlockingSession;
@@ -28,7 +29,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		sendData = OkPacket.OK;
 	}
 	@Override
-	protected void executeCommit(MySQLConnection mysqlCon, int position) {
+	protected boolean executeCommit(MySQLConnection mysqlCon, int position) {
 		switch (session.getXaState()) {
 		case TX_STARTED_STATE:
 			if (participantLogEntry == null) {
@@ -41,13 +42,25 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			break;
 		case TX_ENDED_STATE:
 			if (position == 0) {
-				XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_PREPARING_STATE);
+				if (!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_PREPARING_STATE)) {
+					String errMsg = "saveXARecoverylog error, the stage is TX_PREPARING_STATE";
+					this.setFail(errMsg);
+					sendData = makeErrorPacket(errMsg);
+					nextParse();
+					return false;
+				}
 			}
 			preparePhase(mysqlCon);
 			break;
 		case TX_PREPARED_STATE:
 			if (position == 0) {
-				XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITING_STATE);
+				if (!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITING_STATE)) {
+					String errMsg = "saveXARecoverylog error, the stage is TX_COMMITING_STATE";
+					this.setFail(errMsg);
+					sendData = makeErrorPacket(errMsg);
+					nextParse();
+					return false;
+				}
 			}
 			commitPhase(mysqlCon);
 			break;
@@ -59,6 +72,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			break;
 		default:
 		}
+		return true;
+	}
+
+	private byte[] makeErrorPacket(String errMsg) {
+		ErrorPacket errPacket = new ErrorPacket();
+		errPacket.packetId = ++packetId;
+		errPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
+		errPacket.message = StringUtil.encode(errMsg, session.getSource().getCharset());
+		return errPacket.toBytes();
 	}
 	private void endPhase(MySQLConnection mysqlCon) {
 		String xaTxId = mysqlCon.getConnXID(session);
@@ -291,7 +313,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 					commit();
 				} else {
 					// 关session ,add to定时任务
-					session.getSource().close("COMMIT FAILED but it shoule be commit again!");
+					session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
 					MycatServer.getInstance().getXaSessionCheck().addCommitSession(session);
 				}
 			} else {

@@ -17,7 +17,7 @@ public abstract class AbstractCommitNodesHandler  extends MultiNodeHandler imple
 		super(session);
 	}
 
-	protected abstract void executeCommit(MySQLConnection mysqlCon, int position);
+	protected abstract boolean executeCommit(MySQLConnection mysqlCon, int position);
 	
 	@Override
 	public void commit() {
@@ -32,7 +32,9 @@ public abstract class AbstractCommitNodesHandler  extends MultiNodeHandler imple
 		for (RouteResultsetNode rrn : session.getTargetKeys()) {
 			final BackendConnection conn = session.getTarget(rrn);
 			conn.setResponseHandler(this);
-			executeCommit((MySQLConnection) conn, position++);
+			if (!executeCommit((MySQLConnection) conn, position++)) {
+				break;
+			}
 		}
 	}
 	

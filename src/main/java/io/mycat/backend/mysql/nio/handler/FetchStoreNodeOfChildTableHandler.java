@@ -23,9 +23,13 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -37,44 +41,49 @@ import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.cache.CachePool;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.mysql.ErrorPacket;
-import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultsetNode;
+import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
 
 /**
  * company where id=(select company_id from customer where id=3); the one which
  * return data (id) is the datanode to store child table's records
  * 
- * @author wuzhih
+ * @author wuzhih,huqing.yan
  * 
  */
 public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
-	private static final Logger LOGGER = LoggerFactory
-			.getLogger(FetchStoreNodeOfChildTableHandler.class);
-	private String sql;
-	private volatile String result;
+	private static final Logger LOGGER = LoggerFactory.getLogger(FetchStoreNodeOfChildTableHandler.class);
+	private final String sql;
+	private AtomicBoolean hadResult = new AtomicBoolean(false);
 	private volatile String dataNode;
 	private AtomicInteger finished = new AtomicInteger(0);
 	protected final ReentrantLock lock = new ReentrantLock();
-
-	public String execute(String schema, String sql, ArrayList<String> dataNodes) {
+	private Condition result = lock.newCondition();
+	private final NonBlockingSession session;
+	public FetchStoreNodeOfChildTableHandler(String sql, NonBlockingSession session) {
+		this.sql = sql;
+		this.session = session;
+	}
+	public String execute(String schema, ArrayList<String> dataNodes) {
 		String key = schema + ":" + sql;
 		CachePool cache = MycatServer.getInstance().getCacheService()
 				.getCachePool("ER_SQL2PARENTID");
-		String result = (String) cache.get(key);
-		if (result != null) {
-			return result;
+		String cacheResult = (String) cache.get(key);
+		if (cacheResult != null) {
+			return cacheResult;
 		}
-		this.sql = sql;
 		int totalCount = dataNodes.size();
-		long startTime = System.currentTimeMillis();
-		long endTime = startTime + 5 * 60 * 1000L;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 
 		LOGGER.debug("find child node with sql:" + sql);
 		for (String dn : dataNodes) {
-			if (dataNode != null) {
-				return dataNode;
+			if (!LOGGER.isDebugEnabled()) {
+				//no early return when debug
+				if (dataNode != null) {
+					LOGGER.debug(" found return ");
+					return dataNode;
+				}
 			}
 			PhysicalDBNode mysqlDN = conf.getDataNodes().get(dn);
 			try {
@@ -82,40 +91,61 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 					LOGGER.debug("execute in datanode " + dn);
 				}
 				RouteResultsetNode node = new RouteResultsetNode(dn, ServerParse.SELECT, sql);
-				node.setRunOnSlave(false);	// 获取 子表节点，最好走master为好
-
-				mysqlDN.getConnection(mysqlDN.getDatabase(), true, node, this, dn);
-				 
-//				mysqlDN.getConnection(mysqlDN.getDatabase(), true,
-//						new RouteResultsetNode(dn, ServerParse.SELECT, sql),
-//						this, dn);
+				node.setRunOnSlave(false); // 获取 子表节点，最好走master为好
+				BackendConnection conn = session.getTarget(node);
+				if (session.tryExistsCon(conn, node)) {
+					if (session.closed()) {
+						session.clearResources(true);
+						return null;
+					}
+					conn.setResponseHandler(this);
+					try {
+						conn.execute(node, session.getSource(), isAutoCommit());
+					} catch (IOException e) {
+						connectionError(e, conn);
+					}
+				} else {
+					mysqlDN.getConnection(mysqlDN.getDatabase(), true, node, this, node);
+				}
 			} catch (Exception e) {
 				LOGGER.warn("get connection err " + e);
 			}
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-
-			}
 		}
-
-		while (dataNode == null && System.currentTimeMillis() < endTime) {
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				break;
+		lock.lock();
+		try {
+			while (dataNode == null) {
+				try {
+					result.await(50, TimeUnit.MILLISECONDS);
+				} catch (InterruptedException e) {
+					break;
+				}
+				if (dataNode != null || finished.get() >= totalCount) {
+					break;
+				}
 			}
-			if (dataNode != null || finished.get() >= totalCount) {
-				break;
-			}
+		} finally {
+			lock.unlock();
 		}
-		if (dataNode != null) {
-			cache.putIfAbsent(key, dataNode);
+		if (!LOGGER.isDebugEnabled()) {
+			//no cached when debug
+			if (dataNode != null) {
+				cache.putIfAbsent(key, dataNode);
+			}
 		}
 		return dataNode;
 
 	}
 
+	private boolean isAutoCommit(){
+		return session.getSource().isAutocommit() && !session.getSource().isTxstart();
+	}
+
+	private boolean canReleaseConn(){
+		if(session.getSource().isClosed()){
+			return false;
+		}
+		return isAutoCommit();
+	}
 	@Override
 	public void connectionAcquired(BackendConnection conn) {
 		conn.setResponseHandler(this);
@@ -130,7 +160,6 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	public void connectionError(Throwable e, BackendConnection conn) {
 		finished.incrementAndGet();
 		LOGGER.warn("connectionError " + e);
-
 	}
 
 	@Override
@@ -138,56 +167,62 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 		finished.incrementAndGet();
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
-		LOGGER.warn("errorResponse " + err.errno + " "
-				+ new String(err.message));
-		conn.release();
-
+		LOGGER.warn("errorResponse " + err.errno + " " + new String(err.message));
+		if (canReleaseConn()) {
+			conn.release();
+		}
 	}
 
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("okResponse " + conn);
+		}
 		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
 			finished.incrementAndGet();
-			conn.release();
+			if (canReleaseConn()) {
+				conn.release();
+			}
 		}
-
 	}
 
 	@Override
 	public void rowResponse(byte[] row, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("received rowResponse response," + getColumn(row)
-					+ " from  " + conn);
+			LOGGER.debug("received rowResponse response from  " + conn);
 		}
-		if (result == null) {
-			result = getColumn(row);
-			dataNode = (String) conn.getAttachment();
+		if(hadResult.compareAndSet(false, true)){
+			lock.lock();
+			try {
+				dataNode = ((RouteResultsetNode) conn.getAttachment()).getName();
+				result.signal();
+			} finally {
+				lock.unlock();
+			}
 		} else {
-			LOGGER.warn("find multi data nodes for child table store, sql is:  "
-					+ sql);
+			LOGGER.warn("find multi data nodes for child table store, sql is:  " + sql);
 		}
-
 	}
 
-	private String getColumn(byte[] row) {
-		RowDataPacket rowDataPkg = new RowDataPacket(1);
-		rowDataPkg.read(row);
-		byte[] columnData = rowDataPkg.fieldValues.get(0);
-		return new String(columnData);
-	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("rowEofResponse" + conn);
+		}
 		finished.incrementAndGet();
-		conn.release();
+		if (canReleaseConn()) {
+			conn.release();
+		}
 	}
 
 	private void executeException(BackendConnection c, Throwable e) {
 		finished.incrementAndGet();
 		LOGGER.warn("executeException   " + e);
-		c.close("exception:" + e);
-
+		if (canReleaseConn()) {
+			c.release();
+		}
 	}
 
 	@Override
@@ -197,14 +232,12 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void connectionClose(BackendConnection conn, String reason) {
-
 		LOGGER.warn("connection closed " + conn + " reason:" + reason);
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
 			byte[] eof, BackendConnection conn) {
-
 	}
 
 }

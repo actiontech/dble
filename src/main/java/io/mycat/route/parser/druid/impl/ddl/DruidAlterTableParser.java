@@ -43,16 +43,10 @@ import io.mycat.util.StringUtil;
  */
 public class DruidAlterTableParser extends DefaultDruidParser {
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
-
-	}
-
-	@Override
-	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
-			throws SQLNonTransientException {
-		String schemaName = schema == null ? null : schema.getName();
 		SQLAlterTableStatement alterTable = (SQLAlterTableStatement) stmt;
+		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, alterTable.getTableSource());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
@@ -82,16 +76,18 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		}
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
-			String sql = modifyColumnIfAlter(schemaInfo.schemaConfig, ctx.getSql(), alterTable);
+			String sql = modifyColumnIfAlter(schemaInfo, ctx.getSql(), alterTable);
 			ctx.setSql(sql);
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(alterTable);
 		}
 		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs, ctx.getSql());
+		return schemaInfo.schemaConfig;
 	}
 
-	private String modifyColumnIfAlter(SchemaConfig schema, String sql, SQLAlterTableStatement alterStatement) throws SQLNonTransientException {
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), alterStatement.getTableSource());
+	
+
+	private String modifyColumnIfAlter(SchemaInfo schemaInfo, String sql, SQLAlterTableStatement alterStatement) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 		if (orgTbMeta == null)
 			return sql;

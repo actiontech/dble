@@ -1,0 +1,13 @@
+5301=Could not open file {0}
+5302=Could not force file {0}
+5303=Could not sync file {0}
+5304=Reading from {0} failed
+5305=Writing to {0} failed
+5306=Error while renaming file {0} to {1}
+5307=Cannot delete file {0}
+5308=IO Exception: {0}
+5309=Reading from {0} failed,index out of bounds
+5310=Hex a decimal string with odd number of characters: {0}
+5311=Hex a decimal string contains non-hex character: {0}
+5312=Invalid value {0} for parameter {1}
+5313=Error while creating file {0}

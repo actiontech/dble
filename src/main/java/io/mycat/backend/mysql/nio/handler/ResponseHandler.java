@@ -26,6 +26,8 @@ package io.mycat.backend.mysql.nio.handler;
 import java.util.List;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 
 /**
  * @author mycat
@@ -59,19 +61,28 @@ public interface ResponseHandler {
 	/**
 	 * 收到字段数据包结束的响应处理
 	 */
-	void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof,
-			BackendConnection conn);
 
+	void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn);
 	/**
 	 * 收到行数据包的响应处理
 	 */
-	void rowResponse(byte[] row, BackendConnection conn);
+	boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
 
 	/**
 	 * 收到行数据包结束的响应处理
 	 */
-	void rowEofResponse(byte[] eof, BackendConnection conn);
+	void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
+	
+	/**
+	 * 收到中继数据包的响应处理
+	 */
+	void relayPacketResponse(byte[] relayPacket, BackendConnection conn);
 
+	/**
+	 * 收到结束数据包的响应处理
+	 */
+	void endPacketResponse(byte[] endPacket, BackendConnection conn);
 	/**
 	 * 写队列为空，可以写数据了
 	 * 

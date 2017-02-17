@@ -18,7 +18,6 @@
 
 <!ELEMENT schema (table*)>
 <!ATTLIST schema name NMTOKEN #REQUIRED>
-<!ATTLIST schema checkSQLschema NMTOKEN #IMPLIED>
 <!ATTLIST schema dataNode CDATA #IMPLIED>
 <!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
 <!ATTLIST schema lowerCase CDATA #IMPLIED>
@@ -30,7 +29,6 @@
 <!ATTLIST table rule NMTOKEN #IMPLIED>
 <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
 <!ATTLIST table primaryKey NMTOKEN #IMPLIED>
-<!ATTLIST table subTables CDATA #IMPLIED>
 <!ATTLIST table autoIncrement NMTOKEN #IMPLIED>
 <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
 <!ATTLIST table type NMTOKEN #IMPLIED>

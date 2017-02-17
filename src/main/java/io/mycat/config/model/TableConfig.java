@@ -38,15 +38,17 @@ import io.mycat.util.SplitUtil;
  * @author mycat
  */
 public class TableConfig {
-	public static final int TYPE_GLOBAL_TABLE = 1;
-	public static final int TYPE_GLOBAL_DEFAULT = 0;
+	public enum TableTypeEnum{
+		TYPE_DEFAULT, TYPE_GLOBAL_TABLE
+	}
+//	public static final int TYPE_GLOBAL_TABLE = 1;
+//	public static final int TYPE_GLOBAL_DEFAULT = 0;
 	private final String name;
 	private final String primaryKey;
 	private final boolean autoIncrement;
 	private final boolean needAddLimit;
-	private final int tableType;
+	private final TableTypeEnum tableType;
 	private final ArrayList<String> dataNodes;
-	private final ArrayList<String> distTables;
 	private final RuleConfig rule;
 	private final String partitionColumn;
 	private final boolean ruleRequired;
@@ -66,10 +68,10 @@ public class TableConfig {
 	private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
 
 
-	public TableConfig(String name, String primaryKey, boolean autoIncrement,boolean needAddLimit, int tableType,
+	public TableConfig(String name, String primaryKey, boolean autoIncrement,boolean needAddLimit, TableTypeEnum tableType,
 			String dataNode, RuleConfig rule, boolean ruleRequired,
 			TableConfig parentTC, boolean isChildTable, String joinKey,
-			String parentKey,String subTables) {
+			String parentKey) {
 		if (name == null) {
 			throw new IllegalArgumentException("table name is null");
 		} else if (dataNode == null) {
@@ -93,19 +95,6 @@ public class TableConfig {
 		for (String dn : theDataNodes) {
 			dataNodes.add(dn);
 		}
-		
-		if(subTables!=null && !subTables.equals("")){
-			String sTables[] = SplitUtil.split(subTables, ',', '$', '-');
-			if (sTables == null || sTables.length <= 0) {
-				throw new IllegalArgumentException("invalid table subTables");
-			}
-			this.distTables = new ArrayList<String>(sTables.length);
-			for (String table : sTables) {
-				distTables.add(table);
-			}
-		}else{
-			this.distTables = new ArrayList<String>();
-		}	
 		
 		this.rule = rule;
 		this.partitionColumn = (rule == null) ? null : rule.getColumn();
@@ -145,7 +134,7 @@ public class TableConfig {
 	}
 
 	public boolean isGlobalTable() {
-		return this.tableType == TableConfig.TYPE_GLOBAL_TABLE;
+		return this.tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
 	}
 
 	public String genLocateRootParentSQL() {
@@ -187,7 +176,7 @@ public class TableConfig {
 		return partitionColumn;
 	}
 
-	public int getTableType() {
+	public TableTypeEnum getTableType() {
 		return tableType;
 	}
 
@@ -252,17 +241,6 @@ public class TableConfig {
 
 	public boolean primaryKeyIsPartionKey() {
 		return partionKeyIsPrimaryKey;
-	}
-
-	public ArrayList<String> getDistTables() {
-		return this.distTables;
-	}
-
-	public boolean isDistTable(){
-		if(this.distTables!=null && !this.distTables.isEmpty() ){
-			return true;
-		}
-		return false;
 	}
 
 	public List<SQLTableElement> getTableElementList() {

@@ -15,9 +15,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 
-import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.parser.druid.impl.DefaultDruidParser;
 import io.mycat.route.parser.druid.impl.DruidDeleteParser;
 import io.mycat.route.parser.druid.impl.DruidInsertParser;
@@ -38,7 +36,7 @@ import io.mycat.route.parser.druid.impl.ddl.DruidTruncateTableParser;
  */
 public class DruidParserFactory
 {
-	public static DruidParser create(SchemaConfig schema, SQLStatement statement, SchemaStatVisitor visitor)
+	public static DruidParser create(SQLStatement statement)
 			throws SQLNonTransientException {
 		DruidParser parser = null;
 		if (statement instanceof SQLSelectStatement) {

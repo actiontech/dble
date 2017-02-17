@@ -22,18 +22,15 @@ import io.mycat.util.StringUtil;
 
 public class DruidCreateTableParser extends DefaultDruidParser {
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor) {
-	}
-	
-	@Override
-	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
-		String schemaName = schema == null ? null : schema.getName();
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+			throws SQLNonTransientException {
 		MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement)stmt;
 		if(createStmt.getSelect() != null) {
 			String msg = "create table from other table not supported :" + stmt;
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
+		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, createStmt.getTableSource());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
@@ -47,6 +44,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			rrs.setSqlStatement(createStmt);
 		}
 		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs, ctx.getSql());
+		return schemaInfo.schemaConfig;
 	}
 
 	private String addColumnIfCreate(String sql, MySqlCreateTableStatement createStmt) {

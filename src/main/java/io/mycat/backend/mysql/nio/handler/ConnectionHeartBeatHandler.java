@@ -31,10 +31,13 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 
 /**
  * heartbeat check for mysql connections
@@ -132,11 +135,12 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		removeFinished(conn);
 		conn.release();
 	}
@@ -164,12 +168,26 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 		LOGGER.warn("connection closed " + conn + " reason:" + reason);
 	}
 
+
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("received field eof  from " + conn);
 		}
+	}
+
+	
+
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+		
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+		
 	}
 
 }

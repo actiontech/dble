@@ -20,21 +20,16 @@ import io.mycat.server.util.SchemaUtil.SchemaInfo;
  */
 public class DruidDropIndexParser extends DefaultDruidParser {
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
-
-	}
-
-	@Override
-	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
-			throws SQLNonTransientException {
-		String schemaName = schema == null ? null : schema.getName();
 		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement)stmt;
+		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, dropStmt.getTableName());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
 		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs, ctx.getSql());
+		return schemaInfo.schemaConfig;
 	}
 }

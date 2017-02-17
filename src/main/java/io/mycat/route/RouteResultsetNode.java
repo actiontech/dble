@@ -25,6 +25,7 @@ package io.mycat.route;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
@@ -54,8 +55,7 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	// 强制走 master，可以通过 RouteResultset的属性canRunInReadDB(false)
 	// 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
 	private Boolean runOnSlave = null;	// 默认null表示不施加影响, true走slave,false走master
-	
-	private String subTableName; // 分表的表名
+	private AtomicLong multiplexNum;
 
 	
 	public RouteResultsetNode(String name, int sqlType, String srcStatement) {
@@ -68,6 +68,7 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
 		hasBlanceFlag = (statement != null)
 				&& statement.startsWith("/*balance*/");
+		this.multiplexNum = new AtomicLong(0);
 	}
 
 	public Boolean getRunOnSlave() {
@@ -83,7 +84,9 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
     {
         return hintMap;
     }
-
+    public AtomicLong getMultiplexNum() {
+		return multiplexNum;
+	}
     public void setHintMap(Map hintMap)
     {
         this.hintMap = hintMap;
@@ -208,14 +211,9 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		}
 		if (obj instanceof RouteResultsetNode) {
 			RouteResultsetNode rrn = (RouteResultsetNode) obj;
-			if(subTableName!=null){
-				if (equals(name, rrn.getName()) && equals(subTableName, rrn.getSubTableName())) {
-					return true;
-				}
-			}else{
-				if (equals(name, rrn.getName())) {
-					return true;
-				}
+			if ((this.multiplexNum.get() == rrn.getMultiplexNum().get())
+					&&equals(name, rrn.getName())) {
+				return true;
 			}
 		}
 		return false;
@@ -226,6 +224,7 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		StringBuilder s = new StringBuilder();
 		s.append(name);
 		s.append('{').append(statement).append('}');
+		s.append(".").append(multiplexNum.get());
 		return s.toString();
 	}
 
@@ -236,25 +235,9 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		return str1.equals(str2);
 	}
 
-	public String getSubTableName() {
-		return this.subTableName;
-	}
-
-	public void setSubTableName(String subTableName) {
-		this.subTableName = subTableName;
-	}
-
 	public boolean isModifySQL() {
 		return !canRunInReadDB;
 	}
-	public boolean isDisctTable() {
-		if(subTableName!=null && !subTableName.equals("")){
-			return true;
-		};
-		return false;
-	}
-	
-
 	@Override
 	public int compareTo(RouteResultsetNode obj) {
 		if(obj == null) {
@@ -266,15 +249,7 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		if(obj.name == null) {
 			return 1;
 		}
-		int c = this.name.compareTo(obj.name);
-		if(!this.isDisctTable()){
-			return c;
-		}else{
-			if(c==0){
-				return this.subTableName.compareTo(obj.subTableName);
-			}
-			return c;
-		}
+		return this.name.compareTo(obj.name);
 	}
 	
 	public boolean isHasBlanceFlag() {

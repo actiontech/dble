@@ -1,17 +1,9 @@
 package io.mycat.route.parser.druid;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
-
-import io.mycat.sqlengine.mpp.ColumnRoutePair;
-import io.mycat.sqlengine.mpp.RangeValue;
 
 /**
  * druid parser result
@@ -19,10 +11,6 @@ import io.mycat.sqlengine.mpp.RangeValue;
  *
  */
 public class DruidShardingParseInfo {
-	/**
-	 * 一个sql中可能有多个WhereUnit（如子查询中的where可能导致多个）
-	 */
-	private List<WhereUnit> whereUnits = new ArrayList<WhereUnit>();
 	
 	private List<RouteCalculateUnit> routeCalculateUnits = new ArrayList<RouteCalculateUnit>();
 	
@@ -40,8 +28,6 @@ public class DruidShardingParseInfo {
 	 * key table alias, value talbe realname;
 	 */
 	private Map<String, String> tableAliasMap = new LinkedHashMap<String, String>();
-
-	private SchemaStatVisitor visitor;
 
 	public Map<String, String> getTableAliasMap() {
 		return tableAliasMap;
@@ -90,14 +76,5 @@ public class DruidShardingParseInfo {
 		}
 	}
 	
-	public void setVisitor(SchemaStatVisitor visitor) {
-		
-		this.visitor = visitor;
-	}
-	
-	public SchemaStatVisitor getVisitor(){
-		
-		return this.visitor;
-	}
 
 }

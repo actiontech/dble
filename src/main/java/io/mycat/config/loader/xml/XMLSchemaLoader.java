@@ -47,6 +47,7 @@ import io.mycat.config.model.DataHostConfig;
 import io.mycat.config.model.DataNodeConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.config.model.TableConfig.TableTypeEnum;
 import io.mycat.config.model.TableConfigMap;
 import io.mycat.config.model.rule.TableRuleConfig;
 import io.mycat.config.util.ConfigException;
@@ -150,7 +151,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 			//读取各个属性
 			String name = schemaElement.getAttribute("name");
 			String dataNode = schemaElement.getAttribute("dataNode");
-			String checkSQLSchemaStr = schemaElement.getAttribute("checkSQLschema");
 			String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
 			String lowerCaseStr = schemaElement.getAttribute("lowerCase");
 			int sqlMaxLimit = -1;
@@ -186,7 +186,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 						"schema " + name + " didn't config tables,so you must set dataNode property!");
 			}
 			SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
-					tables, sqlMaxLimit, !"false".equalsIgnoreCase(checkSQLSchemaStr), lowerCase);
+					tables, sqlMaxLimit, lowerCase);
 			schemas.put(name, schemaConfig);
 		}
 	}
@@ -312,9 +312,9 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			//记录type，是否为global
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement.getAttribute("type") : null;
-			int tableType = TableConfig.TYPE_GLOBAL_DEFAULT;
+			TableTypeEnum tableType = TableTypeEnum.TYPE_DEFAULT;
 			if ("global".equalsIgnoreCase(tableTypeStr)) {
-				tableType = TableConfig.TYPE_GLOBAL_TABLE;
+				tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
 			}
 			//记录dataNode，就是分布在哪些dataNode上
 			String dataNode = tableElement.getAttribute("dataNode");
@@ -342,8 +342,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (distTableDns) {
 				dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
 			}
-			//分表功能
-			String subTables = tableElement.getAttribute("subTables");
 			
 			for (int j = 0; j < tableNames.length; j++) {
 
@@ -353,7 +351,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 				TableConfig table = new TableConfig(tableName, primaryKey,
 						autoIncrement, needAddLimit, tableType, dataNode,
 						(tableRule != null) ? tableRule.getRule() : null,
-						ruleRequired, null, false, null, null,subTables);
+						ruleRequired, null, false, null, null);
 				
 				checkDataNodeExists(table.getDataNodes());
 				// 检查分片表分片规则配置是否合法
@@ -441,14 +439,13 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (childTbElement.hasAttribute("needAddLimit")) {
 				needAddLimit = Boolean.parseBoolean(childTbElement.getAttribute("needAddLimit"));
 			}
-			String subTables = childTbElement.getAttribute("subTables");
 			//子表join键，和对应的parent的键，父子表通过这个关联
 			String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
 			String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
 			TableConfig table = new TableConfig(cdTbName, primaryKey,
 					autoIncrement, needAddLimit,
-					TableConfig.TYPE_GLOBAL_DEFAULT, dataNodes, null, false, parentTable, true,
-					joinKey, parentKey, subTables);
+					TableTypeEnum.TYPE_DEFAULT, dataNodes, null, false, parentTable, true,
+					joinKey, parentKey);
 			
 			if (tables.containsKey(table.getName())) {
 				throw new ConfigException("table " + table.getName() + " duplicated!");

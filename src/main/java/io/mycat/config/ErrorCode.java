@@ -42,6 +42,19 @@ public interface ErrorCode {
     public static final int ERR_MULTI_NODE_FAILED = 3011;
     public static final int ERR_WRONG_USED = 3012;
     public static final int ERR_FOUND_EXCEPION = 3344;
+    public static final int ER_HANDLE_DATA = 4002;
+	public static final int ER_OPTIMIZER = 4004;
+	public static final int ER_QUERYHANDLER = 4005;
+	public static final int ER_NO_VALID_CONNECTION = 5004;
+	public static final int ER_FILE_INIT = 5301;
+	public static final int ER_FILE_FORCE = 5302;
+	public static final int ER_FILE_SYNC = 5303;
+	public static final int ER_FILE_READ = 5304;
+	public static final int ER_FILE_WRITE = 5305;
+	public static final int ER_FILE_RENAME = 5306;
+	public static final int ER_FILE_DELETE = 5307;
+	public static final int ER_IO_EXCEPTION = 5308;
+	public static final int ER_FILE_CREATE = 5313;
 	// mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;

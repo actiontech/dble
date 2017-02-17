@@ -65,6 +65,12 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile boolean borrowed = false;
 	private volatile boolean modifiedSQLExecuted = false;
 	private volatile boolean isDDL = false;
+	private volatile boolean isRunning;
+	private volatile StatusSync statusSync;
+	private volatile boolean metaDataSyned = true;
+	private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
+	private volatile int txIsolation;
+	private volatile boolean autocommit;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -137,8 +143,6 @@ public class MySQLConnection extends BackendAIOConnection {
 	private boolean fromSlaveDB;
 	private long threadId;
 	private HandshakePacket handshake;
-	private volatile int txIsolation;
-	private volatile boolean autocommit;
 	private long clientFlags;
 	private boolean isAuthenticated;
 	private String user;
@@ -147,9 +151,6 @@ public class MySQLConnection extends BackendAIOConnection {
 	private ResponseHandler respHandler;
 
 	private final AtomicBoolean isQuit;
-	private volatile StatusSync statusSync;
-	private volatile boolean metaDataSyned = true;
-	private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
 
 	public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB) {
 		super(channel);
@@ -161,7 +162,13 @@ public class MySQLConnection extends BackendAIOConnection {
 		// 设为默认值，免得每个初始化好的连接都要去同步一下
 		this.txIsolation = MycatServer.getInstance().getConfig().getSystem().getTxIsolation();
 	}
+	public void setRunning(boolean running) {
+		isRunning = running;
+	}
 
+	public boolean isRunning() {
+		return isRunning;
+	}
 	public TxState getXaStatus() {
 		return xaStatus;
 	}
@@ -391,7 +398,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	}
 
 	public void execute(RouteResultsetNode rrn, ServerConnection sc,
-			boolean autocommit) throws UnsupportedEncodingException {
+			boolean autocommit){
 		if (!modifiedSQLExecuted && rrn.isModifySQL()) {
 			modifiedSQLExecuted = true;
 		}

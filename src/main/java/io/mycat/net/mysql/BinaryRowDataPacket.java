@@ -7,15 +7,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.config.Fields;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.net.FrontendConnection;
 import io.mycat.util.ByteUtil;
 import io.mycat.util.DateUtil;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ProtocolBinary::ResultsetRow:
@@ -254,7 +254,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
 		
 		bb = conn.getProcessor().getBufferPool().allocate(totalSize);
 
-		BufferUtil.writeUB3(bb, calcPacketSize());
+		BufferUtil.writeUB3(bb, size);
 		bb.put(packetId);
 		bb.put(packetHeader); // packet header [00]
 		bb.put(nullBitMap); // NULL-Bitmap

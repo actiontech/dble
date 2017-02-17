@@ -57,8 +57,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLSelectStatement x) {
         setAliasMap();
-//        getAliasMap().put("DUAL", null);
-
         return true;
     }
 

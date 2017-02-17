@@ -1,6 +1,5 @@
 package io.mycat.backend.mysql.nio.handler;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,7 +10,9 @@ import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.config.MycatConfig;
+import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.OkPacket;
+import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
@@ -56,11 +57,7 @@ public class LockTablesHandler extends MultiNodeHandler {
 			return;
 		}
 		conn.setResponseHandler(this);
-		try {
-			conn.execute(node, session.getSource(), autocommit);
-		} catch (IOException e) {
-			connectionError(e, conn);
-		}
+		conn.execute(node, session.getSource(), autocommit);
 	}
 
 	@Override
@@ -106,21 +103,23 @@ public class LockTablesHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		LOGGER.warn(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": row data packet").toString());
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": row's eof").toString());

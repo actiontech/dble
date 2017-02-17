@@ -1,7 +1,9 @@
 package io.mycat.route.sequence;
 
-import io.mycat.route.sequence.handler.*;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import java.sql.SQLNonTransientException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -14,16 +16,26 @@ import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.catlets.Catlet;
 import io.mycat.config.ErrorCode;
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.factory.RouteStrategyFactory;
+import io.mycat.route.sequence.handler.DistributedSequenceHandler;
+import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
+import io.mycat.route.sequence.handler.IncrSequencePropHandler;
+import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
+import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
+import io.mycat.route.sequence.handler.SequenceHandler;
+import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
+import io.mycat.server.util.SchemaUtil;
+import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.EngineCtx;
-import io.mycat.util.StringUtil;
 
 /**
  * 执行批量插入sequence Id
@@ -82,7 +94,19 @@ public class BatchInsertSequence implements Catlet {
 			SQLStatement statement = parser.parseStatement();
 			MySqlInsertStatement insert = (MySqlInsertStatement)statement;
 			if(insert.getValuesList()!=null){
-				String tableName = StringUtil.getTableName(realSQL).toUpperCase();
+				String schemaName = schema == null ? null : schema.getName();
+				SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
+				if (schemaInfo == null) {
+					String msg = "No MyCAT Database is selected Or defined";
+					throw new SQLNonTransientException(msg);
+				}
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+				if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
+					String msg = "The statement DML privilege check is not passed, sql:" + realSQL;
+					throw new SQLNonTransientException(msg);
+				}
+				schema = schemaInfo.schemaConfig;
+				String tableName = schemaInfo.table;
 				TableConfig tableConfig = schema.getTables().get(tableName);
 				String primaryKey = tableConfig.getPrimaryKey();//获得表的主键字段
 				

@@ -190,7 +190,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 	private void handleFieldEofPacket(byte[] data) {
 		ResponseHandler respHand = responseHandler;
 		if (respHand != null) {
-			respHand.fieldEofResponse(header, fields, data, source);
+			respHand.fieldEofResponse(header, fields, null, data, false, source);
 		} else {
 			closeNoHandler();
 		}
@@ -202,7 +202,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 	private void handleRowPacket(byte[] data) {
 		ResponseHandler respHand = responseHandler;
 		if (respHand != null) {
-			respHand.rowResponse(data, source);
+			respHand.rowResponse(data, null, false, source);
 		} else {
 			closeNoHandler();
 
@@ -222,7 +222,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 	 */
 	private void handleRowEofPacket(byte[] data) {
 		if (responseHandler != null) {
-			responseHandler.rowEofResponse(data, source);
+			responseHandler.rowEofResponse(data, false, source);
 		} else {
 			closeNoHandler();
 		}

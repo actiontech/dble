@@ -26,6 +26,8 @@ package io.mycat.backend.mysql.nio.handler;
 import java.util.List;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 
 /**
  * @author mycat
@@ -61,18 +63,19 @@ public class DelegateResponseHandler implements ResponseHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, BackendConnection conn) {
-        target.fieldEofResponse(header, fields, eof, conn);
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
+        target.fieldEofResponse(header, fields,fieldPackets, eof, isLeft, conn);
     }
 
     @Override
-    public void rowResponse(byte[] row, BackendConnection conn) {
-        target.rowResponse(row, conn);
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+        return target.rowResponse(row, rowPacket, isLeft, conn);
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, BackendConnection conn) {
-        target.rowEofResponse(eof, conn);
+    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+        target.rowEofResponse(eof, isLeft, conn);
     }
 
 	@Override
@@ -86,5 +89,11 @@ public class DelegateResponseHandler implements ResponseHandler {
 		target.connectionClose(conn, reason);
 	}
 
-	
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+	}
 }

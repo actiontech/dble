@@ -9,7 +9,7 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.server.ServerConnection;
-import io.mycat.server.util.SchemaUtil;
+import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
 
 /**
@@ -58,9 +58,7 @@ public class MysqlInformationSchemaHandler {
 		
 	}
 	
-	public static void handle(String sql, ServerConnection c) {
-		
-		SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
+	public static void handle(SchemaInfo schemaInfo, ServerConnection c) {
 		if ( schemaInfo != null ) {
 			
 			if ( schemaInfo.table.toUpperCase().equals("CHARACTER_SETS") ) {

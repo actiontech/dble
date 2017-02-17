@@ -1,10 +1,12 @@
 package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +32,9 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.server.parser.ServerParse;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
@@ -38,32 +42,34 @@ import io.mycat.util.StringUtil;
 
 public class DruidInsertParser extends DefaultDruidParser {
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
-		
-	}
-	
-	/**
-	 * 考虑因素：isChildTable、批量、是否分片
-	 */
-	@Override
-	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
 		if (schemaInfo == null) {
-			String msg = "No MyCAT Database selected Or Define";
+			String msg = "No MyCAT Database is selected Or defined";
 			throw new SQLNonTransientException(msg);
 		}
+		rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 		if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
-			return;
-		}
 		schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
+
+		if (RouterUtil.processWithMycatSeq(schema, ServerParse.INSERT, rrs.getStatement(), rrs.getSession().getSource())) {
+			rrs.setFinishedExecute(true);
+			return schema;
+		}
+		if (processInsert(schema, tableName, rrs.getStatement(), rrs.getSession().getSource())) {
+			rrs.setFinishedExecute(true);
+			return schema;
+		}
+		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
+			return schema;
+		}
 		insert.setTableSource(new SQLIdentifierExpr(tableName));
 		ctx.addTable(tableName);
 		// 整个schema都不分库或者该表不拆分
@@ -77,12 +83,12 @@ public class DruidInsertParser extends DefaultDruidParser {
 			rrs.setStatement(sql);
 			RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
 			rrs.setFinishedRoute(true);
-			return;
+			return schema;
 		}
 		// childTable的insert直接在解析过程中完成路由
 		if (tc.isChildTable()) {
 			parserChildTable(schemaInfo, rrs, insert);
-			return;
+			return schema;
 		}
 		String partitionColumn = tc.getPartitionColumn();
 		if (partitionColumn != null) {
@@ -93,8 +99,160 @@ public class DruidInsertParser extends DefaultDruidParser {
 				parserSingleInsert(schemaInfo, rrs, partitionColumn, insert);
 			}
 		}
+		return schema;
 	}
 	
+	private boolean processInsert(SchemaConfig schema, String tableName, String origSQL, ServerConnection sc)
+			throws SQLNonTransientException {
+		TableConfig tableConfig = schema.getTables().get(tableName);
+		boolean processedInsert = false;
+		// 判断是有自增字段
+		if (null != tableConfig && tableConfig.isAutoIncrement()) {
+			String primaryKey = tableConfig.getPrimaryKey();
+			processedInsert = processInsert(sc, schema, origSQL, tableName, primaryKey);
+		}
+		return processedInsert;
+	}
+	
+	private boolean processInsert(ServerConnection sc,SchemaConfig schema,
+			String origSQL,String tableName,String primaryKey) throws SQLNonTransientException {
+
+		int firstLeftBracketIndex = origSQL.indexOf("(");
+		int firstRightBracketIndex = origSQL.indexOf(")");
+		String upperSql = origSQL.toUpperCase();
+		int valuesIndex = upperSql.indexOf("VALUES");
+		int selectIndex = upperSql.indexOf("SELECT");
+		int fromIndex = upperSql.indexOf("FROM");
+		//屏蔽insert into table1 select * from table2语句
+		if(firstLeftBracketIndex < 0) {
+			String msg = "invalid sql:" + origSQL;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+		//屏蔽批量插入
+		if(selectIndex > 0 &&fromIndex>0&&selectIndex>firstRightBracketIndex&&valuesIndex<0) {
+			String msg = "multi insert not provided" ;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+		//插入语句必须提供列结构，因为MyCat默认对于表结构无感知
+		if(valuesIndex + "VALUES".length() <= firstLeftBracketIndex) {
+			throw new SQLSyntaxErrorException("insert must provide ColumnList");
+		}
+		//如果主键不在插入语句的fields中，则需要进一步处理
+		boolean processedInsert=!isPKInFields(origSQL,primaryKey,firstLeftBracketIndex,firstRightBracketIndex);
+		if(processedInsert){
+			List<String> insertSQLs = handleBatchInsert(origSQL, valuesIndex);
+			for(String insertSQL:insertSQLs) {
+				processInsert(sc, schema, insertSQL, tableName, primaryKey, firstLeftBracketIndex + 1, insertSQL.indexOf('(', firstRightBracketIndex) + 1);
+			}
+		}
+		return processedInsert;
+	}
+	
+	private boolean isPKInFields(String origSQL, String primaryKey, int firstLeftBracketIndex,
+			int firstRightBracketIndex) {
+
+		if (primaryKey == null) {
+			throw new RuntimeException("please make sure the primaryKey's config is not null in schemal.xml");
+		}
+		boolean isPrimaryKeyInFields = false;
+		String upperSQL = origSQL.substring(firstLeftBracketIndex, firstRightBracketIndex + 1).toUpperCase();
+		for (int pkOffset = 0, primaryKeyLength = primaryKey.length(), pkStart = 0;;) {
+			pkStart = upperSQL.indexOf(primaryKey, pkOffset);
+			if (pkStart >= 0 && pkStart < firstRightBracketIndex) {
+				char pkSide = upperSQL.charAt(pkStart - 1);
+				if (pkSide <= ' ' || pkSide == '`' || pkSide == ',' || pkSide == '(') {
+					pkSide = upperSQL.charAt(pkStart + primaryKey.length());
+					isPrimaryKeyInFields = pkSide <= ' ' || pkSide == '`' || pkSide == ',' || pkSide == ')';
+				}
+				if (isPrimaryKeyInFields) {
+					break;
+				}
+				pkOffset = pkStart + primaryKeyLength;
+			} else {
+				break;
+			}
+		}
+		return isPrimaryKeyInFields;
+	}
+	private List<String> handleBatchInsert(String origSQL, int valuesIndex){
+		List<String> handledSQLs = new LinkedList<>();
+		String prefix = origSQL.substring(0,valuesIndex + "VALUES".length());
+		String values = origSQL.substring(valuesIndex + "VALUES".length());
+		int flag = 0;
+		StringBuilder currentValue = new StringBuilder();
+		currentValue.append(prefix);
+		for (int i = 0; i < values.length(); i++) {
+			char j = values.charAt(i);
+			if(j=='(' && flag == 0){
+				flag = 1;
+				currentValue.append(j);
+			}else if(j=='\"' && flag == 1){
+				flag = 2;
+				currentValue.append(j);
+			} else if(j=='\'' && flag == 1){
+				flag = 2;
+				currentValue.append(j);
+			} else if(j=='\\' && flag == 2){
+				flag = 3;
+				currentValue.append(j);
+			} else if (flag == 3){
+				flag = 2;
+				currentValue.append(j);
+			}else if(j=='\"' && flag == 2){
+				flag = 1;
+				currentValue.append(j);
+			} else if(j=='\'' && flag == 2){
+				flag = 1;
+				currentValue.append(j);
+			} else if (j==')' && flag == 1){
+				flag = 0;
+				currentValue.append(j);
+				handledSQLs.add(currentValue.toString());
+				currentValue = new StringBuilder();
+				currentValue.append(prefix);
+			} else if(j == ',' && flag == 0){
+				continue;
+			} else {
+				currentValue.append(j);
+			}
+		}
+		return handledSQLs;
+	}
+
+
+	private void processInsert(ServerConnection sc, SchemaConfig schema, String origSQL,
+			String tableName, String primaryKey, int afterFirstLeftBracketIndex, int afterLastLeftBracketIndex) {
+		/**
+		 * 对于主键不在插入语句的fields中的SQL，需要改写。比如hotnews主键为id，插入语句为：
+		 * insert into hotnews(title) values('aaa');
+		 * 需要改写成：
+		 * insert into hotnews(id, title) values(next value for MYCATSEQ_hotnews,'aaa');
+ 		 */
+		int primaryKeyLength = primaryKey.length();
+		int insertSegOffset = afterFirstLeftBracketIndex;
+		String mycatSeqPrefix = "next value for MYCATSEQ_";
+		int mycatSeqPrefixLength = mycatSeqPrefix.length();
+		int tableNameLength = tableName.length();
+
+		char[] newSQLBuf = new char[origSQL.length() + primaryKeyLength + mycatSeqPrefixLength + tableNameLength + 2];
+		origSQL.getChars(0, afterFirstLeftBracketIndex, newSQLBuf, 0);
+		primaryKey.getChars(0, primaryKeyLength, newSQLBuf, insertSegOffset);
+		insertSegOffset += primaryKeyLength;
+		newSQLBuf[insertSegOffset] = ',';
+		insertSegOffset++;
+		origSQL.getChars(afterFirstLeftBracketIndex, afterLastLeftBracketIndex, newSQLBuf, insertSegOffset);
+		insertSegOffset += afterLastLeftBracketIndex - afterFirstLeftBracketIndex;
+		mycatSeqPrefix.getChars(0, mycatSeqPrefixLength, newSQLBuf, insertSegOffset);
+		insertSegOffset += mycatSeqPrefixLength;
+		tableName.getChars(0, tableNameLength, newSQLBuf, insertSegOffset);
+		insertSegOffset += tableNameLength;
+		newSQLBuf[insertSegOffset] = ',';
+		insertSegOffset++;
+		origSQL.getChars(afterLastLeftBracketIndex, origSQL.length(), newSQLBuf, insertSegOffset);
+		RouterUtil.processSQL(sc, schema, new String(newSQLBuf), ServerParse.INSERT);
+	}
 	private boolean parserNoSharding(String schemaName, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) {
 		if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
 			if (insert.getQuery() != null) {

@@ -18,15 +18,15 @@
 
 package io.mycat.memory.environment;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Convenience class to extract hardware specifics of the computer executing this class
@@ -38,6 +38,7 @@ public class Hardware {
 	private static final String LINUX_MEMORY_INFO_PATH = "/proc/meminfo";
 
 	private static final Pattern LINUX_MEMORY_REGEX = Pattern.compile("^MemTotal:\\s*(\\d+)\\s+kB$");
+	private static final Pattern LINUX__FREE_MEMORY_REGEX = Pattern.compile("^MemFree:\\s*(\\d+)\\s+kB$");
 	
 
 	
@@ -92,6 +93,37 @@ public class Hardware {
 			String line;
 			while ((line = lineReader.readLine()) != null) {
 				Matcher matcher = LINUX_MEMORY_REGEX.matcher(line);
+				if (matcher.matches()) {
+					String totalMemory = matcher.group(1);
+					return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte
+				}
+			}
+			// expected line did not come
+			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+			return -1;
+		}
+		catch (NumberFormatException e) {
+			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+			return -1;
+		}
+		catch (Throwable t) {
+			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'): " + t.getMessage(), t);
+			return -1;
+		}
+	}
+	
+	/**
+	 * Returns the size of the free physical memory in bytes on a Linux-based
+	 * operating system.
+	 * 
+	 * @return the size of the free physical memory in bytes or <code>-1</code> if
+	 *         the size could not be determined
+	 */
+	public static long getFreeSizeOfPhysicalMemoryForLinux() {
+		try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
+			String line;
+			while ((line = lineReader.readLine()) != null) {
+				Matcher matcher = LINUX__FREE_MEMORY_REGEX.matcher(line);
 				if (matcher.matches()) {
 					String totalMemory = matcher.group(1);
 					return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte

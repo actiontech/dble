@@ -27,7 +27,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -124,7 +125,7 @@ public class ExplainHandler {
 		String db = c.getSchema();
         int sqlType = ServerParse.parse(stmt) & 0xff;
 		if (db == null) {
-            db = SchemaUtil.detectDefaultDb(stmt, sqlType);
+            db = SchemaUtil.detectDefaultDb(sqlType);
 
             if(db==null)
             {

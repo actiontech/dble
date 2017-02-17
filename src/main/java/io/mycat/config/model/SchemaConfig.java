@@ -45,7 +45,6 @@ public class SchemaConfig {
 	 * prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
-	private final boolean checkSQLSchema;
 	private final int lowerCase;
 
 	/**
@@ -56,11 +55,9 @@ public class SchemaConfig {
 	private final String[] allDataNodeStrArr;
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables, int defaultMaxLimit,
-			boolean checkSQLschema, int lowerCase) {
+			Map<String, TableConfig> tables, int defaultMaxLimit, int lowerCase) {
 		this.name = name;
 		this.dataNode = dataNode;
-		this.checkSQLSchema = checkSQLschema;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
 		this.lowerCase = lowerCase;
@@ -81,9 +78,9 @@ public class SchemaConfig {
 		}
 	}
 
-	public boolean isCheckSQLSchema() {
-		return checkSQLSchema;
-	}
+//	public boolean isCheckSQLSchema() {
+//		return checkSQLSchema;
+//	}
 
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;

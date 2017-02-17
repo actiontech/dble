@@ -26,7 +26,6 @@ package io.mycat.route;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 
@@ -43,10 +42,9 @@ public final class RouteResultset implements Serializable {
 	private String statement; // 原始语句
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
-    private Set<String> subTables;
     private SQLStatement sqlStatement; 
     
-
+    private boolean needOptimizer;
     private int limitStart;
     private boolean cacheAble;
     // used to store table's ID->datanodes cache
@@ -61,11 +59,14 @@ public final class RouteResultset implements Serializable {
     // 是否为全局表，只有在insert、update、delete、ddl里会判断并修改。默认不是全局表，用于修正全局表修改数据的反馈。
     private boolean globalTableFlag = false;
 
-    //是否完成了路由
-    private boolean isFinishedRoute = false;
+	// 是否完成了路由
+	private boolean isFinishedRoute = false;
+
+	// 是否完成了执行
+	private boolean isFinishedExecute = false;
 
     //是否自动提交，此属性主要用于记录ServerConnection上的autocommit状态
-    private boolean autocommit = true;
+	private boolean autocommit = true;
 
     private boolean isLoadData=false;
 
@@ -81,6 +82,14 @@ public final class RouteResultset implements Serializable {
 
     public NonBlockingSession getSession() {
 		return session;
+	}
+
+	public boolean isNeedOptimizer() {
+		return needOptimizer;
+	}
+
+	public void setNeedOptimizer(boolean needOptimizer) {
+		this.needOptimizer = needOptimizer;
 	}
 
 	public Boolean getRunOnSlave() {
@@ -112,6 +121,13 @@ public final class RouteResultset implements Serializable {
         this.isLoadData = isLoadData;
     }
 
+	public boolean isFinishedExecute() {
+		return isFinishedExecute;
+	}
+
+	public void setFinishedExecute(boolean isFinishedExecute) {
+		this.isFinishedExecute = isFinishedExecute;
+	}
     public boolean isFinishedRoute() {
         return isFinishedRoute;
     }
@@ -235,24 +251,28 @@ public final class RouteResultset implements Serializable {
     public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
         if (orderByCols != null && !orderByCols.isEmpty()) {
             createSQLMergeIfNull().setOrderByCols(orderByCols);
+//            this.setNeedOptimizer(true);
         }
     }
 
     public void setHasAggrColumn(boolean hasAggrColumn) {
         if (hasAggrColumn) {
             createSQLMergeIfNull().setHasAggrColumn(true);
+//            this.setNeedOptimizer(true);
         }
     }
 
     public void setGroupByCols(String[] groupByCols) {
         if (groupByCols != null && groupByCols.length > 0) {
             createSQLMergeIfNull().setGroupByCols(groupByCols);
+//            this.setNeedOptimizer(true);
         }
     }
 
     public void setMergeCols(Map<String, Integer> mergeCols) {
         if (mergeCols != null && !mergeCols.isEmpty()) {
             createSQLMergeIfNull().setMergeCols(mergeCols);
+//			this.setNeedOptimizer(true);
         }
 
     }
@@ -344,10 +364,7 @@ public final class RouteResultset implements Serializable {
 		return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
 	}
 
-	public void setSubTables(Set<String> subTables) {
-		this.subTables = subTables;
-	}
-
+	
 	public void setHavings(HavingCols havings) {
 		if (havings != null) {
 			createSQLMergeIfNull().setHavingCols(havings);
@@ -370,16 +387,6 @@ public final class RouteResultset implements Serializable {
 		this.sqlStatement = sqlStatement;
 	}
 
-	public Set<String> getSubTables() {
-		return this.subTables;
-	}
-	
-	public boolean isDistTable(){
-		if(this.getSubTables()!=null && !this.getSubTables().isEmpty() ){
-			return true;
-		}
-		return false;
-	}
 
 	@Override
     public String toString() {

@@ -1,7 +1,5 @@
 package io.mycat.route.sequence.handler;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import io.mycat.route.util.PropertiesUtil;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
@@ -20,8 +18,10 @@ import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.util.ConfigException;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultsetNode;
+import io.mycat.route.util.PropertiesUtil;
 import io.mycat.server.parser.ServerParse;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
@@ -208,7 +208,7 @@ class FetchMySQLSequnceHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		RowDataPacket rowDataPkg = new RowDataPacket(1);
 		rowDataPkg.read(row);
 		byte[] columnData = rowDataPkg.fieldValues.get(0);
@@ -221,10 +221,11 @@ class FetchMySQLSequnceHandler implements ResponseHandler {
 		} else {
 			seqVal.dbretVal = columnVal;
 		}
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		((SequenceVal) conn.getAttachment()).dbfinished = true;
 		conn.release();
 	}
@@ -251,9 +252,19 @@ class FetchMySQLSequnceHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 
+	}
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+		
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+		
 	}
 
 }

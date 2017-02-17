@@ -62,23 +62,21 @@ public class PhysicalDBNode {
 	 * @throws Exception
 	 */
 	public void getConnectionFromSameSource(String schema,boolean autocommit,
-			BackendConnection exitsCon, ResponseHandler handler,
-			Object attachment) throws Exception {
+						BackendConnection exitsCon, ResponseHandler handler,
+						Object attachment) throws Exception {
 
 		PhysicalDatasource ds = this.dbPool.findDatasouce(exitsCon);
 		if (ds == null) {
-			throw new RuntimeException("can't find exits connection,maybe fininshed " + exitsCon);
+			throw new RuntimeException("can't find exits connection, maybe fininshed " + exitsCon);
 		} else {
 			ds.getConnection(schema, autocommit, handler, attachment);
 		}
-
 	}
 
 	private void checkRequest(String schema){
 		if (schema != null && !schema.equals(this.database)) {
 			throw new RuntimeException("invalid param ,connection request db is :"
-						   + schema + " and datanode db is "
-						   + this.database);
+						   + schema + " and datanode db is " + this.database);
 		}
 		if (!dbPool.isInitSuccess()) {
 			dbPool.init(dbPool.activedIndex);
@@ -94,21 +92,25 @@ public class PhysicalDBNode {
 				// 强制走 slave
 				if(rrs.getRunOnSlave()){			
 					LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBlanceFlag());
-					if (rrs.isHasBlanceFlag()) {		// 带有 /*balance*/ 注解(目前好像只支持一个注解...)
-						dbPool.getReadBanlanceCon(schema, autoCommit, handler, attachment, this.database);
+					if (rrs.isHasBlanceFlag()) {  // 带有 /*balance*/ 注解(目前好像只支持一个注解...)
+					    	dbPool.getReadBanlanceCon(schema, autoCommit, handler,
+									  attachment, this.database);
 					}else{	// 没有 /*balance*/ 注解
 						LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());
-						if(!dbPool.getReadCon(schema, autoCommit, handler, attachment, this.database)){
-							LOGGER.warn("Do not have slave connection to use, use master connection instead.");
+						if(!dbPool.getReadCon(schema, autoCommit, handler,
+								      attachment, this.database)){
+							LOGGER.warn("Do not have slave connection to use, "
+								    + "use master connection instead.");
 							PhysicalDatasource writeSource = dbPool.getSource();
 							//记录写节点写负载值
 							writeSource.setWriteCount();
-							writeSource.getConnection(schema, autoCommit, handler, attachment);
+							writeSource.getConnection(schema, autoCommit,
+										  handler, attachment);
 							rrs.setRunOnSlave(false);
 							rrs.setCanRunInReadDB(false);
 						}
 					}
-				}else{	// 强制走 master
+				} else {// 强制走 master
 					// 默认获得的是 writeSource，也就是 走master
 					LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
 					PhysicalDatasource writeSource = dbPool.getSource();

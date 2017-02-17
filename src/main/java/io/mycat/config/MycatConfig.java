@@ -46,7 +46,7 @@ public class MycatConfig {
 	
 	private static final int RELOAD = 1;
 	private static final int ROLLBACK = 2;
-    private static final int RELOAD_ALL = 3;
+    	private static final int RELOAD_ALL = 3;
 
 	private volatile SystemConfig system;
 	private volatile MycatCluster cluster;
@@ -96,13 +96,11 @@ public class MycatConfig {
 		return system;
 	}
 
-	public void setSocketParams(AbstractConnection con, boolean isFrontChannel)
-			throws IOException {
-		
+	public void setSocketParams(AbstractConnection con, boolean isFrontChannel) throws IOException {	
 		int sorcvbuf = 0;
 		int sosndbuf = 0;
 		int soNoDelay = 0;
-		if ( isFrontChannel ) {
+		if (isFrontChannel) {
 			sorcvbuf = system.getFrontsocketsorcvbuf();
 			sosndbuf = system.getFrontsocketsosndbuf();
 			soNoDelay = system.getFrontSocketNoDelay();
@@ -200,55 +198,37 @@ public class MycatConfig {
 		return rollbackTime;
 	}
 
-	public void reload(
-			Map<String, UserConfig> newUsers, 
-			Map<String, SchemaConfig> newSchemas,
-			Map<String, PhysicalDBNode> newDataNodes, 
-			Map<String, PhysicalDBPool> newDataHosts, 
-			MycatCluster newCluster,
-			FirewallConfig newFirewall, 
-			boolean reloadAll) {
-		
+	public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
+			   Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts, 
+			   MycatCluster newCluster, FirewallConfig newFirewall, boolean reloadAll) {
 		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newCluster, newFirewall, reloadAll);
 		this.reloadTime = TimeUtil.currentTimeMillis();
 		this.status = reloadAll?RELOAD_ALL:RELOAD;
 	}
 
 	public boolean canRollback() {
-		if (_users == null || _schemas == null || _dataNodes == null
-				|| _dataHosts == null || _cluster == null
-				|| _firewall == null || status == ROLLBACK) {
+		if (_users == null || _schemas == null || _dataNodes == null || _dataHosts == null || _cluster == null
+		    || _firewall == null || status == ROLLBACK) {
 			return false;
 		} else {
 			return true;
 		}
 	}
 
-	public void rollback(
-			Map<String, UserConfig> users,
-			Map<String, SchemaConfig> schemas,
-			Map<String, PhysicalDBNode> dataNodes,
-			Map<String, PhysicalDBPool> dataHosts, 
-			MycatCluster cluster,
-			FirewallConfig firewall) {
-		
+	public void rollback(Map<String, UserConfig> users, Map<String, SchemaConfig> schemas,
+			     Map<String, PhysicalDBNode> dataNodes, Map<String, PhysicalDBPool> dataHosts, 
+			     MycatCluster cluster, FirewallConfig firewall) {
 		apply(users, schemas, dataNodes, dataHosts, cluster, firewall, status==RELOAD_ALL);
 		this.rollbackTime = TimeUtil.currentTimeMillis();
 		this.status = ROLLBACK;
 	}
 
-	private void apply(Map<String, UserConfig> newUsers,
-			Map<String, SchemaConfig> newSchemas,
-			Map<String, PhysicalDBNode> newDataNodes,
-			Map<String, PhysicalDBPool> newDataHosts, 
-			MycatCluster newCluster,
-			FirewallConfig newFirewall,
-			boolean isLoadAll) {
-		
+	private void apply(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
+			   Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts, 
+			   MycatCluster newCluster, FirewallConfig newFirewall,	boolean isLoadAll) {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			
 			// old 处理
 			// 1、停止老的数据源心跳
 			// 2、备份老的数据源配置
@@ -278,7 +258,7 @@ public class MycatConfig {
 			if (isLoadAll) {
 				if (newDataHosts != null) {
 					for (PhysicalDBPool newDbPool : newDataHosts.values()) {
-						if ( newDbPool != null) {
+						if (newDbPool != null) {
 							newDbPool.startHeartbeat();
 						}
 					}

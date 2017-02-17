@@ -13,7 +13,7 @@ import io.mycat.net.NIOProcessor;
 
 public class ConMap {
 	
-	// key -schema
+	// key--schema
 	private final ConcurrentHashMap<String, ConQueue> items = new ConcurrentHashMap<String, ConQueue>();
 
 	public ConQueue getSchemaConQueue(String schema) {
@@ -53,7 +53,6 @@ public class ConMap {
 		} else {
 			return null;
 		}
-
 	}
 
 	public Collection<ConQueue> getAllConQueue() {
@@ -65,7 +64,7 @@ public class ConMap {
 		for (NIOProcessor processor : MycatServer.getInstance().getProcessors()) {
 			for (BackendConnection con : processor.getBackends().values()) {
 				if (con instanceof MySQLConnection) {
-					MySQLConnection mysqlCon = (MySQLConnection) con;
+					MySQLConnection mysqlCon = (MySQLConnection)con;
 
 					if (mysqlCon.getSchema().equals(schema)
 					    && mysqlCon.getPool() == dataSouce
@@ -90,7 +89,6 @@ public class ConMap {
 					    && !mysqlCon.isClosed()) {
 							total++;
 					}
-
 				}
 			}
 		}

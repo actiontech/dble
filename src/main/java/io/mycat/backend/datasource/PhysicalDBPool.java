@@ -63,6 +63,7 @@ public class PhysicalDBPool {
 
 	private final String hostName;
 
+
     	protected final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
     	protected PhysicalDatasource[] writeSources;
     	protected Map<Integer, PhysicalDatasource[]> readSources;
@@ -153,49 +154,76 @@ public class PhysicalDBPool {
 		return null;
 	}
 
-    	public void delDs(PhysicalDatasource source) {
-
-	}
-    
     	// ensure never be invocated concurrently
-    	public void delRsouce(int index, PhysicalDatasource source) {
-		source.setDying();
-	}
+    	public void delRDs(PhysicalDatasource source) {
+	    	int index = -1;
+	    	PhysicalDatasource[] rDs = null;
+		PhysicalDatasource[] nrDs = null;
+		boolean del = false;
 
-    	// ensure never be invocated concurrently
-    	public void addRsouce(int index, PhysicalDatasource source) {
-	    	PhysicalDatasource[] sources = null;
-		PhysicalDatasource[] nSources = null;
-		
-		int flag = 0;
-
-		sources = this.readSources.get(index);
-		if (sources != null) {
-		    	nSources = new PhysicalDatasource[sources.length + 1];
-			int i = 0;
-			nSources[i++] = source;
-			for (PhysicalDatasource ds: sources) {
-			    	nSources[i++] = ds;	    
+		for (Map.Entry<Integer, PhysicalDatasource[]> entry : readSources.entrySet()) {
+		    	for (PhysicalDatasource ds: entry.getValue()) {
+			    	if (ds == source) {
+				    	index = entry.getKey();
+					break;
+				}
 			}
-			flag = 1;
-		} else {
-		    	nSources = new PhysicalDatasource[1];
-			nSources[0] = source;
-			flag = 2;
 		}
 
-		// start heartbeat ??????
+		rDs = this.readSources.get(index);
+		if (rDs.length == 1) {
+		    	del = true;
+		} else {
+		    	nrDs = new PhysicalDatasource[rDs.length - 1];
+			int i = 0;
+			for (PhysicalDatasource ds: rDs) {
+			    	if (ds != source) {
+				    	nrDs[i++] = ds;
+				}
+			}
+		}
+		
 		adjustLock.writeLock().lock();
 		try {
-		    	switch (flag) {
-			case 1:
-				this.readSources.replace(index, nSources);
-				break;
-			case 2:
-			    	this.readSources.put(index, nSources);
-				break;
+		    	if (del) {
+				this.readSources.remove(index);
+			} else {
+				this.readSources.replace(index, nrDs);
 			}
-		    	this.allDs = this.genAllDataSources();
+			this.allDs = this.genAllDataSources();
+		} finally {
+			adjustLock.writeLock().unlock();
+		}
+	}
+
+    	// ensure never be invocated concurrently
+    	public void addRDs(int index, PhysicalDatasource source) {
+	    	PhysicalDatasource[] rDs = null;
+		PhysicalDatasource[] nrDs = null;
+		boolean ins = false;
+
+		rDs = this.readSources.get(index);
+		if (rDs == null) {
+		    	nrDs = new PhysicalDatasource[1];
+			nrDs[0] = source;
+		    	ins = true;
+		} else {
+		    	nrDs = new PhysicalDatasource[rDs.length + 1];
+			int i = 0;
+			nrDs[i++] = source;
+			for (PhysicalDatasource ds: rDs) {
+			    	nrDs[i++] = ds;	    
+			}
+		}
+
+		adjustLock.writeLock().lock();
+		try {
+		    	if (ins) {
+			    	this.readSources.put(index, nrDs);
+			} else {
+			    	this.readSources.replace(index, nrDs);
+			}
+			this.allDs = this.genAllDataSources();
 		} finally {
 			adjustLock.writeLock().unlock();
 		}
@@ -214,7 +242,7 @@ public class PhysicalDBPool {
 	}
 
 	/* all write datanodes */
-	public PhysicalDatasource[] getSources() {
+	private PhysicalDatasource[] getSources() {
 	    	return writeSources;	
 	}
 	

@@ -289,7 +289,7 @@ public abstract class PhysicalDatasource {
 			}
 		}
 		if (this.conMap.getActiveCountForDs(this) == 0) {
-		    	this.dbPool.delDs(this);
+		    	this.dbPool.delRDs(this);
 		}
 	}
     

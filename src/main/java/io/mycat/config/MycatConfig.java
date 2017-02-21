@@ -27,11 +27,16 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
+import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -43,7 +48,9 @@ import io.mycat.util.TimeUtil;
  * @author mycat
  */
 public class MycatConfig {
-	
+
+	protected static final Logger LOGGER = LoggerFactory.getLogger(MycatConfig.class);
+    
 	private static final int RELOAD = 1;
 	private static final int ROLLBACK = 2;
     	private static final int RELOAD_ALL = 3;
@@ -223,6 +230,100 @@ public class MycatConfig {
 		this.status = ROLLBACK;
 	}
 
+    	private DsDiff dsdiff(Map<String, PhysicalDBPool> newDataHosts) {
+	    	DsDiff diff = new DsDiff();
+		
+		// deleted datasource
+		for (PhysicalDBPool opool: dataHosts.values()) {
+		    	PhysicalDBPool npool = newDataHosts.get(opool.getHostName());
+			if (npool == null) {
+			    	LOGGER.warn("reload failed, use old datasources ");
+				return null;
+			}
+			
+			Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
+			Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
+			Map<Integer, ArrayList<PhysicalDatasource>> idel =
+								new HashMap<Integer, ArrayList<PhysicalDatasource>>(2);
+			boolean haveOne = false;
+			for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
+			    	boolean doadd = false;
+				ArrayList<PhysicalDatasource> del = new ArrayList<PhysicalDatasource>();
+				for (PhysicalDatasource ods : oentry.getValue()) {
+				    	boolean dodel = true;
+				    	for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
+					    	for (PhysicalDatasource nds : nentry.getValue()) {
+						    	if (ods.getName().equals(nds.getName())) {
+							    	dodel = false;
+								break;
+							}
+						}
+						if (!dodel) {
+						    	break;
+						}
+					}
+					if (dodel) {
+					    	del.add(ods);
+						doadd = true;
+					}
+				}
+				if (doadd) {
+				    	idel.put(oentry.getKey(), del);
+					haveOne = true;
+				}
+			}
+			if (haveOne) {
+			    	diff.deled.put(opool, idel);
+			}
+		}
+
+		// added datasource
+		for (PhysicalDBPool npool: newDataHosts.values()) {
+		    	PhysicalDBPool opool = dataHosts.get(npool.getHostName());
+			if (opool == null) {
+			    	LOGGER.warn("reload failed, use old datasources ");
+				return null;
+			}
+
+			Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
+			Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
+			Map<Integer, ArrayList<PhysicalDatasource>> iadd =
+								new HashMap<Integer, ArrayList<PhysicalDatasource>>(2);
+			boolean haveOne = false;
+			for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
+			    	boolean doadd = false;
+				ArrayList<PhysicalDatasource> add = new ArrayList<PhysicalDatasource>();
+				for (PhysicalDatasource nds : nentry.getValue()) {
+				    	boolean isExist = false;
+				    	for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
+					    	for (PhysicalDatasource ods : oentry.getValue()) {
+						    	if (nds.getName().equals(ods.getName())) {
+							    	isExist = true;
+								break;
+							}
+						}
+						if (isExist) {
+						    	break;
+						}
+					}
+					if (! isExist) {
+					    	add.add(nds);
+						doadd = true;
+					}
+				}
+				if (doadd) {
+				    	iadd.put(nentry.getKey(), add);
+					haveOne = true;
+				}
+			}
+			if (haveOne) {
+			    	diff.added.put(opool, iadd);
+			}
+		}
+		
+		return diff;
+	}
+
 	private void apply(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
 			   Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts, 
 			   MycatCluster newCluster, FirewallConfig newFirewall,	boolean isLoadAll) {
@@ -251,6 +352,10 @@ public class MycatConfig {
 			this._cluster = this.cluster;
 			this._firewall = this.firewall;
 
+			if (!isLoadAll) {
+			    	DsDiff diff = dsdiff(newDataHosts);
+			}
+			
 			// new 处理
 			// 1、启动新的数据源心跳
 			// 2、执行新的配置
@@ -274,5 +379,38 @@ public class MycatConfig {
 		} finally {
 			lock.unlock();
 		}
-	}	
+	}
+
+    	private class DsDiff {
+	    	public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
+	    	public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
+
+	    	public DsDiff() {
+		    	deled = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
+			added = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
+		}
+		public void apply() {
+			    for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry :
+				     deled.entrySet()) {
+					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
+						 lentry.getValue().entrySet()) {
+					    	for (int i = 0; i < llentry.getValue().size(); i++) {
+						    	lentry.getKey().delRDs(llentry.getValue().get(i));
+						}
+					}
+			    }
+			    for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry :
+				     added.entrySet()) {
+					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
+						 lentry.getValue().entrySet()) {
+					    	for (int i = 0; i < llentry.getValue().size(); i++) {
+						    	lentry.getKey().addRDs(llentry.getKey(), llentry.getValue().get(i));
+						}
+					}
+			    }
+			    
+		}
+	}
 }
+
+

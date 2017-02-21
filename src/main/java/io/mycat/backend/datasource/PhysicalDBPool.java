@@ -224,6 +224,7 @@ public class PhysicalDBPool {
 			    	this.readSources.replace(index, nrDs);
 			}
 			this.allDs = this.genAllDataSources();
+			source.setDbPool(this);
 		} finally {
 			adjustLock.writeLock().unlock();
 		}
@@ -582,6 +583,15 @@ public class PhysicalDBPool {
 		}
 	}
 
+    	public Map<Integer, PhysicalDatasource[]> getReadSources() {
+	    	adjustLock.readLock().lock();
+		try {
+		    	return this.readSources;
+		} finally {
+		    	adjustLock.readLock().unlock();
+		}
+	};
+    
 	public Collection<PhysicalDatasource> getAllDataSources() {
 		return this.allDs;
 	}

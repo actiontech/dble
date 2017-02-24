@@ -237,7 +237,7 @@ public class MycatConfig {
 		for (PhysicalDBPool opool: dataHosts.values()) {
 		    	PhysicalDBPool npool = newDataHosts.get(opool.getHostName());
 			if (npool == null) {
-			    	LOGGER.warn("reload failed, use old datasources ");
+			    	LOGGER.warn("reload -delete- failed, use old datasources ");
 				return null;
 			}
 			
@@ -281,7 +281,7 @@ public class MycatConfig {
 		for (PhysicalDBPool npool: newDataHosts.values()) {
 		    	PhysicalDBPool opool = dataHosts.get(npool.getHostName());
 			if (opool == null) {
-			    	LOGGER.warn("reload failed, use old datasources ");
+			    	LOGGER.warn("reload -add- failed, use old datasources ");
 				return null;
 			}
 
@@ -354,6 +354,7 @@ public class MycatConfig {
 
 			if (!isLoadAll) {
 			    	DsDiff diff = dsdiff(newDataHosts);
+				diff.apply();
 			}
 			
 			// new 处理

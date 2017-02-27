@@ -396,7 +396,8 @@ public class MycatConfig {
 					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
 						 lentry.getValue().entrySet()) {
 					    	for (int i = 0; i < llentry.getValue().size(); i++) {
-						    	lentry.getKey().delRDs(llentry.getValue().get(i));
+						    	//lentry.getKey().delRDs(llentry.getValue().get(i));
+						    llentry.getValue().get(i).setDying();
 						}
 					}
 			    }

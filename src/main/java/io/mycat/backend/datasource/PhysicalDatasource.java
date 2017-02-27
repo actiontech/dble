@@ -446,7 +446,7 @@ public abstract class PhysicalDatasource {
 				  final Object attachment) throws IOException {
 	    	if (dying.get()) {
 		    	closeByDyingAll();
-			LOGGER.info("the max activeConnnections size can not be max than maxconnections");
+			LOGGER.info(this.name + "will to die");
 			throw new IOException(this.name + "will to die");
 		}
 		

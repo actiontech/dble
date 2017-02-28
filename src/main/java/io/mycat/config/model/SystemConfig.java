@@ -77,6 +77,7 @@ public final class SystemConfig {
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
+	private static final boolean DEFAULT_LOWER_CASE = true;
 	private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
 	private static final String DEFAULT_TRANSACTION_BASE_NAME = "mycat-tx";
 	private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
@@ -220,6 +221,8 @@ public final class SystemConfig {
 	 */
 	private boolean	useZKSwitch=DEFAULT_USE_ZK_SWITCH;
 
+	private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
+
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
@@ -353,6 +356,16 @@ public final class SystemConfig {
 	public void setUseZKSwitch(boolean useZKSwitch) {
 		this.useZKSwitch = useZKSwitch;
 	}
+	
+
+	public boolean isLowerCaseTableNames() {
+		return lowerCaseTableNames;
+	}
+
+	public void setLowerCaseTableNames(boolean lowerCaseTableNames) {
+		this.lowerCaseTableNames = lowerCaseTableNames;
+	}
+
 
 	public String getXARecoveryLogBaseDir() {
 		return XARecoveryLogBaseDir;

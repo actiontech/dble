@@ -70,14 +70,15 @@ public class SchemaUtil
 		if (schemaInfo.schema == null) {
 			return null;
 		}
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			schemaInfo.table = schemaInfo.table.toLowerCase();
+			schemaInfo.schema = schemaInfo.schema.toLowerCase();
+		}
 		SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
 		if (schemaConfig == null && !MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)&& !INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
 			return null;
 		}
 		schemaInfo.schemaConfig = schemaConfig;
-		if (schemaConfig != null && schemaConfig.getLowerCase() == 1) {
-			schemaInfo.table = schemaInfo.table.toUpperCase();
-		}
 		return schemaInfo;
 	}
 

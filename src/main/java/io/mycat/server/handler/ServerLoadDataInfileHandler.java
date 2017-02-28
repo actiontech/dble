@@ -179,7 +179,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         schema = MycatServer.getInstance().getConfig()
                 .getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
-        tableName = statement.getTableName().getSimpleName().toUpperCase();
+        tableName = statement.getTableName().getSimpleName();
+        if(MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()){
+        	tableName =tableName.toLowerCase();
+        }
         tableConfig = schema.getTables().get(tableName);
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";

@@ -91,8 +91,8 @@ public class GlobalTableUtil{
 						TableConfig table = tableMap.get(k);
 						if (table != null && table.isGlobalTable()) {
 							String tableName = table.getName();
-							if (schemaMconfig.getLowerCase() == 1) {
-								tableName = tableName.toUpperCase();
+							if (config.getSystem().isLowerCaseTableNames()) {
+								tableName = tableName.toLowerCase();
 							}
 							globalTableMap.put(key +"."+ tableName, table);
 						}

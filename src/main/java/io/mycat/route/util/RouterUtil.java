@@ -231,7 +231,7 @@ public class RouterUtil {
 	 */
 	public static String getFixedSql(String stmt){
 		stmt = stmt.replaceAll("\r\n", " "); //对于\r\n的字符 用 空格处理 rainbow
-		return stmt = stmt.trim(); //.toUpperCase();    
+		return stmt = stmt.trim();
 	}
 
 	/**
@@ -581,8 +581,8 @@ public class RouterUtil {
 	private static String getMetaReadDataNode(SchemaConfig schema,
 			String table) {
 		String dataNode = null;
-		if (schema.getLowerCase() == 1) {
-			table = table.toUpperCase();
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			table = table.toLowerCase();
 		}
 		Map<String, TableConfig> tables = schema.getTables();
 		TableConfig tc;
@@ -684,8 +684,8 @@ public class RouterUtil {
 
 		//为全局表和单库表找路由
 		for(String tableName : tables) {
-			if (schema.getLowerCase() == 1) {
-				tableName = tableName.toUpperCase();
+			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				tableName = tableName.toLowerCase();
 			}
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig == null) {
@@ -726,8 +726,8 @@ public class RouterUtil {
 
 		if(retNodesSet != null && retNodesSet.size() > 0) {
 			String tableName = tables.get(0);
-			if (schema.getLowerCase() == 1) {
-				tableName = tableName.toUpperCase();
+			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				tableName = tableName.toLowerCase();
 			}
 			
 			if(retNodesSet.size() > 1 && isAllGlobalTable(ctx, schema)) {
@@ -761,8 +761,8 @@ public class RouterUtil {
 		if (isNoSharding(schema, tableName)) {
 			return routeToSingleNode(rrs, schema.getDataNode(), ctx.getSql());
 		}
-		if (schema.getLowerCase() == 1) {
-			tableName = tableName.toUpperCase();
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			tableName = tableName.toLowerCase();
 		}
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
@@ -820,8 +820,8 @@ public class RouterUtil {
 		//为分库表找路由
 		for(Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
 			String tableName = RouterUtil.getFixedSql(RouterUtil.removeSchema(entry.getKey(), schema.getName()));
-			if (schema.getLowerCase() == 1) {
-				tableName = tableName.toUpperCase();
+			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				tableName = tableName.toLowerCase();
 			}
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig == null) {
@@ -1030,8 +1030,8 @@ public class RouterUtil {
 		if (schemaConfig.isNoSharding()) {
 			return true;
 		}
-		if (schemaConfig.getLowerCase() == 1) {
-			tableName = tableName.toUpperCase();
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			tableName = tableName.toLowerCase();
 		}
 		if (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName)) {
 			return true;

@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement.LockType;
 
+import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
@@ -51,7 +52,10 @@ public class DruidLockTableParser extends DefaultDruidParser{
 			throw new SQLNonTransientException("can't lock multi-table");
 		}
 		MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
-		String table = lockTableStat.getTableSource().toString().toUpperCase();
+		String table = lockTableStat.getTableSource().toString();
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			table = table.toLowerCase();
+		}
 		TableConfig tableConfig = schema.getTables().get(table);
 		if (tableConfig == null) {
 			String msg = "can't find table define of " + table + " in schema:" + schema.getName();

@@ -6,6 +6,7 @@ import java.util.List;
 import com.alibaba.druid.sql.ast.SQLHint;
 
 import io.mycat.MycatServer;
+import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.TableConfig.TableTypeEnum;
@@ -37,15 +38,16 @@ public class TableNode extends PlanNode {
 		if (catalog == null || tableName == null)
 			throw new RuntimeException("Table db or name is null error!");
 		this.schema = catalog;
-		SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(catalog);
+		MycatConfig mycatConfig = MycatServer.getInstance().getConfig(); 
+		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(catalog);
 		if(schemaConfig == null){
 			throw new RuntimeException("schema "+catalog+" is not exists!");
 		}
 		this.referedTableNodes.add(this);
 		this.tableName = tableName;
 		String tableKey = tableName;
-		if(schemaConfig.getLowerCase()==1){
-			tableKey = tableKey.toUpperCase();
+		if(mycatConfig.getSystem().isLowerCaseTableNames()){
+			tableKey = tableKey.toLowerCase();
 		}
 		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(catalog, tableKey);
 		this.tableConfig = schemaConfig.getTables().get(tableKey);

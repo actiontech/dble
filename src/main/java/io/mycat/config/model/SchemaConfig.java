@@ -45,7 +45,6 @@ public class SchemaConfig {
 	 * prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
-	private final int lowerCase;
 
 	/**
 	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
@@ -55,12 +54,11 @@ public class SchemaConfig {
 	private final String[] allDataNodeStrArr;
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables, int defaultMaxLimit, int lowerCase) {
+			Map<String, TableConfig> tables, int defaultMaxLimit) {
 		this.name = name;
 		this.dataNode = dataNode;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
-		this.lowerCase = lowerCase;
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
@@ -84,9 +82,6 @@ public class SchemaConfig {
 
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
-	}
-	public int getLowerCase() {
-		return lowerCase;
 	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {

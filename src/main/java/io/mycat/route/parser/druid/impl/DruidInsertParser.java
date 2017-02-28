@@ -17,6 +17,8 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
@@ -46,19 +48,24 @@ public class DruidInsertParser extends DefaultDruidParser {
 			throws SQLNonTransientException {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
+		SQLExprTableSource tableSource =insert.getTableSource();
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined";
 			throw new SQLNonTransientException(msg);
 		}
-		rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 		if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
 		schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
-
+		if(tableSource.getExpr() instanceof SQLPropertyExpr){
+			insert.setTableSource(new SQLIdentifierExpr(tableName));
+			ctx.setSql(stmt.toString());
+		}
+		rrs.setStatement(ctx.getSql());
+		ctx.addTable(tableName);
 		if (RouterUtil.processWithMycatSeq(schema, ServerParse.INSERT, rrs.getStatement(), rrs.getSession().getSource())) {
 			rrs.setFinishedExecute(true);
 			return schema;
@@ -70,16 +77,17 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
 			return schema;
 		}
-		insert.setTableSource(new SQLIdentifierExpr(tableName));
-		ctx.addTable(tableName);
 		// 整个schema都不分库或者该表不拆分
 		TableConfig tc = schema.getTables().get(tableName);
 		if (tc == null) {
 			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
 			throw new SQLNonTransientException(msg);
 		}
-		if (GlobalTableUtil.useGlobleTableCheck() && tc.isGlobalTable()) {
-			String sql = convertInsertSQL(schemaInfo, insert);
+		if (tc.isGlobalTable()) {
+			String sql = ctx.getSql();
+			if (GlobalTableUtil.useGlobleTableCheck()) {
+				sql = convertInsertSQL(schemaInfo, insert);
+			}
 			rrs.setStatement(sql);
 			RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
 			rrs.setFinishedRoute(true);

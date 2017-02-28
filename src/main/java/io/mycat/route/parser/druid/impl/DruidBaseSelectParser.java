@@ -126,15 +126,16 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if (!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			ctx.setSql(rrs.getStatement());
 			if (fromSource.getExpr() instanceof SQLPropertyExpr) {
 				fromSource.setExpr(new SQLIdentifierExpr(schemaInfo.table));
+				String sqlWithoutSchema = stmt.toString();
+				ctx.setSql(sqlWithoutSchema);
 			}
+			rrs.setStatement(ctx.getSql());
 			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor);
 			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);

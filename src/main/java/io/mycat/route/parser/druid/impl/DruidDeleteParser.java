@@ -3,6 +3,8 @@ package io.mycat.route.parser.druid.impl;
 import java.sql.SQLNonTransientException;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
@@ -11,6 +13,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
@@ -50,20 +53,29 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				rrs.setFinishedRoute(true);
 			}
 		} else {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
+			SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, deleteTableSource);
 			if (schemaInfo == null) {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			schema = schemaInfo.schemaConfig;
+			if (deleteTableSource.getExpr() instanceof SQLPropertyExpr) {
+				deleteTableSource.setExpr(new SQLIdentifierExpr(schemaInfo.table));
+				String sqlWithOutSchema = stmt.toString();
+				ctx.setSql(sqlWithOutSchema);
+			}
+			rrs.setStatement(ctx.getSql());
 			ctx.addTable(schemaInfo.table);
-			ctx.setSql(RouterUtil.getFixedSql(RouterUtil.removeSchema(ctx.getSql(),schemaInfo.schema)));
+			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor);
+			TableConfig tc = schema.getTables().get(schemaInfo.table);
+			if (tc.isGlobalTable()) {
+				rrs.setGlobalTable(true);
+			}
 		}
 		return schema;
 	}

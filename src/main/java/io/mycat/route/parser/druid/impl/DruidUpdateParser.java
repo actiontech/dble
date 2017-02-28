@@ -70,7 +70,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
@@ -79,21 +78,29 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			String tableName = schemaInfo.table;
 			TableConfig tc = schema.getTables().get(tableName);
 
+			SQLExpr expr = ((SQLExprTableSource) tableSource).getExpr();
+			if (expr instanceof SQLPropertyExpr) {
+				update.setTableSource(new SQLIdentifierExpr(schemaInfo.table));
+				String sqlWithOutSchema = stmt.toString();
+				ctx.setSql(sqlWithOutSchema);
+			}
+			rrs.setStatement(ctx.getSql());
 			super.visitorParse(schema, rrs, stmt, visitor);
 	        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
 				RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }
-
-	        if (GlobalTableUtil.useGlobleTableCheck() && tc.isGlobalTable()) {
-				// 修改全局表 update 受影响的行数
-				String sql = convertUpdateSQL(schemaInfo, update);
-				rrs.setStatement(sql);
+			if (tc.isGlobalTable()) {
+				String sql = ctx.getSql();
+				if (GlobalTableUtil.useGlobleTableCheck()) {
+					sql = convertUpdateSQL(schemaInfo, update);
+					rrs.setStatement(sql);
+				}
 				RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
 				rrs.setFinishedRoute(true);
 				return schema;
-	        }
+			}
 	        String partitionColumn = tc.getPartitionColumn();
 	        String joinKey = tc.getJoinKey();
 	        confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
@@ -104,7 +111,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			if (ctx.getTables().size() == 0) {
 				ctx.addTable(schemaInfo.table);
 			}
-			ctx.setSql(RouterUtil.getFixedSql(RouterUtil.removeSchema(ctx.getSql(),schemaInfo.schema)));
 		}
         return schema;
     }

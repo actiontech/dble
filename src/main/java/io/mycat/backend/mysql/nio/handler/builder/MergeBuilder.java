@@ -63,7 +63,7 @@ public class MergeBuilder {
 		MycatSchemaStatVisitor visitor = new MycatSchemaStatVisitor();
 		DruidParser druidParser = new DruidBaseSelectParser();
 
-		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT, null);
+		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT, session);
 		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
 		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(schema);
 		rrs = RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor);

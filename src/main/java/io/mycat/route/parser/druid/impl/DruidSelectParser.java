@@ -22,13 +22,6 @@ import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
 
 public class DruidSelectParser extends DruidBaseSelectParser {
-
-
-   
-	
-
-
-	
 	/**
 	 * 改写sql：需要加limit的加上
 	 */

@@ -13,7 +13,7 @@ import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.util.ToStringUtil;
 
 /**
- * @author zhangyaohua
+ * @author ActionTech
  * @createTime 2014-1-21
  */
 public class MergeNode extends PlanNode {

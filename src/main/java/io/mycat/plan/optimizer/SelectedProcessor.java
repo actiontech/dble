@@ -22,7 +22,7 @@ import io.mycat.plan.util.PlanUtil;
 /**
  * 尽量使得select项在传输过程中最少
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class SelectedProcessor {

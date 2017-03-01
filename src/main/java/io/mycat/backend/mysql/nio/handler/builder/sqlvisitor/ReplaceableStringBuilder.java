@@ -6,7 +6,7 @@ import java.util.List;
 import io.mycat.plan.common.ptr.StringPtr;
 
 /**
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2015年12月15日
  */
 public class ReplaceableStringBuilder {

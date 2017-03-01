@@ -5,7 +5,7 @@ import io.mycat.plan.common.item.FieldTypes;
 /**
  * char\binary
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldString extends FieldLongstr {

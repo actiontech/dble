@@ -13,7 +13,7 @@ import io.mycat.plan.common.time.MyTime;
 /**
  * Abstract class for functions returning TIME values.
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class ItemTimeFunc extends ItemTemporalFunc {

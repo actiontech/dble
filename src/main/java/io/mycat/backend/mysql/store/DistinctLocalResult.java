@@ -10,7 +10,7 @@ import io.mycat.util.RBTreeList;
 /**
  * localresult to distinct input rows
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class DistinctLocalResult extends LocalResult {

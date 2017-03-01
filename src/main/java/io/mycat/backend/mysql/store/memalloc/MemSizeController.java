@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 内存使用大小控制器
  * 
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2016年1月19日
  */
 public class MemSizeController {

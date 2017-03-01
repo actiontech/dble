@@ -33,7 +33,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * mergeHandler仅负责将从数据库采集回来的数据进行merge，如果有聚合函数的话，使用group byhandler进行处理
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class MultiNodeMergeHandler extends OwnThreadDMLHandler {

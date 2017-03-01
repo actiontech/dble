@@ -7,7 +7,7 @@ import io.mycat.plan.common.time.MyTime;
  * Abstract class for types with date with optional time, with or without
  * fractional part: DATE, DATETIME, DATETIME(N), TIMESTAMP, TIMESTAMP(N).
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class FieldTemporaWithDate extends FieldTemporal {

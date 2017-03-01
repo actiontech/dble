@@ -5,7 +5,7 @@ import io.mycat.plan.common.item.FieldTypes;
 
 /**
  * 
- * @author chenzifei
+ * @author ActionTech
  *
  */
 public class FieldYear extends FieldTiny {

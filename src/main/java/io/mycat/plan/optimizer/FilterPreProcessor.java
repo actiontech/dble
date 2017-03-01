@@ -28,7 +28,7 @@ import io.mycat.plan.util.PlanUtil;
 /**
  * http://dev.mysql.com/doc/refman/5.7/en/where-optimizations.html
  * 
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime Mar 16, 2016
  */
 public class FilterPreProcessor {

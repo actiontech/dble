@@ -7,7 +7,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * 拥有自己的thread的dmlhandler
  * 
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2014年11月27日
  */
 public abstract class OwnThreadDMLHandler extends BaseDMLHandler {

@@ -21,7 +21,7 @@ import io.mycat.server.NonBlockingSession;
  * union all语句的handler，如果是union语句的话，则在handlerbuilder时，
  * 向unionallhandler后面添加distinctHandler
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class UnionHandler extends BaseDMLHandler {

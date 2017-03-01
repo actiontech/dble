@@ -17,7 +17,7 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.util.ArgComparator;
 /**
  * _2TableComparator和RowDataComparator的区别在于，join比较的两列有可能是不同的类型，比如一个是整数， 一个是字符串等等
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class TwoTableComparator implements Comparator<RowDataPacket> {

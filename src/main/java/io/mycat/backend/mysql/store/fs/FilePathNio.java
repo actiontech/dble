@@ -14,7 +14,7 @@ import io.mycat.MycatServer;
  * This file system stores files on disk and uses java.nio to access the files.
  * </pre>
  * 
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime 2014-8-21
  */
 public class FilePathNio extends FilePathWrapper {

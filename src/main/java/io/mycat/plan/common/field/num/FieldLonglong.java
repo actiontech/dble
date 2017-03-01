@@ -6,7 +6,7 @@ import io.mycat.plan.common.item.Item.ItemResult;
 /**
  * bigint(%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldLonglong extends FieldNum {

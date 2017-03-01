@@ -19,7 +19,7 @@ import io.mycat.plan.util.PlanUtil;
 /**
  * 将View进行处理，将虚拟的merge node变成其它的三种类型的node
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class SubQueryProcessor {

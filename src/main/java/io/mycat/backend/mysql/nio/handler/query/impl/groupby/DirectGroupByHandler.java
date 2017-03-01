@@ -34,7 +34,7 @@ import io.mycat.util.TimeUtil;
  * 通过groupbylocalresult直接进行groupby计算，在localresult计算中，优先进行内存内部的groupby计算，然后再在
  * 内存中再次进行group by计算 这种计算不支持的情况如下： 1.sum函数存在distinct约束 2.sum函数存在groupconcat类的函数
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class DirectGroupByHandler extends OwnThreadDMLHandler {

@@ -29,7 +29,7 @@ import io.mycat.util.FairLinkedBlockingDeque;
 /**
  * join的策略目前为sortmerge，在merge数据到达之前，已经按照merge列进行了排序
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class JoinHandler extends OwnThreadDMLHandler {

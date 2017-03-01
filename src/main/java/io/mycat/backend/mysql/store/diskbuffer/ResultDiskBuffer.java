@@ -12,7 +12,7 @@ import io.mycat.util.exception.NotSupportException;
  * a buffer used to store large amount of data on disk or virtual memory mapped
  * on disk
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class ResultDiskBuffer implements ResultExternal {

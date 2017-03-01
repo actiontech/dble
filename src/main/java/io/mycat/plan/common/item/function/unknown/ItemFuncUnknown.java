@@ -19,7 +19,7 @@ import io.mycat.plan.common.time.MySQLTime;
 
 
 /**
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime 2016年5月9日
  */
 public class ItemFuncUnknown extends ItemFunc {

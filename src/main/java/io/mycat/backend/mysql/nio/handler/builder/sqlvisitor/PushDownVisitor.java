@@ -16,7 +16,7 @@ import io.mycat.plan.node.TableNode;
 /**
  * 处理那种可以下推部分sql，又和global表的下推不同的node类型 单个table er关系表 非全global表的下退等等
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class PushDownVisitor extends MysqlVisitor {

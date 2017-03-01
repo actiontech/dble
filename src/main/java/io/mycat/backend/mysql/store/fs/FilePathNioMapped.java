@@ -17,7 +17,7 @@ import io.mycat.MycatServer;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime 2014-8-21
  */
 public class FilePathNioMapped extends FilePathWrapper {

@@ -17,7 +17,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * 目前having做成和where一样的处理
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class HavingHandler extends BaseDMLHandler {

@@ -6,7 +6,7 @@ import io.mycat.plan.common.item.Item.ItemResult;
 /**
  * mediumint(%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  *
  */
 public class FieldMedium extends FieldNum {

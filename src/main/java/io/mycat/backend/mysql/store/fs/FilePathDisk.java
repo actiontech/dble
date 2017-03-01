@@ -22,7 +22,7 @@ import io.mycat.config.ErrorCode;
 import io.mycat.util.exception.TmpFileException;
 
 /**
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime 2014-9-8
  */
 public class FilePathDisk extends FilePath {

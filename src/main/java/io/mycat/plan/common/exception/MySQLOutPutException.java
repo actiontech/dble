@@ -3,7 +3,7 @@ package io.mycat.plan.common.exception;
 /**
  * 表示mysql的标准输出信息
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class MySQLOutPutException extends RuntimeException {

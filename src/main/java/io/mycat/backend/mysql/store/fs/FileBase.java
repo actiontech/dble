@@ -9,7 +9,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 /**
- * @author zhangyaohua
+ * @author ActionTech
  * @CreateTime 2014-8-21
  */
 public abstract class FileBase extends FileChannel {

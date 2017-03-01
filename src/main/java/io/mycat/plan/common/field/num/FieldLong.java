@@ -8,7 +8,7 @@ import io.mycat.plan.common.item.Item.ItemResult;
 /**
  * int(%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldLong extends FieldNum {

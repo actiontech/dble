@@ -14,7 +14,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * 用来处理limit，仅作简单的统计过滤
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class LimitHandler extends BaseDMLHandler {

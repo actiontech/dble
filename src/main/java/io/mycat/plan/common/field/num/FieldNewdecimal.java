@@ -6,7 +6,7 @@ import io.mycat.plan.common.item.Item.ItemResult;
 /**
  * decimal(%d,%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldNewdecimal extends FieldDecimal {

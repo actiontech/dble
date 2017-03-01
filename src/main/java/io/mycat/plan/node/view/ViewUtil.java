@@ -7,7 +7,7 @@ import io.mycat.plan.util.PlanUtil;
 /**
  * Some function from mysql source code
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class ViewUtil {

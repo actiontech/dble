@@ -17,7 +17,7 @@ import io.mycat.util.TimeUtil;
  * sort need diskbuffer, when done() is called,users use next() to get the
  * result rows which have been sorted already
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class SortedResultDiskBuffer extends ResultDiskBuffer {

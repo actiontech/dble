@@ -15,7 +15,7 @@ import io.mycat.plan.common.item.function.primary.ItemBoolFunc;
 /**
  * This Item represents a <code>X IS TRUE</code> boolean predicate.
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class ItemFuncNot extends ItemBoolFunc {

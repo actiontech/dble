@@ -5,7 +5,7 @@ import io.mycat.plan.common.item.FieldTypes;
 /**
  * 目前blob，enum等值只支持传递，不支持计算
  * 
- * @author chenzifei
+ * @author ActionTech
  *
  */
 public class FieldBlob extends FieldLongstr {

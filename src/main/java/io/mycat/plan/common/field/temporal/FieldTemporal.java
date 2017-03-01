@@ -10,7 +10,7 @@ import io.mycat.plan.common.time.MySQLTime;
  * Abstract class for TIME, DATE, DATETIME, TIMESTAMP with and without
  * fractional part.
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class FieldTemporal extends Field {

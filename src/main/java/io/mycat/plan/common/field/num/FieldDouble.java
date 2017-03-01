@@ -5,7 +5,7 @@ import io.mycat.plan.common.item.FieldTypes;
 /**
  * bigint(%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldDouble extends FieldReal {

@@ -19,7 +19,7 @@ import io.mycat.plan.util.PlanUtil;
 /**
  * 将merge/join中的order by条件下推，包括隐式的order by条件，比如将groupBy转化为orderBy
  * 
- * @author chenzifei 2015-07-10
+ * @author ActionTech 2015-07-10
  */
 public class OrderByPusher {
 

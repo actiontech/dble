@@ -13,7 +13,7 @@ import io.mycat.plan.util.ToStringUtil;
 /**
  * present a view
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class ViewNode extends QueryNode {

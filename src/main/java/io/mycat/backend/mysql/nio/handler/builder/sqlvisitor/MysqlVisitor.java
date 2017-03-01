@@ -17,7 +17,7 @@ import io.mycat.plan.node.TableNode;
 /**
  * 处理可以下发的查询节点，可以下发的情况有可能是全global表， 也有可能是部分global部分非global
  * 
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2014年12月10日
  */
 public abstract class MysqlVisitor {

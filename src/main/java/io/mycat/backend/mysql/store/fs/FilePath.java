@@ -17,7 +17,7 @@ import java.util.Random;
  * relevant methods found in <code>java.nio.file.FileSystem</code> and
  * <code>FileSystems</code>
  * 
- * @author zhangyaohua
+ * @author ActionTech
  * @createTime 2013-11-11
  */
 public abstract class FilePath {

@@ -14,7 +14,7 @@ import io.mycat.plan.common.time.MyTime;
 /**
  * 整数的基类
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class FieldNum extends Field {

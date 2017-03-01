@@ -5,7 +5,7 @@ import io.mycat.plan.common.item.FieldTypes;
 /**
  * decimal(%d,%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class FieldDecimal extends FieldReal {

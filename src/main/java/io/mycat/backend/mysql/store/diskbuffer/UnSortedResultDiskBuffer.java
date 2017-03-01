@@ -11,7 +11,7 @@ import io.mycat.util.TimeUtil;
 /**
  * no sort need diskbuffer，when a new row come in,added it directly
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class UnSortedResultDiskBuffer extends ResultDiskBuffer {

@@ -4,7 +4,7 @@ import io.mycat.plan.common.typelib.TYPELIB;
 
 /**
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class MYLOCALE {

@@ -3,7 +3,7 @@ package io.mycat.plan.common.field.string;
 /**
  * base class for Field_string, Field_varstring and Field_blob
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public abstract class FieldLongstr extends FieldStr {

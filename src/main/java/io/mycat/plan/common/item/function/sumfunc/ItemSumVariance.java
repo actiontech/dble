@@ -32,7 +32,7 @@ import io.mycat.plan.common.ptr.LongPtr;
  * variance = S_{n} / (n-1)
  * 
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 

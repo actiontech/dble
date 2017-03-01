@@ -6,7 +6,7 @@ import io.mycat.plan.common.typelib.TYPELIB;
 /**
  * only locale_en_us is supported now
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class MYLOCALES {

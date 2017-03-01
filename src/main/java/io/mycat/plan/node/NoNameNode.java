@@ -9,7 +9,7 @@ import io.mycat.plan.util.ToStringUtil;
 /**
  * 匿名表，比如select 1,only exists selecteditems
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 

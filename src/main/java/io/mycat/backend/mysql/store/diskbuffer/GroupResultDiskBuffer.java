@@ -21,7 +21,7 @@ import io.mycat.plan.common.item.function.sumfunc.ItemSum;
 /**
  * the disk buffer which need to group by all the tapes value of it
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
@@ -110,7 +110,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
 	/**
 	 * 比原生的resultdisktape要添加sum结果的值
 	 * 
-	 * @author zhangyaohua
+	 * @author ActionTech
 	 * @CreateTime 2015年5月20日
 	 */
 	static class GroupResultDiskTape extends ResultDiskTape {

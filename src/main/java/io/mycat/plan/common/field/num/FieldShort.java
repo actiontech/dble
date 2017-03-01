@@ -6,7 +6,7 @@ import io.mycat.plan.common.item.Item.ItemResult;
 /**
  * smallint(%d) |unsigned |zerofilled
  * 
- * @author chenzifei
+ * @author ActionTech
  *
  */
 public class FieldShort extends FieldNum {

@@ -13,7 +13,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * select 1 as name这种sql
  * 
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2015年3月23日
  */
 class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {

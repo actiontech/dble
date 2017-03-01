@@ -8,7 +8,7 @@ import io.mycat.net.mysql.RowDataPacket;
 /**
  * disk result buffer which show the distinct row result
  * 
- * @author chenzifei
+ * @author ActionTech
  * 
  */
 public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {

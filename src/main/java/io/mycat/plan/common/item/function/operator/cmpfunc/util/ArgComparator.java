@@ -262,7 +262,7 @@ public class ArgComparator {
 	/**
 	 * compare function
 	 * 
-	 * @author chenzifei
+	 * @author ActionTech
 	 * 
 	 */
 	private static interface argCmpFunc {
@@ -561,7 +561,7 @@ public class ArgComparator {
 	 * 0 | a_is_null | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | b_is_null | 1 | 1 | 0 | 0
 	 * | 1 | 1 | 0 | 0 | result | 1 | 0 | 0 |0/1|-1 |-1 |-1 |-1/0/1|
 	 * 
-	 * @author chenzifei
+	 * @author ActionTech
 	 * 
 	 */
 	private static class CompareDatetime implements argCmpFunc {

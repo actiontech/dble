@@ -14,7 +14,7 @@ import io.mycat.plan.node.TableNode;
 /**
  * 标准sql生成器，node是什么就下发什么，因为node是global的 每一个node都得用一个新的globalvisitor对象来进行visit
  * 
- * @author chenzifei
+ * @author ActionTech
  * @CreateTime 2014年12月10日
  */
 public class GlobalVisitor extends MysqlVisitor {

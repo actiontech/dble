@@ -85,10 +85,16 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 			}
 			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
 					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
-				rrs.setSqlStatement(stmt);
-				rrs.setNeedOptimizer(true);
-				rrs.setFinishedRoute(true);
-				return schema;
+				if(MycatServer.getInstance().getConfig().getSystem().isUseExtensions()){
+					rrs.setSqlStatement(stmt);
+					rrs.setNeedOptimizer(true);
+					rrs.setFinishedRoute(true);
+					return schema;
+				}
+				else{
+					String msg = "Query with multiple tables is not supported,please use hint catlet, sql:" + stmt;
+					throw new SQLNonTransientException(msg);
+				}
 			}
 			String schemaName = schema == null ? null : schema.getName();
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;

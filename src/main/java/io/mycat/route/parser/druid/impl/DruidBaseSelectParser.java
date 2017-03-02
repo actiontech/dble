@@ -24,37 +24,22 @@ import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
-import io.mycat.config.MycatPrivileges;
-import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
-import io.mycat.server.handler.MysqlInformationSchemaHandler;
-import io.mycat.server.handler.MysqlProcHandler;
-import io.mycat.server.response.InformationSchemaProfiling;
-import io.mycat.server.util.SchemaUtil;
-import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.sqlengine.mpp.MergeCol;
 import io.mycat.sqlengine.mpp.OrderCol;
@@ -62,100 +47,11 @@ import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
 
 public class DruidBaseSelectParser extends DefaultDruidParser {
-
 	protected boolean isNeedParseOrderAgg = true;
-
+	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
-		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
-		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
-			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
-			if (mysqlFrom == null) {
-				String db = SchemaUtil.getRandomDb();
-				if (db == null) {
-					String msg = "No schema is configured, make sure your config is right, sql:" + stmt;
-					throw new SQLNonTransientException(msg);
-				}
-				schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes(), rrs.getStatement());
-				rrs.setFinishedRoute(true);
-				return schema;
-			}
-			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
-					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
-				if(MycatServer.getInstance().getConfig().getSystem().isUseExtensions()){
-					rrs.setSqlStatement(stmt);
-					rrs.setNeedOptimizer(true);
-					rrs.setFinishedRoute(true);
-					return schema;
-				}
-				else{
-					String msg = "Query with multiple tables is not supported,please use hint catlet, sql:" + stmt;
-					throw new SQLNonTransientException(msg);
-				}
-			}
-			String schemaName = schema == null ? null : schema.getName();
-			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
-			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-			if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
-				MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
-
-			if (SchemaUtil.MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROC.equalsIgnoreCase(schemaInfo.table)) {
-				// 兼容MySQLWorkbench
-				MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
-			// fix navicat SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS
-			// `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
-			// `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
-			// GROUP BY STATE ORDER BY SEQ
-			if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROFILING.equalsIgnoreCase(schemaInfo.table)
-					&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-				InformationSchemaProfiling.response(rrs.getSession().getSource());
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
-			if (schemaInfo.schemaConfig == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			if (!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
-				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			if (fromSource.getExpr() instanceof SQLPropertyExpr) {
-				fromSource.setExpr(new SQLIdentifierExpr(schemaInfo.table));
-				String sqlWithoutSchema = stmt.toString();
-				ctx.setSql(sqlWithoutSchema);
-			}
-			rrs.setStatement(ctx.getSql());
-			schema = schemaInfo.schemaConfig;
-			super.visitorParse(schema, rrs, stmt, visitor);
-			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);
-			// 更改canRunInReadDB属性
-			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-					&& rrs.isAutocommit() == false) {
-				rrs.setCanRunInReadDB(false);
-			}
-		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-			rrs.setSqlStatement(stmt);
-			rrs.setNeedOptimizer(true);
-			rrs.setFinishedRoute(true);
-		}
-		return schema;
+		return super.visitorParse(schema, rrs, stmt, visitor);
 	}
 
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,

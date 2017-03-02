@@ -45,6 +45,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
+		String schemaName = schema == null ? null : schema.getName();
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
@@ -59,32 +60,8 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
-
-			String schemaName = schema == null ? null : schema.getName();
 			SchemaInfo schemaInfo = null;
-			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
-					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
-				//TODO : SQLUnionQueryTableSource USELESS
-				if(MycatServer.getInstance().getConfig().getSystem().isUseExtensions()){
-					rrs.setSqlStatement(stmt);
-					rrs.setNeedOptimizer(true);
-					rrs.setFinishedRoute(true);
-					return schema;
-				}
-				else{
-					if (schemaName == null) {
-						String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-						throw new SQLNonTransientException(msg);
-					}
-					SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaName);
-					if (schemaConfig == null) {
-						String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-						throw new SQLNonTransientException(msg);
-					}
-					schema = schemaConfig;
-				}
-			}
-			else{
+			if (mysqlFrom instanceof SQLExprTableSource){
 				SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 				schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
 				if (schemaInfo == null) {
@@ -131,6 +108,13 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 				rrs.setStatement(ctx.getSql());
 				schema = schemaInfo.schemaConfig;
+			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
+					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
+				// TODO : SQLUnionQueryTableSource is USELESS
+				schema = executeOtherSQL(schemaName, schema, rrs, stmt);
+				if (rrs.isFinishedRoute()) {
+					return schema;
+				}
 			}
 			super.visitorParse(schema, rrs, stmt, visitor);
 			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);
@@ -139,12 +123,35 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					&& rrs.isAutocommit() == false) {
 				rrs.setCanRunInReadDB(false);
 			}
-		} else if (sqlSelectQuery instanceof MySqlUnionQuery && MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
+		} else if (sqlSelectQuery instanceof MySqlUnionQuery ) {
+			schema = executeOtherSQL(schemaName, schema, rrs, stmt);
+			if (rrs.isFinishedRoute()) {
+				return schema;
+			}
+			super.visitorParse(schema, rrs, stmt, visitor);
+		}
+		return schema;
+	}
+
+	private SchemaConfig executeOtherSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
+			throws SQLNonTransientException {
+		if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
+			if (schemaName == null) {
+				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
+			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaName);
+			if (schemaConfig == null) {
+				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
+			return schemaConfig;
+		} else {
 			rrs.setSqlStatement(stmt);
 			rrs.setNeedOptimizer(true);
 			rrs.setFinishedRoute(true);
+			return schema;
 		}
-		return schema;
 	}
 	/**
 	 * 改写sql：需要加limit的加上

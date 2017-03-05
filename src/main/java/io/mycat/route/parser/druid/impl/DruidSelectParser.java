@@ -6,9 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
@@ -56,7 +54,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					throw new SQLNonTransientException(msg);
 				}
 				schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes(), rrs.getStatement());
+				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
@@ -69,6 +67,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					throw new SQLNonTransientException(msg);
 				}
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
+				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
 				if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
 					MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
@@ -101,12 +100,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
-				if (fromSource.getExpr() instanceof SQLPropertyExpr) {
-					fromSource.setExpr(new SQLIdentifierExpr(schemaInfo.table));
-					String sqlWithoutSchema = stmt.toString();
-					ctx.setSql(sqlWithoutSchema);
-				}
-				rrs.setStatement(ctx.getSql());
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 				schema = schemaInfo.schemaConfig;
 			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
 					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
@@ -130,6 +124,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			}
 			super.visitorParse(schema, rrs, stmt, visitor);
 		}
+		
 		return schema;
 	}
 
@@ -162,7 +157,11 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
 			return;
 		}
-		tryRoute(schema, rrs, cachePool);
+		if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
+			tryRoute(schema, rrs, cachePool);
+		} else {
+			tryRouteSingleTable(schema, rrs, cachePool);
+		}
 		rrs.copyLimitToNodes();
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
@@ -186,7 +185,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				limit.setRowCount(new SQLIntegerExpr(limitSize));
 				mysqlSelectQuery.setLimit(limit);
 				rrs.setLimitSize(limitSize);
-				String sql = getSql(rrs, stmt, isNeedAddLimit);
+				String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
 				rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitSize);
 
 			}
@@ -220,13 +219,10 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					}
 
 					mysqlSelectQuery.setLimit(changedLimit);
-					String sql = getSql(rrs, stmt, isNeedAddLimit);
+					String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
 					rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitStart + limitSize);
-
-					// 设置改写后的sql
-					ctx.setSql(sql);
 				} else {
-					rrs.changeNodeSqlAfterAddLimit(schema, getCtx().getSql(), rrs.getLimitStart(), rrs.getLimitSize());
+					rrs.changeNodeSqlAfterAddLimit(schema, rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
 					// ctx.setSql(nativeSql);
 				}
 
@@ -253,11 +249,11 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 	}
 
 
-	protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit) {
+	protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
 		if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
-			return stmt.toString();
+			return RouterUtil.removeSchema(stmt.toString(), schema);
 		}
-		return getCtx().getSql();
+		return rrs.getStatement();
 	}
 
 

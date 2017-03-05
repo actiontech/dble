@@ -93,11 +93,12 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
+			rrs.setStatement(stmt);
 			String defaultNode = schema.getDataNode();
 			if (!Strings.isNullOrEmpty(defaultNode)) {
-				return RouterUtil.routeToSingleNode(rrs, defaultNode, stmt);
+				return RouterUtil.routeToSingleNode(rrs, defaultNode);
 			}
-			return RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes(), stmt);
+			return RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
 		}
 		
 		/**
@@ -119,7 +120,8 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 
 			}
 			stmt = stmt.substring(0, indx[0]) + " FROM " + tableName + stmt.substring(repPos[1]);
-			RouterUtil.routeForTableMeta(rrs, schema, tableName, stmt);
+			rrs.setStatement(stmt);
+			RouterUtil.routeForTableMeta(rrs, schema, tableName);
 			return rrs;
 
 		}
@@ -136,12 +138,13 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 				if (ind2 > 0) {
 					tableName = tableName.substring(ind2 + 1);
 				}
-				RouterUtil.routeForTableMeta(rrs, schema, tableName, stmt);
+				rrs.setStatement(stmt);
+				RouterUtil.routeForTableMeta(rrs, schema, tableName);
 				return rrs;
 			}
 		}
-
-		return RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode(), stmt);
+		rrs.setStatement(stmt);
+		return RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
 	}
 	
 	
@@ -283,7 +286,8 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		String tableName = RouterUtil.getTableName(stmt, repPos);
 		
 		stmt = stmt.substring(0, ind) + tableName + stmt.substring(repPos[1]);
-		RouterUtil.routeForTableMeta(rrs, schema, tableName, stmt);
+		rrs.setStatement(stmt);
+		RouterUtil.routeForTableMeta(rrs, schema, tableName);
 		return rrs;
 	}
 }

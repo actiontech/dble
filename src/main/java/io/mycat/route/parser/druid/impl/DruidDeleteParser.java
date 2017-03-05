@@ -3,8 +3,6 @@ package io.mycat.route.parser.druid.impl;
 import java.sql.SQLNonTransientException;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
@@ -49,7 +47,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 					throw new SQLNonTransientException(msg);
 				}
 				super.visitorParse(schema, rrs, stmt, visitor);
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
+				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 				rrs.setFinishedRoute(true);
 			}
 		} else {
@@ -63,13 +61,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if (deleteTableSource.getExpr() instanceof SQLPropertyExpr) {
-				deleteTableSource.setExpr(new SQLIdentifierExpr(schemaInfo.table));
-				String sqlWithOutSchema = stmt.toString();
-				ctx.setSql(sqlWithOutSchema);
-			}
-			rrs.setStatement(ctx.getSql());
-			ctx.addTable(schemaInfo.table);
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor);
 			TableConfig tc = schema.getTables().get(schemaInfo.table);

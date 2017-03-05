@@ -60,7 +60,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				}
 
 				super.visitorParse(schema, rrs, stmt, visitor);
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
+				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
@@ -77,27 +77,19 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			schema = schemaInfo.schemaConfig;
 			String tableName = schemaInfo.table;
 			TableConfig tc = schema.getTables().get(tableName);
-
-			SQLExpr expr = ((SQLExprTableSource) tableSource).getExpr();
-			if (expr instanceof SQLPropertyExpr) {
-				update.setTableSource(new SQLIdentifierExpr(schemaInfo.table));
-				String sqlWithOutSchema = stmt.toString();
-				ctx.setSql(sqlWithOutSchema);
-			}
-			rrs.setStatement(ctx.getSql());
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			super.visitorParse(schema, rrs, stmt, visitor);
 	        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
-				RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
+				RouterUtil.routeForTableMeta(rrs, schema, tableName);
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }
 			if (tc.isGlobalTable()) {
-				String sql = ctx.getSql();
 				if (GlobalTableUtil.useGlobleTableCheck()) {
-					sql = convertUpdateSQL(schemaInfo, update);
+					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
 					rrs.setStatement(sql);
 				}
-				RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
+				RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
@@ -114,14 +106,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
 		}
         return schema;
     }
-    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update){
+    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String orginSQL){
 		long opTimestamp = new Date().getTime();
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
-			return update.toString();
+			return orginSQL;
 		if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-			return update.toString(); // 没有内部列
+			return orginSQL; // 没有内部列
 		List<SQLUpdateSetItem> items = update.getItems();
 		boolean flag = false;
 		for (int i = 0; i < items.size(); i++) {
@@ -143,7 +135,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			newItem.setValue(new SQLIntegerExpr(opTimestamp));
 			items.add(newItem);
 		}
-		return update.toString();
+		return RouterUtil.removeSchema(update.toString(), schemaInfo.schema);
     }
 
     /*

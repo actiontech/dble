@@ -39,7 +39,8 @@ import io.mycat.util.FormatUtil;
  */
 public final class RouteResultset implements Serializable {
 	private static final long serialVersionUID = 3906972758236875720L;
-	private String statement; // 原始语句
+	private final String srcStatement;// 原始语句
+	private String statement; 
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
     private SQLStatement sqlStatement; 
@@ -146,17 +147,10 @@ public final class RouteResultset implements Serializable {
 
     public RouteResultset(String stmt, int sqlType, NonBlockingSession session) {
         this.statement = stmt;
+		this.srcStatement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
         this.session = session;
-    }
-
-    public void resetNodes() {
-        if (nodes != null) {
-            for (RouteResultsetNode node : nodes) {
-                node.resetStatement();
-            }
-        }
     }
 
     public void copyLimitToNodes() {
@@ -335,6 +329,7 @@ public final class RouteResultset implements Serializable {
     }
 
 	public void changeNodeSqlAfterAddLimit(SchemaConfig schemaConfig, String sql, int offset, int count) {
+		this.setStatement(sql);
 		if (nodes != null) {
 			for (RouteResultsetNode node : nodes) {
 				node.setStatement(sql);
@@ -391,7 +386,7 @@ public final class RouteResultset implements Serializable {
 	@Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(statement).append(", route={");
+        s.append(srcStatement).append(", route={");
         if (nodes != null) {
             for (int i = 0; i < nodes.length; ++i) {
                 s.append("\n ").append(FormatUtil.format(i + 1, 3));

@@ -214,10 +214,6 @@ public class TableConfig {
 	public String getParentKey() {
 		return parentKey;
 	}
-
-	/**
-	 * @return if low_case=1 upper-case
-	 */
 	public String getName() {
 		return name;
 	}

@@ -50,7 +50,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
-import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.StringUtil;
 
 /**
@@ -60,7 +59,6 @@ public class ExplainHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(ExplainHandler.class);
     private final static Pattern pattern = Pattern.compile("(?:(\\s*next\\s+value\\s+for\\s*MYCATSEQ_(\\w+))(,|\\)|\\s)*)+", Pattern.CASE_INSENSITIVE);
-	private static final RouteResultsetNode[] EMPTY_ARRAY = new RouteResultsetNode[0];
 	private static final int FIELD_COUNT = 2;
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	static {
@@ -125,13 +123,9 @@ public class ExplainHandler {
 		String db = c.getSchema();
         int sqlType = ServerParse.parse(stmt) & 0xff;
 		if (db == null) {
-            db = SchemaUtil.detectDefaultDb(sqlType);
-
-            if(db==null)
-            {
-                c.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "No database selected");
-                return null;
-            }
+			//TODO: EXPLAIN SCHEMA.TABLE
+			c.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "No database selected");
+			return null;
 		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig()
 				.getSchemas().get(db);

@@ -15,9 +15,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -31,6 +29,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
+import io.mycat.route.SessionSQLPair;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
@@ -48,7 +47,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			throws SQLNonTransientException {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
-		SQLExprTableSource tableSource =insert.getTableSource();
+		SQLExprTableSource tableSource = insert.getTableSource();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined";
@@ -60,13 +59,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
-		if(tableSource.getExpr() instanceof SQLPropertyExpr){
-			insert.setTableSource(new SQLIdentifierExpr(tableName));
-			ctx.setSql(stmt.toString());
-		}
-		rrs.setStatement(ctx.getSql());
-		ctx.addTable(tableName);
-		if (RouterUtil.processWithMycatSeq(schema, ServerParse.INSERT, rrs.getStatement(), rrs.getSession().getSource())) {
+		if (processWithMycatSeq(schema, ServerParse.INSERT, rrs.getStatement(), rrs.getSession().getSource())) {
 			rrs.setFinishedExecute(true);
 			return schema;
 		}
@@ -84,12 +77,14 @@ public class DruidInsertParser extends DefaultDruidParser {
 			throw new SQLNonTransientException(msg);
 		}
 		if (tc.isGlobalTable()) {
-			String sql = ctx.getSql();
+			String sql = rrs.getStatement();
 			if (GlobalTableUtil.useGlobleTableCheck()) {
-				sql = convertInsertSQL(schemaInfo, insert);
-			}
+				sql = convertInsertSQL(schemaInfo, insert, sql);
+			}else{
+				sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
+			} 
 			rrs.setStatement(sql);
-			RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
+			RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
 			rrs.setFinishedRoute(true);
 			return schema;
 		}
@@ -106,6 +101,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 			} else {
 				parserSingleInsert(schemaInfo, rrs, partitionColumn, insert);
 			}
+		} else {
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+			ctx.addTable(tableName);
 		}
 		return schema;
 	}
@@ -259,7 +257,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 		newSQLBuf[insertSegOffset] = ',';
 		insertSegOffset++;
 		origSQL.getChars(afterLastLeftBracketIndex, origSQL.length(), newSQLBuf, insertSegOffset);
-		RouterUtil.processSQL(sc, schema, new String(newSQLBuf), ServerParse.INSERT);
+		String newSQL = RouterUtil.removeSchema(new String(newSQLBuf), schema.getName());
+		processSQL(sc, schema, newSQL, ServerParse.INSERT);
 	}
 	private boolean parserNoSharding(String schemaName, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) {
 		if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
@@ -267,7 +266,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				//TODO:TABLES insert.getQuery() are all NoSharding
 				return false;
 			}
-			RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
+			RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 			rrs.setFinishedRoute(true);
 			return true;
 		}
@@ -298,9 +297,10 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (joinKeyVal.startsWith("'") && joinKeyVal.endsWith("'") && joinKeyVal.length() > 2) {
 			realVal = joinKeyVal.substring(1, joinKeyVal.length() - 1);
 		}
-		String sql = insertStmt.toString();
+		String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
+		rrs.setStatement(sql);
 		// try to route by ER parent partion key
-		RouteResultset theRrs = routeByERParentKey(sql, rrs, tc, realVal);
+		RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
 		if (theRrs != null) {
 			rrs.setFinishedRoute(true);
 			return theRrs;
@@ -318,10 +318,10 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("found partion node for child table to insert " + dn + " sql :" + sql);
 		}
-		return RouterUtil.routeToSingleNode(rrs, dn, sql);
+		return RouterUtil.routeToSingleNode(rrs, dn);
 	}
 
-	private RouteResultset routeByERParentKey(String stmt, RouteResultset rrs, TableConfig tc, String joinKeyVal)
+	private RouteResultset routeByERParentKey( RouteResultset rrs, TableConfig tc, String joinKeyVal)
 			throws SQLNonTransientException {
 		// only has one parent level and ER parent key is parent table's partition key
 		if (tc.isSecondLevel() && tc.getParentTC().getPartitionColumn().equals(tc.getParentKey())) {
@@ -334,9 +334,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 			}
 			String dn = dataNodeSet.iterator().next();
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + dn + " sql :" + stmt);
+				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
 			}
-			return RouterUtil.routeToSingleNode(rrs, dn, stmt);
+			return RouterUtil.routeToSingleNode(rrs, dn);
 		}
 		return null;
 	}
@@ -371,7 +371,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			throw new SQLNonTransientException(msg);
 		}
 		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), insertStmt.toString());
+		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
 		nodes[0].setSource(rrs);
 
 		// insert into .... on duplicateKey 
@@ -452,7 +452,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				List<ValuesClause> valuesList = node.getValue();
 				insertStmt.setValuesList(valuesList);
 				nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-						insertStmt.toString());
+						RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
 				nodes[count++].setSource(rrs);
 
 			}
@@ -526,15 +526,15 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String joinKey) throws SQLNonTransientException {
 		return getShardingColIndex(schemaInfo, insertStmt, joinKey);
 	}
-	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert) throws SQLNonTransientException {
+	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
-			return insert.toString();
+			return originSql;
 
 		String tableName = schemaInfo.table;
 		if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-			return insert.toString();
+			return originSql;
 
 
 		// insert into .... select ....
@@ -622,7 +622,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				onDuplicateGlobalColumn(sb);
 			}
 		}
-		return sb.toString();
+		return RouterUtil.removeSchema(sb.toString(), schemaInfo.schema);
 	}
 
 	private static void onDuplicateGlobalColumn(StringBuilder sb){
@@ -656,5 +656,39 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (idx <= -1)
 			sb.append(",").append(operationTimestamp);
 		return sb.append(")");
+	}
+	public static boolean processWithMycatSeq(SchemaConfig schema, int sqlType,
+            String origSQL, ServerConnection sc) {
+		// check if origSQL is with global sequence
+		// @micmiu it is just a simple judgement
+		// 对应本地文件配置方式：insert into table1(id,name) values(next value for MYCATSEQ_GLOBAL,‘test’);
+		if (origSQL.indexOf(" MYCATSEQ_") != -1) {
+			origSQL = RouterUtil.removeSchema(origSQL, schema.getName());
+			processSQL(sc, schema, origSQL, sqlType);
+			return true;
+		}
+		return false;
+	}
+
+	public static void processSQL(ServerConnection sc, SchemaConfig schema, String sql, int sqlType) {
+		// int sequenceHandlerType = MycatServer.getInstance().getConfig().getSystem().getSequnceHandlerType();
+		SessionSQLPair sessionSQLPair = new SessionSQLPair(sc.getSession2(), schema, sql, sqlType);
+		// if(sequenceHandlerType == 3 || sequenceHandlerType == 4){
+		// DruidSequenceHandler sequenceHandler = new
+		// DruidSequenceHandler(MycatServer
+		// .getInstance().getConfig().getSystem().getSequnceHandlerType());
+		// String charset = sessionSQLPair.session.getSource().getCharset();
+		// String executeSql = null;
+		// try {
+		// executeSql = sequenceHandler.getExecuteSql(sessionSQLPair.sql,charset
+		// == null ? "utf-8":charset);
+		// } catch (UnsupportedEncodingException e) {
+		// LOGGER.error("UnsupportedEncodingException!");
+		// }
+		// sessionSQLPair.session.getSource().routeEndExecuteSQL(executeSql,
+		// sessionSQLPair.type,sessionSQLPair.schema);
+		// } else {
+		MycatServer.getInstance().getSequnceProcessor().addNewSql(sessionSQLPair);
+		// }
 	}
 }

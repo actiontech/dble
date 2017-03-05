@@ -26,7 +26,11 @@ package io.mycat.server.handler;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.parser.ServerParseShow;
-import io.mycat.server.response.*;
+import io.mycat.server.response.ShowDatabases;
+import io.mycat.server.response.ShowFullTables;
+import io.mycat.server.response.ShowMyCATCluster;
+import io.mycat.server.response.ShowMyCatStatus;
+import io.mycat.server.response.ShowTables;
 import io.mycat.util.StringUtil;
 
 /**
@@ -45,11 +49,11 @@ public final class ShowHandler {
 			ShowDatabases.response(c);
 			break;
 		case ServerParseShow.TABLES:
-			ShowTables.response(c, stmt,type);
+			ShowTables.response(c, stmt, type);
 			break;
-            case ServerParseShow.FULLTABLES:
-                ShowFullTables.response(c, stmt,type);
-                break;
+		case ServerParseShow.FULLTABLES:
+			ShowFullTables.response(c, stmt, type);
+			break;
 		case ServerParseShow.MYCAT_STATUS:
 			ShowMyCatStatus.response(c);
 			break;

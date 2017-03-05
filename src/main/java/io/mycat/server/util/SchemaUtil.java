@@ -15,7 +15,6 @@ import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
 
 /**
@@ -28,14 +27,6 @@ public class SchemaUtil
 	public static final String TABLE_PROC = "proc";
 	public static final String TABLE_PROFILING = "PROFILING";
 
-	public static String detectDefaultDb(int type) {
-		String db = null;
-		if ((ServerParse.SHOW == type || ServerParse.USE == type || ServerParse.EXPLAIN == type
-				|| ServerParse.SET == type || ServerParse.HELP == type || ServerParse.DESCRIBE == type)) {
-			db = getRandomDb();
-		}
-		return db;
-	}
 
 	public static String getRandomDb() {
 		Map<String, SchemaConfig> schemaConfigMap = MycatServer.getInstance().getConfig().getSchemas();

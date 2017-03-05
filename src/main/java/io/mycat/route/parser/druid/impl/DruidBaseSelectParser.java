@@ -30,7 +30,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -47,7 +46,6 @@ import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
 
 public class DruidBaseSelectParser extends DefaultDruidParser {
-	protected boolean isNeedParseOrderAgg = true;
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
@@ -56,11 +54,6 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
 			MySqlSelectQueryBlock mysqlSelectQuery) {
-		MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
-		stmt.accept(visitor);
-		if (!isNeedParseOrderAgg) {
-			return;
-		}
 		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery);
 
 		// setOrderByCols
@@ -68,7 +61,6 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 			List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
 			rrs.setOrderByCols(buildOrderByCols(orderByItems, aliaColumns));
 		}
-		isNeedParseOrderAgg = false;
 	}
 
 	protected Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
@@ -89,16 +81,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				String method = expr.getMethodName();
 				boolean isHasArgument = !expr.getArguments().isEmpty();
 				if (isHasArgument) {
-					String aggrColName = method + "(" + expr.getArguments().get(0) + ")"; // Added
-																							// by
-																							// winbill,
-																							// 20160314,
-																							// for
-																							// having
-																							// clause
-					havingColsName.add(aggrColName); // Added by winbill,
-														// 20160314, for having
-														// clause
+					String aggrColName = method + "(" + expr.getArguments().get(0) + ")";
+					havingColsName.add(aggrColName);
 				}
 				// 只处理有别名的情况，无别名添加别名，否则某些数据库会得不到正确结果处理
 				int mergeType = MergeCol.getMergeType(method);
@@ -114,17 +98,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 					sum.setExpr(sumExp);
 					selectList.set(i, sum);
 					aggrColumns.put(sumColName, MergeCol.MERGE_SUM);
-					havingColsName.add(sumColName); // Added by winbill,
-													// 20160314, for having
-													// clause
-					havingColsName.add(item.getAlias() != null ? item.getAlias() : ""); // Added
-																						// by
-																						// winbill,
-																						// 20160314,
-																						// two
-																						// aliases
-																						// for
-																						// AVG
+					havingColsName.add(sumColName); 
+					havingColsName.add(item.getAlias() != null ? item.getAlias() : ""); 
 
 					SQLSelectItem count = new SQLSelectItem();
 					String countColName = colName + "COUNT";
@@ -149,11 +124,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 						isNeedChangeSql = true;
 					}
 					rrs.setHasAggrColumn(true);
-					havingColsName.add(item.getAlias()); // Added by winbill,
-															// 20160314, for
-															// having clause
-					havingColsName.add(""); // Added by winbill, 20160314, one
-											// alias for non-AVG
+					havingColsName.add(item.getAlias()); 
+					havingColsName.add(""); 
 				}
 			} else {
 				if (!(item.getExpr() instanceof SQLAllColumnExpr)) {
@@ -189,16 +161,11 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 			rrs.setGroupByCols(groupByCols);
 			rrs.setHavings(buildGroupByHaving(mysqlSelectQuery.getGroupBy().getHaving()));
 			rrs.setHasAggrColumn(true);
-			rrs.setHavingColsName(havingColsName.toArray()); // Added by
-																// winbill,
-																// 20160314, for
-																// having clause
+			rrs.setHavingColsName(havingColsName.toArray()); 
 		}
 
 		if (isNeedChangeSql) {
-			String sql = stmt.toString();
-			rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, -1);
-			getCtx().setSql(sql);
+			rrs.changeNodeSqlAfterAddLimit(schema, stmt.toString(), 0, -1);
 		}
 		return aliaColumns;
 	}
@@ -239,7 +206,11 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		LayerCachePool tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService()
 				.getCachePool("TableID2DataNodeCache");
 		try {
-			tryRoute(schema, rrs, tableId2DataNodeCache);
+			if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
+				tryRoute(schema, rrs, tableId2DataNodeCache);
+			} else {
+				tryRouteSingleTable(schema, rrs, tableId2DataNodeCache);
+			}
 			if (rrs.getNodes() != null && rrs.getNodes().length > 1) {
 				return true;
 			}
@@ -248,7 +219,6 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 		return false;
 	}
-
 	private String getFieldName(SQLSelectItem item) {
 		if ((item.getExpr() instanceof SQLPropertyExpr) || (item.getExpr() instanceof SQLMethodInvokeExpr)
 				|| (item.getExpr() instanceof SQLIdentifierExpr) || item.getExpr() instanceof SQLBinaryOpExpr) {
@@ -258,20 +228,18 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 	}
 
+	
+	/**
+	 * will be repalce by tryRouteSingleTable 
+	 * @param item
+	 * @return
+	 */
+	@Deprecated
 	protected void tryRoute(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		if (rrs.isFinishedRoute()) {
 			return;// 避免重复路由
 		}
-
-		// 无表的select语句直接路由带任一节点
-		if ((ctx.getTables() == null || ctx.getTables().size() == 0)
-				&& (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
-			rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode(), ctx.getSql());
-			rrs.setFinishedRoute(true);
-			return;
-		}
-		// RouterUtil.tryRouteForTables(schema, ctx, rrs, true, cachePool);
 		SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
 		boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
 		for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
@@ -280,23 +248,22 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				for (RouteResultsetNode node : rrsTmp.getNodes()) {
 					nodeSet.add(node);
 				}
-			}
-			if (isAllGlobalTable) {// 都是全局表时只计算一遍路由
-				break;
+				if (isAllGlobalTable) {// 都是全局表时只计算一遍路由
+					break;
+				}
 			}
 		}
 
 		if (nodeSet.size() == 0) {
-
 			Collection<String> stringCollection = ctx.getTableAliasMap().values();
 			for (String table : stringCollection) {
 				if (table != null && table.toLowerCase().contains("information_schema.")) {
-					rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode(), ctx.getSql());
+					rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
 					rrs.setFinishedRoute(true);
 					return;
 				}
 			}
-			String msg = " find no Route:" + ctx.getSql();
+			String msg = " find no Route:" + rrs.getStatement();
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
@@ -312,7 +279,43 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		rrs.setNodes(nodes);
 		rrs.setFinishedRoute(true);
 	}
+	
+	protected void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
+			throws SQLNonTransientException {
+		if (rrs.isFinishedRoute()) {
+			return;// 避免重复路由
+		}
+		SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
+		String table = ctx.getTables().get(0);
+		if (RouterUtil.isNoSharding(schema, table)) {
+			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+			return;
+		}
+		for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+			RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, ctx, unit, table, rrs, true, cachePool);
+			if (rrsTmp != null && rrsTmp.getNodes() != null) {
+				for (RouteResultsetNode node : rrsTmp.getNodes()) {
+					nodeSet.add(node);
+				}
+			}
+		}
+		if (nodeSet.size() == 0) {
+			String msg = " find no Route:" + rrs.getStatement();
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
 
+		RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+		int i = 0;
+		for (Iterator<RouteResultsetNode> iterator = nodeSet.iterator(); iterator.hasNext();) {
+			nodes[i] = (RouteResultsetNode) iterator.next();
+			i++;
+
+		}
+
+		rrs.setNodes(nodes);
+		rrs.setFinishedRoute(true);
+	}
 	protected String getAliaColumn(Map<String, String> aliaColumns, String column) {
 		String alia = aliaColumns.get(column);
 		if (alia == null) {
@@ -350,10 +353,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				SQLExpr expr = ((MySqlOrderingExpr) sqlExpr).getExpr();
 
 				if (expr instanceof SQLName) {
-					column = StringUtil.removeBackquote(((SQLName) expr).getSimpleName());// 不要转大写
-																							// 2015-2-10
-																							// sohudo
-																							// StringUtil.removeBackquote(expr.getSimpleName().toUpperCase());
+					column = StringUtil.removeBackquote(((SQLName) expr).getSimpleName());
 				} else {
 					column = StringUtil.removeBackquote(expr.toString());
 				}

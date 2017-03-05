@@ -31,6 +31,7 @@ import io.mycat.net.handler.FrontendQueryHandler;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.handler.BeginHandler;
 import io.mycat.server.handler.CommitHandler;
+import io.mycat.server.handler.DescribeHandler;
 import io.mycat.server.handler.Explain2Handler;
 import io.mycat.server.handler.ExplainHandler;
 import io.mycat.server.handler.KillHandler;
@@ -79,6 +80,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 		//explain2 datanode=? sql=?
 		case ServerParse.EXPLAIN2:
 			Explain2Handler.handle(sql, c, rs >>> 8);
+			break;
+		case ServerParse.DESCRIBE:
+			DescribeHandler.handle(sql, c);
 			break;
 		case ServerParse.SET:
 			SetHandler.handle(sql, c, rs >>> 8);

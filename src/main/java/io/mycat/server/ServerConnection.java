@@ -39,7 +39,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.response.Heartbeat;
 import io.mycat.server.response.Ping;
-import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.SplitUtil;
 import io.mycat.util.TimeUtil;
 
@@ -174,10 +173,6 @@ public class ServerConnection extends FrontendConnection {
 
 		// 检查当前使用的DB
 		String db = this.schema;
-		if (db == null) {
-			db = SchemaUtil.detectDefaultDb(type);
-		}
-		
 		
 		SchemaConfig schemaConfig = null;
 		if (db != null){

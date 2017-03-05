@@ -115,52 +115,57 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             SQLExpr owner = ((SQLPropertyExpr) expr).getOwner();
             String column = ((SQLPropertyExpr) expr).getName();
 
-            if (owner instanceof SQLIdentifierExpr) {
-                String tableName = ((SQLIdentifierExpr) owner).getName();
-                String table = tableName;
-                if (aliasMap.containsKey(table)) {
-                    table = aliasMap.get(table);
-                }
+			if (owner instanceof SQLIdentifierExpr || owner instanceof SQLPropertyExpr) {
+				String tableName;
+				if (owner instanceof SQLPropertyExpr) {
+					tableName = ((SQLPropertyExpr) owner).getName();
+				} else {
+					tableName = ((SQLIdentifierExpr) owner).getName();
+				}
+				String table = tableName;
+				if (aliasMap.containsKey(table)) {
+					table = aliasMap.get(table);
+				}
 
-                if (variants.containsKey(table)) {
-                    return null;
-                }
+				if (variants.containsKey(table)) {
+					return null;
+				}
 
-                if (table != null) {
-                    return new Column(table, column);
-                }
+				if (table != null) {
+					return new Column(table, column);
+				}
 
-                return handleSubQueryColumn(tableName, column);
-            }
+				return handleSubQueryColumn(tableName, column);
+			}
 
             return null;
         }
 
-        if (expr instanceof SQLIdentifierExpr) {
-            Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
-            if (attrColumn != null) {
-                return attrColumn;
-            }
+		if (expr instanceof SQLIdentifierExpr) {
+			Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
+			if (attrColumn != null) {
+				return attrColumn;
+			}
 
-            String column = ((SQLIdentifierExpr) expr).getName();
-            String table = getCurrentTable();
-            if (table != null && aliasMap.containsKey(table)) {
-                table = aliasMap.get(table);
-                if (table == null) {
-                    return null;
-                }
-            }
+			String column = ((SQLIdentifierExpr) expr).getName();
+			String table = getCurrentTable();
+			if (table != null && aliasMap.containsKey(table)) {
+				table = aliasMap.get(table);
+				if (table == null) {
+					return null;
+				}
+			}
 
-            if (table != null) {
-                return new Column(table, column);
-            }
+			if (table != null) {
+				return new Column(table, column);
+			}
 
-            if (variants.containsKey(column)) {
-                return null;
-            }
+			if (variants.containsKey(column)) {
+				return null;
+			}
 
-            return new Column("UNKNOWN", column);
-        }
+			return new Column("UNKNOWN", column);
+		}
 
         if(expr instanceof SQLBetweenExpr) {
             SQLBetweenExpr betweenExpr = (SQLBetweenExpr)expr;

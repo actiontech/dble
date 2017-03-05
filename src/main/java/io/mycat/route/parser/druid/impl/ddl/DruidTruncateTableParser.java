@@ -23,7 +23,7 @@ public class DruidTruncateTableParser extends DefaultDruidParser {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs, ctx.getSql());
+		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 }

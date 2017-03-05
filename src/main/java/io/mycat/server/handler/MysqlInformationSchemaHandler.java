@@ -59,26 +59,24 @@ public class MysqlInformationSchemaHandler {
 	}
 	
 	public static void handle(SchemaInfo schemaInfo, ServerConnection c) {
-		if ( schemaInfo != null ) {
-			
-			if ( schemaInfo.table.toUpperCase().equals("CHARACTER_SETS") ) {
-				
-				//模拟列头
+		if (schemaInfo != null) {
+			if (schemaInfo.table.toUpperCase().equals("CHARACTER_SETS")) {
+				// 模拟列头
 				int field_count = 4;
-			    FieldPacket[] fields = new FieldPacket[field_count];
-			    fields[0] = PacketUtil.getField("CHARACTER_SET_NAME", Fields.FIELD_TYPE_VAR_STRING);
+				FieldPacket[] fields = new FieldPacket[field_count];
+				fields[0] = PacketUtil.getField("CHARACTER_SET_NAME", Fields.FIELD_TYPE_VAR_STRING);
 				fields[1] = PacketUtil.getField("DEFAULT_COLLATE_NAME", Fields.FIELD_TYPE_VAR_STRING);
-			    fields[2] = PacketUtil.getField("DESCRIPTION", Fields.FIELD_TYPE_VAR_STRING);
+				fields[2] = PacketUtil.getField("DESCRIPTION", Fields.FIELD_TYPE_VAR_STRING);
 				fields[3] = PacketUtil.getField("MAXLEN", Fields.FIELD_TYPE_LONG);
-				
-				doWrite(field_count, fields, c);				
-				
+
+				doWrite(field_count, fields, c);
+
 			} else {
 				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-			}			
-			
+			}
+
 		} else {
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-		}		
+		}
 	}
 }

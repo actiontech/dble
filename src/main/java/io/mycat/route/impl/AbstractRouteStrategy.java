@@ -53,7 +53,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		if (schema == null) {
 			rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, cachePool);
 		} else if (schema.isNoSharding() && ServerParse.SHOW != sqlType) {
-			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode(), stmt);
+			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 		} else {
 			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, rrs);
 			if (returnedSet == null) {

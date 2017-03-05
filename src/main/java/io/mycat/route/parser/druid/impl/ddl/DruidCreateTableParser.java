@@ -38,12 +38,11 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
-			String sql= addColumnIfCreate(ctx.getSql(), createStmt);
-			ctx.setSql(sql);
+			String sql= addColumnIfCreate(rrs.getStatement(), createStmt);
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(createStmt);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs, ctx.getSql());
+		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 

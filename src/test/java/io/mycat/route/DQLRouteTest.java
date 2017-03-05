@@ -60,7 +60,6 @@ public class DQLRouteTest {
 			throw new SQLSyntaxErrorException(t);
 		}
 		ctx = new DruidShardingParseInfo();
-		ctx.setSql(stmt);
 
 		List<RouteCalculateUnit> taskList = visitorParse(rrs, statement, visitor);
 		Assert.assertEquals(true, !taskList.get(0).getTablesAndConditions().isEmpty());

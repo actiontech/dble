@@ -40,7 +40,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	private static final long serialVersionUID = 1L;
 	private final String name; // 数据节点名称
 	private String statement; // 执行的语句
-	private final String srcStatement;
 	private final int sqlType;
 	private volatile boolean canRunInReadDB;
 	private final boolean hasBlanceFlag;
@@ -63,7 +62,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		limitStart=0;
 		this.limitSize = -1;
 		this.sqlType = sqlType;
-		this.srcStatement = srcStatement;
 		this.statement = srcStatement;
 		canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
 		hasBlanceFlag = (statement != null)
@@ -102,10 +100,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 
 	public boolean getCanRunInReadDB() {
 		return this.canRunInReadDB;
-	}
-
-	public void resetStatement() {
-		this.statement = srcStatement;
 	}
 
 	/**

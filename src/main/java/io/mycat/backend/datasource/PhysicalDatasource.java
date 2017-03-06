@@ -339,6 +339,11 @@ public abstract class PhysicalDatasource {
 		this.conMap.clearConnections(reason, this);
 	}
 
+    	public void clearConsByDying() {
+	    	clearCons("smooth dying");
+		this.dbPool.delRDs(this);
+	}
+
 	public void startHeartbeat() {
 		heartbeat.start();
 	}

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.lang.Thread;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,7 +211,7 @@ public class MycatConfig {
 			   MycatCluster newCluster, FirewallConfig newFirewall, boolean reloadAll) {
 		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newCluster, newFirewall, reloadAll);
 		this.reloadTime = TimeUtil.currentTimeMillis();
-		this.status = reloadAll?RELOAD_ALL:RELOAD;
+		this.status = reloadAll ? RELOAD_ALL : RELOAD;
 	}
 
 	public boolean canRollback() {
@@ -391,6 +392,7 @@ public class MycatConfig {
 			added = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
 		}
 		public void apply() {
+		    	    // delete
 			    for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry :
 				     deled.entrySet()) {
 					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
@@ -401,12 +403,42 @@ public class MycatConfig {
 						}
 					}
 			    }
+
+			    //add
 			    for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry :
 				     added.entrySet()) {
 					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
 						 lentry.getValue().entrySet()) {
 					    	for (int i = 0; i < llentry.getValue().size(); i++) {
-						    	lentry.getKey().addRDs(llentry.getKey(), llentry.getValue().get(i));
+						    	lentry.getKey().addRDs(llentry.getKey(),
+									       llentry.getValue().get(i));
+						}
+					}
+			    }
+			    
+			    //sleep
+			    ArrayList<PhysicalDatasource> killed = new ArrayList<PhysicalDatasource>(2);
+			    for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry :
+				     deled.entrySet()) {
+					for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry :
+						 lentry.getValue().entrySet()) {
+					    	for (int i = 0; i < llentry.getValue().size(); i++) {
+						    	if (llentry.getValue().get(i).getActiveCount() != 0) {
+								killed.add(llentry.getValue().get(i));
+							};
+						}
+					}
+			    }
+			    if (!killed.isEmpty()) {
+					try {
+					    	Thread.sleep(1000);
+					} catch (InterruptedException ignore) {
+					    //do nothing
+					}
+					
+					for (int i = 0; i < killed.size(); i++) {
+					    	if (killed.get(i).getActiveCount() != 0) {
+						    	killed.get(i).clearConsByDying();
 						}
 					}
 			    }

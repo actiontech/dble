@@ -47,8 +47,7 @@ public final class RollbackConfig {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RollbackConfig.class);
 
 	public static void execute(ManagerConnection c) {
-		final ReentrantLock lock = MycatServer.getInstance().getConfig()
-				.getLock();
+		final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
 		lock.lock();
 		try {
 			if (rollback()) {
@@ -83,9 +82,10 @@ public final class RollbackConfig {
 			return false;
 		}
 
+		Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
+		
 		// 如果回滚已经存在的pool
 		boolean rollbackStatus = true;
-		Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
 		for (PhysicalDBPool dn : dataHosts.values()) {
 			dn.init(dn.getActivedIndex());
 			if (!dn.isInitSuccess()) {
@@ -115,5 +115,4 @@ public final class RollbackConfig {
 		 MycatServer.getInstance().getCacheService().clearCache();
 		return true;
 	}
-
 }

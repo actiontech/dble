@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -38,6 +39,7 @@ import io.mycat.plan.node.NoNameNode;
 import io.mycat.plan.node.QueryNode;
 import io.mycat.plan.node.TableNode;
 import io.mycat.plan.util.FilterUtils;
+import io.mycat.util.StringUtil;
 
 public class MySQLPlanNodeVisitor {
 	private PlanNode tableNode;
@@ -133,16 +135,15 @@ public class MySQLPlanNodeVisitor {
 		return true;
 	}
 
-	
 	public boolean visit(SQLExprTableSource tableSource) {
 		TableNode table = null;
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-			table = new TableNode(propertyExpr.getOwner().toString(), propertyExpr.getName());
+			table = new TableNode(StringUtil.removeBackquote(propertyExpr.getOwner().toString()), StringUtil.removeBackquote(propertyExpr.getName()));
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
-			table = new TableNode(this.currentDb, identifierExpr.getName());
+			table = new TableNode(this.currentDb, StringUtil.removeBackquote(identifierExpr.getName()));
 		}
 		if (tableSource.getAlias() != null) {
 			table.setSubAlias(tableSource.getAlias());
@@ -310,8 +311,16 @@ public class MySQLPlanNodeVisitor {
 	}
 
 	private void handleLimit(Limit limit) {
-		tableNode.setLimitFrom(((Number) limit.getOffset()).longValue());
-		tableNode.setLimitTo(((Number) limit.getRowCount()).longValue());
+		long from = 0;
+		SQLExpr offest = limit.getOffset();
+		if (offest != null) {
+			SQLIntegerExpr offsetExpr = (SQLIntegerExpr) offest;
+			from = offsetExpr.getNumber().longValue();
+		}
+		SQLExpr rowCount = limit.getRowCount();
+		long to = ((SQLIntegerExpr) rowCount).getNumber().longValue();
+		tableNode.setLimitFrom(from);
+		tableNode.setLimitTo(to);
 	}
 
 	private void addJoinOnColumns(Item ifilter, JoinNode joinNode) {

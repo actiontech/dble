@@ -475,7 +475,8 @@ public class StringUtil {
 	public static String removeBackquote(String str){
 		//删除名字中的`tablename`和'value'
 		if (str.length() > 1) {
-			if ((str.charAt(0) == '`' || str.charAt(0) == '\'') && (str.charAt(0) == str.charAt(str.length() - 1))) {
+			char firstValue = str.charAt(0);
+			if (( firstValue== '`' || firstValue == '\'') && (firstValue == str.charAt(str.length() - 1))) {
 				return str.substring(1, str.length() - 1);
 			} else {
 				return str;

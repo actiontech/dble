@@ -37,11 +37,10 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
 		try {
 			PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
 			MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
-			RouteResultsetNode[] rrssArray = mergeBuilder.construct();
-			boolean simpleVisited = mergeBuilder.isSimpleVisited();
+			RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
 			this.needCommon = mergeBuilder.getNeedCommonFlag();
 			this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
-			buildMergeHandler(node, rrssArray, pdVisitor, simpleVisited);
+			buildMergeHandler(node, rrssArray);
 		} catch (Exception e) {
 			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "tablenode buildOwn exception!", e);
 		}
@@ -59,28 +58,19 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
 			if (tableConfig == null || tableConfig.getTableType()==TableTypeEnum.TYPE_GLOBAL_TABLE) {
 				for (Item filter : filters) {
 					node.setWhereFilter(filter);
-					RouteResultsetNode[] rrssArray = mergeBuilder.construct();
+					RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
 					rrssList.addAll(Arrays.asList(rrssArray));
 				}
 				if (filters.size() == 1) {
 					this.needCommon = false;
 					this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
 				}
-//			} else if (!node.isPartitioned()) {
-//				// 防止in的列数太多，不再进行parti计算
-//				for (Item filter : filters) {
-//					node.setWhereFilter(filter);
-//					pdVisitor.visit();
-//					String sql = pdVisitor.getSql().toString();
-//					RouteResultsetNode[] rrssArray = getTableSources(node.getSchema(), node.getTableName(), sql);
-//					rrssList.addAll(Arrays.asList(rrssArray));
-//				}
 			} else {
 				boolean tryGlobal = filters.size() == 1;
 				for (Item filter : filters) {
 					node.setWhereFilter(filter);
 					pdVisitor.visit();
-					RouteResultsetNode[] rrssArray = mergeBuilder.construct();
+					RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
 					rrssList.addAll(Arrays.asList(rrssArray));
 				}
 				if (tryGlobal) {
@@ -90,7 +80,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
 			}
 			RouteResultsetNode[] rrssArray = new RouteResultsetNode[rrssList.size()];
 			rrssArray = rrssList.toArray(rrssArray);
-			buildMergeHandler(node, rrssArray, pdVisitor, mergeBuilder.isSimpleVisited());
+			buildMergeHandler(node, rrssArray);
 		} catch (Exception e) {
 			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "", e);
 		}

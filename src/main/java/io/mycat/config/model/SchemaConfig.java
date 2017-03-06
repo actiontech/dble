@@ -85,7 +85,6 @@ public class SchemaConfig {
 	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {
-
 		if (tables == null || tables.isEmpty()) {
 			return;
 		}

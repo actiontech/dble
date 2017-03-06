@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 
 import io.mycat.config.ErrorCode;
-import io.mycat.config.model.TableConfig.TableTypeEnum;
 import io.mycat.plan.NamedField;
 import io.mycat.plan.Order;
 import io.mycat.plan.PlanNode;
@@ -243,7 +242,7 @@ public class PlanUtil {
 	}
 
 	public static boolean isGlobalOrER(PlanNode node) {
-		if (node.isGlobaled())
+		if (node.getNoshardNode() != null)
 			return true;
 		else {
 			return isERNode(node);
@@ -352,19 +351,7 @@ public class PlanUtil {
 		}
 	}
 
-	/**
-	 * node不存在表名或者node全部为global表时
-	 * 
-	 * @param node
-	 * @return
-	 */
-	public static boolean existShardTable(PlanNode node) {
-		for (TableNode tn : node.getReferedTableNodes()) {
-			if (tn.getTableConfig() != null && tn.getTableConfig().getTableType()!=TableTypeEnum.TYPE_GLOBAL_TABLE)
-				return true;
-		}
-		return false;
-	}
+	
 
 //	public static boolean existPartiTable(PlanNode tn) {
 //		boolean existNumParti = false;

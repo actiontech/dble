@@ -2,13 +2,13 @@ package io.mycat.backend.mysql.nio.handler.builder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
-import io.mycat.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import io.mycat.backend.mysql.nio.handler.query.DMLResponseHandler;
 import io.mycat.backend.mysql.nio.handler.query.impl.DistinctHandler;
 import io.mycat.backend.mysql.nio.handler.query.impl.HavingHandler;
@@ -80,15 +80,18 @@ abstract class BaseHandlerBuilder {
 	 */
 	public final void build() {
 		List<DMLResponseHandler> preHandlers = null;
-		// 是否切换了join策略切换了join策略
+		// 是否切换了join策略
 		boolean joinStrategyed = isNestLoopStrategy(node);
 		if (joinStrategyed) {
 			nestLoopBuild();
-//		} else if (!node.isExsitView() && (node.getUnGlobalTableCount() == 0 || !PlanUtil.existShardTable(node))) {// global优化过的节点
-//			noShardBuild();
+		} else if (!node.isExsitView() &&  node.getUnGlobalTableCount() == 0 && node.getNoshardNode() != null) {
+			// 可确定统一下发到某个节点
+			noShardBuild();
 		} else if (canDoAsMerge()) {
+			//可下发到某些(1...n)结点,如果：eg: ER*NORMAL,  GLOBAL*NORMAL
 			mergeBuild();
 		} else {
+			//拆分
 			preHandlers = buildPre();
 			buildOwn();
 		}
@@ -152,7 +155,7 @@ abstract class BaseHandlerBuilder {
 		} else {
 			needSendMaker = false;
 		}
-		RouteResultsetNode[] rrss = getTableSources(sql);
+		RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
 		hBuilder.checkRRSS(rrss);
 		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit(),
 				session, null);
@@ -273,7 +276,7 @@ abstract class BaseHandlerBuilder {
 	 * @return
 	 */
 	private boolean isOrderNeeded(PlanNode node, List<Order> orderBys) {
-		if (node.isGlobaled() || node instanceof TableNode || PlanUtil.isERNode(node))
+		if (node instanceof TableNode || PlanUtil.isGlobalOrER(node))
 			return false;
 		else if (node instanceof JoinNode) {
 			return !isJoinNodeOrderMatch((JoinNode) node, orderBys);
@@ -381,22 +384,29 @@ abstract class BaseHandlerBuilder {
 
 	/*-----------------计算datasource相关start------------------*/
 
-	protected void buildMergeHandler(PlanNode node, RouteResultsetNode[] rrssArray, PushDownVisitor sqlVisitor,
-			boolean simpleVisited) {
+	protected void buildMergeHandler(PlanNode node, RouteResultsetNode[] rrssArray) {
 		hBuilder.checkRRSS(rrssArray);
 		MultiNodeMergeHandler mh = null;
 		List<Order> orderBys = node.getGroupBys().size() > 0 ? node.getGroupBys() : node.getOrderBys();
-		
+
 		mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit(), session,
-					orderBys);
+				orderBys);
 		addHandler(mh);
 	}
 
-	protected RouteResultsetNode[] getTableSources(String sql) {
-		String schema = session.getSource().getSchema();
-		SchemaConfig schemacfg = mycatConfig.getSchemas().get(schema);
-		RouteResultsetNode rrss = new RouteResultsetNode(schemacfg.getDataNode(), ServerParse.SELECT, sql);
-		return new RouteResultsetNode[]{rrss};
+	protected RouteResultsetNode[] getTableSources(Set<String> dataNodes, String sql) {
+		String randomDatenode = null;
+		int index = (int) (System.currentTimeMillis() % dataNodes.size());
+		int i = 0;
+		for (String dataNode : dataNodes) {
+			if (index == i) {
+				randomDatenode = dataNode;
+				break;
+			}
+			i++;
+		}
+		RouteResultsetNode rrss = new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql);
+		return new RouteResultsetNode[] { rrss };
 	}
 
 	protected TableConfig getTableConfig(String schema, String table) {

@@ -1,6 +1,7 @@
 package io.mycat.plan.node;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLHint;
@@ -27,7 +28,6 @@ public class TableNode extends PlanNode {
 	private String schema;
 	private String tableName;
 	private TableMeta tableMeta;
-	private TableConfig tableConfig;
 	private List<SQLHint> hintList;
 
 	/**
@@ -38,22 +38,26 @@ public class TableNode extends PlanNode {
 		if (catalog == null || tableName == null)
 			throw new RuntimeException("Table db or name is null error!");
 		this.schema = catalog;
+		this.tableName = tableName;
 		MycatConfig mycatConfig = MycatServer.getInstance().getConfig(); 
-		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(catalog);
+		if(mycatConfig.getSystem().isLowerCaseTableNames()){
+			this.schema = this.schema.toLowerCase();
+			this.tableName = this.tableName.toLowerCase();
+		}
+		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(this.schema);
 		if(schemaConfig == null){
-			throw new RuntimeException("schema "+catalog+" is not exists!");
+			throw new RuntimeException("schema "+this.schema+" is not exists!");
 		}
 		this.referedTableNodes.add(this);
-		this.tableName = tableName;
-		String tableKey = tableName;
-		if(mycatConfig.getSystem().isLowerCaseTableNames()){
-			tableKey = tableKey.toLowerCase();
-		}
-		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(catalog, tableKey);
-		this.tableConfig = schemaConfig.getTables().get(tableKey);
-		this.isGlobaled = this.tableConfig != null && (this.tableConfig.getTableType()==TableTypeEnum.TYPE_GLOBAL_TABLE);
-		if (!this.isGlobaled)
+
+		
+		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
+		TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
+		boolean isGlobaled = tableConfig != null && (tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE);
+		if (!isGlobaled) {
 			this.unGlobalTableCount = 1;
+		}
+		this.setNoshardNode(new HashSet<String>(tableConfig.getDataNodes()));
 	}
 
 	/**
@@ -122,23 +126,8 @@ public class TableNode extends PlanNode {
 		return 1;
 	}
 
-	public TableConfig getTableConfig() {
-		return this.tableConfig;
-	}
 
-//	public boolean isPartitioned() {
-//		return isPartitioned;
-//	}
 
-//	private boolean isPartition(TableConfig tableConfig) {
-//		if (tableConfig != null) {
-//			TableRuleConfig tbRuleConfig = tableConfig.getRule();
-//			if (tbRuleConfig != null) {
-//				return tbRuleConfig.getClusteredRule().getTbRule() != null;
-//			}
-//		}
-//		return false;
-//	}
 
 	@Override
 	public String toString(int level) {

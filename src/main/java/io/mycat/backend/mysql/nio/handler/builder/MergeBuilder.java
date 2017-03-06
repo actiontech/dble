@@ -15,16 +15,14 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.plan.PlanNode;
 import io.mycat.route.RouteResultset;
-import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.DruidParser;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.impl.DruidBaseSelectParser;
+import io.mycat.route.parser.druid.impl.DruidNoSharingSelectParser;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
 
 public class MergeBuilder {
-	private boolean simpleVisited;
 	private boolean needCommonFlag;
 	private boolean needSendMakerFlag;
 	private PlanNode node;
@@ -37,7 +35,6 @@ public class MergeBuilder {
 	public MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, boolean needSendMaker,
 			PushDownVisitor pdVisitor) {
 		this.node = node;
-		this.simpleVisited = false;
 		this.needCommonFlag = needCommon;
 		this.needSendMakerFlag = needSendMaker;
 		this.session = session;
@@ -55,31 +52,25 @@ public class MergeBuilder {
 	 * @throws SQLNonTransientException 
 	 * @throws SQLSyntaxErrorException
 	 */
-	public RouteResultsetNode[] construct() throws SQLNonTransientException  {
+	public RouteResultset construct() throws SQLNonTransientException  {
 		pdVisitor.visit();
 		String sql = pdVisitor.getSql().toString();
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
 		MycatSchemaStatVisitor visitor = new MycatSchemaStatVisitor();
-		DruidParser druidParser = new DruidBaseSelectParser();
+		DruidParser druidParser = new DruidNoSharingSelectParser();
 
 		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT, session);
 		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
 		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(schema);
-		rrs = RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor);
+		return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor);
 
-		return rrs.getNodes();
 	}
 
 	/* -------------------- getter/setter -------------------- */
 	public boolean getNeedCommonFlag() {
 		return needCommonFlag;
 	}
-
-	public boolean isSimpleVisited() {
-		return simpleVisited;
-	}
-
 	public boolean getNeedSendMakerFlag() {
 		return needSendMakerFlag;
 	}

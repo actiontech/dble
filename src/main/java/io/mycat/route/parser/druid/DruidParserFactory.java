@@ -63,7 +63,7 @@ public class DruidParserFactory
 			} else if (statement instanceof SQLDropIndexStatement) {
 				parser = new DruidDropIndexParser();
 			} else {
-				String msg = "THE DLL is not supported :" + statement;
+				String msg = "THE DDL is not supported :" + statement;
 				throw new SQLNonTransientException(msg);
 			}
 		} else {

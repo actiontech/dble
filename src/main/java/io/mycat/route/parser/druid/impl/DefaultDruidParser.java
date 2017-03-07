@@ -94,8 +94,12 @@ public class DefaultDruidParser implements DruidParser {
 			String key = entry.getKey();
 			String value = entry.getValue();
 			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-				key = key.toLowerCase();
-				value = value.toLowerCase();
+				if (key != null){
+					key = key.toLowerCase();
+				}
+				if (value != null){
+					value = value.toLowerCase();
+				}
 			}
 			if (key != null && key.indexOf("`") >= 0) {
 				key = key.replaceAll("`", "");

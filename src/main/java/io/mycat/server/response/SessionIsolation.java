@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
+import io.mycat.config.Isolations;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
@@ -61,7 +62,23 @@ public class SessionIsolation {
         buffer = eof.write(buffer, c,true);
         byte packetId = eof.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode("REPEATABLE-READ",c.getCharset()));
+        
+		String value = "";
+		switch (c.getTxIsolation()) {
+		case Isolations.READ_COMMITTED:
+			value = "READ-COMMITTED";
+			break;
+		case Isolations.READ_UNCOMMITTED:
+			value = "READ-UNCOMMITTED";
+			break;
+		case Isolations.REPEATED_READ:
+			value = "REPEATED-READ";
+			break;
+		case Isolations.SERIALIZABLE:
+			value = "SERIALIZABLE";
+			break;
+		}
+        row.add(StringUtil.encode(value,c.getCharset()));
         row.packetId = ++packetId;
         buffer = row.write(buffer, c,true);
         EOFPacket lastEof = new EOFPacket();

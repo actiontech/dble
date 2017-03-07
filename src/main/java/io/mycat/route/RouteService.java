@@ -71,9 +71,9 @@ public class RouteService {
 		String cacheKey = null;
 
 		/**
-		 *  SELECT 类型的SQL, 检测
+		 *  SELECT 类型的SQL, 检测,debug 模式下不缓存
 		 */
-		if (sqlType == ServerParse.SELECT) {
+		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled()) {
 			cacheKey = (schema == null ? "NULL_" : schema.getName()) + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
 			if (rrs != null) {
@@ -135,7 +135,7 @@ public class RouteService {
 					charset, sc, tableId2DataNodeCache);
 		}
 
-		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()) {
+		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()&&!LOGGER.isDebugEnabled()) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
 		}
 		return rrs;

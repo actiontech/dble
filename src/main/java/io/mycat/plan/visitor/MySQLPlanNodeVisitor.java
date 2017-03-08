@@ -140,10 +140,10 @@ public class MySQLPlanNodeVisitor {
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-			table = new TableNode(StringUtil.removeBackquote(propertyExpr.getOwner().toString()), StringUtil.removeBackquote(propertyExpr.getName()));
+			table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
-			table = new TableNode(this.currentDb, StringUtil.removeBackquote(identifierExpr.getName()));
+			table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
 		}
 		if (tableSource.getAlias() != null) {
 			table.setSubAlias(tableSource.getAlias());

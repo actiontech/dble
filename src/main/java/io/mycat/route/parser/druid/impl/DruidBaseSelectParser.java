@@ -193,7 +193,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		if (right instanceof SQLNumericLiteralExpr) {
 			rightValue = right.toString();
 		} else if (right instanceof SQLTextLiteralExpr) {
-			rightValue = StringUtil.removeBackquote(right.toString());
+			rightValue = StringUtil.removeBackQuote(right.toString());
 		}
 
 		return new HavingCols(leftValue, rightValue, operator.getName());
@@ -353,9 +353,9 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				SQLExpr expr = ((MySqlOrderingExpr) sqlExpr).getExpr();
 
 				if (expr instanceof SQLName) {
-					column = StringUtil.removeBackquote(((SQLName) expr).getSimpleName());
+					column = StringUtil.removeBackQuote(((SQLName) expr).getSimpleName());
 				} else {
-					column = StringUtil.removeBackquote(expr.toString());
+					column = StringUtil.removeBackQuote(expr.toString());
 				}
 			} else if (sqlExpr instanceof SQLPropertyExpr) {
 				/**

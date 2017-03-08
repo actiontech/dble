@@ -61,18 +61,18 @@ public class MetaHelper {
 	 */
 	public static IndexMeta makeIndexMeta(String indexName, INDEX_TYPE indexType, List<SQLExpr> columnExprs) {
 		IndexMeta.Builder indexBuilder = IndexMeta.newBuilder();
-		indexBuilder.setName(StringUtil.removeBackquote(indexName));
+		indexBuilder.setName(StringUtil.removeBackQuote(indexName));
 		indexBuilder.setType(indexType.toString());
 		for (int i = 0; i < columnExprs.size(); i++) {
 			SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
-			indexBuilder.addColumns(StringUtil.removeBackquote(column.getName()));
+			indexBuilder.addColumns(StringUtil.removeBackQuote(column.getName()));
 		}
 		return indexBuilder.build();
 	}
 
 	public static ColumnMeta.Builder makeColumnMeta(SQLColumnDefinition column) {
 		ColumnMeta.Builder cmBuilder = ColumnMeta.newBuilder();
-		cmBuilder.setName(StringUtil.removeBackquote(column.getName().getSimpleName()));
+		cmBuilder.setName(StringUtil.removeBackQuote(column.getName().getSimpleName()));
 		cmBuilder.setDataType(column.getDataType().getName());
 		for (SQLColumnConstraint constraint : column.getConstraints()) {
 			if (constraint instanceof SQLNotNullConstraint) {

@@ -197,7 +197,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
                 for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++)
                 {
-                    String column = StringUtil.removeBackquote(columns.get(i).toString());
+                    String column = StringUtil.removeBackQuote(columns.get(i).toString());
                     if (pColumn.equalsIgnoreCase(column))
                     {
                         partitionColumnIndex = i;

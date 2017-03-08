@@ -137,8 +137,8 @@ public class DefaultDruidParser implements DruidParser {
 					break;
 				}
 				if(checkConditionValues(values)) {
-					String columnName = StringUtil.removeBackquote(condition.getColumn().getName().toUpperCase());
-					String tableName = StringUtil.removeBackquote(condition.getColumn().getTable());
+					String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+					String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
 					if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
 						tableName = tableName.toLowerCase();
 					}

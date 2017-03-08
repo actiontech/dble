@@ -381,7 +381,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			List<SQLExpr> updateList = insertStmt.getDuplicateKeyUpdate();
 			for(SQLExpr expr : updateList) {
 				SQLBinaryOpExpr opExpr = (SQLBinaryOpExpr)expr;
-				String column = StringUtil.removeBackquote(opExpr.getLeft().toString().toUpperCase());
+				String column = StringUtil.removeBackQuote(opExpr.getLeft().toString().toUpperCase());
 				if(column.equals(partitionColumn)) {
 					String msg = "Sharding column can't be updated: " + schemaInfo.table + " -> " + partitionColumn;
 					LOGGER.warn(msg);
@@ -488,7 +488,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return shardingColIndex;
 		}
 		for (int i = 0; i < insertStmt.getColumns().size(); i++) {
-			if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString()))) {
+			if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackQuote(insertStmt.getColumns().get(i).toString()))) {
 				return i;
 			}
 		}
@@ -571,7 +571,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					sb.append(columns.get(i).toString()).append(",");
 				else
 					sb.append(columns.get(i).toString());
-				String column = StringUtil.removeBackquote(insert.getColumns().get(i).toString());
+				String column = StringUtil.removeBackQuote(insert.getColumns().get(i).toString());
 				if (column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN))
 					idx = i;
 			}

@@ -132,7 +132,7 @@ public class GlobalTableUtil{
 				ArrayList<PhysicalDBNode> nodes = executedMap.get(sourceName);
 				String[] schemas = new String[nodes.size()];
 				for(int index =0 ;index<nodes.size();index++){
-					schemas[index] = StringUtil.removeBackquote(nodes.get(index).getDatabase());
+					schemas[index] = StringUtil.removeBackQuote(nodes.get(index).getDatabase());
 				}
 				Collection<PhysicalDatasource> allDS = nodes.get(0).getDbPool().getAllDataSources();
 				for(PhysicalDatasource pds : allDS){

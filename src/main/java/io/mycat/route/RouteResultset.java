@@ -130,7 +130,7 @@ public final class RouteResultset implements Serializable {
 		this.isFinishedExecute = isFinishedExecute;
 	}
     public boolean isFinishedRoute() {
-        return isFinishedRoute;
+		return isFinishedRoute || needOptimizer;
     }
 
     public void setFinishedRoute(boolean isFinishedRoute) {

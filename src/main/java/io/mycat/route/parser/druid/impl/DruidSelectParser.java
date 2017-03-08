@@ -68,14 +68,14 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
-				if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
+				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
 					MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
 	
-				if (SchemaUtil.MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-						&& SchemaUtil.TABLE_PROC.equalsIgnoreCase(schemaInfo.table)) {
+				if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
+						&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 					// 兼容MySQLWorkbench
 					MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
@@ -85,8 +85,8 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				// `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
 				// `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
 				// GROUP BY STATE ORDER BY SEQ
-				if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-						&& SchemaUtil.TABLE_PROFILING.equalsIgnoreCase(schemaInfo.table)
+				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
+						&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
 						&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
 					InformationSchemaProfiling.response(rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
@@ -144,7 +144,6 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		} else {
 			rrs.setSqlStatement(stmt);
 			rrs.setNeedOptimizer(true);
-			rrs.setFinishedRoute(true);
 			return schema;
 		}
 	}

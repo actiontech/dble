@@ -202,6 +202,8 @@ public class PushDownVisitor extends MysqlVisitor {
 					}
 				}
 					continue;
+				default:
+					break;
 				}
 			}
 			sqlBuilder.append(pdName);

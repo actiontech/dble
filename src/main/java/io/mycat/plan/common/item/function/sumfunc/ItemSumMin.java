@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
-import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
 
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.plan.common.field.Field;
@@ -14,8 +13,8 @@ import io.mycat.plan.common.item.Item;
 
 public class ItemSumMin extends ItemSumHybrid {
 
-	public ItemSumMin(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields) {
-		super(args, distinct, 1, isPushDown, fields);
+	public ItemSumMin(List<Item> args, boolean isPushDown, List<Field> fields) {
+		super(args,1, isPushDown, fields);
 	}
 
 	@Override
@@ -87,9 +86,6 @@ public class ItemSumMin extends ItemSumHybrid {
 		Item arg0 = args.get(0);
 		SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
 		aggregate.addArgument(arg0.toExpression());
-		if(has_with_distinct()){
-			aggregate.setOption(SQLAggregateOption.DISTINCT);
-		}
 		return aggregate;
 	}
 
@@ -97,9 +93,9 @@ public class ItemSumMin extends ItemSumHybrid {
 	protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
 		if (!forCalculate) {
 			List<Item> newArgs = cloneStructList(args);
-			return new ItemSumMin(newArgs,has_with_distinct(), false, null);
+			return new ItemSumMin(newArgs, false, null);
 		} else {
-			return new ItemSumMin(calArgs,has_with_distinct(), isPushDown, fields);
+			return new ItemSumMin(calArgs, isPushDown, fields);
 		}
 	}
 

@@ -65,6 +65,7 @@ import io.mycat.plan.common.item.function.castfunc.ItemCharTypecast;
 import io.mycat.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import io.mycat.plan.common.item.function.castfunc.ItemNCharTypecast;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncDiv;
+import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncIntDiv;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMinus;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMod;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMul;
@@ -205,6 +206,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			break;
 		case Divide:
 			item = new ItemFuncDiv(itemLeft, itemRight);
+			break;
+		case DIV:
+			item = new ItemFuncIntDiv(itemLeft, itemRight);
 			break;
 		case Mod:
 		case Modulus:
@@ -450,10 +454,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		boolean isDistinct = option == null ? false : true;
 		switch(funcName){
 		case "MAX":
-			item = new ItemSumMax(args,isDistinct, false, null);
+			item = new ItemSumMax(args, false, null);
 			break;
 		case "MIN":
-			item = new ItemSumMin(args,isDistinct, false, null);
+			item = new ItemSumMin(args, false, null);
 			break;
 		case "SUM":
 			item = new ItemSumSum(args,isDistinct, false, null);

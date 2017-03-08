@@ -485,6 +485,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		case "COUNT":
 			item = new ItemSumCount(args,isDistinct, false, null);
 			break;
+		case "STDDEV":
+			item =  new ItemSumStd(args, 0, false, null);
 		}
     }
 	@Override

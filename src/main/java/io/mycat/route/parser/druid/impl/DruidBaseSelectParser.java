@@ -2,8 +2,10 @@ package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +32,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -46,6 +49,16 @@ import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
 
 public class DruidBaseSelectParser extends DefaultDruidParser {
+	private static HashSet<String> aggregateSet = new HashSet<String>(16, 1);
+	static {
+		//https://dev.mysql.com/doc/refman/5.7/en/group-by-functions.html
+		//SQLAggregateExpr
+		aggregateSet.addAll(Arrays.asList(MySqlExprParser.AGGREGATE_FUNCTIONS));
+		//SQLMethodInvokeExpr but is Aggregate (GROUP BY) Functions
+		aggregateSet.addAll(Arrays.asList("BIT_AND", "BIT_OR", "BIT_XOR", "STD", "STDDEV_POP", "STDDEV_SAMP",
+				"VARIANCE", "VAR_POP", "VAR_SAMP"));
+	}
+
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
@@ -69,21 +82,37 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		boolean isNeedChangeSql = false;
 		for (int i = 0; i < selectList.size(); i++) {
 			SQLSelectItem item = selectList.get(i);
-			if (item.getExpr() instanceof SQLAggregateExpr||item.getExpr() instanceof SQLMethodInvokeExpr) {
+			SQLExpr itemExpr = item.getExpr();
+			if (itemExpr instanceof SQLAggregateExpr) {
+				/*TODO:MAX,MIN; SUM,COUNT without distinct no need to optimize
+				 * SUM(distinct ),COUNT(distinct),AVG,STDDEV,GROUP_CONCAT
+				*/
 				rrs.setNeedOptimizer(true);
 				return false;
+			} else if (itemExpr instanceof SQLMethodInvokeExpr) {
+				String MethodName = ((SQLMethodInvokeExpr)itemExpr).getMethodName().toUpperCase();
+				if (aggregateSet.contains(MethodName)){
+					rrs.setNeedOptimizer(true);
+					return false;
+				}else{
+					addToAliaColumn(aliaColumns, item);
+				}
 			} else {
-				if (!(item.getExpr() instanceof SQLAllColumnExpr)) {
-					String alia = item.getAlias();
-					String field = getFieldName(item);
-					if (alia == null) {
-						alia = field;
-					}
-					aliaColumns.put(field, alia);
+				if (!(itemExpr instanceof SQLAllColumnExpr)) {
+					addToAliaColumn(aliaColumns, item);
 				}
 			}
 		}
 		return isNeedChangeSql;
+	}
+
+	private void addToAliaColumn(Map<String, String> aliaColumns, SQLSelectItem item) {
+		String alia = item.getAlias();
+		String field = getFieldName(item);
+		if (alia == null) {
+			alia = field;
+		}
+		aliaColumns.put(field, alia);
 	}
 	@Deprecated
 	private boolean parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, List<SQLSelectItem> selectList,

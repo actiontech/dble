@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -16,7 +17,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.MycatServer;
@@ -180,7 +180,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
 			boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);
 			if (isNeedAddLimit) {
-				Limit limit = new Limit();
+				SQLLimit limit = new SQLLimit();
 				limit.setRowCount(new SQLIntegerExpr(limitSize));
 				mysqlSelectQuery.setLimit(limit);
 				rrs.setLimitSize(limitSize);
@@ -188,7 +188,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitSize);
 
 			}
-			Limit limit = mysqlSelectQuery.getLimit();
+			SQLLimit limit = mysqlSelectQuery.getLimit();
 			if (limit != null && !isNeedAddLimit) {
 				SQLIntegerExpr offset = (SQLIntegerExpr) limit.getOffset();
 				SQLIntegerExpr count = (SQLIntegerExpr) limit.getRowCount();
@@ -202,7 +202,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 
 				if (isNeedChangeLimit(rrs)) {
-					Limit changedLimit = new Limit();
+					SQLLimit changedLimit = new SQLLimit();
 					changedLimit.setRowCount(new SQLIntegerExpr(limitStart + limitSize));
 
 					if (offset != null) {

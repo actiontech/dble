@@ -135,8 +135,15 @@ public class Testparser {
 //		strCreateIndex = "CREATE UNIQUE INDEX part_of_name ON customer (name(10));";
 //		obj.test(strCreateIndex);
 		
-		String selectSQl = "select udf(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),STD(char_columns.ID),STDDEV_SAMP(char_columns.ID), VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID),sum(id),avg(id),MIN(distinct char_columns.ID),MAX(distinct char_columns.ID),COUNT(char_columns.ID) from char_columns where id =1  and name = 'x';";
-//		obj.test(selectSQl);
+		String selectSQl = "select avg(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),"
+				+ "COUNT(char_columns.ID),MAX(distinct char_columns.ID),MIN(distinct char_columns.ID),"
+				+ "STD(char_columns.ID),STDDEV(char_columns.ID),STDDEV_POP(char_columns.ID),STDDEV_SAMP(char_columns.ID), "
+				+ "sum(id),VAR_POP(char_columns.ID),VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID)"
+				+ " from char_columns where id =1  and name = 'x';";
+		obj.test(selectSQl);
+		selectSQl = "SELECT student_name, GROUP_CONCAT(test_score) "
+				+ "FROM student GROUP BY student_name;";
+		obj.test(selectSQl);
 //		selectSQl = "select @@tx_read_only;";
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT ABS(-1);";
@@ -149,14 +156,14 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select CAST(expr AS datetime(6) ), CAST(expr AS date ), CAST(expr AS time(6) ) from char_columns where id =1  and name = 'x';";
 //		TODO:NOT SUPPORTED
-		selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
+//		selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
 //		selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED INT ),CAST(expr AS unSIGNED INT )  from char_columns where id =1  and name = 'x';";
 //		obj.test(selectSQl);
 //		selectSQl = "select CONVERT(expr ,  char(2))   from char_columns where id =1  and name = 'x';";
 //		obj.test(selectSQl);
 //	    selectSQl = "SELECT CASE 1 WHEN 1 THEN 'one'  WHEN 2 THEN 'two' ELSE 'more' END, CASE WHEN 1>0 THEN 'true' ELSE 'false' END;";
 //		obj.test(selectSQl);
-//		selectSQl = "SELECT - (2), 3/5;";
+//		selectSQl = "SELECT 3 DIV 5, - (2), 3/5;";
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT ~5 , SELECT 29 & 15;";
 //		obj.test(selectSQl);
@@ -186,8 +193,8 @@ public class Testparser {
 //		
 //		selectSQl = "SELECT TIMESTAMPADD(WEEK,1,'2003-01-02'), TIMESTAMPDIFF(MONTH,'2003-02-01','2003-05-01'),DATE_ADD(OrderDate,INTERVAL 2 DAY) AS OrderPayDate,ADDDATE('2008-01-02', INTERVAL 31 DAY),ADDDATE('2008-01-02', 31),EXTRACT(YEAR FROM '2009-07-02') FROM Orders;";
 //		obj.test(selectSQl);
-		selectSQl = "SELECT * FROM Orders as t;";
-		obj.test(selectSQl);
+//		selectSQl = "SELECT * FROM Orders as t;";
+//		obj.test(selectSQl);
 //		selectSQl = "select 1,null,'x','xxx';";
 //		obj.test(selectSQl);
 	}
@@ -314,8 +321,8 @@ public class Testparser {
 			if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 				MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock)sqlSelectQuery;
 				SQLExprTableSource fromSource = (SQLExprTableSource) selectQueryBlock.getFrom();
-				fromSource.setExpr(new SQLIdentifierExpr("`table`"));
-				System.out.println(stament.toString());
+//				fromSource.setExpr(new SQLIdentifierExpr("`table`"));
+//				System.out.println(stament.toString());
 //				System.out.println(sql + ": selectQueryBlock.getFrom() :"+selectQueryBlock.getFrom().getClass().toString() + "\n");
 				for(SQLSelectItem item :selectQueryBlock.getSelectList()){
 					if(item.getExpr()!=null){

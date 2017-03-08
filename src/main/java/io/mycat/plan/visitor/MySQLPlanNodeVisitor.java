@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -23,7 +24,6 @@ import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionOperator;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.config.ErrorCode;
@@ -77,7 +77,7 @@ public class MySQLPlanNodeVisitor {
 		mtvright.visit(right);
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
-		Limit limit = sqlSelectQuery.getLimit();
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		MergeNode mergeNode = new MergeNode();
 		if (sqlSelectQuery.getOperator() != SQLUnionOperator.UNION) {
 			mergeNode.setUnion(true);
@@ -128,7 +128,7 @@ public class MySQLPlanNodeVisitor {
 			handleGroupBy(groupBy);
 		}
 
-		Limit limit = sqlSelectQuery.getLimit();
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		if (limit != null) {
 			handleLimit(limit);
 		}
@@ -310,7 +310,7 @@ public class MySQLPlanNodeVisitor {
 
 	}
 
-	private void handleLimit(Limit limit) {
+	private void handleLimit(SQLLimit limit) {
 		long from = 0;
 		SQLExpr offest = limit.getOffset();
 		if (offest != null) {

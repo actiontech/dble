@@ -49,6 +49,7 @@ import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -67,7 +68,6 @@ import io.mycat.net.mysql.RequestFilePacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.DruidShardingParseInfo;
-import io.mycat.route.parser.druid.MycatStatementParser;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
@@ -166,7 +166,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         this.sql = sql;
 
 
-        SQLStatementParser parser = new MycatStatementParser(sql);
+        SQLStatementParser parser = new MySqlStatementParser(sql);
         statement = (MySqlLoadDataInFileStatement) parser.parseStatement();
         fileName = parseFileName(sql);
 
@@ -197,7 +197,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
                 for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++)
                 {
-                    String column = StringUtil.removeBackquote(columns.get(i).toString());
+                    String column = StringUtil.removeBackQuote(columns.get(i).toString());
                     if (pColumn.equalsIgnoreCase(column))
                     {
                         partitionColumnIndex = i;
@@ -805,17 +805,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         return isStartLoadData;
     }
 
-    private String getPartitionColumn() {
-        		String pColumn;
-        		if (tableConfig.isSecondLevel()
-                				&& tableConfig.getParentTC().getPartitionColumn()
-                				.equals(tableConfig.getParentKey())) {
-            			pColumn = tableConfig.getJoinKey();
-            		}else {
-            			pColumn = tableConfig.getPartitionColumn();
-            		}
-        		return pColumn;
-        	}
+	private String getPartitionColumn() {
+		String pColumn;
+		if (tableConfig.getDirectRouteTC() != null) {
+			pColumn = tableConfig.getJoinKey();
+		} else {
+			pColumn = tableConfig.getPartitionColumn();
+		}
+		return pColumn;
+	}
 
     /**
      * 删除目录及其所有子目录和文件

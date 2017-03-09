@@ -6,6 +6,7 @@ import java.util.List;
 import io.mycat.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import io.mycat.backend.mysql.nio.handler.query.DMLResponseHandler;
 import io.mycat.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
+import io.mycat.config.model.SchemaConfig;
 import io.mycat.plan.node.NoNameNode;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
@@ -37,7 +38,9 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
 		vistor.visit();
 		this.canPushDown = true;
 		String sql = vistor.getSql().toString();
-		RouteResultsetNode[] rrss = getTableSources(sql.toString());
+		String schema = session.getSource().getSchema();
+		SchemaConfig schemacfg = mycatConfig.getSchemas().get(schema);
+		RouteResultsetNode[] rrss = getTableSources(schemacfg.getAllDataNodes(),sql);
 		hBuilder.checkRRSS(rrss);
 		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit(),
 				session, null);

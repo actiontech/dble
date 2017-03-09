@@ -85,12 +85,11 @@ public class SchemaConfig {
 	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {
-
 		if (tables == null || tables.isEmpty()) {
 			return;
 		}
 		for (TableConfig tc : tables.values()) {
-			if (tc.isChildTable()) {
+			if (tc.getParentTC() != null) {
 				TableConfig rootTc = tc.getRootParent();
 				String joinRel1 = tc.getName() + '.' + tc.getJoinKey() + '='
 						+ tc.getParentTC().getName() + '.' + tc.getParentKey();

@@ -60,7 +60,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			}
 			if (sqlName != null) {
 				String simpleName = sqlName.getSimpleName();
-				simpleName = StringUtil.removeBackquote(simpleName);
+				simpleName = StringUtil.removeBackQuote(simpleName);
 				if (tableElement instanceof SQLColumnDefinition && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equalsIgnoreCase(simpleName)) {
 					((SQLCreateTableStatement) statement).getTableElementList().remove(tableElement);
 					break;

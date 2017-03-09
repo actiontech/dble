@@ -95,22 +95,17 @@ public final class ServerParseSelect {
 	 * @return
 	 */
 	private static int sessionVarCheck(String stmt, int offset) {
-        String s = stmt.substring(offset).toLowerCase();
-        if (s.startsWith("session.auto_increment_increment")) {
-            if(s.contains("@@"))
-            {
-             return    SELECT_VAR_ALL;
-            }
+		String s = stmt.substring(offset).toLowerCase();
+		if (s.startsWith("session.auto_increment_increment")) {
+			if (s.contains("@@")) {
+				return SELECT_VAR_ALL;
+			}
 			return SESSION_INCREMENT;
-		} else if (s
-				.startsWith("session.tx_isolation")) {
+		} else if (s.startsWith("session.tx_isolation")) {
 			return SESSION_ISOLATION;
-		}
-		else if (s
-				.startsWith("session.tx_read_only")) {
+		} else if (s.startsWith("session.tx_read_only")) {
 			return SESSION_TX_READ_ONLY;
-		}
-		else {
+		} else {
 			return OTHER;
 		}
 	}

@@ -68,20 +68,13 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     private final MyCatMemory myCatMemory;
     private final MemoryManager memoryManager;
     private final MycatPropertyConf conf;
-    /**
-     * Limit N，M
-     */
-    private final  int limitStart;
-    private final  int limitSize;
-
+    
 
     public DataNodeMergeManager(MultiNodeQueryHandler handler, RouteResultset rrs) {
         super(handler,rrs);
         this.myCatMemory = MycatServer.getInstance().getMyCatMemory();
         this.memoryManager = myCatMemory.getResultMergeMemoryManager();
         this.conf = myCatMemory.getConf();
-        this.limitStart = rrs.getLimitStart();
-        this.limitSize = rrs.getLimitSize();
     }
 
 
@@ -99,20 +92,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
       
         DataNodeMemoryManager dataNodeMemoryManager = null;
-        UnsafeExternalRowSorter sorter = null;
 
-        int[] groupColumnIndexs = null;
         this.fieldCount = fieldCount;
-
-        if (rrs.getGroupByCols() != null) {
-            groupColumnIndexs = toColumnIndex(rrs.getGroupByCols(), columToIndx);
-            if (LOGGER.isDebugEnabled()) {
-                for (int i = 0; i <rrs.getGroupByCols().length ; i++) {
-                    LOGGER.debug("groupColumnIndexs:" + rrs.getGroupByCols()[i]);
-                }
-            }
-        }
-
 
         if (rrs.getHavingCols() != null) {
             ColMeta colMeta = columToIndx.get(rrs.getHavingCols().getLeft()
@@ -180,7 +161,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             orderCols = new OrderCol[orders.size()];
             int i = 0;
             for (Map.Entry<String, Integer> entry : orders.entrySet()) {
-                String key = StringUtil.removeBackquote(entry.getKey()
+                String key = StringUtil.removeBackQuote(entry.getKey()
                         .toUpperCase());
                 ColMeta colMeta = columToIndx.get(key);
                 if (colMeta == null) {
@@ -311,7 +292,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     private UnsafeRow unsafeRow = null;
     private BufferHolder bufferHolder = null;
     private UnsafeRowWriter unsafeRowWriter = null;
-    private  int Index = 0;
 
     @Override
     public void run() {

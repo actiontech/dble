@@ -49,17 +49,17 @@ public class ItemFuncTrim extends ItemStrFunc {
 	public final String funcName() {
 		switch (mTrimMode) {
 		case DEFAULT:
-			return "trim";
+			return "TRIM";
 		case BOTH:
-			return "trim";
+			return "TRIM";
 		case LEADING:
-			return "ltrim";
+			return "LTRIM";
 		case TRAILING:
-			return "rtrim";
+			return "RTRIM";
 		case LTRIM:
-			return "ltrim";
+			return "LTRIM";
 		case RTRIM:
-			return "rtrim";
+			return "RTRIM";
 		}
 		return null;
 	}

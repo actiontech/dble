@@ -51,12 +51,12 @@ public class SchemaUtil
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-			schemaInfo.schema = StringUtil.removeBackquote(propertyExpr.getOwner().toString());
-			schemaInfo.table = StringUtil.removeBackquote(propertyExpr.getName());
+			schemaInfo.schema = StringUtil.removeBackQuote(propertyExpr.getOwner().toString());
+			schemaInfo.table = StringUtil.removeBackQuote(propertyExpr.getName());
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
 			schemaInfo.schema = schema;
-			schemaInfo.table = StringUtil.removeBackquote(identifierExpr.getName());
+			schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
 		}
 		if (schemaInfo.schema == null) {
 			return null;

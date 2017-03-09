@@ -37,7 +37,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
 
 	@Override
 	public final String funcName() {
-		return "date_add";
+		return "DATE_ADD";
 	}
 
 	@Override

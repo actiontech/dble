@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -16,7 +17,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.MycatServer;
@@ -68,14 +68,14 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
-				if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
+				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
 					MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
 	
-				if (SchemaUtil.MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-						&& SchemaUtil.TABLE_PROC.equalsIgnoreCase(schemaInfo.table)) {
+				if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
+						&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 					// 兼容MySQLWorkbench
 					MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
@@ -85,8 +85,8 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				// `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
 				// `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
 				// GROUP BY STATE ORDER BY SEQ
-				if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-						&& SchemaUtil.TABLE_PROFILING.equalsIgnoreCase(schemaInfo.table)
+				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
+						&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
 						&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
 					InformationSchemaProfiling.response(rrs.getSession().getSource());
 					rrs.setFinishedExecute(true);
@@ -144,7 +144,6 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		} else {
 			rrs.setSqlStatement(stmt);
 			rrs.setNeedOptimizer(true);
-			rrs.setFinishedRoute(true);
 			return schema;
 		}
 	}
@@ -181,7 +180,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
 			boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);
 			if (isNeedAddLimit) {
-				Limit limit = new Limit();
+				SQLLimit limit = new SQLLimit();
 				limit.setRowCount(new SQLIntegerExpr(limitSize));
 				mysqlSelectQuery.setLimit(limit);
 				rrs.setLimitSize(limitSize);
@@ -189,7 +188,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitSize);
 
 			}
-			Limit limit = mysqlSelectQuery.getLimit();
+			SQLLimit limit = mysqlSelectQuery.getLimit();
 			if (limit != null && !isNeedAddLimit) {
 				SQLIntegerExpr offset = (SQLIntegerExpr) limit.getOffset();
 				SQLIntegerExpr count = (SQLIntegerExpr) limit.getRowCount();
@@ -203,7 +202,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 
 				if (isNeedChangeLimit(rrs)) {
-					Limit changedLimit = new Limit();
+					SQLLimit changedLimit = new SQLLimit();
 					changedLimit.setRowCount(new SQLIntegerExpr(limitStart + limitSize));
 
 					if (offset != null) {

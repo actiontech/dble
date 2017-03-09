@@ -2,8 +2,10 @@ package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +32,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -46,6 +49,16 @@ import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
 
 public class DruidBaseSelectParser extends DefaultDruidParser {
+	private static HashSet<String> aggregateSet = new HashSet<String>(16, 1);
+	static {
+		//https://dev.mysql.com/doc/refman/5.7/en/group-by-functions.html
+		//SQLAggregateExpr
+		aggregateSet.addAll(Arrays.asList(MySqlExprParser.AGGREGATE_FUNCTIONS));
+		//SQLMethodInvokeExpr but is Aggregate (GROUP BY) Functions
+		aggregateSet.addAll(Arrays.asList("BIT_AND", "BIT_OR", "BIT_XOR", "STD", "STDDEV_POP", "STDDEV_SAMP",
+				"VARIANCE", "VAR_POP", "VAR_SAMP"));
+	}
+
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
@@ -55,7 +68,9 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
 			MySqlSelectQueryBlock mysqlSelectQuery) {
 		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery);
-
+		if(rrs.isNeedOptimizer()){
+			return;
+		}
 		// setOrderByCols
 		if (mysqlSelectQuery.getOrderBy() != null) {
 			List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
@@ -63,18 +78,47 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 	}
 
-	protected Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-			SQLSelectQueryBlock mysqlSelectQuery) {
-		Map<String, String> aliaColumns = new HashMap<String, String>();
-		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
-		// Added by winbill, 20160314, for having clause, Begin ==>
-		List<String> havingColsName = new ArrayList<String>();
-		// Added by winbill, 20160314, for having clause, End <==
-		List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
+	private boolean parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, List<SQLSelectItem> selectList, Map<String, String> aliaColumns) {
 		boolean isNeedChangeSql = false;
-		int size = selectList.size();
-		boolean isDistinct = mysqlSelectQuery.getDistionOption() == 2;
-		for (int i = 0; i < size; i++) {
+		for (int i = 0; i < selectList.size(); i++) {
+			SQLSelectItem item = selectList.get(i);
+			SQLExpr itemExpr = item.getExpr();
+			if (itemExpr instanceof SQLAggregateExpr) {
+				/*TODO:MAX,MIN; SUM,COUNT without distinct no need to optimize
+				 * SUM(distinct ),COUNT(distinct),AVG,STDDEV,GROUP_CONCAT
+				*/
+				rrs.setNeedOptimizer(true);
+				return false;
+			} else if (itemExpr instanceof SQLMethodInvokeExpr) {
+				String MethodName = ((SQLMethodInvokeExpr)itemExpr).getMethodName().toUpperCase();
+				if (aggregateSet.contains(MethodName)){
+					rrs.setNeedOptimizer(true);
+					return false;
+				}else{
+					addToAliaColumn(aliaColumns, item);
+				}
+			} else {
+				if (!(itemExpr instanceof SQLAllColumnExpr)) {
+					addToAliaColumn(aliaColumns, item);
+				}
+			}
+		}
+		return isNeedChangeSql;
+	}
+
+	private void addToAliaColumn(Map<String, String> aliaColumns, SQLSelectItem item) {
+		String alia = item.getAlias();
+		String field = getFieldName(item);
+		if (alia == null) {
+			alia = field;
+		}
+		aliaColumns.put(field, alia);
+	}
+	@Deprecated
+	private boolean parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, List<SQLSelectItem> selectList,
+			Map<String, String> aliaColumns, Map<String, Integer> aggrColumns, List<String> havingColsName) {
+		boolean isNeedChangeSql = false;
+		for (int i = 0; i < selectList.size(); i++) {
 			SQLSelectItem item = selectList.get(i);
 			if (item.getExpr() instanceof SQLAggregateExpr) {
 				SQLAggregateExpr expr = (SQLAggregateExpr) item.getExpr();
@@ -98,8 +142,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 					sum.setExpr(sumExp);
 					selectList.set(i, sum);
 					aggrColumns.put(sumColName, MergeCol.MERGE_SUM);
-					havingColsName.add(sumColName); 
-					havingColsName.add(item.getAlias() != null ? item.getAlias() : ""); 
+					havingColsName.add(sumColName);
+					havingColsName.add(item.getAlias() != null ? item.getAlias() : "");
 
 					SQLSelectItem count = new SQLSelectItem();
 					String countColName = colName + "COUNT";
@@ -124,8 +168,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 						isNeedChangeSql = true;
 					}
 					rrs.setHasAggrColumn(true);
-					havingColsName.add(item.getAlias()); 
-					havingColsName.add(""); 
+					havingColsName.add(item.getAlias());
+					havingColsName.add("");
 				}
 			} else {
 				if (!(item.getExpr() instanceof SQLAllColumnExpr)) {
@@ -139,11 +183,32 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 			}
 
 		}
+		return isNeedChangeSql;
+	}
+
+	protected Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
+			SQLSelectQueryBlock mysqlSelectQuery) {
+		Map<String, String> aliaColumns = new HashMap<String, String>();
+		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
+		List<String> havingColsName = new ArrayList<String>();
+		boolean isNeedChangeSql = false;
+		if (MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
+			isNeedChangeSql = parseAggExprCommon(schema, rrs, mysqlSelectQuery.getSelectList(), aliaColumns);
+			if(rrs.isNeedOptimizer()){
+				rrs.setSqlStatement(stmt);
+				return aliaColumns;
+			}
+		} else {
+			isNeedChangeSql = parseAggExprCommon(schema, rrs, mysqlSelectQuery.getSelectList(), aliaColumns,
+					aggrColumns, havingColsName);
+		}
+		
 		if (aggrColumns.size() > 0) {
 			rrs.setMergeCols(aggrColumns);
 		}
 
 		// 通过优化转换成group by来实现
+		boolean isDistinct = mysqlSelectQuery.getDistionOption() == 2;
 		if (isDistinct) {
 			mysqlSelectQuery.setDistionOption(0);
 			SQLSelectGroupByClause groupBy = new SQLSelectGroupByClause();
@@ -181,7 +246,6 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		SQLExpr right = expr.getRight();
 
 		String leftValue = null;
-		;
 		if (left instanceof SQLAggregateExpr) {
 			leftValue = ((SQLAggregateExpr) left).getMethodName() + "("
 					+ ((SQLAggregateExpr) left).getArguments().get(0) + ")";
@@ -193,7 +257,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		if (right instanceof SQLNumericLiteralExpr) {
 			rightValue = right.toString();
 		} else if (right instanceof SQLTextLiteralExpr) {
-			rightValue = StringUtil.removeBackquote(right.toString());
+			rightValue = StringUtil.removeApostrophe(right.toString());
 		}
 
 		return new HavingCols(leftValue, rightValue, operator.getName());
@@ -353,9 +417,9 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				SQLExpr expr = ((MySqlOrderingExpr) sqlExpr).getExpr();
 
 				if (expr instanceof SQLName) {
-					column = StringUtil.removeBackquote(((SQLName) expr).getSimpleName());
+					column = StringUtil.removeBackQuote(((SQLName) expr).getSimpleName());
 				} else {
-					column = StringUtil.removeBackquote(expr.toString());
+					column = StringUtil.removeBackQuote(expr.toString());
 				}
 			} else if (sqlExpr instanceof SQLPropertyExpr) {
 				/**

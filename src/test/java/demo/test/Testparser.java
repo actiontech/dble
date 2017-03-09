@@ -30,6 +30,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -52,6 +53,9 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 public class Testparser {
 	public static void main(String args[]) {
+		String str ="''";
+		str =str.substring(1, str.length() - 1);
+		
 		Testparser obj = new Testparser();
 //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -135,10 +139,17 @@ public class Testparser {
 //		strCreateIndex = "CREATE UNIQUE INDEX part_of_name ON customer (name(10));";
 //		obj.test(strCreateIndex);
 		
-//		String selectSQl = "select udf(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),STD(char_columns.ID),STDDEV_SAMP(char_columns.ID), VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID),sum(id),avg(id),MIN(distinct char_columns.ID),MAX(distinct char_columns.ID),COUNT(char_columns.ID) from char_columns where id =1  and name = 'x';";
+		String selectSQl = "select avg(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),"
+				+ "COUNT(char_columns.ID),MAX(distinct char_columns.ID),MIN(distinct char_columns.ID),"
+				+ "STD(char_columns.ID),STDDEV(char_columns.ID),STDDEV_POP(char_columns.ID),STDDEV_SAMP(char_columns.ID), "
+				+ "sum(id),VAR_POP(char_columns.ID),VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID)"
+				+ " from char_columns where id =1  and name = 'x';";
 //		obj.test(selectSQl);
-		String selectSQl = "select @@tx_read_only;";
-		obj.test(selectSQl);
+//		selectSQl = "SELECT student_name, GROUP_CONCAT(test_score) "
+//				+ "FROM student GROUP BY student_name;";
+//		obj.test(selectSQl);
+//		selectSQl = "select @@tx_read_only;";
+//		obj.test(selectSQl);
 //		selectSQl = "SELECT ABS(-1);";
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT NOT 10,1 AND 1,IF(1<2,'yes','no'),'Monty!' REGEXP '.*';";
@@ -149,14 +160,14 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select CAST(expr AS datetime(6) ), CAST(expr AS date ), CAST(expr AS time(6) ) from char_columns where id =1  and name = 'x';";
 //		TODO:NOT SUPPORTED
-		selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
+//		selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
 //		selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED INT ),CAST(expr AS unSIGNED INT )  from char_columns where id =1  and name = 'x';";
 //		obj.test(selectSQl);
 //		selectSQl = "select CONVERT(expr ,  char(2))   from char_columns where id =1  and name = 'x';";
 //		obj.test(selectSQl);
 //	    selectSQl = "SELECT CASE 1 WHEN 1 THEN 'one'  WHEN 2 THEN 'two' ELSE 'more' END, CASE WHEN 1>0 THEN 'true' ELSE 'false' END;";
 //		obj.test(selectSQl);
-//		selectSQl = "SELECT - (2), 3/5;";
+//		selectSQl = "SELECT 3 DIV 5, - (2), 3/5;";
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT ~5 , SELECT 29 & 15;";
 //		obj.test(selectSQl);
@@ -190,6 +201,18 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select 1,null,'x','xxx';";
 //		obj.test(selectSQl);
+		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
+				+ "inner join table3 c on b.id =c.id;";
+		obj.test(selectSQl);
+		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
+				+ "inner join table3 c on a.id =c.id;";
+		obj.test(selectSQl);
+		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
+				+ "left join table3 c on a.id =c.id;";
+		obj.test(selectSQl);
+		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
+				+ "inner join table3 c on a.id =c.id;";
+		obj.test(selectSQl);
 	}
 	public void test(String sql){
 		SQLStatementParser parser = new MySqlStatementParser(sql);
@@ -313,7 +336,15 @@ public class Testparser {
 			SQLSelectQuery sqlSelectQuery  = stament.getSelect().getQuery();
 			if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 				MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock)sqlSelectQuery;
-//				System.out.println(sql + ": selectQueryBlock.getFrom() :"+selectQueryBlock.getFrom().getClass().toString() + "\n");
+				SQLTableSource fromSource = selectQueryBlock.getFrom();
+				if(fromSource instanceof SQLJoinTableSource){
+					SQLJoinTableSource fromJoinSource = (SQLJoinTableSource)fromSource;
+					System.out.println("SQLJoinTableSource:");
+					System.out.println("all:" + fromJoinSource.toString());
+					System.out.println("left:" + fromJoinSource.getLeft().toString() + ",class" + fromJoinSource.getLeft().getClass());
+					System.out.println("right:" + fromJoinSource.getRight().toString() + ",class" + fromJoinSource.getRight().getClass());
+					System.out.println(   "---------------------------" );
+				}
 				for(SQLSelectItem item :selectQueryBlock.getSelectList()){
 					if(item.getExpr()!=null){
 						SQLExpr func = item.getExpr();

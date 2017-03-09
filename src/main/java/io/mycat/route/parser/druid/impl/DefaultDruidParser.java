@@ -94,8 +94,12 @@ public class DefaultDruidParser implements DruidParser {
 			String key = entry.getKey();
 			String value = entry.getValue();
 			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-				key = key.toLowerCase();
-				value = value.toLowerCase();
+				if (key != null){
+					key = key.toLowerCase();
+				}
+				if (value != null){
+					value = value.toLowerCase();
+				}
 			}
 			if (key != null && key.indexOf("`") >= 0) {
 				key = key.replaceAll("`", "");
@@ -133,8 +137,8 @@ public class DefaultDruidParser implements DruidParser {
 					break;
 				}
 				if(checkConditionValues(values)) {
-					String columnName = StringUtil.removeBackquote(condition.getColumn().getName().toUpperCase());
-					String tableName = StringUtil.removeBackquote(condition.getColumn().getTable());
+					String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+					String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
 					if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
 						tableName = tableName.toLowerCase();
 					}

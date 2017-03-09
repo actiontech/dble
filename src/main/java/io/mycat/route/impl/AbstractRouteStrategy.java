@@ -12,9 +12,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteStrategy;
-import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
-import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
@@ -52,8 +50,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
 		if (schema == null) {
 			rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, cachePool);
-		} else if (schema.isNoSharding() && ServerParse.SHOW != sqlType) {
-			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 		} else {
 			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, rrs);
 			if (returnedSet == null) {

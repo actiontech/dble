@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -22,7 +24,6 @@ import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionOperator;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock.Limit;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.config.ErrorCode;
@@ -38,6 +39,7 @@ import io.mycat.plan.node.NoNameNode;
 import io.mycat.plan.node.QueryNode;
 import io.mycat.plan.node.TableNode;
 import io.mycat.plan.util.FilterUtils;
+import io.mycat.util.StringUtil;
 
 public class MySQLPlanNodeVisitor {
 	private PlanNode tableNode;
@@ -75,7 +77,7 @@ public class MySQLPlanNodeVisitor {
 		mtvright.visit(right);
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
-		Limit limit = sqlSelectQuery.getLimit();
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		MergeNode mergeNode = new MergeNode();
 		if (sqlSelectQuery.getOperator() != SQLUnionOperator.UNION) {
 			mergeNode.setUnion(true);
@@ -126,23 +128,22 @@ public class MySQLPlanNodeVisitor {
 			handleGroupBy(groupBy);
 		}
 
-		Limit limit = sqlSelectQuery.getLimit();
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		if (limit != null) {
 			handleLimit(limit);
 		}
 		return true;
 	}
 
-	
 	public boolean visit(SQLExprTableSource tableSource) {
 		TableNode table = null;
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-			table = new TableNode(propertyExpr.getOwner().toString(), propertyExpr.getName());
+			table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
-			table = new TableNode(this.currentDb, identifierExpr.getName());
+			table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
 		}
 		if (tableSource.getAlias() != null) {
 			table.setSubAlias(tableSource.getAlias());
@@ -309,9 +310,17 @@ public class MySQLPlanNodeVisitor {
 
 	}
 
-	private void handleLimit(Limit limit) {
-		tableNode.setLimitFrom(((Number) limit.getOffset()).longValue());
-		tableNode.setLimitTo(((Number) limit.getRowCount()).longValue());
+	private void handleLimit(SQLLimit limit) {
+		long from = 0;
+		SQLExpr offest = limit.getOffset();
+		if (offest != null) {
+			SQLIntegerExpr offsetExpr = (SQLIntegerExpr) offest;
+			from = offsetExpr.getNumber().longValue();
+		}
+		SQLExpr rowCount = limit.getRowCount();
+		long to = ((SQLIntegerExpr) rowCount).getNumber().longValue();
+		tableNode.setLimitFrom(from);
+		tableNode.setLimitTo(to);
 	}
 
 	private void addJoinOnColumns(Item ifilter, JoinNode joinNode) {

@@ -289,7 +289,10 @@ public class ItemField extends ItemIdent {
 	@Override
 	public SQLExpr toExpression() {
 		SQLIdentifierExpr parent = tableName == null ? null : new SQLIdentifierExpr(tableName);
-		return new SQLPropertyExpr(parent, itemName);
+		if(parent !=null){
+			return new SQLPropertyExpr(parent, itemName);
+		}
+		else return new SQLIdentifierExpr(itemName);
 	}
 
 	@Override

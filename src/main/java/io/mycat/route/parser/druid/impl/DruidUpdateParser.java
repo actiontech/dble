@@ -120,7 +120,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			SQLUpdateSetItem item = items.get(i);
 			String col = item.getColumn().toString();
 
-			if (StringUtil.removeBackquote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+			if (StringUtil.removeBackQuote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
 				flag = true;
 				SQLUpdateSetItem newItem = new SQLUpdateSetItem();
 				newItem.setColumn(item.getColumn());
@@ -146,9 +146,9 @@ public class DruidUpdateParser extends DefaultDruidParser {
     private static boolean columnInExpr(SQLExpr sqlExpr, String colName) throws SQLNonTransientException {
         String column;
         if (sqlExpr instanceof SQLIdentifierExpr) {
-            column = StringUtil.removeBackquote(((SQLIdentifierExpr) sqlExpr).getName()).toUpperCase();
+            column = StringUtil.removeBackQuote(((SQLIdentifierExpr) sqlExpr).getName()).toUpperCase();
         } else if (sqlExpr instanceof SQLPropertyExpr) {
-            column = StringUtil.removeBackquote(((SQLPropertyExpr) sqlExpr).getName()).toUpperCase();
+            column = StringUtil.removeBackQuote(((SQLPropertyExpr) sqlExpr).getName()).toUpperCase();
         } else {
             throw new SQLNonTransientException("Unhandled SQL AST node type encountered: " + sqlExpr.getClass());
         }
@@ -255,7 +255,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         if (updateSetItem != null && updateSetItem.size() > 0) {
             boolean hasParent = (schema.getTables().get(tableName).getParentTC() != null);
             for (SQLUpdateSetItem item : updateSetItem) {
-                String column = StringUtil.removeBackquote(item.getColumn().toString().toUpperCase());
+                String column = StringUtil.removeBackQuote(item.getColumn().toString().toUpperCase());
                 //考虑别名，前面已经限制了update分片表的个数只能有一个，所以这里别名只能是分片表的
                 if (column.contains(StringUtil.TABLE_COLUMN_SEPARATOR)) {
                     column = column.substring(column.indexOf(".") + 1).trim().toUpperCase();

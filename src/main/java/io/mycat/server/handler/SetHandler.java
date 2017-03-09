@@ -162,9 +162,12 @@ public final class SetHandler {
 			 boolean ignore = SetIgnoreUtil.isIgnoreStmt(stmt);
              if ( !ignore ) {        	 
      			StringBuilder s = new StringBuilder();
-    			logger.warn(s.append(c).append(stmt).append(" is not recoginized and ignored").toString());
-             }
-			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+     			String warn = stmt+ " is not recoginized and ignored";
+    			logger.warn(s.append(c).append(warn).toString());
+    			c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, warn);
+			} else {
+				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+			}
 		}
 	}
 }

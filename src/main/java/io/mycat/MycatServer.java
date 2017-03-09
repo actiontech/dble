@@ -374,7 +374,7 @@ public class MycatServer {
 				LOGGER.error("Error",e);
 			}
 		}
-		businessExecutor = ExecutorUtil.createCached("BusinessExecutor",
+		businessExecutor = ExecutorUtil.createFixed("BusinessExecutor",
 				threadPoolSize);
 		timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);

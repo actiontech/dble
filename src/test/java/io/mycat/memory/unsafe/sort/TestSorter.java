@@ -1,4 +1,4 @@
-package io.mycat.memory.unsafe.utils.sort;
+package io.mycat.memory.unsafe.sort;
 
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
@@ -8,6 +8,11 @@ import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.memory.unsafe.row.UnsafeRowWriter;
 import io.mycat.memory.unsafe.utils.MycatPropertyConf;
+import io.mycat.memory.unsafe.utils.sort.PrefixComparator;
+import io.mycat.memory.unsafe.utils.sort.PrefixComparators;
+import io.mycat.memory.unsafe.utils.sort.RowPrefixComputer;
+import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter;
+import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter.PrefixComputer;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
 import org.slf4j.Logger;

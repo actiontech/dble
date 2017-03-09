@@ -583,9 +583,8 @@ public class RouterUtil {
 	public static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, TableConfig tc,
 			Set<ColumnRoutePair> colRoutePairSet) throws SQLNonTransientException {
 		Set<String> retNodeSet = new LinkedHashSet<String>();
-		// using parent rule to find datanode
-		if (tc.isSecondLevel() && tc.getParentTC().getPartitionColumn().equals(tc.getParentKey())) {
-			Set<String> nodeSet = ruleCalculate(tc.getParentTC(), colRoutePairSet);
+		if (tc.getDirectRouteTC() != null) {
+			Set<String> nodeSet = ruleCalculate(tc.getDirectRouteTC(), colRoutePairSet);
 			if (nodeSet.isEmpty()) {
 				throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + nodeSet.size());
 			}
@@ -769,8 +768,9 @@ public class RouterUtil {
 						+ tc.getName() + " is required: " + rrs.getStatement());
 
 			}
-			if(tc.getPartitionColumn() == null && !tc.isSecondLevel()) {
-				//单表且不是childTable in fact,only one datanode
+			if ((tc.getPartitionColumn() == null && tc.getParentTC() == null)
+					|| (tc.getParentTC() != null && tc.getDirectRouteTC() == null)) {
+				// 单表路由  或者 复杂ER表中的某个子表
 				return routeToMultiNode(rrs.isCacheAble(), rrs, tc.getDataNodes());
 			} else {
 				//每个表对应的路由映射

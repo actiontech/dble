@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.log4j.Logger;
@@ -153,11 +154,13 @@ public abstract class PlanNode {
 	 * MergeNode: always false; QueryNode: true <-->subchild is true JoinNode:
 	 * 当且仅当所有子节点最多只有一个非globaltable
 	 */
-	protected boolean isGlobaled = false;
+	protected Set<String> noshardNode = null;
+
 	// 这个node涉及到的unglobal的表的个数
 	protected int unGlobalTableCount = 0;
 
 	protected List<Item> nestLoopFilters = null;
+	
 
 	public abstract String getPureName();
 
@@ -198,6 +201,9 @@ public abstract class PlanNode {
 	}
 
 	public PlanNode orderBy(Item c, SQLOrderingSpecification sortOrder) {
+		if (sortOrder == null) {
+			sortOrder = SQLOrderingSpecification.ASC;
+		}
 		Order order = new Order(c, sortOrder);
 		if (!this.orderBys.contains(order)) {
 			this.orderBys.add(order);
@@ -562,13 +568,6 @@ public abstract class PlanNode {
 		this.whereFilter = whereFilter;
 	}
 
-	public boolean isGlobaled() {
-		return isGlobaled;
-	}
-
-	public void setGlobaled(boolean isGlobaled) {
-		this.isGlobaled = isGlobaled;
-	}
 
 	public int getUnGlobalTableCount() {
 		return unGlobalTableCount;
@@ -576,6 +575,14 @@ public abstract class PlanNode {
 
 	public void setUnGlobalTableCount(int unGlobalTableCount) {
 		this.unGlobalTableCount = unGlobalTableCount;
+	}
+	
+	public Set<String> getNoshardNode() {
+		return noshardNode;
+	}
+
+	public void setNoshardNode(Set<String> noshardNode) {
+		this.noshardNode = noshardNode;
 	}
 
 	/* 获取改节点下的tablenode集合 */

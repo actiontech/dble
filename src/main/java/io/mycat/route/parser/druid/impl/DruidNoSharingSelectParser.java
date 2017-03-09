@@ -57,14 +57,14 @@ public class DruidNoSharingSelectParser extends DruidBaseSelectParser {
 				throw new SQLNonTransientException(msg);
 			}
 			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-			if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
+			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
 				MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
 				rrs.setFinishedExecute(true);
 				return schema;
 			}
 
-			if (SchemaUtil.MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROC.equalsIgnoreCase(schemaInfo.table)) {
+			if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
+					&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 				// 兼容MySQLWorkbench
 				MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
 				rrs.setFinishedExecute(true);
@@ -74,8 +74,8 @@ public class DruidNoSharingSelectParser extends DruidBaseSelectParser {
 			// `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
 			// `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
 			// GROUP BY STATE ORDER BY SEQ
-			if (SchemaUtil.INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROFILING.equalsIgnoreCase(schemaInfo.table)
+			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
+					&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
 					&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
 				InformationSchemaProfiling.response(rrs.getSession().getSource());
 				rrs.setFinishedExecute(true);
@@ -90,10 +90,8 @@ public class DruidNoSharingSelectParser extends DruidBaseSelectParser {
 				throw new SQLNonTransientException(msg);
 			}
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-			//TODO: remove from schema stmt?
 			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor);
-			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);
 			// 更改canRunInReadDB属性
 			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
 					&& rrs.isAutocommit() == false) {

@@ -89,7 +89,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return schema;
 		}
 		// childTable的insert直接在解析过程中完成路由
-		if (tc.isChildTable()) {
+		if (tc.getParentTC()!= null) {
 			parserChildTable(schemaInfo, rrs, insert);
 			return schema;
 		}
@@ -293,11 +293,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 		String joinKey = tc.getJoinKey();
 		int joinKeyIndex = getJoinKeyIndex(schemaInfo, insertStmt, joinKey);
 		String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
-		String realVal = joinKeyVal;
-		if (joinKeyVal.startsWith("'") && joinKeyVal.endsWith("'") && joinKeyVal.length() > 2) {
-			realVal = joinKeyVal.substring(1, joinKeyVal.length() - 1);
-		}
+		String realVal = StringUtil.removeApostrophe(joinKeyVal);
 		String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
+
 		rrs.setStatement(sql);
 		// try to route by ER parent partion key
 		RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -306,7 +304,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return theRrs;
 		}
 		// route by sql query root parent's datanode
-		String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + realVal;
+		String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("find root parent's node sql " + findRootTBSql);
 		}
@@ -323,12 +321,11 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 	private RouteResultset routeByERParentKey( RouteResultset rrs, TableConfig tc, String joinKeyVal)
 			throws SQLNonTransientException {
-		// only has one parent level and ER parent key is parent table's partition key
-		if (tc.isSecondLevel() && tc.getParentTC().getPartitionColumn().equals(tc.getParentKey())) {
+		if (tc.getDirectRouteTC() != null) {
 			Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(1);
 			ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
 			parentColVal.add(pair);
-			Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getParentTC(), parentColVal);
+			Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
 			if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
 				throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + dataNodeSet.size());
 			}
@@ -381,7 +378,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			List<SQLExpr> updateList = insertStmt.getDuplicateKeyUpdate();
 			for(SQLExpr expr : updateList) {
 				SQLBinaryOpExpr opExpr = (SQLBinaryOpExpr)expr;
-				String column = StringUtil.removeBackquote(opExpr.getLeft().toString().toUpperCase());
+				String column = StringUtil.removeBackQuote(opExpr.getLeft().toString().toUpperCase());
 				if(column.equals(partitionColumn)) {
 					String msg = "Sharding column can't be updated: " + schemaInfo.table + " -> " + partitionColumn;
 					LOGGER.warn(msg);
@@ -488,7 +485,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return shardingColIndex;
 		}
 		for (int i = 0; i < insertStmt.getColumns().size(); i++) {
-			if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackquote(insertStmt.getColumns().get(i).toString()))) {
+			if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackQuote(insertStmt.getColumns().get(i).toString()))) {
 				return i;
 			}
 		}
@@ -571,7 +568,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					sb.append(columns.get(i).toString()).append(",");
 				else
 					sb.append(columns.get(i).toString());
-				String column = StringUtil.removeBackquote(insert.getColumns().get(i).toString());
+				String column = StringUtil.removeBackQuote(insert.getColumns().get(i).toString());
 				if (column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN))
 					idx = i;
 			}

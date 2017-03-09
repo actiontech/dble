@@ -40,8 +40,9 @@ public abstract class Field {
 			int decimals, long flags) {
 		String charset = CharsetUtil.getJavaCharset(charsetIndex);
 		try {
-			return getFieldItem(new String(name, charset), table==null?null:new String(table, charset), type, charsetIndex, field_length,
-					decimals, flags);
+			return getFieldItem(new String(name, charset),
+					(table == null || table.length == 0) ? null : new String(table, charset), type, charsetIndex,
+					field_length, decimals, flags);
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException("parser error ,charset :" + charset.toString() );
 		}

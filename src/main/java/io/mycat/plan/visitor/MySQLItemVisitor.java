@@ -65,6 +65,7 @@ import io.mycat.plan.common.item.function.castfunc.ItemCharTypecast;
 import io.mycat.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import io.mycat.plan.common.item.function.castfunc.ItemNCharTypecast;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncDiv;
+import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncIntDiv;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMinus;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMod;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncMul;
@@ -100,6 +101,7 @@ import io.mycat.plan.common.item.function.sumfunc.ItemSumAvg;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumCount;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumMax;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumMin;
+import io.mycat.plan.common.item.function.sumfunc.ItemSumStd;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumSum;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumVariance;
 import io.mycat.plan.common.item.function.timefunc.ItemDateAddInterval;
@@ -204,6 +206,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			break;
 		case Divide:
 			item = new ItemFuncDiv(itemLeft, itemRight);
+			break;
+		case DIV:
+			item = new ItemFuncIntDiv(itemLeft, itemRight);
 			break;
 		case Mod:
 		case Modulus:
@@ -446,13 +451,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		List<Item> args = visitExprList(x.getArguments());
 		String funcName = x.getMethodName().toUpperCase();
 		SQLAggregateOption option = x.getOption();
-		boolean isDistinct = option==null?false:true;
+		boolean isDistinct = option == null ? false : true;
 		switch(funcName){
 		case "MAX":
-			item = new ItemSumMax(args,isDistinct, false, null);
+			item = new ItemSumMax(args, false, null);
 			break;
 		case "MIN":
-			item = new ItemSumMin(args,isDistinct, false, null);
+			item = new ItemSumMin(args, false, null);
 			break;
 		case "SUM":
 			item = new ItemSumSum(args,isDistinct, false, null);
@@ -480,9 +485,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		case "COUNT":
 			item = new ItemSumCount(args,isDistinct, false, null);
 			break;
+		case "STDDEV":
+			item =  new ItemSumStd(args, 0, false, null);
 		}
-		
-		initName(x);
     }
 	@Override
 	public void endVisit(SQLMethodInvokeExpr x) {
@@ -555,15 +560,23 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		case "VARIANCE":
 			item = new ItemSumVariance(args, 0, false, null);
 			break;
+		case "STD":
+		case "STDDEV":
+		case "STDDEV_POP":
+			item =  new ItemSumStd(args, 0, false, null);
+			break;
+		case "STDDEV_SAMP":
+			item =  new ItemSumStd(args, 1, false, null);
+			break;
 		default:
 			if (ItemCreate.getInstance().isNativeFunc(funcName)) {
 				item = ItemCreate.getInstance().createNativeFunc(funcName, args);
 			} else {
 				// unKnownFunction
-				item = new ItemFuncUnknown(funcName, args);
+				item = new ItemFuncUnknown(funcName, args); 
 			}
+			initName(x);
 		}
-		initName(x);
 	}
 	@Override
 	public void endVisit(SQLExistsExpr x) {

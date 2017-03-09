@@ -272,9 +272,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 	
 
 	private Map<String, TableConfig> loadTables(Element node, boolean lowerCaseNames) {
-		
-		// Map<String, TableConfig> tables = new HashMap<String, TableConfig>();
-		
 		// 支持表名中包含引号[`] BEN GONG
 		Map<String, TableConfig> tables = new TableConfigMap();
 		NodeList nodeList = node.getElementsByTagName("table");
@@ -313,7 +310,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			//记录type，是否为global
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement.getAttribute("type") : null;
-			TableTypeEnum tableType = TableTypeEnum.TYPE_DEFAULT;
+			TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
 			if ("global".equalsIgnoreCase(tableTypeStr)) {
 				tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
 			}
@@ -327,13 +324,11 @@ public class XMLSchemaLoader implements SchemaLoader {
 					throw new ConfigException("rule " + ruleName + " is not found!");
 				}
 			}
-			
 			boolean ruleRequired = false;
 			//记录是否绑定有分片规则
 			if (tableElement.hasAttribute("ruleRequired")) {
 				ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
 			}
-
 			if (tableNames == null) {
 				throw new ConfigException("table name is not found!");
 			}
@@ -345,21 +340,14 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			
 			for (int j = 0; j < tableNames.length; j++) {
-
 				String tableName = tableNames[j]; 
-				  
-
-				TableConfig table = new TableConfig(tableName, primaryKey,
-						autoIncrement, needAddLimit, tableType, dataNode,
-						(tableRule != null) ? tableRule.getRule() : null,
-						ruleRequired, null, false, null, null);
-				
+				TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
+						dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
 				checkDataNodeExists(table.getDataNodes());
 				// 检查分片表分片规则配置是否合法
 				if(table.getRule() != null) {
 					checkRuleSuitTable(table);
 				}
-				
 				if (distTableDns) {
 					distributeDataNodes(table.getDataNodes());
 				}
@@ -443,10 +431,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 			//子表join键，和对应的parent的键，父子表通过这个关联
 			String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
 			String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
-			TableConfig table = new TableConfig(cdTbName, primaryKey,
-					autoIncrement, needAddLimit,
-					TableTypeEnum.TYPE_DEFAULT, dataNodes, null, false, parentTable, true,
-					joinKey, parentKey);
+			TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
+					TableTypeEnum.TYPE_SHARDING_TABLE, dataNodes, null, false, parentTable, joinKey, parentKey);
 			
 			if (tables.containsKey(table.getName())) {
 				throw new ConfigException("table " + table.getName() + " duplicated!");

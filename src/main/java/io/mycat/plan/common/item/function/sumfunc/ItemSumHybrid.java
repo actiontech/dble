@@ -20,13 +20,12 @@ public abstract class ItemSumHybrid extends ItemSum {
 	protected boolean was_values;// Set if we have found at least one row (for
 									// max/min only)
 
-	public ItemSumHybrid(List<Item> args, boolean distinct,  int sign, boolean isPushDown, List<Field> fields) {
+	public ItemSumHybrid(List<Item> args, int sign, boolean isPushDown, List<Field> fields) {
 		super(args, isPushDown, fields);
 		hybrid_field_type = FieldTypes.MYSQL_TYPE_LONGLONG;
 		hybrid_type = ItemResult.INT_RESULT;
 		cmp_sign = sign;
 		was_values = true;
-		setDistinct(distinct);
 	}
 
 	@Override

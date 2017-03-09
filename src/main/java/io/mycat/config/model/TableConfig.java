@@ -39,7 +39,7 @@ import io.mycat.util.SplitUtil;
  */
 public class TableConfig {
 	public enum TableTypeEnum{
-		TYPE_DEFAULT, TYPE_GLOBAL_TABLE
+		TYPE_SHARDING_TABLE, TYPE_GLOBAL_TABLE
 	}
 //	public static final int TYPE_GLOBAL_TABLE = 1;
 //	public static final int TYPE_GLOBAL_DEFAULT = 0;
@@ -53,7 +53,6 @@ public class TableConfig {
 	private final String partitionColumn;
 	private final boolean ruleRequired;
 	private final TableConfig parentTC;
-	private final boolean childTable;
 	private final String joinKey;
 	private final String parentKey;
 	private final String locateRTableKeySql;
@@ -67,11 +66,14 @@ public class TableConfig {
 	private volatile Map<String,List<String>> dataNodeTableStructureSQLMap;
 	private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
 
+	public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+			TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired) {
+		this(name, primaryKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null);
+	}
 
-	public TableConfig(String name, String primaryKey, boolean autoIncrement,boolean needAddLimit, TableTypeEnum tableType,
-			String dataNode, RuleConfig rule, boolean ruleRequired,
-			TableConfig parentTC, boolean isChildTable, String joinKey,
-			String parentKey) {
+	public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+			TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
+			String joinKey, String parentKey) {
 		if (name == null) {
 			throw new IllegalArgumentException("table name is null");
 		} else if (dataNode == null) {
@@ -84,9 +86,7 @@ public class TableConfig {
 		if (ruleRequired && rule == null) {
 			throw new IllegalArgumentException("ruleRequired but rule is null");
 		}
-
 		this.name = name;
-		
 		String theDataNodes[] = SplitUtil.split(dataNode, ',', '$', '-');
 		if (theDataNodes == null || theDataNodes.length <= 0) {
 			throw new IllegalArgumentException("invalid table dataNodes: " + dataNode);
@@ -95,19 +95,19 @@ public class TableConfig {
 		for (String dn : theDataNodes) {
 			dataNodes.add(dn);
 		}
-		
 		this.rule = rule;
 		this.partitionColumn = (rule == null) ? null : rule.getColumn();
 		partionKeyIsPrimaryKey=(partitionColumn==null)?primaryKey==null:partitionColumn.equals(primaryKey);
 		this.ruleRequired = ruleRequired;
-		this.childTable = isChildTable;
 		this.parentTC = parentTC;
-		this.joinKey = joinKey;
-		this.parentKey = parentKey;
 		if (parentTC != null) {
+			this.joinKey = joinKey;
+			this.parentKey = parentKey;
 			locateRTableKeySql = genLocateRootParentSQL();
 			secondLevel = (parentTC.parentTC == null);
 		} else {
+			this.joinKey = null;
+			this.parentKey = null;
 			locateRTableKeySql = null;
 			secondLevel = false;
 		}
@@ -201,10 +201,6 @@ public class TableConfig {
 
 	public TableConfig getParentTC() {
 		return parentTC;
-	}
-
-	public boolean isChildTable() {
-		return childTable;
 	}
 
 	public String getJoinKey() {

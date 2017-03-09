@@ -805,17 +805,16 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         return isStartLoadData;
     }
 
-    private String getPartitionColumn() {
-        		String pColumn;
-        		if (tableConfig.isSecondLevel()
-                				&& tableConfig.getParentTC().getPartitionColumn()
-                				.equals(tableConfig.getParentKey())) {
-            			pColumn = tableConfig.getJoinKey();
-            		}else {
-            			pColumn = tableConfig.getPartitionColumn();
-            		}
-        		return pColumn;
-        	}
+	private String getPartitionColumn() {
+		String pColumn;
+		if (tableConfig.isSecondLevel()
+				&& tableConfig.getParentTC().getPartitionColumn().equals(tableConfig.getParentKey())) {
+			pColumn = tableConfig.getJoinKey();
+		} else {
+			pColumn = tableConfig.getPartitionColumn();
+		}
+		return pColumn;
+	}
 
     /**
      * 删除目录及其所有子目录和文件

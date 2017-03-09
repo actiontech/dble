@@ -89,7 +89,7 @@ public class SchemaConfig {
 			return;
 		}
 		for (TableConfig tc : tables.values()) {
-			if (tc.isChildTable()) {
+			if (tc.getParentTC() != null) {
 				TableConfig rootTc = tc.getRootParent();
 				String joinRel1 = tc.getName() + '.' + tc.getJoinKey() + '='
 						+ tc.getParentTC().getName() + '.' + tc.getParentKey();

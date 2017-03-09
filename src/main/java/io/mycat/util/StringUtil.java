@@ -483,5 +483,20 @@ public class StringUtil {
 		}
 		return str;
 	}
-	
+	/**
+	 * 移除'value'包围的'符号
+	 * @param str
+	 * @return
+	 */
+	public static String removeApostrophe(String str){
+		if (str.length() > 1) {
+			char firstValue = str.charAt(0);
+			if ((firstValue == '\'') && (firstValue == str.charAt(str.length() - 1))) {
+				return str.substring(1, str.length() - 1);
+			} else {
+				return str;
+			}
+		}
+		return str;
+	}
 }

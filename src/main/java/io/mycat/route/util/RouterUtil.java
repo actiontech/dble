@@ -770,7 +770,7 @@ public class RouterUtil {
 
 			}
 			if(tc.getPartitionColumn() == null && !tc.isSecondLevel()) {
-				//单表且不是childTable in fact,only one datanode
+				//child table and parentkey != parent.PartitionColumn
 				return routeToMultiNode(rrs.isCacheAble(), rrs, tc.getDataNodes());
 			} else {
 				//每个表对应的路由映射

@@ -89,7 +89,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return schema;
 		}
 		// childTable的insert直接在解析过程中完成路由
-		if (tc.isChildTable()) {
+		if (tc.getParentTC()!= null) {
 			parserChildTable(schemaInfo, rrs, insert);
 			return schema;
 		}
@@ -293,10 +293,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		String joinKey = tc.getJoinKey();
 		int joinKeyIndex = getJoinKeyIndex(schemaInfo, insertStmt, joinKey);
 		String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
-		String realVal = joinKeyVal;
-		if (joinKeyVal.startsWith("'") && joinKeyVal.endsWith("'") && joinKeyVal.length() > 2) {
-			realVal = joinKeyVal.substring(1, joinKeyVal.length() - 1);
-		}
+		String realVal = StringUtil.removeApostrophe(joinKeyVal);
 		String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
 		rrs.setStatement(sql);
 		// try to route by ER parent partion key

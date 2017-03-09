@@ -807,8 +807,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
 	private String getPartitionColumn() {
 		String pColumn;
-		if (tableConfig.isSecondLevel()
-				&& tableConfig.getParentTC().getPartitionColumn().equals(tableConfig.getParentKey())) {
+		if (tableConfig.getDirectRouteTC() != null) {
 			pColumn = tableConfig.getJoinKey();
 		} else {
 			pColumn = tableConfig.getPartitionColumn();

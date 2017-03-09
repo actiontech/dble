@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.alibaba.druid.sql.ast.statement.SQLTableElement;
-
 import io.mycat.config.model.rule.RuleConfig;
 import io.mycat.util.SplitUtil;
 
@@ -41,8 +39,6 @@ public class TableConfig {
 	public enum TableTypeEnum{
 		TYPE_SHARDING_TABLE, TYPE_GLOBAL_TABLE
 	}
-//	public static final int TYPE_GLOBAL_TABLE = 1;
-//	public static final int TYPE_GLOBAL_DEFAULT = 0;
 	private final String name;
 	private final String primaryKey;
 	private final boolean autoIncrement;
@@ -52,17 +48,17 @@ public class TableConfig {
 	private final RuleConfig rule;
 	private final String partitionColumn;
 	private final boolean ruleRequired;
+	private final boolean partionKeyIsPrimaryKey;
+	private final Random rand = new Random();
+	/**
+	 * Child Table
+	 */
 	private final TableConfig parentTC;
 	private final String joinKey;
 	private final String parentKey;
 	private final String locateRTableKeySql;
-	// only has one level of parent
-	private final boolean secondLevel;
-	private final boolean partionKeyIsPrimaryKey;
-	private final Random rand = new Random();
+	private final TableConfig directRouteTC;
 
-	private volatile List<SQLTableElement> tableElementList;
-	private volatile String tableStructureSQL;
 	private volatile Map<String,List<String>> dataNodeTableStructureSQLMap;
 	private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
 
@@ -97,19 +93,44 @@ public class TableConfig {
 		}
 		this.rule = rule;
 		this.partitionColumn = (rule == null) ? null : rule.getColumn();
-		partionKeyIsPrimaryKey=(partitionColumn==null)?primaryKey==null:partitionColumn.equals(primaryKey);
+		partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
 		this.ruleRequired = ruleRequired;
 		this.parentTC = parentTC;
 		if (parentTC != null) {
 			this.joinKey = joinKey;
 			this.parentKey = parentKey;
-			locateRTableKeySql = genLocateRootParentSQL();
-			secondLevel = (parentTC.parentTC == null);
+			if (parentTC.getParentTC() == null) {
+				if (parentKey.equals(parentTC.partitionColumn)) {
+					// secondLevel ,parentKey==parent.partitionColumn
+					directRouteTC = parentTC;
+					locateRTableKeySql = null;
+				} else {
+					directRouteTC = null;
+					locateRTableKeySql = genLocateRootParentSQL();
+				}
+			} else if (parentTC.getDirectRouteTC() != null) {
+				/**
+				 * grandTable partitionColumn =col1
+				 * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
+				 * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
+				 */
+				if(parentKey.equals(parentTC.joinKey)){
+					directRouteTC = parentTC.getDirectRouteTC();
+					locateRTableKeySql = null;
+				}
+				else{
+					directRouteTC = null;
+					locateRTableKeySql = genLocateRootParentSQL();
+				}
+			} else {
+				directRouteTC = null;
+				locateRTableKeySql = genLocateRootParentSQL();
+			}
 		} else {
 			this.joinKey = null;
 			this.parentKey = null;
 			locateRTableKeySql = null;
-			secondLevel = false;
+			directRouteTC = this;
 		}
 	}
 
@@ -125,8 +146,8 @@ public class TableConfig {
 		return needAddLimit;
 	}
 
-	public boolean isSecondLevel() {
-		return secondLevel;
+	public TableConfig getDirectRouteTC() {
+		return directRouteTC;
 	}
 
 	public String getLocateRTableKeySql() {
@@ -235,13 +256,6 @@ public class TableConfig {
 		return partionKeyIsPrimaryKey;
 	}
 
-	public List<SQLTableElement> getTableElementList() {
-		return tableElementList;
-	}
-
-	public void setTableElementList(List<SQLTableElement> tableElementList) {
-		this.tableElementList = tableElementList;
-	}
 
 	public ReentrantReadWriteLock getReentrantReadWriteLock() {
 		return reentrantReadWriteLock;
@@ -250,15 +264,6 @@ public class TableConfig {
 	public void setReentrantReadWriteLock(ReentrantReadWriteLock reentrantReadWriteLock) {
 		this.reentrantReadWriteLock = reentrantReadWriteLock;
 	}
-
-	public String getTableStructureSQL() {
-		return tableStructureSQL;
-	}
-
-	public void setTableStructureSQL(String tableStructureSQL) {
-		this.tableStructureSQL = tableStructureSQL;
-	}
-
 
 	public Map<String, List<String>> getDataNodeTableStructureSQLMap() {
 		return dataNodeTableStructureSQLMap;

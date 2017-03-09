@@ -295,6 +295,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
 		String realVal = StringUtil.removeApostrophe(joinKeyVal);
 		String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
+
 		rrs.setStatement(sql);
 		// try to route by ER parent partion key
 		RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -320,12 +321,11 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 	private RouteResultset routeByERParentKey( RouteResultset rrs, TableConfig tc, String joinKeyVal)
 			throws SQLNonTransientException {
-		// only has one parent level and ER parent key is parent table's partition key
-		if (tc.isSecondLevel() && tc.getParentTC().getPartitionColumn().equals(tc.getParentKey())) {
+		if (tc.getDirectRouteTC() != null) {
 			Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(1);
 			ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
 			parentColVal.add(pair);
-			Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getParentTC(), parentColVal);
+			Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
 			if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
 				throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + dataNodeSet.size());
 			}

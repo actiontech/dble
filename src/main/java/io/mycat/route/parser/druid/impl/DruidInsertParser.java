@@ -304,7 +304,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			return theRrs;
 		}
 		// route by sql query root parent's datanode
-		String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + realVal;
+		String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("find root parent's node sql " + findRootTBSql);
 		}

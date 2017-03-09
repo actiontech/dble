@@ -23,6 +23,26 @@
  */
 package io.mycat.sqlengine.mpp;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.MycatServer;
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.KVIterator;
@@ -33,24 +53,10 @@ import io.mycat.memory.unsafe.row.BufferHolder;
 import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.memory.unsafe.row.UnsafeRowWriter;
-
 import io.mycat.memory.unsafe.utils.BytesTools;
 import io.mycat.memory.unsafe.utils.MycatPropertyConf;
 import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter;
 import io.mycat.util.ByteUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
-import java.text.NumberFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by zagnix on 2016/6/26.
@@ -643,42 +649,8 @@ public class UnsafeRowGrouper {
 				 byte[] right = null;
 				 int type = merg.colMeta.colType;
 				 int index = merg.colMeta.colIndex;
-				 switch(type){
-					 case ColMeta.COL_TYPE_INT:
-					 case ColMeta.COL_TYPE_LONG:
-					 case ColMeta.COL_TYPE_INT24:
-						 left = BytesTools.int2Bytes(toRow.getInt(index));
-						 right = BytesTools.int2Bytes(newRow.getInt(index));
-						 break;
-					 case ColMeta.COL_TYPE_SHORT:
-						 left = BytesTools.short2Bytes(toRow.getShort(index));
-						 right =BytesTools.short2Bytes(newRow.getShort(index));
-						 break;
-					 case ColMeta.COL_TYPE_LONGLONG:
-						 left = BytesTools.long2Bytes(toRow.getLong(index));
-						 right = BytesTools.long2Bytes(newRow.getLong(index));
-						 break;
-					 case ColMeta.COL_TYPE_FLOAT:
-						 left = BytesTools.float2Bytes(toRow.getFloat(index));
-						 right = BytesTools.float2Bytes(newRow.getFloat(index));
-						 break;
-					 case ColMeta.COL_TYPE_DOUBLE:
-						 left = BytesTools.double2Bytes(toRow.getDouble(index));
-						 right = BytesTools.double2Bytes(newRow.getDouble(index));
-						 break;
-					 case ColMeta.COL_TYPE_NEWDECIMAL:
-//						 left = BytesTools.double2Bytes(toRow.getDouble(index));
-//						 right = BytesTools.double2Bytes(newRow.getDouble(index));
-						 int scale = merg.colMeta.decimals;
-						 BigDecimal decimalLeft = toRow.getDecimal(index, scale);
-						 BigDecimal decimalRight = newRow.getDecimal(index, scale);
-						 left = decimalLeft == null ? null : decimalLeft.toString().getBytes();
-						 right = decimalRight == null ? null : decimalRight.toString().getBytes();
-						 break;
-					 default:
-						 break;
-				 }
-
+				 left = unsafeRow2Bytes(toRow,merg);
+				 right = unsafeRow2Bytes(newRow,merg);
                  result = mertFields(left,right,type,merg.mergeType);
 
 				 if (result != null) {
@@ -714,6 +686,41 @@ public class UnsafeRowGrouper {
 		}
     }
 
+	private byte[] unsafeRow2Bytes(UnsafeRow row, MergeCol merg) throws UnsupportedEncodingException {
+		int index = merg.colMeta.colIndex;
+		byte[] result = null;
+		if (row.isNullAt(index)) {
+			return null;
+		}
+		int type = merg.colMeta.colType;
+		switch (type) {
+		case ColMeta.COL_TYPE_INT:
+		case ColMeta.COL_TYPE_LONG:
+		case ColMeta.COL_TYPE_INT24:
+			result = BytesTools.int2Bytes(row.getInt(index));
+			break;
+		case ColMeta.COL_TYPE_SHORT:
+			result = BytesTools.short2Bytes(row.getShort(index));
+			break;
+		case ColMeta.COL_TYPE_LONGLONG:
+			result = BytesTools.long2Bytes(row.getLong(index));
+			break;
+		case ColMeta.COL_TYPE_FLOAT:
+			result = BytesTools.float2Bytes(row.getFloat(index));
+			break;
+		case ColMeta.COL_TYPE_DOUBLE:
+			result = BytesTools.double2Bytes(row.getDouble(index));
+			break;
+		case ColMeta.COL_TYPE_NEWDECIMAL:
+			int scale = merg.colMeta.decimals;
+			BigDecimal decimalLeft = row.getDecimal(index, scale);
+			result = decimalLeft == null ? null : decimalLeft.toString().getBytes();
+			break;
+		default:
+			break;
+		}
+		return result;
+	}
 	private void mergAvg(UnsafeRow toRow) throws UnsupportedEncodingException {
 
 		if (mergCols == null) {

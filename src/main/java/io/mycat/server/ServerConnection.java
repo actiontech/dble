@@ -124,7 +124,7 @@ public class ServerConnection extends FrontendConnection {
 	public void setTxInterrupt(String txInterrputMsg) {
 		if ((!autocommit||txstart) && !txInterrupted) {
 			txInterrupted = true;
-			this.txInterrputMsg = txInterrputMsg;
+			this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + txInterrputMsg+"]";
 		}
 	}
 
@@ -166,8 +166,7 @@ public class ServerConnection extends FrontendConnection {
 		}
 		// 事务状态检查
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback." + txInterrputMsg);
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 			return;
 		}
 
@@ -252,7 +251,7 @@ public class ServerConnection extends FrontendConnection {
 	 */
 	public void beginInTx(String stmt) {
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES, "Transaction error, need to rollback.");
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 		} else {
 			TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
 			getAndIncrementXid();
@@ -265,8 +264,7 @@ public class ServerConnection extends FrontendConnection {
 	 */
 	public void commit(String logReason) {
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback.");
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 		} else {
 			TxnLogHelper.putTxnLog(this, logReason);
 			session.commit();

@@ -143,7 +143,8 @@ public class PhysicalDBPool {
 		} finally {
 		    	adjustLock.readLock().unlock();
 		}
-		
+
+		// mgj: why not only isMyConnection??? fromslavdb is from readnode. switch change the read node???
 		for (PhysicalDatasource ds : all) {
 		    	if ((ds.isReadNode() == exitsCon.isFromSlaveDB()) && ds.isMyConnection(exitsCon)) {
 			    return ds;
@@ -288,7 +289,7 @@ public class PhysicalDBPool {
     	public boolean isSlave(PhysicalDatasource ds) {
 		int currentIndex = 0;
 		boolean islave = false;
-
+		// mgj: immediately get the active ds and compare is good???
 		for (int i = 0; i < getSources().length; i++) {
 		    	PhysicalDatasource writeHostDatasource = getSources()[i];
 			if (writeHostDatasource.getName().equals(ds.getName())) {

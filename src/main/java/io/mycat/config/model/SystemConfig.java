@@ -47,9 +47,6 @@ public final class SystemConfig {
 	 * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
 	 */
 	public static final String[] MySQLVersions = { "5.5", "5.6", "5.7" };
-	public static final int MUTINODELIMIT_PATCH_SIZE = 100;
-	public static final int MUTINODELIMIT_SMALL_DATA = 0;
-	public static final int MUTINODELIMIT_LAR_DATA = 1;
 
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
@@ -57,7 +54,6 @@ public final class SystemConfig {
 	private static final String DEFAULT_SQL_PARSER = "druidparser";// fdbparser, druidparser
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512*1024*4;
-	private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
 	private final  static String RESERVED_SYSTEM_MEMORY_BYTES = "384m";
 	private final static String MEMORY_PAGE_SIZE = "1m";
@@ -68,13 +64,8 @@ public final class SystemConfig {
 	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
-	private static final long DEFAULT_CLUSTER_HEARTBEAT_PERIOD = 5 * 1000L;
-	private static final long DEFAULT_CLUSTER_HEARTBEAT_TIMEOUT = 10 * 1000L;
-	private static final int DEFAULT_CLUSTER_HEARTBEAT_RETRY = 10;
-	private static final int DEFAULT_MAX_LIMIT = 100;
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
-	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
 	private static final boolean DEFAULT_LOWER_CASE = true;
@@ -92,7 +83,6 @@ public final class SystemConfig {
 	private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
 
 	private int processorBufferPoolType = 0;
-	private int processorBufferLocalPercent;
 	private int frontSocketSoRcvbuf = 1024 * 1024;
 	private int frontSocketSoSndbuf = 4 * 1024 * 1024;
 	// mysql 5.6 net_buffer_length defaut 4M
@@ -100,7 +90,6 @@ public final class SystemConfig {
 	private int backSocketSoSndbuf = 1024 * 1024;
 	private int frontSocketNoDelay = 1; // 0=false
 	private int backSocketNoDelay = 1; // 1=true
-	private int maxStringLiteralLength = 65535;
 	private int frontWriteQueueSize = 2048;
 	private String bindIp = "0.0.0.0";
 	private String fakeMySQLVersion = null;
@@ -121,11 +110,7 @@ public final class SystemConfig {
 	private long dataNodeHeartbeatPeriod;
 	private String clusterHeartbeatUser;
 	private String clusterHeartbeatPass;
-	private long clusterHeartbeatPeriod;
-	private long clusterHeartbeatTimeout;
-	private int clusterHeartbeatRetry;
 	private int txIsolation;
-	private int parserCommentVersion;
 	private int sqlRecordCount;
 	private int recordTxn = 0;
 	// a page size
@@ -136,24 +121,14 @@ public final class SystemConfig {
 	private short bufferPoolPageNumber;
 	//大结果集阈值，默认512kb
 	private int maxResultSet=512*1024;
-	//大结果集拒绝策略次数过滤限制,默认10次
-	private int bigResultSizeSqlCount=10;
 	//大结果集拒绝策咯，bufferpool使用率阈值(0-100)，默认80%
 	private int  bufferUsagePercent=80;
-	//大结果集保护策咯，0:不开启,1:级别1为在当前mucat bufferpool
-	//使用率大于bufferUsagePercent阈值时，拒绝超过defaultBigResultSizeSqlCount
-	//sql次数阈值并且符合超过大结果集阈值maxResultSet的所有sql
-	//默认值0
-	private int  flowControlRejectStrategy=0;
 	//清理大结果集记录周期
 	private long clearBigSqLResultSetMapMs=10*60*1000;
-	private int defaultMaxLimit = DEFAULT_MAX_LIMIT;
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
 	private String sqlInterceptor = "io.mycat.server.interceptor.impl.DefaultSqlInterceptor";
 	private String sqlInterceptorType = "select";
 	private String sqlInterceptorFile = System.getProperty("user.dir")+"/logs/sql.txt";
-	private int mutiNodeLimitType = MUTINODELIMIT_SMALL_DATA;
-	private int mutiNodePatchSize = MUTINODELIMIT_PATCH_SIZE;
 	private String defaultSqlParser = DEFAULT_SQL_PARSER;
 	private int usingAIO = 0;
 	private int packetHeaderSize = 4;
@@ -240,7 +215,6 @@ public final class SystemConfig {
 		this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
 		this.managerExecutor = 2;
 
-		this.processorBufferLocalPercent = 100;
 		this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
 		this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
 		this.xaSessionCheckPeriod  = DEFAULT_XA_SESSION_CHECK_PERIOD;
@@ -249,11 +223,7 @@ public final class SystemConfig {
 		this.dataNodeHeartbeatPeriod = DEFAULT_DATANODE_HEARTBEAT_PERIOD;
 		this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
 		this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
-		this.clusterHeartbeatPeriod = DEFAULT_CLUSTER_HEARTBEAT_PERIOD;
-		this.clusterHeartbeatTimeout = DEFAULT_CLUSTER_HEARTBEAT_TIMEOUT;
-		this.clusterHeartbeatRetry = DEFAULT_CLUSTER_HEARTBEAT_RETRY;
 		this.txIsolation = Isolations.REPEATED_READ;
-		this.parserCommentVersion = DEFAULT_PARSER_COMMENT_VERSION;
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
 		this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
 		this.useOffHeapForMerge = 1;
@@ -464,14 +434,6 @@ public final class SystemConfig {
 		this.bindIp = bindIp;
 	}
 
-	public int getDefaultMaxLimit() {
-		return defaultMaxLimit;
-	}
-
-	public void setDefaultMaxLimit(int defaultMaxLimit) {
-		this.defaultMaxLimit = defaultMaxLimit;
-	}
-
 	public static String getHomePath() {
 		String home = System.getProperty(SystemConfig.SYS_HOME);
 		if (home != null
@@ -654,22 +616,6 @@ public final class SystemConfig {
 		this.clusterHeartbeatPass = clusterHeartbeatPass;
 	}
 
-	public long getClusterHeartbeatPeriod() {
-		return clusterHeartbeatPeriod;
-	}
-
-	public void setClusterHeartbeatPeriod(long clusterHeartbeatPeriod) {
-		this.clusterHeartbeatPeriod = clusterHeartbeatPeriod;
-	}
-
-	public long getClusterHeartbeatTimeout() {
-		return clusterHeartbeatTimeout;
-	}
-
-	public void setClusterHeartbeatTimeout(long clusterHeartbeatTimeout) {
-		this.clusterHeartbeatTimeout = clusterHeartbeatTimeout;
-	}
-
 	public int getFrontsocketsorcvbuf() {
 		return frontSocketSoRcvbuf;
 	}
@@ -686,13 +632,6 @@ public final class SystemConfig {
 		return backSocketSoSndbuf;
 	}
 
-	public int getClusterHeartbeatRetry() {
-		return clusterHeartbeatRetry;
-	}
-
-	public void setClusterHeartbeatRetry(int clusterHeartbeatRetry) {
-		this.clusterHeartbeatRetry = clusterHeartbeatRetry;
-	}
 
 	public int getTxIsolation() {
 		return txIsolation;
@@ -700,14 +639,6 @@ public final class SystemConfig {
 
 	public void setTxIsolation(int txIsolation) {
 		this.txIsolation = txIsolation;
-	}
-
-	public int getParserCommentVersion() {
-		return parserCommentVersion;
-	}
-
-	public void setParserCommentVersion(int parserCommentVersion) {
-		this.parserCommentVersion = parserCommentVersion;
 	}
 
 	public int getSqlRecordCount() {
@@ -742,28 +673,12 @@ public final class SystemConfig {
 		this.maxResultSet = maxResultSet;
 	}
 
-	public int getBigResultSizeSqlCount() {
-		return bigResultSizeSqlCount;
-	}
-
-	public void setBigResultSizeSqlCount(int bigResultSizeSqlCount) {
-		this.bigResultSizeSqlCount = bigResultSizeSqlCount;
-	}
-
 	public int getBufferUsagePercent() {
 		return bufferUsagePercent;
 	}
 
 	public void setBufferUsagePercent(int bufferUsagePercent) {
 		this.bufferUsagePercent = bufferUsagePercent;
-	}
-
-	public int getFlowControlRejectStrategy() {
-		return flowControlRejectStrategy;
-	}
-
-	public void setFlowControlRejectStrategy(int flowControlRejectStrategy) {
-		this.flowControlRejectStrategy = flowControlRejectStrategy;
 	}
 
 	public long getClearBigSqLResultSetMapMs() {
@@ -838,38 +753,6 @@ public final class SystemConfig {
 		this.backSocketNoDelay = backSocketNoDelay;
 	}
 
-	public int getMaxStringLiteralLength() {
-		return maxStringLiteralLength;
-	}
-
-	public void setMaxStringLiteralLength(int maxStringLiteralLength) {
-		this.maxStringLiteralLength = maxStringLiteralLength;
-	}
-
-	public int getMutiNodeLimitType() {
-		return mutiNodeLimitType;
-	}
-
-	public void setMutiNodeLimitType(int mutiNodeLimitType) {
-		this.mutiNodeLimitType = mutiNodeLimitType;
-	}
-
-	public int getMutiNodePatchSize() {
-		return mutiNodePatchSize;
-	}
-
-	public void setMutiNodePatchSize(int mutiNodePatchSize) {
-		this.mutiNodePatchSize = mutiNodePatchSize;
-	}
-
-	public int getProcessorBufferLocalPercent() {
-		return processorBufferLocalPercent;
-	}
-
-	public void setProcessorBufferLocalPercent(int processorBufferLocalPercent) {
-		this.processorBufferLocalPercent = processorBufferLocalPercent;
-	}
-
 	public String getSqlInterceptorType() {
 		return sqlInterceptorType;
 	}
@@ -904,18 +787,19 @@ public final class SystemConfig {
 
 	@Override
 	public String toString() {
-		return "SystemConfig [processorBufferLocalPercent="
-				+ processorBufferLocalPercent + ", frontSocketSoRcvbuf="
-				+ frontSocketSoRcvbuf + ", frontSocketSoSndbuf="
-				+ frontSocketSoSndbuf + ", backSocketSoRcvbuf="
-				+ backSocketSoRcvbuf + ", backSocketSoSndbuf="
-				+ backSocketSoSndbuf + ", frontSocketNoDelay="
-				+ frontSocketNoDelay + ", backSocketNoDelay="
-				+ backSocketNoDelay + ", maxStringLiteralLength="
-				+ maxStringLiteralLength + ", frontWriteQueueSize="
-				+ frontWriteQueueSize + ", bindIp=" + bindIp + ", serverPort="
-				+ serverPort + ", managerPort=" + managerPort + ", charset="
-				+ charset + ", processors=" + processors
+		return "SystemConfig [frontSocketSoRcvbuf="
+				+ frontSocketSoRcvbuf
+				+ ", frontSocketSoSndbuf="+ frontSocketSoSndbuf
+				+ ", backSocketSoRcvbuf="+ backSocketSoRcvbuf
+				+ ", backSocketSoSndbuf="+ backSocketSoSndbuf
+				+ ", frontSocketNoDelay="+ frontSocketNoDelay
+				+ ", backSocketNoDelay="+ backSocketNoDelay
+				+ ",frontWriteQueueSize="+ frontWriteQueueSize
+				+ ", bindIp=" + bindIp
+				+ ", serverPort="+ serverPort
+				+ ", managerPort=" + managerPort
+				+ ", charset="+ charset
+				+ ", processors=" + processors
 				+ ", processorExecutor=" + processorExecutor
 				+ ", managerExecutor="
 				+ managerExecutor + ", idleTimeout=" + idleTimeout
@@ -930,31 +814,24 @@ public final class SystemConfig {
 				+ ", transactionLogBaseName=" + transactionLogBaseName
 				+ ", clusterHeartbeatUser=" + clusterHeartbeatUser
 				+ ", clusterHeartbeatPass=" + clusterHeartbeatPass
-				+ ", clusterHeartbeatPeriod=" + clusterHeartbeatPeriod
-				+ ", clusterHeartbeatTimeout=" + clusterHeartbeatTimeout
-				+ ", clusterHeartbeatRetry=" + clusterHeartbeatRetry
-				+ ", txIsolation=" + txIsolation + ", parserCommentVersion="
-				+ parserCommentVersion + ", sqlRecordCount=" + sqlRecordCount
+				+ ", txIsolation=" + txIsolation
+				+ ", sqlRecordCount=" + sqlRecordCount
 				+ ", bufferPoolPageSize=" + bufferPoolPageSize
 				+ ", bufferPoolChunkSize=" + bufferPoolChunkSize
 				+ ", bufferPoolPageNumber=" + bufferPoolPageNumber
 				+ ", maxResultSet=" +maxResultSet
-				+ ", bigResultSizeSqlCount="+bigResultSizeSqlCount
 				+ ", bufferUsagePercent="+bufferUsagePercent
-				+ ", flowControlRejectStrategy="+flowControlRejectStrategy
 				+ ", clearBigSqLResultSetMapMs="+clearBigSqLResultSetMapMs
-				+ ", defaultMaxLimit=" + defaultMaxLimit
 				+ ", sequnceHandlerType=" + sequnceHandlerType
 				+ ", sqlInterceptor=" + sqlInterceptor
 				+ ", sqlInterceptorType=" + sqlInterceptorType
 				+ ", sqlInterceptorFile=" + sqlInterceptorFile
-				+ ", mutiNodeLimitType=" + mutiNodeLimitType 
-				+ ", mutiNodePatchSize=" + mutiNodePatchSize 
 				+ ", defaultSqlParser=" + defaultSqlParser
 				+ ", usingAIO=" + usingAIO 
 				+ ", packetHeaderSize=" + packetHeaderSize 
 				+ ", maxPacketSize=" + maxPacketSize
-				+ ", mycatNodeId=" + mycatNodeId + "]";
+				+ ", mycatNodeId=" + mycatNodeId
+				+ "]";
 	}
 
 

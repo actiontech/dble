@@ -331,7 +331,6 @@ public class MycatServer {
 		//minimum allocation unit
 		short bufferPoolChunkSize = system.getBufferPoolChunkSize();
 		
-		int socketBufferLocalPercent = system.getProcessorBufferLocalPercent();
 		int bufferPoolType = system.getProcessorBufferPoolType();
 
 		switch (bufferPoolType){

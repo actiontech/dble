@@ -67,7 +67,6 @@ public class ShowSysParam {
         paramValues.add(sysConfig.getProcessors() + "");
         paramValues.add(sysConfig.getBufferPoolChunkSize() + "B");
         paramValues.add(sysConfig.getBufferPoolPageSize() + "B");
-        paramValues.add(sysConfig.getProcessorBufferLocalPercent() + "");
         paramValues.add(sysConfig.getProcessorExecutor() + "");
         paramValues.add(sysConfig.getSequnceHandlerType() == 1 ? "数据库方式" : "本地文件方式");
         paramValues.add(sysConfig.getPacketHeaderSize() + "B");
@@ -105,7 +104,6 @@ public class ShowSysParam {
 		"processors",
 		"processorBufferChunk",
 		"processorBufferPool",
-		"processorBufferLocalPercent",
 		"processorExecutor",
 		"sequnceHandlerType",
 		"Mysql_packetHeaderSize",

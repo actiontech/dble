@@ -66,7 +66,6 @@ public class SchemaConfig {
 		}
 		this.metaDataNodes = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();
-//		this.metaDataNodes = buildAllDataNodes();
 		if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
 			String[] dnArr = new String[this.allDataNodes.size()];
 			dnArr = this.allDataNodes.toArray(dnArr);

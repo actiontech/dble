@@ -29,9 +29,8 @@ public class MyOptimizer {
 
 				// 预处理filter，比如过滤永假式/永真式
 				node = FilterPreProcessor.optimize(node);
-				//TODO  疑似错误
-//				// // 将约束条件推向叶节点
-//				node = FilterJoinColumnPusher.optimize(node);
+				// 将约束条件推向叶节点
+				node = FilterJoinColumnPusher.optimize(node);
 
 				//TODO 
 //				node = JoinERProcessor.optimize(node);

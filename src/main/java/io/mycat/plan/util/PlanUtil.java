@@ -215,6 +215,9 @@ public class PlanUtil {
 	 * 将原本的Join的where条件中的a.id=b.id构建为join条件，并从where条件中移除
 	 */
 	public static void findJoinKeysAndRemoveIt(List<Item> DNFNode, JoinNode join) {
+		if (DNFNode.isEmpty()) {
+			return;
+		}
 		List<Item> joinFilters = new LinkedList<Item>();
 		for (Item subItem : DNFNode) { // 一定是简单条件
 			if (subItem.type().equals(ItemType.FUNC_ITEM) || subItem.type().equals(ItemType.COND_ITEM)) {

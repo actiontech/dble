@@ -32,7 +32,11 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     /**服务器版本**/
+<<<<<<< HEAD
     public static byte[] SERVER_VERSION = "5.6.29-mycat-0.2.3-DEV-20170120113424".getBytes();
+=======
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-0.2.5-DEV-20170305191829".getBytes();
+>>>>>>> 7dba2a3c27bacf9aac4863d9b0907c4a3b209eef
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

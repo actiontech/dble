@@ -45,8 +45,6 @@ public class SchemaConfig {
 	 * prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
-	private final boolean checkSQLSchema;
-	private final int lowerCase;
 
 	/**
 	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
@@ -56,14 +54,11 @@ public class SchemaConfig {
 	private final String[] allDataNodeStrArr;
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables, int defaultMaxLimit,
-			boolean checkSQLschema, int lowerCase) {
+			Map<String, TableConfig> tables, int defaultMaxLimit) {
 		this.name = name;
 		this.dataNode = dataNode;
-		this.checkSQLSchema = checkSQLschema;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
-		this.lowerCase = lowerCase;
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
@@ -81,24 +76,20 @@ public class SchemaConfig {
 		}
 	}
 
-	public boolean isCheckSQLSchema() {
-		return checkSQLSchema;
-	}
+//	public boolean isCheckSQLSchema() {
+//		return checkSQLSchema;
+//	}
 
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
 	}
-	public int getLowerCase() {
-		return lowerCase;
-	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {
-
 		if (tables == null || tables.isEmpty()) {
 			return;
 		}
 		for (TableConfig tc : tables.values()) {
-			if (tc.isChildTable()) {
+			if (tc.getParentTC() != null) {
 				TableConfig rootTc = tc.getRootParent();
 				String joinRel1 = tc.getName() + '.' + tc.getJoinKey() + '='
 						+ tc.getParentTC().getName() + '.' + tc.getParentKey();

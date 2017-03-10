@@ -1,6 +1,5 @@
 package io.mycat.backend;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
@@ -44,7 +43,7 @@ public interface BackendConnection extends ClosableConnection {
 
 
 	public void execute(RouteResultsetNode node, ServerConnection source,
-			boolean autocommit) throws IOException;
+			boolean autocommit);
 
 	public void recordSql(String host, String schema, String statement);
 

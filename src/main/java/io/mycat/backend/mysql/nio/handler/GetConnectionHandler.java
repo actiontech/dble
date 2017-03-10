@@ -27,9 +27,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 
 /**
  * wuzh
@@ -88,18 +91,18 @@ public class GetConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
-
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 
 	}
 
@@ -112,5 +115,11 @@ public class GetConnectionHandler implements ResponseHandler {
 	public void connectionClose(BackendConnection conn, String reason) {
 
 	}
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+	}
 
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+	}
 }

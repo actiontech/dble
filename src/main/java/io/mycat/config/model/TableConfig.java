@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.alibaba.druid.sql.ast.statement.SQLTableElement;
-
 import io.mycat.config.model.rule.RuleConfig;
 import io.mycat.util.SplitUtil;
 
@@ -38,38 +36,40 @@ import io.mycat.util.SplitUtil;
  * @author mycat
  */
 public class TableConfig {
-	public static final int TYPE_GLOBAL_TABLE = 1;
-	public static final int TYPE_GLOBAL_DEFAULT = 0;
+	public enum TableTypeEnum{
+		TYPE_SHARDING_TABLE, TYPE_GLOBAL_TABLE
+	}
 	private final String name;
 	private final String primaryKey;
 	private final boolean autoIncrement;
 	private final boolean needAddLimit;
-	private final int tableType;
+	private final TableTypeEnum tableType;
 	private final ArrayList<String> dataNodes;
-	private final ArrayList<String> distTables;
 	private final RuleConfig rule;
 	private final String partitionColumn;
 	private final boolean ruleRequired;
+	private final boolean partionKeyIsPrimaryKey;
+	private final Random rand = new Random();
+	/**
+	 * Child Table
+	 */
 	private final TableConfig parentTC;
-	private final boolean childTable;
 	private final String joinKey;
 	private final String parentKey;
 	private final String locateRTableKeySql;
-	// only has one level of parent
-	private final boolean secondLevel;
-	private final boolean partionKeyIsPrimaryKey;
-	private final Random rand = new Random();
+	private final TableConfig directRouteTC;
 
-	private volatile List<SQLTableElement> tableElementList;
-	private volatile String tableStructureSQL;
 	private volatile Map<String,List<String>> dataNodeTableStructureSQLMap;
 	private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
 
+	public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+			TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired) {
+		this(name, primaryKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null);
+	}
 
-	public TableConfig(String name, String primaryKey, boolean autoIncrement,boolean needAddLimit, int tableType,
-			String dataNode, RuleConfig rule, boolean ruleRequired,
-			TableConfig parentTC, boolean isChildTable, String joinKey,
-			String parentKey,String subTables) {
+	public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+			TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
+			String joinKey, String parentKey) {
 		if (name == null) {
 			throw new IllegalArgumentException("table name is null");
 		} else if (dataNode == null) {
@@ -82,9 +82,7 @@ public class TableConfig {
 		if (ruleRequired && rule == null) {
 			throw new IllegalArgumentException("ruleRequired but rule is null");
 		}
-
 		this.name = name;
-		
 		String theDataNodes[] = SplitUtil.split(dataNode, ',', '$', '-');
 		if (theDataNodes == null || theDataNodes.length <= 0) {
 			throw new IllegalArgumentException("invalid table dataNodes: " + dataNode);
@@ -93,34 +91,46 @@ public class TableConfig {
 		for (String dn : theDataNodes) {
 			dataNodes.add(dn);
 		}
-		
-		if(subTables!=null && !subTables.equals("")){
-			String sTables[] = SplitUtil.split(subTables, ',', '$', '-');
-			if (sTables == null || sTables.length <= 0) {
-				throw new IllegalArgumentException("invalid table subTables");
-			}
-			this.distTables = new ArrayList<String>(sTables.length);
-			for (String table : sTables) {
-				distTables.add(table);
-			}
-		}else{
-			this.distTables = new ArrayList<String>();
-		}	
-		
 		this.rule = rule;
 		this.partitionColumn = (rule == null) ? null : rule.getColumn();
-		partionKeyIsPrimaryKey=(partitionColumn==null)?primaryKey==null:partitionColumn.equals(primaryKey);
+		partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
 		this.ruleRequired = ruleRequired;
-		this.childTable = isChildTable;
 		this.parentTC = parentTC;
-		this.joinKey = joinKey;
-		this.parentKey = parentKey;
 		if (parentTC != null) {
-			locateRTableKeySql = genLocateRootParentSQL();
-			secondLevel = (parentTC.parentTC == null);
+			this.joinKey = joinKey;
+			this.parentKey = parentKey;
+			if (parentTC.getParentTC() == null) {
+				if (parentKey.equals(parentTC.partitionColumn)) {
+					// secondLevel ,parentKey==parent.partitionColumn
+					directRouteTC = parentTC;
+					locateRTableKeySql = null;
+				} else {
+					directRouteTC = null;
+					locateRTableKeySql = genLocateRootParentSQL();
+				}
+			} else if (parentTC.getDirectRouteTC() != null) {
+				/**
+				 * grandTable partitionColumn =col1
+				 * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
+				 * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
+				 */
+				if(parentKey.equals(parentTC.joinKey)){
+					directRouteTC = parentTC.getDirectRouteTC();
+					locateRTableKeySql = null;
+				}
+				else{
+					directRouteTC = null;
+					locateRTableKeySql = genLocateRootParentSQL();
+				}
+			} else {
+				directRouteTC = null;
+				locateRTableKeySql = genLocateRootParentSQL();
+			}
 		} else {
+			this.joinKey = null;
+			this.parentKey = null;
 			locateRTableKeySql = null;
-			secondLevel = false;
+			directRouteTC = this;
 		}
 	}
 
@@ -136,8 +146,8 @@ public class TableConfig {
 		return needAddLimit;
 	}
 
-	public boolean isSecondLevel() {
-		return secondLevel;
+	public TableConfig getDirectRouteTC() {
+		return directRouteTC;
 	}
 
 	public String getLocateRTableKeySql() {
@@ -145,7 +155,7 @@ public class TableConfig {
 	}
 
 	public boolean isGlobalTable() {
-		return this.tableType == TableConfig.TYPE_GLOBAL_TABLE;
+		return this.tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
 	}
 
 	public String genLocateRootParentSQL() {
@@ -187,7 +197,7 @@ public class TableConfig {
 		return partitionColumn;
 	}
 
-	public int getTableType() {
+	public TableTypeEnum getTableType() {
 		return tableType;
 	}
 
@@ -214,10 +224,6 @@ public class TableConfig {
 		return parentTC;
 	}
 
-	public boolean isChildTable() {
-		return childTable;
-	}
-
 	public String getJoinKey() {
 		return joinKey;
 	}
@@ -225,10 +231,6 @@ public class TableConfig {
 	public String getParentKey() {
 		return parentKey;
 	}
-
-	/**
-	 * @return if low_case=1 upper-case
-	 */
 	public String getName() {
 		return name;
 	}
@@ -254,24 +256,6 @@ public class TableConfig {
 		return partionKeyIsPrimaryKey;
 	}
 
-	public ArrayList<String> getDistTables() {
-		return this.distTables;
-	}
-
-	public boolean isDistTable(){
-		if(this.distTables!=null && !this.distTables.isEmpty() ){
-			return true;
-		}
-		return false;
-	}
-
-	public List<SQLTableElement> getTableElementList() {
-		return tableElementList;
-	}
-
-	public void setTableElementList(List<SQLTableElement> tableElementList) {
-		this.tableElementList = tableElementList;
-	}
 
 	public ReentrantReadWriteLock getReentrantReadWriteLock() {
 		return reentrantReadWriteLock;
@@ -280,15 +264,6 @@ public class TableConfig {
 	public void setReentrantReadWriteLock(ReentrantReadWriteLock reentrantReadWriteLock) {
 		this.reentrantReadWriteLock = reentrantReadWriteLock;
 	}
-
-	public String getTableStructureSQL() {
-		return tableStructureSQL;
-	}
-
-	public void setTableStructureSQL(String tableStructureSQL) {
-		this.tableStructureSQL = tableStructureSQL;
-	}
-
 
 	public Map<String, List<String>> getDataNodeTableStructureSQLMap() {
 		return dataNodeTableStructureSQLMap;

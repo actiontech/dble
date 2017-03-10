@@ -24,16 +24,20 @@
 package io.mycat.server;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
@@ -45,17 +49,23 @@ import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
+import io.mycat.backend.mysql.nio.handler.builder.HandlerBuilder;
+import io.mycat.backend.mysql.nio.handler.query.impl.OutputHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.CommitNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
+import io.mycat.backend.mysql.store.memalloc.MemSizeController;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.OkPacket;
+import io.mycat.plan.PlanNode;
+import io.mycat.plan.optimizer.MyOptimizer;
+import io.mycat.plan.visitor.MySQLPlanNodeVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.parser.ServerParse;
@@ -78,11 +88,31 @@ public class NonBlockingSession implements Session {
     private volatile TxState xaState;
 	private boolean prepared;
 
+	
+	private ResponseHandler responseHandler;
+	private OutputHandler outputHandler;
+	private volatile boolean terminated;
+	private volatile boolean inTransactionKilled;
+	
+	// 以链接为单位，对链接中使用的join，orderby以及其它内存使用进行控制
+	private MemSizeController joinBufferMC;
+	private MemSizeController orderBufferMC;
+	private MemSizeController otherBufferMC;
+		
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
-        this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 0.75f);
+        this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 1f);
+        this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
+		this.orderBufferMC = new MemSizeController(4 * 1024 * 1024);
+		this.otherBufferMC = new MemSizeController(4 * 1024 * 1024);
     }
+    public OutputHandler getOutputHandler() {
+		return outputHandler;
+	}
 
+	public void setOutputHandler(OutputHandler outputHandler) {
+		this.outputHandler = outputHandler;
+	}
     @Override
     public ServerConnection getSource() {
         return source;
@@ -125,9 +155,13 @@ public class NonBlockingSession implements Session {
         // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
-            source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                    "No dataNode found ,please check tables defined in schema:" + source.getSchema());
-            return;
+			if (rrs.isNeedOptimizer()) {
+				executeMultiSelect(rrs);
+			} else {
+				source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
+						"No dataNode found ,please check tables defined in schema:" + source.getSchema());
+			}
+			return;
         }
 		if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
 			this.xaState = TxState.TX_STARTED_STATE;
@@ -144,7 +178,10 @@ public class NonBlockingSession implements Session {
 				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
 				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 			}
-		} else {
+			if (this.isPrepared()) {
+				this.setPrepared(false);
+			}
+		} else { 
 			multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
 			if (this.isPrepared()) {
 				multiNodeHandler.setPrepared(true);
@@ -156,13 +193,78 @@ public class NonBlockingSession implements Session {
 				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
 				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 			}
-		}
-
-		if (this.isPrepared()) {
-			this.setPrepared(false);
+			if (this.isPrepared()) {
+				this.setPrepared(false);
+			}
 		}
     }
 
+    private void executeMultiSelect(RouteResultset rrs){
+//    	if (this.source.isTxInterrupted()) {
+//			sendErrorPacket(ErrorCode.ER_YES, "Transaction error, need to rollback.");
+//			return;
+//		}
+    	SQLSelectStatement ast = (SQLSelectStatement)rrs.getSqlStatement();
+		MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema());
+		visitor.visit(ast);
+		PlanNode node = visitor.getTableNode();
+		node.setSql(rrs.getStatement());
+		node.setUpFields();
+		node = MyOptimizer.optimize(this.getSource().getSchema(), node);
+//		if (LOGGER.isInfoEnabled()) {
+//			long currentTime = System.nanoTime();
+//			StringBuilder builder = new StringBuilder();
+//			builder.append(toString()).append("| sql optimize's elapsedTime is ")
+//					.append(currentTime - getExecutedNanos());
+//			logger.info(builder.toString());
+//			setExecutedNanos(currentTime);
+//		}
+		execute(node);
+    }
+    
+    public void execute(PlanNode node) {
+		init();
+		HandlerBuilder builder = new HandlerBuilder(node, this);
+		try {
+			builder.build(false);//no next
+		} catch (SQLSyntaxErrorException e) {
+			LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//			source.setCurrentSQL(null);
+			source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
+		} catch (NoSuchElementException e) {
+			LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//			source.setCurrentSQL(null);
+			this.terminate();
+			source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
+		} catch (Exception e) {
+			LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//			source.setCurrentSQL(null);
+			this.terminate();
+			source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
+		}
+	}
+    
+    private void init() {
+		this.outputHandler = null;
+		this.responseHandler = null;
+		this.terminated = false;
+		if (inTransactionKilled) {
+			//TODO:YHQ
+			// kill query is asynchronized, wait for last query is killed.
+//			for (BackendConnection conn : target.values()) {
+//				while (conn.isRunning()) {
+//					LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+//				}
+//			}
+			inTransactionKilled = false;
+		}
+	}
+    public void onQueryError(byte[] message) {
+//		source.unlockTable();
+//		source.getIsRunning().set(false);
+		if (outputHandler != null)
+			outputHandler.backendConnError(message);
+	}
     private CommitNodesHandler createCommitNodesHandler() {
 		if (commitHandler == null) {
 			if (this.getSessionXaID() == null) {
@@ -293,9 +395,6 @@ public class NonBlockingSession implements Session {
     public void releaseConnectionIfSafe(BackendConnection conn, boolean debug, boolean needRollBack) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
-            if (node.isDisctTable()) {
-                return;
-            }
             if ((this.source.isAutocommit() || conn.isFromSlaveDB())&&!this.source.isTxstart() && !this.source.isLocked()) {
                 releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollBack);
             }
@@ -531,7 +630,7 @@ public class NonBlockingSession implements Session {
 					if(!newConn.setResponseHandler(queryHandler)){
 						return errConn;
 					}
-					this.getTargetMap().put(node, newConn);
+					this.bindConnection(node, newConn);
 					return newConn;
 				} catch (Exception e) {
 					return errConn;
@@ -562,5 +661,16 @@ public class NonBlockingSession implements Session {
 			}
 			MycatServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess);
 		}
+	}
+	public MemSizeController getJoinBufferMC() {
+		return joinBufferMC;
+	}
+
+	public MemSizeController getOrderBufferMC() {
+		return orderBufferMC;
+	}
+
+	public MemSizeController getOtherBufferMC() {
+		return otherBufferMC;
 	}
 }

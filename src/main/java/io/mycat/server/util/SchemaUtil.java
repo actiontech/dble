@@ -12,14 +12,9 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
 
 /**
@@ -27,38 +22,19 @@ import io.mycat.util.StringUtil;
  */
 public class SchemaUtil
 {
-	public static SchemaInfo parseSchema(String sql) {
-		SQLStatementParser parser = new MySqlStatementParser(sql);
-		return parseTables(parser.parseStatement(), new MycatSchemaStatVisitor());
-	}
-    public static String detectDefaultDb(String sql, int type)
-    {
-		String db = null;
-		Map<String, SchemaConfig> schemaConfigMap = MycatServer.getInstance().getConfig().getSchemas();
-		if (ServerParse.SELECT == type) {
-			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
-			if ((schemaInfo == null || schemaInfo.table == null) && !schemaConfigMap.isEmpty()) {
-				db = schemaConfigMap.entrySet().iterator().next().getKey();
-			}
-			if (schemaInfo != null && schemaInfo.schema != null) {
-				if (schemaConfigMap.containsKey(schemaInfo.schema)) {
-					db = schemaInfo.schema;
-					/**
-					 * 对 MySQL 自带的元数据库 information_schema 进行返回
-					 */
-				} else if ("information_schema".equalsIgnoreCase(schemaInfo.schema)) {
-					db = "information_schema";
-				}
-			}
-		} else if ((ServerParse.SHOW == type || ServerParse.USE == type || ServerParse.EXPLAIN == type
-				|| ServerParse.SET == type || ServerParse.HELP == type || ServerParse.DESCRIBE == type)
-				&& !schemaConfigMap.isEmpty()) {
-			// 兼容mysql gui 不填默认database
-			db = schemaConfigMap.entrySet().iterator().next().getKey();
-		}
-		return db;
-    }
+	public static final String MYSQL_SCHEMA = "mysql";
+	public static final String INFORMATION_SCHEMA = "information_schema";
+	public static final String TABLE_PROC = "proc";
+	public static final String TABLE_PROFILING = "PROFILING";
 
+
+	public static String getRandomDb() {
+		Map<String, SchemaConfig> schemaConfigMap = MycatServer.getInstance().getConfig().getSchemas();
+		if (!schemaConfigMap.isEmpty()) {
+			return schemaConfigMap.entrySet().iterator().next().getKey();
+		}
+		return null;
+	}
 
     public static String parseShowTableSchema(String sql)
     {
@@ -70,51 +46,30 @@ public class SchemaUtil
         return null;
     }
 
-	private static SchemaInfo parseTables(SQLStatement stmt, SchemaStatVisitor schemaStatVisitor) {
-		stmt.accept(schemaStatVisitor);
-		String key = schemaStatVisitor.getCurrentTable();
-		if (key != null && key.contains("`")) {
-			key = key.replaceAll("`", "");
-		}
-
-		if (key != null) {
-			SchemaInfo schemaInfo = new SchemaInfo();
-			int pos = key.indexOf(".");
-			if (pos > 0) {
-				schemaInfo.schema = key.substring(0, pos);
-				schemaInfo.table = key.substring(pos + 1);
-			} else {
-				schemaInfo.table = key;
-			}
-			return schemaInfo;
-		}
-
-		return null;
-	}
-
 	public static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
 		SchemaInfo schemaInfo = new SchemaInfo();
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-			schemaInfo.schema = StringUtil.removeBackquote(propertyExpr.getOwner().toString());
-			schemaInfo.table = StringUtil.removeBackquote(propertyExpr.getName());
+			schemaInfo.schema = StringUtil.removeBackQuote(propertyExpr.getOwner().toString());
+			schemaInfo.table = StringUtil.removeBackQuote(propertyExpr.getName());
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
 			schemaInfo.schema = schema;
-			schemaInfo.table = StringUtil.removeBackquote(identifierExpr.getName());
+			schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
 		}
 		if (schemaInfo.schema == null) {
 			return null;
 		}
+		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			schemaInfo.table = schemaInfo.table.toLowerCase();
+			schemaInfo.schema = schemaInfo.schema.toLowerCase();
+		}
 		SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
-		if (schemaConfig == null) {
+		if (schemaConfig == null && !MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)&& !INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
 			return null;
 		}
 		schemaInfo.schemaConfig = schemaConfig;
-		if (schemaConfig.getLowerCase() == 1) {
-			schemaInfo.table = schemaInfo.table.toUpperCase();
-		}
 		return schemaInfo;
 	}
 

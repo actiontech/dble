@@ -83,12 +83,5 @@ public interface FrontendPrivileges {
      * @return
      */
     boolean checkFirewallSQLPolicy(String user, String sql);
-    
-    
-    /**
-     * 检查 SQL 语句的 DML 权限
-     * @return
-     */
-    boolean checkDmlPrivilege(String user, String schema, String sql);   
 
 }

@@ -12,9 +12,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteStrategy;
-import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
-import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
@@ -24,24 +22,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	@Override
 	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String origSQL,
 			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLNonTransientException {
-		//TODO:yhq, TMP ,WILL DELETE
-		boolean isNeedCheckDB = true;
-		if (ServerParse.INSERT == sqlType || ServerParse.UPDATE == sqlType || ServerParse.DELETE == sqlType || ServerParse.DDL == sqlType) {
-			isNeedCheckDB = false;
-		}
-		//对应schema标签checkSQLschema属性，把表示schema的字符去掉
-		if (isNeedCheckDB && schema.isCheckSQLSchema()) {
-			origSQL = RouterUtil.removeSchema(origSQL, schema.getName());
-		}
- 
-		//TODO:seq should managerd by mycat
-		if(isNeedCheckDB && RouterUtil.processWithMycatSeq(schema, sqlType, origSQL, sc)){
-			return null;
-		}
-		if (sqlType == ServerParse.INSERT && RouterUtil.processInsert(schema, sqlType, origSQL, sc)) {
-			return null;
-		}
-
 		/**
 		 * SQL 语句拦截
 		 */
@@ -68,11 +48,8 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 			rrs.setAutocommit(sc.isAutocommit());
 		}
 
-		/**
-		 * 检查是否有分片
-		 */
-		if (schema.isNoSharding() && ServerParse.SHOW != sqlType) {
-			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode(), stmt);
+		if (schema == null) {
+			rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, cachePool);
 		} else {
 			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, rrs);
 			if (returnedSet == null) {

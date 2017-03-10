@@ -13,6 +13,8 @@ import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.parser.ServerParse;
 
@@ -150,24 +152,24 @@ public class SQLJob implements ResponseHandler, Runnable {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		jobHandler.onHeader(dataNodeOrDatabase, header, fields);
 
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		boolean finsihed = jobHandler.onRowData(dataNodeOrDatabase, row);
 		if (finsihed) {
 			conn.release();
 			doFinished(false);
 		}
-
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		conn.release();
 		doFinished(false);
 	}
@@ -191,6 +193,14 @@ public class SQLJob implements ResponseHandler, Runnable {
 		return "SQLJob [ id=" + id + ",dataNodeOrDatabase="
 				+ dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler="
 				+ jobHandler + "]";
+	}
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
 	}
 
 }

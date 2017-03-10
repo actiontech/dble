@@ -24,10 +24,13 @@ import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
+import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.interceptor.impl.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
@@ -39,20 +42,27 @@ import io.mycat.util.StringUtil;
  *
  */
 public class DruidUpdateParser extends DefaultDruidParser {
-    @Override
-    public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+			throws SQLNonTransientException {
         MySqlUpdateStatement update = (MySqlUpdateStatement) stmt;
-        String schemaName = schema == null ? null : schema.getName();
         SQLTableSource tableSource = update.getTableSource();
+        String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
 			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(schemaName, (SQLJoinTableSource) tableSource, stmt);
 			if (schemaInfo == null) {
 				String msg = "updating multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			} else {
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table, rrs.getStatement());
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+				if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
+					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+					throw new SQLNonTransientException(msg);
+				}
+
+				super.visitorParse(schema, rrs, stmt, visitor);
+				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 				rrs.setFinishedRoute(true);
-				return;
+				return schema;
 			}
 		} else {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
@@ -60,24 +70,29 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
+			if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
+				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
 			schema = schemaInfo.schemaConfig;
 			String tableName = schemaInfo.table;
 			TableConfig tc = schema.getTables().get(tableName);
-
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+			super.visitorParse(schema, rrs, stmt, visitor);
 	        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
-				RouterUtil.routeForTableMeta(rrs, schema, tableName, rrs.getStatement());
+				RouterUtil.routeForTableMeta(rrs, schema, tableName);
 				rrs.setFinishedRoute(true);
-				return;
+				return schema;
 	        }
-
-	        if (GlobalTableUtil.useGlobleTableCheck() && tc.isGlobalTable()) {
-				// 修改全局表 update 受影响的行数
-				String sql = convertUpdateSQL(schemaInfo, update);
-				rrs.setStatement(sql);
-				RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), sql, tc.isGlobalTable());
+			if (tc.isGlobalTable()) {
+				if (GlobalTableUtil.useGlobleTableCheck()) {
+					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
+					rrs.setStatement(sql);
+				}
+				RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
 				rrs.setFinishedRoute(true);
-				return;
-	        }
+				return schema;
+			}
 	        String partitionColumn = tc.getPartitionColumn();
 	        String joinKey = tc.getJoinKey();
 	        confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
@@ -88,24 +103,24 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			if (ctx.getTables().size() == 0) {
 				ctx.addTable(schemaInfo.table);
 			}
-			ctx.setSql(RouterUtil.getFixedSql(RouterUtil.removeSchema(ctx.getSql(),schemaInfo.schema)));
 		}
+        return schema;
     }
-    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update){
+    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String orginSQL){
 		long opTimestamp = new Date().getTime();
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
-			return update.toString();
+			return orginSQL;
 		if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-			return update.toString(); // 没有内部列
+			return orginSQL; // 没有内部列
 		List<SQLUpdateSetItem> items = update.getItems();
 		boolean flag = false;
 		for (int i = 0; i < items.size(); i++) {
 			SQLUpdateSetItem item = items.get(i);
 			String col = item.getColumn().toString();
 
-			if (StringUtil.removeBackquote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+			if (StringUtil.removeBackQuote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
 				flag = true;
 				SQLUpdateSetItem newItem = new SQLUpdateSetItem();
 				newItem.setColumn(item.getColumn());
@@ -120,7 +135,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			newItem.setValue(new SQLIntegerExpr(opTimestamp));
 			items.add(newItem);
 		}
-		return update.toString();
+		return RouterUtil.removeSchema(update.toString(), schemaInfo.schema);
     }
 
     /*
@@ -131,9 +146,9 @@ public class DruidUpdateParser extends DefaultDruidParser {
     private static boolean columnInExpr(SQLExpr sqlExpr, String colName) throws SQLNonTransientException {
         String column;
         if (sqlExpr instanceof SQLIdentifierExpr) {
-            column = StringUtil.removeBackquote(((SQLIdentifierExpr) sqlExpr).getName()).toUpperCase();
+            column = StringUtil.removeBackQuote(((SQLIdentifierExpr) sqlExpr).getName()).toUpperCase();
         } else if (sqlExpr instanceof SQLPropertyExpr) {
-            column = StringUtil.removeBackquote(((SQLPropertyExpr) sqlExpr).getName()).toUpperCase();
+            column = StringUtil.removeBackQuote(((SQLPropertyExpr) sqlExpr).getName()).toUpperCase();
         } else {
             throw new SQLNonTransientException("Unhandled SQL AST node type encountered: " + sqlExpr.getClass());
         }
@@ -240,7 +255,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         if (updateSetItem != null && updateSetItem.size() > 0) {
             boolean hasParent = (schema.getTables().get(tableName).getParentTC() != null);
             for (SQLUpdateSetItem item : updateSetItem) {
-                String column = StringUtil.removeBackquote(item.getColumn().toString().toUpperCase());
+                String column = StringUtil.removeBackQuote(item.getColumn().toString().toUpperCase());
                 //考虑别名，前面已经限制了update分片表的个数只能有一个，所以这里别名只能是分片表的
                 if (column.contains(StringUtil.TABLE_COLUMN_SEPARATOR)) {
                     column = column.substring(column.indexOf(".") + 1).trim().toUpperCase();

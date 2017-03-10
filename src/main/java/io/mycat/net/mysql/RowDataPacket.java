@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.buffer.BufferArray;
@@ -55,8 +56,8 @@ import io.mycat.net.FrontendConnection;
  * @author mycat
  */
 public class RowDataPacket extends MySQLPacket {
-	private static final byte NULL_MARK = (byte) 251;
-    private static final byte EMPTY_MARK = (byte) 0;
+	protected static final byte NULL_MARK = (byte) 251;
+    protected static final byte EMPTY_MARK = (byte) 0;
 
 	public byte[] value;
 	public int fieldCount;
@@ -75,7 +76,15 @@ public class RowDataPacket extends MySQLPacket {
 		//这里应该修改field
 		fieldCount=fieldCount+add;
 	}
-	
+	public void addAll(List<byte[]> values) {
+		fieldValues.addAll(values);
+	}
+	public byte[] getValue(int index) {
+		return fieldValues.get(index);
+	}
+	public void setValue(int index, byte[] value) {
+		fieldValues.set(index, value);
+	}
 	public void read(byte[] data) {
 		value = data;
 		MySQLMessage mm = new MySQLMessage(data);
@@ -147,5 +156,25 @@ public class RowDataPacket extends MySQLPacket {
 			}
 		}
 	}
-
+	public byte[] toBytes() {
+		int size = calcPacketSize();
+		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize); 
+		BufferUtil.writeUB3(buffer, size);
+		buffer.put(packetId);
+		for (int i = 0; i < fieldCount; i++) {
+			byte[] fv = fieldValues.get(i);
+			if (fv == null) {
+				buffer.put(RowDataPacket.NULL_MARK);
+			} else if (fv.length == 0) {
+				buffer.put(RowDataPacket.EMPTY_MARK);
+			} else {
+				BufferUtil.writeWithLength(buffer, fv);
+			}
+		}
+		buffer.flip();
+		byte[] data = new byte[buffer.limit()];
+		buffer.get(data);
+		MycatServer.getInstance().getBufferPool().recycle(buffer);
+		return data;
+	}
 }

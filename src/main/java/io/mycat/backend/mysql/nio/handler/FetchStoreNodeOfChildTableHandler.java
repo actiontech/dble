@@ -23,7 +23,6 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,8 @@ import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.cache.CachePool;
 import io.mycat.config.MycatConfig;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
@@ -99,11 +100,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 						return null;
 					}
 					conn.setResponseHandler(this);
-					try {
-						conn.execute(node, session.getSource(), isAutoCommit());
-					} catch (IOException e) {
-						connectionError(e, conn);
-					}
+					conn.execute(node, session.getSource(), isAutoCommit());
+					
 				} else {
 					mysqlDN.getConnection(mysqlDN.getDatabase(), true, node, this, node);
 				}
@@ -188,7 +186,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("received rowResponse response from  " + conn);
 		}
@@ -203,11 +201,12 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 		} else {
 			LOGGER.warn("find multi data nodes for child table store, sql is:  " + sql);
 		}
+		return false;
 	}
 
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("rowEofResponse" + conn);
 		}
@@ -236,8 +235,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
+	}
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
 	}
 
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+	}
 }

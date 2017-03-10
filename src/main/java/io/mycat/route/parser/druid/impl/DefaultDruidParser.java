@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 
+import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
@@ -38,44 +38,22 @@ public class DefaultDruidParser implements DruidParser {
 	 */
 	protected DruidShardingParseInfo ctx;
 	
-	private Map<String,String> tableAliasMap = new HashMap<String,String>();
-
-	private List<Condition> conditions = new ArrayList<Condition>();
-	
-	public Map<String, String> getTableAliasMap() {
-		return tableAliasMap;
-	}
-
-	public List<Condition> getConditions() {
-		return conditions;
-	}
-	
 	/**
 	 * 使用MycatSchemaStatVisitor解析,得到tables、tableAliasMap、conditions等
 	 * @param schema
 	 * @param stmt
 	 */
-	public void parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLNonTransientException {
+	public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLNonTransientException {
 		ctx = new DruidShardingParseInfo();
-		//设置为原始sql，如果有需要改写sql的，可以通过修改SQLStatement中的属性，然后调用SQLStatement.toString()得到改写的sql
-		ctx.setSql(originSql);
 		//通过visitor解析
-		visitorParse(rrs,stmt,schemaStatVisitor);
-		//通过Statement解析
-		statementParse(schema, rrs, stmt);
+		schema = visitorParse(schema, rrs,stmt,schemaStatVisitor);
 		
 		//改写sql：如insert语句主键自增长的可以
-		changeSql(schema, rrs, stmt,cachePool);
+		changeSql(schema, rrs, stmt, cachePool);
+		return schema;
 	}
 	
-	/**
-	 * 子类可覆盖（如果visitorParse解析得不到表名、字段等信息的，就通过覆盖该方法来解析）
-	 * 子类覆盖该方法一般是将SQLStatement转型后再解析（如转型为MySqlInsertStatement）
-	 */
-	@Override
-	public void statementParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLNonTransientException {
-		
-	}
+	 
 	
 	/**
 	 * 改写sql：如insert是
@@ -92,51 +70,63 @@ public class DefaultDruidParser implements DruidParser {
 	 * @param stmt
 	 */
 	@Override
-	public void visitorParse(RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
 		stmt.accept(visitor);
 		List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-		if (visitor.hasOrCondition()) {// 包含or语句
-			// TODO
+		if (visitor.hasOrCondition()) {
 			// 根据or拆分
 			mergedConditionList = visitor.splitConditions();
 		} else {// 不包含OR语句
 			mergedConditionList.add(visitor.getConditions());
 		}
-
-		if (visitor.getAliasMap() != null) {
-			for (Map.Entry<String, String> entry : visitor.getAliasMap().entrySet()) {
-				String key = entry.getKey();
-				String value = entry.getValue();
-				if (key != null && key.indexOf("`") >= 0) {
-					key = key.replaceAll("`", "");
-				}
-				if (value != null && value.indexOf("`") >= 0) {
-					value = value.replaceAll("`", "");
-				}
-				// 表名前面带database的，去掉
-				if (key != null) {
-					int pos = key.indexOf(".");
-					if (pos > 0) {
-						key = key.substring(pos + 1);
-					}
-					if (key.equalsIgnoreCase(value)) {
-						ctx.addTable(key.toUpperCase());
-					}
-					tableAliasMap.put(key.toUpperCase(), value);
-				}
-				// else {
-				// tableAliasMap.put(key, value);
-				// }
-			}
-			visitor.getAliasMap().putAll(tableAliasMap);
-			ctx.setTableAliasMap(tableAliasMap);
-		}
-		ctx.setRouteCalculateUnits(this.buildRouteCalculateUnits(visitor, mergedConditionList));
-		ctx.setVisitor(visitor);
+		Map<String,String> tableAliasMap = getTableAliasMap(visitor.getAliasMap());
+		ctx.setRouteCalculateUnits(this.buildRouteCalculateUnits(tableAliasMap, mergedConditionList));
+		return schema;
 	}
-	
-	private List<RouteCalculateUnit> buildRouteCalculateUnits(SchemaStatVisitor visitor, List<List<Condition>> conditionList) {
+	private Map<String,String> getTableAliasMap(Map<String,String> originTableAliasMap){
+		if (originTableAliasMap == null) {
+			return null;
+		}
+		Map<String,String> tableAliasMap = new HashMap<String,String>();
+		tableAliasMap.putAll(originTableAliasMap);
+		for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
+			String key = entry.getKey();
+			String value = entry.getValue();
+			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				if (key != null){
+					key = key.toLowerCase();
+				}
+				if (value != null){
+					value = value.toLowerCase();
+				}
+			}
+			if (key != null && key.indexOf("`") >= 0) {
+				key = key.replaceAll("`", "");
+			}
+			if (value != null && value.indexOf("`") >= 0) {
+				value = value.replaceAll("`", "");
+			}
+			// 表名前面带database的，去掉
+			if (key != null) {
+				boolean needAddTable = false;
+				if (key.equals(value)) {
+					needAddTable = true;
+				}
+				int pos = key.indexOf(".");
+				if (pos > 0) {
+					key = key.substring(pos + 1);
+				}
+				if (needAddTable) {
+					ctx.addTable(key);
+				}
+				tableAliasMap.put(key, value);
+			}
+		}
+		ctx.setTableAliasMap(tableAliasMap);
+		return tableAliasMap;
+	}
+	private List<RouteCalculateUnit> buildRouteCalculateUnits(Map<String,String> tableAliasMap, List<List<Condition>> conditionList) {
 		List<RouteCalculateUnit> retList = new ArrayList<RouteCalculateUnit>();
 		//遍历condition ，找分片字段
 		for(int i = 0; i < conditionList.size(); i++) {
@@ -147,26 +137,26 @@ public class DefaultDruidParser implements DruidParser {
 					break;
 				}
 				if(checkConditionValues(values)) {
-					String columnName = StringUtil.removeBackquote(condition.getColumn().getName().toUpperCase());
-					String tableName = StringUtil.removeBackquote(condition.getColumn().getTable().toUpperCase());
-					
-					if(visitor.getAliasMap() != null && visitor.getAliasMap().get(tableName) != null 
-							&& !visitor.getAliasMap().get(tableName).equals(tableName)) {
-						tableName = visitor.getAliasMap().get(tableName);
+					String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+					String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
+					if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+						tableName = tableName.toLowerCase();
 					}
-
-					if(visitor.getAliasMap() != null && visitor.getAliasMap().get(StringUtil.removeBackquote(condition.getColumn().getTable().toUpperCase())) == null) {//子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
+					if(tableAliasMap != null && tableAliasMap.get(tableName) == null) {//子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
 						continue;
 					}
-					
+					if(tableAliasMap != null && tableAliasMap.get(tableName) != null 
+							&& !tableAliasMap.get(tableName).equals(tableName)) {
+						tableName = tableAliasMap.get(tableName);
+					}
 					String operator = condition.getOperator();
 					
 					//只处理between ,in和=3中操作符
 					if(operator.equals("between")) {
 						RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
-								routeCalculateUnit.addShardingExpr(tableName.toUpperCase(), columnName, rv);
+								routeCalculateUnit.addShardingExpr(tableName, columnName, rv);
 					} else if(operator.equals("=") || operator.toLowerCase().equals("in")){ //只处理=号和in操作符,其他忽略
-								routeCalculateUnit.addShardingExpr(tableName.toUpperCase(), columnName, values.toArray());
+								routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
 					}
 				}
 			}

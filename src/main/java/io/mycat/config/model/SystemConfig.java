@@ -77,12 +77,19 @@ public final class SystemConfig {
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
+	private static final boolean DEFAULT_LOWER_CASE = true;
 	private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
 	private static final String DEFAULT_TRANSACTION_BASE_NAME = "mycat-tx";
 	private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
-	private final static long CHECKTABLECONSISTENCYPERIOD = 30 * 60 * 1000;
+	private static final long CHECKTABLECONSISTENCYPERIOD = 30 * 60 * 1000;
 	// 全局表一致性检测任务，默认24小时调度一次
 	private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
+	private static final int DEFAULT_MERGE_QUEUE_SIZE = 1024;
+	private static final int DEFAULT_ORDERBY_QUEUE_SIZE = 1024;
+	private static final int DEFAULT_JOIN_QUEUE_SIZE = 1024;
+	private static final int DEFAULT_NESTLOOP_ROWS_SIZE = 2000;
+	private static final int DEFAULT_NESTLOOP_CONN_SIZE = 4;
+	private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
 
 	private int processorBufferPoolType = 0;
 	private int processorBufferLocalPercent;
@@ -197,6 +204,13 @@ public final class SystemConfig {
 	private String transactionLogBaseDir;
 	private String transactionLogBaseName;
 	private int transactionRatateSize;
+	
+	private int mergeQueueSize;
+	private int orderByQueueSize;
+	private int joinQueueSize;
+	private int nestLoopRowsSize;
+	private int nestLoopConnSize;
+	private int mappedFileSize;
 	/**
 	 * 排序时，内存不够时，将已经排序的结果集
 	 * 写入到临时目录
@@ -206,6 +220,9 @@ public final class SystemConfig {
 	 * 是否启用zk切换
 	 */
 	private boolean	useZKSwitch=DEFAULT_USE_ZK_SWITCH;
+
+	private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
+	private boolean useExtensions = false;
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
@@ -250,6 +267,12 @@ public final class SystemConfig {
 		this.transactionLogBaseDir = SystemConfig.getHomePath()+File.separatorChar+DEFAULT_TRANSACTION_BASE_DIR;
 		this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
 		this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
+		this.mergeQueueSize = DEFAULT_MERGE_QUEUE_SIZE;
+		this.orderByQueueSize = DEFAULT_ORDERBY_QUEUE_SIZE;
+		this.joinQueueSize = DEFAULT_JOIN_QUEUE_SIZE;
+		this.nestLoopRowsSize = DEFAULT_NESTLOOP_ROWS_SIZE;
+		this.nestLoopConnSize = DEFAULT_NESTLOOP_CONN_SIZE;
+		this.mappedFileSize = DEFAULT_MAPPEDFILE_SIZE;
 	}
 
 	public int getTransactionRatateSize() {
@@ -334,6 +357,24 @@ public final class SystemConfig {
 	public void setUseZKSwitch(boolean useZKSwitch) {
 		this.useZKSwitch = useZKSwitch;
 	}
+	
+
+	public boolean isLowerCaseTableNames() {
+		return lowerCaseTableNames;
+	}
+
+	public void setLowerCaseTableNames(boolean lowerCaseTableNames) {
+		this.lowerCaseTableNames = lowerCaseTableNames;
+	}
+
+	public boolean isUseExtensions() {
+		return useExtensions;
+	}
+
+	public void setUseExtensions(boolean useExtensions) {
+		this.useExtensions = useExtensions;
+	}
+
 
 	public String getXARecoveryLogBaseDir() {
 		return XARecoveryLogBaseDir;
@@ -949,6 +990,45 @@ public final class SystemConfig {
 	public void setUseHandshakeV10(int useHandshakeV10) {
 		this.useHandshakeV10 = useHandshakeV10;
 	}
-	
-	
+	public int getNestLoopRowsSize() {
+		return nestLoopRowsSize;
+	}
+
+	public void setNestLoopRowsSize(int nestLoopRowsSize) {
+		this.nestLoopRowsSize = nestLoopRowsSize;
+	}
+	public int getJoinQueueSize() {
+		return joinQueueSize;
+	}
+	public void setJoinQueueSize(int joinQueueSize) {
+		this.joinQueueSize = joinQueueSize;
+	}
+	public int getMergeQueueSize() {
+		return mergeQueueSize;
+	}
+
+	public void setMergeQueueSize(int mergeQueueSize) {
+		this.mergeQueueSize = mergeQueueSize;
+	}
+	public int getMappedFileSize() {
+		return mappedFileSize;
+	}
+
+	public void setMappedFileSize(int mappedFileSize) {
+		this.mappedFileSize = mappedFileSize;
+	}
+	public int getNestLoopConnSize() {
+		return nestLoopConnSize;
+	}
+
+	public void setNestLoopConnSize(int nestLoopConnSize) {
+		this.nestLoopConnSize = nestLoopConnSize;
+	}
+	public int getOrderByQueueSize() {
+		return orderByQueueSize;
+	}
+
+	public void setOrderByQueueSize(int orderByQueueSize) {
+		this.orderByQueueSize = orderByQueueSize;
+	}
 }

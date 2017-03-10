@@ -47,6 +47,7 @@ import io.mycat.config.model.DataHostConfig;
 import io.mycat.config.model.DataNodeConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.config.model.TableConfig.TableTypeEnum;
 import io.mycat.config.model.TableConfigMap;
 import io.mycat.config.model.rule.TableRuleConfig;
 import io.mycat.config.util.ConfigException;
@@ -69,8 +70,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 	private final Map<String, DataHostConfig> dataHosts;
 	private final Map<String, DataNodeConfig> dataNodes;
 	private final Map<String, SchemaConfig> schemas;
-
-	public XMLSchemaLoader(String schemaFile, String ruleFile) {
+	private final boolean lowerCaseNames;
+	public XMLSchemaLoader(String schemaFile, String ruleFile, boolean lowerCaseNames) {
 		//先读取rule.xml
 		XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile);
 		//将tableRules拿出，用于这里加载Schema做rule有效判断，以及之后的分片路由计算
@@ -80,12 +81,18 @@ public class XMLSchemaLoader implements SchemaLoader {
 		this.dataHosts = new HashMap<String, DataHostConfig>();
 		this.dataNodes = new HashMap<String, DataNodeConfig>();
 		this.schemas = new HashMap<String, SchemaConfig>();
+		this.lowerCaseNames = lowerCaseNames;
 		//读取加载schema配置
 		this.load(DEFAULT_DTD, schemaFile == null ? DEFAULT_XML : schemaFile);
 	}
-
+	public XMLSchemaLoader(String schemaFile, String ruleFile) {
+		this(schemaFile, ruleFile, true);
+	}
 	public XMLSchemaLoader() {
-		this(null, null);
+		this(true);
+	}
+	public XMLSchemaLoader(boolean lowerCaseNames) {
+		this(null, null,lowerCaseNames);
 	}
 
 	@Override
@@ -149,21 +156,15 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element schemaElement = (Element) list.item(i);
 			//读取各个属性
 			String name = schemaElement.getAttribute("name");
+			if(lowerCaseNames){
+				name = name.toLowerCase();
+			}
 			String dataNode = schemaElement.getAttribute("dataNode");
-			String checkSQLSchemaStr = schemaElement.getAttribute("checkSQLschema");
 			String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
-			String lowerCaseStr = schemaElement.getAttribute("lowerCase");
 			int sqlMaxLimit = -1;
 			//读取sql返回结果集限制
 			if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
 				sqlMaxLimit = Integer.parseInt(sqlMaxLimitStr);
-			}
-			int lowerCase = 1;
-			if (lowerCaseStr != null && !lowerCaseStr.isEmpty()) {
-				lowerCase = Integer.parseInt(lowerCaseStr);
-			}
-			if (lowerCase != 0 && lowerCase != 1) {
-				throw new ConfigException("lowerCase can't be [" + lowerCase + "]!");
 			}
 			//校验检查并添加dataNode
 			if (dataNode != null && !dataNode.isEmpty()) {
@@ -174,7 +175,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 				dataNode = null;
 			}
 			//加载schema下所有tables
-			Map<String, TableConfig> tables = loadTables(schemaElement, lowerCase);
+			Map<String, TableConfig> tables = loadTables(schemaElement, lowerCaseNames);
 			//判断schema是否重复
 			if (schemas.containsKey(name)) {
 				throw new ConfigException("schema " + name + " duplicated!");
@@ -186,7 +187,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 						"schema " + name + " didn't config tables,so you must set dataNode property!");
 			}
 			SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
-					tables, sqlMaxLimit, !"false".equalsIgnoreCase(checkSQLSchemaStr), lowerCase);
+					tables, sqlMaxLimit);
 			schemas.put(name, schemaConfig);
 		}
 	}
@@ -270,24 +271,21 @@ public class XMLSchemaLoader implements SchemaLoader {
 	}
 	
 
-	private Map<String, TableConfig> loadTables(Element node, int lowerCase) {
-		
-		// Map<String, TableConfig> tables = new HashMap<String, TableConfig>();
-		
+	private Map<String, TableConfig> loadTables(Element node, boolean lowerCaseNames) {
 		// 支持表名中包含引号[`] BEN GONG
 		Map<String, TableConfig> tables = new TableConfigMap();
 		NodeList nodeList = node.getElementsByTagName("table");
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Element tableElement = (Element) nodeList.item(i);
 			String tableNameElement = tableElement.getAttribute("name");
-			if (lowerCase == 1) {
-				tableNameElement = tableNameElement.toUpperCase();
+			if (lowerCaseNames) {
+				tableNameElement = tableNameElement.toLowerCase();
 			}
 
 			//TODO:路由, 增加对动态日期表的支持
 			String tableNameSuffixElement = tableElement.getAttribute("nameSuffix");
-			if (lowerCase == 1) {
-				tableNameSuffixElement = tableNameSuffixElement.toUpperCase();
+			if (lowerCaseNames) {
+				tableNameSuffixElement = tableNameSuffixElement.toLowerCase();
 			}
 			if ( !"".equals( tableNameSuffixElement ) ) {				
 				
@@ -312,9 +310,9 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			//记录type，是否为global
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement.getAttribute("type") : null;
-			int tableType = TableConfig.TYPE_GLOBAL_DEFAULT;
+			TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
 			if ("global".equalsIgnoreCase(tableTypeStr)) {
-				tableType = TableConfig.TYPE_GLOBAL_TABLE;
+				tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
 			}
 			//记录dataNode，就是分布在哪些dataNode上
 			String dataNode = tableElement.getAttribute("dataNode");
@@ -326,13 +324,11 @@ public class XMLSchemaLoader implements SchemaLoader {
 					throw new ConfigException("rule " + ruleName + " is not found!");
 				}
 			}
-			
 			boolean ruleRequired = false;
 			//记录是否绑定有分片规则
 			if (tableElement.hasAttribute("ruleRequired")) {
 				ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
 			}
-
 			if (tableNames == null) {
 				throw new ConfigException("table name is not found!");
 			}
@@ -342,25 +338,16 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (distTableDns) {
 				dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
 			}
-			//分表功能
-			String subTables = tableElement.getAttribute("subTables");
 			
 			for (int j = 0; j < tableNames.length; j++) {
-
 				String tableName = tableNames[j]; 
-				  
-
-				TableConfig table = new TableConfig(tableName, primaryKey,
-						autoIncrement, needAddLimit, tableType, dataNode,
-						(tableRule != null) ? tableRule.getRule() : null,
-						ruleRequired, null, false, null, null,subTables);
-				
+				TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
+						dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
 				checkDataNodeExists(table.getDataNodes());
 				// 检查分片表分片规则配置是否合法
 				if(table.getRule() != null) {
 					checkRuleSuitTable(table);
 				}
-				
 				if (distTableDns) {
 					distributeDataNodes(table.getDataNodes());
 				}
@@ -375,7 +362,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (tableNames.length == 1) {
 				TableConfig table = tables.get(tableNames[0]);
 				// process child tables
-				processChildTables(tables, table, dataNode, tableElement, lowerCase);
+				processChildTables(tables, table, dataNode, tableElement, lowerCaseNames);
 			}
 		}
 		return tables;
@@ -416,7 +403,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 	}
 
 	private void processChildTables(Map<String, TableConfig> tables,
-			TableConfig parentTable, String dataNodes, Element tableNode, int lowerCase) {
+			TableConfig parentTable, String dataNodes, Element tableNode, boolean lowerCaseNames) {
 		
 		// parse child tables
 		NodeList childNodeList = tableNode.getChildNodes();
@@ -428,8 +415,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element childTbElement = (Element) theNode;
 			//读取子表信息
 			String cdTbName = childTbElement.getAttribute("name");
-			if (lowerCase == 1) {
-				cdTbName = cdTbName.toUpperCase();
+			if (lowerCaseNames) {
+				cdTbName = cdTbName.toLowerCase();
 			}
 			String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
 
@@ -441,21 +428,18 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (childTbElement.hasAttribute("needAddLimit")) {
 				needAddLimit = Boolean.parseBoolean(childTbElement.getAttribute("needAddLimit"));
 			}
-			String subTables = childTbElement.getAttribute("subTables");
 			//子表join键，和对应的parent的键，父子表通过这个关联
 			String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
 			String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
-			TableConfig table = new TableConfig(cdTbName, primaryKey,
-					autoIncrement, needAddLimit,
-					TableConfig.TYPE_GLOBAL_DEFAULT, dataNodes, null, false, parentTable, true,
-					joinKey, parentKey, subTables);
+			TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
+					TableTypeEnum.TYPE_SHARDING_TABLE, dataNodes, null, false, parentTable, joinKey, parentKey);
 			
 			if (tables.containsKey(table.getName())) {
 				throw new ConfigException("table " + table.getName() + " duplicated!");
 			}
 			tables.put(table.getName(), table);
 			//对于子表的子表，递归处理
-			processChildTables(tables, table, dataNodes, childTbElement, lowerCase);
+			processChildTables(tables, table, dataNodes, childTbElement, lowerCaseNames);
 		}
 	}
 
@@ -521,6 +505,9 @@ public class XMLSchemaLoader implements SchemaLoader {
 			String dnNamePre = element.getAttribute("name");
 
 			String databaseStr = element.getAttribute("database");
+			if(lowerCaseNames){
+				databaseStr = databaseStr.toLowerCase();
+			}
 			String host = element.getAttribute("dataHost");
 			//字符串不为空
 			if (empty(dnNamePre) || empty(databaseStr) || empty(host)) {

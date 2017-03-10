@@ -28,7 +28,8 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.cache.CachePool;
 import io.mycat.cache.CacheService;
@@ -70,10 +71,10 @@ public class RouteService {
 		String cacheKey = null;
 
 		/**
-		 *  SELECT 类型的SQL, 检测
+		 *  SELECT 类型的SQL, 检测,debug 模式下不缓存
 		 */
-		if (sqlType == ServerParse.SELECT) {
-			cacheKey = schema.getName() + stmt;			
+		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled()) {
+			cacheKey = (schema == null ? "NULL_" : schema.getName()) + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
 			if (rrs != null) {
 				return rrs;
@@ -134,7 +135,7 @@ public class RouteService {
 					charset, sc, tableId2DataNodeCache);
 		}
 
-		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()) {
+		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()&&!LOGGER.isDebugEnabled()) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
 		}
 		return rrs;

@@ -23,7 +23,6 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -208,11 +207,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			return;
 		}
 		conn.setResponseHandler(this);
-		try {
-			conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
-		} catch (IOException e) {
-			connectionError(e, conn);
-		}
+		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
 	}
 	@Override
 	public void connectionClose(BackendConnection conn, String reason) {
@@ -350,7 +345,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	}
 
 	@Override
-	public void rowEofResponse(final byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("on row end reseponse " + conn);
 		}
@@ -565,8 +560,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		
 		
 		this.netOutBytes += header.length;
@@ -711,7 +706,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	}
 
 	@Override
-	public void rowResponse(final byte[] row, final BackendConnection conn) {
+	public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
 		
 		if (errorRepsponsed.get()) {
 			// the connection has been closed or set to "txInterrupt" properly
@@ -720,7 +715,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			// @author Uncle-pan
 			// @since 2016-03-25
 			//conn.close(error);
-			return;
+			return true;
 		}
 		
 		
@@ -767,6 +762,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		} finally {
 			lock.unlock();
 		}
+		return false;
 	}
 
 	@Override

@@ -1,5 +1,11 @@
 package io.mycat.route;
 
+import java.sql.SQLNonTransientException;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Test;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -9,6 +15,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
@@ -16,14 +23,8 @@ import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
 import io.mycat.util.StringUtil;
 import junit.framework.Assert;
-import org.junit.Test;
-
-import java.sql.SQLNonTransientException;
-import java.util.List;
-import java.util.Map;
 
 public class DruidMysqlCreateTableTest
 {
@@ -107,7 +108,7 @@ public class DruidMysqlCreateTableTest
             }
             if (sqlName != null) {
                 String simpleName = sqlName.getSimpleName();
-                simpleName = StringUtil.removeBackquote(simpleName);
+                simpleName = StringUtil.removeBackQuote(simpleName);
                 if (tableElement instanceof SQLColumnDefinition && "_slot".equalsIgnoreCase(simpleName)) {
                     return true;
                 }

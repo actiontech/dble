@@ -38,7 +38,7 @@ public class HintDataNodeHandler implements HintHandler {
 		RouteResultset rrs = new RouteResultset(stmt, sqlType, sc.getSession2());
 		PhysicalDBNode dataNode = MycatServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
 		if (dataNode != null) {			
-			rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName(), stmt);
+			rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());
 		} else {
 			String msg = "can't find hint datanode:" + hintSQLValue;
 			LOGGER.warn(msg);

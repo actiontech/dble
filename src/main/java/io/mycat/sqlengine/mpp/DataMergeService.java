@@ -1,5 +1,16 @@
 package io.mycat.sqlengine.mpp;
 
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
+
 /*
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -34,14 +45,6 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.ServerConnection;
 import io.mycat.sqlengine.mpp.tmp.RowDataSorter;
 import io.mycat.util.StringUtil;
-
-import org.apache.log4j.Logger;
-
-
-
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Data merge service handle data Min,Max,AVG group 、order by 、limit
@@ -149,7 +152,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
 			OrderCol[] orderCols = new OrderCol[orders.size()];
 			int i = 0;
 			for (Map.Entry<String, Integer> entry : orders.entrySet()) {
-				String key = StringUtil.removeBackquote(entry.getKey()
+				String key = StringUtil.removeBackQuote(entry.getKey()
 						.toUpperCase());
 				ColMeta colMeta = columToIndx.get(key);
 				if (colMeta == null) {

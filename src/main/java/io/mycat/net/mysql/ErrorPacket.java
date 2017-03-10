@@ -94,8 +94,8 @@ public class ErrorPacket extends MySQLPacket {
 		return data;
 	}
 	public byte[] toBytes() {
-		ByteBuffer buffer = ByteBuffer.allocate(calcPacketSize()+4);
 		int size = calcPacketSize();
+		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
 		BufferUtil.writeUB3(buffer, size);
 		buffer.put(packetId);
 		buffer.put(fieldCount);

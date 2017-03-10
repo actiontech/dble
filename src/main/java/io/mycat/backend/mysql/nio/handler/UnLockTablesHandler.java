@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.OkPacket;
+import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
@@ -103,21 +105,23 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		LOGGER.warn(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": row data packet").toString());
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": row's eof").toString());
@@ -133,6 +137,17 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 	public void connectionClose(BackendConnection conn, String reason) {
 		// TODO Auto-generated method stub
 
+	}
+
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+		
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+		
 	}
 
 }

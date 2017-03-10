@@ -18,6 +18,12 @@
 package io.mycat.memory.unsafe.row;
 
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.ByteArrayMethods;
@@ -26,12 +32,6 @@ import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
 import io.mycat.memory.unsafe.types.UTF8String;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.MySQLPacket;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
 
 
 /**

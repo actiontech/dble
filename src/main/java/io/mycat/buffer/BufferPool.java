@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @time 12:19 2016/5/23
  */
 public interface BufferPool {
+	ByteBuffer allocate();
     public ByteBuffer allocate(int size);
     public void recycle(ByteBuffer theBuf);
     public long capacity();

@@ -25,9 +25,12 @@ package io.mycat.backend.mysql.nio.handler;
 
 import java.util.List;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
 
 public class NewConnectionRespHandler implements ResponseHandler{
 	private static final Logger LOGGER = LoggerFactory
@@ -59,20 +62,20 @@ public class NewConnectionRespHandler implements ResponseHandler{
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		LOGGER.info("fieldEofResponse: " + conn );
 		
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		LOGGER.info("rowResponse: " + conn );
-		
+		return false;
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		LOGGER.info("rowEofResponse: " + conn );
 		
 	}
@@ -87,6 +90,14 @@ public class NewConnectionRespHandler implements ResponseHandler{
 	public void connectionClose(BackendConnection conn, String reason) {
 		
 		
+	}
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+	}
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
 	}
 
 }

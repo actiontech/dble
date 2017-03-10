@@ -153,27 +153,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			return;
 		}
 		conn.setResponseHandler(this);
-		try {
-			boolean isAutocommit = session.getSource().isAutocommit()&&!session.getSource().isTxstart();
-			if(!isAutocommit&& node.isModifySQL()){
-				TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
-			}
-			conn.execute(node, session.getSource(), isAutocommit);
-		} catch (Exception e1) {
-			executeException(conn, e1);
-			return;
+		boolean isAutocommit = session.getSource().isAutocommit()&&!session.getSource().isTxstart();
+		if(!isAutocommit&& node.isModifySQL()){
+			TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
 		}
+		conn.execute(node, session.getSource(), isAutocommit);
 	}
-
-	private void executeException(BackendConnection c, Exception e) {
-		ErrorPacket err = new ErrorPacket();
-		err.packetId = ++packetId;
-		err.errno = ErrorCode.ERR_FOUND_EXCEPION;
-		err.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
-
-		this.backConnectionErr(err, c);
-	}
-
 	@Override
 	public void connectionError(Throwable e, BackendConnection conn) {
 		ErrorPacket err = new ErrorPacket();
@@ -270,7 +255,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	 * 行结束标志返回时触发，将EOF标志写入缓冲区，最后调用source.write(buffer)将缓冲区放入前端连接的写缓冲队列中，等待NIOSocketWR将其发送给应用
 	 */
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		
 		this.netOutBytes += eof.length;
 		
@@ -322,8 +307,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	 * 元数据返回时触发，将header和元数据内容依次写入缓冲区中
 	 */	
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 		
 		this.netOutBytes += header.length;
 		for (int i = 0, len = fields.size(); i < len; ++i) {
@@ -378,7 +363,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	 * 行数据返回时触发，将行数据写入缓冲区中
 	 */
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 		
 		this.netOutBytes += row.length;
 		this.selectRows++;
@@ -388,14 +373,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			rowDataPacket.read(row);
 			String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), conn.getCharset());
 			if (shardingTablesSet.contains(table.toUpperCase())) {
-				return;
+				return false;
 			}
 		}
 		row[3] = ++packetId;
 		
 		if ( prepared ) {			
 			RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
-			rowDataPk.read(row);			
+			rowDataPk.read(row);
 			BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
 			binRowDataPk.read(fieldPackets, rowDataPk);
 			binRowDataPk.packetId = rowDataPk.packetId;
@@ -410,7 +395,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			buffer = session.getSource().writeToBuffer(row, allocBuffer());
 			//session.getSource().write(row);
 		}
-
+		return false;
 	}
 
 	@Override
@@ -448,6 +433,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	@Override
 	public String toString() {
 		return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
+	}
+
+
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+		
+	}
+
+
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+		
 	}
 
 }

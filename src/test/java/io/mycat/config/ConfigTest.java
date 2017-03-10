@@ -9,7 +9,7 @@ import org.junit.Test;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
-import io.mycat.config.loader.ConfigLoader;
+import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLConfigLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.DBHostConfig;
@@ -33,12 +33,12 @@ public class ConfigTest {
 		String ruleFile = "/config/rule.xml";
 		
 		XMLSchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
-		XMLConfigLoader configLoader = new XMLConfigLoader(schemaLoader);
+		XMLConfigLoader configLoader = new XMLConfigLoader();
 		
 		this.system = configLoader.getSystemConfig();
 		this.users = configLoader.getUserConfigs();
-		this.schemas = configLoader.getSchemaConfigs();		
-        this.dataHosts = initDataHosts(configLoader);
+		this.schemas = schemaLoader.getSchemas();		
+        this.dataHosts = initDataHosts(schemaLoader);
         
 	}
 	
@@ -92,17 +92,16 @@ public class ConfigTest {
     	Assert.assertTrue( tbm.size() == 32);    	
     }
     
-	private Map<String, PhysicalDBPool> initDataHosts(ConfigLoader configLoader) {
-		Map<String, DataHostConfig> nodeConfs = configLoader.getDataHosts();
+	private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
+		Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
 		Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(
 				nodeConfs.size());
 		for (DataHostConfig conf : nodeConfs.values()) {
-			PhysicalDBPool pool = getPhysicalDBPool(conf, configLoader);
+			PhysicalDBPool pool = getPhysicalDBPool(conf);
 			nodes.put(pool.getHostName(), pool);
 		}
 		return nodes;
 	}
-    
     private PhysicalDatasource[] createDataSource(DataHostConfig conf,
 			String hostName, DBHostConfig[] nodes, boolean isRead) {
 		PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
@@ -114,8 +113,7 @@ public class ConfigTest {
 		return dataSources;
 	}
 
-	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf,
-			ConfigLoader configLoader) {
+	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
 		String name = conf.getName();
 		PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();

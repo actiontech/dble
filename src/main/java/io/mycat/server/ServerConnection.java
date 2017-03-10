@@ -36,13 +36,9 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.FrontendConnection;
 import io.mycat.route.RouteResultset;
-import io.mycat.server.handler.MysqlInformationSchemaHandler;
-import io.mycat.server.handler.MysqlProcHandler;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.response.Heartbeat;
-import io.mycat.server.response.InformationSchemaProfiling;
 import io.mycat.server.response.Ping;
-import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.SplitUtil;
 import io.mycat.util.TimeUtil;
 
@@ -128,7 +124,7 @@ public class ServerConnection extends FrontendConnection {
 	public void setTxInterrupt(String txInterrputMsg) {
 		if ((!autocommit||txstart) && !txInterrupted) {
 			txInterrupted = true;
-			this.txInterrputMsg = txInterrputMsg;
+			this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + txInterrputMsg+"]";
 		}
 	}
 
@@ -170,76 +166,26 @@ public class ServerConnection extends FrontendConnection {
 		}
 		// 事务状态检查
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback." + txInterrputMsg);
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 			return;
 		}
 
 		// 检查当前使用的DB
 		String db = this.schema;
-		boolean isDefault = true;
-		if (db == null) {
-			db = SchemaUtil.detectDefaultDb(sql, type);
-			isDefault = false;
-		}
 		
-		// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-		//// TODO: 2016/5/20 支持更多information_schema特性
-		if (ServerParse.SELECT == type 
-				&& db.equalsIgnoreCase("information_schema") ) {
-			MysqlInformationSchemaHandler.handle(sql, this);
-			return;
-		}
-
-		if (ServerParse.SELECT == type 
-				&& sql.contains("mysql") 
-				&& sql.contains("proc")) {
-			
-			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
-			if (schemaInfo != null 
-					&& "mysql".equalsIgnoreCase(schemaInfo.schema)
-					&& "proc".equalsIgnoreCase(schemaInfo.table)) {
-				
-				// 兼容MySQLWorkbench
-				MysqlProcHandler.handle(sql, this);
-				return;
-			}
-		}
-		SchemaConfig schema = null;
+		SchemaConfig schemaConfig = null;
 		if (db != null){
-			schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-			if (schema == null) {
+			schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(db);
+			if (schemaConfig == null) {
 				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown MyCAT Database '" + db + "'");
 				return;
 			}
 		}
-
-		//fix navicat   SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ
-		if(ServerParse.SELECT == type &&sql.contains(" INFORMATION_SCHEMA.PROFILING ")&&sql.contains("CONCAT(ROUND(SUM(DURATION)/*100,3)"))
-		{
-			InformationSchemaProfiling.response(this);
-			return;
-		}
-		
-		/* 当已经设置默认schema时，可以通过在sql中指定其它schema的方式执行
-		 * 相关sql，已经在mysql客户端中验证。
-		 * 所以在此处增加关于sql中指定Schema方式的支持。
-		 */
-		if (ServerParse.SELECT==type && isDefault && schema.isCheckSQLSchema() ) {
-			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.parseSchema(sql);
-			if (schemaInfo != null && schemaInfo.schema != null && !schemaInfo.schema.equals(db)) {
-				SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
-				if (schemaConfig != null)
-					schema = schemaConfig;
-			}
-		}
-
-		routeEndExecuteSQL(sql, type, schema);
+		routeEndExecuteSQL(sql, type, schemaConfig);
 
 	}
 
     public RouteResultset routeSQL(String sql, int type) {
-
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
@@ -305,7 +251,7 @@ public class ServerConnection extends FrontendConnection {
 	 */
 	public void beginInTx(String stmt) {
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES, "Transaction error, need to rollback.");
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 		} else {
 			TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
 			getAndIncrementXid();
@@ -318,8 +264,7 @@ public class ServerConnection extends FrontendConnection {
 	 */
 	public void commit(String logReason) {
 		if (txInterrupted) {
-			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback.");
+			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 		} else {
 			TxnLogHelper.putTxnLog(this, logReason);
 			session.commit();

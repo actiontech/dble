@@ -518,11 +518,11 @@ public class ProxyMetaManager {
 					}
 				} else if (alterItem instanceof SQLAlterTableDropIndex) {
 					SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;
-					String dropName = StringUtil.removeBackquote(dropIndex.getIndexName().getSimpleName());
+					String dropName = StringUtil.removeBackQuote(dropIndex.getIndexName().getSimpleName());
 					dropIndex(tmBuilder, dropName);
 				} else if (alterItem instanceof SQLAlterTableDropKey) {
 					SQLAlterTableDropKey dropIndex = (SQLAlterTableDropKey) alterItem;
-					String dropName = StringUtil.removeBackquote(dropIndex.getKeyName().getSimpleName());
+					String dropName = StringUtil.removeBackQuote(dropIndex.getKeyName().getSimpleName());
 					dropIndex(tmBuilder, dropName);
 				} else if (alterItem instanceof MySqlAlterTableChangeColumn) {
 					autoColumnIndex = changeColumn(cols, (MySqlAlterTableChangeColumn) alterItem);
@@ -610,7 +610,7 @@ public class ProxyMetaManager {
 			}
 			if (orgTbMeta != null) {
 				TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
-				String dropName = StringUtil.removeBackquote(((SQLIdentifierExpr) dropIndexStatement.getIndexName()).getName());
+				String dropName = StringUtil.removeBackQuote(((SQLIdentifierExpr) dropIndexStatement.getIndexName()).getName());
 				dropIndex(tmBuilder, dropName);
 			}
 		} catch (Exception e) {
@@ -672,7 +672,7 @@ public class ProxyMetaManager {
 			if (isFirst) {
 				addIndex = 0;
 			} else {
-				String afterColName = StringUtil.removeBackquote(afterColumn.getSimpleName());
+				String afterColName = StringUtil.removeBackQuote(afterColumn.getSimpleName());
 				for (int i = 0; i < columnMetas.size(); i++) {
 					String colName = columnMetas.get(i).getName();
 					if (afterColName.equalsIgnoreCase(colName)) {
@@ -701,7 +701,7 @@ public class ProxyMetaManager {
 
 	private int changeColumn(List<ColumnMeta> columnMetas, MySqlAlterTableChangeColumn changeColumn) {
 		int autoColumnIndex = -1;
-		String changeColName = StringUtil.removeBackquote(changeColumn.getColumnName().getSimpleName());
+		String changeColName = StringUtil.removeBackQuote(changeColumn.getColumnName().getSimpleName());
 		for (int i = 0; i < columnMetas.size(); i++) {
 			String colName = columnMetas.get(i).getName();
 			if (changeColName.equalsIgnoreCase(colName)) {
@@ -715,7 +715,7 @@ public class ProxyMetaManager {
 		if (isFirst) {
 			changeIndex = 0;
 		} else if (afterColumn != null) {
-			String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
+			String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
 			for (int i = 0; i < columnMetas.size(); i++) {
 				String colName = columnMetas.get(i).getName();
 				if (afterColName.equalsIgnoreCase(colName)) {
@@ -736,7 +736,7 @@ public class ProxyMetaManager {
 
 	private void dropColumn(List<ColumnMeta> columnMetas, SQLAlterTableDropColumnItem dropColumn) {
 		for (SQLName dropName : dropColumn.getColumns()) {
-			String dropColName = StringUtil.removeBackquote(dropName.getSimpleName());
+			String dropColName = StringUtil.removeBackQuote(dropName.getSimpleName());
 			for (int i = 0; i < columnMetas.size(); i++) {
 				String colName = columnMetas.get(i).getName();
 				if (dropColName.equalsIgnoreCase(colName)) {
@@ -750,7 +750,7 @@ public class ProxyMetaManager {
 	private int modifyColumn(List<ColumnMeta> columnMetas, MySqlAlterTableModifyColumn modifyColumn) {
 		int autoColumnIndex = -1;
 		SQLColumnDefinition modifyColDef = modifyColumn.getNewColumnDefinition();
-		String modifyColName = StringUtil.removeBackquote(modifyColDef.getName().getSimpleName());
+		String modifyColName = StringUtil.removeBackQuote(modifyColDef.getName().getSimpleName());
 		for (int i = 0; i < columnMetas.size(); i++) {
 			String colName = columnMetas.get(i).getName();
 			if (modifyColName.equalsIgnoreCase(colName)) {
@@ -764,7 +764,7 @@ public class ProxyMetaManager {
 		if (isFirst) {
 			modifyIndex = 0;
 		} else if (afterColumn != null) {
-			String afterColName = StringUtil.removeBackquote(((SQLIdentifierExpr) afterColumn).getName());
+			String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
 			for (int i = 0; i < columnMetas.size(); i++) {
 				String colName = columnMetas.get(i).getName();
 				if (afterColName.equalsIgnoreCase(colName)) {

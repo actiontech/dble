@@ -26,13 +26,16 @@ package io.mycat.backend.mysql.nio.handler;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.net.mysql.CommandPacket;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.MySQLPacket;
+import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.server.NonBlockingSession;
 
 /**
@@ -80,7 +83,7 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+	public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 		LOGGER.warn(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
@@ -105,12 +108,13 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, BackendConnection conn) {
+	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+			boolean isLeft, BackendConnection conn) {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, BackendConnection conn) {
+	public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+		return false;
 	}
 
 	@Override
@@ -121,5 +125,11 @@ public class KillConnectionHandler implements ResponseHandler {
 	@Override
 	public void connectionClose(BackendConnection conn, String reason) {
 	}
+	@Override
+	public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
+	}
 
+	@Override
+	public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
+	}
 }

@@ -27,18 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger; 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 
@@ -47,8 +40,8 @@ import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.config.model.UserPrivilegesConfig;
 import io.mycat.net.handler.FrontendPrivileges;
-import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.MycatStatementParser;
+import io.mycat.route.RouteResultset;
+import io.mycat.server.ServerConnection;
 
 /**
  * @author mycat
@@ -203,100 +196,45 @@ public class MycatPrivileges implements FrontendPrivileges {
 		}
 		return isPassed;
 	}
-
+	public enum Checktype{INSERT,UPDATE,SELECT,DELETE};
 	// 审计SQL权限
-	@Override
-	public boolean checkDmlPrivilege(String user, String schema, String sql) {
-
-		if ( schema == null ) {
+	public static boolean checkPrivilege(RouteResultset rrs, String schema, String tableName, Checktype chekctype) {
+		ServerConnection source = rrs.getSession().getSource();
+		MycatConfig conf = MycatServer.getInstance().getConfig();
+		UserConfig userConfig = conf.getUsers().get(source.getUser());
+		if (userConfig == null) {
 			return true;
 		}
-		
-		boolean isPassed = false;
-
-		MycatConfig conf = MycatServer.getInstance().getConfig();
-		UserConfig userConfig = conf.getUsers().get(user);
-		if (userConfig != null) {
-			
-			UserPrivilegesConfig userPrivilege = userConfig.getPrivilegesConfig();
-			if ( userPrivilege != null && userPrivilege.isCheck() ) {				
-			
-				UserPrivilegesConfig.SchemaPrivilege schemaPrivilege = userPrivilege.getSchemaPrivilege( schema );
-				if ( schemaPrivilege != null ) {
-		
-					String tableName = null;
-					int index = -1;
-					
-					//TODO 此处待优化，寻找更优SQL 解析器
-					SQLStatementParser parser = new MycatStatementParser(sql);			
-					SQLStatement stmt = parser.parseStatement();
-					
-					if (stmt instanceof MySqlReplaceStatement || stmt instanceof SQLInsertStatement ) {		
-						index = 0;
-					} else if (stmt instanceof SQLUpdateStatement ) {
-						index = 1;
-					} else if (stmt instanceof SQLSelectStatement ) {
-						index = 2;
-					} else if (stmt instanceof SQLDeleteStatement ) {
-						index = 3;
-					}
-					
-					if ( index > -1) {
-						
-						SchemaStatVisitor schemaStatVisitor = new MycatSchemaStatVisitor();
-						stmt.accept(schemaStatVisitor);
-						String key = schemaStatVisitor.getCurrentTable();
-						if ( key != null ) {
-							
-							if (key.contains("`")) {
-								key = key.replaceAll("`", "");
-							}
-							
-							int dotIndex = key.indexOf(".");
-							if (dotIndex > 0) {
-								tableName = key.substring(dotIndex + 1);
-							} else {
-								tableName = key;
-							}							
-							
-							//获取table 权限, 此处不需要检测空值, 无设置则自动继承父级权限
-							UserPrivilegesConfig.TablePrivilege tablePrivilege = schemaPrivilege.getTablePrivilege( tableName );
-							if ( tablePrivilege.getDml()[index] > 0 ) {
-								isPassed = true;
-							}
-							
-						} else {
-							//skip
-							isPassed = true;
-						}
-						
-						
-					} else {						
-						//skip
-						isPassed = true;
-					}
-					
-				} else {					
-					//skip
-					isPassed = true;
-				}
-				
-			} else {
-				//skip
-				isPassed = true;
-			}
-
-		} else {
-			//skip
-			isPassed = true;
+		UserPrivilegesConfig userPrivilege = userConfig.getPrivilegesConfig();
+		if (userPrivilege == null || !userPrivilege.isCheck()) {
+			return true;
 		}
-		
-		if( !isPassed ) {
-			 ALARM.error(new StringBuilder().append(Alarms.DML_ATTACK ).append("[sql=").append( sql )
-                     .append(",user=").append(user).append(']').toString());
+		UserPrivilegesConfig.SchemaPrivilege schemaPrivilege = userPrivilege.getSchemaPrivilege(schema);
+		if (schemaPrivilege == null) {
+			return true;
 		}
-		
-		return isPassed;
-	}	
-	
+		UserPrivilegesConfig.TablePrivilege tablePrivilege = schemaPrivilege.getTablePrivilege(tableName);
+		if (tablePrivilege == null) {
+			return true;
+		}
+		int index = -1;
+		switch (chekctype) {
+		case INSERT:
+			index = 0;
+			break;
+		case UPDATE:
+			index = 1;
+			break;
+		case SELECT:
+			index = 2;
+			break;
+		case DELETE:
+			index = 3;
+			break;
+		}
+		if (tablePrivilege.getDml()[index] > 0) {
+			return true;
+		}
+		return false;
+	}
 }

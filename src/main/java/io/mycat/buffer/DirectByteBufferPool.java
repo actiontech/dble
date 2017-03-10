@@ -65,7 +65,9 @@ public class DirectByteBufferPool implements BufferPool{
         }
         return null;
     }
-
+    public ByteBuffer allocate() {
+    	return allocate(chunkSize);
+    }
     public ByteBuffer allocate(int size) {
        final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
         int selectedPage =  prevAllocatedPage.incrementAndGet() % allPages.length;

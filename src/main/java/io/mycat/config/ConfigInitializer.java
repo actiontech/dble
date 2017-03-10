@@ -34,7 +34,6 @@ import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
-import io.mycat.config.loader.ConfigLoader;
 import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLConfigLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
@@ -67,24 +66,19 @@ public class ConfigInitializer {
 	private volatile Map<String, PhysicalDBPool> dataHosts;
 
 	public ConfigInitializer(boolean loadDataHost) {
-		
-		//读取rule.xml和schema.xml
-		SchemaLoader schemaLoader = new XMLSchemaLoader();
-		
 		//读取server.xml
-		XMLConfigLoader configLoader = new XMLConfigLoader(schemaLoader);
-		
-		schemaLoader = null;
-		
+		XMLConfigLoader configLoader = new XMLConfigLoader();
+		//读取rule.xml和schema.xml
+		SchemaLoader schemaLoader = new XMLSchemaLoader(configLoader.getSystemConfig().isLowerCaseTableNames());
 		//加载配置
 		this.system = configLoader.getSystemConfig();
 		this.users = configLoader.getUserConfigs();
-		this.schemas = configLoader.getSchemaConfigs();
+		this.schemas = schemaLoader.getSchemas();
 		
 		//是否重新加载DataHost和对应的DataNode
 		if (loadDataHost) {
-			this.dataHosts = initDataHosts(configLoader);
-			this.dataNodes = initDataNodes(configLoader);
+			this.dataHosts = initDataHosts(schemaLoader);
+			this.dataNodes = initDataNodes(schemaLoader);
 		}
 		
 		//权限管理
@@ -242,18 +236,18 @@ public class ConfigInitializer {
 		return this.dataHosts;
 	}
 
-	private MycatCluster initCobarCluster(ConfigLoader configLoader) {
+	private MycatCluster initCobarCluster(XMLConfigLoader configLoader) {
 		return new MycatCluster(configLoader.getClusterConfig());
 	}
 
-	private Map<String, PhysicalDBPool> initDataHosts(ConfigLoader configLoader) {
-		Map<String, DataHostConfig> nodeConfs = configLoader.getDataHosts();
+	private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
+		Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
 		//根据DataHost建立PhysicalDBPool，其实就是实际数据库连接池，每个DataHost对应一个PhysicalDBPool
 		Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(
 				nodeConfs.size());
 		for (DataHostConfig conf : nodeConfs.values()) {
 			//建立PhysicalDBPool
-			PhysicalDBPool pool = getPhysicalDBPool(conf, configLoader);
+			PhysicalDBPool pool = getPhysicalDBPool(conf);
 			nodes.put(pool.getHostName(), pool);
 		}
 		return nodes;
@@ -271,8 +265,7 @@ public class ConfigInitializer {
 		return dataSources;
 	}
 
-	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf,
-			ConfigLoader configLoader) {
+	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
 		String name = conf.getName();
 		//针对所有写节点创建PhysicalDatasource
 		PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
@@ -291,19 +284,17 @@ public class ConfigInitializer {
 		return pool;
 	}
 
-	private Map<String, PhysicalDBNode> initDataNodes(ConfigLoader configLoader) {
-		Map<String, DataNodeConfig> nodeConfs = configLoader.getDataNodes();
+	private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {
+		Map<String, DataNodeConfig> nodeConfs = schemaLoader.getDataNodes();
 		Map<String, PhysicalDBNode> nodes = new HashMap<String, PhysicalDBNode>(
 				nodeConfs.size());
 		for (DataNodeConfig conf : nodeConfs.values()) {
 			PhysicalDBPool pool = this.dataHosts.get(conf.getDataHost());
 			if (pool == null) {
-				throw new ConfigException("dataHost not exists "
-						+ conf.getDataHost());
-
+				throw new ConfigException("dataHost not exists " + conf.getDataHost());
 			}
 			PhysicalDBNode dataNode = new PhysicalDBNode(conf.getName(),
-					conf.getDatabase(), pool);
+					conf.getDatabase() , pool);
 			nodes.put(dataNode.getName(), dataNode);
 		}
 		return nodes;

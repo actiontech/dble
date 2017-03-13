@@ -187,11 +187,6 @@ public final class SystemConfig {
 	private int nestLoopConnSize;
 	private int mappedFileSize;
 	/**
-	 * 排序时，内存不够时，将已经排序的结果集
-	 * 写入到临时目录
-	 */
-	private String dataNodeSortedTempDir;
-	/**
 	 * 是否启用zk切换
 	 */
 	private boolean	useZKSwitch=DEFAULT_USE_ZK_SWITCH;
@@ -231,7 +226,6 @@ public final class SystemConfig {
 		this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
 		this.useStreamOutput = 0;
 		this.systemReserveMemorySize = RESERVED_SYSTEM_MEMORY_BYTES;
-		this.dataNodeSortedTempDir = System.getProperty("user.dir");
 		this.XARecoveryLogBaseDir = SystemConfig.getHomePath()+"/tmlogs/";
 		this.XARecoveryLogBaseName ="tmlog";
 		this.transactionLogBaseDir = SystemConfig.getHomePath()+File.separatorChar+DEFAULT_TRANSACTION_BASE_DIR;
@@ -275,9 +269,6 @@ public final class SystemConfig {
 
 	public void setTransactionLogBaseName(String transactionLogBaseName) {
 		this.transactionLogBaseName = transactionLogBaseName;
-	}
-	public String getDataNodeSortedTempDir() {
-		return dataNodeSortedTempDir;
 	}
 
 	public int getUseOffHeapForMerge() {

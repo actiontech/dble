@@ -44,10 +44,14 @@ public final class ServerParseSet {
 	public static final int XA_FLAG_ON = 11;
 	public static final int XA_FLAG_OFF = 12;
 
+	private static final int VALUE_ON = 1;
+	private static final int VALUE_OFF = 0;
 	public static int parse(String stmt, int offset) {
-		int i = offset;
-		for (; i < stmt.length(); i++) {
-			switch (stmt.charAt(i)) {
+		if (!isSpace(stmt.charAt(offset))) {
+			return OTHER;
+		}
+		while (stmt.length() > ++offset) {
+			switch (stmt.charAt(offset)) {
 			case ' ':
 			case '\r':
 			case '\n':
@@ -55,26 +59,25 @@ public final class ServerParseSet {
 				continue;
 			case '/':
 			case '#':
-				i = ParseUtil.comment(stmt, i);
+				offset = ParseUtil.comment(stmt, offset);
 				continue;
 			case 'A':
 			case 'a':
-				return autocommit(stmt, i);
+				return autocommit(stmt, offset);
 			case 'C':
 			case 'c':
-				return characterSet(stmt, i, 0);
+				return characterSet(stmt, offset);
 			case 'N':
 			case 'n':
-				return names(stmt, i);
+				return names(stmt, offset);
 			case 'S':
 			case 's':
-				return session(stmt, i);
-			case 'T':
-			case 't':
-				return transaction(stmt, i);
+				return session(stmt, offset);
 			case 'X':
 			case 'x':
-				return xaFlag(stmt, i);
+				return xaFlag(stmt, offset);
+			case '@':
+				return parseAt(stmt, offset);
 			default:
 				return OTHER;
 			}
@@ -95,10 +98,10 @@ public final class ServerParseSet {
 					case '\t':
 						continue;
 					case '=':
-						int value = autocommitValue(stmt, offset);
-						if (value == AUTOCOMMIT_ON) {
+						int value = parseValue(stmt, offset);
+						if (value == VALUE_ON) {
 							return XA_FLAG_ON;
-						} else if (value == AUTOCOMMIT_OFF) {
+						} else if (value == VALUE_OFF) {
 							return XA_FLAG_OFF;
 						} else {
 							return OTHER;
@@ -112,7 +115,7 @@ public final class ServerParseSet {
 		return OTHER;
 	}
 
-	// SET AUTOCOMMIT(' '=)
+	//AUTOCOMMIT(' '=)
 	private static int autocommit(String stmt, int offset) {
 		if (stmt.length() > offset + 9) {
 			char c1 = stmt.charAt(++offset);
@@ -137,7 +140,14 @@ public final class ServerParseSet {
 					case '\t':
 						continue;
 					case '=':
-						return autocommitValue(stmt, offset);
+						int value = parseValue(stmt, offset);
+						if (value == VALUE_ON) {
+							return AUTOCOMMIT_ON;
+						} else if (value == VALUE_OFF) {
+							return AUTOCOMMIT_OFF;
+						} else {
+							return OTHER;
+						}
 					default:
 						return OTHER;
 					}
@@ -147,7 +157,7 @@ public final class ServerParseSet {
 		return OTHER;
 	}
 
-	private static int autocommitValue(String stmt, int offset) {
+	private static int parseValue(String stmt, int offset) {
 		for (;;) {
 			offset++;
 			if (stmt.length() <= offset) {
@@ -162,40 +172,40 @@ public final class ServerParseSet {
 			case '1':
 				if (stmt.length() == ++offset
 						|| ParseUtil.isEOF(stmt.charAt(offset))) {
-					return AUTOCOMMIT_ON;
+					return VALUE_ON;
 				} else {
 					return OTHER;
 				}
 			case '0':
 				if (stmt.length() == ++offset
 						|| ParseUtil.isEOF(stmt.charAt(offset))) {
-					return AUTOCOMMIT_OFF;
+					return VALUE_OFF;
 				} else {
 					return OTHER;
 				}
 			case 'O':
 			case 'o':
-				return autocommitOn(stmt, offset);
+				return parseValueO(stmt, offset);
 			default:
 				return OTHER;
 			}
 		}
 	}
 
-	private static int autocommitOn(String stmt, int offset) {
+	private static int parseValueO(String stmt, int offset) {
 		if (stmt.length() > ++offset) {
 			switch (stmt.charAt(offset)) {
 			case 'N':
 			case 'n':
 				if (stmt.length() == ++offset
 						|| ParseUtil.isEOF(stmt.charAt(offset))) {
-					return AUTOCOMMIT_ON;
+					return VALUE_ON;
 				} else {
 					return OTHER;
 				}
 			case 'F':
 			case 'f':
-				return autocommitOff(stmt, offset);
+				return parseValueOff(stmt, offset);
 			default:
 				return OTHER;
 			}
@@ -204,14 +214,14 @@ public final class ServerParseSet {
 	}
 
 	// SET AUTOCOMMIT = OFF
-	private static int autocommitOff(String stmt, int offset) {
+	private static int parseValueOff(String stmt, int offset) {
 		if (stmt.length() > ++offset) {
 			switch (stmt.charAt(offset)) {
 			case 'F':
 			case 'f':
 				if (stmt.length() == ++offset
 						|| ParseUtil.isEOF(stmt.charAt(offset))) {
-					return AUTOCOMMIT_OFF;
+					return VALUE_OFF;
 				} else {
 					return OTHER;
 				}
@@ -231,7 +241,7 @@ public final class ServerParseSet {
 			char c4 = stmt.charAt(++offset);
 			if ((c1 == 'A' || c1 == 'a') && (c2 == 'M' || c2 == 'm')
 					&& (c3 == 'E' || c3 == 'e') && (c4 == 'S' || c4 == 's')
-					&& stmt.charAt(++offset) == ' ') {
+					&& isSpace(stmt.charAt(++offset))) {
 				return (offset << 8) | NAMES;
 			}
 		}
@@ -239,7 +249,7 @@ public final class ServerParseSet {
 	}
 
 	// SET CHARACTER_SET_
-	private static int characterSet(String stmt, int offset, int depth) {
+	private static int characterSet(String stmt, int offset) {
 		if (stmt.length() > offset + 14) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -418,42 +428,117 @@ public final class ServerParseSet {
 		return OTHER;
 	}
 
-	// SET SESSION' '
+	//SESSION +space
 	private static int session(String stmt, int offset) {
 		if (stmt.length() > offset + 7) {
-			char c1 = stmt.charAt(++offset);
-			char c2 = stmt.charAt(++offset);
-			char c3 = stmt.charAt(++offset);
-			char c4 = stmt.charAt(++offset);
-			char c5 = stmt.charAt(++offset);
-			char c6 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's')
-					&& (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i')
-					&& (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')
-					&& stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
-						switch (stmt.charAt(offset)) {
-						case ' ':
-						case '\r':
-						case '\n':
-						case '\t':
-							continue;
-						case 'T':
-						case 't':
-							return transaction(stmt, offset);
-						default:
-							return OTHER;
-						}
+			if (isSession(stmt, offset)) {
+				offset = offset + 6;
+				if (!isSpace(stmt.charAt(++offset))) {
+					return OTHER;
+				}
+				while (stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case 'T':
+					case 't':
+						return transaction(stmt, offset);
+					case 'A':
+					case 'a':
+						return autocommit(stmt, offset);
+					default:
+						return OTHER;
 					}
-//					return OTHER;
-//				}
+				}
+			}
+		}
+		return OTHER;
+	}
+	
+	// set @@
+	private static int parseAt(String stmt, int offset) {
+		if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
+			switch (stmt.charAt(offset)) {
+			case 'S':
+			case 's':
+				return sessionDot(stmt, offset);
+			case 'A':
+			case 'a':
+				return autocommit(stmt, offset);
+			default:
+				return OTHER;
 			}
 		}
 		return OTHER;
 	}
 
-	// SET [SESSION] TRANSACTION ISOLATION LEVEL
+	// SET @@SESSION.
+	private static int sessionDot(String stmt, int offset) {
+		if (stmt.length() > offset + 8) {
+			if (isSession(stmt, offset)) {
+				offset = offset + 6;
+				if (stmt.charAt(++offset) == '.') {
+					switch (stmt.charAt(++offset)) {
+					case 'T':
+					case 't':
+						return parseTx(stmt, offset);
+					case 'A':
+					case 'a':
+						return autocommit(stmt, offset);
+					default:
+						return OTHER;
+					}
+				}
+			}
+		}
+		return OTHER;
+	}
+
+	// tx_isolation
+	private static int parseTx(String stmt, int offset) {
+		if (stmt.length() > offset + 4) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			char c3 = stmt.charAt(++offset);
+			if ((c1 == 'X' || c1 == 'x') && (c2 == '_') && (c3 == 'I' || c3 == 'i') && isIsolation(stmt, offset)) {
+				offset = offset + 8;
+				while (stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case '=':
+						return parserIsolationValue(stmt, offset, true);
+					default:
+						return OTHER;
+					}
+				}
+			}
+		}
+		return OTHER;
+	}
+	private static int parserIsolationValue(String stmt, int offset, boolean checkApostrophe){ 
+		while (stmt.length() > ++offset) {
+			switch (stmt.charAt(offset)) {
+			case ' ':
+			case '\r':
+			case '\n':
+			case '\t':
+				continue;
+			case '\'':
+				return parserLevel(stmt, offset + 1, checkApostrophe);
+			default:
+				return OTHER;
+			}
+		}
+		return OTHER;
+	}
+	// SET SESSION TRANSACTION ISOLATION LEVEL
 	private static int transaction(String stmt, int offset) {
 		if (stmt.length() > offset + 11) {
 			char c1 = stmt.charAt(++offset);
@@ -466,109 +551,100 @@ public final class ServerParseSet {
 			char c8 = stmt.charAt(++offset);
 			char c9 = stmt.charAt(++offset);
 			char c10 = stmt.charAt(++offset);
-			if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a')
-					&& (c3 == 'N' || c3 == 'n') && (c4 == 'S' || c4 == 's')
-					&& (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
-					&& (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i')
-					&& (c9 == 'O' || c9 == 'o') && (c10 == 'N' || c10 == 'n')
-					&& stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
-						switch (stmt.charAt(offset)) {
-						case ' ':
-						case '\r':
-						case '\n':
-						case '\t':
-							continue;
-						case 'I':
-						case 'i':
-							return isolation(stmt, offset);
-						default:
-							return OTHER;
-						}
+			if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
+					&& (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
+					&& (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o')
+					&& (c10 == 'N' || c10 == 'n') && isSpace(stmt.charAt(++offset))) {
+				while (stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case 'I':
+					case 'i':
+						return isolation(stmt, offset);
+					default:
+						return OTHER;
 					}
-//					return OTHER;
-//				}
+				}
 			}
 		}
 		return OTHER;
 	}
 
-	// SET [SESSION] TRANSACTION ISOLATION LEVEL
+	// SET SESSION TRANSACTION ISOLATION LEVEL || set @@session.isolation = ' '
 	private static int isolation(String stmt, int offset) {
 		if (stmt.length() > offset + 9) {
-			char c1 = stmt.charAt(++offset);
-			char c2 = stmt.charAt(++offset);
-			char c3 = stmt.charAt(++offset);
-			char c4 = stmt.charAt(++offset);
-			char c5 = stmt.charAt(++offset);
-			char c6 = stmt.charAt(++offset);
-			char c7 = stmt.charAt(++offset);
-			char c8 = stmt.charAt(++offset);
-			if ((c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o')
-					&& (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a')
-					&& (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i')
-					&& (c7 == 'O' || c7 == 'o') && (c8 == 'N' || c8 == 'n')
-					&& stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
-						switch (stmt.charAt(offset)) {
-						case ' ':
-						case '\r':
-						case '\n':
-						case '\t':
-							continue;
-						case 'L':
-						case 'l':
-							return level(stmt, offset);
-						default:
-							return OTHER;
-						}
+			if (isIsolation(stmt, offset)) {
+				offset = offset + 8;
+				if (!isSpace(stmt.charAt(++offset))) {
+					return OTHER;
+				}
+				while (stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case 'L':
+					case 'l':
+						return level(stmt, offset);
+					default:
+						return OTHER;
 					}
-//					return OTHER;
-//				}
+				}
 			}
 		}
 		return OTHER;
 	}
 
-	// SET [SESSION] TRANSACTION ISOLATION LEVEL' '
+	// SET SESSION TRANSACTION ISOLATION LEVEL' '
 	private static int level(String stmt, int offset) {
 		if (stmt.length() > offset + 5) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
 			char c3 = stmt.charAt(++offset);
 			char c4 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e') && (c2 == 'V' || c2 == 'v')
-					&& (c3 == 'E' || c3 == 'e') && (c4 == 'L' || c4 == 'l')
-					&& stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
-						switch (stmt.charAt(offset)) {
-						case ' ':
-						case '\r':
-						case '\n':
-						case '\t':
-							continue;
-						case 'R':
-						case 'r':
-							return rCheck(stmt, offset);
-						case 'S':
-						case 's':
-							return serializable(stmt, offset);
-						default:
-							return OTHER;
-						}
+			if ((c1 == 'E' || c1 == 'e') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e')
+					&& (c4 == 'L' || c4 == 'l') && isSpace(stmt.charAt(++offset))) {
+				while (stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case 'r':
+					case 'R':
+					case 's':
+					case 'S':
+						stmt = stmt.toUpperCase();
+						return parserLevel(stmt, offset, false);
+					default:
+						return OTHER;
 					}
-//					return OTHER;
-//				}
+				}
 			}
 		}
 		return OTHER;
 	}
 
-	// SET [SESSION] TRANSACTION ISOLATION LEVEL SERIALIZABLE
-	private static int serializable(String stmt, int offset) {
+	private static int parserLevel(String stmt, int offset, boolean checkApostrophe) {
+		switch (stmt.charAt(offset)) {
+		case 'R':
+			return rCheck(stmt, offset, checkApostrophe);
+		case 'S':
+			return serializable(stmt, offset, checkApostrophe);
+		default:
+			return OTHER;
+		}
+	}
+
+	// SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE
+	private static int serializable(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > offset + 11) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -581,32 +657,25 @@ public final class ServerParseSet {
 			char c9 = stmt.charAt(++offset);
 			char c10 = stmt.charAt(++offset);
 			char c11 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e')
-					&& (c2 == 'R' || c2 == 'r')
-					&& (c3 == 'I' || c3 == 'i')
-					&& (c4 == 'A' || c4 == 'a')
-					&& (c5 == 'L' || c5 == 'l')
-					&& (c6 == 'I' || c6 == 'i')
-					&& (c7 == 'Z' || c7 == 'z')
-					&& (c8 == 'A' || c8 == 'a')
-					&& (c9 == 'B' || c9 == 'b')
-					&& (c10 == 'L' || c10 == 'l')
-					&& (c11 == 'E' || c11 == 'e')
-					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-							.charAt(offset)))) {
-				return TX_SERIALIZABLE;
+			if ((c1 == 'E') && (c2 == 'R') && (c3 == 'I') && (c4 == 'A') && (c5 == 'L') && (c6 == 'I') && (c7 == 'Z')
+					&& (c8 == 'A') && (c9 == 'B') && (c10 == 'L') && (c11 == 'E')) {
+				if (checkApostrophe && stmt.charAt(++offset) != '\'') {
+					return OTHER;
+				}
+				if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+					return TX_SERIALIZABLE;
+				}
 			}
 		}
 		return OTHER;
 	}
 
 	// READ' '|REPEATABLE
-	private static int rCheck(String stmt, int offset) {
+	private static int rCheck(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > ++offset) {
 			switch (stmt.charAt(offset)) {
 			case 'E':
-			case 'e':
-				return eCheck(stmt, offset);
+				return eCheck(stmt, offset, checkApostrophe);
 			default:
 				return OTHER;
 			}
@@ -615,15 +684,13 @@ public final class ServerParseSet {
 	}
 
 	// READ' '|REPEATABLE
-	private static int eCheck(String stmt, int offset) {
+	private static int eCheck(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > ++offset) {
 			switch (stmt.charAt(offset)) {
 			case 'A':
-			case 'a':
-				return aCheck(stmt, offset);
+				return aCheck(stmt, offset, checkApostrophe);
 			case 'P':
-			case 'p':
-				return pCheck(stmt, offset);
+				return pCheck(stmt, offset, checkApostrophe);
 			default:
 				return OTHER;
 			}
@@ -631,38 +698,48 @@ public final class ServerParseSet {
 		return OTHER;
 	}
 
-	// READ' '
-	private static int aCheck(String stmt, int offset) {
-		if (stmt.length() > offset + 2) {
-			char c1 = stmt.charAt(++offset);
-			if ((c1 == 'D' || c1 == 'd') && stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
-						switch (stmt.charAt(offset)) {
-						case ' ':
-						case '\r':
-						case '\n':
-						case '\t':
-							continue;
-						case 'C':
-						case 'c':
-							return committed(stmt, offset);
-						case 'U':
-						case 'u':
-							return uncommitted(stmt, offset);
-						default:
-							return OTHER;
-						}
+	// READ' '||READ-
+	private static int aCheck(String stmt, int offset, boolean checkApostrophe) {
+		if ((stmt.length() > offset + 2) && (stmt.charAt(++offset) == 'D')) {
+			if (checkApostrophe) {
+				if (stmt.charAt(++offset) != '-') {
+					return OTHER;
+				}
+				offset++;
+			} else if (!isSpace(stmt.charAt(++offset))) {
+				return OTHER;
+			} else {
+				boolean find = false;
+				while (!find && stmt.length() > ++offset) {
+					switch (stmt.charAt(offset)) {
+					case ' ':
+					case '\r':
+					case '\n':
+					case '\t':
+						continue;
+					case 'C':
+					case 'U':
+						find = true;
+						break;
+					default:
+						return OTHER;
 					}
-//					return OTHER;
-//				}
+				}
+			}
+			switch (stmt.charAt(offset)) {
+			case 'C':
+				return committed(stmt, offset, checkApostrophe);
+			case 'U':
+				return uncommitted(stmt, offset, checkApostrophe);
+			default:
+				return OTHER;
 			}
 		}
 		return OTHER;
 	}
 
 	// COMMITTED
-	private static int committed(String stmt, int offset) {
+	private static int committed(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > offset + 8) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -672,24 +749,21 @@ public final class ServerParseSet {
 			char c6 = stmt.charAt(++offset);
 			char c7 = stmt.charAt(++offset);
 			char c8 = stmt.charAt(++offset);
-			if ((c1 == 'O' || c1 == 'o')
-					&& (c2 == 'M' || c2 == 'm')
-					&& (c3 == 'M' || c3 == 'm')
-					&& (c4 == 'I' || c4 == 'i')
-					&& (c5 == 'T' || c5 == 't')
-					&& (c6 == 'T' || c6 == 't')
-					&& (c7 == 'E' || c7 == 'e')
-					&& (c8 == 'D' || c8 == 'd')
-					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-							.charAt(offset)))) {
-				return TX_READ_COMMITTED;
+			if ((c1 == 'O') && (c2 == 'M') && (c3 == 'M') && (c4 == 'I') && (c5 == 'T') && (c6 == 'T') && (c7 == 'E')
+					&& (c8 == 'D')) {
+				if (checkApostrophe && stmt.charAt(++offset) != '\'') {
+					return OTHER;
+				}
+				if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+					return TX_READ_COMMITTED;
+				}
 			}
 		}
 		return OTHER;
 	}
 
 	// UNCOMMITTED
-	private static int uncommitted(String stmt, int offset) {
+	private static int uncommitted(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > offset + 10) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -701,26 +775,21 @@ public final class ServerParseSet {
 			char c8 = stmt.charAt(++offset);
 			char c9 = stmt.charAt(++offset);
 			char c10 = stmt.charAt(++offset);
-			if ((c1 == 'N' || c1 == 'n')
-					&& (c2 == 'C' || c2 == 'c')
-					&& (c3 == 'O' || c3 == 'o')
-					&& (c4 == 'M' || c4 == 'm')
-					&& (c5 == 'M' || c5 == 'm')
-					&& (c6 == 'I' || c6 == 'i')
-					&& (c7 == 'T' || c7 == 't')
-					&& (c8 == 'T' || c8 == 't')
-					&& (c9 == 'E' || c9 == 'e')
-					&& (c10 == 'D' || c10 == 'd')
-					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-							.charAt(offset)))) {
-				return TX_READ_UNCOMMITTED;
+			if ((c1 == 'N') && (c2 == 'C') && (c3 == 'O') && (c4 == 'M') && (c5 == 'M') && (c6 == 'I') && (c7 == 'T')
+					&& (c8 == 'T') && (c9 == 'E') && (c10 == 'D')) {
+				if (checkApostrophe && stmt.charAt(++offset) != '\'') {
+					return OTHER;
+				}
+				if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+					return TX_READ_UNCOMMITTED;
+				}
 			}
 		}
 		return OTHER;
 	}
 
 	// REPEATABLE
-	private static int pCheck(String stmt, int offset) {
+	private static int pCheck(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > offset + 8) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -729,12 +798,17 @@ public final class ServerParseSet {
 			char c5 = stmt.charAt(++offset);
 			char c6 = stmt.charAt(++offset);
 			char c7 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a')
-					&& (c3 == 'T' || c3 == 't') && (c4 == 'A' || c4 == 'a')
-					&& (c5 == 'B' || c5 == 'b') && (c6 == 'L' || c6 == 'l')
-					&& (c7 == 'E' || c7 == 'e') && stmt.charAt(++offset) == ' ') {
-//				for (;;) {
-					while (stmt.length() > ++offset) {
+			if ((c1 == 'E') && (c2 == 'A') && (c3 == 'T') && (c4 == 'A') && (c5 == 'B') && (c6 == 'L') && (c7 == 'E')) {
+				if (checkApostrophe) {
+					if (stmt.charAt(++offset) != '-') {
+						return OTHER;
+					}
+					offset++;
+				} else if (!isSpace(stmt.charAt(++offset))) {
+					return OTHER;
+				} else {
+					boolean find = false;
+					while (!find && stmt.length() > ++offset) {
 						switch (stmt.charAt(offset)) {
 						case ' ':
 						case '\r':
@@ -743,33 +817,76 @@ public final class ServerParseSet {
 							continue;
 						case 'R':
 						case 'r':
-							return prCheck(stmt, offset);
+							find = true;
+							break;
 						default:
 							return OTHER;
 						}
 					}
-//					return OTHER;
-//				}
+				}
+				switch (stmt.charAt(offset)) {
+				case 'R':
+				case 'r':
+					return prCheck(stmt, offset, checkApostrophe);
+				default:
+					return OTHER;
+				}
 			}
 		}
 		return OTHER;
 	}
 
 	// READ
-	private static int prCheck(String stmt, int offset) {
+	private static int prCheck(String stmt, int offset, boolean checkApostrophe) {
 		if (stmt.length() > offset + 3) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
 			char c3 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e')
-					&& (c2 == 'A' || c2 == 'a')
-					&& (c3 == 'D' || c3 == 'd')
-					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-							.charAt(offset)))) {
-				return TX_REPEATED_READ;
+			if ((c1 == 'E') && (c2 == 'A') && (c3 == 'D')) {
+				if (checkApostrophe && stmt.charAt(++offset) != '\'') {
+					return OTHER;
+				}
+				if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+					return TX_REPEATED_READ;
+				}
 			}
 		}
 		return OTHER;
 	}
 
+	private static boolean isIsolation(String stmt, int offset) {
+		char c1 = stmt.charAt(++offset);
+		char c2 = stmt.charAt(++offset);
+		char c3 = stmt.charAt(++offset);
+		char c4 = stmt.charAt(++offset);
+		char c5 = stmt.charAt(++offset);
+		char c6 = stmt.charAt(++offset);
+		char c7 = stmt.charAt(++offset);
+		char c8 = stmt.charAt(++offset);
+		if ((c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a')
+				&& (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') && (c7 == 'O' || c7 == 'o')
+				&& (c8 == 'N' || c8 == 'n')) {
+			return true;
+		}
+		return false;
+	}
+	private static boolean isSession(String stmt, int offset) {
+		char c1 = stmt.charAt(++offset);
+		char c2 = stmt.charAt(++offset);
+		char c3 = stmt.charAt(++offset);
+		char c4 = stmt.charAt(++offset);
+		char c5 = stmt.charAt(++offset);
+		char c6 = stmt.charAt(++offset);
+		if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i')
+				&& (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
+			return true;
+		}
+		return false;
+	}
+	private static boolean isSpace(char space) {
+		if (space == ' ' || space == '\r' || space == '\n' || space == '\t') {
+			return true;
+		}
+		return false;
+	}
 }

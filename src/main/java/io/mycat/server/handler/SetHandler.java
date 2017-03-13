@@ -61,7 +61,7 @@ public final class SetHandler {
 	private static final byte[] AC_OFF = new byte[] { 7, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 };
 		
 	public static void handle(String stmt, ServerConnection c, int offset) {
-		// System.out.println("SetHandler: "+stmt);
+		//TODO: set split with ','
 		int rs = ServerParseSet.parse(stmt, offset);
 		switch (rs & 0xff) {
 		case AUTOCOMMIT_ON:

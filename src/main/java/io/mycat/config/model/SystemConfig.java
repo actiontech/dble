@@ -64,8 +64,6 @@ public final class SystemConfig {
 	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
-	private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
-	private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
 	private static final boolean DEFAULT_LOWER_CASE = true;
@@ -108,8 +106,6 @@ public final class SystemConfig {
 	private long xaLogCleanPeriod;
 	private long dataNodeIdleCheckPeriod;
 	private long dataNodeHeartbeatPeriod;
-	private String clusterHeartbeatUser;
-	private String clusterHeartbeatPass;
 	private int txIsolation;
 	private int sqlRecordCount;
 	private int recordTxn = 0;
@@ -216,8 +212,6 @@ public final class SystemConfig {
 		this.xaLogCleanPeriod  = DEFAULT_XA_LOG_CLEAN_PERIOD;
 		this.dataNodeIdleCheckPeriod = DEFAULT_DATANODE_IDLE_CHECK_PERIOD;
 		this.dataNodeHeartbeatPeriod = DEFAULT_DATANODE_HEARTBEAT_PERIOD;
-		this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
-		this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
 		this.txIsolation = Isolations.REPEATED_READ;
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
 		this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
@@ -583,14 +577,6 @@ public final class SystemConfig {
 		this.dataNodeHeartbeatPeriod = dataNodeHeartbeatPeriod;
 	}
 
-	public String getClusterHeartbeatUser() {
-		return clusterHeartbeatUser;
-	}
-
-	public void setClusterHeartbeatUser(String clusterHeartbeatUser) {
-		this.clusterHeartbeatUser = clusterHeartbeatUser;
-	}
-
 	public long getSqlExecuteTimeout() {
 		return sqlExecuteTimeout;
 	}
@@ -599,13 +585,6 @@ public final class SystemConfig {
 		this.sqlExecuteTimeout = sqlExecuteTimeout;
 	}
 
-	public String getClusterHeartbeatPass() {
-		return clusterHeartbeatPass;
-	}
-
-	public void setClusterHeartbeatPass(String clusterHeartbeatPass) {
-		this.clusterHeartbeatPass = clusterHeartbeatPass;
-	}
 
 	public int getFrontsocketsorcvbuf() {
 		return frontSocketSoRcvbuf;
@@ -803,8 +782,6 @@ public final class SystemConfig {
 				+ ", xaLogCleanPeriod=" + xaLogCleanPeriod
 				+ ", transactionLogBaseDir=" + transactionLogBaseDir 
 				+ ", transactionLogBaseName=" + transactionLogBaseName
-				+ ", clusterHeartbeatUser=" + clusterHeartbeatUser
-				+ ", clusterHeartbeatPass=" + clusterHeartbeatPass
 				+ ", txIsolation=" + txIsolation
 				+ ", sqlRecordCount=" + sqlRecordCount
 				+ ", bufferPoolPageSize=" + bufferPoolPageSize

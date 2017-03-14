@@ -80,16 +80,12 @@ public class MycatPrivileges implements FrontendPrivileges {
     @Override
     public String getPassword(String user) {
         MycatConfig conf = MycatServer.getInstance().getConfig();
-        if (user != null && user.equals(conf.getSystem().getClusterHeartbeatUser())) {
-            return conf.getSystem().getClusterHeartbeatPass();
-        } else {
             UserConfig uc = conf.getUsers().get(user);
             if (uc != null) {
                 return uc.getPassword();
             } else {
                 return null;
             }
-        }
     }
 
     @Override

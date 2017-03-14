@@ -150,7 +150,6 @@ public class MycatServer {
 
 	private final MycatConfig config;
 	private final ScheduledExecutorService scheduler;
-	private final SQLRecorder sqlRecorder;
 	private final AtomicBoolean isOnline;
 	private final long startupTime;
 	private NIOProcessor[] processors;
@@ -170,9 +169,6 @@ public class MycatServer {
 		//定时线程池，单线程线程池
 		scheduler = Executors.newSingleThreadScheduledExecutor();
 		
-		//SQL记录器
-		this.sqlRecorder = new SQLRecorder(config.getSystem().getSqlRecordCount());
-
 		/**
 		 * 是否在线，MyCat manager中有命令控制
 		 * | offline | Change MyCat status to OFF |
@@ -743,9 +739,6 @@ public class MycatServer {
 		return connector;
 	}
 
-	public SQLRecorder getSqlRecorder() {
-		return sqlRecorder;
-	}
 
 	public long getStartupTime() {
 		return startupTime;

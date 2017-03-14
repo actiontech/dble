@@ -56,7 +56,6 @@ public class MyCatMemory {
 		LOGGER.info("useStreamOutput = " + system.getUseStreamOutput());
 		LOGGER.info("systemReserveMemorySize = " + system.getSystemReserveMemorySize());
 		LOGGER.info("totalNetWorkBufferSize = " + JavaUtils.bytesToString2(totalNetWorkBufferSize));
-		LOGGER.info("dataNodeSortedTempDir = " + system.getDataNodeSortedTempDir());
 
 		this.conf = new MycatPropertyConf();
 		numCores = Runtime.getRuntime().availableProcessors();

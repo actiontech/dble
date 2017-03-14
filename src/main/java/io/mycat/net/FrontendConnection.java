@@ -218,7 +218,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 		MySQLMessage mm = new MySQLMessage(data);
 		mm.position(5);
 		String db = mm.readString();
-
+		if (db != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			db = db.toLowerCase();
+		}
 		// 检查schema的有效性
 		if (db == null || !privileges.schemaExists(db)) {
 			writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");

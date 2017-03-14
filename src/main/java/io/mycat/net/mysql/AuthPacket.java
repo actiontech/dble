@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.backend.mysql.StreamUtil;
@@ -83,6 +84,9 @@ public class AuthPacket extends MySQLPacket {
         password = mm.readBytesWithLength();
         if (((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0) && mm.hasRemaining()) {
             database = mm.readStringWithNull();
+			if (database != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				database = database.toLowerCase();
+			}
         }
     }
 

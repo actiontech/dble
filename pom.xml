@@ -32,6 +32,11 @@
 			<name>local private nexus</name>
 			<url>http://nexus.mycat.io/content/groups/public</url>
 		</repository>
+		<repository>
+			<id>jenkins</id>
+			<name> Jenkins Releases Repository</name>
+			<url>http://repo.jenkins-ci.org/releases/</url>
+		</repository>
 	</repositories>
 	<distributionManagement>
 		<repository>

@@ -106,7 +106,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 		if (heartbeat.getSource().getHostConfig().isShowClusterSql() ) {
 			fetchColms=MYSQL_CLUSTER_STAUTS_COLMS;
 		}
-		OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler( fetchColms, this);
+		
+		OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchColms, this);
 		sqlJob = new SQLJob(heartbeat.getHeartbeatSQL(), databaseName, resultHandler, ds);
 		sqlJob.run();
 	}

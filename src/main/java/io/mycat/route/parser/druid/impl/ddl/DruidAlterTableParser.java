@@ -292,6 +292,9 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		String  columnName = name.toString();
 		Map<String, TableConfig> tableConfig = schema.getTables();
 		TableConfig chanagedTable = tableConfig.get(tableName);
+		if (chanagedTable == null){
+			return  false;
+		}
 		if(columnName.equalsIgnoreCase(chanagedTable.getPartitionColumn())
 				|| columnName.equalsIgnoreCase(chanagedTable.getJoinKey())){
 			return true;

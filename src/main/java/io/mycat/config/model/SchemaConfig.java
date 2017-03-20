@@ -45,21 +45,16 @@ public class SchemaConfig {
 	 * prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
-
-	/**
-	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
-	 * ,then A is root table
-	 */
-	private final Map<String, TableConfig> joinRel2TableMap = new HashMap<String, TableConfig>();
 	private final String[] allDataNodeStrArr;
-
+	private Map<ERTable, Set<ERTable>> FkErRelations;
+	private Map<String, Set<ERTable>> funcNodeERMap;
 	public SchemaConfig(String name, String dataNode,
 			Map<String, TableConfig> tables, int defaultMaxLimit) {
 		this.name = name;
 		this.dataNode = dataNode;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
-		buildJoinMap(tables);
+		buildERMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
 			throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
@@ -75,36 +70,70 @@ public class SchemaConfig {
 		}
 	}
 
-//	public boolean isCheckSQLSchema() {
-//		return checkSQLSchema;
-//	}
-
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
 	}
-
-	private void buildJoinMap(Map<String, TableConfig> tables2) {
+	private void buildERMap(Map<String, TableConfig> tables2) {
 		if (tables == null || tables.isEmpty()) {
 			return;
 		}
 		for (TableConfig tc : tables.values()) {
-			if (tc.getParentTC() != null) {
-				TableConfig rootTc = tc.getRootParent();
-				String joinRel1 = tc.getName() + '.' + tc.getJoinKey() + '='
-						+ tc.getParentTC().getName() + '.' + tc.getParentKey();
-				String joinRel2 = tc.getParentTC().getName() + '.'
-						+ tc.getParentKey() + '=' + tc.getName() + '.'
-						+ tc.getJoinKey();
-				joinRel2TableMap.put(joinRel1, rootTc);
-				joinRel2TableMap.put(joinRel2, rootTc);
+			TableConfig parent = tc.getParentTC();
+			if (parent == null) {
+				// noraml table may has the same funaction add date node with other tables
+				TableConfig root = tc.getDirectRouteTC();
+				if (tc.isGlobalTable() || tc.getRule() == null) {
+					continue;
+				}
+				String key = tc.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
+				String column = root.getRule().getColumn();
+				if (funcNodeERMap == null) {
+					funcNodeERMap = new HashMap<String, Set<ERTable>>();
+				}
+				Set<ERTable> eratables = funcNodeERMap.get(key);
+				if (eratables == null) {
+					eratables = new HashSet<ERTable>();
+					funcNodeERMap.put(key, eratables);
+				}
+				eratables.add(new ERTable(name, tc.getName(), column));
+				continue;
 			}
+			if (parent.getDirectRouteTC() == null || tc.getDirectRouteTC() == null) {
+				if (FkErRelations == null) {
+					FkErRelations = new HashMap<ERTable, Set<ERTable>>();
+				}
+				ERTable parentTable = new ERTable(name, parent.getName(), tc.getParentKey());
+				ERTable childTable = new ERTable(name, tc.getName(), tc.getJoinKey());
+				Set<ERTable> relationParent = FkErRelations.get(parentTable);
+				if (relationParent == null) {
+					relationParent = new HashSet<ERTable>(1);
+				}
+				relationParent.add(childTable);
+				FkErRelations.put(parentTable, relationParent);
 
+				Set<ERTable> relationChild = FkErRelations.get(childTable);
+				if (relationChild == null) {
+					relationChild = new HashSet<ERTable>(1);
+				}
+				relationChild.add(parentTable);
+				FkErRelations.put(childTable, relationChild);
+			} else {
+				if (tc.getDirectRouteTC() != null) {
+					TableConfig root = tc.getDirectRouteTC();
+					String key = root.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
+					if (funcNodeERMap == null) {
+						funcNodeERMap = new HashMap<String, Set<ERTable>>();
+					}
+					Set<ERTable> eratables = funcNodeERMap.get(key);
+					if (eratables == null) {
+						eratables = new HashSet<ERTable>();
+						funcNodeERMap.put(key, eratables);
+					}
+					eratables.add(new ERTable(name, tc.getName(), tc.getJoinKey()));
+					eratables.add(new ERTable(name, parent.getName(), tc.getParentKey()));
+				}
+			}
 		}
-
-	}
-
-	public Map<String, TableConfig> getJoinRel2TableMap() {
-		return joinRel2TableMap;
 	}
 
 	public String getName() {
@@ -131,6 +160,9 @@ public class SchemaConfig {
 		return allDataNodes;
 	}
 
+	public Map<ERTable, Set<ERTable>> getFkErRelations() {
+		return FkErRelations;
+	}
 	public String getRandomDataNode() {
 		if (this.allDataNodeStrArr == null) {
 			return null;
@@ -174,6 +206,10 @@ public class SchemaConfig {
 
 	private static boolean isEmpty(String str) {
 		return ((str == null) || (str.length() == 0));
+	}
+
+	public Map<String, Set<ERTable>> getFuncNodeERMap() {
+		return funcNodeERMap;
 	}
 
 }

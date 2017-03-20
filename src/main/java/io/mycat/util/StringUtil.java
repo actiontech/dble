@@ -382,6 +382,12 @@ public class StringUtil {
 		return str1.equalsIgnoreCase(str2);
 	}
 
+	public static boolean equals(String str1, String str2) {
+		if (str1 == null) {
+			return str2 == null;
+		}
+		return str1.equals(str2);
+	}
 	public static int countChar(String str, char c) {
 		if (str == null || str.isEmpty()) {
 			return 0;

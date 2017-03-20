@@ -40,6 +40,7 @@ import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.DataHostConfig;
 import io.mycat.config.model.DataNodeConfig;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -64,6 +65,7 @@ public class ConfigInitializer {
 	private volatile Map<String, SchemaConfig> schemas;
 	private volatile Map<String, PhysicalDBNode> dataNodes;
 	private volatile Map<String, PhysicalDBPool> dataHosts;
+	private volatile Map<ERTable, Set<ERTable>> erRelations;
 
 	public ConfigInitializer(boolean loadDataHost) {
 		//读取server.xml
@@ -74,7 +76,7 @@ public class ConfigInitializer {
 		this.system = configLoader.getSystemConfig();
 		this.users = configLoader.getUserConfigs();
 		this.schemas = schemaLoader.getSchemas();
-		
+		this.erRelations = schemaLoader.getErRelations();
 		//是否重新加载DataHost和对应的DataNode
 		if (loadDataHost) {
 			this.dataHosts = initDataHosts(schemaLoader);
@@ -236,6 +238,9 @@ public class ConfigInitializer {
 		return this.dataHosts;
 	}
 
+	public Map<ERTable, Set<ERTable>> getErRelations() {
+		return erRelations;
+	}
 	private MycatCluster initCobarCluster(XMLConfigLoader configLoader) {
 		return new MycatCluster(configLoader.getClusterConfig());
 	}

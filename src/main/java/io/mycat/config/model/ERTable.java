@@ -1,10 +1,10 @@
 package io.mycat.config.model;
 
-public class ERTable {
+public class ERTable{
 	private final String table;
 	private final String column;
 	private final String schema;
-
+	private int hashCode = 0;
 	public ERTable(String schema, String table, String column) {
 		if (schema == null)
 			throw new IllegalArgumentException("ERTable's schema can't be null");
@@ -31,12 +31,15 @@ public class ERTable {
 
 	@Override
 	public int hashCode() {
-		final int constant = 37;
-		int hash = 17;
-		hash += constant * (schema == null ? 0 : schema.toLowerCase().hashCode());
-		hash += constant * (table == null ? 0 : table.toLowerCase().hashCode());
-		hash += constant * (column == null ? 0 : column.toLowerCase().hashCode());
-		return hash;
+		if (hashCode == 0) {
+			final int constant = 37;
+			int hash = 17;
+			hash += constant * (schema == null ? 0 : schema.hashCode());
+			hash += constant * (table == null ? 0 : table.hashCode());
+			hash += constant * (column == null ? 0 : column.toLowerCase().hashCode());
+			hashCode = hash;
+		}
+		return hashCode;
 	}
 
 	@Override
@@ -45,8 +48,8 @@ public class ERTable {
 			return true;
 		if (obj instanceof ERTable) {
 			ERTable erTable = (ERTable) obj;
-			return this.schema.equalsIgnoreCase(erTable.getSchema())
-					&& this.table.equalsIgnoreCase(erTable.getTable())
+			return this.schema.equals(erTable.getSchema())
+					&& this.table.equals(erTable.getTable())
 					&& this.column.equalsIgnoreCase(erTable.getColumn());
 		}
 		return false;

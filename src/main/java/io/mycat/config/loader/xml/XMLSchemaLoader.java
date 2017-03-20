@@ -31,8 +31,11 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,7 @@ import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.DataHostConfig;
 import io.mycat.config.model.DataNodeConfig;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.TableConfig.TableTypeEnum;
@@ -70,6 +74,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 	private final Map<String, DataHostConfig> dataHosts;
 	private final Map<String, DataNodeConfig> dataNodes;
 	private final Map<String, SchemaConfig> schemas;
+	private Map<ERTable, Set<ERTable>> erRelations;
+	private Map<String, Set<ERTable>> funcNodeERMap;
 	private final boolean lowerCaseNames;
 	public XMLSchemaLoader(String schemaFile, String ruleFile, boolean lowerCaseNames) {
 		//先读取rule.xml
@@ -113,6 +119,10 @@ public class XMLSchemaLoader implements SchemaLoader {
 	@Override
 	public Map<String, SchemaConfig> getSchemas() {
 		return (Map<String, SchemaConfig>) (schemas.isEmpty() ? Collections.emptyMap() : schemas);
+	}
+	@Override
+	public Map<ERTable, Set<ERTable>> getErRelations() {
+		return erRelations;
 	}
 
 	private void load(String dtdFile, String xmlFile) {
@@ -188,11 +198,67 @@ public class XMLSchemaLoader implements SchemaLoader {
 			}
 			SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
 					tables, sqlMaxLimit);
+			mergeFuncNodeERMap(schemaConfig);
+			mergeFKERMap(schemaConfig);
 			schemas.put(name, schemaConfig);
 		}
+		makeAllErRelations();
+	}
+	private void makeAllErRelations() {
+		if(funcNodeERMap == null){
+			return;
+		}
+		Iterator<Entry<String, Set<ERTable>>> iterator = funcNodeERMap.entrySet().iterator();
+		while(iterator.hasNext()){
+			Entry<String, Set<ERTable>> entry = iterator.next();
+			if(entry.getValue().size()==1){
+				iterator.remove();
+				continue;
+			}
+			for (ERTable erTable:entry.getValue()) {
+				Set<ERTable> relations = erRelations.get(erTable);
+				if(relations==null){
+					erRelations.put(erTable, entry.getValue());
+				}else{
+					relations.addAll(entry.getValue());
+				}
+			}
+		}
+		funcNodeERMap = null;
 	}
 
-	
+	private void mergeFuncNodeERMap(SchemaConfig schemaConfig){
+		Map<String, Set<ERTable>> schemaFuncNodeER = schemaConfig.getFuncNodeERMap();
+		if(schemaFuncNodeER == null){
+			return;
+		}
+		Iterator<Entry<String, Set<ERTable>>> iterator = schemaFuncNodeER.entrySet().iterator();
+		while(iterator.hasNext()){
+			Entry<String, Set<ERTable>> entry = iterator.next();
+			String key = entry.getKey();
+			if(funcNodeERMap == null){
+				funcNodeERMap = new HashMap<String, Set<ERTable>>();
+			}
+			if(!funcNodeERMap.containsKey(key)){
+				funcNodeERMap.put(key, entry.getValue());
+			}else{
+				Set<ERTable> setFuncNode = funcNodeERMap.get(key);
+				setFuncNode.addAll(entry.getValue());
+			}
+		}
+		schemaFuncNodeER = null;
+	}
+	private void mergeFKERMap(SchemaConfig schemaConfig){
+		Map<ERTable, Set<ERTable>> schemaFKERMap= schemaConfig.getFkErRelations();
+		if(schemaFKERMap == null){
+			return;
+		}
+		if(erRelations == null){
+			erRelations = new HashMap<ERTable, Set<ERTable>>();
+		}
+		erRelations.putAll(schemaFKERMap);
+		schemaFKERMap = null;
+	}
 	/**
 	 * 处理动态日期表, 支持 YYYYMM、YYYYMMDD 两种格式
 	 * 

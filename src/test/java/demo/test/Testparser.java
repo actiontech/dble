@@ -53,6 +53,9 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 public class Testparser {
 	public static void main(String args[]) {
+		byte[] temp = new byte[4];
+		byte[] rest = new byte[]{1,1,1,1};
+		System.arraycopy(rest, 4, temp, 4, 0);
 		String str ="''";
 		str =str.substring(1, str.length() - 1);
 		

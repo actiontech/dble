@@ -32,9 +32,8 @@ public class MyOptimizer {
 				// 将约束条件推向叶节点
 				node = FilterJoinColumnPusher.optimize(node);
 
-				//TODO 
-//				node = JoinERProcessor.optimize(node);
-//
+				node = JoinERProcessor.optimize(node);
+
 				if (existGlobal == 0) {
 					node = GlobalTableProcessor.optimize(node);
 				}

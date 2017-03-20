@@ -203,6 +203,7 @@ public class XMLRuleLoader {
 				String clazz = e.getAttribute("class");
 				//根据class利用反射新建分片算法
 				AbstractPartitionAlgorithm function = createFunction(name, clazz);
+				function.setName(name);
 				//根据读取参数配置分片算法
 				ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
 				//每个AbstractPartitionAlgorithm可能会实现init来初始化

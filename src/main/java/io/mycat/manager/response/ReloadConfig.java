@@ -26,6 +26,7 @@ package io.mycat.manager.response;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -46,6 +47,7 @@ import io.mycat.config.ConfigInitializer;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatCluster;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.UserConfig;
@@ -99,6 +101,7 @@ public final class ReloadConfig {
 		Map<String, SchemaConfig> newSchemas = loader.getSchemas();
 		Map<String, PhysicalDBNode> newDataNodes = loader.getDataNodes();
 		Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
+		Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
 		MycatCluster newCluster = loader.getCluster();
 		FirewallConfig newFirewall = loader.getFirewall();
 		
@@ -162,7 +165,7 @@ public final class ReloadConfig {
 			/**
 			 * 2.3、 在老的配置上，应用新的配置，开始准备承接任务
 			 */
-			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newCluster, newFirewall, true);
+			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newCluster, newFirewall, true);
 
 			/**
 			 * 2.4、 处理旧的资源
@@ -223,13 +226,14 @@ public final class ReloadConfig {
         Map<String, SchemaConfig> schemas = loader.getSchemas();
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
         Map<String, PhysicalDBPool> dataHosts = loader.getDataHosts();
+        Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
         MycatCluster cluster = loader.getCluster();
         FirewallConfig firewall = loader.getFirewall();
         
         /**
          * 2、在老的配置上，应用新的配置
          */
-        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, cluster, firewall, false);
+        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall, false);
 
         /**
          * 3、清理缓存

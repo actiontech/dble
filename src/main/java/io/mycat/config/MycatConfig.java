@@ -27,11 +27,14 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -61,6 +64,8 @@ public class MycatConfig {
 	private volatile Map<String, PhysicalDBNode> _dataNodes;
 	private volatile Map<String, PhysicalDBPool> dataHosts;
 	private volatile Map<String, PhysicalDBPool> _dataHosts;
+	private volatile Map<ERTable, Set<ERTable>> erRelations;
+	private volatile Map<ERTable, Set<ERTable>> _erRelations;
 	private long reloadTime;
 	private long rollbackTime;
 	private int status;
@@ -68,14 +73,14 @@ public class MycatConfig {
 
 	public MycatConfig() {
 		
-		//读取schema.xml，rule.xml和server.xml
+		//读取schema.xml,rule.xml和server.xml
 		ConfigInitializer confInit = new ConfigInitializer(true);
 		this.system = confInit.getSystem();
 		this.users = confInit.getUsers();
 		this.schemas = confInit.getSchemas();
 		this.dataHosts = confInit.getDataHosts();
-
 		this.dataNodes = confInit.getDataNodes();
+		this.erRelations = confInit.getErRelations();
 		for (PhysicalDBPool dbPool : dataHosts.values()) {
 			dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
 		}
@@ -91,7 +96,15 @@ public class MycatConfig {
 		//配置加载锁
 		this.lock = new ReentrantLock();
 	}
-
+	private Map<ERTable, Set<ERTable>> initFuncNodeER(Map<String, Set<ERTable>> erGroups) {
+		Map<ERTable, Set<ERTable>> erMaps = new HashMap<ERTable, Set<ERTable>> ();
+		for (Set<ERTable> erTables : erGroups.values()) {
+			for (ERTable erTable:erTables) {
+				erMaps.put(erTable, erTables);
+			}
+		}
+		return erMaps;
+	}
 	public SystemConfig getSystem() {
 		return system;
 	}
@@ -172,6 +185,13 @@ public class MycatConfig {
 		return _dataHosts;
 	}
 
+	public Map<ERTable, Set<ERTable>> getErRelations() {
+		return erRelations;
+	}
+	public Map<ERTable, Set<ERTable>> getBackupErRelations() {
+		return _erRelations;
+	}
+
 	public MycatCluster getCluster() {
 		return cluster;
 	}
@@ -205,11 +225,12 @@ public class MycatConfig {
 			Map<String, SchemaConfig> newSchemas,
 			Map<String, PhysicalDBNode> newDataNodes, 
 			Map<String, PhysicalDBPool> newDataHosts, 
+			Map<ERTable, Set<ERTable>> newErRelations,
 			MycatCluster newCluster,
 			FirewallConfig newFirewall, 
 			boolean reloadAll) {
 		
-		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newCluster, newFirewall, reloadAll);
+		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newCluster, newFirewall, reloadAll);
 		this.reloadTime = TimeUtil.currentTimeMillis();
 		this.status = reloadAll?RELOAD_ALL:RELOAD;
 	}
@@ -229,10 +250,11 @@ public class MycatConfig {
 			Map<String, SchemaConfig> schemas,
 			Map<String, PhysicalDBNode> dataNodes,
 			Map<String, PhysicalDBPool> dataHosts, 
+			Map<ERTable, Set<ERTable>> erRelations,
 			MycatCluster cluster,
 			FirewallConfig firewall) {
 		
-		apply(users, schemas, dataNodes, dataHosts, cluster, firewall, status==RELOAD_ALL);
+		apply(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall, status==RELOAD_ALL);
 		this.rollbackTime = TimeUtil.currentTimeMillis();
 		this.status = ROLLBACK;
 	}
@@ -241,6 +263,7 @@ public class MycatConfig {
 			Map<String, SchemaConfig> newSchemas,
 			Map<String, PhysicalDBNode> newDataNodes,
 			Map<String, PhysicalDBPool> newDataHosts, 
+			Map<ERTable, Set<ERTable>> newErRelations,
 			MycatCluster newCluster,
 			FirewallConfig newFirewall,
 			boolean isLoadAll) {
@@ -270,7 +293,7 @@ public class MycatConfig {
 			this._schemas = this.schemas;
 			this._cluster = this.cluster;
 			this._firewall = this.firewall;
-
+			this._erRelations = this._erRelations ;
 			// new 处理
 			// 1、启动新的数据源心跳
 			// 2、执行新的配置
@@ -290,7 +313,7 @@ public class MycatConfig {
 			this.schemas = newSchemas;
 			this.cluster = newCluster;
 			this.firewall = newFirewall;
-			
+			this.erRelations = newErRelations;
 		} finally {
 			lock.unlock();
 		}

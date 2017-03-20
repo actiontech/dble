@@ -24,9 +24,11 @@
 package io.mycat.manager.response;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
@@ -34,6 +36,7 @@ import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatCluster;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.UserConfig;
@@ -77,6 +80,7 @@ public final class RollbackConfig {
 		Map<String, PhysicalDBPool> dataHosts = conf.getBackupDataHosts();
 		MycatCluster cluster = conf.getBackupCluster();
 		FirewallConfig firewall = conf.getBackupFirewall();
+		Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations(); 
 
 		// 检查可回滚状态
 		if (!conf.canRollback()) {
@@ -103,7 +107,7 @@ public final class RollbackConfig {
 		}
 
 		// 应用回滚
-		conf.rollback(users, schemas, dataNodes, dataHosts, cluster, firewall);
+		conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall);
 
 		// 处理旧的资源
 		for (PhysicalDBPool dn : cNodes.values()) {

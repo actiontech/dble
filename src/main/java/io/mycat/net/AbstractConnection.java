@@ -505,7 +505,9 @@ public abstract class AbstractConnection implements NIOConnection {
 			if (Strings.isNullOrEmpty(reason)) {
 				return;
 			}
-			LOGGER.info("close connection,reason:" + reason + " ," + this);
+			if(LOGGER.isDebugEnabled()){
+				LOGGER.debug("close connection,reason:" + reason + " ," + this);
+			}
 			if (reason.contains("connection,reason:java.net.ConnectException")) {
 				throw new RuntimeException(" errr");
 			}

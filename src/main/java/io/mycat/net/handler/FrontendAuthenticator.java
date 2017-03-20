@@ -186,14 +186,14 @@ public class FrontendAuthenticator implements NIOHandler {
         source.setCharsetIndex(auth.charsetIndex);
         source.setHandler(new FrontendCommandHandler(source));
 
-        if (LOGGER.isInfoEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
             s.append(source).append('\'').append(auth.user).append("' login success");
             byte[] extra = auth.extra;
             if (extra != null && extra.length > 0) {
                 s.append(",extra:").append(new String(extra));
             }
-            LOGGER.info(s.toString());
+            LOGGER.debug(s.toString());
         }
 
         ByteBuffer buffer = source.allocate();

@@ -30,6 +30,7 @@ import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.factory.FrontendConnectionFactory;
+import io.mycat.net.handler.ManagerAuthenticator;
 
 /**
  * @author mycat
@@ -41,6 +42,7 @@ public class ManagerConnectionFactory extends FrontendConnectionFactory {
         ManagerConnection c = new ManagerConnection(channel);
         MycatServer.getInstance().getConfig().setSocketParams(c, true);
         c.setPrivileges(MycatPrivileges.instance());
+	c.setHandler(new ManagerAuthenticator(c));
         c.setQueryHandler(new ManagerQueryHandler(c));
         return c;
     }

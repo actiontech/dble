@@ -3,6 +3,7 @@ package io.mycat.route.parser.druid.impl.ddl;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -25,6 +26,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyCo
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
@@ -58,14 +60,28 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 					|| alterItem instanceof SQLAlterTableAddIndex
 					|| alterItem instanceof SQLAlterTableDropIndex
 					|| alterItem instanceof SQLAlterTableDropKey
-					|| alterItem instanceof MySqlAlterTableChangeColumn
-					|| alterItem instanceof MySqlAlterTableModifyColumn
-					|| alterItem instanceof SQLAlterTableDropColumnItem
 					|| alterItem instanceof SQLAlterTableDropPrimaryKey) {
 				support = true;
 			} else if (alterItem instanceof SQLAlterTableAddConstraint) {
 				SQLConstraint constraint = ((SQLAlterTableAddConstraint) alterItem).getConstraint();
 				if (constraint instanceof MySqlPrimaryKey) {
+					support = true;
+				}
+			}else if(alterItem instanceof MySqlAlterTableChangeColumn
+					||alterItem instanceof MySqlAlterTableModifyColumn
+					|| alterItem instanceof SQLAlterTableDropColumnItem){
+				List<SQLName> columnList  = new ArrayList<SQLName>();
+				if(alterItem instanceof MySqlAlterTableChangeColumn){
+					columnList.add(((MySqlAlterTableChangeColumn) alterItem).getColumnName());
+				}else if(alterItem instanceof MySqlAlterTableModifyColumn) {
+					columnList.add(((MySqlAlterTableModifyColumn) alterItem).getNewColumnDefinition().getName());
+				}else if(alterItem instanceof SQLAlterTableDropColumnItem){
+					columnList = ((SQLAlterTableDropColumnItem) alterItem).getColumns();
+				}
+
+				if(this.columnInfluenceCheck(columnList,schema,schemaInfo.table)) {
+					support = false;
+				}else {
 					support = true;
 				}
 			}
@@ -246,4 +262,53 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			}
 		}
 	}
+
+	/**
+	 * the function is check if the columns contains the import column
+	 * true -- yes the sql did not to exec
+	 * false -- safe the sql can be exec
+	 * @param columnList
+	 * @param schema
+	 * @return
+	 */
+	private boolean columnInfluenceCheck(List<SQLName> columnList,SchemaConfig schema,String table){
+		for(SQLName name : columnList){
+			if(this.influenceKeyColumn(name,schema,table)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * this function is check if the name is the important column in any tables
+	 * true -- the column influence some important column
+	 * false -- safe
+	 * @param name
+	 * @param schema
+	 * @return
+	 */
+	private boolean influenceKeyColumn(SQLName name,SchemaConfig schema,String tableName){
+		String  columnName = name.toString();
+		Map<String, TableConfig> tableConfig = schema.getTables();
+		TableConfig chanagedTable = tableConfig.get(tableName);
+		if (chanagedTable == null){
+			return  false;
+		}
+		if(columnName.equalsIgnoreCase(chanagedTable.getPartitionColumn())
+				|| columnName.equalsIgnoreCase(chanagedTable.getJoinKey())){
+			return true;
+		}
+		// Traversal all the table node to find if some table is the child table of the changedTale
+		for (Map.Entry<String, TableConfig> entry : tableConfig.entrySet()) {
+			TableConfig tb  = entry.getValue();
+			if(tb.getParentTC() != null
+			        && tableName.equalsIgnoreCase(tb.getParentTC().getName())
+					&& columnName.equalsIgnoreCase(tb.getParentKey())){
+				return true;
+			}
+		}
+		return false;
+	}
+
 }

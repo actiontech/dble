@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -400,9 +402,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     {
 
         RouteResultset rrs = tryDirectRoute(sql, line);
-        if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0)
-        {
 
+        if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             String insertSql = makeSimpleInsert(columns, line, tableName, true);
             rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
         }
@@ -532,7 +533,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         statement.setLocal(true);//强制local
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //默认druid会过滤掉路径的分隔符，所以这里重新设置下
         statement.setFileName(fn);
-        String srcStatement = statement.toString();
+        //在这里使用替换方法替换掉SQL语句中的 IGNORE X LINES 防止每个物理节点都IGNORE X个元素
+        String srcStatement = this.ignoreLinesDelete(statement.toString());
         RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL, serverConnection.getSession2());
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
@@ -664,9 +666,18 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
                 parser.beginParsing(new StringReader(content));
                 String[] row = null;
 
+                //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
+                int ignoreNumber = 0;
+                if(statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())){
+                    ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
+                }
                 while ((row = parser.parseNext()) != null)
                 {
-                    parseOneLine(columns, tableName, row, false, null);
+                    if(ignoreNumber == 0) {
+                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    }else{
+                        ignoreNumber --;
+                    }
                 }
             } finally
             {
@@ -690,8 +701,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private void parseFileByLine(String file, String encode, String split)
-    {
+    private void parseFileByLine(String file, String encode, String split) {
         List<SQLExpr> columns = statement.getColumns();
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
@@ -716,25 +726,31 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         CsvParser parser = new CsvParser(settings);
         InputStreamReader reader = null;
         FileInputStream fileInputStream = null;
-        try
-        {
+        try {
 
             fileInputStream = new FileInputStream(file);
             reader = new InputStreamReader(fileInputStream, encode);
             parser.beginParsing(reader);
             String[] row = null;
 
+            //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
+            int ignoreNumber = 0;
+            if(statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())){
+                ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
+            }
             while ((row = parser.parseNext()) != null)
             {
-                parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                if(ignoreNumber == 0) {
+                    parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                }else{
+                    ignoreNumber --;
+                }
             }
 
 
-        } catch (FileNotFoundException | UnsupportedEncodingException e)
-        {
+        } catch(FileNotFoundException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
-        } finally
-        {
+        } finally {
             parser.stopParsing();
             if(fileInputStream!=null)
             {
@@ -759,6 +775,26 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
         }
 
+    }
+
+
+    /**
+     * use a Regular Expression to replace the
+     *  "IGNORE    1234 LINES" to the " "
+     * @param sql
+     * @return
+     */
+    private String ignoreLinesDelete(String sql){
+        Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES");
+        Matcher m = p.matcher(sql);
+        StringBuffer sb = new StringBuffer();
+        if (m.find()) {
+            m.appendReplacement(sb, " ");
+        }else{
+            return sql;
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
 

@@ -362,7 +362,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             {
                 String value = lineList[partitionColumnIndex];
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(), parseFieldString(value,loadData.getEnclose()));
+                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(), parseFieldString(value,loadData.getEnclose(),loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
                 try
                 {
@@ -404,7 +404,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         RouteResultset rrs = tryDirectRoute(sql, line);
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
-            String insertSql = makeSimpleInsert(columns, line, tableName, true);
+            String insertSql = makeSimpleInsert(columns, line, tableName);
             rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
         }
 
@@ -510,13 +510,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         for (int i = 0, srcLength = src.length; i < srcLength; i++)
         {
             String s = src[i]!=null?src[i]:"";
-            if(loadData.getEnclose()==null)
-            {
-                  sb.append(s);
-            }   else
-            {
-                sb.append(loadData.getEnclose()).append(s.replace(loadData.getEnclose(),loadData.getEscape()+loadData.getEnclose())).append(loadData.getEnclose());
-            }
+             sb.append(s);
             if(i!=srcLength-1)
             {
                 sb.append(loadData.getFieldTerminatedBy());
@@ -571,7 +565,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table, boolean isAddEncose)
+    private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table)
     {
         StringBuilder sb = new StringBuilder();
         sb.append(LoadData.loadDataHint).append("insert into ").append(table.toUpperCase());
@@ -594,13 +588,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         for (int i = 0, columnsSize = fields.length; i < columnsSize; i++)
         {
             String column = fields[i];
-            if (isAddEncose)
-            {
-                sb.append("'").append(parseFieldString(column, loadData.getEnclose())).append("'");
-            } else
-            {
-                sb.append(column);
-            }
+
+            sb.append("'").append(parseFieldString(column, loadData.getEnclose(),loadData.getEscape())).append("'");
+
             if (i != columnsSize - 1)
             {
                 sb.append(",");
@@ -610,16 +600,16 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         return sb.toString();
     }
 
-    private String parseFieldString(String value, String encose)
+    private String parseFieldString(String value, String encose,String escape)
     {
         if (encose == null || "".equals(encose) || value == null)
         {
-            return value;
+            return value.replace(escape,"\\");
         } else if (value.startsWith(encose) && value.endsWith(encose))
         {
-            return value.substring(encose.length() - 1, value.length() - encose.length());
+            return value.substring(encose.length() - 1, value.length() - encose.length()).replace(escape,"\\");
         }
-        return value;
+        return value.replace(escape,"\\");
     }
 
 
@@ -712,10 +702,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
         }
-        if(loadData.getEscape()!=null)
-        {
-            settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
-        }
+
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
         /*
          *  fix #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false

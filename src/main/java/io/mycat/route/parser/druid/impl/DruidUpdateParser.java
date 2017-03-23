@@ -84,7 +84,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }
-			if (tc.isGlobalTable()) {
+			if (tc!=null && tc.isGlobalTable()) {
 				if (GlobalTableUtil.useGlobleTableCheck()) {
 					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
 					rrs.setStatement(sql);

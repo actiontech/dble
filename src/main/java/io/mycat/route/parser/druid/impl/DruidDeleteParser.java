@@ -65,7 +65,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor);
 			TableConfig tc = schema.getTables().get(schemaInfo.table);
-			if (tc.isGlobalTable()) {
+			if (tc != null && tc.isGlobalTable()) {
 				rrs.setGlobalTable(true);
 			}
 		}

@@ -167,17 +167,22 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         clear();
         this.sql = sql;
 
+        if(this.checkPartition(sql)){
+            serverConnection.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
+            clear();
+            return;
+        }
 
         SQLStatementParser parser = new MySqlStatementParser(sql);
         statement = (MySqlLoadDataInFileStatement) parser.parseStatement();
         fileName = parseFileName(sql);
-
         if (fileName == null)
         {
             serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
             clear();
             return;
         }
+
         schema = MycatServer.getInstance().getConfig()
                 .getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
@@ -185,14 +190,14 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         if(MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()){
         	tableName =tableName.toLowerCase();
         }
+
         tableConfig = schema.getTables().get(tableName);
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
         List<SQLExpr> columns = statement.getColumns();
-        if(tableConfig!=null)
-        {
+        if(tableConfig!=null) {
             String pColumn = getPartitionColumn();
             if (pColumn != null && columns != null && columns.size() > 0)
             {
@@ -213,8 +218,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         }
 
         parseLoadDataPram();
-        if (statement.isLocal())
-        {
+        if (statement.isLocal()) {
             isStartLoadData = true;
             //向客户端请求发送文件
             ByteBuffer buffer = serverConnection.allocate();
@@ -222,18 +226,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             filePacket.fileName = fileName.getBytes();
             filePacket.packetId = 1;
             filePacket.write(buffer, serverConnection, true);
-        } else
-        {
-            if (!new File(fileName).exists())
-            {
+        } else {
+            if (!new File(fileName).exists()) {
                 serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, fileName + " is not found!");
                 clear();
-            } else
-            {
+            } else {
+
                 parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy());
                 RouteResultset rrs = buildResultSet(routeResultMap);
-                if (rrs != null)
-                {
+                if (rrs != null) {
                     flushDataToFile();
                     isStartLoadData = false;
                     serverConnection.getSession2().execute(rrs, ServerParse.LOAD_DATA_INFILE_SQL);
@@ -609,7 +610,30 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         {
             return value.substring(encose.length() - 1, value.length() - encose.length()).replace(escape,"\\");
         }
-        return value.replace(escape,"\\");
+        return this.trance(value.replace(escape,"\\"));
+    }
+
+
+    private String trance(String input){
+        StringBuffer output = new StringBuffer();
+        char[] x = input.toCharArray();
+        for(int i  =0;i < x.length;i++){
+            if (x[i] == '\\' && i < x.length-1){
+                switch (x[i+1]){
+                    case 'b':output.append('\b');break;
+                    case 't': output.append('\t');break;
+                    case 'n': output.append('\n');break;
+                    case 'f':output.append('\f');break;
+                    case 'r':output.append('\r');break;
+                    case '"':output.append('\"');break;
+                    case '\'':output.append('\'');
+                }
+                i++;
+                continue;
+            }
+            output.append(x[i]);
+        }
+        return output.toString();
     }
 
 
@@ -766,13 +790,29 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
 
     /**
+     * check if the sql is contain the partition
+     * if the sql contain the  partition word than stopped
+     * @param sql
+     * @throws Exception
+     */
+    private boolean checkPartition(String sql){
+        Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)",Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sql);
+        if(m.find()){
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
      * use a Regular Expression to replace the
      *  "IGNORE    1234 LINES" to the " "
      * @param sql
      * @return
      */
     private String ignoreLinesDelete(String sql){
-        Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES");
+        Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES",Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sql);
         StringBuffer sb = new StringBuffer();
         if (m.find()) {

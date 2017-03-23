@@ -211,15 +211,18 @@ public class XMLSchemaLoader implements SchemaLoader {
 		Iterator<Entry<String, Set<ERTable>>> iterator = funcNodeERMap.entrySet().iterator();
 		while(iterator.hasNext()){
 			Entry<String, Set<ERTable>> entry = iterator.next();
-			if(entry.getValue().size()==1){
+			if (entry.getValue().size() == 1) {
 				iterator.remove();
 				continue;
 			}
 			for (ERTable erTable:entry.getValue()) {
+				if (erRelations == null) {
+					erRelations = new HashMap<ERTable, Set<ERTable>>();
+				}
 				Set<ERTable> relations = erRelations.get(erTable);
-				if(relations==null){
+				if (relations == null) {
 					erRelations.put(erTable, entry.getValue());
-				}else{
+				} else {
 					relations.addAll(entry.getValue());
 				}
 			}

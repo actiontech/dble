@@ -54,8 +54,25 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 		participantLogEntry = null;
 		sendData = OkPacket.OK;
 	}
-	@Override
-	protected boolean executeRollback(MySQLConnection mysqlCon, int position) {
+	public void rollback() {
+		final int initCount = session.getTargetCount();
+		lock.lock();
+		try {
+			reset(initCount);
+		} finally {
+			lock.unlock();
+		}
+		// 执行
+		int position = 0;
+		for (final RouteResultsetNode node : session.getTargetKeys()) {
+			final BackendConnection conn = session.getTarget(node);
+			conn.setResponseHandler(this);
+			if (!executeRollback((MySQLConnection) conn, position++)) {
+				break;
+			}
+		}
+	}
+	private boolean executeRollback(MySQLConnection mysqlCon, int position) {
 		if(position==0 && participantLogEntry != null){
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
 		}
@@ -67,10 +84,13 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 				XAStateLog.flushMemoryRepository(session.getSessionXaID(), coordinatorLogEntry); 
 			}
 			XAStateLog.initRecoverylog(session.getSessionXaID(), position, mysqlCon);
+			if(mysqlCon.isClosed()){
+				mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
+			}
 			endPhase(mysqlCon);
 			break;
 		case TX_PREPARED_STATE:
-			if(position==0){
+			if (position == 0) {
 				if(!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKING_STATE)){
 					this.setFail("saveXARecoverylog error, the stage is TX_ROLLBACKING_STATE");
 					cleanAndFeedback();
@@ -79,7 +99,12 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 			}
 		case TX_ROLLBACK_FAILED_STATE:
 		case TX_PREPARE_UNCONNECT_STATE:
+			rollbackPhase(mysqlCon);
+			break;
 		case TX_ENDED_STATE:
+			if(mysqlCon.isClosed()){
+				mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
+			}
 			rollbackPhase(mysqlCon);
 			break;
 		default:

@@ -99,7 +99,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 	private int isOffHeapuseOffHeapForMerge = 1;
 	private ErrorPacket err;
-	private Set<BackendConnection> errConnection;
+	private List<BackendConnection> errConnection;
 
 	public MultiNodeQueryHandler(int sqlType, RouteResultset rrs,
 			 NonBlockingSession session) {
@@ -223,10 +223,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				terminated = true;
 			}
 			if (errConnection == null) {
-				errConnection = new HashSet<BackendConnection>();
+				errConnection = new ArrayList<BackendConnection>();
 			}
 			errConnection.add(conn);
-			if (--nodeCount == 0) {
+			if (--nodeCount <= 0) {
 				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -248,10 +248,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				terminated = true;
 			}
 			if (errConnection == null) {
-				errConnection = new HashSet<BackendConnection>();
+				errConnection = new ArrayList<BackendConnection>();
 			}
 			errConnection.add(conn);
-			if (--nodeCount == 0) {
+			if (--nodeCount <= 0) {
 				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -795,36 +795,41 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	}
 	protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
 		ServerConnection source = session.getSource();
-		if (source.isAutocommit() &&!source.isTxstart()&& conn.isModifiedSQLExecuted()) {
-			if(txOperation==AutoTxOperation.COMMIT){
-				if(session.getXaState()==null){
+		if (source.isAutocommit() && !source.isTxstart() && conn.isModifiedSQLExecuted()) {
+			if (nodeCount < 0) {
+				return;
+			}
+			//隐式分布式事务，自动发起commit or rollback
+			if (txOperation == AutoTxOperation.COMMIT) {
+				if (session.getXaState() == null) {
 					NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
 					autoHandler.commit();
-				}else{
+				} else {
 					XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
 					autoHandler.commit();
 				}
-			}
-			else{
-				if(session.getXaState()==null){
-					NormalAutoRollbackNodesHandler  autoHandler = new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
+			} else {
+				if (session.getXaState() == null) {
+					NormalAutoRollbackNodesHandler autoHandler = new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
 					autoHandler.rollback();
-				}else{
-					XAAutoRollbackNodesHandler  autoHandler = new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
+				} else {
+					XAAutoRollbackNodesHandler autoHandler = new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
 					autoHandler.rollback();
 				}
 			}
 		} else {
 			boolean inTransaction = !source.isAutocommit() || source.isTxstart();
 			if (!inTransaction) {
-				//普通查询
+				// 普通查询
 				session.releaseConnection(conn);
 			}
-			//显示分布式事务
+			// 显示分布式事务
 			if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
 				source.setTxInterrupt("ROLLBACK");
 			}
-			session.getSource().write(data);
+			if (nodeCount == 0) {
+				session.getSource().write(data);
+			}
 		}
 	}
 }

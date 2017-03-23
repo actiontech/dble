@@ -111,7 +111,8 @@ public class XAStateLog {
 	public static void updateXARecoverylog(String xaTXID, String host, int port, String schema, TxState txState) {
 		CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
 		for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
-			if (coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema)
+			if (coordinatorLogEntry.getParticipants()[i] != null
+					&& coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema)
 					&& coordinatorLogEntry.getParticipants()[i].getHost().equals(host)
 					&& coordinatorLogEntry.getParticipants()[i].getPort() == port) {
 				coordinatorLogEntry.getParticipants()[i].setTxState(txState);

@@ -532,17 +532,20 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	@Override
 	public void close(String reason) {
+		this.terminate(reason);
+		if (this.respHandler != null) {
+			this.respHandler.connectionClose(this, reason);
+			respHandler = null;
+		}
+	}
+	@Override
+	public void terminate(String reason) {
 		if (!isClosed.get()) {
 			isQuit.set(true);
 			super.close(reason);
 			pool.connectionClosed(this);
-			if (this.respHandler != null) {
-				this.respHandler.connectionClose(this, reason);
-				respHandler = null;
-			}
 		}
 	}
-
 	public void commit() {
 
 		_COMMIT.write(this);

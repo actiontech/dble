@@ -386,7 +386,7 @@ public class NonBlockingSession implements Session {
 			return;
 		}
         for (BackendConnection node : target.values()) {
-            node.close(reason);
+            node.terminate(reason);
         }
         target.clear();
         clearHandlesResources();

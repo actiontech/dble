@@ -83,6 +83,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private volatile boolean isDefaultNodeShowTable;
     private volatile boolean isDefaultNodeShowFullTable;
     private  Set<String> shardingTablesSet;
+    private volatile boolean waitingResponse;
 	
 	public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
 		this.rrs = rrs;
@@ -118,6 +119,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	public void execute() throws Exception {
 		startTime=System.currentTimeMillis();
 		ServerConnection sc = session.getSource();
+		waitingResponse = true;
 		this.packetId = 0;
 		final BackendConnection conn = session.getTarget(node);
 		LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
@@ -149,6 +151,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 	private void _execute(BackendConnection conn) {
 		if (session.closed()) {
+			waitingResponse = false;
 			session.clearResources(true);
 			return;
 		}
@@ -165,8 +168,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_NEW_ABORTING_CONNECTION;
 		err.message = StringUtil.encode(e.getMessage(), session.getSource().getCharset());
-		
-		backConnectionErr(err, conn);
 		session.getSource().close(err.message.toString());
 	}
 
@@ -208,8 +209,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		 * 
 		 */		
 		// 由于 pakcetId != 1 造成的问题 
-		errPkg.packetId = 1;
-		errPkg.write(source);
+		if(waitingResponse){
+			errPkg.packetId = 1;
+			errPkg.write(source);
+			waitingResponse = false;
+		}
 		recycleResources();
 	}
 
@@ -244,7 +248,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			//handleSpecial
 			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 			ok.write(source);
-			
+			waitingResponse = false;
 		}
 	}
 
@@ -272,6 +276,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		int resultSize = source.getWriteQueue().size()*MycatServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
 		resultSize=resultSize+buffer.position();
 		source.write(buffer);
+		waitingResponse = false;
 
 		//TODO: add by zhuam
 		//查询结果派发
@@ -408,9 +413,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_ERROR_ON_CLOSE;
-		err.message = StringUtil.encode(reason, session.getSource()
-				.getCharset());
-		backConnectionErr(err, conn);
+		err.message = StringUtil.encode(reason, session.getSource().getCharset());
+		this.backConnectionErr(err, conn);
+		session.getSource().close(err.message.toString());
 	}
 
 	public void clearResources() {

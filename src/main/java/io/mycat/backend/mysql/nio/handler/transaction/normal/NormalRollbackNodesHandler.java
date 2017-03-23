@@ -28,6 +28,8 @@ import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.backend.mysql.nio.handler.transaction.AbstractRollbackNodesHandler;
 import io.mycat.net.mysql.ErrorPacket;
+import io.mycat.net.mysql.OkPacket;
+import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.util.StringUtil;
 
@@ -43,10 +45,37 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 	public NormalRollbackNodesHandler(NonBlockingSession session) {
 		super(session);
 	}
-	@Override
-	protected boolean executeRollback(MySQLConnection mysqlCon, int position) {
-		mysqlCon.rollback();
-		return true;
+	public void rollback() {
+		final int initCount = session.getTargetCount();
+		lock.lock();
+		try {
+			reset(initCount);
+		} finally {
+			lock.unlock();
+		}
+		// 执行
+		int position = 0;
+		for (final RouteResultsetNode node : session.getTargetKeys()) {
+			final BackendConnection conn = session.getTarget(node);
+			if(conn.isClosed()){
+				lock.lock();
+				try {
+					nodeCount--;
+				} finally {
+					lock.unlock();
+				}
+				continue;
+			}
+			position++;
+			conn.setResponseHandler(this);
+			((MySQLConnection) conn).rollback();
+		}
+		if(position == 0){
+			if (sendData == null) {
+				sendData = OkPacket.OK;
+			}
+			cleanAndFeedback();
+		}
 	}
 
 	@Override

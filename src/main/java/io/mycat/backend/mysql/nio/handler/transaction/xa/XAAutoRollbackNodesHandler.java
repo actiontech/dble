@@ -1,6 +1,6 @@
 package io.mycat.backend.mysql.nio.handler.transaction.xa;
 
-import java.util.Set;
+import java.util.List;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.route.RouteResultsetNode;
@@ -8,8 +8,8 @@ import io.mycat.server.NonBlockingSession;
 
 public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
 	private RouteResultsetNode[] nodes;
-	private Set<BackendConnection> errConnection;
-	public XAAutoRollbackNodesHandler(NonBlockingSession session, byte[] packet, RouteResultsetNode[] nodes, Set<BackendConnection> errConnection) {
+	private List<BackendConnection> errConnection;
+	public XAAutoRollbackNodesHandler(NonBlockingSession session, byte[] packet, RouteResultsetNode[] nodes, List<BackendConnection> errConnection) {
 		super(session);
 		this.sendData = packet;
 		this.nodes = nodes;

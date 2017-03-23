@@ -173,22 +173,21 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
 	public void connectionClose(BackendConnection conn, String reason) {
 		this.setFail("closed connection:" + reason + " con:" + conn);
-//		boolean finished = false;
-//		lock.lock();
-//		try {
-//			finished = (this.nodeCount == 0);
-//
-//		} finally {
-//			lock.unlock();
-//		}
-//		if (finished == false) {
-//			finished = this.decrementCountBy(1);
-//		}
-//		if (error == null) {
-//			error = "back connection closed ";
-//		}
-//		tryErrorFinished(finished);
-		tryErrorFinished(this.decrementCountBy(1));
+		boolean finished = false;
+		lock.lock();
+		try {
+			finished = (this.nodeCount == 0);
+
+		} finally {
+			lock.unlock();
+		}
+		if (finished == false) {
+			finished = this.decrementCountBy(1);
+		}
+		if (error == null) {
+			error = "back connection closed ";
+		}
+		tryErrorFinished(finished);
 	}
 
 	public void clearResources() {

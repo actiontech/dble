@@ -399,8 +399,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String tableName, String[] line, boolean toFile, String lineEnd)
-    {
+    private void parseOneLine(List<SQLExpr> columns, String tableName, String[] line, boolean toFile, String lineEnd) {
 
         RouteResultset rrs = tryDirectRoute(sql, line);
 
@@ -605,12 +604,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     {
         if (encose == null || "".equals(encose) || value == null)
         {
-            return value.replace(escape,"\\");
+            return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
         } else if (value.startsWith(encose) && value.endsWith(encose))
         {
-            return value.substring(encose.length() - 1, value.length() - encose.length()).replace(escape,"\\");
+            return this.trance(value.substring(encose.length() - 1, value.length() - encose.length())
+                                                .replace("\\","\\\\").replace(escape,"\\"));
         }
-        return this.trance(value.replace(escape,"\\"));
+        return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
     }
 
 
@@ -626,7 +626,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
                     case 'f':output.append('\f');break;
                     case 'r':output.append('\r');break;
                     case '"':output.append('\"');break;
-                    case '\'':output.append('\'');
+                    case '\'':output.append('\'');break;
+                    case '\\':output.append('\\');
                 }
                 i++;
                 continue;

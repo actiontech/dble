@@ -23,7 +23,7 @@
  */
 package io.mycat.util;
 
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
 /**
@@ -45,6 +45,6 @@ public class ExecutorUtil {
 
 	private static final NameableExecutor createFixed(String name, int size, boolean isDaemon) {
 		NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
-		return new NameableExecutor(name, size, size, Long.MAX_VALUE, new LinkedTransferQueue<Runnable>(), factory);
+		return new NameableExecutor(name, size, size, Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>(), factory);
 	}
 }

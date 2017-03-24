@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,10 +25,12 @@ public class XAStateLog {
 	public static final Repository inMemoryRepository = new InMemoryRepository();
 	private static ReentrantLock lock = new ReentrantLock();
 	private static AtomicBoolean hasLeader = new AtomicBoolean(false);
-	private static AtomicBoolean isWriting = new AtomicBoolean(false);
-	private static Condition waitLeader = lock.newCondition();
+	private static volatile boolean isWriting = false;
 	private static Condition waitWriting = lock.newCondition();
 	private static volatile boolean writeResult = false;
+	private static ReentrantLock lockNum = new ReentrantLock();
+	private static AtomicInteger batchNum = new AtomicInteger(0);
+	private static Set<Long> waitSet = new CopyOnWriteArraySet<Long>();
 	public static boolean saveXARecoverylog(String xaTXID, TxState sessionState) {
 		CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
 		coordinatorLogEntry.setTxState(sessionState);
@@ -48,61 +53,74 @@ public class XAStateLog {
 		updateXARecoverylog(xaTXID, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
 	}
 
-	public static boolean writeCheckpoint(String xaTXID){
-		if(!hasLeader.compareAndSet(false, true)){
-			//follower thread
-			lock.lock();
-			try{
-				//wait leader copy the follower's status
-				waitLeader.await();
-				//the follower's status has copied and ready to write 
+	public static boolean writeCheckpoint(String xaTXID) {
+		lock.lock();
+		try {
+			if (isWriting) {
+				waitSet.add(Thread.currentThread().getId());
 				waitWriting.await();
-				return writeResult;
-			} catch (InterruptedException e) {
-				logger.warn("writeCheckpoint error, follower Xid is:"+xaTXID ,e);
-				return false;
-			} finally{
-				lock.unlock();
 			}
-		}else{//leader thread
-			while(!isWriting.compareAndSet(false, true)){
-				lock.lock();
-				try{
-					waitWriting.await();
-				}  catch (InterruptedException e) {
-					logger.warn("writeCheckpoint error, waitting leader Xid is:"+xaTXID+", it will be retry" ,e);
-				} finally{
-					lock.unlock();
-				}
+		} catch (InterruptedException e) {
+			logger.warn("writeCheckpoint error, waiter XID is " + xaTXID , e);
+		} finally {
+			lock.unlock();
+		}
+		lockNum.lock();
+		try {
+			batchNum.incrementAndGet();
+		} finally {
+			lockNum.unlock();
+		}
+		if (hasLeader.compareAndSet(false, true)) {// leader thread
+			waitSet.remove(Thread.currentThread().getId());
+			while (waitSet.size() > 0) {
+				//  make all wait thread all became leader or  follower
+				Thread.yield();
 			}
-			// copy memoryRepository
-			List<CoordinatorLogEntry> logs= new ArrayList<>();
-			ReentrantLock lockmap = ((InMemoryRepository)inMemoryRepository).getLock();
-			lockmap.lock();
-			try{
-				Collection<CoordinatorLogEntry> logCollection = inMemoryRepository.getAllCoordinatorLogEntries();
-				for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
-					logs.add(coordinatorLogEntry.getDeepCopy());
+			lockNum.lock();
+			try {
+				isWriting = true;
+				// copy memoryRepository
+				List<CoordinatorLogEntry> logs = new ArrayList<>();
+				ReentrantLock lockmap = ((InMemoryRepository) inMemoryRepository).getLock();
+				lockmap.lock();
+				try {
+					Collection<CoordinatorLogEntry> logCollection = inMemoryRepository.getAllCoordinatorLogEntries();
+					for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
+						logs.add(coordinatorLogEntry.getDeepCopy());
+					}
+				} finally {
+					lockmap.unlock();
 				}
+				writeResult = fileRepository.writeCheckpoint(logs);
+				while (batchNum.get() != 1) {
+					Thread.yield();
+				}
+				batchNum.decrementAndGet();
+				hasLeader.set(false);
 				lock.lock();
 				try {
-					// wakeup follower
-					waitLeader.signalAll();
+					isWriting = false;
+					// 1.wakeup follower to return 2.wake up waiting threads continue
+					waitWriting.signalAll();
+					return writeResult;
 				} finally {
 					lock.unlock();
 				}
-				//new leader can pre write
-				hasLeader.set(false);
-			}finally{
-				lockmap.unlock();
+			} finally {
+				lockNum.unlock();
 			}
-			writeResult = fileRepository.writeCheckpoint(logs);
-			isWriting.set(false);
+		} else {// follower thread
 			lock.lock();
 			try {
-				//1.wakeup follower to return 2.wake up new leader to write
-				waitWriting.signalAll();
+				waitSet.remove(Thread.currentThread().getId());
+				batchNum.decrementAndGet();
+				// the follower's status has copied and ready to write
+				waitWriting.await();
 				return writeResult;
+			} catch (InterruptedException e) {
+				logger.warn("writeCheckpoint error, follower Xid is:" + xaTXID, e);
+				return false;
 			} finally {
 				lock.unlock();
 			}

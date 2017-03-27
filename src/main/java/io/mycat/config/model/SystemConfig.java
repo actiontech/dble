@@ -58,7 +58,6 @@ public final class SystemConfig {
 	private final  static String RESERVED_SYSTEM_MEMORY_BYTES = "384m";
 	private final static String MEMORY_PAGE_SIZE = "1m";
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
-	private final static String DATANODE_SORTED_TEMP_DIR = "datanode";
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
@@ -81,6 +80,7 @@ public final class SystemConfig {
 	private static final int DEFAULT_NESTLOOP_ROWS_SIZE = 2000;
 	private static final int DEFAULT_NESTLOOP_CONN_SIZE = 4;
 	private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
+	private static final boolean DEFAULT_USE_JOINSTRATEGY = false;
 
 	private int processorBufferPoolType = 0;
 	private int frontSocketSoRcvbuf = 1024 * 1024;
@@ -193,6 +193,9 @@ public final class SystemConfig {
 
 	private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
 	private boolean useExtensions = false;
+	
+	// 是否使用JoinStrategy优化
+	private boolean useJoinStrategy;
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
@@ -237,6 +240,7 @@ public final class SystemConfig {
 		this.nestLoopRowsSize = DEFAULT_NESTLOOP_ROWS_SIZE;
 		this.nestLoopConnSize = DEFAULT_NESTLOOP_CONN_SIZE;
 		this.mappedFileSize = DEFAULT_MAPPEDFILE_SIZE;
+		this.useJoinStrategy = DEFAULT_USE_JOINSTRATEGY;
 	}
 
 	public int getTransactionRatateSize() {
@@ -319,7 +323,15 @@ public final class SystemConfig {
 		this.useZKSwitch = useZKSwitch;
 	}
 	
+	public boolean isUseJoinStrategy() {
+		return useJoinStrategy;
+	}
 
+	public void setUseJoinStrategy(boolean useJoinStrategy) {
+		this.useJoinStrategy = useJoinStrategy;
+	}
+	
+	
 	public boolean isLowerCaseTableNames() {
 		return lowerCaseTableNames;
 	}

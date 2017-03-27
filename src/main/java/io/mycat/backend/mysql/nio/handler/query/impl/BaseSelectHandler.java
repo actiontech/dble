@@ -155,7 +155,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
 	@Override
 	protected void onTerminate() {
-		this.session.releaseConnections(false);
+		this.session.releaseConnection(rrss, logger.isDebugEnabled(), false);
 	}
 
 	@Override

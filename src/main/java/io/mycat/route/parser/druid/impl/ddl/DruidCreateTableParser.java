@@ -1,14 +1,11 @@
 package io.mycat.route.parser.druid.impl.ddl;
 
-import java.sql.SQLNonTransientException;
-
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -19,6 +16,8 @@ import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
 
+import java.sql.SQLNonTransientException;
+
 
 public class DruidCreateTableParser extends DefaultDruidParser {
 	@Override
@@ -27,6 +26,16 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement)stmt;
 		if(createStmt.getSelect() != null) {
 			String msg = "create table from other table not supported :" + stmt;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+		if(createStmt.getPartitioning() != null){
+			String msg = "create table with Partition not supported:" + stmt;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+		if(createStmt.getTableOptions().get("ENGINE")!=null){
+			String msg = "create table with ENGINE  not supported:" + stmt;
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}

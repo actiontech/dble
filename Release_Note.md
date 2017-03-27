@@ -1,3 +1,18 @@
+DATE:2017/03/27  
+VERSION 0.3.2  
+CONTENT:  
+### fix bug  
+1.#64, #67  
+略  
+2.#59
+疑似JDK LinkedTransferQueue bug，未找到直接证据，修改为LinkedBlockingQueue，涉及代码一行，需要压力测试观察  
+3.#57  
+修改后台node close conn时候响应逻辑，设计代码较多，需要回归正常事务的冒烟以及单、多结点异常关闭时的表现。  
+4.#62  修改XA 写log时候的死锁问题，代码只涉及到XA，需要压力观察是否修改正确  
+5.#68  修改join时候其中一个表返回结果时提前释放handler，导致另一个表结果返回时报NP或者hang住(log有WARN),涉及代码一行，只影响JOIN
+
+------
+
 DATE:2017/03/21  
 VERSION 0.3.1  
 CONTENT:  

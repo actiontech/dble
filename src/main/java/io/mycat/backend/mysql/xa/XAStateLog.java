@@ -80,6 +80,7 @@ public class XAStateLog {
 			lockNum.lock();
 			try {
 				isWriting = true;
+				writeResult = false;
 				// copy memoryRepository
 				List<CoordinatorLogEntry> logs = new ArrayList<>();
 				ReentrantLock lockmap = ((InMemoryRepository) inMemoryRepository).getLock();
@@ -87,12 +88,20 @@ public class XAStateLog {
 				try {
 					Collection<CoordinatorLogEntry> logCollection = inMemoryRepository.getAllCoordinatorLogEntries();
 					for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
-						logs.add(coordinatorLogEntry.getDeepCopy());
+						CoordinatorLogEntry log = coordinatorLogEntry.getDeepCopy();
+						if (log != null) {
+							logs.add(log);
+						}
 					}
+				} catch (Exception e) {
+					logger.warn("logCollection deep copy error, leader Xid is:" + xaTXID, e);
+					logs.clear();
 				} finally {
 					lockmap.unlock();
 				}
-				writeResult = fileRepository.writeCheckpoint(logs);
+				if (!logs.isEmpty()) {
+					writeResult = fileRepository.writeCheckpoint(logs);
+				}
 				while (batchNum.get() != 1) {
 					Thread.yield();
 				}

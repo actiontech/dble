@@ -23,32 +23,12 @@
  */
 package io.mycat.server;
 
-import java.nio.ByteBuffer;
-import java.sql.SQLSyntaxErrorException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.nio.MySQLConnection;
-import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
-import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
-import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
-import io.mycat.backend.mysql.nio.handler.ResponseHandler;
-import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
-import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
+import io.mycat.backend.mysql.nio.handler.*;
 import io.mycat.backend.mysql.nio.handler.builder.HandlerBuilder;
 import io.mycat.backend.mysql.nio.handler.query.impl.OutputHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.CommitNodesHandler;
@@ -69,6 +49,15 @@ import io.mycat.plan.visitor.MySQLPlanNodeVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.parser.ServerParse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.sql.SQLSyntaxErrorException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author mycat
@@ -76,6 +65,10 @@ import io.mycat.server.parser.ServerParse;
 public class NonBlockingSession implements Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
+	public static final int CANCEL_STATUS_INIT = 0;
+	public static final int CANCEL_STATUS_COMMITING = 1;
+	public static final int CANCEL_STATUS_CANCELING = 2;
+
 
     private final ServerConnection source;
     private final ConcurrentHashMap<RouteResultsetNode, BackendConnection> target;
@@ -88,7 +81,9 @@ public class NonBlockingSession implements Session {
     private volatile TxState xaState;
 	private boolean prepared;
 
-	
+	// 取消状态 0 - 初始 1 - 提交进行  2 - 切断进行
+	private int cancelStatus = 0;
+
 	private ResponseHandler responseHandler;
 	private OutputHandler outputHandler;
 	private volatile boolean terminated;
@@ -100,12 +95,12 @@ public class NonBlockingSession implements Session {
 	private MemSizeController otherBufferMC;
 		
     public NonBlockingSession(ServerConnection source) {
-        this.source = source;
-        this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 1f);
-        this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
+		this.source = source;
+		this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 1f);
+		this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
 		this.orderBufferMC = new MemSizeController(4 * 1024 * 1024);
 		this.otherBufferMC = new MemSizeController(4 * 1024 * 1024);
-    }
+	}
     public OutputHandler getOutputHandler() {
 		return outputHandler;
 	}
@@ -143,7 +138,18 @@ public class NonBlockingSession implements Session {
 		this.xaState = xaState;
 	}
 
-    
+	/**
+	 * 获取并验证锁的方法
+	 */
+	public synchronized boolean cancelableStatusSet(int value){
+		//这个锁其实只有在1和2冲突的时候才会有提示
+		if( (value|this.cancelStatus) > 2 ){
+			return false;
+		}
+		this.cancelStatus = value;
+		return true;
+	}
+
     @Override
     public void execute(RouteResultset rrs, int type) {
         // clear prev execute resources
@@ -361,7 +367,7 @@ public class NonBlockingSession implements Session {
 	 * 执行unlock tables语句方法
 	 * @author songdabin
 	 * @date 2016-7-9
-	 * @param rrs
+	 * @param sql
 	 */
 	public void unLockTable(String sql) {
 		UnLockTablesHandler handler = new UnLockTablesHandler(this, this.source.isAutocommit(), sql);
@@ -379,6 +385,18 @@ public class NonBlockingSession implements Session {
     public void terminate() {
         closeAndClearResources("client closed ");
     }
+
+	/**
+	 * Only used when kill @@connection is Issued
+	 */
+	public void initiativeTerminate(){
+
+		for (BackendConnection node : target.values()) {
+			node.terminate("client closed ");
+		}
+		target.clear();
+		clearHandlesResources();
+	}
 
     public void closeAndClearResources(String reason) {
 		// XA MUST BE FINISHED

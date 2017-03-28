@@ -23,14 +23,8 @@
  */
 package io.mycat.server;
 
-import java.io.IOException;
-import java.nio.channels.NetworkChannel;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
+import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.log.transaction.TxnLogHelper;
@@ -41,6 +35,12 @@ import io.mycat.server.response.Heartbeat;
 import io.mycat.server.response.Ping;
 import io.mycat.util.SplitUtil;
 import io.mycat.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.NetworkChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author mycat
@@ -337,10 +337,23 @@ public class ServerConnection extends FrontendConnection {
 
 	@Override
 	public void close(String reason) {
-		super.close(reason);
-		session.terminate();
-		if(getLoadDataInfileHandler()!=null)
-		{
+
+		//如果是XA的事务，那么需要等待到事务全部回滚的时候才能进行调用回收资源
+		if (session.getSource().isTxstart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING)
+				&&session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+			super.close(reason);
+			session.initiativeTerminate();
+		}else if(session.getSource().isTxstart()
+				&&session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+			//已经开始了XA事务但是拿不到锁，关闭前端关后端
+			super.close(reason);
+		}else{
+			//并没有开启XA事务，直接关闭前后端连接
+			super.close(reason);
+			session.terminate();
+		}
+
+		if (getLoadDataInfileHandler() != null) {
 			getLoadDataInfileHandler().clear();
 		}
 	}

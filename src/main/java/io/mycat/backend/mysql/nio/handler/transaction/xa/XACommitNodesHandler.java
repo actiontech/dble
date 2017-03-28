@@ -124,7 +124,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			mysqlCon.setXaStatus(TxState.TX_PREPARED_STATE);
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
 			if (decrementCountBy(1)) {
-				if(session.getXaState()==TxState.TX_ENDED_STATE){
+				if(session.getXaState()== TxState.TX_ENDED_STATE){
 					session.setXaState(TxState.TX_PREPARED_STATE);
 				}
 				nextParse();
@@ -138,7 +138,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
 			mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
 			if (decrementCountBy(1)) {
-				if(session.getXaState()==TxState.TX_PREPARED_STATE){
+				if(session.getXaState()== TxState.TX_PREPARED_STATE){
 					session.setXaState(TxState.TX_INITIALIZE_STATE);
 				}
 				cleanAndFeedback();
@@ -175,7 +175,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 				mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
 				XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
 				if (decrementCountBy(1)) {
-					if(session.getXaState()==TxState.TX_ENDED_STATE){
+					if(session.getXaState()== TxState.TX_ENDED_STATE){
 						session.setXaState(TxState.TX_PREPARED_STATE);
 					}
 					nextParse();
@@ -299,6 +299,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		case TX_INITIALIZE_STATE:
 			// clear all resources
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
+			//在这里释放取消限制锁
+			session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
 			byte[] send = sendData;
 			session.clearResources(false);
 			if (session.closed()) {
@@ -322,7 +324,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			} else {
 				XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
 				session.setXaState(TxState.TX_INITIALIZE_STATE);
-				byte[] toSend = sendData;
+				//在这里释放取消限制锁
+				session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
+				byte[]toSend = sendData;
 				session.clearResources(false);
 				if (!session.closed()) {
 					session.getSource().write(toSend);

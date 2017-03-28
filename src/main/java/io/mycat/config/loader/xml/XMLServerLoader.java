@@ -34,13 +34,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import io.mycat.config.Versions;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.alibaba.druid.wall.WallConfig;
 
-import io.mycat.config.Versions;
 import io.mycat.config.model.ClusterConfig;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SystemConfig;
@@ -192,20 +192,22 @@ public class XMLServerLoader {
                 user.setPassword(passwordDecrypt);
                 user.setEncryptPassword(password);
 				
-				String benchmark = (String) props.get("benchmark");
-				if(null != benchmark) {
-					user.setBenchmark( Integer.parseInt(benchmark) );
-				}
+		String benchmark = (String) props.get("benchmark");
+		if(null != benchmark) {
+		    user.setBenchmark( Integer.parseInt(benchmark) );
+		}
 				
-				String readOnly = (String) props.get("readOnly");
-				if (null != readOnly) {
-					user.setReadOnly(Boolean.parseBoolean(readOnly));
-				}
-				
-				String schemas = (String) props.get("schemas");
-				if(system.isLowerCaseTableNames()){
-					schemas = schemas.toLowerCase();
-				}
+		String readOnly = (String) props.get("readOnly");
+		if (null != readOnly) {
+		    user.setReadOnly(Boolean.parseBoolean(readOnly));
+		}
+
+		String manager = (String) props.get("manager");
+		if (null != manager) {
+		    user.setManager(Boolean.parseBoolean(manager));
+		}
+		
+		String schemas = (String) props.get("schemas");
                 if (schemas != null) {
                     String[] strArray = SplitUtil.split(schemas, ',', true);
                     user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));
@@ -242,9 +244,6 @@ public class XMLServerLoader {
 			for (int j = 0; j < schemaNodeLength; j++ ) {
 				Element schemaNode = (Element) schemaNodes.item(j);
 				String name1 = schemaNode.getAttribute("name");
-				if(system.isLowerCaseTableNames()){
-					name1 = name1.toLowerCase();
-				}
 				String dml1 = schemaNode.getAttribute("dml");
 				
 				int[] dml1Array = new int[ dml1.length() ];
@@ -264,9 +263,6 @@ public class XMLServerLoader {
 					
 					Element tableNode = (Element) tableNodes.item(z);
 					String name2 = tableNode.getAttribute("name");
-					if(system.isLowerCaseTableNames()){
-						name2 = name2.toLowerCase();
-					}
 					String dml2 = tableNode.getAttribute("dml");
 					
 					int[] dml2Array = new int[ dml2.length() ];

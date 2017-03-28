@@ -31,6 +31,13 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
+		//创建新表like禁止
+		if(createStmt.getLike() != null){
+			String msg = "create table like other table not supported :" + stmt;
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
+
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, createStmt.getTableSource());
 		if (schemaInfo == null) {

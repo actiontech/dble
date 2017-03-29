@@ -1,12 +1,10 @@
 package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +17,8 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
@@ -26,16 +26,14 @@ import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
-import io.mycat.route.SessionSQLPair;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
-import io.mycat.server.ServerConnection;
 import io.mycat.server.interceptor.impl.GlobalTableUtil;
-import io.mycat.server.parser.ServerParse;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
@@ -59,14 +57,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
-		if (processWithMycatSeq(schema, ServerParse.INSERT, rrs.getStatement(), rrs.getSession().getSource())) {
-			rrs.setFinishedExecute(true);
-			return schema;
-		}
-		if (processInsert(schema, tableName, rrs.getStatement(), rrs.getSession().getSource())) {
-			rrs.setFinishedExecute(true);
-			return schema;
-		}
+
 		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
 			return schema;
 		}
@@ -76,10 +67,16 @@ public class DruidInsertParser extends DefaultDruidParser {
 			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
 			throw new SQLNonTransientException(msg);
 		}
+		if (insert.getQuery() != null) {
+			// insert into .... select ....
+			String msg = "TODO:insert into .... select .... not supported!";
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
 		if (tc.isGlobalTable()) {
 			String sql = rrs.getStatement();
-			if (GlobalTableUtil.useGlobleTableCheck()) {
-				sql = convertInsertSQL(schemaInfo, insert, sql);
+			if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
+				sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck());
 			}else{
 				sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			} 
@@ -87,6 +84,14 @@ public class DruidInsertParser extends DefaultDruidParser {
 			RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
 			rrs.setFinishedRoute(true);
 			return schema;
+		}
+
+		if (tc.isAutoIncrement()) {
+			String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false);
+			rrs.setStatement(sql);
+			SQLStatementParser parser = new MySqlStatementParser(sql);
+			stmt = parser.parseStatement();
+			insert = (MySqlInsertStatement) stmt;
 		}
 		// childTable的insert直接在解析过程中完成路由
 		if (tc.getParentTC()!= null) {
@@ -107,159 +112,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		return schema;
 	}
-	
-	private boolean processInsert(SchemaConfig schema, String tableName, String origSQL, ServerConnection sc)
-			throws SQLNonTransientException {
-		TableConfig tableConfig = schema.getTables().get(tableName);
-		boolean processedInsert = false;
-		// 判断是有自增字段
-		if (null != tableConfig && tableConfig.isAutoIncrement()) {
-			String primaryKey = tableConfig.getPrimaryKey();
-			processedInsert = processInsert(sc, schema, origSQL, tableName, primaryKey);
-		}
-		return processedInsert;
-	}
-	
-	private boolean processInsert(ServerConnection sc,SchemaConfig schema,
-			String origSQL,String tableName,String primaryKey) throws SQLNonTransientException {
 
-		int firstLeftBracketIndex = origSQL.indexOf("(");
-		int firstRightBracketIndex = origSQL.indexOf(")");
-		String upperSql = origSQL.toUpperCase();
-		int valuesIndex = upperSql.indexOf("VALUES");
-		int selectIndex = upperSql.indexOf("SELECT");
-		int fromIndex = upperSql.indexOf("FROM");
-		//屏蔽insert into table1 select * from table2语句
-		if(firstLeftBracketIndex < 0) {
-			String msg = "invalid sql:" + origSQL;
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
-		}
-		//屏蔽批量插入
-		if(selectIndex > 0 &&fromIndex>0&&selectIndex>firstRightBracketIndex&&valuesIndex<0) {
-			String msg = "multi insert not provided" ;
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
-		}
-		//插入语句必须提供列结构，因为MyCat默认对于表结构无感知
-		if(valuesIndex + "VALUES".length() <= firstLeftBracketIndex) {
-			throw new SQLSyntaxErrorException("insert must provide ColumnList");
-		}
-		//如果主键不在插入语句的fields中，则需要进一步处理
-		boolean processedInsert=!isPKInFields(origSQL,primaryKey,firstLeftBracketIndex,firstRightBracketIndex);
-		if(processedInsert){
-			List<String> insertSQLs = handleBatchInsert(origSQL, valuesIndex);
-			for(String insertSQL:insertSQLs) {
-				processInsert(sc, schema, insertSQL, tableName, primaryKey, firstLeftBracketIndex + 1, insertSQL.indexOf('(', firstRightBracketIndex) + 1);
-			}
-		}
-		return processedInsert;
-	}
-	
-	private boolean isPKInFields(String origSQL, String primaryKey, int firstLeftBracketIndex,
-			int firstRightBracketIndex) {
-
-		if (primaryKey == null) {
-			throw new RuntimeException("please make sure the primaryKey's config is not null in schemal.xml");
-		}
-		boolean isPrimaryKeyInFields = false;
-		String upperSQL = origSQL.substring(firstLeftBracketIndex, firstRightBracketIndex + 1).toUpperCase();
-		for (int pkOffset = 0, primaryKeyLength = primaryKey.length(), pkStart = 0;;) {
-			pkStart = upperSQL.indexOf(primaryKey, pkOffset);
-			if (pkStart >= 0 && pkStart < firstRightBracketIndex) {
-				char pkSide = upperSQL.charAt(pkStart - 1);
-				if (pkSide <= ' ' || pkSide == '`' || pkSide == ',' || pkSide == '(') {
-					pkSide = upperSQL.charAt(pkStart + primaryKey.length());
-					isPrimaryKeyInFields = pkSide <= ' ' || pkSide == '`' || pkSide == ',' || pkSide == ')';
-				}
-				if (isPrimaryKeyInFields) {
-					break;
-				}
-				pkOffset = pkStart + primaryKeyLength;
-			} else {
-				break;
-			}
-		}
-		return isPrimaryKeyInFields;
-	}
-	private List<String> handleBatchInsert(String origSQL, int valuesIndex){
-		List<String> handledSQLs = new LinkedList<>();
-		String prefix = origSQL.substring(0,valuesIndex + "VALUES".length());
-		String values = origSQL.substring(valuesIndex + "VALUES".length());
-		int flag = 0;
-		StringBuilder currentValue = new StringBuilder();
-		currentValue.append(prefix);
-		for (int i = 0; i < values.length(); i++) {
-			char j = values.charAt(i);
-			if(j=='(' && flag == 0){
-				flag = 1;
-				currentValue.append(j);
-			}else if(j=='\"' && flag == 1){
-				flag = 2;
-				currentValue.append(j);
-			} else if(j=='\'' && flag == 1){
-				flag = 2;
-				currentValue.append(j);
-			} else if(j=='\\' && flag == 2){
-				flag = 3;
-				currentValue.append(j);
-			} else if (flag == 3){
-				flag = 2;
-				currentValue.append(j);
-			}else if(j=='\"' && flag == 2){
-				flag = 1;
-				currentValue.append(j);
-			} else if(j=='\'' && flag == 2){
-				flag = 1;
-				currentValue.append(j);
-			} else if (j==')' && flag == 1){
-				flag = 0;
-				currentValue.append(j);
-				handledSQLs.add(currentValue.toString());
-				currentValue = new StringBuilder();
-				currentValue.append(prefix);
-			} else if(j == ',' && flag == 0){
-				continue;
-			} else {
-				currentValue.append(j);
-			}
-		}
-		return handledSQLs;
-	}
-
-
-	private void processInsert(ServerConnection sc, SchemaConfig schema, String origSQL,
-			String tableName, String primaryKey, int afterFirstLeftBracketIndex, int afterLastLeftBracketIndex) {
-		/**
-		 * 对于主键不在插入语句的fields中的SQL，需要改写。比如hotnews主键为id，插入语句为：
-		 * insert into hotnews(title) values('aaa');
-		 * 需要改写成：
-		 * insert into hotnews(id, title) values(next value for MYCATSEQ_hotnews,'aaa');
- 		 */
-		int primaryKeyLength = primaryKey.length();
-		int insertSegOffset = afterFirstLeftBracketIndex;
-		String mycatSeqPrefix = "next value for MYCATSEQ_";
-		int mycatSeqPrefixLength = mycatSeqPrefix.length();
-		int tableNameLength = tableName.length();
-
-		char[] newSQLBuf = new char[origSQL.length() + primaryKeyLength + mycatSeqPrefixLength + tableNameLength + 2];
-		origSQL.getChars(0, afterFirstLeftBracketIndex, newSQLBuf, 0);
-		primaryKey.getChars(0, primaryKeyLength, newSQLBuf, insertSegOffset);
-		insertSegOffset += primaryKeyLength;
-		newSQLBuf[insertSegOffset] = ',';
-		insertSegOffset++;
-		origSQL.getChars(afterFirstLeftBracketIndex, afterLastLeftBracketIndex, newSQLBuf, insertSegOffset);
-		insertSegOffset += afterLastLeftBracketIndex - afterFirstLeftBracketIndex;
-		mycatSeqPrefix.getChars(0, mycatSeqPrefixLength, newSQLBuf, insertSegOffset);
-		insertSegOffset += mycatSeqPrefixLength;
-		tableName.getChars(0, tableNameLength, newSQLBuf, insertSegOffset);
-		insertSegOffset += tableNameLength;
-		newSQLBuf[insertSegOffset] = ',';
-		insertSegOffset++;
-		origSQL.getChars(afterLastLeftBracketIndex, origSQL.length(), newSQLBuf, insertSegOffset);
-		String newSQL = RouterUtil.removeSchema(new String(newSQLBuf), schema.getName());
-		processSQL(sc, schema, newSQL, ServerParse.INSERT);
-	}
 	private boolean parserNoSharding(String schemaName, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) {
 		if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
 			if (insert.getQuery() != null) {
@@ -278,7 +131,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	 * @return
 	 */
 	private boolean isMultiInsert(MySqlInsertStatement insertStmt) {
-		return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1) || insertStmt.getQuery() != null;
+		return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1);
 	}
 	
 	private RouteResultset parserChildTable(SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
@@ -295,7 +148,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 		String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
 		String realVal = StringUtil.removeApostrophe(joinKeyVal);
 		String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
-
 		rrs.setStatement(sql);
 		// try to route by ER parent partion key
 		RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -401,68 +253,93 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
 			MySqlInsertStatement insertStmt) throws SQLNonTransientException {
 		// insert into table() values (),(),....
-		if (insertStmt.getValuesList().size() > 1) {
-			SchemaConfig schema = schemaInfo.schemaConfig;
-			String tableName = schemaInfo.table;
-			// 字段列数
-			int columnNum = getTableColumns(schemaInfo, insertStmt);
-			int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
-			List<ValuesClause> valueClauseList = insertStmt.getValuesList();
-			Map<Integer, List<ValuesClause>> nodeValuesMap = new HashMap<Integer, List<ValuesClause>>();
-			TableConfig tableConfig = schema.getTables().get(tableName);
-			AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
-			for (ValuesClause valueClause : valueClauseList) {
-				if (valueClause.getValues().size() != columnNum) {
-					String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != "
-							+ valueClause.getValues().size() + "values:" + valueClause;
-					LOGGER.warn(msg);
-					throw new SQLNonTransientException(msg);
-				}
-				SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-				String shardingValue = null;
-				if (expr instanceof SQLIntegerExpr) {
-					SQLIntegerExpr intExpr = (SQLIntegerExpr) expr;
-					shardingValue = intExpr.getNumber() + "";
-				} else if (expr instanceof SQLCharExpr) {
-					SQLCharExpr charExpr = (SQLCharExpr) expr;
-					shardingValue = charExpr.getText();
-				}
-
-				Integer nodeIndex = algorithm.calculate(shardingValue);
-				// 没找到插入的分片
-				if (nodeIndex == null) {
-					String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> "
-							+ shardingValue;
-					LOGGER.warn(msg);
-					throw new SQLNonTransientException(msg);
-				}
-				if (nodeValuesMap.get(nodeIndex) == null) {
-					nodeValuesMap.put(nodeIndex, new ArrayList<ValuesClause>());
-				}
-				nodeValuesMap.get(nodeIndex).add(valueClause);
+		SchemaConfig schema = schemaInfo.schemaConfig;
+		String tableName = schemaInfo.table;
+		// 字段列数
+		int columnNum = getTableColumns(schemaInfo, insertStmt);
+		int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
+		List<ValuesClause> valueClauseList = insertStmt.getValuesList();
+		Map<Integer, List<ValuesClause>> nodeValuesMap = new HashMap<Integer, List<ValuesClause>>();
+		TableConfig tableConfig = schema.getTables().get(tableName);
+		AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+		for (ValuesClause valueClause : valueClauseList) {
+			if (valueClause.getValues().size() != columnNum) {
+				String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != "
+						+ valueClause.getValues().size() + "values:" + valueClause;
+				LOGGER.warn(msg);
+				throw new SQLNonTransientException(msg);
+			}
+			SQLExpr expr = valueClause.getValues().get(shardingColIndex);
+			String shardingValue = null;
+			if (expr instanceof SQLIntegerExpr) {
+				SQLIntegerExpr intExpr = (SQLIntegerExpr) expr;
+				shardingValue = intExpr.getNumber() + "";
+			} else if (expr instanceof SQLCharExpr) {
+				SQLCharExpr charExpr = (SQLCharExpr) expr;
+				shardingValue = charExpr.getText();
 			}
 
-			RouteResultsetNode[] nodes = new RouteResultsetNode[nodeValuesMap.size()];
-			int count = 0;
-			for (Map.Entry<Integer, List<ValuesClause>> node : nodeValuesMap.entrySet()) {
-				Integer nodeIndex = node.getKey();
-				List<ValuesClause> valuesList = node.getValue();
-				insertStmt.setValuesList(valuesList);
-				nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-						RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
-				nodes[count++].setSource(rrs);
-
+			Integer nodeIndex = algorithm.calculate(shardingValue);
+			// 没找到插入的分片
+			if (nodeIndex == null) {
+				String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> "
+						+ shardingValue;
+				LOGGER.warn(msg);
+				throw new SQLNonTransientException(msg);
 			}
-			rrs.setNodes(nodes);
-			rrs.setFinishedRoute(true);
-		} else if (insertStmt.getQuery() != null) {
-			// insert into .... select ....
-			String msg = "TODO:insert into .... select .... not supported!";
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
+			if (nodeValuesMap.get(nodeIndex) == null) {
+				nodeValuesMap.put(nodeIndex, new ArrayList<ValuesClause>());
+			}
+			nodeValuesMap.get(nodeIndex).add(valueClause);
 		}
+
+		RouteResultsetNode[] nodes = new RouteResultsetNode[nodeValuesMap.size()];
+		int count = 0;
+		for (Map.Entry<Integer, List<ValuesClause>> node : nodeValuesMap.entrySet()) {
+			Integer nodeIndex = node.getKey();
+			List<ValuesClause> valuesList = node.getValue();
+			insertStmt.setValuesList(valuesList);
+			nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
+					RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
+			nodes[count++].setSource(rrs);
+
+		}
+		rrs.setNodes(nodes);
+		rrs.setFinishedRoute(true);
 	}
 	
+	private int getPrimaryKeyIndex(SchemaInfo schemaInfo, String primaryKeyColumn) throws SQLNonTransientException {
+		if (primaryKeyColumn == null) {
+			throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
+		}
+		int primaryKeyIndex = -1;
+		TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
+				schemaInfo.table);
+		if (tbMeta != null) {
+			boolean hasPrimaryKey = false;
+			IndexMeta primaryKey = tbMeta.getPrimary();
+			if (primaryKey != null) {
+				for (int i = 0; i < tbMeta.getPrimary().getColumnsCount(); i++) {
+					if (primaryKeyColumn.equalsIgnoreCase(tbMeta.getPrimary().getColumns(i))) {
+						hasPrimaryKey = true;
+						break;
+					}
+				}
+			}
+			if (!hasPrimaryKey) {
+				String msg = "please make sure your table structure has primaryKey";
+				LOGGER.warn(msg);
+				throw new SQLNonTransientException(msg);
+			}
+
+			for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+				if (primaryKeyColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+					return i;
+				}
+			}
+		}
+		return primaryKeyIndex;
+	}
 	/**
 	 * 寻找拆分字段在 columnList中的索引
 	 *
@@ -523,22 +400,21 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String joinKey) throws SQLNonTransientException {
 		return getShardingColIndex(schemaInfo, insertStmt, joinKey);
 	}
-	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql) throws SQLNonTransientException {
+	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc , boolean isGlobalCheck) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
 			return originSql;
 
+		boolean isAutoIncrement = tc.isAutoIncrement();
+
 		String tableName = schemaInfo.table;
-		if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-			return originSql;
-
-
-		// insert into .... select ....
-		if (insert.getQuery() != null) {
-			String msg = "TODO:insert into .... select .... not supported!";
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
+		if (isGlobalCheck && !GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta)) {
+			if (!isAutoIncrement) {
+				return originSql;
+			} else {
+				isGlobalCheck = false;
+			}
 		}
 
 		StringBuilder sb = new StringBuilder(200) // 指定初始容量可以提高性能
@@ -546,19 +422,25 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 		List<SQLExpr> columns = insert.getColumns();
 
-		int idx = -1;
+		int autoIncrement = -1;
+		int idxGlobal = -1;
 		int colSize = -1;
 		// insert 没有带列名：insert into t values(xxx,xxx)
 		if (columns == null || columns.size() <= 0) {
+			if (isAutoIncrement) {
+				autoIncrement = getPrimaryKeyIndex(schemaInfo, tc.getPrimaryKey());
+			}
 			colSize = orgTbMeta.getColumnsList().size();
 			sb.append("(");
 			for (int i = 0; i < colSize; i++) {
 				String column = orgTbMeta.getColumnsList().get(i).getName();
-				if (i > 0)
+				if (i > 0){
 					sb.append(",");
-				if (column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN))
-					idx = i; // 找到 内部列的索引位置
+				}
 				sb.append(column);
+				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+					idxGlobal = i; // 找到 内部列的索引位置
+				}
 			}
 			sb.append(")");
 		} else { // insert 语句带有 列名
@@ -569,27 +451,44 @@ public class DruidInsertParser extends DefaultDruidParser {
 				else
 					sb.append(columns.get(i).toString());
 				String column = StringUtil.removeBackQuote(insert.getColumns().get(i).toString());
-				if (column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN))
-					idx = i;
+				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+					String msg = "In insert Syntax, you can't set value for Global check column!";
+					LOGGER.warn(msg);
+					throw new SQLNonTransientException(msg);
+				}
+				if (isAutoIncrement && column.equalsIgnoreCase(tc.getPrimaryKey())) {
+					String msg = "In insert Syntax, you can't set value for Autoincrement column!";
+					LOGGER.warn(msg);
+					throw new SQLNonTransientException(msg);
+				}
 			}
-			if (idx <= -1)
-				sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
-			sb.append(")");
 			colSize = columns.size();
+			if (isAutoIncrement) {
+				autoIncrement = columns.size();
+				sb.append(",").append(tc.getPrimaryKey());
+				colSize++;
+			}
+			if (isGlobalCheck && idxGlobal <= -1){
+				idxGlobal = isAutoIncrement ? columns.size() + 1 : columns.size();
+				sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+				colSize++;
+			}
+			sb.append(")");
 		}
 
 		sb.append(" values");
+		String tableKey = schemaInfo.schema + "_" + schemaInfo.table;
 		List<ValuesClause> vcl = insert.getValuesList();
 		if (vcl != null && vcl.size() > 1) { // 批量insert
 			for (int j = 0; j < vcl.size(); j++) {
 				if (j != vcl.size() - 1)
-					appendValues(vcl.get(j).getValues(), sb, idx, colSize).append(",");
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
 				else
-					appendValues(vcl.get(j).getValues(), sb, idx, colSize);
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
 			}
 		} else { // 非批量 insert
 			List<SQLExpr> valuse = insert.getValues().getValues();
-			appendValues(valuse, sb, idx, colSize);
+			appendValues(tableKey,valuse, sb ,autoIncrement, idxGlobal, colSize);
 		}
 
 		List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
@@ -629,63 +528,33 @@ public class DruidInsertParser extends DefaultDruidParser {
 		sb.append(")");
 	}
 
-	private static StringBuilder appendValues(List<SQLExpr> valuse, StringBuilder sb, int idx, int colSize) {
-		String operationTimestamp = String.valueOf(new Date().getTime());
+	private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
 		int size = valuse.size();
-		if (size < colSize)
-			size = colSize;
-
+		int checkSize = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
+		if (checkSize != size){
+			String msg = "In insert Syntax, you can't set value for Autoincrement column!";
+			if (autoIncrement < 0) {
+				msg = "In insert Syntax, you can't set value for Global check column!";
+			}
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
+		}
 		sb.append("(");
-		for (int i = 0; i < size; i++) {
-			if (i < size - 1) {
-				if (i != idx)
-					sb.append(valuse.get(i).toString()).append(",");
-				else
-					sb.append(operationTimestamp).append(",");
+		int iValue =0;
+		for (int i = 0; i < colSize; i++) {
+			if (i == idxGlobal) {
+				sb.append(String.valueOf(new Date().getTime()));
+			} else if (i == autoIncrement) {
+				long id = MycatServer.getInstance().getSequenceHandler().nextId(tableKey);
+				sb.append(id);
 			} else {
-				if (i != idx) {
-					sb.append(valuse.get(i).toString());
-				} else {
-					sb.append(operationTimestamp);
-				}
+				sb.append(valuse.get(iValue++).toString());
+			}
+			if (i < colSize-1) {
+				sb.append(",");
 			}
 		}
-		if (idx <= -1)
-			sb.append(",").append(operationTimestamp);
 		return sb.append(")");
 	}
-	public static boolean processWithMycatSeq(SchemaConfig schema, int sqlType,
-            String origSQL, ServerConnection sc) {
-		// check if origSQL is with global sequence
-		// @micmiu it is just a simple judgement
-		// 对应本地文件配置方式：insert into table1(id,name) values(next value for MYCATSEQ_GLOBAL,‘test’);
-		if (origSQL.indexOf(" MYCATSEQ_") != -1) {
-			origSQL = RouterUtil.removeSchema(origSQL, schema.getName());
-			processSQL(sc, schema, origSQL, sqlType);
-			return true;
-		}
-		return false;
-	}
 
-	public static void processSQL(ServerConnection sc, SchemaConfig schema, String sql, int sqlType) {
-		// int sequenceHandlerType = MycatServer.getInstance().getConfig().getSystem().getSequnceHandlerType();
-		SessionSQLPair sessionSQLPair = new SessionSQLPair(sc.getSession2(), schema, sql, sqlType);
-		// if(sequenceHandlerType == 3 || sequenceHandlerType == 4){
-		// DruidSequenceHandler sequenceHandler = new
-		// DruidSequenceHandler(MycatServer
-		// .getInstance().getConfig().getSystem().getSequnceHandlerType());
-		// String charset = sessionSQLPair.session.getSource().getCharset();
-		// String executeSql = null;
-		// try {
-		// executeSql = sequenceHandler.getExecuteSql(sessionSQLPair.sql,charset
-		// == null ? "utf-8":charset);
-		// } catch (UnsupportedEncodingException e) {
-		// LOGGER.error("UnsupportedEncodingException!");
-		// }
-		// sessionSQLPair.session.getSource().routeEndExecuteSQL(executeSql,
-		// sessionSQLPair.type,sessionSQLPair.schema);
-		// } else {
-		MycatServer.getInstance().getSequnceProcessor().addNewSql(sessionSQLPair);
-		// }
-	}
 }

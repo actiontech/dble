@@ -1,11 +1,14 @@
 package io.mycat.route.sequence.handler;
 
 
-import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.config.model.SystemConfig;
-import io.mycat.route.util.PropertiesUtil;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
@@ -18,13 +21,11 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.model.SystemConfig;
+import io.mycat.route.util.PropertiesUtil;
 
 /**
  * 基于ZK与本地配置的分布式ID生成器(可以通过ZK获取集群（机房）唯一InstanceID，也可以通过配置文件配置InstanceID)

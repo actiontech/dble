@@ -54,7 +54,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
 	public abstract Boolean fetchNextPeriod(String prefixName);
 
 	@Override
-	public long nextId(String prefixName) {
+	public synchronized long nextId(String prefixName) {
 		Map<String, String> paraMap = this.getParaValMap(prefixName);
 		if (null == paraMap) {
 			throw new RuntimeException("fetch Param Values error.");

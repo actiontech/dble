@@ -84,7 +84,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 	private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<String, SequenceVal>();
 
 	@Override
-	public long nextId(String seqName) {
+	public synchronized long nextId(String seqName) {
 		SequenceVal seqVal = seqValueMap.get(seqName);
 		if (seqVal == null) {
 			throw new ConfigException("can't find definition for sequence :"

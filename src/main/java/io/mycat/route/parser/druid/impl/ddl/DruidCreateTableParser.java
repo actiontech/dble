@@ -2,7 +2,8 @@ package io.mycat.route.parser.druid.impl.ddl;
 
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -46,10 +47,13 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 
 		//如果这个不是no_sharing表格那么就需要这么进行检查
-		if(schema.getTables().get(createStmt.getTableSource().toString()).getRule() != null){
+		String tableName =
+				createStmt.getTableSource().toString().contains(".")?
+						createStmt.getTableSource().toString().split("\\.")[1]:
+						createStmt.getTableSource().toString();
+		if(!RouterUtil.isNoSharding(schema,tableName)){
 			sharingTableCheck(createStmt);
 		}
-
 
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
@@ -97,8 +101,8 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 
 		//创建的新表只允许出现InnoDB引擎
-		SQLIdentifierExpr engineConf = (SQLIdentifierExpr)createStmt.getTableOptions().get("ENGINE");
-		if(engineConf != null && !"InnoDB".equalsIgnoreCase(engineConf.getName())){
+		SQLCharExpr engineConf = (SQLCharExpr)createStmt.getTableOptions().get("ENGINE");
+		if(engineConf != null && !"'InnoDB'".equalsIgnoreCase(engineConf.toString())){
 			String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);

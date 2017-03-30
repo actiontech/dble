@@ -326,35 +326,9 @@ public class MycatServer {
 		//minimum allocation unit
 		short bufferPoolChunkSize = system.getBufferPoolChunkSize();
 		
-		int bufferPoolType = system.getProcessorBufferPoolType();
-
-		switch (bufferPoolType){
-			case 0:
-				bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize,
-					bufferPoolPageNumber,system.getFrontSocketSoRcvbuf());
-			
-
-				totalNetWorkBufferSize = bufferPoolPageSize*bufferPoolPageNumber;
-				break;
-			case 1:
-				/**
-				 * todo 对应权威指南修改：
-				 *
-				 * bytebufferarena由6个bytebufferlist组成，这六个list有减少内存碎片的机制
-				 * 每个bytebufferlist由多个bytebufferchunk组成，每个list也有减少内存碎片的机制
-				 * 每个bytebufferchunk由多个page组成，平衡二叉树管理内存使用状态，计算灵活
-				 * 设置的pagesize对应bytebufferarena里面的每个bytebufferlist的每个bytebufferchunk的buffer长度
-				 * bufferPoolChunkSize对应每个bytebufferchunk的每个page的长度
-				 * bufferPoolPageNumber对应每个bytebufferlist有多少个bytebufferchunk
-				 */
-
-				totalNetWorkBufferSize = 6*bufferPoolPageSize * bufferPoolPageNumber;
-				break;
-			default:
-				bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize,
-					bufferPoolPageNumber,system.getFrontSocketSoRcvbuf());;
-				totalNetWorkBufferSize = bufferPoolPageSize*bufferPoolPageNumber;
-		}
+		bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize,
+				bufferPoolPageNumber,system.getFrontSocketSoRcvbuf());;
+		totalNetWorkBufferSize = bufferPoolPageSize*bufferPoolPageNumber;
 		
 			/**
 		 * Off Heap For Merge/Order/Group/Limit 初始化

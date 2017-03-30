@@ -83,7 +83,6 @@ public final class SystemConfig {
 	private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
 	private static final boolean DEFAULT_USE_JOINSTRATEGY = false;
 
-	private int processorBufferPoolType = 0;
 	private int frontSocketSoRcvbuf = 1024 * 1024;
 	private int frontSocketSoSndbuf = 4 * 1024 * 1024;
 	// mysql 5.6 net_buffer_length defaut 4M
@@ -91,7 +90,6 @@ public final class SystemConfig {
 	private int backSocketSoSndbuf = 1024 * 1024;
 	private int frontSocketNoDelay = 1; // 0=false
 	private int backSocketNoDelay = 1; // 1=true
-	private int frontWriteQueueSize = 2048;
 	private String bindIp = "0.0.0.0";
 	private String fakeMySQLVersion = null;
 	private int serverPort;
@@ -422,14 +420,6 @@ public final class SystemConfig {
 
 	public void setMaxPacketSize(int maxPacketSize) {
 		this.maxPacketSize = maxPacketSize;
-	}
-
-	public int getFrontWriteQueueSize() {
-		return frontWriteQueueSize;
-	}
-
-	public void setFrontWriteQueueSize(int frontWriteQueueSize) {
-		this.frontWriteQueueSize = frontWriteQueueSize;
 	}
 
 	public String getBindIp() {
@@ -808,7 +798,6 @@ public final class SystemConfig {
 				+ ", backSocketSoSndbuf="+ backSocketSoSndbuf
 				+ ", frontSocketNoDelay="+ frontSocketNoDelay
 				+ ", backSocketNoDelay="+ backSocketNoDelay
-				+ ",frontWriteQueueSize="+ frontWriteQueueSize
 				+ ", bindIp=" + bindIp
 				+ ", serverPort="+ serverPort
 				+ ", managerPort=" + managerPort
@@ -864,15 +853,6 @@ public final class SystemConfig {
 	public void setCheckTableConsistencyPeriod(long checkTableConsistencyPeriod) {
 		this.checkTableConsistencyPeriod = checkTableConsistencyPeriod;
 	}
-
-	public int getProcessorBufferPoolType() {
-		return processorBufferPoolType;
-	}
-
-	public void setProcessorBufferPoolType(int processorBufferPoolType) {
-		this.processorBufferPoolType = processorBufferPoolType;
-	}
-
 
 	public int getUseHandshakeV10() {
 		return useHandshakeV10;

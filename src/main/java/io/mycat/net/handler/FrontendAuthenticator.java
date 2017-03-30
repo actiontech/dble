@@ -178,13 +178,15 @@ public class FrontendAuthenticator implements NIOHandler {
         }
     }
 
-    
+	protected NIOHandler successCommendHander() {
+		return new FrontendCommandHandler(source);
+	}
     protected void success(AuthPacket auth) {
         source.setAuthenticated(true);
         source.setUser(auth.user);
         source.setSchema(auth.database);
         source.setCharsetIndex(auth.charsetIndex);
-        source.setHandler(new FrontendCommandHandler(source));
+        source.setHandler(successCommendHander());
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();

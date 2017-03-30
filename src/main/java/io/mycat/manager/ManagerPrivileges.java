@@ -54,11 +54,6 @@ public class ManagerPrivileges extends MycatPrivileges {
 	 * 无需每次建立连接都new实例。
 	 */
     private static ManagerPrivileges instance = new ManagerPrivileges();
-	
-    private static final Logger ALARM = LoggerFactory.getLogger("alarm");
-    
-    private static boolean check = false;	
-    private final static ThreadLocal<WallProvider> contextLocal = new ThreadLocal<WallProvider>();
 
     public static ManagerPrivileges instance() {
     	return instance;
@@ -67,42 +62,14 @@ public class ManagerPrivileges extends MycatPrivileges {
     private ManagerPrivileges() {
     	super();
     }
-    
-    @Override
-    public boolean checkFirewallWhiteHostPolicy(String user, String host) {
-		
-	MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
-        FirewallConfig firewallConfig = mycatConfig.getFirewall();
-	UserConfig rUser = mycatConfig.getUsers().get(user);
-	
-	if (rUser == null || rUser.isManager() == false)
-	    	return false;
-        
-        //防火墙 白名单处理
-        boolean isPassed = false;
-        
-        Map<String, List<UserConfig>> whitehost = firewallConfig.getWhitehost();
-        if (whitehost == null || whitehost.size() == 0) {        	
-        	Map<String, UserConfig> users = mycatConfig.getUsers();
-        	isPassed = users.containsKey(user);
-        	
-        } else {        	
-        	List<UserConfig> list = whitehost.get(host);
-			if (list != null) {			
-				for (UserConfig userConfig : list) {
-					if (userConfig.getName().equals(user)) {
-						isPassed = true;
-						break;
-					}
-				}
-			}        	
-        }
-        
-        if ( !isPassed ) {
-        	 ALARM.error(new StringBuilder().append(Alarms.FIREWALL_ATTACK).append("[host=").append(host)
-                     .append(",user=").append(user).append(']').toString());
-        	 return false;
-        }        
-        return true;
+
+    protected boolean checkManagerPrivilege(String user) {
+		MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
+		UserConfig rUser = mycatConfig.getUsers().get(user);
+		// Manager privilege must be assign explicitly
+		if (rUser == null || rUser.isManager() == false)
+		    return false;
+
+		return true;
     }
 }

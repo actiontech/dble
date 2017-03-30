@@ -92,7 +92,6 @@ import io.mycat.server.interceptor.SQLInterceptor;
 import io.mycat.server.interceptor.impl.GlobalTableUtil;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
-import io.mycat.statistic.SQLRecorder;
 import io.mycat.statistic.stat.SqlResultSizeRecorder;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
@@ -416,11 +415,11 @@ public class MycatServer {
 			connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", reactorPool);
 			((NIOConnector) connector).start();
 
-			manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
-					+ "Manager", system.getBindIp(), system.getManagerPort(), mf, reactorPool);
+			manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", system.getBindIp(),
+					system.getManagerPort(), 100, mf, reactorPool);
 
-			server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
-					+ "Server", system.getBindIp(), system.getServerPort(), sf, reactorPool);
+			server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", system.getBindIp(),
+					system.getServerPort(), system.getServerBacklog(), sf, reactorPool);
 		}
 
 		// start transaction SQL log

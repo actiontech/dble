@@ -50,6 +50,7 @@ public final class SystemConfig {
 
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
+	private static final int DEFAULT_BACK_LOG_SIZE = 2048;
 	private static final String DEFAULT_CHARSET = "utf8";
 	private static final String DEFAULT_SQL_PARSER = "druidparser";// fdbparser, druidparser
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
@@ -95,6 +96,7 @@ public final class SystemConfig {
 	private String fakeMySQLVersion = null;
 	private int serverPort;
 	private int managerPort;
+	private int serverBacklog;
 	private String charset;
 	private int processors;
 	private int processorExecutor;
@@ -200,6 +202,7 @@ public final class SystemConfig {
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
+		this.serverBacklog= DEFAULT_BACK_LOG_SIZE;
 		this.charset = DEFAULT_CHARSET;
 		this.processors = DEFAULT_PROCESSORS;
 		this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
@@ -514,6 +517,14 @@ public final class SystemConfig {
 
 	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
+	}
+
+	public int getServerBacklog() {
+		return serverBacklog;
+	}
+
+	public void setServerBacklog(int serverBacklog) {
+		this.serverBacklog = serverBacklog;
 	}
 
 	public int getManagerPort() {

@@ -3,7 +3,6 @@ package io.mycat.route.parser.druid.impl.ddl;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -47,11 +46,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 
 		//如果这个不是no_sharing表格那么就需要这么进行检查
-		String tableName =
-				createStmt.getTableSource().toString().contains(".")?
-						createStmt.getTableSource().toString().split("\\.")[1]:
-						createStmt.getTableSource().toString();
-		if(!RouterUtil.isNoSharding(schema,tableName)){
+		if(!RouterUtil.isNoSharding(schema,schemaInfo.table)){
 			sharingTableCheck(createStmt);
 		}
 

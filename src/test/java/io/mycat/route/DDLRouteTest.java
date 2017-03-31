@@ -1,35 +1,25 @@
 package io.mycat.route;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
-import io.mycat.route.parser.druid.impl.ddl.DruidCreateTableParser;
-import org.junit.Test;
-
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
-import io.mycat.config.loader.SchemaLoader;
-import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.RouteService;
-import io.mycat.route.RouteStrategy;
-import io.mycat.route.factory.RouteStrategyFactory;
+import io.mycat.route.parser.druid.impl.ddl.DruidCreateTableParser;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
+import org.junit.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class DDLRouteTest {
     protected Map<String, SchemaConfig> schemaMap;
@@ -165,15 +155,36 @@ public class DDLRouteTest {
     @Test
     public void testCreateTableForbidden() throws Exception {
         Method[] fa = DruidCreateTableParser.class.getDeclaredMethods();
-        SQLCreateTableStatement[] testSQLStatement = new SQLCreateTableStatement[20];
-        InvocationTargetException[] result = new InvocationTargetException[20];
+        SQLCreateTableStatement[] testSQLStatement = new SQLCreateTableStatement[100];
+        InvocationTargetException[] result = new InvocationTargetException[100];
         String[] createSqls = {
                 "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT)",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) CHARACTER SET = 'utf8'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) COMMENT = '一二三四五'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENCRYPTION  = 'Y'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) KEY_BLOCK_SIZE  = 1",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ROW_FORMAT  = 'BLOB'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) STATS_AUTO_RECALC   = 0",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) STATS_PERSISTENT = 0",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) STATS_SAMPLE_PAGES   = 5",
                 "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'InnoDB'",
-                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) PARTITION BY HASH(XX)",
+
                 "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'MyISAM'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'MEMORY'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'CSV'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'ARCHIVE'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'EXAMPLE'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'HEAP'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'MERGE'",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) ENGINE = 'NDB'",
+
                 "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) DATA DIRECTORY = '/data'",
-                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) AUTO_INCREMENT = 1"
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) AUTO_INCREMENT = 1",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) AUTO_INCREMENT = 2",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) PARTITION BY HASH(XX)",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT)PARTITION BY HASH ( YEAR(XX) )",
+                "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) PARTITION BY KEY(XX) PARTITIONS 4"
+
         };
         //测试分片的状态
         for(int i = 0;i < createSqls.length;i++){
@@ -185,25 +196,49 @@ public class DDLRouteTest {
             if(f.getName().equals("sharingTableCheck")){
                 f.setAccessible(true);
                 for(int i = 0;i < createSqls.length;i++) {
-                    DruidCreateTableParser createTableParser = new DruidCreateTableParser();
-                    Object[] prams = {testSQLStatement[i]};
                     try {
-                        f.invoke(createTableParser, prams);
-                    } catch (InvocationTargetException e) {
-                        result[i] = e;
-                        continue;
+                        DruidCreateTableParser createTableParser = new DruidCreateTableParser();
+                        Object[] prams = {testSQLStatement[i]};
+                        try {
+                            f.invoke(createTableParser, prams);
+                        } catch (InvocationTargetException e) {
+                            result[i] = e;
+                            continue;
+                        }
+                        result[i] = null;
+                    }catch(Exception e){
+                        System.out.print("there is something wrong with the Parser"+e.getMessage());
                     }
-                    result[i] = null;
                 }
             }
         }
 
         Assert.assertTrue(result[0] == null);
         Assert.assertTrue(result[1] == null);
-        Assert.assertTrue(result[2].getTargetException().getMessage().contains("Partition"));
-        Assert.assertTrue(result[3].getTargetException().getMessage().contains("ENGINE InnoDB"));
-        Assert.assertTrue(result[4].getTargetException().getMessage().contains("DATA DIRECTORY"));
-        Assert.assertTrue(result[5].getTargetException().getMessage().contains("AUTO_INCREMENT"));
+        Assert.assertTrue(result[2] == null);
+        Assert.assertTrue(result[3] == null);
+        Assert.assertTrue(result[4] == null);
+        Assert.assertTrue(result[5] == null);
+        Assert.assertTrue(result[6] == null);
+        Assert.assertTrue(result[7] == null);
+        Assert.assertTrue(result[8] == null);
+        Assert.assertTrue(result[9] == null);
+
+        Assert.assertTrue(result[10].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[11].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[12].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[13].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[14].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[15].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[16].getTargetException().getMessage().contains("ENGINE InnoDB"));
+        Assert.assertTrue(result[17].getTargetException().getMessage().contains("ENGINE InnoDB"));
+
+        Assert.assertTrue(result[18].getTargetException().getMessage().contains("DATA DIRECTORY"));
+        Assert.assertTrue(result[19].getTargetException().getMessage().contains("AUTO_INCREMENT"));
+        Assert.assertTrue(result[20].getTargetException().getMessage().contains("AUTO_INCREMENT"));
+        Assert.assertTrue(result[21].getTargetException().getMessage().contains("Partition"));
+        Assert.assertTrue(result[22].getTargetException().getMessage().contains("Partition"));
+        Assert.assertTrue(result[23].getTargetException().getMessage().contains("Partition"));
     }
 
 

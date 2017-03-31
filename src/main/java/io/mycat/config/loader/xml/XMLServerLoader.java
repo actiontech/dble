@@ -192,20 +192,25 @@ public class XMLServerLoader {
                 user.setPassword(passwordDecrypt);
                 user.setEncryptPassword(password);
 				
-				String benchmark = (String) props.get("benchmark");
-				if(null != benchmark) {
-					user.setBenchmark( Integer.parseInt(benchmark) );
-				}
+		String benchmark = (String) props.get("benchmark");
+		if(null != benchmark) {
+		    user.setBenchmark( Integer.parseInt(benchmark) );
+		}
 				
-				String readOnly = (String) props.get("readOnly");
-				if (null != readOnly) {
-					user.setReadOnly(Boolean.parseBoolean(readOnly));
-				}
+		String readOnly = (String) props.get("readOnly");
+		if (null != readOnly) {
+		    user.setReadOnly(Boolean.parseBoolean(readOnly));
+		}
 
-				String schemas = (String) props.get("schemas");
-				if(system.isLowerCaseTableNames()){
-					schemas = schemas.toLowerCase();
-				}
+		String manager = (String) props.get("manager");
+		if (null != manager) {
+		    user.setManager(Boolean.parseBoolean(manager));
+		}
+
+		String schemas = (String) props.get("schemas");
+		if(system.isLowerCaseTableNames()){
+		    schemas = schemas.toLowerCase();
+		}
                 if (schemas != null) {
                     String[] strArray = SplitUtil.split(schemas, ',', true);
                     user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));

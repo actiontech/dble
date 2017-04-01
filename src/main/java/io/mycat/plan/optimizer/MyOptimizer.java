@@ -14,7 +14,6 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.util.SchemaUtil;
 
 public class MyOptimizer {
-	//TODO:YHQ CHECK LOGIC
 	public static PlanNode optimize(String schema, PlanNode node) {
 
 		try {
@@ -47,11 +46,10 @@ public class MyOptimizer {
 
 				node = SelectedProcessor.optimize(node);
 
-				//TODO
-//				boolean useJoinStrategy = ProxyServer.getInstance().getConfig().getSystem().isUseJoinStrategy();
-//				if (useJoinStrategy){
-//					node = JoinStrategyProcessor.optimize(node);
-//				}
+				boolean useJoinStrategy = MycatServer.getInstance().getConfig().getSystem().isUseJoinStrategy();
+				if (useJoinStrategy){
+					node = JoinStrategyProcessor.optimize(node);
+				}
 			}
 			return node;
 		} catch (MySQLOutPutException e) {

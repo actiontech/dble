@@ -50,6 +50,7 @@ public final class SystemConfig {
 
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
+	private static final int DEFAULT_BACK_LOG_SIZE = 2048;
 	private static final String DEFAULT_CHARSET = "utf8";
 	private static final String DEFAULT_SQL_PARSER = "druidparser";// fdbparser, druidparser
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
@@ -58,7 +59,6 @@ public final class SystemConfig {
 	private final  static String RESERVED_SYSTEM_MEMORY_BYTES = "384m";
 	private final static String MEMORY_PAGE_SIZE = "1m";
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
-	private final static String DATANODE_SORTED_TEMP_DIR = "datanode";
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1 * 1000L;
 	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
@@ -81,8 +81,8 @@ public final class SystemConfig {
 	private static final int DEFAULT_NESTLOOP_ROWS_SIZE = 2000;
 	private static final int DEFAULT_NESTLOOP_CONN_SIZE = 4;
 	private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
+	private static final boolean DEFAULT_USE_JOINSTRATEGY = false;
 
-	private int processorBufferPoolType = 0;
 	private int frontSocketSoRcvbuf = 1024 * 1024;
 	private int frontSocketSoSndbuf = 4 * 1024 * 1024;
 	// mysql 5.6 net_buffer_length defaut 4M
@@ -90,11 +90,11 @@ public final class SystemConfig {
 	private int backSocketSoSndbuf = 1024 * 1024;
 	private int frontSocketNoDelay = 1; // 0=false
 	private int backSocketNoDelay = 1; // 1=true
-	private int frontWriteQueueSize = 2048;
 	private String bindIp = "0.0.0.0";
 	private String fakeMySQLVersion = null;
 	private int serverPort;
 	private int managerPort;
+	private int serverBacklog;
 	private String charset;
 	private int processors;
 	private int processorExecutor;
@@ -193,10 +193,14 @@ public final class SystemConfig {
 
 	private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
 	private boolean useExtensions = false;
+	
+	// 是否使用JoinStrategy优化
+	private boolean useJoinStrategy;
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
+		this.serverBacklog= DEFAULT_BACK_LOG_SIZE;
 		this.charset = DEFAULT_CHARSET;
 		this.processors = DEFAULT_PROCESSORS;
 		this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
@@ -237,6 +241,7 @@ public final class SystemConfig {
 		this.nestLoopRowsSize = DEFAULT_NESTLOOP_ROWS_SIZE;
 		this.nestLoopConnSize = DEFAULT_NESTLOOP_CONN_SIZE;
 		this.mappedFileSize = DEFAULT_MAPPEDFILE_SIZE;
+		this.useJoinStrategy = DEFAULT_USE_JOINSTRATEGY;
 	}
 
 	public int getTransactionRatateSize() {
@@ -319,7 +324,15 @@ public final class SystemConfig {
 		this.useZKSwitch = useZKSwitch;
 	}
 	
+	public boolean isUseJoinStrategy() {
+		return useJoinStrategy;
+	}
 
+	public void setUseJoinStrategy(boolean useJoinStrategy) {
+		this.useJoinStrategy = useJoinStrategy;
+	}
+	
+	
 	public boolean isLowerCaseTableNames() {
 		return lowerCaseTableNames;
 	}
@@ -409,14 +422,6 @@ public final class SystemConfig {
 		this.maxPacketSize = maxPacketSize;
 	}
 
-	public int getFrontWriteQueueSize() {
-		return frontWriteQueueSize;
-	}
-
-	public void setFrontWriteQueueSize(int frontWriteQueueSize) {
-		this.frontWriteQueueSize = frontWriteQueueSize;
-	}
-
 	public String getBindIp() {
 		return bindIp;
 	}
@@ -502,6 +507,14 @@ public final class SystemConfig {
 
 	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
+	}
+
+	public int getServerBacklog() {
+		return serverBacklog;
+	}
+
+	public void setServerBacklog(int serverBacklog) {
+		this.serverBacklog = serverBacklog;
 	}
 
 	public int getManagerPort() {
@@ -785,7 +798,6 @@ public final class SystemConfig {
 				+ ", backSocketSoSndbuf="+ backSocketSoSndbuf
 				+ ", frontSocketNoDelay="+ frontSocketNoDelay
 				+ ", backSocketNoDelay="+ backSocketNoDelay
-				+ ",frontWriteQueueSize="+ frontWriteQueueSize
 				+ ", bindIp=" + bindIp
 				+ ", serverPort="+ serverPort
 				+ ", managerPort=" + managerPort
@@ -841,15 +853,6 @@ public final class SystemConfig {
 	public void setCheckTableConsistencyPeriod(long checkTableConsistencyPeriod) {
 		this.checkTableConsistencyPeriod = checkTableConsistencyPeriod;
 	}
-
-	public int getProcessorBufferPoolType() {
-		return processorBufferPoolType;
-	}
-
-	public void setProcessorBufferPoolType(int processorBufferPoolType) {
-		this.processorBufferPoolType = processorBufferPoolType;
-	}
-
 
 	public int getUseHandshakeV10() {
 		return useHandshakeV10;

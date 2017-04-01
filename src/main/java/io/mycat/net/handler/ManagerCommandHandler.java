@@ -23,45 +23,22 @@
  */
 package io.mycat.net.handler;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.config.ErrorCode;
 import io.mycat.net.FrontendConnection;
-import io.mycat.net.NIOHandler;
 import io.mycat.net.mysql.MySQLPacket;
-import io.mycat.statistic.CommandCount;
 
 /**
  * manager命令处理器
  *
  * @author mycat
  */
-public class ManagerCommandHandler implements NIOHandler
-{
-	protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<byte[]>();
-	protected final AtomicBoolean handleStatus;
-	protected final FrontendConnection source;
-	protected final CommandCount commands;
-
-    public ManagerCommandHandler(FrontendConnection source)
-    {
-        this.source = source;
-        this.commands = source.getProcessor().getCommands();
-        this.handleStatus = new AtomicBoolean(false);
-    }
+public class ManagerCommandHandler extends FrontendCommandHandler {
+	public ManagerCommandHandler(FrontendConnection source) {
+		super(source);
+	}
 
     @Override
-    public void handle(byte[] data)
-    {
-        if (dataQueue.offer(data)) {
-			handleQueue();
-		} else {
-			throw new RuntimeException("add data to queue error.");
-		}
-    }
-    private void handleData(byte[] data) {
+	protected void handleData(byte[] data) {
 		switch (data[4]) {
 		case MySQLPacket.COM_QUERY:
 			commands.doQuery();
@@ -80,29 +57,4 @@ public class ManagerCommandHandler implements NIOHandler
 			source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
 		}
     }
-
-	private void handleQueue() {
-		if (this.handleStatus.compareAndSet(false, true)) {
-			this.source.getProcessor().getExecutor().execute(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						byte[] data = null;
-						while ((data = dataQueue.poll()) != null) {
-							handleData(data);
-						}
-					} catch (Exception e) {
-						source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
-						// QUESTION_TO 阻止当前线程继续工作
-						dataQueue.clear();
-					} finally {
-						handleStatus.set(false);
-						if (dataQueue.size() > 0) {
-							handleQueue();
-						}
-					}
-				}
-			});
-		}
-	}
 }

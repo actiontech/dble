@@ -23,22 +23,8 @@
  */
 package io.mycat.net.handler;
 
-import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
-import java.util.Set;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
-import io.mycat.MycatServer;
-import io.mycat.backend.mysql.SecurityUtil;
-import io.mycat.config.Capabilities;
-import io.mycat.config.ErrorCode;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.NIOHandler;
-import io.mycat.net.NIOProcessor;
-import io.mycat.net.mysql.AuthPacket;
-import io.mycat.net.mysql.MySQLPacket;
-import io.mycat.net.mysql.QuitPacket;
 
 /**
  * manager认证处理器
@@ -46,41 +32,12 @@ import io.mycat.net.mysql.QuitPacket;
  * @author mycat
  */
 public class ManagerAuthenticator extends FrontendAuthenticator {
-	
-    private static final Logger LOGGER = LoggerFactory.getLogger(ManagerAuthenticator.class);
-    private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
-    
-    // protected final FrontendConnection source;
+	public ManagerAuthenticator(FrontendConnection source) {
+		super(source);
+	}
 
-    public ManagerAuthenticator(FrontendConnection source) {
-	super(source);
-    }
-
-    @Override
-     protected void success(AuthPacket auth) {
-        source.setAuthenticated(true);
-        source.setUser(auth.user);
-        source.setSchema(auth.database);
-        source.setCharsetIndex(auth.charsetIndex);
-        source.setHandler(new ManagerCommandHandler(source));
-
-        if (LOGGER.isInfoEnabled()) {
-            StringBuilder s = new StringBuilder();
-            s.append(source).append('\'').append(auth.user).append("' login success");
-            byte[] extra = auth.extra;
-            if (extra != null && extra.length > 0) {
-                s.append(",extra:").append(new String(extra));
-            }
-            LOGGER.info(s.toString());
-        }
-
-        ByteBuffer buffer = source.allocate();
-        source.write(source.writeToBuffer(AUTH_OK, buffer));
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS==(Capabilities.CLIENT_COMPRESS & auth.clientFlags);
-        boolean usingCompress= MycatServer.getInstance().getConfig().getSystem().getUseCompression()==1 ;
-        if(clientCompress&&usingCompress)
-        {
-            source.setSupportCompress(true);
-        }
-    }
+	@Override
+	protected NIOHandler successCommendHander() {
+		return new ManagerCommandHandler(source);
+	}
 }

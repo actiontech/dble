@@ -31,6 +31,7 @@ import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -204,20 +205,33 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select 1,null,'x','xxx';";
 //		obj.test(selectSQl);
-		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
-				+ "inner join table3 c on b.id =c.id;";
-		obj.test(selectSQl);
-		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
-				+ "inner join table3 c on a.id =c.id;";
-		obj.test(selectSQl);
-		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
-				+ "left join table3 c on a.id =c.id;";
-		obj.test(selectSQl);
-		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
-				+ "inner join table3 c on a.id =c.id;";
+//		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
+//				+ "inner join table3 c on b.id =c.id;";
+//		obj.test(selectSQl);
+//		selectSQl = "select * from table1 a inner join table2 b on a.id =b.id "
+//				+ "inner join table3 c on a.id =c.id;";
+//		obj.test(selectSQl);
+//		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
+//				+ "left join table3 c on a.id =c.id;";
+//		obj.test(selectSQl);
+//		selectSQl = "select * from table1 a left join table2 b on a.id =b.id "
+//				+ "inner join table3 c on a.id =c.id;";
+//		obj.test(selectSQl);
+//		selectSQl = "select  CONCAT(A,b),count(*) from table1 GROUP BY CONCAT(A,b);";
+//		obj.test(selectSQl);
+//		selectSQl = "select  id,count(*) from table1 GROUP BY id having count(*)>1;";
+//		obj.test(selectSQl);
+//		selectSQl = "select  id,count(*) from table1 GROUP BY table.id having count(*)>1;";
+//		obj.test(selectSQl);
+//		selectSQl = "select  id,count(*) from table1 GROUP BY id order by count(*);";
+//		obj.test(selectSQl);
+		selectSQl = "select  id from db.table1 GROUP BY db.table1.id;";
 		obj.test(selectSQl);
 	}
 	public void test(String sql){
+		System.out.println("-----------------------------------------------------------");
+		System.out.println("-----------------------------------------------------------");
+		System.out.println(sql);
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLStatement statement = parser.parseStatement();
 		if(statement instanceof MySqlCreateTableStatement){
@@ -440,6 +454,29 @@ public class Testparser {
 //				SQLOrderBy
 //				SQLSelect
 //				SQLInSubQueryExpr
+				if (selectQueryBlock.getGroupBy() != null) {
+					SQLSelectGroupByClause groupBy = selectQueryBlock.getGroupBy();
+					for(SQLExpr groupByItem:groupBy.getItems()){
+						System.out.println(   "groupByItem:" ); 
+						System.out.println(   "class :" +groupByItem.getClass());
+						System.out.println(   "---------------------------" ); 
+					}
+					
+					if(groupBy.getHaving()!=null){
+						SQLExpr having = groupBy.getHaving();
+						System.out.println(   "having:" ); 
+						System.out.println(   "class :" +having.getClass());
+						System.out.println(   "---------------------------" ); 
+					}
+					//with rollup...
+				}
+				if (selectQueryBlock.getOrderBy() != null) {
+					for(SQLSelectOrderByItem orderItem :selectQueryBlock.getOrderBy().getItems()){ 
+						System.out.println(   "OrderBy:" ); 
+						System.out.println(   "class :" +orderItem.getExpr().getClass());
+						System.out.println(   "---------------------------" ); 
+					}
+				}
 			} else if (sqlSelectQuery instanceof MySqlUnionQuery) { 
 			}
 			

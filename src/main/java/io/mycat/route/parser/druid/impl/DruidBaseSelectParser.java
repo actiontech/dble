@@ -37,6 +37,7 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -66,8 +67,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 	}
 
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-			MySqlSelectQueryBlock mysqlSelectQuery) {
-		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery);
+			MySqlSelectQueryBlock mysqlSelectQuery, String tableName) throws SQLNonTransientException {
+		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tableName);
 		if(rrs.isNeedOptimizer()){
 			return;
 		}
@@ -78,34 +79,75 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 	}
 
-	private boolean parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, List<SQLSelectItem> selectList, Map<String, String> aliaColumns) {
-		boolean isNeedChangeSql = false;
+	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, String tableName) throws SQLNonTransientException {
+		List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
 		for (int i = 0; i < selectList.size(); i++) {
 			SQLSelectItem item = selectList.get(i);
 			SQLExpr itemExpr = item.getExpr();
 			if (itemExpr instanceof SQLAggregateExpr) {
-				/*TODO:MAX,MIN; SUM,COUNT without distinct no need to optimize
+				/*
+				 * MAX,MIN; SUM,COUNT without distinct is not need optimize, but
+				 * there is bugs in default Aggregate IN FACT ,ONLY:
 				 * SUM(distinct ),COUNT(distinct),AVG,STDDEV,GROUP_CONCAT
-				*/
+				 */
 				rrs.setNeedOptimizer(true);
-				return false;
+				return;
 			} else if (itemExpr instanceof SQLMethodInvokeExpr) {
-				String MethodName = ((SQLMethodInvokeExpr)itemExpr).getMethodName().toUpperCase();
-				if (aggregateSet.contains(MethodName)){
+				String MethodName = ((SQLMethodInvokeExpr) itemExpr).getMethodName().toUpperCase();
+				if (aggregateSet.contains(MethodName)) {
 					rrs.setNeedOptimizer(true);
-					return false;
-				}else{
+					return;
+				} else {
 					addToAliaColumn(aliaColumns, item);
 				}
+			} else if (itemExpr instanceof SQLAllColumnExpr) {
+				continue;
 			} else {
-				if (!(itemExpr instanceof SQLAllColumnExpr)) {
-					addToAliaColumn(aliaColumns, item);
-				}
+				addToAliaColumn(aliaColumns, item);
 			}
 		}
-		return isNeedChangeSql;
+		if (mysqlSelectQuery.getGroupBy() != null) {
+			SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
+			boolean hasPartitionColumn = false;
+			TableConfig tc= schema.getTables().get(tableName);
+			if (tc == null) {
+				String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
+				throw new SQLNonTransientException(msg);
+			}
+
+			if (groupBy.getHaving() != null) {
+				//TODO:DEFAULT HAVING HAS BUG,So NeedOptimizer 
+				//SEE DataNodeMergeManager.java function onRowMetaData
+				rrs.setNeedOptimizer(true);
+				return;
+			}
+			for (SQLExpr groupByItem : groupBy.getItems()) {
+				if (isNeedOptimizer(groupByItem)) {
+					rrs.setNeedOptimizer(true);
+					return;
+				} else if (groupByItem instanceof SQLIdentifierExpr) {
+					SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
+					if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
+						hasPartitionColumn = true;
+					}
+				} else if (groupByItem instanceof SQLPropertyExpr) {
+					SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
+					if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
+						hasPartitionColumn = true;
+					}
+				}
+			}
+			if (hasPartitionColumn == false) {
+				rrs.setNeedOptimizer(true);
+				return;
+			}
+		}
 	}
 
+	private boolean isNeedOptimizer(SQLExpr expr){
+		// it is NotSimpleColumn TODO: 细分是否真的NeedOptimizer
+		return !(expr instanceof SQLPropertyExpr) && !(expr instanceof SQLIdentifierExpr);
+	}
 	private void addToAliaColumn(Map<String, String> aliaColumns, SQLSelectItem item) {
 		String alia = item.getAlias();
 		String field = getFieldName(item);
@@ -187,13 +229,13 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 	}
 
 	protected Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-			SQLSelectQueryBlock mysqlSelectQuery) {
+			SQLSelectQueryBlock mysqlSelectQuery, String tableName) throws SQLNonTransientException {
 		Map<String, String> aliaColumns = new HashMap<String, String>();
 		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 		List<String> havingColsName = new ArrayList<String>();
 		boolean isNeedChangeSql = false;
 		if (MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			isNeedChangeSql = parseAggExprCommon(schema, rrs, mysqlSelectQuery.getSelectList(), aliaColumns);
+			parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tableName);
 			if(rrs.isNeedOptimizer()){
 				rrs.setSqlStatement(stmt);
 				return aliaColumns;

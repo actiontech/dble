@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -165,17 +167,22 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         clear();
         this.sql = sql;
 
+        if(this.checkPartition(sql)){
+            serverConnection.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
+            clear();
+            return;
+        }
 
         SQLStatementParser parser = new MySqlStatementParser(sql);
         statement = (MySqlLoadDataInFileStatement) parser.parseStatement();
         fileName = parseFileName(sql);
-
         if (fileName == null)
         {
             serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
             clear();
             return;
         }
+
         schema = MycatServer.getInstance().getConfig()
                 .getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
@@ -183,14 +190,14 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         if(MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()){
         	tableName =tableName.toLowerCase();
         }
+
         tableConfig = schema.getTables().get(tableName);
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
         List<SQLExpr> columns = statement.getColumns();
-        if(tableConfig!=null)
-        {
+        if(tableConfig!=null) {
             String pColumn = getPartitionColumn();
             if (pColumn != null && columns != null && columns.size() > 0)
             {
@@ -211,8 +218,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         }
 
         parseLoadDataPram();
-        if (statement.isLocal())
-        {
+        if (statement.isLocal()) {
             isStartLoadData = true;
             //向客户端请求发送文件
             ByteBuffer buffer = serverConnection.allocate();
@@ -220,18 +226,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             filePacket.fileName = fileName.getBytes();
             filePacket.packetId = 1;
             filePacket.write(buffer, serverConnection, true);
-        } else
-        {
-            if (!new File(fileName).exists())
-            {
+        } else {
+            if (!new File(fileName).exists()) {
                 serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, fileName + " is not found!");
                 clear();
-            } else
-            {
+            } else {
+
                 parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy());
                 RouteResultset rrs = buildResultSet(routeResultMap);
-                if (rrs != null)
-                {
+                if (rrs != null) {
                     flushDataToFile();
                     isStartLoadData = false;
                     serverConnection.getSession2().execute(rrs, ServerParse.LOAD_DATA_INFILE_SQL);
@@ -360,7 +363,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             {
                 String value = lineList[partitionColumnIndex];
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(), parseFieldString(value,loadData.getEnclose()));
+                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(), parseFieldString(value,loadData.getEnclose(),loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
                 try
                 {
@@ -396,14 +399,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String tableName, String[] line, boolean toFile, String lineEnd)
-    {
+    private void parseOneLine(List<SQLExpr> columns, String tableName, String[] line, boolean toFile, String lineEnd) {
 
         RouteResultset rrs = tryDirectRoute(sql, line);
-        if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0)
-        {
 
-            String insertSql = makeSimpleInsert(columns, line, tableName, true);
+        if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
+            String insertSql = makeSimpleInsert(columns, line, tableName);
             rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
         }
 
@@ -509,13 +510,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         for (int i = 0, srcLength = src.length; i < srcLength; i++)
         {
             String s = src[i]!=null?src[i]:"";
-            if(loadData.getEnclose()==null)
-            {
-                  sb.append(s);
-            }   else
-            {
-                sb.append(loadData.getEnclose()).append(s.replace(loadData.getEnclose(),loadData.getEscape()+loadData.getEnclose())).append(loadData.getEnclose());
-            }
+             sb.append(s);
             if(i!=srcLength-1)
             {
                 sb.append(loadData.getFieldTerminatedBy());
@@ -532,7 +527,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         statement.setLocal(true);//强制local
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //默认druid会过滤掉路径的分隔符，所以这里重新设置下
         statement.setFileName(fn);
-        String srcStatement = statement.toString();
+        //在这里使用替换方法替换掉SQL语句中的 IGNORE X LINES 防止每个物理节点都IGNORE X个元素
+        String srcStatement = this.ignoreLinesDelete(statement.toString());
         RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL, serverConnection.getSession2());
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
@@ -569,7 +565,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table, boolean isAddEncose)
+    private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table)
     {
         StringBuilder sb = new StringBuilder();
         sb.append(LoadData.loadDataHint).append("insert into ").append(table.toUpperCase());
@@ -592,13 +588,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         for (int i = 0, columnsSize = fields.length; i < columnsSize; i++)
         {
             String column = fields[i];
-            if (isAddEncose)
-            {
-                sb.append("'").append(parseFieldString(column, loadData.getEnclose())).append("'");
-            } else
-            {
-                sb.append(column);
-            }
+
+            sb.append("'").append(parseFieldString(column, loadData.getEnclose(),loadData.getEscape())).append("'");
+
             if (i != columnsSize - 1)
             {
                 sb.append(",");
@@ -608,16 +600,41 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         return sb.toString();
     }
 
-    private String parseFieldString(String value, String encose)
+    private String parseFieldString(String value, String encose,String escape)
     {
         if (encose == null || "".equals(encose) || value == null)
         {
-            return value;
+            return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
         } else if (value.startsWith(encose) && value.endsWith(encose))
         {
-            return value.substring(encose.length() - 1, value.length() - encose.length());
+            return this.trance(value.substring(encose.length() - 1, value.length() - encose.length())
+                                                .replace("\\","\\\\").replace(escape,"\\"));
         }
-        return value;
+        return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
+    }
+
+
+    private String trance(String input){
+        StringBuffer output = new StringBuffer();
+        char[] x = input.toCharArray();
+        for(int i  =0;i < x.length;i++){
+            if (x[i] == '\\' && i < x.length-1){
+                switch (x[i+1]){
+                    case 'b':output.append('\b');break;
+                    case 't': output.append('\t');break;
+                    case 'n': output.append('\n');break;
+                    case 'f':output.append('\f');break;
+                    case 'r':output.append('\r');break;
+                    case '"':output.append('\"');break;
+                    case '\'':output.append('\'');break;
+                    case '\\':output.append('\\');
+                }
+                i++;
+                continue;
+            }
+            output.append(x[i]);
+        }
+        return output.toString();
     }
 
 
@@ -664,9 +681,18 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
                 parser.beginParsing(new StringReader(content));
                 String[] row = null;
 
+                //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
+                int ignoreNumber = 0;
+                if(statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())){
+                    ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
+                }
                 while ((row = parser.parseNext()) != null)
                 {
-                    parseOneLine(columns, tableName, row, false, null);
+                    if(ignoreNumber == 0) {
+                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    }else{
+                        ignoreNumber --;
+                    }
                 }
             } finally
             {
@@ -690,8 +716,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     }
 
 
-    private void parseFileByLine(String file, String encode, String split)
-    {
+    private void parseFileByLine(String file, String encode, String split) {
         List<SQLExpr> columns = statement.getColumns();
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
@@ -702,10 +727,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
         }
-        if(loadData.getEscape()!=null)
-        {
-            settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
-        }
+
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
         /*
          *  fix #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
@@ -716,25 +738,31 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         CsvParser parser = new CsvParser(settings);
         InputStreamReader reader = null;
         FileInputStream fileInputStream = null;
-        try
-        {
+        try {
 
             fileInputStream = new FileInputStream(file);
             reader = new InputStreamReader(fileInputStream, encode);
             parser.beginParsing(reader);
             String[] row = null;
 
+            //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
+            int ignoreNumber = 0;
+            if(statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())){
+                ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
+            }
             while ((row = parser.parseNext()) != null)
             {
-                parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                if(ignoreNumber == 0) {
+                    parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                }else{
+                    ignoreNumber --;
+                }
             }
 
 
-        } catch (FileNotFoundException | UnsupportedEncodingException e)
-        {
+        } catch(FileNotFoundException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
-        } finally
-        {
+        } finally {
             parser.stopParsing();
             if(fileInputStream!=null)
             {
@@ -759,6 +787,42 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
         }
 
+    }
+
+
+    /**
+     * check if the sql is contain the partition
+     * if the sql contain the  partition word than stopped
+     * @param sql
+     * @throws Exception
+     */
+    private boolean checkPartition(String sql){
+        Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)",Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sql);
+        if(m.find()){
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * use a Regular Expression to replace the
+     *  "IGNORE    1234 LINES" to the " "
+     * @param sql
+     * @return
+     */
+    private String ignoreLinesDelete(String sql){
+        Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES",Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sql);
+        StringBuffer sb = new StringBuffer();
+        if (m.find()) {
+            m.appendReplacement(sb, " ");
+        }else{
+            return sql;
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
 

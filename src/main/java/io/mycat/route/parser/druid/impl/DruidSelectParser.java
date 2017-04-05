@@ -10,7 +10,6 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
@@ -111,7 +110,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				}
 			}
 			super.visitorParse(schema, rrs, stmt, visitor);
-			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery);
+			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, schemaInfo.table);
 			// 更改canRunInReadDB属性
 			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
 					&& rrs.isAutocommit() == false) {
@@ -168,14 +167,6 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
 			int limitStart = 0;
 			int limitSize = schema.getDefaultMaxLimit();
-
-			// clear group having
-			SQLSelectGroupByClause groupByClause = mysqlSelectQuery.getGroupBy();
-			// Modified by winbill, 20160614, do NOT include having clause when
-			// routing to multiple nodes
-			if (groupByClause != null && groupByClause.getHaving() != null && isRoutMultiNode(schema, rrs)) {
-				groupByClause.setHaving(null);
-			}
 
 			Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
 			boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);

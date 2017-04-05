@@ -177,54 +177,54 @@ public class XMLServerLoader {
     }
 
     private void loadUsers(Element root) {
-        NodeList list = root.getElementsByTagName("user");
-        for (int i = 0, n = list.getLength(); i < n; i++) {
-            Node node = list.item(i);
-            if (node instanceof Element) {
-                Element e = (Element) node;
-                String name = e.getAttribute("name");
-                UserConfig user = new UserConfig();
-                Map<String, Object> props = ConfigUtil.loadElements(e);
-                String password = (String)props.get("password");
-                String usingDecrypt = (String)props.get("usingDecrypt");
-                String passwordDecrypt = DecryptUtil.mycatDecrypt(usingDecrypt,name,password);
-                user.setName(name);
-                user.setPassword(passwordDecrypt);
-                user.setEncryptPassword(password);
-				
-		String benchmark = (String) props.get("benchmark");
-		if(null != benchmark) {
-		    user.setBenchmark( Integer.parseInt(benchmark) );
-		}
-				
-		String readOnly = (String) props.get("readOnly");
-		if (null != readOnly) {
-		    user.setReadOnly(Boolean.parseBoolean(readOnly));
-		}
+		NodeList list = root.getElementsByTagName("user");
+		for (int i = 0, n = list.getLength(); i < n; i++) {
+			Node node = list.item(i);
+			if (node instanceof Element) {
+				Element e = (Element) node;
+				String name = e.getAttribute("name");
+				UserConfig user = new UserConfig();
+				Map<String, Object> props = ConfigUtil.loadElements(e);
+				String password = (String) props.get("password");
+				String usingDecrypt = (String) props.get("usingDecrypt");
+				String passwordDecrypt = DecryptUtil.mycatDecrypt(usingDecrypt, name, password);
+				user.setName(name);
+				user.setPassword(passwordDecrypt);
+				user.setEncryptPassword(password);
 
-		String manager = (String) props.get("manager");
-		if (null != manager) {
-		    user.setManager(Boolean.parseBoolean(manager));
-		}
+				String benchmark = (String) props.get("benchmark");
+				if (null != benchmark) {
+					user.setBenchmark(Integer.parseInt(benchmark));
+				}
 
-		String schemas = (String) props.get("schemas");
-		if(system.isLowerCaseTableNames()){
-		    schemas = schemas.toLowerCase();
+				String readOnly = (String) props.get("readOnly");
+				if (null != readOnly) {
+					user.setReadOnly(Boolean.parseBoolean(readOnly));
+				}
+
+				String manager = (String) props.get("manager");
+				if (null != manager) {
+					user.setManager(Boolean.parseBoolean(manager));
+				}
+
+				String schemas = (String) props.get("schemas");
+				if (schemas != null) {
+					if (system.isLowerCaseTableNames()) {
+						schemas = schemas.toLowerCase();
+					}
+					String[] strArray = SplitUtil.split(schemas, ',', true);
+					user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));
+				}
+
+				// 加载用户 DML 权限
+				loadPrivileges(user, e);
+
+				if (users.containsKey(name)) {
+					throw new ConfigException("user " + name + " duplicated!");
+				}
+				users.put(name, user);
+			}
 		}
-                if (schemas != null) {
-                    String[] strArray = SplitUtil.split(schemas, ',', true);
-                    user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));
-                }
-                
-                //加载用户 DML 权限
-                loadPrivileges(user, e);         
-                
-                if (users.containsKey(name)) {
-                    throw new ConfigException("user " + name + " duplicated!");
-                }
-                users.put(name, user);
-            }
-        }
     }
     
     private void loadPrivileges(UserConfig userConfig, Element node) {

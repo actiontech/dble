@@ -37,6 +37,15 @@ public class UserConfig {
     private UserPrivilegesConfig privilegesConfig;	//SQL表级的增删改查权限控制
     
     private boolean readOnly = false;
+    private boolean manager = false;
+
+    public boolean isManager() {
+		return manager;
+    }
+
+    public void setManager(boolean manager) {
+		this.manager = manager;
+    }
     
     public boolean isReadOnly() {
 		return readOnly;
@@ -99,8 +108,8 @@ public class UserConfig {
 	@Override
 	public String toString() {
 		return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword="
-				+ this.encryptPassword + ", benchmark=" + this.benchmark 
-				+ ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
+		    + this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager
+		    + ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
 	}
 	
 	

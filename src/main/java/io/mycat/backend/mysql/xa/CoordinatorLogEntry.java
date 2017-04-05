@@ -43,7 +43,10 @@ public class CoordinatorLogEntry implements Serializable {
 	}
 	public CoordinatorLogEntry getDeepCopy(){
 		ParticipantLogEntry[] newParticipants = new ParticipantLogEntry[participants.length];
-		for(int i=0;i<participants.length;i++){
+		for (int i = 0; i < participants.length; i++) {
+			if (participants[i] == null) {
+				return null;
+			}
 			newParticipants[i] = new ParticipantLogEntry(participants[i].getCoordinatorId(), participants[i].getHost(),
 					participants[i].getPort(), participants[i].getExpires(), participants[i].getSchema(),
 					participants[i].getTxState());

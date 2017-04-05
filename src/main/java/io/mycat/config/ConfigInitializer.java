@@ -122,16 +122,16 @@ public class ConfigInitializer {
 				if (uc == null) {
 					throw new ConfigException("SelfCheck### users node within the item is empty!");
 				}
-				
-				Set<String> authSchemas = uc.getSchemas();
-				if (authSchemas == null) {
-					throw new ConfigException("SelfCheck### user " + uc.getName() + "refered schemas is empty!");
-				}
-				
-				for (String schema : authSchemas) {
-					if ( !schemas.containsKey(schema) ) {
-						String errMsg = "SelfCheck###  schema " + schema + " refered by user " + uc.getName() + " is not exist!";
-						throw new ConfigException(errMsg);
+				if (!uc.isManager()) {
+					Set<String> authSchemas = uc.getSchemas();
+					if (authSchemas == null) {
+						throw new ConfigException("SelfCheck### user " + uc.getName() + "refered schemas is empty!");
+					}
+					for (String schema : authSchemas) {
+						if ( !schemas.containsKey(schema) ) {
+							String errMsg = "SelfCheck###  schema " + schema + " refered by user " + uc.getName() + " is not exist!";
+							throw new ConfigException(errMsg);
+						}
 					}
 				}
 			}

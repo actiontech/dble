@@ -55,7 +55,6 @@ public class FrontendCommandHandler implements NIOHandler
     @Override
     public void handle(byte[] data)
     {
-		// TODO:YHQ: LOAD DATA NEED TO USE A NEW THRED????
         if(source.getLoadDataInfileHandler()!=null&&source.getLoadDataInfileHandler().isStartLoadData())
         {
             MySQLMessage mm = new MySQLMessage(data);
@@ -73,7 +72,7 @@ public class FrontendCommandHandler implements NIOHandler
 			throw new RuntimeException("add data to queue error.");
 		}
     }
-    private void handleData(byte[] data) {
+    protected void handleData(byte[] data) {
 		switch (data[4]) {
 		case MySQLPacket.COM_INIT_DB:
 			commands.doInitDB();

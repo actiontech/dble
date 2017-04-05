@@ -61,7 +61,7 @@ public class MycatPrivileges implements FrontendPrivileges {
     	return instance;
     }
     
-    private MycatPrivileges() {
+    protected MycatPrivileges() {
     	super();
     }
     
@@ -80,16 +80,16 @@ public class MycatPrivileges implements FrontendPrivileges {
     @Override
     public String getPassword(String user) {
         MycatConfig conf = MycatServer.getInstance().getConfig();
-		if (user != null && user.equals(conf.getSystem().getClusterHeartbeatUser())) {
-			return conf.getSystem().getClusterHeartbeatPass();
-		} else {
+        if (user != null && user.equals(conf.getSystem().getClusterHeartbeatUser())) {
+            return conf.getSystem().getClusterHeartbeatPass();
+        } else {
             UserConfig uc = conf.getUsers().get(user);
             if (uc != null) {
                 return uc.getPassword();
             } else {
                 return null;
             }
-		}
+        }
     }
 
     @Override
@@ -125,11 +125,22 @@ public class MycatPrivileges implements FrontendPrivileges {
         }
 	}
 
+    	protected boolean checkManagerPrivilege(String user) {
+	    	//  normal user don't neet manager privilege
+	    	return true;
+	}
+    
 	@Override
 	public boolean checkFirewallWhiteHostPolicy(String user, String host) {
 		
-		MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
-        FirewallConfig firewallConfig = mycatConfig.getFirewall();
+	    MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
+	    FirewallConfig firewallConfig = mycatConfig.getFirewall();
+
+	    if (!checkManagerPrivilege(user)) {
+			// return and don't trigger firewall alarm
+			return false;
+	    }
+		
         
         //防火墙 白名单处理
         boolean isPassed = false;
@@ -183,7 +194,7 @@ public class MycatPrivileges implements FrontendPrivileges {
 			
 			// 修复 druid 防火墙在处理SHOW FULL TABLES WHERE Table_type != 'VIEW' 的时候存在的 BUG
 			List<SQLStatement> stmts =  result.getStatementList();
-			if ( !stmts.isEmpty() &&  !( stmts.get(0) instanceof SQLShowTablesStatement) ) {				
+			if ( !stmts.isEmpty() &&  !( stmts.get(0) instanceof SQLShowTablesStatement) ) {			
 				if ( !result.getViolations().isEmpty()) {				
 					isPassed = false;
 					ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:"

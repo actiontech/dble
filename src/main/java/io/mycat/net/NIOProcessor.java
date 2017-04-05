@@ -254,9 +254,5 @@ public final class NIOProcessor {
 		}
 
 	}
-	//jdbc连接用这个释放
-	public void removeConnection(BackendConnection con){
-	    this.backends.remove(con.getId());
-	}
-
+	
 }

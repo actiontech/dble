@@ -22,13 +22,6 @@ public class XASessionCheck {
 		this.rollbackSession.put(s.getSource().getId(), s);
 	}
 	
-	public void removeCommitSession(NonBlockingSession s) {
-		this.commitSession.remove(s.getSource().getId());
-	}
-	
-	public void removeRollbackSession(NonBlockingSession s) {
-		this.rollbackSession.remove(s.getSource().getId());
-	}
 	/**
 	 * 定时执行
 	 */

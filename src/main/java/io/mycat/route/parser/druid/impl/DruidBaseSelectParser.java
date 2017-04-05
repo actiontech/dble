@@ -92,7 +92,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 				 */
 				rrs.setNeedOptimizer(true);
 				return;
-			} else if (itemExpr instanceof SQLAllColumnExpr) {
+			} else if (itemExpr instanceof SQLMethodInvokeExpr) {
 				String MethodName = ((SQLMethodInvokeExpr) itemExpr).getMethodName().toUpperCase();
 				if (aggregateSet.contains(MethodName)) {
 					rrs.setNeedOptimizer(true);

@@ -117,6 +117,7 @@ public final class RollbackConfig {
 
 		//清理缓存
 		 MycatServer.getInstance().getCacheService().clearCache();
+		 MycatServer.getInstance().reloadMetaData();
 		return true;
 	}
 

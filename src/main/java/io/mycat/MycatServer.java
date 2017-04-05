@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
@@ -166,7 +167,7 @@ public class MycatServer {
 		this.config = new MycatConfig();
 		
 		//定时线程池，单线程线程池
-		scheduler = Executors.newSingleThreadScheduledExecutor();
+		scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
 		
 		/**
 		 * 是否在线，MyCat manager中有命令控制
@@ -442,9 +443,6 @@ public class MycatServer {
 		scheduler.schedule(catletClassClear(), 30000,TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getxaSessionCheckPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getxaLogCleanPeriod(),TimeUnit.MILLISECONDS);
-		if (system.getCheckTableConsistency() == 1) {
-            scheduler.scheduleWithFixedDelay(tableStructureCheck(), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
-        }
 		
 		if (system.getUseSqlStat() == 1) {
 			scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
@@ -483,6 +481,11 @@ public class MycatServer {
 		}
 	}
 
+	public void reloadMetaData(){
+		tmManager.terminate();
+		tmManager = new ProxyMetaManager();
+		tmManager.init();
+	}
 
 	public void reloadDnIndex()
 	{
@@ -860,21 +863,6 @@ public class MycatServer {
 					userStat.getSqlHigh().recycle();
 					userStat.getSqlLargeRowStat().recycle();
 				}
-			}
-		};
-	}
-
-	//定时检查不同分片表结构一致性
-	private Runnable tableStructureCheck(){
-		return new Runnable() {
-			@Override
-			public void run() {
-				timerExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						tmManager.tableStructureCheck();
-					}
-				});
 			}
 		};
 	}

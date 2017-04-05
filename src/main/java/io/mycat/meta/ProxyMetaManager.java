@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -41,9 +45,12 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyCo
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.mycat.MycatServer;
+import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
 import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
@@ -64,6 +71,8 @@ public class ProxyMetaManager {
 	private final Set<String> lockTables;
 	private ReentrantLock metalock = new ReentrantLock();
 	private Condition condRelease = metalock.newCondition();
+	private ScheduledExecutorService scheduler;
+	private ScheduledFuture<?> checkTaskHandler;
 	public ProxyMetaManager() {
 		this.catalogs = new ConcurrentHashMap<String, SchemaMeta>();
 		this.lockTables= new HashSet<String>();
@@ -370,11 +379,32 @@ public class ProxyMetaManager {
 //	}
 
 	public void init()  {
-		SchemaMetaHandler handler = new SchemaMetaHandler(MycatServer.getInstance().getConfig());
+		MycatConfig config = MycatServer.getInstance().getConfig();
+		SchemaMetaHandler handler = new SchemaMetaHandler(config);
 		handler.execute();
+		SystemConfig system = config.getSystem();
+		if (system.getCheckTableConsistency() == 1) {
+			scheduler= Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
+			checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+		}
 	}
-
-	public void tableStructureCheck() {
+	public void terminate(){
+		if (checkTaskHandler != null) {
+			checkTaskHandler.cancel(false);
+			scheduler.shutdown();
+		}
+		catalogs.clear();
+	}
+	//定时检查不同分片表结构一致性
+	private Runnable tableStructureCheckTask() {
+		return new Runnable() {
+			@Override
+			public void run() {
+				tableStructureCheck();
+			}
+		};
+	}
+	private void tableStructureCheck() {
 		for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
 			if (!checkDbExists(schema.getName())) {
 				continue;

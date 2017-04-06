@@ -40,7 +40,7 @@ import io.mycat.server.NonBlockingSession;
 /**
  * @author mycat
  */
-public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
+public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 	private static int ROLLBACK_TIMES = 5;
 	private int try_rollback_times = 0;
 	private ParticipantLogEntry[] participantLogEntry = null;
@@ -64,6 +64,15 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 		}
 		// 执行
 		int position = 0;
+		//在发起真正的rollback之前就获取到session级别的锁
+		//当执行END的时候我们就可以认为这个状态处于一种不定的状态
+		//不再允许XA事务被kill,如果事务已经被kill那么我们不再执行commit
+		if(session.getXaState() != null
+				&& session.getXaState() == TxState.TX_ENDED_STATE) {
+			if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITING)) {
+				return;
+			}
+		}
 		for (final RouteResultsetNode node : session.getTargetKeys()) {
 			final BackendConnection conn = session.getTarget(node);
 			conn.setResponseHandler(this);
@@ -81,7 +90,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 			if (participantLogEntry == null) {
 				participantLogEntry = new ParticipantLogEntry[nodeCount];
 				CoordinatorLogEntry coordinatorLogEntry = new CoordinatorLogEntry(session.getSessionXaID(), participantLogEntry, session.getXaState());
-				XAStateLog.flushMemoryRepository(session.getSessionXaID(), coordinatorLogEntry); 
+				XAStateLog.flushMemoryRepository(session.getSessionXaID(), coordinatorLogEntry);
 			}
 			XAStateLog.initRecoverylog(session.getSessionXaID(), position, mysqlCon);
 			if(mysqlCon.isClosed()){
@@ -188,7 +197,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 				XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
 				mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
 				if (decrementCountBy(1)) {
-					if(session.getXaState()==TxState.TX_PREPARED_STATE){
+					if(session.getXaState()== TxState.TX_PREPARED_STATE){
 						session.setXaState(TxState.TX_INITIALIZE_STATE);
 					}
 					cleanAndFeedback();
@@ -360,6 +369,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler{
 		case TX_INITIALIZE_STATE:
 			// clear all resources
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
+			//取消限制
+			session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
 			byte[] send = sendData;
 			session.clearResources(false);
 			if (session.closed()) {

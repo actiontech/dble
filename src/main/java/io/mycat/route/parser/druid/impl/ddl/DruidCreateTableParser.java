@@ -1,12 +1,17 @@
 package io.mycat.route.parser.druid.impl.ddl;
 
+import java.sql.SQLNonTransientException;
+
 import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -16,8 +21,6 @@ import io.mycat.server.interceptor.impl.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
-
-import java.sql.SQLNonTransientException;
 
 
 public class DruidCreateTableParser extends DefaultDruidParser {
@@ -96,12 +99,23 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 
 		//创建的新表只允许出现InnoDB引擎
-		SQLCharExpr engineConf = (SQLCharExpr)createStmt.getTableOptions().get("ENGINE");
-		if(engineConf != null && !"'InnoDB'".equalsIgnoreCase(engineConf.toString())){
-			String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
+		SQLObject engine = createStmt.getTableOptions().get("ENGINE");
+		if (engine != null) {
+			String strEngine;
+			if (engine instanceof SQLCharExpr) {
+				strEngine = ((SQLCharExpr) engine).getText();
+			} else if (engine instanceof SQLIdentifierExpr) {
+				strEngine = ((SQLIdentifierExpr) engine).getSimpleName();
+			} else {
+				strEngine = engine.toString();
+			}
+			if (!"InnoDB".equalsIgnoreCase(strEngine.toString())) {
+				String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
+				LOGGER.warn(msg);
+				throw new SQLNonTransientException(msg);
+			}
 		}
+
 		//创建新表的时候数据目录指定禁止
 		if (createStmt.getTableOptions().get("DATA DIRECTORY") != null){
 			String msg = "create table with DATA DIRECTORY  not supported:" + createStmt;

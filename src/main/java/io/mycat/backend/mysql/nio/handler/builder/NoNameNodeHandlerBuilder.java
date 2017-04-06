@@ -42,7 +42,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
 		SchemaConfig schemacfg = mycatConfig.getSchemas().get(schema);
 		RouteResultsetNode[] rrss = getTableSources(schemacfg.getAllDataNodes(),sql);
 		hBuilder.checkRRSS(rrss);
-		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit(),
+		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit()&&!session.getSource().isTxstart(),
 				session, null);
 		addHandler(mh);
 	}

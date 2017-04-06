@@ -157,7 +157,7 @@ abstract class BaseHandlerBuilder {
 		}
 		RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
 		hBuilder.checkRRSS(rrss);
-		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit(),
+		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit()&&!session.getSource().isTxstart(),
 				session, null);
 		addHandler(mh);
 	}
@@ -389,7 +389,7 @@ abstract class BaseHandlerBuilder {
 		MultiNodeMergeHandler mh = null;
 		List<Order> orderBys = node.getGroupBys().size() > 0 ? node.getGroupBys() : node.getOrderBys();
 
-		mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit(), session,
+		mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit()&&!session.getSource().isTxstart(), session,
 				orderBys);
 		addHandler(mh);
 	}

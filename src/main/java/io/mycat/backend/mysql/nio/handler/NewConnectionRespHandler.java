@@ -24,6 +24,8 @@
 package io.mycat.backend.mysql.nio.handler;
 
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,25 @@ import io.mycat.net.mysql.RowDataPacket;
 public class NewConnectionRespHandler implements ResponseHandler{
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger(NewConnectionRespHandler.class);
+	private BackendConnection backConn;
+	private ReentrantLock lock = new ReentrantLock();
+	private Condition inited = lock.newCondition();
+	public BackendConnection getBackConn() {
+		lock.lock();
+		try {
+			if (backConn != null) {
+				return backConn;
+			}
+			inited.await();
+			return backConn;
+		} catch (InterruptedException e) {
+			LOGGER.warn("getBackConn " + e);
+			return null;
+		} finally {
+			lock.unlock();
+		}
+	}
+
 	@Override
 	public void connectionError(Throwable e, BackendConnection conn) {
 		LOGGER.warn(conn+" connectionError "+e);
@@ -43,8 +64,13 @@ public class NewConnectionRespHandler implements ResponseHandler{
 
 	@Override
 	public void connectionAcquired(BackendConnection conn) {
-		//
-		conn.release();
+		lock.lock();
+		try {
+			backConn = conn;
+			inited.signal();
+		} finally {
+			lock.unlock();
+		}
 		LOGGER.info("connectionAcquired "+conn);
 		
 		

@@ -292,6 +292,7 @@ public abstract class PhysicalDatasource {
 			try {
 				// creat new connection
 				this.createNewConnection(simpleHandler, null, schemas[i	% schemas.length]);
+				simpleHandler.getBackConn().release();
 			} catch (IOException e) {
 				LOGGER.warn("create connection err " + e);
 			}
@@ -344,16 +345,8 @@ public abstract class PhysicalDatasource {
 	private BackendConnection takeCon(BackendConnection conn,
 			final ResponseHandler handler, final Object attachment,
 			String schema) {
-
-		conn.setBorrowed(true);
-		if (!conn.getSchema().equals(schema)) {
-			// need do schema syn in before sql send
-			conn.setSchema(schema);
-		}
-		ConQueue queue = conMap.getSchemaConQueue(schema);
-		queue.incExecuteCount();
+		takeCon(conn,schema);
 		conn.setAttachment(attachment);
-		conn.setLastTime(System.currentTimeMillis()); // 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
 		handler.connectionAcquired(conn);
 		return conn;
 	}
@@ -414,7 +407,9 @@ public abstract class PhysicalDatasource {
 			} else { // create connection
 				LOGGER.info(
 						"no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-				con = retrunNewConnection(schema);
+				NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
+				this.createNewConnection(simpleHandler, schema);
+				con = simpleHandler.getBackConn();
 			}
 		}
 		return takeCon(con, schema);
@@ -455,10 +450,6 @@ public abstract class PhysicalDatasource {
 		}
 
 	}
-	/**
-	 * 创建新连接
-	 */
-	public abstract BackendConnection retrunNewConnection(String schema) throws IOException;
 	/**
 	 * 创建新连接
 	 */

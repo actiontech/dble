@@ -53,7 +53,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 		} else {
 			MycatConfig conf = MycatServer.getInstance().getConfig();
 			PhysicalDBNode dn = conf.getDataNodes().get(rrss.getName());
-			final BackendConnection newConn=  dn.getConnection(dn.getDatabase(), session.getSource().isAutocommit());
+			final BackendConnection newConn=  dn.getConnection(dn.getDatabase(), autocommit);
 			session.bindConnection(rrss, newConn);
 			return (MySQLConnection)newConn;
 		}
@@ -155,7 +155,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
 	@Override
 	protected void onTerminate() {
-		this.session.releaseConnection(rrss, logger.isDebugEnabled(), false);
+		if (autocommit) {
+			this.session.releaseConnection(rrss, logger.isDebugEnabled(), false);
+        }
 	}
 
 	@Override

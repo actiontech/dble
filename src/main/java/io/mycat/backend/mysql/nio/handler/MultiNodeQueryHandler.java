@@ -93,7 +93,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	private long startTime;
 	private long netInBytes;
 	private long netOutBytes;
-	private int execCount = 0;
 	protected volatile boolean terminated;
 	private boolean prepared;
 	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
@@ -138,15 +137,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				&& LOGGER.isDebugEnabled()) {
 				LOGGER.debug("has data merge logic ");
 		}
-		
-		if ( rrs != null && rrs.getStatement() != null) {
-			netInBytes += rrs.getStatement().getBytes().length;
-		}
 	}
 
 	protected void reset(int initCount) {
 		super.reset(initCount);
-		this.execCount = 0;
 		this.netInBytes = 0;
 		this.netOutBytes = 0;
 		this.terminated = false;
@@ -402,15 +396,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
 				}
 			}
-		}
-		execCount++;
-		if (execCount == rrs.getNodes().length) {
-			int resultSize = source.getWriteQueue().size()*MycatServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
-			//TODO: add by zhuam
-			//查询结果派发
-			QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
-					rrs.getSqlType(), rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
-			QueryResultDispatcher.dispatchQuery( queryResult );
+			if (MycatServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+				int resultSize = source.getWriteQueue().size() * MycatServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
+				if (rrs != null && rrs.getStatement() != null) {
+					netInBytes += rrs.getStatement().getBytes().length;
+				}
+				// 查询结果派发
+				QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
+						rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
+				QueryResultDispatcher.dispatchQuery(queryResult);
+			}
 		}
 
 	}

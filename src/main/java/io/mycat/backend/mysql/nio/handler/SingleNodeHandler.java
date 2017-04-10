@@ -109,10 +109,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 				shardingTablesSet = ShowFullTables.getTableSet(source, rrs.getStatement());
 			}
 		}
-
-		if (rrs != null && rrs.getStatement() != null) {
-			netInBytes += rrs.getStatement().getBytes().length;
-		}
 	}
 
 
@@ -278,12 +274,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		source.write(buffer);
 		waitingResponse = false;
 
-		//TODO: add by zhuam
-		//查询结果派发
-		QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
-				rrs.getSqlType(), rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
-		QueryResultDispatcher.dispatchQuery( queryResult );
-		
+		if (MycatServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+			if (rrs != null && rrs.getStatement() != null) {
+				netInBytes += rrs.getStatement().getBytes().length;
+			}
+			//查询结果派发
+			QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
+					rrs.getSqlType(), rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
+			QueryResultDispatcher.dispatchQuery( queryResult );
+		}
 	}
 
 	private void recycleResources() {

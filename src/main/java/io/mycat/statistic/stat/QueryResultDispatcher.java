@@ -3,7 +3,7 @@ package io.mycat.statistic.stat;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.slf4j.Logger; 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
@@ -43,14 +43,6 @@ public class QueryResultDispatcher {
 	}
 	
 	public static void dispatchQuery(final QueryResult queryResult) {
-		
-		
-		// 是否派发 QueryResult 事件
-		int useSqlStat = MycatServer.getInstance().getConfig().getSystem().getUseSqlStat();
-		if ( useSqlStat == 0 ) {
-			return;
-		}
-		
 		//TODO：异步分发，待进一步调优 
 		MycatServer.getInstance().getBusinessExecutor().execute(new Runnable() {
 			

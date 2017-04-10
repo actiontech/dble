@@ -51,25 +51,25 @@ public enum ZookeeperPath {
 
     /**
      * 数据库信息dataHost
-     * @字段说明 FLOW_ZK_PATH_SCHEMA_DATANODE
+     * @字段说明 FLOW_ZK_PATH_SCHEMA_DATAHOST
      */
     FLOW_ZK_PATH_SCHEMA_DATAHOST("dataHost"),
 
     /**
      * 路由信息
-     * @字段说明 FLOW_ZK_PATH_SCHEMA_DATANODE
+     * @字段说明 FLOW_ZK_PATH_RULE
      */
     FLOW_ZK_PATH_RULE("rules"),
 
     /**
      * 路由信息
-     * @字段说明 FLOW_ZK_PATH_SCHEMA_DATANODE
+     * @字段说明 FLOW_ZK_PATH_RULE_TABLERULE
      */
     FLOW_ZK_PATH_RULE_TABLERULE("tableRule"),
 
     /**
      * 路由信息
-     * @字段说明 FLOW_ZK_PATH_SCHEMA_DATANODE
+     * @字段说明 FLOW_ZK_PATH_RULE_FUNCTION
      */
     FLOW_ZK_PATH_RULE_FUNCTION("function"),
 

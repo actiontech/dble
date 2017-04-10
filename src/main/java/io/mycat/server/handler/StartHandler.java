@@ -23,9 +23,9 @@
  */
 package io.mycat.server.handler;
 
+import io.mycat.config.ErrorCode;
 import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.OkPacket;
-import io.mycat.config.ErrorCode;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.parser.ServerParseStart;
@@ -37,14 +37,14 @@ public final class StartHandler {
     public static void handle(String stmt, ServerConnection c, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
         case ServerParseStart.TRANSACTION:
-	    if (c.isTxstart() || !c.isAutocommit()) {
-		c.beginInTx(stmt);
-	    } else {
-		c.setTxstart(true);
-		TxnLogHelper.putTxnLog(c, stmt);
-		c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-	    }
-            break;
+			if (c.isTxstart() || !c.isAutocommit()) {
+				c.beginInTx(stmt);
+			} else {
+				c.setTxstart(true);
+				TxnLogHelper.putTxnLog(c, stmt);
+				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+			}
+			break;
 	case ServerParseStart.READCHARCS:
 	    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
 	    break;

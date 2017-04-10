@@ -23,12 +23,32 @@
  */
 package io.mycat.server;
 
+import java.nio.ByteBuffer;
+import java.sql.SQLSyntaxErrorException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.nio.MySQLConnection;
-import io.mycat.backend.mysql.nio.handler.*;
+import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
+import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
+import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
+import io.mycat.backend.mysql.nio.handler.ResponseHandler;
+import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
+import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
 import io.mycat.backend.mysql.nio.handler.builder.HandlerBuilder;
 import io.mycat.backend.mysql.nio.handler.query.impl.OutputHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.CommitNodesHandler;
@@ -49,15 +69,6 @@ import io.mycat.plan.visitor.MySQLPlanNodeVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.parser.ServerParse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
-import java.sql.SQLSyntaxErrorException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author mycat

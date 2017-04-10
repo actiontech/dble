@@ -53,7 +53,8 @@ public class ServerConnection extends FrontendConnection {
 
 	private volatile int txIsolation;
 	private volatile boolean autocommit;
-	private volatile boolean txstart;
+	private volatile boolean txStarted;
+	private volatile boolean txChainBegin;
 	private volatile boolean txInterrupted;
 	private volatile String txInterrputMsg = "";
 	private long lastInsertId;
@@ -113,17 +114,22 @@ public class ServerConnection extends FrontendConnection {
 	}
 
 	public boolean isTxstart() {
-		return txstart;
+		return txStarted;
 	}
 
-	public void setTxstart(boolean txstart) {
-		this.txstart = txstart;
+	public void setTxstart(boolean txStart) {
+		if (!txStart && txChainBegin) {
+			txChainBegin = false;
+		} else {
+			this.txStarted = txStart;
+		}
 	}
+
 	/**
 	 * 设置是否需要中断当前事务
 	 */
 	public void setTxInterrupt(String txInterrputMsg) {
-		if ((!autocommit||txstart) && !txInterrupted) {
+		if ((!autocommit||txStarted) && !txInterrupted) {
 			txInterrupted = true;
 			this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + txInterrputMsg+"]";
 		}
@@ -255,9 +261,9 @@ public class ServerConnection extends FrontendConnection {
 			writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
 		} else {
 			TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
-			getAndIncrementXid();
-			TxnLogHelper.putTxnLog(this, stmt);
+			this.txChainBegin = true;
 			session.commit();
+			TxnLogHelper.putTxnLog(this, stmt);
 		}
 	}
 	/**

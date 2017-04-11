@@ -58,8 +58,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
 					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
-
-				super.visitorParse(schema, rrs, stmt, visitor);
 				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 				rrs.setFinishedRoute(true);
 				return schema;
@@ -76,14 +74,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			}
 			schema = schemaInfo.schemaConfig;
 			String tableName = schemaInfo.table;
-			TableConfig tc = schema.getTables().get(tableName);
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-			super.visitorParse(schema, rrs, stmt, visitor);
-	        if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
+			if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
 				RouterUtil.routeForTableMeta(rrs, schema, tableName);
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }
+			TableConfig tc = schema.getTables().get(tableName);
+			super.visitorParse(schema, rrs, stmt, visitor);
 			if (tc!=null && tc.isGlobalTable()) {
 				if (GlobalTableUtil.useGlobleTableCheck()) {
 					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());

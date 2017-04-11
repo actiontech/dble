@@ -17,7 +17,7 @@ import io.mycat.plan.PlanNode;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.DruidParser;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.druid.impl.DruidNoSharingSelectParser;
+import io.mycat.route.parser.druid.impl.DruidSingleUnitSelectParser;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
@@ -58,7 +58,7 @@ public class MergeBuilder {
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
 		MycatSchemaStatVisitor visitor = new MycatSchemaStatVisitor();
-		DruidParser druidParser = new DruidNoSharingSelectParser();
+		DruidParser druidParser = new DruidSingleUnitSelectParser();
 
 		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT, session);
 		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();

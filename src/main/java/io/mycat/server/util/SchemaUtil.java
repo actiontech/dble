@@ -15,6 +15,7 @@ import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.route.util.RouterUtil;
 import io.mycat.util.StringUtil;
 
 /**
@@ -75,7 +76,7 @@ public class SchemaUtil
 
 	public static SchemaInfo isNoSharding(String schema, SQLJoinTableSource tables, SQLStatement stmt)
 			throws SQLNonTransientException {
-		SchemaInfo returnInfo = null;
+		SchemaInfo leftInfo = null;
 		SQLTableSource left = tables.getLeft();
 		if (left instanceof SQLExprTableSource) {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, (SQLExprTableSource) left);
@@ -83,17 +84,18 @@ public class SchemaUtil
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if (schemaInfo.schemaConfig.isNoSharding()) {
-				returnInfo = schemaInfo;
+			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+				leftInfo = schemaInfo;
 			} else {
 				return null;
 			}
 		} else {
-			returnInfo = isNoSharding(schema, (SQLJoinTableSource) left, stmt);
+			leftInfo = isNoSharding(schema, (SQLJoinTableSource) left, stmt);
+			if (leftInfo == null) {
+				return null;
+			}
 		}
-		if (returnInfo == null) {
-			return null;
-		}
+		SchemaInfo rightInfo = null;
 		SQLTableSource right = tables.getLeft();
 		if (right instanceof SQLExprTableSource) {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, (SQLExprTableSource) right);
@@ -101,15 +103,18 @@ public class SchemaUtil
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if (schemaInfo.schemaConfig.isNoSharding()) {
-				returnInfo = schemaInfo;
+			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+				rightInfo = schemaInfo;
 			} else {
 				return null;
 			}
 		} else {
-			returnInfo = isNoSharding(schema, (SQLJoinTableSource) right, stmt);
+			rightInfo = isNoSharding(schema, (SQLJoinTableSource) right, stmt);
+			if (rightInfo == null) {
+				return null;
+			}
 		}
-		return returnInfo;
+		return StringUtil.equals(leftInfo.schema, rightInfo.schema) ? leftInfo : null;
 	}
 
     public static class SchemaInfo

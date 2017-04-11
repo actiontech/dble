@@ -25,7 +25,7 @@ import io.mycat.server.response.InformationSchemaProfiling;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
-public class DruidNoSharingSelectParser extends DruidBaseSelectParser {
+public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {

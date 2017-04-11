@@ -293,7 +293,7 @@ public class MycatConfig {
 			this._schemas = this.schemas;
 			this._cluster = this.cluster;
 			this._firewall = this.firewall;
-			this._erRelations = this._erRelations ;
+			this._erRelations = this.erRelations ;
 			// new 处理
 			// 1、启动新的数据源心跳
 			// 2、执行新的配置

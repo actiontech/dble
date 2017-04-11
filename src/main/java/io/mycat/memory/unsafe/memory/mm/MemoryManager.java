@@ -1,12 +1,14 @@
 package io.mycat.memory.unsafe.memory.mm;
 
 
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.concurrent.GuardedBy;
+
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.ByteArrayMethods;
 import io.mycat.memory.unsafe.memory.MemoryAllocator;
 import io.mycat.memory.unsafe.utils.MycatPropertyConf;
-import javax.annotation.concurrent.GuardedBy;
-import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class MemoryManager {
 
@@ -124,10 +126,14 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
 
     switch (tungstenMemoryMode()){
       case ON_HEAP:
-        maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
+			synchronized (this) {
+				maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
+			}
         break;
       case OFF_HEAP:
-        maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
+			synchronized (this) {
+				maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
+			}
         break;
     }
 
@@ -155,7 +161,8 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
      * Get Direct Memory Usage.
      */
     public final ConcurrentHashMap<Long, Long> getDirectMemorUsage() {
-
-        return offHeapExecutionMemoryPool.getMemoryForConnection();
+		synchronized (this) {
+			return offHeapExecutionMemoryPool.getMemoryForConnection();
+		}
     }
 }

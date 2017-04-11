@@ -164,7 +164,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_NEW_ABORTING_CONNECTION;
 		err.message = StringUtil.encode(e.getMessage(), session.getSource().getCharset());
-		session.getSource().close(err.message.toString());
+		session.getSource().close(e.getMessage());
 	}
 
 	@Override
@@ -414,7 +414,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		err.errno = ErrorCode.ER_ERROR_ON_CLOSE;
 		err.message = StringUtil.encode(reason, session.getSource().getCharset());
 		this.backConnectionErr(err, conn);
-		session.getSource().close(err.message.toString());
+		session.getSource().close(reason);
 	}
 
 	public void clearResources() {

@@ -49,7 +49,7 @@ public class MySQLcom {
 
 	public static String setReal(double num, int decimals) {
 		BigDecimal bd = new BigDecimal(num);
-		bd.setScale(decimals);
+		bd = bd.setScale(decimals);
 		double db = bd.doubleValue();
 		return String.valueOf(db);
 	}

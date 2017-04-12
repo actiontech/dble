@@ -1,5 +1,13 @@
 package io.mycat.server.response;
 
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.common.base.Strings;
 
 import io.mycat.MycatServer;
@@ -17,14 +25,6 @@ import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.StringUtil;
-
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * show tables impl
@@ -94,7 +94,7 @@ public class ShowFullTables
         for (String name : tableSet) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
-            row.add(StringUtil.encode("BASE TABLE", c.getCharset()));
+            row.add(StringUtil.encode("SHARDING TABLE", c.getCharset()));
             row.packetId = ++packetId;
             buffer = row.write(buffer, c,true);
         }

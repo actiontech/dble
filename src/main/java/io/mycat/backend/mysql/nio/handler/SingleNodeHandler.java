@@ -341,17 +341,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			
 			for (String name : shardingTablesSet) {
 				RowDataPacket row = new RowDataPacket(1);
-				row.add(StringUtil.encode(name.toLowerCase(), source.getCharset()));
+				row.add(StringUtil.encode(name, source.getCharset()));
 				row.packetId = ++packetId;
 				buffer = row.write(buffer, source, true);
 			}
 			
 		} else if (isDefaultNodeShowFullTable) {
-			
 			for (String name : shardingTablesSet) {
 				RowDataPacket row = new RowDataPacket(1);
-				row.add(StringUtil.encode(name.toLowerCase(), source.getCharset()));
-				row.add(StringUtil.encode("BASE TABLE", source.getCharset()));
+				row.add(StringUtil.encode(name, source.getCharset()));
+				row.add(StringUtil.encode("SHARDING TABLE", source.getCharset()));
 				row.packetId = ++packetId;
 				buffer = row.write(buffer, source, true);
 			}
@@ -372,8 +371,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		if (isDefaultNodeShowTable || isDefaultNodeShowFullTable) {
 			RowDataPacket rowDataPacket = new RowDataPacket(1);
 			rowDataPacket.read(row);
-			String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), conn.getCharset());
-			if (shardingTablesSet.contains(table.toUpperCase())) {
+			String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getSource().getCharset());
+			if (shardingTablesSet.contains(table)) {
 				return false;
 			}
 		}

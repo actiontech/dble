@@ -50,8 +50,7 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 				SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 				if (schemaInfo != null) {
 					rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-					RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
-					rrs.setFinishedRoute(true);
+					RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 					return schemaInfo.schemaConfig;
 				} else{
 					super.visitorParse(schema, rrs, stmt, visitor);
@@ -110,8 +109,7 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 			if (schemaInfo != null) {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
-				rrs.setFinishedRoute(true);
+				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 				return schemaInfo.schemaConfig;
 			} else{
 				super.visitorParse(schema, rrs, stmt, visitor);

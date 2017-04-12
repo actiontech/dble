@@ -54,7 +54,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				throw new SQLNonTransientException(msg);
 			} else {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
@@ -72,7 +72,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			String tableName = schemaInfo.table;
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
-				RouterUtil.routeForTableMeta(rrs, schema, tableName);
+				RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }

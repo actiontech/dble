@@ -101,8 +101,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 				schema = schemaInfo.schemaConfig;
 				if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
-					RouterUtil.routeForTableMeta(rrs, schema, schemaInfo.table);
-					rrs.setFinishedRoute(true);
+					RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 					return schema;
 		        }
 				TableConfig tc= schema.getTables().get(schemaInfo.table);
@@ -143,8 +142,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 			return schema;
 		} else {
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-			RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
-			rrs.setFinishedRoute(true);
+			RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 			return schemaInfo.schemaConfig;
 		}
 	}

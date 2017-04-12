@@ -42,7 +42,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				throw new SQLNonTransientException(msg);
 			} else {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 				rrs.setFinishedRoute(true);
 			}
 		} else {
@@ -59,8 +59,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			schema = schemaInfo.schemaConfig;
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
-				RouterUtil.routeForTableMeta(rrs, schema, schemaInfo.table);
-				rrs.setFinishedRoute(true);
+				RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 				return schema;
 	        }
 			super.visitorParse(schema, rrs, stmt, visitor);

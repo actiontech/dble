@@ -121,7 +121,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 			}
 			stmt = stmt.substring(0, indx[0]) + " FROM " + tableName + stmt.substring(repPos[1]);
 			rrs.setStatement(stmt);
-			RouterUtil.routeForTableMeta(rrs, schema, tableName);
+			RouterUtil.routeToRandomNode(rrs, schema, tableName);
 			return rrs;
 
 		}
@@ -139,7 +139,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 					tableName = tableName.substring(ind2 + 1);
 				}
 				rrs.setStatement(stmt);
-				RouterUtil.routeForTableMeta(rrs, schema, tableName);
+				RouterUtil.routeToRandomNode(rrs, schema, tableName);
 				return rrs;
 			}
 		}
@@ -287,7 +287,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		
 		stmt = stmt.substring(0, ind) + tableName + stmt.substring(repPos[1]);
 		rrs.setStatement(stmt);
-		RouterUtil.routeForTableMeta(rrs, schema, tableName);
+		RouterUtil.routeToRandomNode(rrs, schema, tableName);
 		return rrs;
 	}
 }

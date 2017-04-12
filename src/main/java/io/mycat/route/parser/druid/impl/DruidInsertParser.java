@@ -266,8 +266,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				//TODO:TABLES insert.getQuery() are all NoSharding
 				return false;
 			}
-			RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
-			rrs.setFinishedRoute(true);
+			RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 			return true;
 		}
 		return false;

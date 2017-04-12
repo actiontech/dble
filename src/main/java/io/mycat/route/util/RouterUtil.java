@@ -540,25 +540,10 @@ public class RouterUtil {
 		return rrs;
 	}
 
-	public static void routeForTableMeta(RouteResultset rrs,
+	public static void routeToRandomNode(RouteResultset rrs,
 			SchemaConfig schema, String tableName) {
-		String dataNode = null;
-		if (isNoSharding(schema,tableName)) {//不分库的直接从schema中获取dataNode
-			dataNode = schema.getDataNode();
-		} else {
-			dataNode = getMetaReadDataNode(schema, tableName);
-		}
-
-		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-		nodes[0] = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
-		nodes[0].setSource(rrs);
-		if (rrs.getCanRunInReadDB() != null) {
-			nodes[0].setCanRunInReadDB(rrs.getCanRunInReadDB());
-		}
-		if(rrs.getRunOnSlave() != null){
-			nodes[0].setRunOnSlave(rrs.getRunOnSlave());
-		}
-		rrs.setNodes(nodes);
+		String dataNode = getRandomDataNode(schema, tableName); 
+		routeToSingleNode(rrs,dataNode);
 	}
 
 	/**
@@ -569,7 +554,7 @@ public class RouterUtil {
 	 * @return 			  数据节点
 	 * @author mycat
 	 */
-	private static String getMetaReadDataNode(SchemaConfig schema,
+	private static String getRandomDataNode(SchemaConfig schema,
 			String table) {
 		String dataNode = null;
 		Map<String, TableConfig> tables = schema.getTables();

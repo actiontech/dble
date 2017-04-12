@@ -160,10 +160,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	}
 	@Override
 	public void connectionError(Throwable e, BackendConnection conn) {
-		ErrorPacket err = new ErrorPacket();
-		err.packetId = ++packetId;
-		err.errno = ErrorCode.ER_NEW_ABORTING_CONNECTION;
-		err.message = StringUtil.encode(e.getMessage(), session.getSource().getCharset());
+		recycleResources();
 		session.getSource().close(e.getMessage());
 	}
 

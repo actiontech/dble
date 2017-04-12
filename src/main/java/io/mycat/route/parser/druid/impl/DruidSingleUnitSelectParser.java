@@ -31,6 +31,7 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
+		String schemaName = schema == null ? null : schema.getName();
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
@@ -46,10 +47,18 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 				return schema;
 			}
 			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource) {
-				super.visitorParse(schema, rrs, stmt, visitor);
-				return schema;
+				SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+				if (schemaInfo != null) {
+					rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+					RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+					rrs.setFinishedRoute(true);
+					return schemaInfo.schemaConfig;
+				} else{
+					super.visitorParse(schema, rrs, stmt, visitor);
+					return schema;
+				}
 			}
-			String schemaName = schema == null ? null : schema.getName();
+			
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
 			if (schemaInfo == null) {
@@ -85,7 +94,7 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if (!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+			if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
@@ -98,8 +107,16 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 				rrs.setCanRunInReadDB(false);
 			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-			super.visitorParse(schema, rrs, stmt, visitor);
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+			if (schemaInfo != null) {
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+				rrs.setFinishedRoute(true);
+				return schemaInfo.schemaConfig;
+			} else{
+				super.visitorParse(schema, rrs, stmt, visitor);
+			}
 		}
 		return schema;
-	}
+	} 
 }

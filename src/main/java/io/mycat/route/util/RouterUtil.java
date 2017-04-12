@@ -680,21 +680,10 @@ public class RouterUtil {
 				LOGGER.warn(msg);
 				throw new SQLNonTransientException(msg);
 			}
-			if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-				if (tableConfig.isGlobalTable()) {// 全局表
-					if (tablesRouteMap.get(tableName) == null) {
-						tablesRouteMap.put(tableName, new HashSet<String>());
-					}
-					tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
-				} else if (tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
-					tablesRouteMap.put(tableName, new HashSet<String>());
-					tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
-				}
-			} else {
-				if (!tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
-					tablesRouteMap.put(tableName, new HashSet<String>());
-					tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
-				}
+			
+			if (!tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
+				tablesRouteMap.put(tableName, new HashSet<String>());
+				tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
 			}
 		}
 
@@ -719,22 +708,7 @@ public class RouterUtil {
 			}
 		}
 		//retNodesSet.size() >0
-		if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			if (retNodesSet.size() > 1 && isAllGlobalTable(ctx, schema)) {
-				// mulit routes ,not cache route result
-				if (isSelect) {
-					rrs.setCacheAble(false);
-					routeToSingleNode(rrs, retNodesSet.iterator().next());
-				} else {// delete 删除全局表的记录
-					routeToMultiNode(isSelect, rrs, retNodesSet, true);
-				}
-
-			} else {
-				routeToMultiNode(isSelect, rrs, retNodesSet);
-			}
-		} else {
-			routeToMultiNode(isSelect, rrs, retNodesSet);
-		}
+		routeToMultiNode(isSelect, rrs, retNodesSet);
 		return rrs;
 
 	}
@@ -962,22 +936,7 @@ public class RouterUtil {
 			}
 		}
 	}
-	@Deprecated
-	public static boolean isAllGlobalTable(DruidShardingParseInfo ctx, SchemaConfig schema) {
-		if (MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			return false;
-		}
-		boolean isAllGlobal = false;
-		for (String table : ctx.getTables()) {
-			TableConfig tableConfig = schema.getTables().get(table);
-			if (tableConfig != null && tableConfig.isGlobalTable()) {
-				isAllGlobal = true;
-			} else {
-				return false;
-			}
-		}
-		return isAllGlobal;
-	}
+
 	/**
 	 *
 	 * @param schema

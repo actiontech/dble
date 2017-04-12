@@ -14,7 +14,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
@@ -95,29 +94,37 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
-				if (!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+				if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
 					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 				schema = schemaInfo.schemaConfig;
-			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource
-					|| mysqlFrom instanceof SQLUnionQueryTableSource) {
-				// TODO : SQLUnionQueryTableSource is USELESS
-				schema = executeOtherSQL(schemaName, schema, rrs, stmt);
+				if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
+					RouterUtil.routeForTableMeta(rrs, schema, schemaInfo.table);
+					rrs.setFinishedRoute(true);
+					return schema;
+		        }
+				TableConfig tc= schema.getTables().get(schemaInfo.table);
+				if (tc == null) {
+					String msg = "can't find table [" + schemaInfo.table + "] define in schema:" + schema.getName();
+					throw new SQLNonTransientException(msg);
+				}
+				super.visitorParse(schema, rrs, stmt, visitor);
+				parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
+				// 更改canRunInReadDB属性
+				if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
+						&& rrs.isAutocommit() == false) {
+					rrs.setCanRunInReadDB(false);
+				}
+			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource) {
+				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
 				if (rrs.isFinishedRoute()) {
 					return schema;
 				}
 			}
-			super.visitorParse(schema, rrs, stmt, visitor);
-			parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, schemaInfo.table);
-			// 更改canRunInReadDB属性
-			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-					&& rrs.isAutocommit() == false) {
-				rrs.setCanRunInReadDB(false);
-			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery ) {
-			schema = executeOtherSQL(schemaName, schema, rrs, stmt);
+			schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
 			if (rrs.isFinishedRoute()) {
 				return schema;
 			}
@@ -127,23 +134,18 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		return schema;
 	}
 
-	private SchemaConfig executeOtherSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
+	private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt)
 			throws SQLNonTransientException {
-		if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			if (schemaName == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaName);
-			if (schemaConfig == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			return schemaConfig;
-		} else {
-			rrs.setSqlStatement(stmt);
+		SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+		if (schemaInfo == null) {
+			rrs.setSqlStatement(selectStmt);
 			rrs.setNeedOptimizer(true);
 			return schema;
+		} else {
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+			RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+			rrs.setFinishedRoute(true);
+			return schemaInfo.schemaConfig;
 		}
 	}
 	/**
@@ -155,11 +157,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
 			return;
 		}
-		if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			tryRoute(schema, rrs, cachePool);
-		} else {
-			tryRouteSingleTable(schema, rrs, cachePool);
-		}
+		tryRouteSingleTable(schema, rrs, cachePool);
 		rrs.copyLimitToNodes();
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();

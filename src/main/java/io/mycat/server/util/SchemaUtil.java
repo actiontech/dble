@@ -11,11 +11,21 @@ import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
 
 /**
@@ -73,48 +83,85 @@ public class SchemaUtil
 		schemaInfo.schemaConfig = schemaConfig;
 		return schemaInfo;
 	}
-
-	public static SchemaInfo isNoSharding(String schema, SQLJoinTableSource tables, SQLStatement stmt)
+	
+	public static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt)
 			throws SQLNonTransientException {
-		SchemaInfo leftInfo = null;
+		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+			return isNoSharding(source, schema, ((MySqlSelectQueryBlock) sqlSelectQuery).getFrom(), selectStmt);
+		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+			return isNoSharding(source, schema, (MySqlUnionQuery) sqlSelectQuery, selectStmt);
+		} else {
+			return null;
+		}
+	}
+	private static SchemaInfo isNoSharding(ServerConnection source,String schema, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt)
+			throws SQLNonTransientException {
+		SQLSelectQuery left = sqlSelectQuery.getLeft();
+		SQLSelectQuery right = sqlSelectQuery.getRight();
+		SchemaInfo leftInfo = isNoSharding(source, schema, left, stmt);
+		if (leftInfo == null) {
+			return null;
+		}
+		SchemaInfo rightInfo = isNoSharding(source, schema, right, stmt);
+		if (rightInfo == null) {
+			return null;
+		}
+		return StringUtil.equals(leftInfo.schema, rightInfo.schema)?leftInfo:null;
+	}
+	private static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLTableSource tables, SQLStatement stmt)
+			throws SQLNonTransientException {
+		if (tables instanceof SQLExprTableSource) {
+			return isNoSharding(source, schema, (SQLExprTableSource) tables, stmt);
+		} else if (tables instanceof SQLJoinTableSource) {
+			return isNoSharding(source, schema, (SQLJoinTableSource) tables, stmt);
+		} else if (tables instanceof SQLSubqueryTableSource) {
+			SQLSelectQuery sqlSelectQuery = ((SQLSubqueryTableSource) tables).getSelect().getQuery();
+			return isNoSharding(source, schema, sqlSelectQuery, stmt);
+		} else {
+			return null;
+		}
+	}
+
+	private static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLExprTableSource table, SQLStatement stmt)
+			throws SQLNonTransientException {
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, table);
+		if (schemaInfo == null) {
+			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+			throw new SQLNonTransientException(msg);
+		}
+		Checktype chekctype = Checktype.SELECT;
+		if (stmt instanceof MySqlUpdateStatement) {
+			chekctype = Checktype.UPDATE;
+		} else if (stmt instanceof SQLSelectStatement) {
+			chekctype = Checktype.SELECT;
+		} else if (stmt instanceof MySqlDeleteStatement) {
+			chekctype = Checktype.DELETE;
+		}
+
+		if(!MycatPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, chekctype)){
+			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+			throw new SQLNonTransientException(msg);
+		}
+		if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+			return schemaInfo;
+		} else {
+			return null;
+		}
+	}
+	
+	public static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLJoinTableSource tables, SQLStatement stmt)
+			throws SQLNonTransientException {
 		SQLTableSource left = tables.getLeft();
-		if (left instanceof SQLExprTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, (SQLExprTableSource) left);
-			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
-				leftInfo = schemaInfo;
-			} else {
-				return null;
-			}
-		} else {
-			leftInfo = isNoSharding(schema, (SQLJoinTableSource) left, stmt);
-			if (leftInfo == null) {
-				return null;
-			}
+		SQLTableSource right = tables.getRight();
+		SchemaInfo leftInfo = isNoSharding(source, schema, left, stmt);
+		if (leftInfo == null) {
+			return null;
 		}
-		SchemaInfo rightInfo = null;
-		SQLTableSource right = tables.getLeft();
-		if (right instanceof SQLExprTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, (SQLExprTableSource) right);
-			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
-			}
-			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
-				rightInfo = schemaInfo;
-			} else {
-				return null;
-			}
-		} else {
-			rightInfo = isNoSharding(schema, (SQLJoinTableSource) right, stmt);
-			if (rightInfo == null) {
-				return null;
-			}
+		SchemaInfo rightInfo = isNoSharding(source, schema, right, stmt);
+		if (rightInfo == null) {
+			return null;
 		}
-		return StringUtil.equals(leftInfo.schema, rightInfo.schema) ? leftInfo : null;
+		return StringUtil.equals(leftInfo.schema, rightInfo.schema)?leftInfo:null;
 	}
 
     public static class SchemaInfo

@@ -61,9 +61,13 @@ import io.mycat.backend.mysql.store.memalloc.MemSizeController;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.MycatPrivileges;
+import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.plan.PlanNode;
+import io.mycat.plan.common.exception.MySQLOutPutException;
+import io.mycat.plan.node.TableNode;
 import io.mycat.plan.optimizer.MyOptimizer;
 import io.mycat.plan.visitor.MySQLPlanNodeVisitor;
 import io.mycat.route.RouteResultset;
@@ -227,7 +231,8 @@ public class NonBlockingSession implements Session {
 		PlanNode node = visitor.getTableNode();
 		node.setSql(rrs.getStatement());
 		node.setUpFields();
-		node = MyOptimizer.optimize(this.getSource().getSchema(), node);
+		checkTablesPrivilege(node,ast);
+		node = MyOptimizer.optimize(node);
 //		if (LOGGER.isInfoEnabled()) {
 //			long currentTime = System.nanoTime();
 //			StringBuilder builder = new StringBuilder();
@@ -237,6 +242,14 @@ public class NonBlockingSession implements Session {
 //			setExecutedNanos(currentTime);
 //		}
 		execute(node);
+    }
+    private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt){
+    	for (TableNode tn : node.getReferedTableNodes()) {
+    		if (!MycatPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), Checktype.SELECT)) {
+				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "",msg );
+			}
+    	}
     }
     
     public void execute(PlanNode node) {

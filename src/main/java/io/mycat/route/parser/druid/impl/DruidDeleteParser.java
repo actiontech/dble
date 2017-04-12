@@ -36,16 +36,12 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			tableSource = fromSource;
 		}
 		if (tableSource instanceof SQLJoinTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(schemaName, (SQLJoinTableSource) tableSource, stmt);
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, (SQLJoinTableSource) tableSource, stmt);
 			if (schemaInfo == null) {
 				String msg = "deleting from multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			} else {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
-					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
-					throw new SQLNonTransientException(msg);
-				}
 				RouterUtil.routeForTableMeta(rrs, schemaInfo.schemaConfig, schemaInfo.table);
 				rrs.setFinishedRoute(true);
 			}
@@ -56,7 +52,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
+			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}

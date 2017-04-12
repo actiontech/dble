@@ -40,7 +40,6 @@ import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.config.model.UserPrivilegesConfig;
 import io.mycat.net.handler.FrontendPrivileges;
-import io.mycat.route.RouteResultset;
 import io.mycat.server.ServerConnection;
 
 /**
@@ -209,8 +208,7 @@ public class MycatPrivileges implements FrontendPrivileges {
 	}
 	public enum Checktype{INSERT,UPDATE,SELECT,DELETE};
 	// 审计SQL权限
-	public static boolean checkPrivilege(RouteResultset rrs, String schema, String tableName, Checktype chekctype) {
-		ServerConnection source = rrs.getSession().getSource();
+	public static boolean checkPrivilege(ServerConnection source, String schema, String tableName, Checktype chekctype) {
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 		UserConfig userConfig = conf.getUsers().get(source.getUser());
 		if (userConfig == null) {

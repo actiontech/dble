@@ -14,7 +14,7 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.util.SchemaUtil;
 
 public class MyOptimizer {
-	public static PlanNode optimize(String schema, PlanNode node) {
+	public static PlanNode optimize(PlanNode node) {
 
 		try {
 			// 预先处理子查询

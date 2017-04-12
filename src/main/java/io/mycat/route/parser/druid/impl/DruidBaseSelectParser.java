@@ -3,7 +3,6 @@ package io.mycat.route.parser.druid.impl;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -44,9 +43,7 @@ import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.sqlengine.mpp.HavingCols;
-import io.mycat.sqlengine.mpp.MergeCol;
 import io.mycat.sqlengine.mpp.OrderCol;
-import io.mycat.util.ObjectUtil;
 import io.mycat.util.StringUtil;
 
 public class DruidBaseSelectParser extends DefaultDruidParser {
@@ -67,8 +64,8 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 	}
 
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-			MySqlSelectQueryBlock mysqlSelectQuery, String tableName) throws SQLNonTransientException {
-		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tableName);
+			MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLNonTransientException {
+		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
 		if(rrs.isNeedOptimizer()){
 			return;
 		}
@@ -79,7 +76,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 	}
 
-	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, String tableName) throws SQLNonTransientException {
+	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLNonTransientException {
 		List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
 		for (int i = 0; i < selectList.size(); i++) {
 			SQLSelectItem item = selectList.get(i);
@@ -109,11 +106,6 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		if (mysqlSelectQuery.getGroupBy() != null) {
 			SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
 			boolean hasPartitionColumn = false;
-			TableConfig tc= schema.getTables().get(tableName);
-			if (tc == null) {
-				String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
-				throw new SQLNonTransientException(msg);
-			}
 
 			if (groupBy.getHaving() != null) {
 				//TODO:DEFAULT HAVING HAS BUG,So NeedOptimizer 
@@ -156,93 +148,17 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 		aliaColumns.put(field, alia);
 	}
-	@Deprecated
-	private boolean parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, List<SQLSelectItem> selectList,
-			Map<String, String> aliaColumns, Map<String, Integer> aggrColumns, List<String> havingColsName) {
-		boolean isNeedChangeSql = false;
-		for (int i = 0; i < selectList.size(); i++) {
-			SQLSelectItem item = selectList.get(i);
-			if (item.getExpr() instanceof SQLAggregateExpr) {
-				SQLAggregateExpr expr = (SQLAggregateExpr) item.getExpr();
-				String method = expr.getMethodName();
-				boolean isHasArgument = !expr.getArguments().isEmpty();
-				if (isHasArgument) {
-					String aggrColName = method + "(" + expr.getArguments().get(0) + ")";
-					havingColsName.add(aggrColName);
-				}
-				// 只处理有别名的情况，无别名添加别名，否则某些数据库会得不到正确结果处理
-				int mergeType = MergeCol.getMergeType(method);
-				if (MergeCol.MERGE_AVG == mergeType && isRoutMultiNode(schema, rrs)) { // 跨分片avg需要特殊处理，直接avg结果是不对的
-					String colName = item.getAlias() != null ? item.getAlias() : method + i;
-					SQLSelectItem sum = new SQLSelectItem();
-					String sumColName = colName + "SUM";
-					sum.setAlias(sumColName);
-					SQLAggregateExpr sumExp = new SQLAggregateExpr("SUM");
-					ObjectUtil.copyProperties(expr, sumExp);
-					sumExp.getArguments().addAll(expr.getArguments());
-					sumExp.setMethodName("SUM");
-					sum.setExpr(sumExp);
-					selectList.set(i, sum);
-					aggrColumns.put(sumColName, MergeCol.MERGE_SUM);
-					havingColsName.add(sumColName);
-					havingColsName.add(item.getAlias() != null ? item.getAlias() : "");
-
-					SQLSelectItem count = new SQLSelectItem();
-					String countColName = colName + "COUNT";
-					count.setAlias(countColName);
-					SQLAggregateExpr countExp = new SQLAggregateExpr("COUNT");
-					ObjectUtil.copyProperties(expr, countExp);
-					countExp.getArguments().addAll(expr.getArguments());
-					countExp.setMethodName("COUNT");
-					count.setExpr(countExp);
-					selectList.add(count);
-					aggrColumns.put(countColName, MergeCol.MERGE_COUNT);
-
-					isNeedChangeSql = true;
-					aggrColumns.put(colName, mergeType);
-					rrs.setHasAggrColumn(true);
-				} else if (MergeCol.MERGE_UNSUPPORT != mergeType) {
-					if (item.getAlias() != null && item.getAlias().length() > 0) {
-						aggrColumns.put(item.getAlias(), mergeType);
-					} else { // 如果不加，jdbc方式时取不到正确结果 ;修改添加别名
-						item.setAlias(method + i);
-						aggrColumns.put(method + i, mergeType);
-						isNeedChangeSql = true;
-					}
-					rrs.setHasAggrColumn(true);
-					havingColsName.add(item.getAlias());
-					havingColsName.add("");
-				}
-			} else {
-				if (!(item.getExpr() instanceof SQLAllColumnExpr)) {
-					String alia = item.getAlias();
-					String field = getFieldName(item);
-					if (alia == null) {
-						alia = field;
-					}
-					aliaColumns.put(field, alia);
-				}
-			}
-
-		}
-		return isNeedChangeSql;
-	}
-
+	
 	protected Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-			SQLSelectQueryBlock mysqlSelectQuery, String tableName) throws SQLNonTransientException {
+			SQLSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLNonTransientException {
 		Map<String, String> aliaColumns = new HashMap<String, String>();
 		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 		List<String> havingColsName = new ArrayList<String>();
 		boolean isNeedChangeSql = false;
-		if (MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-			parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tableName);
-			if(rrs.isNeedOptimizer()){
-				rrs.setSqlStatement(stmt);
-				return aliaColumns;
-			}
-		} else {
-			isNeedChangeSql = parseAggExprCommon(schema, rrs, mysqlSelectQuery.getSelectList(), aliaColumns,
-					aggrColumns, havingColsName);
+		parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
+		if (rrs.isNeedOptimizer()) {
+			rrs.setSqlStatement(stmt);
+			return aliaColumns;
 		}
 		
 		if (aggrColumns.size() > 0) {
@@ -312,11 +228,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		LayerCachePool tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService()
 				.getCachePool("TableID2DataNodeCache");
 		try {
-			if (!MycatServer.getInstance().getConfig().getSystem().isUseExtensions()) {
-				tryRoute(schema, rrs, tableId2DataNodeCache);
-			} else {
-				tryRouteSingleTable(schema, rrs, tableId2DataNodeCache);
-			}
+			tryRouteSingleTable(schema, rrs, tableId2DataNodeCache);
 			if (rrs.getNodes() != null && rrs.getNodes().length > 1) {
 				return true;
 			}
@@ -335,56 +247,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 	}
 
 	
-	/**
-	 * will be repalce by tryRouteSingleTable 
-	 * @param item
-	 * @return
-	 */
-	@Deprecated
-	protected void tryRoute(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
-			throws SQLNonTransientException {
-		if (rrs.isFinishedRoute()) {
-			return;// 避免重复路由
-		}
-		SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
-		boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
-		for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-			RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, true, cachePool);
-			if (rrsTmp != null && rrsTmp.getNodes() != null) {
-				for (RouteResultsetNode node : rrsTmp.getNodes()) {
-					nodeSet.add(node);
-				}
-				if (isAllGlobalTable) {// 都是全局表时只计算一遍路由
-					break;
-				}
-			}
-		}
-
-		if (nodeSet.size() == 0) {
-			Collection<String> stringCollection = ctx.getTableAliasMap().values();
-			for (String table : stringCollection) {
-				if (table != null && table.toLowerCase().contains("information_schema.")) {
-					rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
-					rrs.setFinishedRoute(true);
-					return;
-				}
-			}
-			String msg = " find no Route:" + rrs.getStatement();
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
-		}
-
-		RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
-		int i = 0;
-		for (Iterator<RouteResultsetNode> iterator = nodeSet.iterator(); iterator.hasNext();) {
-			nodes[i] = (RouteResultsetNode) iterator.next();
-			i++;
-
-		}
-
-		rrs.setNodes(nodes);
-		rrs.setFinishedRoute(true);
-	}
+	
 	
 	protected void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
 			throws SQLNonTransientException {

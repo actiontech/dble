@@ -53,7 +53,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			String msg = "No MyCAT Database is selected Or defined";
 			throw new SQLNonTransientException(msg);
 		}
-		if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
+		if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}

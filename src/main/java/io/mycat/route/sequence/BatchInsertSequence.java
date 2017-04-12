@@ -101,7 +101,7 @@ public class BatchInsertSequence implements Catlet {
 					throw new SQLNonTransientException(msg);
 				}
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				if(!MycatPrivileges.checkPrivilege(rrs, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
+				if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 					String msg = "The statement DML privilege check is not passed, sql:" + realSQL;
 					throw new SQLNonTransientException(msg);
 				}

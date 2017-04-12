@@ -192,7 +192,6 @@ public final class SystemConfig {
 	private boolean	useZKSwitch=DEFAULT_USE_ZK_SWITCH;
 
 	private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
-	private boolean useExtensions = false;
 	
 	// 是否使用JoinStrategy优化
 	private boolean useJoinStrategy;
@@ -340,15 +339,6 @@ public final class SystemConfig {
 	public void setLowerCaseTableNames(boolean lowerCaseTableNames) {
 		this.lowerCaseTableNames = lowerCaseTableNames;
 	}
-
-	public boolean isUseExtensions() {
-		return useExtensions;
-	}
-
-	public void setUseExtensions(boolean useExtensions) {
-		this.useExtensions = useExtensions;
-	}
-
 
 	public String getXARecoveryLogBaseDir() {
 		return XARecoveryLogBaseDir;

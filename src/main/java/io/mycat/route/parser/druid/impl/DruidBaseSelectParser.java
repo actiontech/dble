@@ -154,7 +154,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		Map<String, String> aliaColumns = new HashMap<String, String>();
 		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 		List<String> havingColsName = new ArrayList<String>();
-		boolean isNeedChangeSql = false;
+		
 		parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
 		if (rrs.isNeedOptimizer()) {
 			rrs.setSqlStatement(stmt);
@@ -166,15 +166,14 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 
 		// 通过优化转换成group by来实现
-		boolean isDistinct = mysqlSelectQuery.getDistionOption() == 2;
-		if (isDistinct) {
+		boolean isNeedChangeSql = mysqlSelectQuery.getDistionOption() == 2;
+		if (isNeedChangeSql) {
 			mysqlSelectQuery.setDistionOption(0);
 			SQLSelectGroupByClause groupBy = new SQLSelectGroupByClause();
 			for (String fieldName : aliaColumns.keySet()) {
 				groupBy.addItem(new SQLIdentifierExpr(fieldName));
 			}
 			mysqlSelectQuery.setGroupBy(groupBy);
-			isNeedChangeSql = true;
 		}
 
 		// setGroupByCols

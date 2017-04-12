@@ -45,7 +45,7 @@ import io.mycat.plan.util.PlanUtil;
  * 如: table.join(table2).on(
  * "table1.id = table2.id and table1.id>5 && table2.id<10") 优化成：table1.query(
  * "table1.id>5 && table1.id<10").join(table2.query(
- * "table2.id>5 && table2.id<10"))
+ * "table2.id>5 && table2.id<10")).on("table1.id = table2.id")
  */
 public class FilterPusher {
 

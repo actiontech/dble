@@ -894,7 +894,7 @@ public abstract class Item {
 	 * @param context
 	 */
 	public abstract void fixRefer(ReferContext context);
-	//TODO:YHQ  NEED CHECK
+	
 	public abstract SQLExpr toExpression();
 
 	public final Item cloneStruct() {

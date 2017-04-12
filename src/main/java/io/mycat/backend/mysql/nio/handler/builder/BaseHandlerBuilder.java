@@ -88,7 +88,7 @@ abstract class BaseHandlerBuilder {
 			// 可确定统一下发到某个节点
 			noShardBuild();
 		} else if (canDoAsMerge()) {
-			//可下发到某些(1...n)结点,如果：eg: ER*NORMAL,  GLOBAL*NORMAL
+			//可下发到某些(1...n)结点,如果：eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
 			mergeBuild();
 		} else {
 			//拆分

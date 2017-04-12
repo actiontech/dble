@@ -209,11 +209,8 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitStart + limitSize);
 				} else {
 					rrs.changeNodeSqlAfterAddLimit(schema, rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
-					// ctx.setSql(nativeSql);
 				}
-
 			}
-
 			rrs.setCacheAble(isNeedCache(schema, rrs, mysqlSelectQuery, allConditions));
 		}
 
@@ -245,15 +242,15 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 
 	
 	protected boolean isNeedChangeLimit(RouteResultset rrs) {
-		if(rrs.getNodes() == null) {
+		if (rrs.getNodes() == null) {
 			return false;
 		} else {
-			if(rrs.getNodes().length > 1) {
+			if (rrs.getNodes().length > 1) {
 				return true;
 			}
 			return false;
-		
-		} 
+
+		}
 	}
 	
 	private boolean isNeedCache(SchemaConfig schema, RouteResultset rrs, 
@@ -291,48 +288,42 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 	 */
 	private boolean isNeedAddLimit(SchemaConfig schema, RouteResultset rrs, 
 			MySqlSelectQueryBlock mysqlSelectQuery, Map<String, Map<String, Set<ColumnRoutePair>>> allConditions) {
-//		ctx.getTablesAndConditions().get(key))
-		  if(rrs.getLimitSize()>-1)
-		  {
-			  return false;
-		  }else
-		if(schema.getDefaultMaxLimit() == -1) {
+		if (rrs.getLimitSize() > -1) {
 			return false;
-		} else if (mysqlSelectQuery.getLimit() != null) {//语句中已有limit
+		} else if (schema.getDefaultMaxLimit() == -1) {
+			return false;
+		} else if (mysqlSelectQuery.getLimit() != null) {// 语句中已有limit
 			return false;
 		} else if(ctx.getTables().size() == 1) {
+			if(rrs.hasPrimaryKeyToCache()){
+				// 只有一个表且条件中有主键,不需要limit了,因为主键只能查到一条记录
+				return false;
+			}
 			String tableName = ctx.getTables().get(0);
 			TableConfig tableConfig = schema.getTables().get(tableName);
-			if(tableConfig==null)
-			{
-			 return    schema.getDefaultMaxLimit() > -1;   //   找不到则取schema的配置
+			if (tableConfig == null) {
+				return schema.getDefaultMaxLimit() > -1; // 找不到则取schema的配置
 			}
 
-			boolean isNeedAddLimit= tableConfig.isNeedAddLimit();
-			if(!isNeedAddLimit)
-			{
-				return false;//优先从配置文件取
+			boolean isNeedAddLimit = tableConfig.isNeedAddLimit();
+			if (!isNeedAddLimit) {
+				return false;// 优先从配置文件取
 			}
 
-			if(schema.getTables().get(tableName).isGlobalTable()) {
+			if (schema.getTables().get(tableName).isGlobalTable()) {
 				return true;
 			}
 
 			String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
-
-//			schema.getTables().get(ctx.getTables().get(0)).getParentKey() != null;
-			if(allConditions.get(tableName) == null) {//无条件
+			if (allConditions.get(tableName) == null) {// 无条件
 				return true;
 			}
-			
-			if (allConditions.get(tableName).get(primaryKey) != null) {//条件中带主键
+
+			if (allConditions.get(tableName).get(primaryKey) != null) {// 条件中带主键
 				return false;
 			}
-			
 			return true;
-		} else if(rrs.hasPrimaryKeyToCache() && ctx.getTables().size() == 1){//只有一个表且条件中有主键,不需要limit了,因为主键只能查到一条记录
-			return false;
-		} else {//多表或无表
+		} else {// 多表或无表
 			return false;
 		}
 		

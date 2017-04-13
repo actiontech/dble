@@ -1,4 +1,30 @@
-DATE:2017/03/27  
+DATE:2017/04/13  
+VERSION 0.3.5  
+CONTENT: 
+###1. fix bug  
+####1.1 #68
+fix可能建立连接会有NP异常
+####1.2 #86  
+begin应当为commit当前并新开一个事物
+####1.3 #88 
+性能相关，消耗较大的计算字节数只在开启统计时使用
+####1.4 #83
+ 事务中复杂查询上下文未正确设置(上一版仍有问题) 
+####1.5 #59  
+连接出现异常不会关闭前端连接 
+
+###2. feature    
+####2.1 移除临时参数useExtensions
+开原版聚合函数bug较多，直接弃用  
+####2.2 移除不必要的依赖包
+mongo-java-driver-2.11.4.jar
+mysql-binlog-connector-java-0.4.1.jar
+sequoiadb-driver-1.12.jar（原本集成gson包，所以要添加gson-2.8.0.jar）
+
+------
+
+
+DATE:2017/04/07  
 VERSION 0.3.4  
 CONTENT:  
 注：0.3.3 有个临时版本，故跳过

@@ -59,11 +59,6 @@
 			<version>2.6.1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.mongodb</groupId>
-			<artifactId>mongo-java-driver</artifactId>
-			<version>2.11.4</version>
-		</dependency>
-		<dependency>
 			<groupId>org.iq80.leveldb</groupId>
 			<artifactId>leveldb</artifactId>
 			<version>0.7</version>
@@ -137,6 +132,11 @@
             <artifactId>log4j-1.2-api</artifactId>
             <version>2.7</version>
         </dependency>
+        <dependency>
+    		<groupId>log4j</groupId>
+    		<artifactId>log4j</artifactId>
+   			<version>1.2.17</version>
+		</dependency>
 		<dependency>
 			<groupId>com.univocity</groupId>
 			<artifactId>univocity-parsers</artifactId>
@@ -144,13 +144,11 @@
 			<type>jar</type>
 		</dependency>
 
-
 		<dependency>
-			<groupId>com.sequoiadb</groupId>
-			<artifactId>sequoiadb-driver</artifactId>
-			<version>1.12</version>
+    		<groupId>com.google.code.gson</groupId>
+    		<artifactId>gson</artifactId>
+    		<version>2.8.0</version>
 		</dependency>
-
 
 		<!--DOM4J FOR XML -->
 		<dependency>
@@ -199,13 +197,6 @@
 			<artifactId>joda-time</artifactId>
 			<version>2.9.3</version>
 		</dependency>
-
-		<dependency>
-			<groupId>com.github.shyiko</groupId>
-			<artifactId>mysql-binlog-connector-java</artifactId>
-			<version>0.4.1</version>
-		</dependency>
-
 
 		<dependency>
 			<groupId>org.mockito</groupId>

@@ -16,7 +16,7 @@ begin应当为commit当前并新开一个事物
 ### 2.feature  
 #### 2.1 移除临时参数useExtensions  
 开原版聚合函数bug较多，直接弃用  
-####2.2 移除不必要的依赖包  
+#### 2.2 移除不必要的依赖包  
 mongo-java-driver-2.11.4.jar  
 mysql-binlog-connector-java-0.4.1.jar  
 sequoiadb-driver-1.12.jar（原本集成gson包，所以要添加gson-2.8.0.jar）  

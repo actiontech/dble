@@ -28,6 +28,11 @@
 	</scm>
 	<repositories>
 		<repository>
+			<id>nexus-actiontech</id>
+			<name>nexus-actiontech</name>
+			<url>http://10.186.19.52:8081/nexus/content/groups/public</url>
+		</repository>
+		<repository>
 			<id>nexus</id>
 			<name>local private nexus</name>
 			<url>http://nexus.mycat.io/content/groups/public</url>
@@ -38,6 +43,24 @@
 			<url>http://repo.jenkins-ci.org/releases/</url>
 		</repository>
 	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>nexus-actiontech</id>
+			<name>nexus-actiontech</name>
+			<url>http://10.186.19.52:8081/nexus/content/groups/public</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>nexus</id>
+			<name>local private nexus</name>
+			<url>http://nexus.mycat.io/content/groups/public</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>jenkins</id>
+			<name> Jenkins Releases Repository</name>
+			<url>http://repo.jenkins-ci.org/releases/</url>
+		</pluginRepository>
+	</pluginRepositories>
+
 	<distributionManagement>
 		<repository>
 			<id>releases</id>

@@ -1,25 +1,25 @@
 DATE:2017/04/13  
 VERSION 0.3.5  
-CONTENT: 
-###1. fix bug  
-####1.1 #68
-fix可能建立连接会有NP异常
-####1.2 #86  
-begin应当为commit当前并新开一个事物
-####1.3 #88 
-性能相关，消耗较大的计算字节数只在开启统计时使用
-####1.4 #83
- 事务中复杂查询上下文未正确设置(上一版仍有问题) 
-####1.5 #59  
-连接出现异常不会关闭前端连接 
+CONTENT:  
+### 1.fix bug  
+#### 1.1 #68  
+fix可能建立连接会有NP异常  
+#### 1.2 #86  
+begin应当为commit当前并新开一个事物  
+#### 1.3 #88  
+性能相关，消耗较大的计算字节数只在开启统计时使用  
+#### 1.4 #83  
+ 事务中复杂查询上下文未正确设置(上一版仍有问题)  
+#### 1.5 #59  
+连接出现异常不会关闭前端连接  
 
-###2. feature    
-####2.1 移除临时参数useExtensions
+### 2.feature  
+#### 2.1 移除临时参数useExtensions  
 开原版聚合函数bug较多，直接弃用  
-####2.2 移除不必要的依赖包
-mongo-java-driver-2.11.4.jar
-mysql-binlog-connector-java-0.4.1.jar
-sequoiadb-driver-1.12.jar（原本集成gson包，所以要添加gson-2.8.0.jar）
+####2.2 移除不必要的依赖包  
+mongo-java-driver-2.11.4.jar  
+mysql-binlog-connector-java-0.4.1.jar  
+sequoiadb-driver-1.12.jar（原本集成gson包，所以要添加gson-2.8.0.jar）  
 
 ------
 
@@ -28,25 +28,25 @@ DATE:2017/04/07
 VERSION 0.3.4  
 CONTENT:  
 注：0.3.3 有个临时版本，故跳过
-###1. fix bug  
-####1.1 #62（0.3.3版已修正）
-####1.2 #43 
-原生mycat将多节点having移除，猜测是想留给客户端去做，另外group by ,having中有聚合函数也没有处理，在使用useExtensions前提下一并修正。
-####1.3 #73 
-backlog默认值改为2048，也可以通过serverBacklog 设置
-####1.4 #78
-增加不支持提示
-####1.5 #81
+### 1. fix bug  
+#### 1.1 #62（0.3.3版已修正）  
+#### 1.2 #43  
+原生mycat将多节点having移除，猜测是想留给客户端去做，另外group by ,having中有聚合函数也没有处理，在使用useExtensions前提下一并修正。  
+#### 1.3 #73  
+backlog默认值改为2048，也可以通过serverBacklog 设置  
+#### 1.4 #78  
+增加不支持提示  
+####  1.5 #81  
 跨库join判断 schema
-####1.6 #83
+#### 1.6 #83  
  事务中复杂查询上下文未正确设置
-####1.7 #74
-可能引起原因：默认close不会关闭XA事务，导致连接僵死 ( 和#71 kill相关)
-####1.8 load data 相关 #58，#61（优先级低）
+#### 1.7 #74  
+可能引起原因：默认close不会关闭XA事务，导致连接僵死 ( 和#71 kill相关)  
+#### 1.8 load data 相关 #58，#61（优先级低）  
 
-###2. feature    
-####2.1 移除半成品参数 ProcessorBufferPoolType
-####2.2 运维账号与普通账号隔离 #56
+### 2. feature      
+#### 2.1 移除半成品参数 ProcessorBufferPoolType  
+#### 2.2 运维账号与普通账号隔离 #56  
 使用方法： 
 
 	<user name="man1">   
@@ -62,10 +62,10 @@ backlog默认值改为2048，也可以通过serverBacklog 设置
 	</user>
 
 
-####2.3  #71 XA事务时候的kill
-####2.4 create table 限制（优先级较低） #69  
-####2.5 普通join 的Strategy策略（优先级较低）
-默认不开，如需开启加参数useJoinStrategy
+#### 2.3  #71 XA事务时候的kill  
+#### 2.4 create table 限制（优先级较低） #69   
+#### 2.5 普通join 的Strategy策略（优先级较低）  
+默认不开，如需开启加参数useJoinStrategy  
 
 ------
 

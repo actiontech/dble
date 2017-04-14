@@ -107,7 +107,6 @@ hs_err_pid*
 /project/project/
 /project/target/
 /project/activator-*
-/logs/
 /RUNNING_PID
 .DS_Store
 /target/

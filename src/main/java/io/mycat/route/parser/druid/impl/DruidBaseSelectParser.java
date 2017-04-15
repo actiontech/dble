@@ -65,15 +65,20 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 
 	protected void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
 			MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLNonTransientException {
-		Map<String, String> aliaColumns = parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
+		if (mysqlSelectQuery.getOrderBy() != null) {
+			rrs.setSqlStatement(stmt);
+			rrs.setNeedOptimizer(true);
+			return;
+		}
+		parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
 		if(rrs.isNeedOptimizer()){
 			return;
 		}
-		// setOrderByCols
-		if (mysqlSelectQuery.getOrderBy() != null) {
-			List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
-			rrs.setOrderByCols(buildOrderByCols(orderByItems, aliaColumns));
-		}
+//		// setOrderByCols TODO: ORDER BY has bugs,so it will not reach here. BY YHQ
+//		if (mysqlSelectQuery.getOrderBy() != null) {
+//			List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
+//			rrs.setOrderByCols(buildOrderByCols(orderByItems, aliaColumns));
+//		}
 	}
 
 	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLNonTransientException {

@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.mysql.nio.MySQLDataSource;
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
 import io.mycat.sqlengine.SQLQueryResult;

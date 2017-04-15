@@ -1,4 +1,4 @@
-package io.mycat.server.interceptor.impl;
+package io.mycat.server.util;
 
 import java.util.ArrayList;
 import java.util.Collection;

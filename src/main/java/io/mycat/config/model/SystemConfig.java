@@ -124,9 +124,6 @@ public final class SystemConfig {
 	//清理大结果集记录周期
 	private long clearBigSqLResultSetMapMs=10*60*1000;
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCAL_TIME;
-	private String sqlInterceptor = "io.mycat.server.interceptor.impl.DefaultSqlInterceptor";
-	private String sqlInterceptorType = "select";
-	private String sqlInterceptorFile = System.getProperty("user.dir")+"/logs/sql.txt";
 	private String defaultSqlParser = DEFAULT_SQL_PARSER;
 	private int usingAIO = 0;
 	private int packetHeaderSize = 4;
@@ -368,14 +365,6 @@ public final class SystemConfig {
 
 	public void setGlableTableCheckPeriod(long glableTableCheckPeriod) {
 		this.glableTableCheckPeriod = glableTableCheckPeriod;
-	}
-
-	public String getSqlInterceptor() {
-		return sqlInterceptor;
-	}
-
-	public void setSqlInterceptor(String sqlInterceptor) {
-		this.sqlInterceptor = sqlInterceptor;
 	}
 
 	public int getSequnceHandlerType() {
@@ -745,22 +734,6 @@ public final class SystemConfig {
 		this.backSocketNoDelay = backSocketNoDelay;
 	}
 
-	public String getSqlInterceptorType() {
-		return sqlInterceptorType;
-	}
-
-	public void setSqlInterceptorType(String sqlInterceptorType) {
-		this.sqlInterceptorType = sqlInterceptorType;
-	}
-
-	public String getSqlInterceptorFile() {
-		return sqlInterceptorFile;
-	}
-
-	public void setSqlInterceptorFile(String sqlInterceptorFile) {
-		this.sqlInterceptorFile = sqlInterceptorFile;
-	}
-
 	public int getUsingAIO() {
 		return usingAIO;
 	}
@@ -814,9 +787,6 @@ public final class SystemConfig {
 				+ ", bufferUsagePercent="+bufferUsagePercent
 				+ ", clearBigSqLResultSetMapMs="+clearBigSqLResultSetMapMs
 				+ ", sequnceHandlerType=" + sequnceHandlerType
-				+ ", sqlInterceptor=" + sqlInterceptor
-				+ ", sqlInterceptorType=" + sqlInterceptorType
-				+ ", sqlInterceptorFile=" + sqlInterceptorFile
 				+ ", defaultSqlParser=" + defaultSqlParser
 				+ ", usingAIO=" + usingAIO 
 				+ ", packetHeaderSize=" + packetHeaderSize 

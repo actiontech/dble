@@ -92,8 +92,7 @@ import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
 import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
 import io.mycat.route.sequence.handler.SequenceHandler;
 import io.mycat.server.ServerConnectionFactory;
-import io.mycat.server.interceptor.SQLInterceptor;
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
 import io.mycat.statistic.stat.SqlResultSizeRecorder;
@@ -131,7 +130,6 @@ public class MycatServer {
 	private volatile int channelIndex = 0;
 
 	private final DynaClassLoader catletClassLoader;
-	private final SQLInterceptor sqlInterceptor;
 	private volatile int nextProcessor;
 	
 	// System Buffer Pool Instance
@@ -187,13 +185,6 @@ public class MycatServer {
 		
 		// load datanode active index from properties
 		dnIndexProperties = loadDnIndexProps();
-		try {
-			//SQL解析器
-			sqlInterceptor = (SQLInterceptor) Class.forName(
-					config.getSystem().getSqlInterceptor()).newInstance();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 
 		//catlet加载器
 		catletClassLoader = new DynaClassLoader(SystemConfig.getHomePath()
@@ -227,10 +218,6 @@ public class MycatServer {
 
 	public DynaClassLoader getCatletClassLoader() {
 		return catletClassLoader;
-	}
-
-	public SQLInterceptor getSqlInterceptor() {
-		return sqlInterceptor;
 	}
 
 	public String genXATXID() {

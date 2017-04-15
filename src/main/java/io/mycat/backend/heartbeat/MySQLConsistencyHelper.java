@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.sqlengine.SQLJob;
 import io.mycat.sqlengine.SQLQueryResult;
 import io.mycat.sqlengine.SQLQueryResultListener;

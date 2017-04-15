@@ -33,7 +33,7 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.impl.DefaultDruidParser;
 import io.mycat.route.util.RouterUtil;
-import io.mycat.server.interceptor.impl.GlobalTableUtil;
+import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;

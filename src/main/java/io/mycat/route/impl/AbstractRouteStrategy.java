@@ -6,7 +6,6 @@ import java.sql.SQLSyntaxErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -22,16 +21,8 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	@Override
 	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String origSQL,
 			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLNonTransientException {
-		/**
-		 * SQL 语句拦截
-		 */
-		String stmt = MycatServer.getInstance().getSqlInterceptor().interceptSQL(origSQL, sqlType);
-		if (!origSQL.equals(stmt) && LOGGER.isDebugEnabled()) {
-			LOGGER.debug("sql intercepted to " + stmt + " from " + origSQL);
-		}
 
-
-		RouteResultset rrs = new RouteResultset(stmt, sqlType, sc.getSession2());
+		RouteResultset rrs = new RouteResultset(origSQL, sqlType, sc.getSession2());
 
 		/**
 		 * 优化debug loaddata输出cache的日志会极大降低性能
@@ -49,11 +40,11 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		}
 
 		if (schema == null) {
-			rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, cachePool);
+			rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool);
 		} else {
-			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, rrs);
+			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, origSQL, rrs);
 			if (returnedSet == null) {
-				rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, cachePool);
+				rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool);
 			}
 		}
 

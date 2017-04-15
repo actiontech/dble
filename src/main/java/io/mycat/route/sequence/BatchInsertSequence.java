@@ -25,8 +25,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.route.sequence.handler.DistributedSequenceHandler;
-import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
-import io.mycat.route.sequence.handler.IncrSequencePropHandler;
 import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
 import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
 import io.mycat.route.sequence.handler.SequenceHandler;
@@ -117,12 +115,6 @@ public class BatchInsertSequence implements Catlet {
 				if(sequenceHandler == null){
 					int seqHandlerType = MycatServer.getInstance().getConfig().getSystem().getSequnceHandlerType();
 					switch(seqHandlerType){
-						case SystemConfig.SEQUENCEHANDLER_MYSQLDB:
-							sequenceHandler = IncrSequenceMySQLHandler.getInstance();
-							break;
-						case SystemConfig.SEQUENCEHANDLER_LOCALFILE:
-							sequenceHandler = IncrSequencePropHandler.getInstance();
-							break;
 						case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
 							sequenceHandler = IncrSequenceTimeHandler.getInstance();
 							break;

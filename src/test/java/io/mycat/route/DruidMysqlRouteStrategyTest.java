@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -20,9 +19,6 @@ import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.RouteResultsetNode;
-import io.mycat.route.RouteStrategy;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
@@ -38,8 +34,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         String ruleFile = "/route/rule.xml";
         SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
         schemaMap = schemaLoader.getSchemas();
-        RouteStrategyFactory.init();
-        routeStrategy = RouteStrategyFactory.getRouteStrategy("druidparser");
+        routeStrategy = RouteStrategyFactory.getRouteStrategy();
     }
 
     protected void setUp() throws Exception {

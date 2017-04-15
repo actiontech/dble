@@ -25,8 +25,7 @@ public class DruidMysqlHavingTest
 		String ruleFile = "/route/rule.xml";
 		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
 		schemaMap = schemaLoader.getSchemas();
-		RouteStrategyFactory.init();
-		routeStrategy = RouteStrategyFactory.getRouteStrategy("druidparser");
+		routeStrategy = RouteStrategyFactory.getRouteStrategy();
 	}
 
 	@Test

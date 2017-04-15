@@ -86,7 +86,6 @@ import io.mycat.net.NIOReactorPool;
 import io.mycat.net.SocketAcceptor;
 import io.mycat.net.SocketConnector;
 import io.mycat.route.RouteService;
-import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.route.sequence.handler.DistributedSequenceHandler;
 import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
 import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
@@ -458,8 +457,6 @@ public class MycatServer {
 		//定期清理结果集排行榜，控制拒绝策略
 		scheduler.scheduleWithFixedDelay(resultSetMapClear(),0L,  system.getClearBigSqLResultSetMapMs(),TimeUnit.MILLISECONDS);
 		
-		RouteStrategyFactory.init();
-//        new Thread(tableStructureCheck()).start();
 
 		if(isUseZkSwitch()) {
 			//首次启动如果发现zk上dnindex为空，则将本地初始化上zk

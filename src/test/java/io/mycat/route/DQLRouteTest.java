@@ -30,7 +30,7 @@ public class DQLRouteTest {
 
 	protected Map<String, SchemaConfig> schemaMap;
 	protected LayerCachePool cachePool = new SimpleCachePool();
-	protected RouteStrategy routeStrategy = RouteStrategyFactory.getRouteStrategy("druidparser");
+	protected RouteStrategy routeStrategy = RouteStrategyFactory.getRouteStrategy();
 	private Map<String, String> tableAliasMap = new HashMap<String, String>();
 
 	protected DruidShardingParseInfo ctx;

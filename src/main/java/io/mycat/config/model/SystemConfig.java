@@ -50,7 +50,6 @@ public final class SystemConfig {
 	private static final int DEFAULT_MANAGER_PORT = 9066;
 	private static final int DEFAULT_BACK_LOG_SIZE = 2048;
 	private static final String DEFAULT_CHARSET = "utf8";
-	private static final String DEFAULT_SQL_PARSER = "druidparser";// fdbparser, druidparser
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512*1024*4;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
@@ -124,7 +123,6 @@ public final class SystemConfig {
 	//清理大结果集记录周期
 	private long clearBigSqLResultSetMapMs=10*60*1000;
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCAL_TIME;
-	private String defaultSqlParser = DEFAULT_SQL_PARSER;
 	private int usingAIO = 0;
 	private int packetHeaderSize = 4;
 	private int maxPacketSize = 16 * 1024 * 1024;
@@ -244,14 +242,6 @@ public final class SystemConfig {
 
 	public void setTransactionRatateSize(int transactionRatateSize) {
 		this.transactionRatateSize = transactionRatateSize;
-	}
-
-	public String getDefaultSqlParser() {
-		return defaultSqlParser;
-	}
-
-	public void setDefaultSqlParser(String defaultSqlParser) {
-		this.defaultSqlParser = defaultSqlParser;
 	}
 
 	public String getTransactionLogBaseDir() {
@@ -787,7 +777,6 @@ public final class SystemConfig {
 				+ ", bufferUsagePercent="+bufferUsagePercent
 				+ ", clearBigSqLResultSetMapMs="+clearBigSqLResultSetMapMs
 				+ ", sequnceHandlerType=" + sequnceHandlerType
-				+ ", defaultSqlParser=" + defaultSqlParser
 				+ ", usingAIO=" + usingAIO 
 				+ ", packetHeaderSize=" + packetHeaderSize 
 				+ ", maxPacketSize=" + maxPacketSize

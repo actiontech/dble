@@ -37,8 +37,6 @@ public final class SystemConfig {
 
 	public static final String SYS_HOME = "MYCAT_HOME";
 	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
-	public static final int SEQUENCEHANDLER_LOCALFILE = 0;
-	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
 	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
 	public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
 	public static final int SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT = 4;
@@ -125,7 +123,7 @@ public final class SystemConfig {
 	private int  bufferUsagePercent=80;
 	//清理大结果集记录周期
 	private long clearBigSqLResultSetMapMs=10*60*1000;
-	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
+	private int sequnceHandlerType = SEQUENCEHANDLER_LOCAL_TIME;
 	private String sqlInterceptor = "io.mycat.server.interceptor.impl.DefaultSqlInterceptor";
 	private String sqlInterceptorType = "select";
 	private String sqlInterceptorFile = System.getProperty("user.dir")+"/logs/sql.txt";

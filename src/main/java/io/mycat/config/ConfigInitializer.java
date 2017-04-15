@@ -47,7 +47,6 @@ import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.config.util.ConfigException;
 import io.mycat.route.sequence.handler.DistributedSequenceHandler;
-import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
 import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
 import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
 
@@ -88,10 +87,6 @@ public class ConfigInitializer {
 		this.cluster = initCobarCluster(configLoader);
 		
 		//不同类型的全局序列处理器的配置加载
-		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_MYSQLDB) {
-			IncrSequenceMySQLHandler.getInstance().load();
-		}
-		
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_LOCAL_TIME) {
 			IncrSequenceTimeHandler.getInstance().load();
 		}

@@ -85,9 +85,12 @@ import io.mycat.net.NIOProcessor;
 import io.mycat.net.NIOReactorPool;
 import io.mycat.net.SocketAcceptor;
 import io.mycat.net.SocketConnector;
-import io.mycat.route.MyCATSequnceProcessor;
 import io.mycat.route.RouteService;
 import io.mycat.route.factory.RouteStrategyFactory;
+import io.mycat.route.sequence.handler.DistributedSequenceHandler;
+import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
+import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
+import io.mycat.route.sequence.handler.SequenceHandler;
 import io.mycat.server.ServerConnectionFactory;
 import io.mycat.server.interceptor.SQLInterceptor;
 import io.mycat.server.interceptor.impl.GlobalTableUtil;
@@ -115,6 +118,8 @@ public class MycatServer {
 	private static final MycatServer INSTANCE = new MycatServer();
 	private static final Logger LOGGER = LoggerFactory.getLogger("MycatServer");
 	private static final Repository fileRepository = new FileSystemRepository();
+	//全局序列号
+	private final SequenceHandler sequenceHandler;
 	private final RouteService routerService;
 	private final CacheService cacheService;
 	private Properties dnIndexProperties;
@@ -125,8 +130,6 @@ public class MycatServer {
 	private AsynchronousChannelGroup[] asyncChannelGroups;
 	private volatile int channelIndex = 0;
 
-	//全局序列号
-	private final MyCATSequnceProcessor sequnceProcessor = new MyCATSequnceProcessor();
 	private final DynaClassLoader catletClassLoader;
 	private final SQLInterceptor sqlInterceptor;
 	private volatile int nextProcessor;
@@ -203,6 +206,11 @@ public class MycatServer {
 			dnindexLock = new InterProcessMutex(ZKUtils.getConnection(), path);
 		}
 		xaSessionCheck = new XASessionCheck();
+		sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
+	}
+
+	public SequenceHandler getSequenceHandler() {
+		return sequenceHandler;
 	}
 
 	public long getTotalNetWorkBufferSize() {
@@ -219,10 +227,6 @@ public class MycatServer {
 
 	public DynaClassLoader getCatletClassLoader() {
 		return catletClassLoader;
-	}
-
-	public MyCATSequnceProcessor getSequnceProcessor() {
-		return sequnceProcessor;
 	}
 
 	public SQLInterceptor getSqlInterceptor() {
@@ -250,6 +254,18 @@ public class MycatServer {
 		}
 	}
 
+	private SequenceHandler initSequenceHandler(int seqHandlerType) {
+		switch (seqHandlerType) {
+		case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
+			return IncrSequenceTimeHandler.getInstance();
+		case SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED:
+			return DistributedSequenceHandler.getInstance(MycatServer.getInstance().getConfig().getSystem());
+		case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
+			return IncrSequenceZKHandler.getInstance();
+		default:
+			throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
+		}
+	}
 	public MyCatMemory getMyCatMemory() {
 		return myCatMemory;
 	}

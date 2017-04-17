@@ -163,10 +163,12 @@ public final class ServerParseShow {
 		return OTHER;
 	}
 
-    private  static     Pattern fullpattern = Pattern.compile("^\\s*(SHOW)\\s+(FULL)+\\s+(TABLES)\\s+\\s*([\\!\\'\\=a-zA-Z_0-9\\s]*)", Pattern.CASE_INSENSITIVE);
-    public static int fullTableCheck(String  stmt,int offset )
+
+	public static int fullTableCheck(String  stmt,int offset )
     {
-        if(fullpattern.matcher(stmt).matches())
+		String pat = "^\\s*(show){1}\\s*(full){1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
+
+		if(isShowTableMatched(stmt,pat))
         {
          return FULLTABLES;
         }

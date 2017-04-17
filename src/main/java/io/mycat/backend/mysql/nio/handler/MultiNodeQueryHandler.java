@@ -70,6 +70,9 @@ import io.mycat.statistic.stat.QueryResult;
 import io.mycat.statistic.stat.QueryResultDispatcher;
 import io.mycat.util.StringUtil;
 
+import io.mycat.server.parser.ServerParse;
+import io.mycat.util.FormatUtil;
+
 /**
  * @author mycat
  */
@@ -209,6 +212,28 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		conn.setResponseHandler(this);
 		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
 	}
+
+    	private void handleDdl() {
+	    	if(rrs.getSqlType() != ServerParse.DDL) {
+		    	return;
+		}
+		
+		StringBuilder s = new StringBuilder();
+		s.append(rrs.toString());
+		
+		s.append(", failed={");
+		for (int i=0; i < errConnection.size(); i++) {
+		    BackendConnection conn = errConnection.get(i);
+		    s.append("\n ").append(FormatUtil.format(i + 1, 3));
+		    s.append(" -> ").append(conn.compactInfo());
+		}
+		s.append("\n}");
+		
+		LOGGER.warn(s.toString());
+		
+		return;
+	}
+    
 	@Override
 	public void connectionClose(BackendConnection conn, String reason) {
 		LOGGER.warn("backend connect"+reason);
@@ -227,6 +252,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			errConnection.add(conn);
 			if (--nodeCount <= 0) {
+			    	handleDdl();
 				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -252,6 +278,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			errConnection.add(conn);
 			if (--nodeCount <= 0) {
+			    	handleDdl();
 				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -281,6 +308,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 				setFail(err.toString());
 			if (--nodeCount > 0)
 				return;
+			handleDdl();
 			session.handleSpecial(rrs, session.getSource().getSchema(), false);
 			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 		} finally {

@@ -75,4 +75,8 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 		return "BackendConnection [id=" + id + ", host=" + host + ", port="
 				+ port + ", localPort=" + localPort + "]";
 	}
+
+    public String compactInfo() {
+		return "BackendConnection host=" + host + ", port=" + port;
+    }
 }

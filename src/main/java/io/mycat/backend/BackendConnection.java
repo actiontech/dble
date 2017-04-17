@@ -63,4 +63,5 @@ public interface BackendConnection extends ClosableConnection {
 
 	public void terminate(String reason);
 
+    	public String compactInfo();
 }

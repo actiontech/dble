@@ -99,7 +99,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		String schema = source.getSchema();
 		if (schema != null && ServerParse.SHOW == rrs.getSqlType()) {
 			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schema);
-			int type = ServerParseShow.tableCheck(rrs.getStatement(), 0);
+			int type = ServerParseShow.showTableType(rrs.getStatement());
 			isDefaultNodeShowTable = (ServerParseShow.TABLES == type && !Strings.isNullOrEmpty(schemaConfig.getDataNode()));
 			isDefaultNodeShowFullTable = (ServerParseShow.FULLTABLES == type && !Strings.isNullOrEmpty(schemaConfig.getDataNode()));
 			if (isDefaultNodeShowTable) {
@@ -348,7 +348,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			
 		} else if (isDefaultNodeShowFullTable) {
 			for (String name : shardingTablesSet) {
-				RowDataPacket row = new RowDataPacket(1);
+				RowDataPacket row = new RowDataPacket(2);
 				row.add(StringUtil.encode(name, source.getCharset()));
 				row.add(StringUtil.encode("SHARDING TABLE", source.getCharset()));
 				row.packetId = ++packetId;

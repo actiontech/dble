@@ -23,10 +23,10 @@
  */
 package io.mycat.server.parser;
 
+import io.mycat.route.parser.util.ParseUtil;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.mycat.route.parser.util.ParseUtil;
 
 /**
  * @author mycat
@@ -256,5 +256,25 @@ public 	static int tableCheck(String stmt, int offset) {
 		}
 		return OTHER;
 	}
+
+	public static int showTableType(String sql){
+
+		String pat = "^\\s*(show){1}\\s*(full){0,1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*"
+				+"(. *)'\\s*){0,1}\\s*";
+		Pattern pattern = Pattern.compile(pat, Pattern.CASE_INSENSITIVE);
+		Matcher ma = pattern.matcher(sql);
+
+		if(ma.matches()){
+			if("full".equalsIgnoreCase(ma.group(2))){
+				return FULLTABLES;
+			}else{
+				return TABLES;
+			}
+		}else{
+			return OTHER;
+		}
+	}
+
+
 
 }

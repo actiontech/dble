@@ -259,8 +259,7 @@ public 	static int tableCheck(String stmt, int offset) {
 
 	public static int showTableType(String sql){
 
-		String pat = "^\\s*(show){1}\\s*(full){0,1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*"
-				+"(. *)'\\s*){0,1}\\s*";
+		String pat = "^\\s*(show){1}\\s*(full){0,1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
 		Pattern pattern = Pattern.compile(pat, Pattern.CASE_INSENSITIVE);
 		Matcher ma = pattern.matcher(sql);
 

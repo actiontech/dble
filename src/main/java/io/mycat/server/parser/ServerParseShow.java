@@ -178,27 +178,9 @@ public final class ServerParseShow {
 public 	static int tableCheck(String stmt, int offset) {
 
 		// strict match
-		String pat1 = "^\\s*(SHOW)\\s+(TABLES)\\s*";
-		String pat2 = "^\\s*(SHOW)\\s+(TABLES)\\s+(LIKE\\s+'(.*)')\\s*";
-		String pat3 = "^\\s*(SHOW)\\s+(TABLES)\\s+(FROM)\\s+([a-zA-Z_0-9]+)\\s*";
-		String pat4 = "^\\s*(SHOW)\\s+(TABLES)\\s+(FROM)\\s+([a-zA-Z_0-9]+)\\s+(LIKE\\s+'(.*)')\\s*";
+		String pat = "^\\s*(show){1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
 
-		boolean flag = isShowTableMatched(stmt, pat1);
-		if (flag) {
-			return TABLES;
-		}
-
-		flag = isShowTableMatched(stmt, pat2);
-		if (flag) {
-			return TABLES;
-		}
-
-		flag = isShowTableMatched(stmt, pat3);
-		if (flag) {
-			return TABLES;
-		}
-
-		flag = isShowTableMatched(stmt, pat4);
+		boolean flag = isShowTableMatched(stmt, pat);
 		if (flag) {
 			return TABLES;
 		}

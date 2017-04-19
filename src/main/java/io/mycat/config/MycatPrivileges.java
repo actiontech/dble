@@ -30,8 +30,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 
@@ -190,19 +188,11 @@ public class MycatPrivileges implements FrontendPrivileges {
 		
 		if( check ){
 			WallCheckResult result = contextLocal.get().check(sql);
-			
-			// 修复 druid 防火墙在处理SHOW FULL TABLES WHERE Table_type != 'VIEW' 的时候存在的 BUG
-			List<SQLStatement> stmts =  result.getStatementList();
-			if ( !stmts.isEmpty() &&  !( stmts.get(0) instanceof SQLShowTablesStatement) ) {			
-				if ( !result.getViolations().isEmpty()) {				
-					isPassed = false;
-					ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:"
-							+ result.getViolations().get(0).getMessage() +
-							" \r\n " + sql);
-		        }				
+			if (!result.getViolations().isEmpty()) {
+				isPassed = false;
+				ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:"
+						+ result.getViolations().get(0).getMessage() + " \r\n " + sql);
 			}
-			
-			
 		}
 		return isPassed;
 	}

@@ -1,3 +1,21 @@
+DATE:2017/04/20  
+VERSION 2.17.04.0  
+CONTENT:  
+### 1.fix bug  
+#### 1.1 #42,#51  
+有关排序的，使用ares移植代码逻辑  
+#### 1.2 #84  
+目前仅仅记录了log  
+#### 1.3 #92  
+防火墙失效问题   
+
+### 2.feature  
+#### 2.1 全局序列  
+移除本地配置和数据库方式配置，默认单机部署采用时间戳方式  
+#### 2.2 移除sqlInterceptor 和defaultSqlParser 配置   
+
+------
+
 DATE:2017/04/13  
 VERSION 0.3.5  
 CONTENT:  

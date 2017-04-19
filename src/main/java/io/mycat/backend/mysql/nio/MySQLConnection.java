@@ -664,6 +664,10 @@ public class MySQLConnection extends BackendAIOConnection {
 				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}
 
+    	public String compactInfo() {
+		return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
+	}
+
 	@Override
 	public boolean isModifiedSQLExecuted() {
 		return modifiedSQLExecuted;

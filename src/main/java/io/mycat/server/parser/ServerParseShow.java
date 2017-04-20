@@ -166,8 +166,12 @@ public final class ServerParseShow {
 
 	public static int fullTableCheck(String  stmt,int offset )
     {
-		String pat = "^\\s*(show){1}\\s*(full){1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
-
+        String pat = "^\\s*(show){1}" +
+                "(\\s+full){1}" +
+                "(\\s+tables){1}" +
+                "(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+                "(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+                "\\s*$";
 		if(isShowTableMatched(stmt,pat))
         {
          return FULLTABLES;
@@ -179,17 +183,20 @@ public final class ServerParseShow {
 
 public 	static int tableCheck(String stmt, int offset) {
 
-		// strict match
-		String pat = "^\\s*(show){1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
+    String pat = "^\\s*(show){1}" +
+            "(\\s+tables){1}" +
+            "(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+            "(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+            "\\s*$";
+    boolean flag = isShowTableMatched(stmt, pat);
 
-		boolean flag = isShowTableMatched(stmt, pat);
-		if (flag) {
-			return TABLES;
-		}
+    if (flag) {
+        return TABLES;
+    }
 
-		return OTHER;
+    return OTHER;
 
-	}
+}
 
 	private static boolean isShowTableMatched(String stmt, String pat1) {
 		Pattern pattern = Pattern.compile(pat1, Pattern.CASE_INSENSITIVE);
@@ -243,16 +250,21 @@ public 	static int tableCheck(String stmt, int offset) {
 
 	public static int showTableType(String sql){
 
-		String pat = "^\\s*(show){1}\\s*(full){0,1}\\s*(tables){1}\\s*(from){0,1}\\s*([a-zA-Z_0-9]{0,})\\s*((LIKE){0,1}\\s*\\'(. *){0,}\\'\\s*){0,1}\\s*";
+		String pat = "^\\s*(show){1}" +
+					"(\\s+full){0,1}" +
+					"(\\s+tables){1}" +
+					"(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+					"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+					"\\s*$";
 		Pattern pattern = Pattern.compile(pat, Pattern.CASE_INSENSITIVE);
 		Matcher ma = pattern.matcher(sql);
 
 		if(ma.matches()){
-			if("full".equalsIgnoreCase(ma.group(2))){
-				return FULLTABLES;
-			}else{
-				return TABLES;
-			}
+				if (ma.group(2) != null) {
+					return FULLTABLES;
+				} else {
+					return TABLES;
+				}
 		}else{
 			return OTHER;
 		}

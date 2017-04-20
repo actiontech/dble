@@ -282,13 +282,13 @@ public abstract class PhysicalDatasource {
 	private void createByIdleLitte(int idleCons, int createCount) {
 		LOGGER.info("create connections ,because idle connection not enough ,cur is "
 			    + idleCons + ", minCon is " + hostConfig.getMinCon() + " for " + name);
-		NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
 
 		final String[] schemas = dbPool.getSchemas();
 		for (int i = 0; i < createCount; i++) {
 			if (this.getActiveCount() + this.getIdleCount() >= size) {
 				break;
 			}
+			NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
 			try {
 				// creat new connection
 				this.createNewConnection(simpleHandler, null, schemas[i	% schemas.length]);

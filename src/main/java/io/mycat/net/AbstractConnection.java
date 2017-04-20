@@ -593,6 +593,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 	public void onConnectfinish() {
-		LOGGER.debug("连接后台真正完成");
+		LOGGER.debug("The backend conntinon has finished connecting");
 	}	
 }

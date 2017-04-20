@@ -4,6 +4,7 @@ import java.sql.SQLNonTransientException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -27,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
@@ -310,20 +312,18 @@ public class DruidUpdateParser extends DefaultDruidParser {
 
     /**
      * 判断字段是不是在作为某些表格的父表连接字段使用
+     * 直接通过在schema配置加载的时候创建的父子关系进行判断
+     * 如果存在的只有两种情况，一种作为子表字段，一种作为父表字段
+     * confirmShardColumnNotUpdated方法已经检测了第一种情况
      * @param schema
      * @param tableName
      * @return
      */
     private boolean isJoinColumn(String column,SchemaConfig schema,String tableName){
-        Map<String, TableConfig> tableConfig = schema.getTables();
-        // Traversal all the table node to find if some table is the child table of the changedTale
-        for (Map.Entry<String, TableConfig> entry : tableConfig.entrySet()) {
-            TableConfig tb  = entry.getValue();
-            if(tb.getParentTC() != null
-                    && tableName.equalsIgnoreCase(tb.getParentTC().getName())
-                    && column.equalsIgnoreCase(tb.getParentKey())){
-                return true;
-            }
+        Map<ERTable, Set<ERTable>> map =  schema.getFkErRelations();
+        ERTable key = new ERTable(schema.getName(),tableName,column);
+        if(map.containsKey(key)){
+            return true;
         }
         return false;
     }

@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.log4j.Logger;
 
@@ -62,7 +63,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
 	private RowDataPacketGrouper grouper;
 	private Map<String, LinkedList<RowDataPacket>> result = new HashMap<String, LinkedList<RowDataPacket>>();
 	private static Logger LOGGER = Logger.getLogger(DataMergeService.class);
-	private ConcurrentHashMap<String, Boolean> canDiscard = new ConcurrentHashMap<String, Boolean>();
+	private ConcurrentMap<String, Boolean> canDiscard = new ConcurrentHashMap<String, Boolean>();
 	public DataMergeService(MultiNodeQueryHandler handler, RouteResultset rrs) {
 		super(handler,rrs);
 

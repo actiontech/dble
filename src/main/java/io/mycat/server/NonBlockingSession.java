@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class NonBlockingSession implements Session {
 
 
     private final ServerConnection source;
-    private final ConcurrentHashMap<RouteResultsetNode, BackendConnection> target;
+    private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     // life-cycle: each sql execution
     private volatile SingleNodeHandler singleNodeHandler;
     private volatile MultiNodeQueryHandler multiNodeHandler;

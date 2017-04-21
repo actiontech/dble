@@ -12,9 +12,8 @@ import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.net.NIOProcessor;
 
 public class ConMap {
-	
 	// key--schema
-	private final ConcurrentHashMap<String, ConQueue> items = new ConcurrentHashMap<String, ConQueue>();
+	private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<String, ConQueue>();
 
 	public ConQueue getSchemaConQueue(String schema) {
 		ConQueue queue = items.get(schema);

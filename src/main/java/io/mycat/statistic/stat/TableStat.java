@@ -3,6 +3,7 @@ package io.mycat.statistic.stat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.mycat.server.parser.ServerParse;
@@ -29,7 +30,7 @@ public class TableStat implements Comparable<TableStat> {
     private final AtomicLong wCount = new AtomicLong(0);
     
     // 关联表
-    private final ConcurrentHashMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<String, RelaTable>();    
+    private final ConcurrentMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<String, RelaTable>();    
     
     /**
      * 最后执行时间

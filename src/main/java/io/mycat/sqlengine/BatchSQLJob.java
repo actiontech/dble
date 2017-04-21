@@ -2,12 +2,13 @@ package io.mycat.sqlengine;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 import io.mycat.MycatServer;
 
 public class BatchSQLJob {
 
-	private ConcurrentHashMap<Integer, SQLJob> runningJobs = new ConcurrentHashMap<Integer, SQLJob>();
+	private ConcurrentMap<Integer, SQLJob> runningJobs = new ConcurrentHashMap<Integer, SQLJob>();
 	private ConcurrentLinkedQueue<SQLJob> waitingJobs = new ConcurrentLinkedQueue<SQLJob>();
 	private volatile boolean noMoreJobInput = false;
 

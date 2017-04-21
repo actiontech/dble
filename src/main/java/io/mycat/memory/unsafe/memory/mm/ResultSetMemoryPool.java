@@ -1,13 +1,11 @@
 package io.mycat.memory.unsafe.memory.mm;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.concurrent.GuardedBy;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by zagnix on 2016/6/6.
@@ -39,13 +37,13 @@ public class ResultSetMemoryPool extends MemoryPool {
         return "off-heap memory";
     }
 
-    public ConcurrentHashMap<Long, Long> getMemoryForConnection() {
+    public ConcurrentMap<Long, Long> getMemoryForConnection() {
         return memoryForConnection;
     }
     /**
      * Map from taskAttemptId -> memory consumption in bytes
      */
-    private ConcurrentHashMap<Long,Long> memoryForConnection = new ConcurrentHashMap<Long,Long>();
+    private ConcurrentMap<Long,Long> memoryForConnection = new ConcurrentHashMap<Long,Long>();
 
     @Override
     protected long memoryUsed() {

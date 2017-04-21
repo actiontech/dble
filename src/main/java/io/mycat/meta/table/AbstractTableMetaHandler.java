@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public abstract class AbstractTableMetaHandler {
 		for (String dataNode : tbConfig.getDataNodes()) {
 			try {
 				tbConfig.getReentrantReadWriteLock().writeLock().lock();
-				ConcurrentHashMap<String, List<String>> map = new ConcurrentHashMap<>();
+				ConcurrentMap<String, List<String>> map = new ConcurrentHashMap<>();
 				tbConfig.setDataNodeTableStructureSQLMap(map);
 			} finally {
 				tbConfig.getReentrantReadWriteLock().writeLock().unlock();

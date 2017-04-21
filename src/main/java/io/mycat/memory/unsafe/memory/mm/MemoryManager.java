@@ -1,7 +1,7 @@
 package io.mycat.memory.unsafe.memory.mm;
 
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -160,7 +160,7 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
     /**
      * Get Direct Memory Usage.
      */
-    public final ConcurrentHashMap<Long, Long> getDirectMemorUsage() {
+    public final ConcurrentMap<Long, Long> getDirectMemorUsage() {
 		synchronized (this) {
 			return offHeapExecutionMemoryPool.getMemoryForConnection();
 		}

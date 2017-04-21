@@ -1,5 +1,10 @@
 package io.mycat.manager.response;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -11,13 +16,6 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
-import sun.rmi.runtime.Log;
-
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 实现show@@directmemory功能
@@ -110,13 +108,13 @@ public class ShowDirectMemory {
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
 
-        ConcurrentHashMap<Long,Long> networkbufferpool = MycatServer.getInstance().
+        ConcurrentMap<Long,Long> networkbufferpool = MycatServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         try {
 
             if(useOffHeapForMerge == 1) {
-                ConcurrentHashMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
+                ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
                         getMyCatMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
                 for (Long key : concurrentHashMap.keySet()) {
@@ -185,7 +183,7 @@ public class ShowDirectMemory {
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();
 
-        ConcurrentHashMap<Long,Long> networkbufferpool = MycatServer.getInstance().
+        ConcurrentMap<Long,Long> networkbufferpool = MycatServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         RowDataPacket row = new RowDataPacket(TOTAL_FIELD_COUNT);
@@ -204,7 +202,7 @@ public class ShowDirectMemory {
                 /**
                  * 结果集合并时，总共消耗的DirectMemory内存
                  */
-                ConcurrentHashMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
+                ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
                         getMyCatMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
                 for (Map.Entry<Long, Long> entry : concurrentHashMap.entrySet()) {

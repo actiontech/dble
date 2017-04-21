@@ -18,17 +18,19 @@
 package io.mycat.memory.unsafe.storage;
 
 
-import io.mycat.memory.unsafe.utils.JavaUtils;
-import io.mycat.memory.unsafe.utils.MycatPropertyConf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.memory.unsafe.utils.JavaUtils;
+import io.mycat.memory.unsafe.utils.MycatPropertyConf;
 
 
 /**
@@ -54,7 +56,7 @@ public class DataNodeFileManager {
   private List<File> localDirs ;
   private int subDirsPerLocalDir;
 
-  private ConcurrentHashMap<Integer,ArrayList<File>> subDirs;
+  private ConcurrentMap<Integer,ArrayList<File>> subDirs;
 
 
   public DataNodeFileManager(MycatPropertyConf conf , boolean deleteFilesOnStop) throws IOException {

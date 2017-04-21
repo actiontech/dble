@@ -27,12 +27,13 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class MysqlDataSetService {
 	private volatile boolean enabled = false;
 	// max expire time is 300 seconds
 	private int maxExpire = 300;
-	private final ConcurrentHashMap<String, MysqlDataSetCache> cachedMap = new ConcurrentHashMap<String, MysqlDataSetCache>();
+	private final ConcurrentMap<String, MysqlDataSetCache> cachedMap = new ConcurrentHashMap<String, MysqlDataSetCache>();
 	private volatile Set<String> needCachedSQL = new HashSet<String>();
 
 	public boolean isEnabled() {

@@ -2,6 +2,7 @@ package io.mycat.buffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class DirectByteBufferPool implements BufferPool{
     /**
      * 记录对线程ID->该线程的所使用Direct Buffer的size
      */
-    private final ConcurrentHashMap<Long,Long> memoryUsage;
+    private final ConcurrentMap<Long,Long> memoryUsage;
 
     public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount,int conReadBuferChunk) {
         allPages = new ByteBufferPage[pageCount];
@@ -135,7 +136,7 @@ public class DirectByteBufferPool implements BufferPool{
     }
 	
 	 @Override
-    public ConcurrentHashMap<Long,Long> getNetDirectMemoryUsage() {
+    public ConcurrentMap<Long,Long> getNetDirectMemoryUsage() {
         return memoryUsage;
     }
 

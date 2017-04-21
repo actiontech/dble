@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 
 public class SchemaMeta {
 
 	/** <table,tableMeta> */
-	private final ConcurrentHashMap<String, TableMeta> tableMetas;
+	private final ConcurrentMap<String, TableMeta> tableMetas;
 //	private final Map<String, ViewMeta> viewMetas;
 	/** <table+'.'+indexName,IndexMeta> */
 //	private final Map<String, IndexMeta> indexMetas;

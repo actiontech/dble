@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.log4j.Logger;
 
@@ -46,7 +47,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
      * value为对应的排序器
      * 目前，没有使用！
      */
-    private ConcurrentHashMap<String, UnsafeExternalRowSorter> unsafeRows =
+    private ConcurrentMap<String, UnsafeExternalRowSorter> unsafeRows =
             new ConcurrentHashMap<String,UnsafeExternalRowSorter>();
     /**
      * 全局sorter，排序器

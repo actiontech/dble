@@ -1,5 +1,9 @@
 package io.mycat.manager.response;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
@@ -13,10 +17,6 @@ import io.mycat.statistic.stat.UserStatAnalyzer;
 import io.mycat.util.IntegerUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
-
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * show 大结果集 SQL
@@ -74,7 +74,7 @@ public final class ShowSqlResultSet {
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
     	for (UserStat userStat : statMap.values()) {
         	String user = userStat.getUser();        
-        	ConcurrentHashMap<String, SqlResultSet> map=userStat.getSqlResultSizeRecorder().getSqlResultSet();
+        	ConcurrentMap<String, SqlResultSet> map=userStat.getSqlResultSizeRecorder().getSqlResultSet();
              if ( map != null ) { 
      	        for (SqlResultSet sqlResultSet:map.values()) {
      	        	RowDataPacket row = getRow(++i, user,sqlResultSet.getSql(), sqlResultSet.getCount(), sqlResultSet.getResultSetSize(),c.getCharset());

@@ -1,13 +1,14 @@
 package io.mycat.memory.unsafe.utils;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by zagnix on 2016/6/2.
  */
 public class MycatPropertyConf {
 
-    private ConcurrentHashMap settings = new ConcurrentHashMap<String, String>();
+    private ConcurrentMap settings = new ConcurrentHashMap<String, String>();
 
     public MycatPropertyConf(){
 

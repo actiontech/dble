@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger(ConnectionHeartBeatHandler.class);
 	protected final ReentrantLock lock = new ReentrantLock();
-	private final ConcurrentHashMap<Long, HeartBeatCon> allCons = new ConcurrentHashMap<Long, HeartBeatCon>();
+	private final ConcurrentMap<Long, HeartBeatCon> allCons = new ConcurrentHashMap<Long, HeartBeatCon>();
 
 	public void doHeartBeat(BackendConnection conn, String sql) {
 		if (LOGGER.isDebugEnabled()) {

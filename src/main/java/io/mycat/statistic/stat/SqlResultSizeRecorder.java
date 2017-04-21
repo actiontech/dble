@@ -1,6 +1,7 @@
 package io.mycat.statistic.stat;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
@@ -10,7 +11,7 @@ import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
  */
 public class SqlResultSizeRecorder {
 	
-	private ConcurrentHashMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<String, SqlResultSet>();	
+	private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<String, SqlResultSet>();	
 	
 
 	
@@ -36,7 +37,7 @@ public class SqlResultSizeRecorder {
 	/**
 	 * 获取 SQL 大结果集记录
 	 */
-	public ConcurrentHashMap<String, SqlResultSet>  getSqlResultSet() {
+	public ConcurrentMap<String, SqlResultSet>  getSqlResultSet() {
 		
         return sqlResultSetMap;
 	}	

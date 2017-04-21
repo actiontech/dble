@@ -1,7 +1,7 @@
 package io.mycat.buffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 缓冲池
@@ -19,6 +19,6 @@ public interface BufferPool {
     public int getConReadBuferChunk();
     public  int getSharedOptsCount();
     public int getChunkSize();
-    public ConcurrentHashMap<Long,Long> getNetDirectMemoryUsage();
+    public ConcurrentMap<Long,Long> getNetDirectMemoryUsage();
     public BufferArray allocateArray();
 }

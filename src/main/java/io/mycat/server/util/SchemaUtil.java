@@ -28,6 +28,8 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
 
+import static io.mycat.server.parser.ServerParseShow.FULL_TABLE_CHECK;
+
 /**
  * Created by magicdoom on 2016/1/26.
  */
@@ -50,9 +52,9 @@ public class SchemaUtil
     public static String parseShowTableSchema(String sql)
     {
         Matcher ma = pattern.matcher(sql);
-        if(ma.matches()&&ma.groupCount()>=5)
+        if(ma.matches()&&ma.groupCount()>=6)
         {
-          return  ma.group(5);
+          return  ma.group(6);
         }
         return null;
     }
@@ -181,26 +183,6 @@ public class SchemaUtil
         }
     }
 
-private  static     Pattern pattern = Pattern.compile("^\\s*(SHOW)\\s+(FULL)*\\s*(TABLES)\\s+(FROM)\\s+([a-zA-Z_0-9]+)\\s*([a-zA-Z_0-9\\s]*)", Pattern.CASE_INSENSITIVE);
+private  static     Pattern pattern = Pattern.compile(FULL_TABLE_CHECK, Pattern.CASE_INSENSITIVE);
 
-    public static void main(String[] args)
-    {
-        String sql = "SELECT name, type FROM `mysql`.`proc` as xxxx WHERE Db='base'";
-     //   System.out.println(parseSchema(sql));
-        sql="insert into aaa.test(id) values(1)" ;
-       // System.out.println(parseSchema(sql));
-        sql="update updatebase.test set xx=1 " ;
-        //System.out.println(parseSchema(sql));
-
-        String pat3 = "show  full  tables from  base like ";
-        Matcher ma = pattern.matcher(pat3);
-        if(ma.matches())
-        {
-            System.out.println(ma.groupCount());
-            System.out.println(ma.group(5));
-        }
-
-
-
-    }
 }

@@ -163,16 +163,17 @@ public final class ServerParseShow {
 		return OTHER;
 	}
 
+	public static String FULL_TABLE_CHECK = "^\\s*(show){1}" +
+			"(\\s+full){1}" +
+			"(\\s+tables){1}" +
+			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+			"(\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*){0,1}" +
+			"\\s*$";
 
 	public static int fullTableCheck(String  stmt,int offset )
     {
-        String pat = "^\\s*(show){1}" +
-                "(\\s+full){1}" +
-                "(\\s+tables){1}" +
-                "(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
-                "(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
-                "\\s*$";
-		if(isShowTableMatched(stmt,pat))
+
+		if(isShowTableMatched(stmt,FULL_TABLE_CHECK))
         {
          return FULLTABLES;
         }
@@ -181,14 +182,15 @@ public final class ServerParseShow {
 
 	// SHOW TABLE
 
+	public static String TABLE_CHECK = "^\\s*(show){1}" +
+							"(\\s+tables){1}" +
+							"(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+							"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+							"\\s*$";
+
 public 	static int tableCheck(String stmt, int offset) {
 
-    String pat = "^\\s*(show){1}" +
-            "(\\s+tables){1}" +
-            "(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
-            "(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
-            "\\s*$";
-    boolean flag = isShowTableMatched(stmt, pat);
+    boolean flag = isShowTableMatched(stmt, TABLE_CHECK);
 
     if (flag) {
         return TABLES;
@@ -248,15 +250,17 @@ public 	static int tableCheck(String stmt, int offset) {
 		return OTHER;
 	}
 
+	public static String TABLE_PAT = "^\\s*(show){1}" +
+										"(\\s+full){0,1}" +
+										"(\\s+tables){1}" +
+										"(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+										"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+			                            "\\s*$";
+
+
 	public static int showTableType(String sql){
 
-		String pat = "^\\s*(show){1}" +
-					"(\\s+full){0,1}" +
-					"(\\s+tables){1}" +
-					"(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
-					"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
-					"\\s*$";
-		Pattern pattern = Pattern.compile(pat, Pattern.CASE_INSENSITIVE);
+		Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 		Matcher ma = pattern.matcher(sql);
 
 		if(ma.matches()){

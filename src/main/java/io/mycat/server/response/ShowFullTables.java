@@ -26,6 +26,8 @@ import io.mycat.server.parser.ServerParse;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.StringUtil;
 
+import static io.mycat.server.parser.ServerParseShow.FULL_TABLE_CHECK;
+
 /**
  * show tables impl
  * @author yanglixue
@@ -41,7 +43,7 @@ public class ShowFullTables
 
     private static final String SCHEMA_KEY = "schemaName";
     private static final String LIKE_KEY = "like";
-    private static final   Pattern pattern = Pattern.compile("^\\s*(SHOW)\\s++(FULL)*\\s*(TABLES)(\\s+(FROM)\\s+([a-zA-Z_0-9]+))?(\\s+(LIKE\\s+'(.*)'))?\\s*",Pattern.CASE_INSENSITIVE);
+    private static final   Pattern pattern = Pattern.compile(FULL_TABLE_CHECK,Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * response method.

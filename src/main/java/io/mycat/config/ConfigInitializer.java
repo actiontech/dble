@@ -110,9 +110,7 @@ public class ConfigInitializer {
 		// 检查user与schema配置对应以及schema配置不为空
 		if (users == null || users.isEmpty()) {
 			throw new ConfigException("SelfCheck### user all node is empty!");
-			
 		} else {
-			
 			for (UserConfig uc : users.values()) {
 				if (uc == null) {
 					throw new ConfigException("SelfCheck### users node within the item is empty!");
@@ -132,44 +130,38 @@ public class ConfigInitializer {
 			}
 		}	
 		
-		
 		// schema 配置检测		
 		for (SchemaConfig sc : schemas.values()) {
 			if (null == sc) {
 				throw new ConfigException("SelfCheck### schema all node is empty!");
-				
 			} else {				
 				// check dataNode / dataHost 节点
-				if ( this.dataNodes != null &&  this.dataHosts != null  ) {					
-					Set<String> dataNodeNames = sc.getAllDataNodes();
+				if ( this.dataNodes != null &&  this.dataHosts != null  ) {
+				    	Set<String> dataNodeNames = sc.getAllDataNodes();
 					for(String dataNodeName: dataNodeNames) {
-						
 						PhysicalDBNode node = this.dataNodes.get(dataNodeName);
 						if ( node == null ) {
-							throw new ConfigException("SelfCheck### schema dbnode is empty!");
+						       throw new ConfigException("SelfCheck### schema dbnode is empty!");
 						}
 					}
 				}
 			}
 		}	
-		
 	}
 	
 	public void testConnection() {
 		
 		// 实际链路的连接测试		
-		if ( this.dataNodes != null &&  this.dataHosts != null  ) {
-			
+		if ( this.dataNodes != null &&  this.dataHosts != null  ) {			
 			Map<String, Boolean> map = new HashMap<String, Boolean>();
 			
-			for(PhysicalDBNode dataNode: dataNodes.values() ) {
-				
+			for(PhysicalDBNode dataNode: dataNodes.values() ) {				
 				String database = dataNode.getDatabase();		
 				PhysicalDBPool pool = dataNode.getDbPool();
 				
-				for (PhysicalDatasource ds : pool.getAllDataSources()) {							
+				for (PhysicalDatasource ds : pool.getAllDataSources()) {				
 					String key = ds.getName() + "_" + database;
-					if ( map.get( key ) == null ) {										
+					if ( map.get( key ) == null ) {							
 						map.put( key, false );
 						
 						boolean isConnected = false;
@@ -178,7 +170,7 @@ public class ConfigInitializer {
 							map.put( key, isConnected );
 						} catch (IOException e) {
 							LOGGER.warn("test conn error:", e);
-						}										
+						}
 					}								
 				}
 			}
@@ -189,7 +181,7 @@ public class ConfigInitializer {
 				String key = entry.getKey();
 				Boolean value = entry.getValue();
 				if ( !value && isConnectivity ) {
-					LOGGER.warn("SelfCheck### test " + key + " database connection failed ");							
+					LOGGER.warn("SelfCheck### test " + key + " database connection failed ");	
 					isConnectivity = false;
 					
 				} else {
@@ -198,7 +190,8 @@ public class ConfigInitializer {
 			}
 			
 			if ( !isConnectivity ) {
-				throw new ConfigException("SelfCheck### there are some datasource connection failed, pls check!");
+				throw new ConfigException("SelfCheck### there are some datasource connection failed,"
+							  + " pls check!");
 			}
 				
 		}
@@ -243,8 +236,8 @@ public class ConfigInitializer {
 	private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
 		Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
 		//根据DataHost建立PhysicalDBPool，其实就是实际数据库连接池，每个DataHost对应一个PhysicalDBPool
-		Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(
-				nodeConfs.size());
+		Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(nodeConfs.size());
+		
 		for (DataHostConfig conf : nodeConfs.values()) {
 			//建立PhysicalDBPool
 			PhysicalDBPool pool = getPhysicalDBPool(conf);
@@ -253,8 +246,9 @@ public class ConfigInitializer {
 		return nodes;
 	}
 
-	private PhysicalDatasource[] createDataSource(DataHostConfig conf,
-			String hostName, DBHostConfig[] nodes, boolean isRead) {
+	private PhysicalDatasource[] createDataSource(DataHostConfig conf, String hostName, DBHostConfig[] nodes,
+						      boolean isRead) {
+	    
 		PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
 		for (int i = 0; i < nodes.length; i++) {
 			//设置最大idle时间，默认为30分钟
@@ -264,37 +258,37 @@ public class ConfigInitializer {
 		}
 		return dataSources;
 	}
-
 	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
 		String name = conf.getName();
+		
 		//针对所有写节点创建PhysicalDatasource
 		PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
+		
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
-		Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(
-				readHostsMap.size());
-		//对于每个读节点建立key为writeHost下标value为readHost的PhysicalDatasource[]的哈希表
+		Map<Integer, PhysicalDatasource[]> readSourcesMap =
+		    					new HashMap<Integer, PhysicalDatasource[]>(readHostsMap.size());
+		//对于每个读节点建立key为writeHost下标, value为readHost的PhysicalDatasource[]的哈希表
 		for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
 			PhysicalDatasource[] readSources = createDataSource(conf, name, entry.getValue(), true);
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
-		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf,
-				writeSources, readSourcesMap, conf.getBalance(),
-				conf.getWriteType());
+		
+		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap,
+							 conf.getBalance(), conf.getWriteType());
 		pool.setSlaveIDs(conf.getSlaveIDs());
+		
 		return pool;
 	}
 
 	private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {
 		Map<String, DataNodeConfig> nodeConfs = schemaLoader.getDataNodes();
-		Map<String, PhysicalDBNode> nodes = new HashMap<String, PhysicalDBNode>(
-				nodeConfs.size());
+		Map<String, PhysicalDBNode> nodes = new HashMap<String, PhysicalDBNode>(nodeConfs.size());
 		for (DataNodeConfig conf : nodeConfs.values()) {
 			PhysicalDBPool pool = this.dataHosts.get(conf.getDataHost());
 			if (pool == null) {
 				throw new ConfigException("dataHost not exists " + conf.getDataHost());
 			}
-			PhysicalDBNode dataNode = new PhysicalDBNode(conf.getName(),
-					conf.getDatabase() , pool);
+			PhysicalDBNode dataNode = new PhysicalDBNode(conf.getName(), conf.getDatabase(), pool);
 			nodes.put(dataNode.getName(), dataNode);
 		}
 		return nodes;

@@ -68,14 +68,16 @@ public final class ReloadConfig {
 		
 		// reload @@config_all 校验前一次的事务完成情况
 		if ( loadAll && !NIOProcessor.backends_old.isEmpty() ) {
-			c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
+			c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has "
+					  + "an unfinished db transaction, please try again later.");
 			return;
 		}
 		
 		final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();		
 		lock.lock();
 		try {
-			ListenableFuture<Boolean> listenableFuture = MycatServer.getInstance().getListeningExecutorService().submit(
+			ListenableFuture<Boolean> listenableFuture =
+			    MycatServer.getInstance().getListeningExecutorService().submit(
 				new Callable<Boolean>() {
 					@Override
 					public Boolean call() throws Exception {
@@ -83,17 +85,17 @@ public final class ReloadConfig {
 					}
 				}
 			);
-			Futures.addCallback(listenableFuture, new ReloadCallBack(c), MycatServer.getInstance().getListeningExecutorService());
+			Futures.addCallback(listenableFuture, new ReloadCallBack(c),
+					    MycatServer.getInstance().getListeningExecutorService());
 		} finally {
 			lock.unlock();
 		}
 	}
 
 	public static boolean reload_all() {
-		
 		/**
 		 *  1、载入新的配置
-		 *  1.1、ConfigInitializer 初始化，基本自检
+		 *  1.1、ConfigInitializer 初始化l, 基本自检
 		 *  1.2、DataNode/DataHost 实际链路检测
 		 */
 		ConfigInitializer loader = new ConfigInitializer(true);
@@ -105,9 +107,7 @@ public final class ReloadConfig {
 		MycatCluster newCluster = loader.getCluster();
 		FirewallConfig newFirewall = loader.getFirewall();
 		
-		/**
-		 * 1.2、实际链路检测
-		 */
+		/* 1.2、实际链路检测 */
 		loader.testConnection();
 
 		/**
@@ -118,18 +118,12 @@ public final class ReloadConfig {
 		 *  2.4、老的 dataSource 内部的事务执行完毕， 相继关闭
 		 *  2.5、老的 dataSource 超过阀值的，强制关闭
 		 */
-		
 		MycatConfig config = MycatServer.getInstance().getConfig();
 		
-		/**
-		 * 2.1 、老的 dataSource 继续承接新建请求， 此处什么也不需要做
-		 */
-		
+		/* 2.1 、老的 dataSource 继续承接新建请求， 此处什么也不需要做 */
 		boolean isReloadStatusOK = true;
 		
-		/**
-		 * 2.2、新的 dataHosts 初始化
-		 */
+		/* 2.2、新的 dataHosts 初始化 */
 		for (PhysicalDBPool dbPool : newDataHosts.values()) {					
 			String hostName = dbPool.getHostName();
 			
@@ -140,16 +134,17 @@ public final class ReloadConfig {
 					dnSchemas.add(dn.getDatabase());
 				}
 			}
-			dbPool.setSchemas( dnSchemas.toArray(new String[dnSchemas.size()]) );
+			dbPool.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
 			
 			// 获取 data host
 			String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
 			if ( !"0".equals(dnIndex) ) {
-				LOGGER.info("init datahost: " + dbPool.getHostName() + "  to use datasource index:" + dnIndex);
+				LOGGER.info("init datahost: " + dbPool.getHostName()
+					    + "  to use datasource index:" + dnIndex);
 			}			
 			
-			dbPool.init( Integer.valueOf(dnIndex) );			
-			if ( !dbPool.isInitSuccess() ) {
+			dbPool.init(Integer.valueOf(dnIndex));			
+			if (!dbPool.isInitSuccess()) {
 				isReloadStatusOK = false;
 				break;
 			}
@@ -162,15 +157,11 @@ public final class ReloadConfig {
 		 */
 		if ( isReloadStatusOK ) {
 			
-			/**
-			 * 2.3、 在老的配置上，应用新的配置，开始准备承接任务
-			 */
+			/* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
 			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newCluster, newFirewall, true);
 
-			/**
-			 * 2.4、 处理旧的资源
-			 */
-			LOGGER.warn("1、clear old backend connection(size): " + NIOProcessor.backends_old.size());
+			/* 2.4、 处理旧的资源 */
+			LOGGER.warn("1. clear old backend connection(size): " + NIOProcessor.backends_old.size());
 			
 			// 清除前一次 reload 转移出去的 old Cons
 			Iterator<BackendConnection> iter = NIOProcessor.backends_old.iterator();
@@ -185,21 +176,21 @@ public final class ReloadConfig {
 				dbPool.stopHeartbeat();
 				
 				// 提取数据源下的所有连接
-				for (PhysicalDatasource ds : dbPool.getAllDataSources()) {					
-					//
+				for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
 					for (NIOProcessor processor : MycatServer.getInstance().getProcessors()) {
 						for (BackendConnection con : processor.getBackends().values()) {
 							if (con instanceof MySQLConnection) {
 								MySQLConnection mysqlCon = (MySQLConnection) con;
 								if ( mysqlCon.getPool() == ds) {
-									NIOProcessor.backends_old.add( con );									
+									NIOProcessor.backends_old.add(con);
 								}
-			                }
-			            }
+							}
+						}
 					}
 				}				
 			}			
-			LOGGER.warn("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
+			LOGGER.warn("2、to be recycled old backend connection(size): "
+				    + NIOProcessor.backends_old.size());
 
 			//清理缓存
 			MycatServer.getInstance().getCacheService().clearCache();
@@ -218,11 +209,9 @@ public final class ReloadConfig {
 	}
 
     public static boolean reload() {
-    	
-    	/**
-		 *  1、载入新的配置， ConfigInitializer 内部完成自检工作, 由于不更新数据源信息,此处不自检 dataHost  dataNode
-		 */
-        ConfigInitializer loader = new ConfigInitializer(false);
+	/* 1、载入新的配置， ConfigInitializer 内部完成自检工作, 由于不更新数据源信息,此处不自检 dataHost/dataNode */
+        //ConfigInitializer loader = new ConfigInitializer(false);
+	ConfigInitializer loader = new ConfigInitializer(true);
         Map<String, UserConfig> users = loader.getUsers();
         Map<String, SchemaConfig> schemas = loader.getSchemas();
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
@@ -231,24 +220,16 @@ public final class ReloadConfig {
         MycatCluster cluster = loader.getCluster();
         FirewallConfig firewall = loader.getFirewall();
         
-        /**
-         * 2、在老的配置上，应用新的配置
-         */
+		/* 2、在老的配置上， 应用新的配置 */
         MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall, false);
-
-        /**
-         * 3、清理缓存
-         */
+        /* 3、清理缓存 */
         MycatServer.getInstance().getCacheService().clearCache();
         MycatServer.getInstance().reloadMetaData();
         return true;
     }
     
-	/**
-	 * 异步执行回调类，用于回写数据给用户等。
-	 */
-	private static class ReloadCallBack implements FutureCallback<Boolean> {
-
+    /* 异步执行回调类，用于回写数据给用户等 */
+    private static class ReloadCallBack implements FutureCallback<Boolean> {
 		private ManagerConnection mc;
 
 		private ReloadCallBack(ManagerConnection c) {

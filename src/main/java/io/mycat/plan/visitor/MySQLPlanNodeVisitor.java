@@ -202,6 +202,10 @@ public class MySQLPlanNodeVisitor {
 	public boolean visit(SQLSubqueryTableSource subQueryTables) {
 		SQLSelect sqlSelect = subQueryTables.getSelect();
 		visit(sqlSelect.getQuery());
+		this.tableNode.setSubQuery(true);
+		if (subQueryTables.getAlias() != null) {
+			tableNode.alias(subQueryTables.getAlias());
+		}
 		return true;
 	}
 	public boolean visit(SQLSelect node) {

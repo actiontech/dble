@@ -295,6 +295,9 @@ public class DruidUpdateParser extends DefaultDruidParser {
      * @throws SQLNonTransientException
      */
     private void confirmChildColumnNotUpdated(SQLUpdateStatement update,SchemaConfig schema,String tableName) throws  SQLNonTransientException{
+		if (schema.getFkErRelations() == null) {
+			return;
+		}
         List<SQLUpdateSetItem> updateSetItem = update.getItems();
         //遍历此次需要更新的字段
         if (updateSetItem != null && updateSetItem.size() > 0) {

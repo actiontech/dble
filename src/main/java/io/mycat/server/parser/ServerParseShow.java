@@ -23,10 +23,10 @@
  */
 package io.mycat.server.parser;
 
+import io.mycat.route.parser.util.ParseUtil;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.mycat.route.parser.util.ParseUtil;
 
 /**
  * @author mycat
@@ -163,10 +163,17 @@ public final class ServerParseShow {
 		return OTHER;
 	}
 
-    private  static     Pattern fullpattern = Pattern.compile("^\\s*(SHOW)\\s+(FULL)+\\s+(TABLES)\\s+\\s*([\\!\\'\\=a-zA-Z_0-9\\s]*)", Pattern.CASE_INSENSITIVE);
-    public static int fullTableCheck(String  stmt,int offset )
+	public static String FULL_TABLE_CHECK = "^\\s*(show){1}" +
+			"(\\s+full){1}" +
+			"(\\s+tables){1}" +
+			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+			"(\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*){0,1}" +
+			"\\s*$";
+
+	public static int fullTableCheck(String  stmt,int offset )
     {
-        if(fullpattern.matcher(stmt).matches())
+
+		if(isShowTableMatched(stmt,FULL_TABLE_CHECK))
         {
          return FULLTABLES;
         }
@@ -175,37 +182,23 @@ public final class ServerParseShow {
 
 	// SHOW TABLE
 
+	public static String TABLE_CHECK = "^\\s*(show){1}" +
+							"(\\s+tables){1}" +
+							"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+							"(\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*){0,1}" +
+							"\\s*$";
+
 public 	static int tableCheck(String stmt, int offset) {
 
-		// strict match
-		String pat1 = "^\\s*(SHOW)\\s+(TABLES)\\s*";
-		String pat2 = "^\\s*(SHOW)\\s+(TABLES)\\s+(LIKE\\s+'(.*)')\\s*";
-		String pat3 = "^\\s*(SHOW)\\s+(TABLES)\\s+(FROM)\\s+([a-zA-Z_0-9]+)\\s*";
-		String pat4 = "^\\s*(SHOW)\\s+(TABLES)\\s+(FROM)\\s+([a-zA-Z_0-9]+)\\s+(LIKE\\s+'(.*)')\\s*";
+    boolean flag = isShowTableMatched(stmt, TABLE_CHECK);
 
-		boolean flag = isShowTableMatched(stmt, pat1);
-		if (flag) {
-			return TABLES;
-		}
+    if (flag) {
+        return TABLES;
+    }
 
-		flag = isShowTableMatched(stmt, pat2);
-		if (flag) {
-			return TABLES;
-		}
+    return OTHER;
 
-		flag = isShowTableMatched(stmt, pat3);
-		if (flag) {
-			return TABLES;
-		}
-
-		flag = isShowTableMatched(stmt, pat4);
-		if (flag) {
-			return TABLES;
-		}
-
-		return OTHER;
-
-	}
+}
 
 	private static boolean isShowTableMatched(String stmt, String pat1) {
 		Pattern pattern = Pattern.compile(pat1, Pattern.CASE_INSENSITIVE);
@@ -256,5 +249,31 @@ public 	static int tableCheck(String stmt, int offset) {
 		}
 		return OTHER;
 	}
+
+	public static String TABLE_PAT = "^\\s*(show){1}" +
+										"(\\s+full){0,1}" +
+										"(\\s+tables){1}" +
+										"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+										"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
+			                            "\\s*$";
+
+
+	public static int showTableType(String sql){
+
+		Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
+		Matcher ma = pattern.matcher(sql);
+
+		if(ma.matches()){
+				if (ma.group(2) != null) {
+					return FULLTABLES;
+				} else {
+					return TABLES;
+				}
+		}else{
+			return OTHER;
+		}
+	}
+
+
 
 }

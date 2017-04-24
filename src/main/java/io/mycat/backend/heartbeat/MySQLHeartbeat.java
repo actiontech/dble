@@ -27,10 +27,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.datasource.PhysicalDBPool;
-import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
 import io.mycat.config.model.DataHostConfig;
 
@@ -194,12 +194,12 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	private void setError(MySQLDetector detector) {
 		// should continues check error status
 		if (++errorCount < maxRetryCount) {
-		    	if (detector != null && !detector.isQuit()) {
-			    heartbeat(); // error count not enough, heart beat again
+			if (detector != null && !detector.isQuit()) {
+				heartbeat(); // error count not enough, heart beat again
 			}
 		} else {
-		    	if (detector != null ) {
-			    	detector.quit();
+			if (detector != null) {
+				detector.quit();
 			}
 			this.status = ERROR_STATUS;
 			this.errorCount = 0;

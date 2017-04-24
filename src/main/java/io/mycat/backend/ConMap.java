@@ -64,7 +64,7 @@ public class ConMap {
 		for (NIOProcessor processor : MycatServer.getInstance().getProcessors()) {
 			for (BackendConnection con : processor.getBackends().values()) {
 				if (con instanceof MySQLConnection) {
-					MySQLConnection mysqlCon = (MySQLConnection)con;
+					MySQLConnection mysqlCon = (MySQLConnection) con;
 
 					if (mysqlCon.getSchema().equals(schema)
 					    && mysqlCon.getPool() == dataSouce

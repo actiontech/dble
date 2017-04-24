@@ -59,14 +59,13 @@ public abstract class PhysicalDatasource {
 	private final DBHostConfig config;
 	private final ConMap conMap = new ConMap();
 	private DBHeartbeat heartbeat;
-	private final boolean readNode;    
+	private final boolean readNode;
 	private volatile long heartbeatRecoveryTime;
 	private final DataHostConfig hostConfig;
 	private final ConnectionHeartBeatHandler conHeartBeatHanler = new ConnectionHeartBeatHandler();
 	private PhysicalDBPool dbPool;
-    
-    	private AtomicBoolean dying = new AtomicBoolean(false);
-	
+	private AtomicBoolean dying = new AtomicBoolean(false);
+
 	// 添加DataSource读计数
 	private AtomicLong readCount = new AtomicLong(0);
 	
@@ -90,13 +89,13 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
-    	public boolean getDying() {
-	    	return dying.get();
+	public boolean getDying() {
+		return dying.get();
 	}
 
-    	public void setDying() {
-	    	heartbeat.stop();
-	    	dying.compareAndSet(false, true);
+	public void setDying() {
+		heartbeat.stop();
+		dying.compareAndSet(false, true);
 		closeByDyingAll();
 	}
     
@@ -430,9 +429,9 @@ public abstract class PhysicalDatasource {
 		} else {
 			int activeCons = this.getActiveCount(); // 当前最大活动连接
 			if (activeCons + 1 > size) { // 下一个连接大于最大连接数
-				LOGGER.error("the max activeConnnections size can not be max than maxconnections");
-				throw new IOException("the max activeConnnections size can not be max than "
-						      + "maxconnections");
+				String msg = "the max activeConnnections size can not be max than maxconnections";
+				LOGGER.error(msg);
+				throw new IOException(msg);
 			} else { // create connection
 				LOGGER.info("no ilde connection in pool,create new connection for "
 					    + this.name + " of schema " + schema);
@@ -459,10 +458,11 @@ public abstract class PhysicalDatasource {
 		}
 		return takeCon(con, schema);
 	}
+
 	private void returnCon(BackendConnection c) {
-	    	if (dying.get()) {
-		    	c.close("dying");
-		    	closeByDyingAll();
+		if (dying.get()) {
+			c.close("dying");
+			closeByDyingAll();
 			return;
 		}
 		

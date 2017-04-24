@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ConQueue {
-	private final ConcurrentLinkedQueue<BackendConnection> autoCommitCons
-	    								= new ConcurrentLinkedQueue<BackendConnection>();
-	private final ConcurrentLinkedQueue<BackendConnection> manCommitCons
-	    								= new ConcurrentLinkedQueue<BackendConnection>();
+	private final ConcurrentLinkedQueue<BackendConnection> autoCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
+	private final ConcurrentLinkedQueue<BackendConnection> manCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
 	private long executeCount;
 
 	public BackendConnection takeIdleCon(boolean autoCommit) {
@@ -62,44 +60,45 @@ public class ConQueue {
 		return manCommitCons;
 	}
 
-    	public ArrayList<BackendConnection> getIdleConsToClose() {
-	    	ArrayList<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(autoCommitCons.size() +
-											       manCommitCons.size());
-		while (!manCommitCons.isEmpty()) {
-		    	BackendConnection theCon = manCommitCons.poll();
-			if (theCon != null) {
-				readyCloseCons.add(theCon);
-			}
-		}
-		
-		while (!autoCommitCons.isEmpty()) {
-			BackendConnection theCon = autoCommitCons.poll();
-			if (theCon != null) {
-				readyCloseCons.add(theCon);
-			}
-		}
-		
-		return readyCloseCons;
-	}
-    
 	public ArrayList<BackendConnection> getIdleConsToClose(int count) {
 		ArrayList<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(count);
-		
+
 		while (!manCommitCons.isEmpty() && readyCloseCons.size() < count) {
 			BackendConnection theCon = manCommitCons.poll();
 			if (theCon != null) {
 				readyCloseCons.add(theCon);
 			}
 		}
-		
+
 		while (!autoCommitCons.isEmpty() && readyCloseCons.size() < count) {
 			BackendConnection theCon = autoCommitCons.poll();
 			if (theCon != null) {
 				readyCloseCons.add(theCon);
 			}
 		}
-		
+
 		return readyCloseCons;
 	}
+
+	public ArrayList<BackendConnection> getIdleConsToClose() {
+		ArrayList<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(
+				autoCommitCons.size() + manCommitCons.size());
+		while (!manCommitCons.isEmpty()) {
+			BackendConnection theCon = manCommitCons.poll();
+			if (theCon != null) {
+				readyCloseCons.add(theCon);
+			}
+		}
+
+		while (!autoCommitCons.isEmpty()) {
+			BackendConnection theCon = autoCommitCons.poll();
+			if (theCon != null) {
+				readyCloseCons.add(theCon);
+			}
+		}
+
+		return readyCloseCons;
+	}
+
 
 }

@@ -87,7 +87,6 @@ public final class RollbackConfig {
 		}
 
 		Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
-		
 		// 如果回滚已经存在的pool
 		boolean rollbackStatus = true;
 		for (PhysicalDBPool dn : dataHosts.values()) {

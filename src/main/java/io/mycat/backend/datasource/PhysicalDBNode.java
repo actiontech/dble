@@ -93,7 +93,7 @@ public class PhysicalDBNode {
 				if(rrs.getRunOnSlave()){			
 					LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBlanceFlag());
 					if (rrs.isHasBlanceFlag()) {  // 带有 /*balance*/ 注解(目前好像只支持一个注解...)
-					    	dbPool.getReadBanlanceCon(schema, autoCommit, handler,
+					    dbPool.getReadBanlanceCon(schema, autoCommit, handler,
 									  attachment, this.database);
 					}else{	// 没有 /*balance*/ 注解
 						LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());

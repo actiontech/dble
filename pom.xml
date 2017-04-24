@@ -508,9 +508,6 @@
 									<systemProperty>MYCAT_HOME=.</systemProperty>
 								</systemProperties>
 								<extraArguments>
-								  	<!-- mgj debug -->
-								  	<extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,address=8090,suspend=n</extraArgument>
-									
 									<extraArgument>-server </extraArgument>
 									<extraArgument>-XX:MaxPermSize=64M</extraArgument>
 									<extraArgument>-XX:+AggressiveOpts</extraArgument>

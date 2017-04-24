@@ -68,16 +68,14 @@ public final class ReloadConfig {
 		
 		// reload @@config_all 校验前一次的事务完成情况
 		if ( loadAll && !NIOProcessor.backends_old.isEmpty() ) {
-			c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has "
-					  + "an unfinished db transaction, please try again later.");
+			c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
 			return;
 		}
 		
 		final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();		
 		lock.lock();
 		try {
-			ListenableFuture<Boolean> listenableFuture =
-			    MycatServer.getInstance().getListeningExecutorService().submit(
+			ListenableFuture<Boolean> listenableFuture = MycatServer.getInstance().getListeningExecutorService().submit(
 				new Callable<Boolean>() {
 					@Override
 					public Boolean call() throws Exception {
@@ -85,8 +83,7 @@ public final class ReloadConfig {
 					}
 				}
 			);
-			Futures.addCallback(listenableFuture, new ReloadCallBack(c),
-					    MycatServer.getInstance().getListeningExecutorService());
+			Futures.addCallback(listenableFuture, new ReloadCallBack(c), MycatServer.getInstance().getListeningExecutorService());
 		} finally {
 			lock.unlock();
 		}
@@ -139,11 +136,10 @@ public final class ReloadConfig {
 			// 获取 data host
 			String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
 			if ( !"0".equals(dnIndex) ) {
-				LOGGER.info("init datahost: " + dbPool.getHostName()
-					    + "  to use datasource index:" + dnIndex);
+				LOGGER.info("init datahost: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
 			}			
 			
-			dbPool.init(Integer.valueOf(dnIndex));			
+			dbPool.init(Integer.valueOf(dnIndex));
 			if (!dbPool.isInitSuccess()) {
 				isReloadStatusOK = false;
 				break;
@@ -189,8 +185,7 @@ public final class ReloadConfig {
 					}
 				}				
 			}			
-			LOGGER.warn("2、to be recycled old backend connection(size): "
-				    + NIOProcessor.backends_old.size());
+			LOGGER.warn("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
 
 			//清理缓存
 			MycatServer.getInstance().getCacheService().clearCache();
@@ -209,9 +204,8 @@ public final class ReloadConfig {
 	}
 
     public static boolean reload() {
-	/* 1、载入新的配置， ConfigInitializer 内部完成自检工作, 由于不更新数据源信息,此处不自检 dataHost/dataNode */
-        //ConfigInitializer loader = new ConfigInitializer(false);
-	ConfigInitializer loader = new ConfigInitializer(true);
+	/* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
+    	ConfigInitializer loader = new ConfigInitializer(true);
         Map<String, UserConfig> users = loader.getUsers();
         Map<String, SchemaConfig> schemas = loader.getSchemas();
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();

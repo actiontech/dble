@@ -29,6 +29,7 @@ import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
 
 import static io.mycat.server.parser.ServerParseShow.FULL_TABLE_CHECK;
+import static io.mycat.server.parser.ServerParseShow.TABLE_PAT;
 
 /**
  * Created by magicdoom on 2016/1/26.
@@ -183,6 +184,6 @@ public class SchemaUtil
         }
     }
 
-private  static     Pattern pattern = Pattern.compile(FULL_TABLE_CHECK, Pattern.CASE_INSENSITIVE);
+private  static     Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 
 }

@@ -253,7 +253,7 @@ public 	static int tableCheck(String stmt, int offset) {
 	public static String TABLE_PAT = "^\\s*(show){1}" +
 										"(\\s+full){0,1}" +
 										"(\\s+tables){1}" +
-										"(\\s+(from|in){1}\\s+[a-zA-Z_0-9]{1,}){0,1}" +
+										"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
 										"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
 			                            "\\s*$";
 

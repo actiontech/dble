@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
@@ -95,15 +94,6 @@ public class MycatConfig {
 		
 		//配置加载锁
 		this.lock = new ReentrantLock();
-	}
-	private Map<ERTable, Set<ERTable>> initFuncNodeER(Map<String, Set<ERTable>> erGroups) {
-		Map<ERTable, Set<ERTable>> erMaps = new HashMap<ERTable, Set<ERTable>> ();
-		for (Set<ERTable> erTables : erGroups.values()) {
-			for (ERTable erTable:erTables) {
-				erMaps.put(erTable, erTables);
-			}
-		}
-		return erMaps;
 	}
 	public SystemConfig getSystem() {
 		return system;

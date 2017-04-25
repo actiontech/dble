@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +33,7 @@ public class XAStateLog {
 	private static ReentrantLock lockNum = new ReentrantLock();
 	private static AtomicInteger batchNum = new AtomicInteger(0);
 	private static Set<Long> waitSet = new CopyOnWriteArraySet<Long>();
+	private static ConcurrentMap<Long,Boolean> mapResult = new ConcurrentHashMap<Long,Boolean>();
 	public static boolean saveXARecoverylog(String xaTXID, TxState sessionState) {
 		CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
 		coordinatorLogEntry.setTxState(sessionState);
@@ -68,6 +71,7 @@ public class XAStateLog {
 		lockNum.lock();
 		try {
 			batchNum.incrementAndGet();
+			mapResult.put(Thread.currentThread().getId(), false);
 		} finally {
 			lockNum.unlock();
 		}
@@ -109,10 +113,18 @@ public class XAStateLog {
 				hasLeader.set(false);
 				lock.lock();
 				try {
+					if(writeResult){
+						Iterator<Long> it = mapResult.keySet().iterator();
+						while(it.hasNext()){
+							mapResult.put(it.next(),true);
+						}
+					}
 					isWriting = false;
+					boolean result = mapResult.get(Thread.currentThread().getId());
+					mapResult.remove(Thread.currentThread().getId());
 					// 1.wakeup follower to return 2.wake up waiting threads continue
 					waitWriting.signalAll();
-					return writeResult;
+					return result;
 				} finally {
 					lock.unlock();
 				}
@@ -126,7 +138,9 @@ public class XAStateLog {
 				batchNum.decrementAndGet();
 				// the follower's status has copied and ready to write
 				waitWriting.await();
-				return writeResult;
+				boolean result = mapResult.get(Thread.currentThread().getId());
+				mapResult.remove(Thread.currentThread().getId());
+				return result;
 			} catch (InterruptedException e) {
 				logger.warn("writeCheckpoint error, follower Xid is:" + xaTXID, e);
 				return false;

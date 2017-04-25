@@ -220,9 +220,10 @@ public class FileSystemRepository implements Repository{
 		} catch (FileNotFoundException firstStart) {
 			// the file could not be opened for reading;
 			// merely return the default empty vector
+			logger.warn("Failed to write checkpoint", firstStart);
 			return false;
 		} catch (Exception e) {
-			logger.error("Failed to write checkpoint", e);
+			logger.warn("Failed to write checkpoint", e);
 			return false;
 		}
 	}

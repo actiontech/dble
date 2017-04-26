@@ -227,7 +227,7 @@ public class NonBlockingSession implements Session {
 //			return;
 //		}
     	SQLSelectStatement ast = (SQLSelectStatement)rrs.getSqlStatement();
-		MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema());
+		MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(),this.getSource().getCharsetIndex());
 		visitor.visit(ast);
 		PlanNode node = visitor.getTableNode();
 		node.setSql(rrs.getStatement());

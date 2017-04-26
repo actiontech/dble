@@ -19,7 +19,7 @@ public class TestMySQLPlanNodeVisitor {
 	private PlanNode getPlanNode(String sql){
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLSelectStatement ast = (SQLSelectStatement)parser.parseStatement();
-		MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor("test");
+		MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor("test",33);
 		visitor.visit(ast);
 		return visitor.getTableNode();
 	}

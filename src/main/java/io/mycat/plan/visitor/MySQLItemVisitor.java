@@ -113,9 +113,10 @@ import io.mycat.plan.common.item.subquery.ItemSinglerowSubselect;
 
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	private String currentDb;
-
-	public MySQLItemVisitor(String currentDb) {
+	private int charsetIndex;
+	public MySQLItemVisitor(String currentDb, int charsetIndex) {
 		this.currentDb = currentDb;
+		this.charsetIndex = charsetIndex;
 	}
 	private Item item;
 
@@ -407,6 +408,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLCharExpr x) {
     	item = new ItemString(x.getText());
+    	item.charsetIndex=this.charsetIndex;
 		initName(x);
     }
     @Override
@@ -657,7 +659,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		return args;
 	}
 	private Item getItem(SQLExpr expr){
-		MySQLItemVisitor fv = new MySQLItemVisitor(currentDb);
+		MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex);
 		expr.accept(fv);
 		return fv.getItem();
 	}

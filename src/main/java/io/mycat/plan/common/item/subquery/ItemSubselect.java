@@ -18,7 +18,6 @@ public abstract class ItemSubselect extends ItemResultField {
 	protected SQLSelectQuery query;
 	private String currentDb;
 	private PlanNode planNode;
-
 	public enum subSelectType {
 		UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
 	};
@@ -39,7 +38,7 @@ public abstract class ItemSubselect extends ItemResultField {
 	}
 
 	private void init() {
-		MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb);
+		MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex);
 		pv.visit(this.query);
 		this.planNode = pv.getTableNode();
 		this.withSubQuery = true;

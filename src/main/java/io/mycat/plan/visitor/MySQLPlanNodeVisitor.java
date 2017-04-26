@@ -44,9 +44,10 @@ import io.mycat.util.StringUtil;
 public class MySQLPlanNodeVisitor {
 	private PlanNode tableNode;
 	private String currentDb;
-
-	public MySQLPlanNodeVisitor(String currentDb) {
+	private int charsetIndex;
+	public MySQLPlanNodeVisitor(String currentDb, int charsetIndex) {
 		this.currentDb = currentDb;
+		this.charsetIndex = charsetIndex;
 	}
 
 	public PlanNode getTableNode() {
@@ -55,7 +56,7 @@ public class MySQLPlanNodeVisitor {
 
 	public boolean visit(SQLSelectStatement node) {
 		SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-		MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 		mtv.visit(sqlSelect);
 		this.tableNode = mtv.getTableNode();
 		return true;
@@ -69,11 +70,11 @@ public class MySQLPlanNodeVisitor {
 	}
 	public boolean visit(MySqlUnionQuery sqlSelectQuery) {
 		SQLSelectQuery left = sqlSelectQuery.getLeft();
-		MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb,this.charsetIndex);
 		mtvleft.visit(left);
 
 		SQLSelectQuery right = sqlSelectQuery.getRight();
-		MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb,this.charsetIndex);
 		mtvright.visit(right);
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
@@ -155,11 +156,11 @@ public class MySQLPlanNodeVisitor {
 	
 	public boolean visit(SQLJoinTableSource joinTables) {
 		SQLTableSource left = joinTables.getLeft();
-		MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 		mtvLeft.visit(left);
 
 		SQLTableSource right = joinTables.getRight();
-		MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 		mtvRight.visit(right);
 		JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode());
 		switch (joinTables.getJoinType()) {
@@ -184,7 +185,7 @@ public class MySQLPlanNodeVisitor {
 
 		SQLExpr cond = joinTables.getCondition();
 		if (cond != null) {
-			MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb);
+			MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 			cond.accept(ev);
 			Item ifilter = ev.getItem();
 			addJoinOnColumns(ifilter, joinNode);
@@ -205,7 +206,7 @@ public class MySQLPlanNodeVisitor {
 		return true;
 	}
 	public boolean visit(SQLSelect node) {
-		MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+		MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 		mtv.visit(node);
 		this.tableNode = mtv.getTableNode();
 		return true;
@@ -214,17 +215,17 @@ public class MySQLPlanNodeVisitor {
 	public void visit(SQLTableSource tables) {
 		if (tables instanceof SQLExprTableSource) {
 			SQLExprTableSource table = (SQLExprTableSource) tables;
-			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 			mtv.visit(table);
 			this.tableNode = mtv.getTableNode();
 		} else if (tables instanceof SQLJoinTableSource) {
 			SQLJoinTableSource joinTables = (SQLJoinTableSource) tables;
-			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 			mtv.visit(joinTables);
 			this.tableNode = mtv.getTableNode();
 		} else if (tables instanceof SQLSubqueryTableSource) {
 			SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
-			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 			mtv.visit(subQueryTables);
 			if (this.tableNode == null) {
 				this.tableNode = mtv.getTableNode();
@@ -245,7 +246,7 @@ public class MySQLPlanNodeVisitor {
 			SQLExpr expr = item.getExpr();
 			if (expr instanceof SQLQueryExpr)
 				throw new RuntimeException("query statement as column not supported!");
-			MySQLItemVisitor ev = new MySQLItemVisitor(currentDb);
+			MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex);
 			expr.accept(ev);
 			Item selItem = ev.getItem();
 
@@ -256,7 +257,7 @@ public class MySQLPlanNodeVisitor {
 	}
 
 	private void handleWhereCondition(SQLExpr whereExpr) {
-		MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb);
+		MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 		whereExpr.accept(mev);
 		if (this.tableNode != null) {
 			Item whereFiler = mev.getItem();
@@ -270,7 +271,7 @@ public class MySQLPlanNodeVisitor {
 	private void handleOrderBy(SQLOrderBy orderBy) {
 		for (SQLSelectOrderByItem p : orderBy.getItems()) {
 			SQLExpr expr = p.getExpr();
-			MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb);
+			MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 			expr.accept(v);
 			this.tableNode = tableNode.orderBy(v.getItem(), p.getType());
 		}
@@ -281,11 +282,11 @@ public class MySQLPlanNodeVisitor {
 			if (p instanceof MySqlOrderingExpr) {
 				MySqlOrderingExpr groupitem = (MySqlOrderingExpr) p;
 				SQLExpr q = groupitem.getExpr();
-				MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb);
+				MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 				q.accept(v);
 				this.tableNode = tableNode.groupBy(v.getItem(), groupitem.getType());
 			} else {
-				MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb);
+				MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 				p.accept(v);
 				this.tableNode = tableNode.groupBy(v.getItem(), SQLOrderingSpecification.ASC);
 			}
@@ -300,7 +301,7 @@ public class MySQLPlanNodeVisitor {
 	}
 
 	private void handleHavingCondition(SQLExpr havingExpr) {
-		MySQLItemVisitor mev = new MySQLItemVisitor(currentDb);
+		MySQLItemVisitor mev = new MySQLItemVisitor(currentDb, this.charsetIndex);
 		havingExpr.accept(mev);
 		Item havingFilter = mev.getItem();
 		if (this.tableNode == null) {

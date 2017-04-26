@@ -217,7 +217,13 @@ public abstract class FrontendConnection extends AbstractConnection {
 		
 		MySQLMessage mm = new MySQLMessage(data);
 		mm.position(5);
-		String db = mm.readString();
+		String db = null;
+		try {
+			db = mm.readString(charset);
+		} catch (UnsupportedEncodingException e) {
+			writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
+			return;
+		}
 		if (db != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
 			db = db.toLowerCase();
 		}

@@ -23,10 +23,8 @@
  */
 package io.mycat.backend.mysql;
 
-import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +35,10 @@ import org.slf4j.LoggerFactory;
 public class CharsetUtil {
     public static final Logger logger = LoggerFactory
             .getLogger(CharsetUtil.class);
-    private static final String[] INDEX_TO_CHARSET = new String[248];
+    private static final String[] INDEX_TO_CHARSET = new String[251];
     private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
     private static final Map<String, String> CHARSET_TO_JAVA = new HashMap<String, String>();
     static {
-
-        // index_to_charset.properties
     	INDEX_TO_CHARSET[1] = "big5";
 		INDEX_TO_CHARSET[2] = "latin2";
 		INDEX_TO_CHARSET[3] = "dec8";
@@ -262,30 +258,52 @@ public class CharsetUtil {
 		INDEX_TO_CHARSET[245] = "utf8mb4";
 		INDEX_TO_CHARSET[246] = "utf8mb4";
 		INDEX_TO_CHARSET[247] = "utf8mb4";
-
-        String filePath = Thread.currentThread().getContextClassLoader()
-                .getResource("").getPath().replaceAll("%20", " ")
-                + "index_to_charset.properties";
-        Properties prop = new Properties();
-        try {
-            prop.load(new FileInputStream(filePath));
-            for (Object index : prop.keySet()){
-				INDEX_TO_CHARSET[Integer.parseInt((String) index)] = prop.getProperty((String) index);
-            }
-        } catch (Exception e) {
-            logger.error("error:",e);
-        }
-        
+		INDEX_TO_CHARSET[248] = "gb18030";
+		INDEX_TO_CHARSET[249] = "gb18030";
+		INDEX_TO_CHARSET[250] = "gb18030";
+		
         // charset --> index
-        for(int index =0;index<INDEX_TO_CHARSET.length;index++){
-        	String charset = INDEX_TO_CHARSET[index];
-        	if(charset != null && CHARSET_TO_INDEX.get(charset) == null){
-        		CHARSET_TO_INDEX.put(charset, index);
-        	}
-        }
-
-        CHARSET_TO_INDEX.put("iso-8859-1", 14);
-        CHARSET_TO_INDEX.put("utf-8", 33);
+		CHARSET_TO_INDEX.put("big5", 1);
+		CHARSET_TO_INDEX.put("dec8", 3);
+		CHARSET_TO_INDEX.put("cp850", 4);
+		CHARSET_TO_INDEX.put("hp8", 6);
+		CHARSET_TO_INDEX.put("koi8r", 7);
+		CHARSET_TO_INDEX.put("latin1", 8);
+		CHARSET_TO_INDEX.put("latin2", 9);
+		CHARSET_TO_INDEX.put("swe7", 10);
+		CHARSET_TO_INDEX.put("ascii", 11);
+		CHARSET_TO_INDEX.put("ujis", 12);
+		CHARSET_TO_INDEX.put("sjis", 13);
+		CHARSET_TO_INDEX.put("hebrew", 16);
+		CHARSET_TO_INDEX.put("tis620", 18);
+		CHARSET_TO_INDEX.put("euckr", 19);
+		CHARSET_TO_INDEX.put("koi8u", 22);
+		CHARSET_TO_INDEX.put("gb2312", 24);
+		CHARSET_TO_INDEX.put("greek", 25);
+		CHARSET_TO_INDEX.put("cp1250", 26);
+		CHARSET_TO_INDEX.put("gbk", 28);
+		CHARSET_TO_INDEX.put("latin5", 30);
+		CHARSET_TO_INDEX.put("armscii8", 32);
+		CHARSET_TO_INDEX.put("utf8", 33);
+		CHARSET_TO_INDEX.put("ucs2", 35);
+		CHARSET_TO_INDEX.put("cp866", 36);
+		CHARSET_TO_INDEX.put("keybcs2", 37);
+		CHARSET_TO_INDEX.put("macce", 38);
+		CHARSET_TO_INDEX.put("macroman", 39);
+		CHARSET_TO_INDEX.put("cp852", 40);
+		CHARSET_TO_INDEX.put("latin7", 41);
+		CHARSET_TO_INDEX.put("utf8mb4", 45);
+		CHARSET_TO_INDEX.put("cp1251", 51);
+		CHARSET_TO_INDEX.put("utf16", 54);
+		CHARSET_TO_INDEX.put("utf16le", 56);
+		CHARSET_TO_INDEX.put("cp1256", 57);
+		CHARSET_TO_INDEX.put("cp1257", 59);
+		CHARSET_TO_INDEX.put("utf32", 60);
+		CHARSET_TO_INDEX.put("binary", 63);
+		CHARSET_TO_INDEX.put("geostd8", 92);
+		CHARSET_TO_INDEX.put("cp932", 95);
+		CHARSET_TO_INDEX.put("eucjpms", 97);
+		CHARSET_TO_INDEX.put("gb18030", 248);
         
         CHARSET_TO_JAVA.put("binary", "US-ASCII");
 		CHARSET_TO_JAVA.put("hp8", "ISO8859_1");

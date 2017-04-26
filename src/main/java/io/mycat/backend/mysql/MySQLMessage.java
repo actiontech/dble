@@ -213,23 +213,19 @@ public class MySQLMessage {
         return ab;
     }
 
-    public String readString() {
-        if (position >= length) {
-            return null;
-        }
-        String s = new String(data, position, length - position);
-        position = length;
-        return s;
-    }
-
     public String readString(String charset) throws UnsupportedEncodingException {
         if (position >= length) {
             return null;
         }
-        
-        String s = new String(data, position, length - position, charset);
-        position = length;
-        return s;
+		String s;
+		String javaCharset = CharsetUtil.getJavaCharset(charset);
+		if (javaCharset != null) {
+			s = new String(data, position, length - position, javaCharset);
+		} else {
+			s = new String(data, position, length - position);
+		}
+		position = length;
+		return s;
     }
 
     public String readStringWithNull() {
@@ -256,33 +252,6 @@ public class MySQLMessage {
         } else {
             position++;
             return null;
-        }
-    }
-
-    public String readStringWithNull(String charset) throws UnsupportedEncodingException {
-        final byte[] b = this.data;
-        if (position >= length) {
-            return null;
-        }
-        int offset = -1;
-        for (int i = position; i < length; i++) {
-            if (b[i] == 0) {
-                offset = i;
-                break;
-            }
-        }
-        switch (offset) {
-        case -1:
-            String s1 = new String(b, position, length - position, charset);
-            position = length;
-            return s1;
-        case 0:
-            position++;
-            return null;
-        default:
-            String s2 = new String(b, position, offset - position, charset);
-            position = offset + 1;
-            return s2;
         }
     }
 

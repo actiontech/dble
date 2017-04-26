@@ -111,7 +111,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 		int ci = CharsetUtil.getIndex(charset);
 		if (ci > 0) {
-			this.charset = charset.equalsIgnoreCase("utf8mb4") ? "utf8" : charset;
+			this.charset = charset;
 			this.charsetIndex = ci;
 			return true;
 		} else {

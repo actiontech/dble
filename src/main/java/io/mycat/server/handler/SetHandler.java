@@ -27,6 +27,7 @@ import static io.mycat.server.parser.ServerParseSet.AUTOCOMMIT_OFF;
 import static io.mycat.server.parser.ServerParseSet.AUTOCOMMIT_ON;
 import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_CLIENT;
 import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_CONNECTION;
+import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_NAME;
 import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_RESULTS;
 import static io.mycat.server.parser.ServerParseSet.NAMES;
 import static io.mycat.server.parser.ServerParseSet.TX_READ_COMMITTED;
@@ -118,16 +119,15 @@ public final class SetHandler {
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			break;
 		}
-		case NAMES:
+		case NAMES:{
 			String charset = stmt.substring(rs >>> 8).trim();
-		   int index=	charset.indexOf(",")  ;
-			if(index>-1) {
-				//支持rails框架自动生成的SET NAMES utf8,  @@SESSION.sql_auto_is_null = 0, @@SESSION.wait_timeout = 2147483, @@SESSION.sql_mode = 'STRICT_ALL_TABLES'
-			charset=charset.substring(0,index)	;
+			int index = charset.indexOf(",");
+			if (index > -1) {
+				// 支持rails框架自动生成的SET NAMES utf8, @@SESSION.sql_auto_is_null = 0, @@SESSION.wait_timeout = 2147483, @@SESSION.sql_mode = 'STRICT_ALL_TABLES'
+				charset = charset.substring(0, index);
 			}
-			if(charset.startsWith("'")&&charset.endsWith("'"))
-			{
-				charset=charset.substring(1,charset.length()-1)  ;
+			if (charset.startsWith("'") && charset.endsWith("'")) {
+				charset = charset.substring(1, charset.length() - 1);
 			}
 			if (c.setCharset(charset)) {
 				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
@@ -139,7 +139,8 @@ public final class SetHandler {
 				 */	
 				int beginIndex = stmt.toLowerCase().indexOf("names");
 				int endIndex = stmt.toLowerCase().indexOf("collate");
-				if ( beginIndex > -1 && endIndex > -1 ) {					
+				int collateName = stmt.toLowerCase().indexOf("'utf8_general_ci'");
+				if ( beginIndex > -1 && endIndex > -1 && collateName>-1) {
 					charset = stmt.substring(beginIndex + "names".length(), endIndex);					
 					//重试一次
 					if (c.setCharset( charset.trim() )) {
@@ -153,11 +154,25 @@ public final class SetHandler {
 				}
 			}
 			break;
+		}
 		case CHARACTER_SET_CLIENT:
 		case CHARACTER_SET_CONNECTION:
 		case CHARACTER_SET_RESULTS:
 			CharacterSet.response(stmt, c, rs);
 			break;
+		case CHARACTER_SET_NAME:{
+			//ONLY SUPPORT:SET CHARACTER SET 'utf8';
+			String charset = stmt.substring(rs >>> 8).trim();
+			if (charset.startsWith("'") && charset.endsWith("'")) {
+				charset = charset.substring(1, charset.length() - 1);
+			}
+			if (charset.equalsIgnoreCase("utf8")&&c.setCharset(charset)) {
+				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+			} else {
+				c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
+			}
+			break;
+		}
 		default:			
 			 boolean ignore = SetIgnoreUtil.isIgnoreStmt(stmt);
              if ( !ignore ) {        	 

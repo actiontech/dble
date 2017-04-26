@@ -43,6 +43,7 @@ public final class ServerParseSet {
 	public static final int CHARACTER_SET_RESULTS = 10;
 	public static final int XA_FLAG_ON = 11;
 	public static final int XA_FLAG_OFF = 12;
+	public static final int CHARACTER_SET_NAME = 13;
 
 	private static final int VALUE_ON = 1;
 	private static final int VALUE_OFF = 0;
@@ -66,7 +67,7 @@ public final class ServerParseSet {
 				return autocommit(stmt, offset);
 			case 'C':
 			case 'c':
-				return characterSet(stmt, offset);
+				return character(stmt, offset);
 			case 'N':
 			case 'n':
 				return names(stmt, offset);
@@ -247,10 +248,9 @@ public final class ServerParseSet {
 		}
 		return OTHER;
 	}
-
-	// SET CHARACTER_SET_
-	private static int characterSet(String stmt, int offset) {
-		if (stmt.length() > offset + 14) {
+	// SET CHARACTER
+	private static int character(String stmt, int offset) {
+		if (stmt.length() > offset + 9) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
 			char c3 = stmt.charAt(++offset);
@@ -260,19 +260,60 @@ public final class ServerParseSet {
 			char c7 = stmt.charAt(++offset);
 			char c8 = stmt.charAt(++offset);
 			char c9 = stmt.charAt(++offset);
-			char c10 = stmt.charAt(++offset);
-			char c11 = stmt.charAt(++offset);
-			char c12 = stmt.charAt(++offset);
-			char c13 = stmt.charAt(++offset);
-			char c14 = stmt.charAt(++offset);
-			if ((c1 == 'H' || c1 == 'h') && (c2 == 'A' || c2 == 'a')
-					&& (c3 == 'R' || c3 == 'r') && (c4 == 'A' || c4 == 'a')
-					&& (c5 == 'C' || c5 == 'c') && (c6 == 'T' || c6 == 't')
-					&& (c7 == 'E' || c7 == 'e') && (c8 == 'R' || c8 == 'r')
-					&& (c9 == '_') && (c10 == 'S' || c10 == 's')
-					&& (c11 == 'E' || c11 == 'e') && (c12 == 'T' || c12 == 't')
-					&& (c13 == '_')) {
-				switch (c14) {
+			if ((c1 == 'H' || c1 == 'h') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r')
+					&& (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'T' || c6 == 't')
+					&& (c7 == 'E' || c7 == 'e') && (c8 == 'R' || c8 == 'r')) {
+				switch (c9) {
+				case ' ':
+				case '\r':
+				case '\n':
+				case '\t':
+					return characterSetName(stmt, offset);
+				case '_':
+					return characterSet(stmt, offset);
+				default:
+					return OTHER;
+				}
+			}
+		}
+		return OTHER;
+	}
+
+	// SET CHARACTER SET ''
+	private static int characterSetName(String stmt, int offset) {
+		while (stmt.length() > ++offset) {
+			switch (stmt.charAt(offset)) {
+			case ' ':
+			case '\r':
+			case '\n':
+			case '\t':
+				continue;
+			case 'S':
+			case 's':
+				if (stmt.length() > offset + 4) {
+					char c2 = stmt.charAt(++offset);
+					char c3 = stmt.charAt(++offset);
+					if ((c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') && isSpace(stmt.charAt(++offset))) {
+						return (offset << 8) | CHARACTER_SET_NAME;
+					}
+				}
+			default:
+				return OTHER;
+			}
+		}
+		return OTHER;
+	}
+	// SET CHARACTER_SET_
+	private static int characterSet(String stmt, int offset) {
+		if (stmt.length() > offset + 5) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			char c3 = stmt.charAt(++offset);
+			char c4 = stmt.charAt(++offset);
+			char c5 = stmt.charAt(++offset);
+			if ((c1 == 'S' || c1 == 's')
+					&& (c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') && (c4 == '_')) {
+				switch (c5) {
 				case 'R':
 				case 'r':
 					return characterSetResults(stmt, offset);
@@ -296,9 +337,8 @@ public final class ServerParseSet {
 			char c4 = stmt.charAt(++offset);
 			char c5 = stmt.charAt(++offset);
 			char c6 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's')
-					&& (c3 == 'U' || c3 == 'u') && (c4 == 'L' || c4 == 'l')
-					&& (c5 == 'T' || c5 == 't') && (c6 == 'S' || c6 == 's')) {
+			if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'U' || c3 == 'u')
+					&& (c4 == 'L' || c4 == 'l') && (c5 == 'T' || c5 == 't') && (c6 == 'S' || c6 == 's')) {
 				while (stmt.length() > ++offset) {
 					switch (stmt.charAt(offset)) {
 					case ' ':

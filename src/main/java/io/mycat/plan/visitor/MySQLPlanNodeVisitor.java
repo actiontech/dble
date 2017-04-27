@@ -356,8 +356,8 @@ public class MySQLPlanNodeVisitor {
 	private List<ItemFuncEqual> getUsingFilter(List<SQLExpr> using, String leftJoinNode, String rightJoinNode) {
 		List<ItemFuncEqual> filterList = new ArrayList<ItemFuncEqual>();
 		for (SQLExpr us : using) {
-			ItemField column1 = new ItemField(null, leftJoinNode, us.toString());
-			ItemField column2 = new ItemField(null, rightJoinNode, us.toString());
+			ItemField column1 = new ItemField(null, leftJoinNode, StringUtil.removeBackQuote(us.toString()));
+			ItemField column2 = new ItemField(null, rightJoinNode, StringUtil.removeBackQuote(us.toString()));
 			ItemFuncEqual arg = new ItemFuncEqual(column1, column2);
 			filterList.add(arg);
 		}

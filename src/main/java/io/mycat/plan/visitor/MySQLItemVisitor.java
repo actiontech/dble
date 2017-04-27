@@ -114,6 +114,7 @@ import io.mycat.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
 import io.mycat.plan.common.item.function.unknown.ItemFuncUnknown;
 import io.mycat.plan.common.item.subquery.ItemInSubselect;
 import io.mycat.plan.common.item.subquery.ItemSinglerowSubselect;
+import io.mycat.util.StringUtil;
 
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	private String currentDb;
@@ -418,9 +419,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		initName(x);
     }
     @Override
-	public void endVisit(SQLIdentifierExpr x) { 
-    	item = new ItemField(null, null, x.getSimpleName());
-		initName(x);
+	public void endVisit(SQLIdentifierExpr x) {
+		item = new ItemField(null, null, StringUtil.removeBackQuote(x.getSimpleName()));
 	}
 	@Override
 	public void endVisit(SQLNullExpr x){
@@ -451,7 +451,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	@Override
 	public void endVisit(SQLPropertyExpr x) { 
 		SQLIdentifierExpr owner= (SQLIdentifierExpr) x.getOwner();
-		item = new ItemField(null, owner.getSimpleName(), x.getSimpleName());
+		item = new ItemField(null, StringUtil.removeBackQuote(owner.getSimpleName()), StringUtil.removeBackQuote(x.getSimpleName()));
 	}
 	
 	@Override

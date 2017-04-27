@@ -14,6 +14,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
@@ -116,7 +117,7 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 						&& rrs.isAutocommit() == false) {
 					rrs.setCanRunInReadDB(false);
 				}
-			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource) {
+			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
 				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
 				if (rrs.isFinishedRoute()) {
 					return schema;

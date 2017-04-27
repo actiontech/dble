@@ -22,6 +22,8 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionOperator;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
@@ -67,7 +69,7 @@ public class MySQLPlanNodeVisitor {
 			visit((MySqlUnionQuery)node);
 		} 
 	}
-	public boolean visit(MySqlUnionQuery sqlSelectQuery) {
+	public boolean visit(SQLUnionQuery sqlSelectQuery) {
 		SQLSelectQuery left = sqlSelectQuery.getLeft();
 		MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb);
 		mtvleft.visit(left);
@@ -77,7 +79,6 @@ public class MySQLPlanNodeVisitor {
 		mtvright.visit(right);
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
-		SQLLimit limit = sqlSelectQuery.getLimit();
 		MergeNode mergeNode = new MergeNode();
 		if (sqlSelectQuery.getOperator() != SQLUnionOperator.UNION) {
 			mergeNode.setUnion(true);
@@ -88,6 +89,11 @@ public class MySQLPlanNodeVisitor {
 		if (orderBy != null) {
 			handleOrderBy(orderBy);
 		}
+		return true;
+	}
+	public boolean visit(MySqlUnionQuery sqlSelectQuery) {
+		visit((SQLUnionQuery)sqlSelectQuery);
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		if (limit != null) {
 			handleLimit(limit);
 		}
@@ -152,7 +158,10 @@ public class MySQLPlanNodeVisitor {
 		this.tableNode = table;
 		return true;
 	}
-	
+	public boolean visit(SQLUnionQueryTableSource unionTables) {
+		visit(unionTables.getUnion());
+		return true;
+	}
 	public boolean visit(SQLJoinTableSource joinTables) {
 		SQLTableSource left = joinTables.getLeft();
 		MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb);
@@ -226,7 +235,13 @@ public class MySQLPlanNodeVisitor {
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
 			mtv.visit(joinTables);
 			this.tableNode = mtv.getTableNode();
-		} else if (tables instanceof SQLSubqueryTableSource) {
+		} else if (tables instanceof SQLUnionQueryTableSource) {
+			SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
+			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
+			mtv.visit(unionTables);
+			this.tableNode = mtv.getTableNode();
+		} 
+		else if (tables instanceof SQLSubqueryTableSource) {
 			SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
 			mtv.visit(subQueryTables);

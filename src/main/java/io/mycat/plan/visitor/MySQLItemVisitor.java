@@ -97,13 +97,16 @@ import io.mycat.plan.common.item.function.strfunc.ItemFuncChar;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TRIM_TYPE_ENUM;
 import io.mycat.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
+import io.mycat.plan.common.item.function.sumfunc.ItemSumAnd;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumAvg;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumCount;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumMax;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumMin;
+import io.mycat.plan.common.item.function.sumfunc.ItemSumOr;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumStd;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumSum;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumVariance;
+import io.mycat.plan.common.item.function.sumfunc.ItemSumXor;
 import io.mycat.plan.common.item.function.timefunc.ItemDateAddInterval;
 import io.mycat.plan.common.item.function.timefunc.ItemExtract;
 import io.mycat.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
@@ -567,6 +570,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			break;
 		case "STDDEV_SAMP":
 			item =  new ItemSumStd(args, 1, false, null);
+			break;
+		case "BIT_AND":
+			item = new ItemSumAnd(args, false, null);
+			break;
+		case "BIT_OR":
+			item = new ItemSumOr(args, false, null);
+			break;
+		case "BIT_XOR":
+			item = new ItemSumXor(args, false, null);
 			break;
 		default:
 			if (ItemCreate.getInstance().isNativeFunc(funcName)) {

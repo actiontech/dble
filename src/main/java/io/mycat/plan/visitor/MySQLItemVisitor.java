@@ -479,7 +479,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 				}
 			}
 			SQLCharExpr charExpr = (SQLCharExpr) x.getAttribute(ItemFuncKeyWord.SEPARATOR);
-			String separator = null;
+			String separator = ",";
 			if (charExpr != null) {
 				separator = charExpr.getText();
 			}

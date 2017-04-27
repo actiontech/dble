@@ -54,12 +54,6 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 public class Testparser {
 	public static void main(String args[]) {
-		byte[] temp = new byte[4];
-		byte[] rest = new byte[]{1,1,1,1};
-		System.arraycopy(rest, 4, temp, 4, 0);
-		String str ="''";
-		str =str.substring(1, str.length() - 1);
-		
 		Testparser obj = new Testparser();
 //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -225,7 +219,9 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select  id,count(*) from table1 GROUP BY id order by count(*);";
 //		obj.test(selectSQl);
-		selectSQl = "select  id from db.table1 GROUP BY db.table1.id;";
+//		selectSQl = "select  id from db.table1 GROUP BY db.table1.id;";
+//		obj.test(selectSQl);
+		selectSQl = "select * from sharding_two_node a natural join sharding_four_node b  ;";
 		obj.test(selectSQl);
 	}
 	public void test(String sql){

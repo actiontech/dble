@@ -175,6 +175,7 @@ public class MySQLPlanNodeVisitor {
 		case JOIN:
 		case CROSS_JOIN:
 		case INNER_JOIN:
+		case STRAIGHT_JOIN:
 			joinNode.setInnerJoin();
 			break;
 		case LEFT_OUTER_JOIN:
@@ -184,8 +185,6 @@ public class MySQLPlanNodeVisitor {
 			joinNode.setRightOuterJoin();
 			break;
 		case NATURAL_JOIN:// col?
-			break;
-		case STRAIGHT_JOIN:
 			break;
 		default:
 			break;

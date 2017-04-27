@@ -31,6 +31,7 @@ import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.expr.SQLUnaryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
@@ -129,7 +130,11 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	public void setItem(Item item) {
 		this.item = item;
 	}
-
+	@Override
+	public void endVisit(SQLQueryExpr x) {
+		SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
+		item = new ItemSinglerowSubselect(currentDb, sqlSelect);
+    }
 	@Override
 	public void endVisit(SQLBetweenExpr x){
 		item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());

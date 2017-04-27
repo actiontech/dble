@@ -89,7 +89,7 @@ public class SelectedProcessor {
 				return qtn;
 			default:
 				for (PlanNode child : qtn.getChildren()) {
-					List<Item> referList = qtn.getColumnsReferedMap().get(child);
+					List<Item> referList = qtn.getColumnsReferedByChild(child);
 					if (referList.isEmpty()) {
 						referList.add(new ItemInt(1));
 					}

@@ -509,8 +509,13 @@ public abstract class PlanNode {
 		return this;
 	}
 
-	public Map<PlanNode, List<Item>> getColumnsReferedMap() {
-		return this.columnsReferedCache.asMap();
+	public List<Item> getColumnsReferedByChild(PlanNode tn) {
+		try {
+			return this.columnsReferedCache.get(tn);
+		} catch (ExecutionException e) {
+			logger.warn("columnsReferedCache error", e);
+		}
+		return null;
 	}
 
 	public void addSelToReferedMap(PlanNode tn, Item sel) {

@@ -245,16 +245,7 @@ public class MySQLPlanNodeVisitor {
 			SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
 			mtv.visit(subQueryTables);
-			if (this.tableNode == null) {
-				this.tableNode = mtv.getTableNode();
-				// 如果是第一个table，并且是唯一的一个，才做queryNode，因为如果多于两个可以通过joinNode来代替
-				if (this.tableNode.isSubQuery()
-						&& (this.tableNode instanceof TableNode || this.tableNode instanceof NoNameNode)) {
-					this.tableNode = new QueryNode(this.tableNode);
-				}
-			} else {
-				this.tableNode = new JoinNode(this.tableNode, mtv.getTableNode());
-			}
+			this.tableNode = new QueryNode(mtv.getTableNode());
 		}
 	}
 

@@ -48,11 +48,12 @@ public class TableNode extends PlanNode {
 		if(schemaConfig == null){
 			throw new RuntimeException("schema "+this.schema+" is not exists!");
 		}
-		this.referedTableNodes.add(this);
-
-		
-		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
 		TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
+		if(tableConfig == null){
+			throw new RuntimeException("table "+this.tableName+" is not exists!");
+		}
+		this.referedTableNodes.add(this);
+		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
 		boolean isGlobaled = tableConfig != null && (tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE);
 		if (!isGlobaled) {
 			this.unGlobalTableCount = 1;

@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.plan.PlanNode;
+import io.mycat.plan.PlanNode.PlanNodeType;
 import io.mycat.plan.common.context.NameResolutionContext;
 import io.mycat.plan.common.context.ReferContext;
 import io.mycat.plan.common.exception.MySQLOutPutException;
@@ -42,7 +43,9 @@ public abstract class ItemSubselect extends ItemResultField {
 		MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb);
 		pv.visit(this.query);
 		this.planNode = pv.getTableNode();
-		this.withSubQuery = true;
+		if (planNode.type() != PlanNodeType.NONAME) {
+			this.withSubQuery = true;
+		}
 	}
 
 	public void reset() {

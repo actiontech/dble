@@ -1,8 +1,11 @@
 package io.mycat.meta.table;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
@@ -10,6 +13,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLNotNullConstraint;
 import com.alibaba.druid.sql.ast.statement.SQLNullConstraint;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
@@ -29,6 +33,7 @@ public class MetaHelper {
 		TableMeta.Builder tmBuilder = TableMeta.newBuilder();
 		tmBuilder.setTableName(table);
 		tmBuilder.setVersion(timeStamp);
+		Set<String> indexNames = null;
 		for (SQLTableElement tableElement : createStment.getTableElementList()) {
 			if (tableElement instanceof SQLColumnDefinition) {
 				ColumnMeta.Builder cmBuilder = makeColumnMeta((SQLColumnDefinition) tableElement);
@@ -41,10 +46,25 @@ public class MetaHelper {
 				tmBuilder.setPrimary(makeIndexMeta(PRIMARY,  INDEX_TYPE.PRI, primaryKey.getColumns()));
 			} else if (tableElement instanceof MySqlUnique) {
 				MySqlUnique unique = (MySqlUnique) tableElement;
-				tmBuilder.addUniIndex(makeIndexMeta(unique.getIndexName().getSimpleName(), INDEX_TYPE.UNI, unique.getColumns()));
+				if(indexNames == null){
+					indexNames = new HashSet<String>();
+				}
+				String indexName = genIndexName(unique.getName(), unique.getColumns(), indexNames);
+				tmBuilder.addUniIndex(makeIndexMeta(indexName, INDEX_TYPE.UNI, unique.getColumns()));
 			} else if (tableElement instanceof MySqlTableIndex) {
 				MySqlTableIndex index = (MySqlTableIndex) tableElement;
-				tmBuilder.addIndex(makeIndexMeta(index.getName().getSimpleName(), INDEX_TYPE.MUL, index.getColumns()));
+				if(indexNames == null){
+					indexNames = new HashSet<String>();
+				}
+				String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
+				tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
+			} else if (tableElement instanceof MySqlKey) {
+				MySqlKey index = (MySqlKey) tableElement;
+				if(indexNames == null){
+					indexNames = new HashSet<String>();
+				}
+				String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
+				tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
 			} else {
 				// ignore
 			}
@@ -52,6 +72,23 @@ public class MetaHelper {
 		return tmBuilder.build();
 	}
 
+	private static String genIndexName(SQLName srcIndexName, List<SQLExpr> columnExprs, Set<String> indexNames){
+		String indexName = null;
+		if (srcIndexName != null) {
+			indexName = StringUtil.removeBackQuote(srcIndexName.getSimpleName());
+		} else {
+			SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(0);
+			String columnName = StringUtil.removeBackQuote(column.getName());
+			indexName = columnName;
+			int indexNum = 1;
+			while (indexNames.contains(indexName)) {
+				indexNum++;
+				indexName = columnName + "_" + indexNum;
+			}
+		}
+		indexNames.add(indexName);
+		return indexName;
+	}
 	/**
 	 * the "`" will be removed
 	 * @param indexName

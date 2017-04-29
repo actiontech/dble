@@ -13,7 +13,7 @@ import io.mycat.plan.common.item.Item;
 
 public class ItemSumAnd extends ItemSumBit {
 	public ItemSumAnd(List<Item> item_par, boolean isPushDown, List<Field> fields) {
-		super(item_par, 1, isPushDown, fields);
+		super(item_par, -1, isPushDown, fields);
 	}
 
 	@Override

@@ -12,6 +12,8 @@ import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
 import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
@@ -23,7 +25,9 @@ import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
+import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLListExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNotExpr;
@@ -32,6 +36,7 @@ import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLSomeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLUnaryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
@@ -136,12 +141,20 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
 		item = new ItemSinglerowSubselect(currentDb, sqlSelect);
     }
+
 	@Override
 	public void endVisit(SQLBetweenExpr x){
 		item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());
 		initName(x);
 	}
-
+	
+	@Override
+	public void endVisit(SQLInSubQueryExpr x){
+		boolean isNeg = x.isNot();
+		Item left = getItem(x.getExpr());
+		item = new ItemInSubselect(currentDb, left, x.getSubQuery().getQuery(), isNeg);
+		initName(x);
+	}
 	
 	@Override
 	public void endVisit(SQLBooleanExpr x) {
@@ -322,15 +335,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	public void endVisit(SQLInListExpr x){
 		boolean isNeg = x.isNot();
 		Item left = getItem(x.getExpr());
-		List<Item> args = visitExprList(x.getTargetList());
-		if(args.get(0) instanceof ItemSinglerowSubselect){
-			SQLSelectStatement query = (SQLSelectStatement) (x.getTargetList().get(0));
-			item = new ItemInSubselect(currentDb, left, query.getSelect().getQuery(), isNeg);
-		}else{
-			args.add(left);
-			args.addAll(visitExprList(x.getTargetList()));
-			item = new ItemFuncIn(args, isNeg);
-		}
+		List<Item> args = new ArrayList<Item>();
+		args.add(left);
+		args.addAll(visitExprList(x.getTargetList()));
+		item = new ItemFuncIn(args, isNeg);
 		initName(x);
 	}
 
@@ -595,6 +603,30 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			initName(x);
 		}
 	}
+	
+
+	@Override
+	public void endVisit(SQLListExpr x) {
+		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Row Subqueries is not supported");
+	}
+	
+	@Override
+	public void endVisit(SQLAllExpr x) {
+		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with All is not supported");
+	}
+	
+	@Override
+	public void endVisit(SQLSomeExpr x) {
+		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with Some is not supported");
+	}
+	
+
+	@Override
+	public void endVisit(SQLAnyExpr x) {
+		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with Any is not supported");
+	}
+
+
 	@Override
 	public void endVisit(SQLExistsExpr x) {
 		// TODO

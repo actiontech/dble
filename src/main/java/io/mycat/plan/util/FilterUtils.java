@@ -8,6 +8,10 @@ import io.mycat.plan.common.item.Item.ItemType;
 import io.mycat.plan.common.item.ItemInt;
 import io.mycat.plan.common.item.function.ItemFunc.Functype;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLt;
 import io.mycat.plan.common.item.function.operator.logic.ItemCond;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
@@ -119,6 +123,29 @@ public class FilterUtils {
 	 */
 	public static ItemFuncEqual equal(Item column, Item value) {
 		ItemFuncEqual f = new ItemFuncEqual(column, value);
+		PlanUtil.refreshReferTables(f);
+		return f;
+	}
+
+	public static ItemFuncGt GreaterThan(Item column, Item value) {
+		ItemFuncGt f = new ItemFuncGt(column, value);
+		PlanUtil.refreshReferTables(f);
+		return f;
+	}
+
+	public static ItemFuncLt LessThan(Item column, Item value) {
+		ItemFuncLt f = new ItemFuncLt(column, value);
+		PlanUtil.refreshReferTables(f);
+		return f;
+	}
+	public static ItemFuncGe GreaterEqual(Item column, Item value) {
+		ItemFuncGe f = new ItemFuncGe(column, value);
+		PlanUtil.refreshReferTables(f);
+		return f;
+	}
+
+	public static ItemFuncLe LessEqual(Item column, Item value) {
+		ItemFuncLe f = new ItemFuncLe(column, value);
 		PlanUtil.refreshReferTables(f);
 		return f;
 	}

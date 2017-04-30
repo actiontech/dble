@@ -73,6 +73,9 @@ public class DefaultDruidParser implements DruidParser {
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
 		stmt.accept(visitor);
+		if(visitor.getNotSupportMsg()!= null){
+			throw new SQLNonTransientException(visitor.getNotSupportMsg());
+		}
 		List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
 		if (visitor.hasOrCondition()) {
 			// 根据or拆分

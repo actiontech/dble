@@ -257,7 +257,7 @@ public class MySQLPlanNodeVisitor {
 		for (SQLSelectItem item : items) {
 			SQLExpr expr = item.getExpr();
 			if (expr instanceof SQLQueryExpr)
-				throw new RuntimeException("query statement as column not supported!");
+				throw new RuntimeException("query statement as column is not supported!");
 			MySQLItemVisitor ev = new MySQLItemVisitor(currentDb);
 			expr.accept(ev);
 			Item selItem = ev.getItem();

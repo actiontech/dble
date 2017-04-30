@@ -160,6 +160,10 @@ public class MySQLPlanNodeVisitor {
 	}
 	public boolean visit(SQLUnionQueryTableSource unionTables) {
 		visit(unionTables.getUnion());
+		this.tableNode.setSubQuery(true);
+		if (unionTables.getAlias() != null) {
+			tableNode.alias(unionTables.getAlias());
+		}
 		return true;
 	}
 	public boolean visit(SQLJoinTableSource joinTables) {
@@ -238,7 +242,7 @@ public class MySQLPlanNodeVisitor {
 			SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
 			mtv.visit(unionTables);
-			this.tableNode = mtv.getTableNode();
+			this.tableNode = new QueryNode(mtv.getTableNode());
 		} 
 		else if (tables instanceof SQLSubqueryTableSource) {
 			SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;

@@ -33,6 +33,7 @@ public class SubQueryPreProcessor {
 	private final static String AUTOALIAS = "autoalias_";
 
 	public static PlanNode optimize(PlanNode qtn) {
+		MergeHavingFilter.optimize(qtn);
 		qtn = findComparisonsSubQueryToJoinNode(qtn);
 		return qtn;
 	}

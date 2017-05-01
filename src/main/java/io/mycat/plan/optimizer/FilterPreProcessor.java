@@ -34,32 +34,12 @@ import io.mycat.plan.util.PlanUtil;
 public class FilterPreProcessor {
 
 	public static PlanNode optimize(PlanNode qtn) {
-		mergeHavingFilter(qtn);
+		MergeHavingFilter.optimize(qtn);
 		qtn = preProcess(qtn);
 		return qtn;
 	}
 
-	/**
-	 * 将having中可合并的条件合并到where
-	 * 
-	 * @param qtn
-	 */
-	private static void mergeHavingFilter(PlanNode qtn) {
-		if (qtn.getHavingFilter() != null) {
-			List<Item> subFilters = FilterUtils.splitFilter(qtn.getHavingFilter());
-			List<Item> canMergeSubs = new ArrayList<Item>();
-			for (Item subFilter : subFilters) {
-				if (!subFilter.withSumFunc) {
-					canMergeSubs.add(subFilter);
-				}
-			}
-			subFilters.removeAll(canMergeSubs);
-			qtn.having(FilterUtils.and(subFilters));
-			qtn.setWhereFilter(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(canMergeSubs)));
-		}
-		for (PlanNode child : qtn.getChildren())
-			mergeHavingFilter(child);
-	}
+	
 
 	private static PlanNode preProcess(PlanNode qtn) {
 		qtn.having(processFilter(qtn.getHavingFilter()));

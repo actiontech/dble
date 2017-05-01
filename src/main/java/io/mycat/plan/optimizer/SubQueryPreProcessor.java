@@ -20,6 +20,8 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGt;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncNe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncStrictEqual;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
 import io.mycat.plan.common.item.function.sumfunc.ItemSum;
@@ -97,7 +99,8 @@ public class SubQueryPreProcessor {
 			boolean isNotIn = false;
 			boolean neeEexchange = false;
 			if (filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe
-					|| filter instanceof ItemFuncLt || filter instanceof ItemFuncLe) {
+					|| filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe
+					|| filter instanceof ItemFuncStrictEqual) {
 				ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
 				Item arg0 = eqFilter.arguments().get(0);
 				Item arg1 = eqFilter.arguments().get(1);
@@ -182,6 +185,8 @@ public class SubQueryPreProcessor {
 				} else if (((filter instanceof ItemFuncLe) && !neeEexchange)
 						|| ((filter instanceof ItemFuncGe) && neeEexchange)) {
 					joinFrilter = FilterUtils.LessEqual(leftColumn, rightJoinColumn);
+				} else if (filter instanceof ItemFuncNe) {
+					joinFrilter = FilterUtils.NotEqual(leftColumn, rightJoinColumn);
 				} else {
 					//equal or in
 					joinFrilter = FilterUtils.equal(leftColumn, rightJoinColumn);

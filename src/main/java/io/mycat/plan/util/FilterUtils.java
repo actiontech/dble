@@ -12,6 +12,7 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGt;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncNe;
 import io.mycat.plan.common.item.function.operator.logic.ItemCond;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
@@ -146,6 +147,12 @@ public class FilterUtils {
 
 	public static ItemFuncLe LessEqual(Item column, Item value) {
 		ItemFuncLe f = new ItemFuncLe(column, value);
+		PlanUtil.refreshReferTables(f);
+		return f;
+	}
+
+	public static ItemFuncNe NotEqual(Item column, Item value) {
+		ItemFuncNe f = new ItemFuncNe(column, value);
 		PlanUtil.refreshReferTables(f);
 		return f;
 	}

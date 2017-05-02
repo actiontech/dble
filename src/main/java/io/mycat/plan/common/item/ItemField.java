@@ -208,15 +208,15 @@ public class ItemField extends ItemIdent {
 	public Item fixFields(NameResolutionContext context) {
 		if (this.isWild())
 			return this;
-		NamedField tmpField = new NamedField(null);
-		tmpField.name = getItemName();
+		String tmpFieldTable = null;
+		String tmpFieldName = getItemName();
 		PlanNode planNode = context.getPlanNode();
 		Item column = null;
 		Item columnFromMeta = null;
 		if (context.getPlanNode().type() == PlanNodeType.MERGE) {
 			// select union only found in outerfields
 			if (StringUtils.isEmpty(getTableName())) {
-				column = planNode.getOuterFields().get(tmpField);
+				column = planNode.getOuterFields().get(new NamedField(tmpFieldTable,tmpFieldName,null));
 			} else {
 				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "42000",
 						"Table '" + getTableName() + "' from one of the SELECTs cannot be used in global ORDER clause");
@@ -227,7 +227,7 @@ public class ItemField extends ItemIdent {
 			// 尝试从selectlist中查找一次
 			if (StringUtils.isEmpty(getTableName())) {
 				for (NamedField field : planNode.getOuterFields().keySet()) {
-					if (StringUtils.equalsIgnoreCase(tmpField.name, field.name)) {
+					if (StringUtils.equalsIgnoreCase(tmpFieldName, field.getName())) {
 						if (column == null) {
 							column = planNode.getOuterFields().get(field);
 						} else
@@ -235,8 +235,8 @@ public class ItemField extends ItemIdent {
 					}
 				}
 			} else {
-				tmpField.table = getTableName();
-				column = planNode.getOuterFields().get(tmpField);
+				tmpFieldTable = getTableName();
+				column = planNode.getOuterFields().get(new NamedField(tmpFieldTable,tmpFieldName,null));
 			}
 		}
 		if (column != null && context.isSelectFirst()) {
@@ -245,11 +245,11 @@ public class ItemField extends ItemIdent {
 		// find from inner fields
 		if (StringUtils.isEmpty(getTableName())) {
 			for (NamedField field : planNode.getInnerFields().keySet()) {
-				if (StringUtils.equalsIgnoreCase(tmpField.name, field.name)) {
+				if (StringUtils.equalsIgnoreCase(tmpFieldName, field.getName())) {
 					if (columnFromMeta == null) {
-						tmpField.table = field.table;
-						NamedField coutField = planNode.getInnerFields().get(tmpField);
-						this.tableName = tmpField.table;
+						tmpFieldTable = field.getTable();
+						NamedField coutField = planNode.getInnerFields().get(new NamedField(tmpFieldTable,tmpFieldName,null));
+						this.tableName = field.getTable();
 						getReferTables().clear();
 						this.getReferTables().add(coutField.planNode);
 						columnFromMeta = this;
@@ -258,12 +258,13 @@ public class ItemField extends ItemIdent {
 				}
 			}
 		} else {
-			tmpField.table = getTableName();
+			tmpFieldTable = getTableName();
+			NamedField tmpField = new NamedField(tmpFieldTable,tmpFieldName,null);
 			if (planNode.getInnerFields().containsKey(tmpField)) {
 				NamedField coutField = planNode.getInnerFields().get(tmpField);
 				getReferTables().clear();
 				getReferTables().add(coutField.planNode);
-				this.tableName = tmpField.table;
+				this.tableName = tmpField.getTable();
 				columnFromMeta = this;
 			}
 		}

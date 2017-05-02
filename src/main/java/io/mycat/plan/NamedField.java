@@ -3,8 +3,9 @@ package io.mycat.plan;
 import org.apache.commons.lang.StringUtils;
 
 public class NamedField {
-	public String table;
-	public String name;
+	private final String table;
+	private final String name;
+	private final int hashCode;
 	// 这个field隶属于哪个节点
 	public final PlanNode planNode;
 
@@ -16,14 +17,25 @@ public class NamedField {
 		this.table = table;
 		this.name = name;
 		this.planNode = planNode;
+
+		//初始化hashCode
+		int prime = 2;
+		int hashCode = table == null ? 0 : table.hashCode();
+		this.hashCode = hashCode * prime + (name == null ? 0 : name.toLowerCase().hashCode());
 	}
 
 	@Override
 	public int hashCode() {
-		int prime = 2;
-		int hashCode = table == null ? 0 : table.hashCode();
-		hashCode = hashCode * prime + (name == null ? 0 : name.toLowerCase().hashCode());
+
 		return hashCode;
+	}
+
+	public String getTable() {
+		return table;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	@Override

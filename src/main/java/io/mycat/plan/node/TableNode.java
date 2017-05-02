@@ -93,7 +93,7 @@ public class TableNode extends PlanNode {
 				newSels.add(sel);
 			else {
 				for (NamedField innerField : innerFields.keySet()) {
-					ItemField col = new ItemField(null, sel.getTableName(), innerField.name);
+					ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
 					newSels.add(col);
 				}
 			}

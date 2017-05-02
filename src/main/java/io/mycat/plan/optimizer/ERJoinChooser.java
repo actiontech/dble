@@ -596,7 +596,7 @@ public class ERJoinChooser {
 		String colName = col.getItemName();
 		if (StringUtil.isEmpty(col.getTableName())) {
 			for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
-				if (StringUtil.equalsIgnoreCase(colName, entry.getKey().name)) {
+				if (StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
 					return entry.getValue();
 				}
 			}
@@ -606,8 +606,8 @@ public class ERJoinChooser {
 			// 存在col名称
 			if (child.getAlias() == null) {
 				for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
-					if (StringUtil.equals(table, entry.getKey().table)
-							&& StringUtil.equalsIgnoreCase(colName, entry.getKey().name)) {
+					if (StringUtil.equals(table, entry.getKey().getTable())
+							&& StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
 						return entry.getValue();
 					}
 				}
@@ -616,7 +616,7 @@ public class ERJoinChooser {
 				if (!StringUtil.equals(table, child.getAlias()))
 					return null;
 				for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
-					if (StringUtil.equalsIgnoreCase(colName, entry.getKey().name)) {
+					if (StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
 						return entry.getValue();
 					}
 				}

@@ -92,8 +92,8 @@ public class MergeNode extends PlanNode {
 		PlanNode firstNode = getChild();
 		outerFields.clear();
 		for (NamedField coutField : firstNode.getOuterFields().keySet()) {
-			ItemField column = new ItemField(null, null, coutField.name);
-			NamedField tmpField = new NamedField(null, coutField.name, this);
+			ItemField column = new ItemField(null, null, coutField.getName());
+			NamedField tmpField = new NamedField(null, coutField.getName(), this);
 			if (outerFields.containsKey(tmpField) && getParent() != null)
 				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
 			outerFields.put(tmpField, column);

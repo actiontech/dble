@@ -287,15 +287,17 @@ public abstract class PlanNode {
 
 	protected void setUpInnerFields() {
 		innerFields.clear();
+		String tmpFieldTable;
+		String tmpFieldName;
 		for (PlanNode child : children) {
 			child.setUpFields();
 			for (NamedField coutField : child.outerFields.keySet()) {
-				NamedField tmpField = new NamedField(coutField.planNode);
-				tmpField.table = child.getAlias() == null ? coutField.table : child.getAlias();
+				tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
 				// view也会有subAlias
 				if (subAlias!= null && subAlias.length()!=0)
-					tmpField.table = subAlias;
-				tmpField.name = coutField.name;
+					tmpFieldTable = subAlias;
+				tmpFieldName = coutField.getName();
+				NamedField tmpField = new NamedField(tmpFieldTable,tmpFieldName,coutField.planNode);
 				innerFields.put(tmpField, coutField);
 			}
 		}
@@ -379,16 +381,16 @@ public abstract class PlanNode {
 				ItemField wildField = (ItemField) selItem;
 				if (wildField.tableName==null || wildField.tableName.length()==0) {
 					for (NamedField field : innerFields.keySet()) {
-						ItemField col = new ItemField(null, field.table, field.name);
+						ItemField col = new ItemField(null, field.getTable(), field.getName());
 						newSels.add(col);
 					}
 				} else {
 					String selTable = wildField.tableName;
 					boolean found = false;
 					for (NamedField field : innerFields.keySet()) {
-						if (selTable != null && selTable.equals(field.table)
-								|| (selTable == null && field.table == null)) {
-							ItemField col = new ItemField(null, field.table, field.name);
+						if (selTable != null && selTable.equals(field.getTable())
+								|| (selTable == null && field.getTable() == null)) {
+							ItemField col = new ItemField(null, field.getTable(), field.getName());
 							newSels.add(col);
 							found = true;
 						} else if (found) {
@@ -409,13 +411,15 @@ public abstract class PlanNode {
 	}
 
 	private NamedField makeOutNamedField(Item sel) {
-		NamedField tmpField = new NamedField(sel.getTableName(), sel.getItemName(), this);
+		String tmpFieldTable = sel.getTableName();
+		String tmpFieldName =  sel.getItemName();
 		if (subAlias != null)
-			tmpField.table = subAlias;
-		if (tmpField.table == null)// maybe function
-			tmpField.table = getPureName();
+			tmpFieldTable = subAlias;
+		if (tmpFieldTable == null)// maybe function
+			tmpFieldTable = getPureName();
 		if (sel.getAlias() != null)
-			tmpField.name = sel.getAlias();
+			tmpFieldName = sel.getAlias();
+		NamedField tmpField = new NamedField(tmpFieldTable,tmpFieldName,this);
 		return tmpField;
 	}
 

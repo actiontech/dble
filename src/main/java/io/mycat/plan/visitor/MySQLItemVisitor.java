@@ -215,10 +215,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			}
 			break;
 		case NotLike:
-			item = new ItemFuncLike(itemLeft, itemLeft, null, true);
+			item = new ItemFuncLike(itemLeft, itemRight, null, true);
 			break;
 		case Like:
-			item = new ItemFuncLike(itemLeft, itemLeft, null, false);
+			item = new ItemFuncLike(itemLeft, itemRight, null, false);
 			break;
 		case Equality:
 			item = new ItemFuncEqual(itemLeft, itemRight);

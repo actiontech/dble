@@ -13,7 +13,6 @@ import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.Item.ItemType;
 import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.ItemInt;
-import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.operator.ItemBoolFunc2;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
@@ -24,7 +23,6 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncNe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncStrictEqual;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
-import io.mycat.plan.common.item.function.sumfunc.ItemSum;
 import io.mycat.plan.common.item.subquery.ItemInSubselect;
 import io.mycat.plan.common.item.subquery.ItemSubselect;
 import io.mycat.plan.node.JoinNode;
@@ -198,31 +196,16 @@ public class SubQueryPreProcessor {
 				result.query.setAlias(qtn.query.getPureName());
 			} else {
 				String queryAlias = qtn.query.getAlias();
+				qtn.query.alias(null);
 				if(queryAlias == null)
 					queryAlias = qtn.query.getSubAlias();
 				result.query.setAlias(queryAlias);
-				refreshItemTable(leftColumn, queryAlias);
+//				refreshItemTable(leftColumn, queryAlias);
 			}
 			result.query.setUpFields();
 			return result;
 		}
 		return qtn;
-	}
-
-	private static void refreshItemTable(Item item, String newTable) {
-		if (item instanceof ItemField) {
-			((ItemField) item).tableName = newTable;
-		} else if (item instanceof ItemFunc) {
-			ItemFunc func = (ItemFunc) item;
-			for (int index = 0; index < func.getArgCount(); index++) {
-				refreshItemTable(func.arguments().get(index), newTable);
-			}
-		} else if (item instanceof ItemSum) {
-			ItemSum func = (ItemSum) item;
-			for (int index = 0; index < func.getArgCount(); index++) {
-				refreshItemTable(func.arguments().get(index), newTable);
-			}
-		}
 	}
 
 }

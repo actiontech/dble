@@ -215,6 +215,9 @@ public class MySQLPlanNodeVisitor {
 		SQLSelect sqlSelect = subQueryTables.getSelect();
 		visit(sqlSelect.getQuery());
 		this.tableNode.setSubQuery(true);
+		if (subQueryTables.getAlias() != null) {
+			tableNode.alias(subQueryTables.getAlias());
+		}
 		return true;
 	}
 	public boolean visit(SQLSelect node) {
@@ -246,9 +249,6 @@ public class MySQLPlanNodeVisitor {
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb);
 			mtv.visit(subQueryTables);
 			this.tableNode = new QueryNode(mtv.getTableNode());
-			if (subQueryTables.getAlias() != null) {
-				tableNode.alias(subQueryTables.getAlias());
-			}
 		}
 	}
 

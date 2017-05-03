@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.plan.PlanNode;
@@ -296,15 +297,15 @@ public abstract class ItemFunc extends Item {
 
 	@Override
 	public SQLExpr toExpression() {
-//		if (ItemCreate.getInstance().isNativeFunc(this.funcName())) {
-//			List<SQLExpr> exprList = toExpressionList(args);
-//			FunctionExpression nativeFe = MySQLFunctionManager.INSTANCE_MYSQL_DEFAULT
-//					.createFunctionExpression(this.funcName().toUpperCase(), exprList);
-//			return nativeFe;
-//		} else {
-//			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected function:" + funcName());
-//		}
-		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected function:" + funcName());
+		if (ItemCreate.getInstance().isNativeFunc(this.funcName())) {
+			SQLMethodInvokeExpr nativeFe = new SQLMethodInvokeExpr(this.funcName().toUpperCase());
+			for (Item item : args) {
+				nativeFe.addParameter(item.toExpression());
+			}
+			return nativeFe;
+		} else {
+			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected function:" + funcName());
+		}
 	}
 
 	@Override

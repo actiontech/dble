@@ -1,8 +1,10 @@
 package io.mycat.plan.node;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.plan.NamedField;
@@ -91,11 +93,15 @@ public class MergeNode extends PlanNode {
 		columnsSelected.clear();
 		PlanNode firstNode = getChild();
 		outerFields.clear();
+		Set<NamedField> checkDup = new HashSet<NamedField>(firstNode.getOuterFields().size() , 1);
 		for (NamedField coutField : firstNode.getOuterFields().keySet()) {
-			ItemField column = new ItemField(null, null, coutField.name);
-			NamedField tmpField = new NamedField(null, coutField.name, this);
-			if (outerFields.containsKey(tmpField) && getParent() != null)
-				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
+			ItemField column = new ItemField(null, coutField.table, coutField.name);
+			NamedField tmpField = new NamedField(coutField.table, coutField.name, this);
+			NamedField testDupField = new NamedField(null, coutField.name, this);
+			if (checkDup.contains(testDupField) && getParent() != null) {
+				throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "", "Duplicate column name "+coutField.name);
+			}
+			checkDup.add(testDupField);
 			outerFields.put(tmpField, column);
 			getColumnsSelected().add(column);
 		}

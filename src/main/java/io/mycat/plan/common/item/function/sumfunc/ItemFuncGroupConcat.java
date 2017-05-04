@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
+import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 
 import io.mycat.net.mysql.RowDataPacket;
@@ -192,8 +193,11 @@ public class ItemFuncGroupConcat extends ItemSum {
 			}
 			aggregate.putAttribute(ItemFuncKeyWord.ORDER_BY, orderBy);
 		}
+		Item arg0 = getArg(0);
+		aggregate.addArgument(arg0.toExpression());
 		if (seperator != null) {
-			aggregate.putAttribute(ItemFuncKeyWord.SEPARATOR, seperator);
+			SQLCharExpr sep = new SQLCharExpr(seperator);
+			aggregate.putAttribute(ItemFuncKeyWord.SEPARATOR, sep);
 		}
 		return aggregate;
 	}

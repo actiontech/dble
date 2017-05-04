@@ -333,7 +333,7 @@ public class MySQLConnection extends BackendAIOConnection {
 		private final Boolean autocommit;
 		private final AtomicInteger synCmdCount;
 
-		public StatusSync(boolean xaStarted, String schema,
+		public StatusSync(String schema,
 				Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
 				int synCount) {
 			super();
@@ -341,9 +341,6 @@ public class MySQLConnection extends BackendAIOConnection {
 			this.charsetIndex = charsetIndex;
 			this.txtIsolation = txtIsolation;
 			this.autocommit = autocommit;
-			if (xaStarted) {
-				synCount++;
-			}
 			this.synCmdCount = new AtomicInteger(synCount);
 		}
 
@@ -424,13 +421,14 @@ public class MySQLConnection extends BackendAIOConnection {
 			int clientCharSetIndex, int clientTxIsoLation,
 			boolean expectAutocommit) {
 		String xaCmd = null;
-
 		boolean conAutoComit = this.autocommit;
 		String conSchema = this.schema;
+		int xaSyn = 0;
 		if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
 			// clientTxIsoLation = Isolations.SERIALIZABLE;
 			xaCmd = "XA START " + xaTxID + ';';
 			this.xaStatus = TxState.TX_STARTED_STATE;
+			xaSyn = 1;
 		}
 		int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
 		int charsetSyn = 0;
@@ -443,8 +441,8 @@ public class MySQLConnection extends BackendAIOConnection {
 		}
 		int txIsoLationSyn = (txIsolation == clientTxIsoLation) ? 0 : 1;
 		int autoCommitSyn = (conAutoComit == expectAutocommit) ? 0 : 1;
-		int synCount = schemaSyn + charsetSyn + txIsoLationSyn + autoCommitSyn;
-		if (synCount == 0 && this.xaStatus != TxState.TX_STARTED_STATE) {
+		int synCount = schemaSyn + charsetSyn + txIsoLationSyn + autoCommitSyn + xaSyn;
+		if (synCount == 0) {
 			// not need syn connection
 			sendQueryCmd(rrn.getStatement());
 			return;
@@ -474,7 +472,7 @@ public class MySQLConnection extends BackendAIOConnection {
 					+ (schemaCmd != null) + " con:" + this);
 		}
 		metaDataSyned = false;
-		statusSync = new StatusSync(xaCmd != null, conSchema,
+		statusSync = new StatusSync(conSchema,
 				clientCharSetIndex, clientTxIsoLation, expectAutocommit,
 				synCount);
 		// syn schema

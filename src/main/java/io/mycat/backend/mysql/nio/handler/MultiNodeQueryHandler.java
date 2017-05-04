@@ -208,7 +208,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	}
 
     	private void handleDdl() {
-	    	if(rrs.getSqlType() != ServerParse.DDL) {
+	    	if(rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
 		    	return;
 		}
 		

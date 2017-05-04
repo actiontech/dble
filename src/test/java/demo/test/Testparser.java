@@ -222,7 +222,34 @@ public class Testparser {
 //		selectSQl = "select  id from db.table1 GROUP BY db.table1.id;";
 //		obj.test(selectSQl);
 
-		selectSQl = "select  id,'abc' from db.table1 GROUP BY db.table1.id;";
+//		selectSQl = "select  id,'abc' from db.table1 GROUP BY db.table1.id;";
+//		selectSQl = "select * from sharding_two_node a natural join sharding_four_node b  ;";
+//		obj.test(selectSQl);
+//		selectSQl = "select * from sharding_two_node a where id = (select min(id) from sharding_two_node)  ;";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT column1 FROM t1 AS x  WHERE x.column1 = (SELECT column1 FROM t2 AS x "
+//				+ "WHERE x.column1 = (SELECT column1 FROM t3 "
+//				+ "WHERE x.column2 = t3.column1));";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT s1 FROM t1 WHERE s1 = ANY (SELECT s1 FROM t2);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT s1 FROM t1 WHERE s1 = SOME (SELECT s1 FROM t2);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT s1 FROM t1 WHERE s1 > ALL (SELECT s1 FROM t2);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT * FROM t1  WHERE (col1,col2) = (SELECT col3, col4 FROM t2 WHERE id = 10);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT column1 FROM t1 WHERE EXISTS (SELECT * FROM t2);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT column1 FROM t1 WHERE Not EXISTS (SELECT * FROM t2);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT (SELECT s2 FROM t1);";
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT 1 + 1 FROM DUAL;";
+//		obj.test(selectSQl);
+//		selectSQl = "select * from sharding_two_node where id in(select id from sharding_four_node);";
+//		obj.test(selectSQl);
+		selectSQl = "select * from t1 where s1 in(1,(select s1 from t2));";
 		obj.test(selectSQl);
 		
 	}

@@ -8,12 +8,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLListExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLSomeExpr;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
@@ -36,6 +43,8 @@ import io.mycat.route.util.RouterUtil;
  *
  */
 public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
+	private String notSupportMsg = null;
+	private boolean hasSubQuery = false;
 	private boolean hasOrCondition = false;
 	private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<WhereUnit>();
 	private List<WhereUnit> storedwhereUnits = new CopyOnWriteArrayList<WhereUnit>();
@@ -45,7 +54,15 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 		this.whereUnits.clear();
 		this.hasOrCondition = false;
 	}
-	
+
+	public boolean isHasSubQuery() {
+		return hasSubQuery;
+	}
+
+	public String getNotSupportMsg() {
+		return notSupportMsg;
+	}
+
 	public List<WhereUnit> getWhereUnits() {
 		return whereUnits;
 	}
@@ -53,6 +70,51 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 	public boolean hasOrCondition() {
 		return hasOrCondition;
 	}
+	@Override
+    public boolean visit(SQLInSubQueryExpr x) {
+		super.visit(x);
+		hasSubQuery = true;
+		return true;
+	}
+	@Override
+    public boolean visit(SQLQueryExpr x) {
+		super.visit(x);
+		hasSubQuery = true;
+		return true;
+	}
+	@Override
+    public boolean visit(SQLListExpr x) {
+		super.visit(x);
+		notSupportMsg = "Row Subqueries is not supported";
+        return true;
+    }
+
+	@Override
+    public boolean visit(SQLExistsExpr x) {
+		super.visit(x);
+		notSupportMsg = "Subqueries with EXISTS or NOT EXISTS is not supported";
+        return true;
+    }
+	@Override
+    public boolean visit(SQLAllExpr x) {
+		super.visit(x);
+		notSupportMsg = "Subqueries with All is not supported";
+        return true;
+    }
+
+	@Override
+    public boolean visit(SQLSomeExpr x) {
+		super.visit(x);
+		notSupportMsg = "Subqueries with Some is not supported";
+        return true;
+    }
+	
+	@Override
+    public boolean visit(SQLAnyExpr x) {
+		super.visit(x);
+		notSupportMsg = "Subqueries with Any is not supported";
+        return true;
+    }
 	
     @Override
     public boolean visit(SQLSelectStatement x) {

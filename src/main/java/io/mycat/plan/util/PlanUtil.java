@@ -15,6 +15,7 @@ import io.mycat.plan.PlanNode.PlanNodeType;
 import io.mycat.plan.common.exception.MySQLOutPutException;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.Item.ItemType;
+import io.mycat.plan.common.item.ItemBasicConstant;
 import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.ItemFunc.Functype;
@@ -275,7 +276,10 @@ public class PlanUtil {
 			return pushColToUnionChild((ItemField) toPush, colIndexs, childSelects);
 		} else if (toPush instanceof ItemFunc) {
 			return pushFunctionToUnionChild((ItemFunc) toPush, colIndexs, childSelects);
-		} else {
+		} else if (toPush instanceof ItemBasicConstant) {
+			return toPush;
+		}
+		else {
 			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
 		}
 	}

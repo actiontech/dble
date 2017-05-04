@@ -3,6 +3,8 @@ package io.mycat.route.parser.druid.impl;
 import java.sql.SQLNonTransientException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -26,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
+import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
@@ -60,10 +63,12 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			}
 		} else {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
+            //数据库校验
 			if (schemaInfo == null) {
 				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
+			//权限控制
 			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
@@ -89,7 +94,13 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			}
 	        String partitionColumn = tc.getPartitionColumn();
 	        String joinKey = tc.getJoinKey();
+
+            /*此方法控制分片字段不会被更新
+             */
 	        confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
+
+            //这里新增检查方法确保子表的关联字段不会被更新
+            confirmChildColumnNotUpdated(update,schema,tableName);
 
 	        if (schema.getTables().get(tableName).isGlobalTable() && ctx.getRouteCalculateUnit().getTablesAndConditions().size() > 1) {
 	            throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
@@ -275,5 +286,48 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 }
             }
         }
+    }
+
+
+    /**
+     * 确保子表和父表关联的字段不会被更新
+     * 注如果是更新子表和父表关联的字段这个限制由方法confirmShardColumnNotUpdated做出
+     * @throws SQLNonTransientException
+     */
+    private void confirmChildColumnNotUpdated(SQLUpdateStatement update,SchemaConfig schema,String tableName) throws  SQLNonTransientException{
+		if (schema.getFkErRelations() == null) {
+			return;
+		}
+        List<SQLUpdateSetItem> updateSetItem = update.getItems();
+        //遍历此次需要更新的字段
+        if (updateSetItem != null && updateSetItem.size() > 0) {
+            for (SQLUpdateSetItem item : updateSetItem) {
+                String column = StringUtil.removeBackQuote(item.getColumn().toString().toUpperCase());
+                if(isJoinColumn(column,schema,tableName)){
+                    String msg = "child relevant column can't be updated " + tableName + "->" + column;
+                    LOGGER.warn(msg);
+                    throw new SQLNonTransientException(msg);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * 判断字段是不是在作为某些表格的父表连接字段使用
+     * 直接通过在schema配置加载的时候创建的父子关系进行判断
+     * 如果存在的只有两种情况，一种作为子表字段，一种作为父表字段
+     * confirmShardColumnNotUpdated方法已经检测了第一种情况
+     * @param schema
+     * @param tableName
+     * @return
+     */
+    private boolean isJoinColumn(String column,SchemaConfig schema,String tableName){
+        Map<ERTable, Set<ERTable>> map =  schema.getFkErRelations();
+        ERTable key = new ERTable(schema.getName(),tableName,column);
+        if(map.containsKey(key)){
+            return true;
+        }
+        return false;
     }
 }

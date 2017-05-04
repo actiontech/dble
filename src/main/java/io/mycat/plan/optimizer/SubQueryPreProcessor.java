@@ -13,20 +13,27 @@ import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.Item.ItemType;
 import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.ItemInt;
-import io.mycat.plan.common.item.function.ItemFunc;
+import io.mycat.plan.common.item.function.operator.ItemBoolFunc2;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncNe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncStrictEqual;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
-import io.mycat.plan.common.item.function.sumfunc.ItemSum;
 import io.mycat.plan.common.item.subquery.ItemInSubselect;
 import io.mycat.plan.common.item.subquery.ItemSubselect;
 import io.mycat.plan.node.JoinNode;
+import io.mycat.plan.util.FilterUtils;
 
 public class SubQueryPreProcessor {
 	private final static String AUTONAME = "autosubgenrated0";
 	private final static String AUTOALIAS = "autoalias_";
 
 	public static PlanNode optimize(PlanNode qtn) {
+		MergeHavingFilter.optimize(qtn);
 		qtn = findComparisonsSubQueryToJoinNode(qtn);
 		return qtn;
 	}
@@ -88,8 +95,11 @@ public class SubQueryPreProcessor {
 			Item leftColumn;
 			PlanNode query;
 			boolean isNotIn = false;
-			if (filter instanceof ItemFuncEqual) {
-				ItemFuncEqual eqFilter = (ItemFuncEqual) filter;
+			boolean neeEexchange = false;
+			if (filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe
+					|| filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe
+					|| filter instanceof ItemFuncStrictEqual) {
+				ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
 				Item arg0 = eqFilter.arguments().get(0);
 				Item arg1 = eqFilter.arguments().get(1);
 				boolean arg0IsSubQuery = arg0.type().equals(ItemType.SUBSELECT_ITEM);
@@ -98,6 +108,7 @@ public class SubQueryPreProcessor {
 					throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
 							"left and right both condition subquery,not supported...");
 				}
+				neeEexchange = arg0IsSubQuery;
 				leftColumn = arg0IsSubQuery ? arg1 : arg0;
 				query = arg0IsSubQuery ? ((ItemSubselect) arg0).getPlanNode() : ((ItemSubselect) arg1).getPlanNode();
 			} else if (filter instanceof ItemInSubselect) {
@@ -108,6 +119,7 @@ public class SubQueryPreProcessor {
 			} else {
 				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
 			}
+			query = findComparisonsSubQueryToJoinNode(query);
 			if (StringUtils.isEmpty(query.getAlias()))
 				query.alias(AUTOALIAS + query.getPureName());
 			if (query.getColumnsSelected().size() != 1)
@@ -130,7 +142,7 @@ public class SubQueryPreProcessor {
 
 			ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
 			// left column的table名称需要改变
-			result.query = new JoinNode(qtn.query, query).addJoinKeys(leftColumn, rightJoinColumn);
+			result.query = new JoinNode(qtn.query, query);
 			// 保留原sql至新的join节点
 			result.query.setSql(qtn.query.getSql());
 			qtn.query.setSql(null);
@@ -158,37 +170,42 @@ public class SubQueryPreProcessor {
 			if (isNotIn) {
 				((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
 			} else {
-				result.filter = null;
+				Item joinFrilter = null;
+				if (((filter instanceof ItemFuncGt) && !neeEexchange)
+						|| ((filter instanceof ItemFuncLt) && neeEexchange)) {
+					joinFrilter = FilterUtils.GreaterThan(leftColumn, rightJoinColumn);
+				} else if (((filter instanceof ItemFuncLt) && !neeEexchange)
+						|| ((filter instanceof ItemFuncGt) && neeEexchange)) {
+					joinFrilter = FilterUtils.LessThan(leftColumn, rightJoinColumn);
+				} else if (((filter instanceof ItemFuncGe) && !neeEexchange)
+						|| ((filter instanceof ItemFuncLe) && neeEexchange)) {
+					joinFrilter = FilterUtils.GreaterEqual(leftColumn, rightJoinColumn);
+				} else if (((filter instanceof ItemFuncLe) && !neeEexchange)
+						|| ((filter instanceof ItemFuncGe) && neeEexchange)) {
+					joinFrilter = FilterUtils.LessEqual(leftColumn, rightJoinColumn);
+				} else if (filter instanceof ItemFuncNe) {
+					joinFrilter = FilterUtils.NotEqual(leftColumn, rightJoinColumn);
+				} else {
+					//equal or in
+					joinFrilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+				}
+				((JoinNode) result.query).query(joinFrilter);
+				result.filter = joinFrilter;
 			}
 			if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {
 				result.query.setAlias(qtn.query.getPureName());
 			} else {
 				String queryAlias = qtn.query.getAlias();
+				qtn.query.alias(null);
 				if(queryAlias == null)
 					queryAlias = qtn.query.getSubAlias();
 				result.query.setAlias(queryAlias);
-				refreshItemTable(leftColumn, queryAlias);
+//				refreshItemTable(leftColumn, queryAlias);
 			}
 			result.query.setUpFields();
 			return result;
 		}
 		return qtn;
-	}
-
-	private static void refreshItemTable(Item item, String newTable) {
-		if (item instanceof ItemField) {
-			((ItemField) item).tableName = newTable;
-		} else if (item instanceof ItemFunc) {
-			ItemFunc func = (ItemFunc) item;
-			for (int index = 0; index < func.getArgCount(); index++) {
-				refreshItemTable(func.arguments().get(index), newTable);
-			}
-		} else if (item instanceof ItemSum) {
-			ItemSum func = (ItemSum) item;
-			for (int index = 0; index < func.getArgCount(); index++) {
-				refreshItemTable(func.arguments().get(index), newTable);
-			}
-		}
 	}
 
 }

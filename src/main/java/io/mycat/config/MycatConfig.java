@@ -100,7 +100,6 @@ public class MycatConfig {
 		//配置加载锁
 		this.lock = new ReentrantLock();
 	}
-
 	public SystemConfig getSystem() {
 		return system;
 	}

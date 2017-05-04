@@ -77,7 +77,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
 	private byte[] makeErrorPacket(String errMsg) {
 		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.packetId = ++packetId;
 		errPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
 		errPacket.message = StringUtil.encode(errMsg, session.getSource().getCharset());
 		return errPacket.toBytes();
@@ -289,7 +288,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 	protected void nextParse(){
 		if (this.isFail()){
 			session.getSource().setTxInterrupt(error);
-			createErrPkg(error).write(session.getSource());
+			session.getSource().write(sendData);
+			LOGGER.warn("nextParse failed:"+error);
 		} else {
 			commit();
 		}
@@ -336,7 +336,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 		// need to rollback;
 		default:
 			XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
-			createErrPkg(error).write(session.getSource());
+			session.getSource().write(sendData);
+			LOGGER.warn("cleanAndFeedback:" + error);
 			break;
 		}
 	}

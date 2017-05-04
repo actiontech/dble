@@ -600,7 +600,7 @@ public class ProxyMetaManager {
 				TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
 				if (orgTbMeta == null)
 					return;
-				String indexName = statement.getName().getSimpleName();
+				String indexName = StringUtil.removeBackQuote(statement.getName().getSimpleName());
 				TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
 				if (statement.getType() == null) {
 					addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, statement.getItems());
@@ -615,7 +615,7 @@ public class ProxyMetaManager {
 		}
 	}
 	private void addIndex(TableMeta.Builder tmBuilder, SQLAlterTableAddIndex addIndex) {
-		String indexName = addIndex.getName().getSimpleName();
+		String indexName = StringUtil.removeBackQuote(addIndex.getName().getSimpleName());
 		if (addIndex.isUnique()) {
 			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, addIndex.getItems());
 		} else {

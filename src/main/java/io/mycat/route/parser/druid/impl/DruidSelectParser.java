@@ -8,12 +8,15 @@ import java.util.Set;
 import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
@@ -44,6 +47,11 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 		String schemaName = schema == null ? null : schema.getName();
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
+			for(SQLSelectItem item:mysqlSelectQuery.getSelectList()){
+				if(item.getExpr() instanceof SQLQueryExpr){
+					throw new SQLNonTransientException("query statement as column is not supported!");
+				}
+			}
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
 			if (mysqlFrom == null) {
 				String db = SchemaUtil.getRandomDb();
@@ -110,13 +118,18 @@ public class DruidSelectParser extends DruidBaseSelectParser {
 					throw new SQLNonTransientException(msg);
 				}
 				super.visitorParse(schema, rrs, stmt, visitor);
+				if(visitor.isHasSubQuery()){
+					rrs.setSqlStatement(selectStmt);
+					rrs.setNeedOptimizer(true);
+					return schema;
+				}
 				parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
 				// 更改canRunInReadDB属性
 				if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
 						&& rrs.isAutocommit() == false) {
 					rrs.setCanRunInReadDB(false);
 				}
-			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource) {
+			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
 				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
 				if (rrs.isFinishedRoute()) {
 					return schema;

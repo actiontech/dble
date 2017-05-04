@@ -22,6 +22,8 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionOperator;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
@@ -68,7 +70,7 @@ public class MySQLPlanNodeVisitor {
 			visit((MySqlUnionQuery)node);
 		} 
 	}
-	public boolean visit(MySqlUnionQuery sqlSelectQuery) {
+	public boolean visit(SQLUnionQuery sqlSelectQuery) {
 		SQLSelectQuery left = sqlSelectQuery.getLeft();
 		MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb,this.charsetIndex);
 		mtvleft.visit(left);
@@ -78,7 +80,6 @@ public class MySQLPlanNodeVisitor {
 		mtvright.visit(right);
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
-		SQLLimit limit = sqlSelectQuery.getLimit();
 		MergeNode mergeNode = new MergeNode();
 		if (sqlSelectQuery.getOperator() != SQLUnionOperator.UNION) {
 			mergeNode.setUnion(true);
@@ -89,6 +90,11 @@ public class MySQLPlanNodeVisitor {
 		if (orderBy != null) {
 			handleOrderBy(orderBy);
 		}
+		return true;
+	}
+	public boolean visit(MySqlUnionQuery sqlSelectQuery) {
+		visit((SQLUnionQuery)sqlSelectQuery);
+		SQLLimit limit = sqlSelectQuery.getLimit();
 		if (limit != null) {
 			handleLimit(limit);
 		}
@@ -153,7 +159,14 @@ public class MySQLPlanNodeVisitor {
 		this.tableNode = table;
 		return true;
 	}
-	
+	public boolean visit(SQLUnionQueryTableSource unionTables) {
+		visit(unionTables.getUnion());
+		this.tableNode.setSubQuery(true);
+		if (unionTables.getAlias() != null) {
+			tableNode.alias(unionTables.getAlias());
+		}
+		return true;
+	}
 	public boolean visit(SQLJoinTableSource joinTables) {
 		SQLTableSource left = joinTables.getLeft();
 		MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
@@ -167,6 +180,7 @@ public class MySQLPlanNodeVisitor {
 		case JOIN:
 		case CROSS_JOIN:
 		case INNER_JOIN:
+		case STRAIGHT_JOIN:
 			joinNode.setInnerJoin();
 			break;
 		case LEFT_OUTER_JOIN:
@@ -176,8 +190,6 @@ public class MySQLPlanNodeVisitor {
 			joinNode.setRightOuterJoin();
 			break;
 		case NATURAL_JOIN:// col?
-			break;
-		case STRAIGHT_JOIN:
 			break;
 		default:
 			break;
@@ -203,6 +215,10 @@ public class MySQLPlanNodeVisitor {
 	public boolean visit(SQLSubqueryTableSource subQueryTables) {
 		SQLSelect sqlSelect = subQueryTables.getSelect();
 		visit(sqlSelect.getQuery());
+		this.tableNode.setSubQuery(true);
+		if (subQueryTables.getAlias() != null) {
+			tableNode.alias(subQueryTables.getAlias());
+		}
 		return true;
 	}
 	public boolean visit(SQLSelect node) {
@@ -223,20 +239,17 @@ public class MySQLPlanNodeVisitor {
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 			mtv.visit(joinTables);
 			this.tableNode = mtv.getTableNode();
-		} else if (tables instanceof SQLSubqueryTableSource) {
+		} else if (tables instanceof SQLUnionQueryTableSource) {
+			SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
+			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+			mtv.visit(unionTables);
+			this.tableNode = new QueryNode(mtv.getTableNode());
+		} 
+		else if (tables instanceof SQLSubqueryTableSource) {
 			SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
 			MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
 			mtv.visit(subQueryTables);
-			if (this.tableNode == null) {
-				this.tableNode = mtv.getTableNode();
-				// 如果是第一个table，并且是唯一的一个，才做queryNode，因为如果多于两个可以通过joinNode来代替
-				if (this.tableNode.isSubQuery()
-						&& (this.tableNode instanceof TableNode || this.tableNode instanceof NoNameNode)) {
-					this.tableNode = new QueryNode(this.tableNode);
-				}
-			} else {
-				this.tableNode = new JoinNode(this.tableNode, mtv.getTableNode());
-			}
+			this.tableNode = new QueryNode(mtv.getTableNode());
 		}
 	}
 
@@ -245,7 +258,7 @@ public class MySQLPlanNodeVisitor {
 		for (SQLSelectItem item : items) {
 			SQLExpr expr = item.getExpr();
 			if (expr instanceof SQLQueryExpr)
-				throw new RuntimeException("query statement as column not supported!");
+				throw new RuntimeException("query statement as column is not supported!");
 			MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex);
 			expr.accept(ev);
 			Item selItem = ev.getItem();
@@ -348,8 +361,8 @@ public class MySQLPlanNodeVisitor {
 	private List<ItemFuncEqual> getUsingFilter(List<SQLExpr> using, String leftJoinNode, String rightJoinNode) {
 		List<ItemFuncEqual> filterList = new ArrayList<ItemFuncEqual>();
 		for (SQLExpr us : using) {
-			ItemField column1 = new ItemField(null, leftJoinNode, us.toString());
-			ItemField column2 = new ItemField(null, rightJoinNode, us.toString());
+			ItemField column1 = new ItemField(null, leftJoinNode, StringUtil.removeBackQuote(us.toString()));
+			ItemField column2 = new ItemField(null, rightJoinNode, StringUtil.removeBackQuote(us.toString()));
 			ItemFuncEqual arg = new ItemFuncEqual(column1, column2);
 			filterList.add(arg);
 		}

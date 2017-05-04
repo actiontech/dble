@@ -9,10 +9,6 @@ public class NamedField {
 	// 这个field隶属于哪个节点
 	public final PlanNode planNode;
 
-	public NamedField(PlanNode tableNode) {
-		this(null, null, tableNode);
-	}
-
 	public NamedField(String table, String name, PlanNode planNode) {
 		this.table = table;
 		this.name = name;

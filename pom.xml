@@ -419,6 +419,14 @@
 									<token>@server-version@</token>
 									<value>5.6.29-mycat-${project.version}-${timestamp}</value>
 								</replacement>
+								<replacement>
+									<token>@version-comment@</token>
+									<value>${sever.comment}</value>
+								</replacement>
+								<replacement>
+									<token>@annotation-name@</token>
+									<value>mycat:</value>
+								</replacement>
 							</replacements>
 						</configuration>
 					</execution>

@@ -370,6 +370,57 @@
 						</configuration>
 					</execution>
 					<execution>
+						<id>rule.dtd</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/resources/rule.dtd.template</file>
+							<outputFile>${project.basedir}/src/main/resources/rule.dtd</outputFile>
+							<replacements>
+								<replacement>
+									<token>@project-name@</token>
+									<value>ushard</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>schema.dtd</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/resources/schema.dtd.template</file>
+							<outputFile>${project.basedir}/src/main/resources/schema.dtd</outputFile>
+							<replacements>
+								<replacement>
+									<token>@project-name@</token>
+									<value>ushard</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>server.dtd</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/resources/server.dtd.template</file>
+							<outputFile>${project.basedir}/src/main/resources/server.dtd</outputFile>
+							<replacements>
+								<replacement>
+									<token>@project-name@</token>
+									<value>ushard</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
 						<id>version2</id>
 						<phase>process-sources</phase>
 						<goals>
@@ -386,6 +437,10 @@
 								<replacement>
 									<token>@version-comment@</token>
 									<value>${sever.comment}</value>
+								</replacement>
+								<replacement>
+									<token>@annotation-name@</token>
+									<value>ushard:</value>
 								</replacement>
 							</replacements>
 						</configuration>
@@ -462,7 +517,7 @@
 					<useWildcardClassPath>true</useWildcardClassPath>
 					<daemons>
 						<daemon>
-							<id>mycat</id>
+							<id>ushard</id>
 							<mainClass>io.mycat.MycatStartup</mainClass>
 							<commandLineArguments>
 								<commandLineArgument>start</commandLineArgument>
@@ -550,12 +605,7 @@
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<descriptors>
-						<descriptor>src/main/assembly/assembly-win.xml</descriptor>
-						<descriptor>src/main/assembly/assembly-linux.xml</descriptor>
-						<descriptor>src/main/assembly/assembly-mac.xml</descriptor>
-						<descriptor>src/main/assembly/assembly-solaris.xml</descriptor>
-						<descriptor>src/main/assembly/assembly-unix.xml</descriptor>
-						<descriptor>src/main/assembly/assembly-testtool.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-ushard-linux.xml</descriptor>
 					</descriptors>
 				</configuration>
 				<executions>

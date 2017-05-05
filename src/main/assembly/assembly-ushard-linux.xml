@@ -38,6 +38,9 @@
 			<excludes>
 				<exclude>*.dtd</exclude>
 				<exclude>log4j*</exclude>
+				<exclude>rule_template.xml</exclude>
+				<exclude>schema_template.xml</exclude>
+				<exclude>server_template.xml</exclude>
 			</excludes>
 		</fileSet>
         <fileSet>

@@ -376,11 +376,11 @@
 							<goal>replace</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/src/main/resources/rule.dtd.template</file>
+							<file>${project.basedir}/src/main/resources/rule.dtd</file>
 							<outputFile>${project.basedir}/src/main/resources/rule.dtd</outputFile>
 							<replacements>
 								<replacement>
-									<token>@project-name@</token>
+									<token>mycat</token>
 									<value>ushard</value>
 								</replacement>
 							</replacements>
@@ -393,11 +393,11 @@
 							<goal>replace</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/src/main/resources/schema.dtd.template</file>
+							<file>${project.basedir}/src/main/resources/schema.dtd</file>
 							<outputFile>${project.basedir}/src/main/resources/schema.dtd</outputFile>
 							<replacements>
 								<replacement>
-									<token>@project-name@</token>
+									<token>mycat</token>
 									<value>ushard</value>
 								</replacement>
 							</replacements>
@@ -410,11 +410,11 @@
 							<goal>replace</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/src/main/resources/server.dtd.template</file>
+							<file>${project.basedir}/src/main/resources/server.dtd</file>
 							<outputFile>${project.basedir}/src/main/resources/server.dtd</outputFile>
 							<replacements>
 								<replacement>
-									<token>@project-name@</token>
+									<token>mycat</token>
 									<value>ushard</value>
 								</replacement>
 							</replacements>

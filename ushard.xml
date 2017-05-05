@@ -403,6 +403,23 @@
 							</replacements>
 						</configuration>
 					</execution>
+                    <execution>
+                        <id>log4j2.xml</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.basedir}/src/main/resources/log4j2.xml</file>
+                            <outputFile>${project.basedir}/src/main/resources/log4j2.xml</outputFile>
+                            <replacements>
+                                <replacement>
+                                    <token>mycat</token>
+                                    <value>ushard</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </execution>
 					<execution>
 						<id>server.dtd</id>
 						<phase>process-sources</phase>
@@ -420,6 +437,23 @@
 							</replacements>
 						</configuration>
 					</execution>
+                    <execution>
+                        <id>ShowServerLog.java</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.basedir}/src/main/java/io/mycat/manager/handler/ShowServerLog.java</file>
+                            <outputFile>${project.basedir}/src/main/java/io/mycat/manager/handler/ShowServerLog.java</outputFile>
+                            <replacements>
+                                <replacement>
+                                    <token>mycat.log</token>
+                                    <value>ushard.log</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </execution>
 					<execution>
 						<id>version2</id>
 						<phase>process-sources</phase>

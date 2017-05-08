@@ -259,15 +259,15 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 			entry.getValue().clear();
 			entry.getValue().put(new HeapItem(null, null, entry.getKey()));
 		}
-	}
-
-	@Override
-	protected void recycleResources() {
 		synchronized (exeHandlers) {
 			for (BaseSelectHandler exeHandler : exeHandlers) {
 				terminatePreHandler(exeHandler);
 			}
 		}
+	}
+
+	@Override
+	protected void recycleResources() {
 		Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iter = this.queues.entrySet().iterator();
 		while (iter.hasNext()) {
 			Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iter.next();

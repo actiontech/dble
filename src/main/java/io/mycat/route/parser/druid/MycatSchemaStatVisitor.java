@@ -124,6 +124,9 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLBetweenExpr x) {
+    	if(x.isNot()){
+    		return true;
+    	}
         String begin = null;
         if(x.beginExpr instanceof SQLCharExpr)
         {

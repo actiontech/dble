@@ -327,21 +327,6 @@ public class ServerConnection extends FrontendConnection {
 		
 	}
 
-	/**
-	 * 撤销执行中的语句
-	 * 
-	 * @param sponsor
-	 *            发起者为null表示是自己
-	 */
-	public void cancel(final FrontendConnection sponsor) {
-		processor.getExecutor().execute(new Runnable() {
-			@Override
-			public void run() {
-				session.cancel(sponsor);
-			}
-		});
-	}
-
 	@Override
 	public void close(String reason) {
 

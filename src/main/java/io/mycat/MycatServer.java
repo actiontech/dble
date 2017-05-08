@@ -155,6 +155,7 @@ public class MycatServer {
 	private NIOProcessor[] processors;
 	private SocketConnector connector;
 	private NameableExecutor businessExecutor;
+	private NameableExecutor ownJobExecutor;
 	private NameableExecutor timerExecutor;
 	private ListeningExecutorService listeningExecutorService;
 	private  InterProcessMutex dnindexLock;
@@ -217,6 +218,10 @@ public class MycatServer {
 
 	public DynaClassLoader getCatletClassLoader() {
 		return catletClassLoader;
+	}
+
+	public NameableExecutor getOwnJobExecutor() {
+		return ownJobExecutor;
 	}
 
 	public String genXATXID() {
@@ -345,8 +350,8 @@ public class MycatServer {
 				LOGGER.error("Error",e);
 			}
 		}
-		businessExecutor = ExecutorUtil.createFixed("BusinessExecutor",
-				threadPoolSize);
+		businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
+		ownJobExecutor = ExecutorUtil.createCached("ownJobExecutor", 1);
 		timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 

@@ -86,8 +86,7 @@ public class UnionHandler extends BaseDMLHandler {
 			FieldPacket fp = this.fieldPackets.get(i);
 			Item sel = sels.get(i);
 			fp.name = sel.getItemName().getBytes();
-			// @fix: union语句没有表名，只要列名相等即可
-			fp.table = null;
+			fp.table = sel.getTableName().getBytes();
 		}
 	}
 

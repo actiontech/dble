@@ -28,6 +28,7 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mycat.config.Versions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,7 @@ public class RouteService {
 	private final String OLD_MYCAT_HINT = "/*!mycat:"; 	// 处理自定义分片注解, 注解格式：/*!mycat: type = value */ sql
 	private final String NEW_MYCAT_HINT = "/*#mycat:"; 	// 新的注解格式:/* !mycat: type = value */ sql，oldMycatHint的格式不兼容直连mysql
     private final String HINT_SPLIT = "=";
+
 
 	public RouteService(CacheService cachService) {
 		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
@@ -142,6 +144,7 @@ public class RouteService {
 	}
 
 	public static int isHintSql(String sql){
+        char[] annotation = Versions.ANNOTATION_NAME.toCharArray();
 		int j = 0;
 		int len = sql.length();
 		if(sql.charAt(j++) == '/' && sql.charAt(j++) == '*'){
@@ -153,16 +156,21 @@ public class RouteService {
 			//注解支持的'!'不被mysql单库兼容，
 			//注解支持的'#'不被mybatis兼容
 			//考虑用mycat字符前缀标志Hintsql:"/** mycat: */"
-			if(sql.charAt(j)=='m'){
+			if(sql.charAt(j)==annotation[0]){
 				j--;
 			}
 			if(j + 6 >= len)	{// prevent the following sql.charAt overflow
 				return -1;        // false
 			}
-			if(sql.charAt(++j) == 'm' && sql.charAt(++j) == 'y' && sql.charAt(++j) == 'c'
-				&& sql.charAt(++j) == 'a' && sql.charAt(++j) == 't' && sql.charAt(++j) == ':') {
-				return j + 1;    // true，同时返回注解部分的长度
-			}
+
+            for(int i = 0;i < annotation.length;i++){
+                if(sql.charAt(++j) !=  annotation[i]){
+                    break;
+                }
+                if(i == annotation.length-1){
+                    return j + 1;
+                }
+            }
 		}
 		return -1;	// false
 	}

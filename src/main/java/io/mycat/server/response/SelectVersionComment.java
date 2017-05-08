@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
+import io.mycat.config.Versions;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
@@ -38,7 +39,6 @@ import io.mycat.server.ServerConnection;
  */
 public class SelectVersionComment {
 
-    private static final byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -69,7 +69,7 @@ public class SelectVersionComment {
         // write rows
         byte packetId = eof.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(VERSION_COMMENT);
+        row.add(Versions.VERSION_COMMENT);
         row.packetId = ++packetId;
         buffer = row.write(buffer, c,true);
 

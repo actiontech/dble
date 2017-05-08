@@ -2,6 +2,7 @@ package io.mycat.backend.mysql.nio.handler.query;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.mycat.MycatServer;
 import io.mycat.server.NonBlockingSession;
 
 /**
@@ -41,7 +42,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
 	 *            有可能会用到的参数
 	 */
 	protected final void startOwnThread(final Object... objects) {
-		session.getSource().getProcessor().getExecutor().execute(new Runnable() {
+		MycatServer.getInstance().getOwnJobExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
 				if (terminate.get())

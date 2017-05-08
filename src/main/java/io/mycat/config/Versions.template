@@ -33,6 +33,8 @@ public abstract class Versions {
 
     /**服务器版本**/
     public static byte[] SERVER_VERSION = "@server-version@".getBytes();
+	public static byte[] VERSION_COMMENT = "@version-comment@".getBytes();
+	public static String ANNOTATION_NAME = "@annotation-name@";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

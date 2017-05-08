@@ -32,7 +32,9 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     /**服务器版本**/
-    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.04.0-20170420011014".getBytes();
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.04.0-20170508103825".getBytes();
+	public static byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
+	public static String ANNOTATION_NAME = "mycat:";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

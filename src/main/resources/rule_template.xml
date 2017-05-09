@@ -112,7 +112,7 @@
 	<function name="pattern"
 		class="io.mycat.route.function.PartitionByPattern">
 	  	<property name="mapFile">partition-pattern.txt</property>
-		<property name="patternvalue">1024</property>
+		<property name="patternValue">1024</property>
 		<property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
 	</function> 
 	

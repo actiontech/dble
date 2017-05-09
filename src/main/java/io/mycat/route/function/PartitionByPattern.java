@@ -78,6 +78,29 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		
 		return rst;
 	}
+
+    	public Integer[] calculateRange(String beginValue, String endValue)  {
+		Integer begin = 0, end = 0;
+		begin = this.calculate(beginValue);
+		end = this.calculate(endValue);
+
+		if(begin == null || end == null){
+			return new Integer[0];
+		}
+		
+		if (end >= begin) {
+			int len = end-begin+1;
+			Integer [] re = new Integer[len];
+			
+			for(int i =0;i<len;i++){
+				re[i]=begin+i;
+			}
+			return re;
+		}else{
+			return new Integer[0];
+		}
+	}
+	
 	
 	@Override
 	public int getPartitionNum() {

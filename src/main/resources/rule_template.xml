@@ -44,8 +44,6 @@
 		</rule>
 	</tableRule>
 
-	 
-	 
 	<tableRule name="sharding-by-date">
 		<rule>
 			<columns>calldate</columns>
@@ -53,7 +51,12 @@
 		</rule>
 	</tableRule>
 	
-	
+	<tableRule name="sharding-by-pattern">
+		<rule>
+			<columns>id</columns>
+			<algorithm>pattern</algorithm>
+		</rule>
+	</tableRule>
 	 
 
 	 
@@ -104,6 +107,14 @@
 		<property name="sPartionDay">10</property>
 		<property name="defaultNode">0</property><!--默认为-1 ,若为-1 时,小于sBeginDate日期直接报错 -->
 	</function>
+
+	<!-- 模式方式分区 -->
+	<function name="pattern"
+		class="io.mycat.route.function.PartitionByPattern">
+	  	<property name="mapFile">partition-pattern.txt</property>
+		<property name="patternvalue">1024</property>
+		<property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
+	</function> 
 	
 	 
 </mycat:rule>

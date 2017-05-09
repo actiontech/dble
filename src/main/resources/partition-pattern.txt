@@ -1,0 +1,7 @@
+//this is comment
+# this is comment too
+# use closed interval
+
+#begin - end - nodeid
+0 - 10000 - 1
+10001 - 20000 - 2

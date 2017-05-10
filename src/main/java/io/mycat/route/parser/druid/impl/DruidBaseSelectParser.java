@@ -37,6 +37,8 @@ import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.plan.common.item.Item;
+import io.mycat.plan.visitor.MySQLItemVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -100,12 +102,22 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 					rrs.setNeedOptimizer(true);
 					return;
 				} else {
-					addToAliaColumn(aliaColumns, item);
+					if (isSumFunc(schema.getName(), itemExpr)) {
+						rrs.setNeedOptimizer(true);
+						return;
+					} else {
+						addToAliaColumn(aliaColumns, item);
+					}
 				}
 			} else if (itemExpr instanceof SQLAllColumnExpr) {
 				continue;
 			} else {
-				addToAliaColumn(aliaColumns, item);
+				if (isSumFunc(schema.getName(), itemExpr)) {
+					rrs.setNeedOptimizer(true);
+					return;
+				} else {
+					addToAliaColumn(aliaColumns, item);
+				}
 			}
 		}
 		if (mysqlSelectQuery.getGroupBy() != null) {
@@ -140,7 +152,28 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 			}
 		}
 	}
-
+	private boolean isSumFunc(String schema,SQLExpr itemExpr){
+		MySQLItemVisitor ev = new MySQLItemVisitor(schema);
+		itemExpr.accept(ev);
+		Item selItem = ev.getItem();
+		return contactSumFunc(selItem);
+	}
+	private boolean contactSumFunc(Item selItem){
+		if(selItem.withSumFunc){
+			return true;
+		}
+		if(selItem.getArgCount()>0){
+			for(Item child:selItem.arguments()){
+				if(contactSumFunc(child)){
+					return true;
+				}
+			}
+			return false;
+		}
+		else{
+			return false;
+		}
+	}
 	private boolean isNeedOptimizer(SQLExpr expr){
 		// it is NotSimpleColumn TODO: 细分是否真的NeedOptimizer
 		return !(expr instanceof SQLPropertyExpr) && !(expr instanceof SQLIdentifierExpr);

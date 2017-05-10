@@ -45,7 +45,7 @@ public class ItemCharTypecast extends ItemStrFunc {
 			return null;
 		}
 		nullValue = false;
-		if (cast_length < res.length()){
+		if (cast_length != -1 && cast_length < res.length()) {
 			res = res.substring(0, cast_length);
 		}
 		if(charSetName != null){
@@ -65,7 +65,6 @@ public class ItemCharTypecast extends ItemStrFunc {
 		SQLCastExpr cast = new SQLCastExpr();
 		cast.setExpr(args.get(0).toExpression());
 		SQLCharacterDataType dataType = new SQLCharacterDataType(SQLCharacterDataType.CHAR_TYPE_CHAR);
-		dataType.addArgument(new SQLIntegerExpr(cast_length));
 		cast.setDataType(dataType);
 		if (cast_length >= 0) {
 			dataType.addArgument(new SQLIntegerExpr(cast_length));

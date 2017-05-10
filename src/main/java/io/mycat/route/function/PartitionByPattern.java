@@ -61,13 +61,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		this.defaultNode = defaultNode;
 	}
 
-	@Override
-	public Integer calculate(String columnValue) {
-		if (!isNumeric(columnValue)) {
-			return defaultNode;
-		}
-		
-		long value = Long.parseLong(columnValue);
+    	private Integer calc(long value) {
 		Integer rst = null;
 		for (LongRange longRang : this.longRongs) {
 			long hash = value % patternValue;
@@ -79,25 +73,90 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		return rst;
 	}
 
-    	public Integer[] calculateRange(String beginValue, String endValue)  {
-		Integer begin = 0, end = 0;
-		begin = this.calculate(beginValue);
-		end = this.calculate(endValue);
-
-		if(begin == null || end == null){
-			return new Integer[0];
+	@Override
+	public Integer calculate(String columnValue) {
+		if (!isNumeric(columnValue)) {
+			return defaultNode;
 		}
 		
-		if (end >= begin) {
-			int len = end-begin+1;
-			Integer [] re = new Integer[len];
-			
-			for(int i =0;i<len;i++){
-				re[i]=begin+i;
+		long value = Long.parseLong(columnValue);
+		
+		return calc(value);
+	}
+
+    	/* x2 - x1 < m
+	 *     n1 < n2 ---> n1 - n2  		type1
+	 *     n1 > n2 ---> 0 - n2 && n1 - L  	type2
+	 *   x2 - x1 >= m
+	 *     L 				type3
+	 */
+    	private Integer[] copy_type1(Integer begin, Integer end) {
+	    	int len = end - begin + 1;		    
+		Integer [] re = new Integer[len];
+		for(int i =0; i < len; i++){
+		    	re[i]= longRongs[begin + i].nodeIndx;
+		}
+		return re;
+	}
+
+    	private Integer[] copy_type2(Integer begin, Integer end) {
+	    	int len = longRongs.length - begin + end + 1;
+		Integer [] re = new Integer[len];
+
+		int i, j;
+		for(i =0; i <= end; i++){
+		    	re[i]= longRongs[i].nodeIndx;
+		}
+
+		for (j = begin; j < longRongs.length; j++) {
+		    	re[i++]= longRongs[j].nodeIndx;
+		}
+		return re;
+	}
+
+    	private Integer[] copy_type3() {
+	    	Integer [] re = new Integer[longRongs.length];
+		for(int i =0; i < longRongs.length; i++){
+		    	re[i]= longRongs[i].nodeIndx;
+		}
+	    	return re;
+	}
+    
+    	public Integer[] calculateRange(String beginValue, String endValue)  {
+		Integer begin = 0, end = 0;
+		long bv, ev;
+		Integer[] dv;
+
+		if (!isNumeric(beginValue) || !isNumeric(endValue)) {
+		    	dv = new Integer[1];
+			dv[0] = defaultNode;
+			return dv;
+		}
+		bv = Long.parseLong(beginValue);
+		ev = Long.parseLong(endValue);
+
+		begin = calc(bv);
+		end = calc(ev);
+		if (begin == null || end == null) {
+		    	dv = new Integer[1];
+			dv[0] = defaultNode;
+			return dv;
+		}
+
+		if (ev >= bv) {
+		    	long delta = ev - bv;
+			if (delta < patternValue) {
+			    	if (begin < end) {
+				    	return copy_type1(begin, end);
+				} else {
+				    	return copy_type2(begin, end);
+				}
+			} else {
+			    	return copy_type3();
 			}
-			return re;
-		}else{
-			return new Integer[0];
+		} else {
+		    	dv = new Integer[0];
+			return dv;
 		}
 	}
 	
@@ -110,6 +169,22 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
 	public static boolean isNumeric(String str) {
 		return pattern.matcher(str).matches();
+	}
+
+    	private void initialize_aux(LinkedList<LongRange> ll, LongRange lr) {
+	    	if (ll.size() == 0) {
+		    	ll.add(lr);
+		} else {
+		    	LongRange tmp;
+			for (int i = ll.size() - 1; i > -1; i--) {
+				tmp = ll.get(i);
+				if (tmp.valueStart < lr.valueStart) {
+				    	ll.add(i + 1, lr);
+					return;
+				}
+			}
+			ll.add(0, lr);
+		}    
 	}
 
 	private void initialize() {
@@ -139,7 +214,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 				long longStart = Long.parseLong(pairs[0].trim());
 				long longEnd = Long.parseLong(pairs[1].trim());
 				int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
-				longRangeList.add(new LongRange(nodeId, longStart, longEnd));
+				initialize_aux(longRangeList, new LongRange(nodeId, longStart, longEnd));
+				
+				//longRangeList.add(new LongRange(nodeId, longStart, longEnd));
 			}
 			longRongs = longRangeList.toArray(new LongRange[longRangeList.size()]);
 		} catch (Exception e) {

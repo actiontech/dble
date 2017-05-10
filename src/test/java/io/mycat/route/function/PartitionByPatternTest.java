@@ -42,11 +42,19 @@ public class PartitionByPatternTest {
 		idVal = "45a";
 		Assert.assertEquals(true, 2 == autoPartition.calculate(idVal));
 
-		Integer [] all = autoPartition.calculateRange("45a", "0");
-		Assert.assertEquals(true, 6 == all.length);
-		Assert.assertEquals(true, 2 == all[0]);
-		Assert.assertEquals(true, 7 == all[5]);
+		Integer [] err1 = autoPartition.calculateRange("45a", "0");
+		Assert.assertEquals(true, 1 == err1.length);
+		Integer [] err2 = autoPartition.calculateRange("45", "0");
+		Assert.assertEquals(true, 0 == err2.length);
 
+		Integer [] type1 = autoPartition.calculateRange("0", "45");
+		Assert.assertEquals(true, 3 == type1.length);
+
+		Integer [] type2 = autoPartition.calculateRange("200", "260");
+		Assert.assertEquals(true, 3 == type2.length);
+
+		Integer [] type3 = autoPartition.calculateRange("200", "456");
+		Assert.assertEquals(true, 7 == type3.length);
 	}
 
     	public static void main(String[] args) {

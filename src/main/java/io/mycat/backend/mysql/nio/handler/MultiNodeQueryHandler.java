@@ -68,10 +68,8 @@ import io.mycat.sqlengine.mpp.DataNodeMergeManager;
 import io.mycat.sqlengine.mpp.MergeCol;
 import io.mycat.statistic.stat.QueryResult;
 import io.mycat.statistic.stat.QueryResultDispatcher;
-import io.mycat.util.StringUtil;
-
-import io.mycat.server.parser.ServerParse;
 import io.mycat.util.FormatUtil;
+import io.mycat.util.StringUtil;
 
 /**
  * @author mycat
@@ -207,24 +205,24 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
 	}
 
-    	private void handleDdl() {
-	    	if(rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
-		    	return;
+	private void handleDdl() {
+		if (rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
+			return;
 		}
-		
+
 		StringBuilder s = new StringBuilder();
 		s.append(rrs.toString());
-		
+
 		s.append(", failed={");
-		for (int i=0; i < errConnection.size(); i++) {
-		    BackendConnection conn = errConnection.get(i);
-		    s.append("\n ").append(FormatUtil.format(i + 1, 3));
-		    s.append(" -> ").append(conn.compactInfo());
+		for (int i = 0; i < errConnection.size(); i++) {
+			BackendConnection conn = errConnection.get(i);
+			s.append("\n ").append(FormatUtil.format(i + 1, 3));
+			s.append(" -> ").append(conn.compactInfo());
 		}
 		s.append("\n}");
-		
+
 		LOGGER.warn(s.toString());
-		
+
 		return;
 	}
     
@@ -824,6 +822,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			//隐式分布式事务，自动发起commit or rollback
 			if (txOperation == AutoTxOperation.COMMIT) {
+				session.checkBackupStatus();
 				if (session.getXaState() == null) {
 					NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
 					autoHandler.commit();

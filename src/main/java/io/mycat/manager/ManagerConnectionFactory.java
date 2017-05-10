@@ -42,7 +42,7 @@ public class ManagerConnectionFactory extends FrontendConnectionFactory {
         ManagerConnection c = new ManagerConnection(channel);
         MycatServer.getInstance().getConfig().setSocketParams(c, true);
         c.setPrivileges(ManagerPrivileges.instance());
-	c.setHandler(new ManagerAuthenticator(c));
+        c.setHandler(new ManagerAuthenticator(c));
         c.setQueryHandler(new ManagerQueryHandler(c));
         return c;
     }

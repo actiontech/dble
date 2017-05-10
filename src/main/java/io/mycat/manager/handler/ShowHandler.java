@@ -27,6 +27,7 @@ import io.mycat.config.ErrorCode;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.manager.response.ShowBackend;
 import io.mycat.manager.response.ShowBackendOld;
+import io.mycat.manager.response.ShowBinlogStatus;
 import io.mycat.manager.response.ShowCollation;
 import io.mycat.manager.response.ShowCommand;
 import io.mycat.manager.response.ShowConnection;
@@ -37,6 +38,7 @@ import io.mycat.manager.response.ShowDatabase;
 import io.mycat.manager.response.ShowDatasourceCluster;
 import io.mycat.manager.response.ShowDatasourceSyn;
 import io.mycat.manager.response.ShowDatasourceSynDetail;
+import io.mycat.manager.response.ShowDirectMemory;
 import io.mycat.manager.response.ShowHeartbeat;
 import io.mycat.manager.response.ShowHeartbeatDetail;
 import io.mycat.manager.response.ShowHelp;
@@ -62,7 +64,6 @@ import io.mycat.manager.response.ShowTime;
 import io.mycat.manager.response.ShowVariables;
 import io.mycat.manager.response.ShowVersion;
 import io.mycat.manager.response.ShowWhiteHost;
-import io.mycat.manager.response.ShowDirectMemory;
 import io.mycat.route.parser.ManagerParseShow;
 import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.server.handler.ShowCache;
@@ -97,6 +98,9 @@ public final class ShowHandler {
 			break;
 		case ManagerParseShow.BACKEND_OLD:
 			ShowBackendOld.execute(c);
+			break;
+		case ManagerParseShow.BINLOG_STATUS:
+			ShowBinlogStatus.execute(c);
 			break;
 		case ManagerParseShow.CONNECTION_SQL:
 			ShowConnectionSQL.execute(c);

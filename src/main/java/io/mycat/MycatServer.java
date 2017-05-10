@@ -116,6 +116,8 @@ public class MycatServer {
 	private static final MycatServer INSTANCE = new MycatServer();
 	private static final Logger LOGGER = LoggerFactory.getLogger("MycatServer");
 	private static final Repository fileRepository = new FileSystemRepository();
+	private AtomicBoolean backupLocked;
+
 	//全局序列号
 	private final SequenceHandler sequenceHandler;
 	private final RouteService routerService;
@@ -224,6 +226,13 @@ public class MycatServer {
 		return ownJobExecutor;
 	}
 
+	public AtomicBoolean getBackupLocked() {
+		return backupLocked;
+	}
+
+	public boolean isBackupLocked() {
+		return backupLocked.get();
+	}
 	public String genXATXID() {
 		long seq = this.xaIDInc.incrementAndGet();
 		if (seq < 0) {
@@ -317,6 +326,7 @@ public class MycatServer {
 		LOGGER.info(inf);
 		LOGGER.info("sysconfig params:" + system.toString());
 
+		backupLocked = new AtomicBoolean(false);
 		// startup manager
 		ManagerConnectionFactory mf = new ManagerConnectionFactory();
 		ServerConnectionFactory sf = new ServerConnectionFactory();

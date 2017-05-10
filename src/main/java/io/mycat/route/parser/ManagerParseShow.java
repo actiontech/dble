@@ -80,7 +80,7 @@ public final class ManagerParseShow {
 	public static final int WHITE_HOST_SET = 44;
     public static final int DIRECTMEMORY_TOTAL = 45;
     public static final int DIRECTMEMORY_DETAILl = 46;
-
+    public static final int BINLOG_STATUS = 47;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -198,16 +198,60 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@BACKEND
-    static int show2BCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ACKEND".length()) {
-            char c1 = stmt.charAt(++offset);
+	// SHOW @@B
+	static int show2BCheck(String stmt, int offset) {
+		if (stmt.length() > offset + 1) {
+			char c1 = stmt.charAt(++offset);
+			switch (c1) {
+			case 'A':
+			case 'a':
+				return show2BackCheck(stmt, offset);
+			case 'I':
+			case 'i':
+				return show2BinCheck(stmt, offset);
+			default:
+				return OTHER;
+			}
+		}
+		return OTHER;
+	}
+    // SHOW @@BINLOG.STATUS
+    static int show2BinCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "NLOG.STATUS".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k')
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+			if ((c2 == 'N' || c2 == 'n') && (c3 == 'L' || c3 == 'l')
+					&& (c4 == 'O' || c4 == 'o') && (c5 == 'G' || c5 == 'g') && (c6 == '.') && (c7 == 'S' || c7 == 's')
+					&& (c8 == 'T' || c8 == 't') && (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't')
+					&& (c11 == 'U' || c11 == 'u') && (c12 == 'S' || c12 == 's')) {
+				if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+					return OTHER;
+				}
+				return BINLOG_STATUS;
+
+			}
+        }
+        return OTHER;
+    }
+
+    // SHOW @@BACKEND
+    static int show2BackCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "CKEND".length()) {
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k')
                     && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'D' || c6 == 'd')) {
                 
                 if (stmt.length() > ++offset) {

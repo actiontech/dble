@@ -33,7 +33,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +98,7 @@ public class NonBlockingSession implements Session {
     private volatile String xaTXID;
     private volatile TxState xaState;
 	private boolean prepared;
-
+	private volatile boolean needWaitFinished = false;
 	// 取消状态 0 - 初始 1 - 提交进行  2 - 切断进行
 	private int cancelStatus = 0;
 
@@ -109,8 +111,9 @@ public class NonBlockingSession implements Session {
 	private MemSizeController joinBufferMC;
 	private MemSizeController orderBufferMC;
 	private MemSizeController otherBufferMC;
-		
-    public NonBlockingSession(ServerConnection source) {
+
+
+	public NonBlockingSession(ServerConnection source) {
 		this.source = source;
 		this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 1f);
 		this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
@@ -152,6 +155,10 @@ public class NonBlockingSession implements Session {
 
 	public void setXaState(TxState xaState) {
 		this.xaState = xaState;
+	}
+
+    public boolean isNeedWaitFinished() {
+		return needWaitFinished;
 	}
 
 	/**
@@ -205,6 +212,9 @@ public class NonBlockingSession implements Session {
 			}
 		} else { 
 			multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
+			if(rrs.getSqlType() == ServerParse.DDL){
+				checkBackupStatus();
+			}
 			if (this.isPrepared()) {
 				multiNodeHandler.setPrepared(true);
 			}
@@ -323,11 +333,17 @@ public class NonBlockingSession implements Session {
 			source.write(buffer);
 			return;
 		}
-
+		checkBackupStatus();
 		createCommitNodesHandler();
 		commitHandler.commit();
 	}
-    	
+
+	public void checkBackupStatus() {
+		while (MycatServer.getInstance().isBackupLocked()) {
+			LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+		}
+		needWaitFinished = true;
+	}
 	private RollbackNodesHandler createRollbackNodesHandler() {
 		if (rollbackHandler == null) {
 			if (this.getSessionXaID() == null) {
@@ -624,6 +640,7 @@ public class NonBlockingSession implements Session {
             LOGGER.debug("clear session resources " + this);
         }
         this.releaseConnections(needRollback);
+        needWaitFinished = false;
         clearHandlesResources();
         source.setTxstart(false);
         source.getAndIncrementXid();

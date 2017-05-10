@@ -27,6 +27,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.regex.Pattern;
 
 import io.mycat.config.model.rule.RuleAlgorithm;
@@ -41,6 +42,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 	private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值
 	private String mapFile;
 	private LongRange[] longRongs;
+    	private Integer[] allNode;
+    	private boolean outOfOrder = false;
 	private int defaultNode = 0;// 包含非数值字符，默认存储节点
     	private static final  Pattern pattern = Pattern.compile("[0-9]*");;
 
@@ -48,8 +51,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 	public void init() {
 		initialize();
 	}
-
-	public void setMapFile(String mapFile) {
+    
+ 	public void setMapFile(String mapFile) {
 		this.mapFile = mapFile;
 	}
 
@@ -61,10 +64,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		this.defaultNode = defaultNode;
 	}
 
-    	private Integer calc(long value) {
+    	private Integer findNode(long hash) {
 		Integer rst = null;
 		for (LongRange longRang : this.longRongs) {
-			long hash = value % patternValue;
 			if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
 				return longRang.nodeIndx;
 			}
@@ -80,87 +82,81 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		}
 		
 		long value = Long.parseLong(columnValue);
-		
-		return calc(value);
+		long hash = value % patternValue;
+		return findNode(hash);
 	}
 
     	/* x2 - x1 < m
 	 *     n1 < n2 ---> n1 - n2  		type1
 	 *     n1 > n2 ---> 0 - n2 && n1 - L  	type2
-	 *   x2 - x1 >= m
+	 * x2 - x1 >= m
 	 *     L 				type3
 	 */
-    	private Integer[] copy_type1(Integer begin, Integer end) {
-	    	int len = end - begin + 1;		    
-		Integer [] re = new Integer[len];
-		for(int i =0; i < len; i++){
-		    	re[i]= longRongs[begin + i].nodeIndx;
+    	private void calc_aux(HashSet<Integer> ids, long begin, long end) {
+	    	for (LongRange longRang : this.longRongs) {
+		    	if (longRang.valueEnd < begin) {
+			    	continue;
+			}
+			if (longRang.valueStart > end) {
+			    	break;
+			}
+			ids.add(longRang.nodeIndx);
 		}
-		return re;
-	}
-
-    	private Integer[] copy_type2(Integer begin, Integer end) {
-	    	int len = longRongs.length - begin + end + 1;
-		Integer [] re = new Integer[len];
-
-		int i, j;
-		for(i =0; i <= end; i++){
-		    	re[i]= longRongs[i].nodeIndx;
-		}
-
-		for (j = begin; j < longRongs.length; j++) {
-		    	re[i++]= longRongs[j].nodeIndx;
-		}
-		return re;
-	}
-
-    	private Integer[] copy_type3() {
-	    	Integer [] re = new Integer[longRongs.length];
-		for(int i =0; i < longRongs.length; i++){
-		    	re[i]= longRongs[i].nodeIndx;
-		}
-	    	return re;
 	}
     
+    	private Integer[] calc_type1(long begin, long end) {
+	    	HashSet<Integer> ids = new HashSet<Integer>();
+		
+		calc_aux(ids, begin, end);
+
+		return ids.toArray(new Integer[ids.size()]);
+	}
+
+    	private Integer[] calc_type2(long begin, long end) {
+	    	HashSet<Integer> ids = new HashSet<Integer>();
+
+		calc_aux(ids, begin, patternValue);
+		calc_aux(ids, 0, end);
+
+		return ids.toArray(new Integer[ids.size()]);
+	}
+
+    	private Integer[] calc_type3() {
+	    	return allNode;
+	}
+
+    	/* NODE:
+	 * if the order of range and the order of nodeid don't match, we give all nodeid.
+	 * so when writing configure, be cautious
+	 */
     	public Integer[] calculateRange(String beginValue, String endValue)  {
-		Integer begin = 0, end = 0;
-		long bv, ev;
-		Integer[] dv;
-
 		if (!isNumeric(beginValue) || !isNumeric(endValue)) {
-		    	dv = new Integer[1];
-			dv[0] = defaultNode;
-			return dv;
+		    	return calc_type3();
 		}
-		bv = Long.parseLong(beginValue);
-		ev = Long.parseLong(endValue);
+		long bv = Long.parseLong(beginValue);
+		long ev = Long.parseLong(endValue);
+		long hbv = bv % patternValue;
+		long hev = ev % patternValue;
 
-		begin = calc(bv);
-		end = calc(ev);
-		if (begin == null || end == null) {
-		    	dv = new Integer[1];
-			dv[0] = defaultNode;
-			return dv;
+		if (findNode(hbv) == null || findNode(hbv) == null) {
+		    	return calc_type3();
 		}
 
 		if (ev >= bv) {
-		    	long delta = ev - bv;
-			if (delta < patternValue) {
-			    	if (begin < end) {
-				    	return copy_type1(begin, end);
-				} else {
-				    	return copy_type2(begin, end);
-				}
+			if (ev - bv >= patternValue) {
+			    	return calc_type3();
+			}
+
+			if (hbv < hev) {
+			    	return calc_type1(hbv, hev);
 			} else {
-			    	return copy_type3();
+			    	return calc_type2(hbv, hev);
 			}
 		} else {
-		    	dv = new Integer[0];
-			return dv;
+		    	return new Integer[0];
 		}
 	}
-	
-	
+		
 	@Override
 	public int getPartitionNum() {
 		int nPartition = this.longRongs.length;
@@ -197,6 +193,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 			}
 			in = new BufferedReader(new InputStreamReader(fin));
 			LinkedList<LongRange> longRangeList = new LinkedList<LongRange>();
+			HashSet<Integer> ids = new HashSet<Integer>();
 
 			for (String line = null; (line = in.readLine()) != null;) {
 				line = line.trim();
@@ -214,10 +211,12 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 				long longStart = Long.parseLong(pairs[0].trim());
 				long longEnd = Long.parseLong(pairs[1].trim());
 				int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
-				initialize_aux(longRangeList, new LongRange(nodeId, longStart, longEnd));
 				
-				//longRangeList.add(new LongRange(nodeId, longStart, longEnd));
+				ids.add(nodeId);
+				initialize_aux(longRangeList, new LongRange(nodeId, longStart, longEnd));
 			}
+			
+			allNode = ids.toArray(new Integer[ids.size()]);
 			longRongs = longRangeList.toArray(new LongRange[longRangeList.size()]);
 		} catch (Exception e) {
 			if (e instanceof RuntimeException) {

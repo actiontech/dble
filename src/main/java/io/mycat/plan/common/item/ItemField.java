@@ -216,9 +216,22 @@ public class ItemField extends ItemIdent {
 		if (context.getPlanNode().type() == PlanNodeType.MERGE) {
 			// select union only found in outerfields
 			if (StringUtils.isEmpty(getTableName())) {
+				PlanNode firstNode = planNode.getChild();
+				boolean found = false;
+				for (NamedField coutField : firstNode.getOuterFields().keySet()) {
+					if (tmpFieldName.equalsIgnoreCase(coutField.getName())) {
+						if (!found) {
+							tmpFieldName = coutField.getTable();
+							found = true;
+						} else {
+							throw new MySQLOutPutException(ErrorCode.ER_BAD_FIELD_ERROR, "(42S22",
+									"Unknown column '" + tmpFieldName + "' in 'order clause'");
+						}
+					}
+				}
 				column = planNode.getOuterFields().get(new NamedField(tmpFieldTable,tmpFieldName,null));
 			} else {
-				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "42000",
+				throw new MySQLOutPutException(ErrorCode.ER_TABLENAME_NOT_ALLOWED_HERE, "42000",
 						"Table '" + getTableName() + "' from one of the SELECTs cannot be used in global ORDER clause");
 			}
 			return column;

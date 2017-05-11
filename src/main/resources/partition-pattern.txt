@@ -1,0 +1,8 @@
+//this is comment
+# this is comment too
+# use closed interval
+
+#begin - end = nodeid
+0 - 10 = 0
+11 - 20 = 1
+

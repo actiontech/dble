@@ -446,6 +446,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	@Override
     public void endVisit(SQLNCharExpr x) {
     	item = new ItemString(x.getText());
+    	item.charsetIndex=this.charsetIndex;
 		initName(x);
     }
 	@Override

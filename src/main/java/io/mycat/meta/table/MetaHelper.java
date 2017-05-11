@@ -7,6 +7,7 @@ import java.util.Set;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
@@ -16,6 +17,7 @@ import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
+import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 
@@ -101,8 +103,17 @@ public class MetaHelper {
 		indexBuilder.setName(StringUtil.removeBackQuote(indexName));
 		indexBuilder.setType(indexType.toString());
 		for (int i = 0; i < columnExprs.size(); i++) {
-			SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
-			indexBuilder.addColumns(StringUtil.removeBackQuote(column.getName()));
+			if(columnExprs.get(i) instanceof  SQLIdentifierExpr) {
+				SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
+				indexBuilder.addColumns(StringUtil.removeBackQuote(column.getName()));
+			}else if(columnExprs.get(i) instanceof MySqlOrderingExpr){
+				MySqlOrderingExpr column = (MySqlOrderingExpr) columnExprs.get(i);
+				if(column.getExpr() instanceof SQLIdentifierExpr){
+					indexBuilder.addColumns(StringUtil.removeBackQuote(((SQLIdentifierExpr) column.getExpr()).getName()));
+				}else if(column.getExpr() instanceof SQLMethodInvokeExpr){
+					indexBuilder.addColumns(StringUtil.removeBackQuote(((SQLMethodInvokeExpr) column.getExpr()).getMethodName()));
+				}
+			}
 		}
 		return indexBuilder.build();
 	}

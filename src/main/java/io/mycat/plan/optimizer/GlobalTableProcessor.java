@@ -32,15 +32,23 @@ public class GlobalTableProcessor {
 		if (PlanUtil.isERNode(tn)) {
 			// 是erjoin，只能算一个unglobaltable
 			tn.setUnGlobalTableCount(1);
-			tn.setNoshardNode(tn.getReferedTableNodes().get(0).getNoshardNode());
+			Set<String> newSet = new HashSet<String>();
+			newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
+			tn.setNoshardNode(newSet);
 		} else {
 			int unGlobalCount = 0;
 			for (PlanNode tnChild : tn.getChildren()) {
 				if (tnChild != null) {
 					if (tn.getNoshardNode() == null) {
-						tn.setNoshardNode(tnChild.getNoshardNode());
+						if (tnChild.getNoshardNode() != null) {
+							Set<String> parentSet = new HashSet<String>();
+							parentSet.addAll(tnChild.getNoshardNode());
+							tn.setNoshardNode(parentSet);
+						}
 					}
-					tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
+					if (tn.getNoshardNode() != null) {
+						tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
+					}
 				}
 				unGlobalCount += tnChild.getUnGlobalTableCount();
 			}

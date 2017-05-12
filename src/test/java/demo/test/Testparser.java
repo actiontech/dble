@@ -247,7 +247,16 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select * from sharding_two_node where id in(select id from sharding_four_node);";
 //		obj.test(selectSQl);
-		selectSQl = "select * from t1 where s1 in(1,(select s1 from t2));";
+//		selectSQl = "select * from t1 where s1 in(1,(select s1 from t2));";
+//		obj.test(selectSQl);
+//		selectSQl = "select distinct pad from sbtest1;";
+//		obj.test(selectSQl);
+//		selectSQl = "select distinctrow pad from sbtest1;";
+//		obj.test(selectSQl);
+		selectSQl = "select distinct sql_big_result pad from sbtest1;";
+		obj.test(selectSQl);
+		//not support
+		selectSQl = "select sql_big_result distinct pad from sbtest1;";
 		obj.test(selectSQl);
 		
 	}

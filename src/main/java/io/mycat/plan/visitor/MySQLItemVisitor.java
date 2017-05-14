@@ -48,6 +48,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 
+import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.plan.Order;
 import io.mycat.plan.common.CastTarget;
@@ -124,6 +125,10 @@ import io.mycat.util.StringUtil;
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	private String currentDb;
 	private int charsetIndex;
+
+	public MySQLItemVisitor(String currentDb) {
+		this(currentDb, CharsetUtil.getIndex("utf8"));
+	}
 	public MySQLItemVisitor(String currentDb, int charsetIndex) {
 		this.currentDb = currentDb;
 		this.charsetIndex = charsetIndex;

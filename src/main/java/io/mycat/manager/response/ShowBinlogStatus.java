@@ -119,13 +119,13 @@ public class ShowBinlogStatus {
 		}
 		logger.info("all transaction session are paused.");
 	}
-	private static void getQueryResult(String charset){
+	private static void getQueryResult(final String charset){
 		Collection<PhysicalDBPool> allPools = MycatServer.getInstance().getConfig().getDataHosts().values();
 		sourceCount = new AtomicInteger(allPools.size());
 		rows = new ArrayList<RowDataPacket>(allPools.size());
 		for(PhysicalDBPool pool:allPools){
 			//if WRITE_RANDOM_NODE ,may the binlog is not ready.
-			PhysicalDatasource source = pool.getSource();
+			final PhysicalDatasource source = pool.getSource();
 			OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,
 					new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
 						@Override

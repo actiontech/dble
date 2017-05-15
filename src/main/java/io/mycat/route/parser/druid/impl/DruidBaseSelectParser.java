@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import com.alibaba.druid.sql.ast.SQLSetQuantifier;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
@@ -204,7 +205,7 @@ public class DruidBaseSelectParser extends DefaultDruidParser {
 		}
 
 		// 通过优化转换成group by来实现
-		boolean isNeedChangeSql = mysqlSelectQuery.getDistionOption() == 2;
+		boolean isNeedChangeSql = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT)||(mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
 		if (isNeedChangeSql) {
 			mysqlSelectQuery.setDistionOption(0);
 			SQLSelectGroupByClause groupBy = new SQLSelectGroupByClause();

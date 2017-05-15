@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import com.alibaba.druid.sql.ast.SQLSetQuantifier;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
@@ -109,7 +110,7 @@ public class MySQLPlanNodeVisitor {
 			this.tableNode = new NoNameNode(currentDb, sqlSelectQuery.toString());
 		}
 
-		if (tableNode != null && (sqlSelectQuery.getDistionOption() != 0))
+		if (tableNode != null && (sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT ||sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW))
 			this.tableNode.setDistinct(true);
 
 		List<SQLSelectItem> items = sqlSelectQuery.getSelectList();

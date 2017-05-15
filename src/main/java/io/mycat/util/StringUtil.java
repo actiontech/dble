@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Random;
 
+import io.mycat.backend.mysql.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,7 @@ public class StringUtil {
 			return null;
 		}
 		try {
-			return src.getBytes(charset);
+			return src.getBytes(CharsetUtil.getJavaCharset(charset));
 		} catch (UnsupportedEncodingException e) {
 			return src.getBytes();
 		}

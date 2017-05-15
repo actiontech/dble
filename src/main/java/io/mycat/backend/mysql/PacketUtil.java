@@ -49,7 +49,7 @@ public class PacketUtil {
             return null;
         }
         try {
-            return src.getBytes(charset);
+            return src.getBytes(CharsetUtil.getJavaCharset(charset));
         } catch (UnsupportedEncodingException e) {
             return src.getBytes();
         }

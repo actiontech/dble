@@ -547,7 +547,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 			return src.getBytes();
 		}
 		try {
-			return src.getBytes(charset);
+			return src.getBytes(CharsetUtil.getJavaCharset(charset));
 		} catch (UnsupportedEncodingException e) {
 			return src.getBytes();
 		}

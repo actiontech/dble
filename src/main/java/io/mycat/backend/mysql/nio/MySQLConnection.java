@@ -286,7 +286,7 @@ public class MySQLConnection extends BackendAIOConnection {
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
 		try {
-			packet.arg = query.getBytes(charset);
+			packet.arg = query.getBytes(CharsetUtil.getJavaCharset(charset));
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 		}
@@ -498,7 +498,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	/**
 	 * by wuzh ,execute a query and ignore transaction settings for performance
 	 * 
-	 * @param sql
+	 * @param query
 	 * @throws UnsupportedEncodingException
 	 */
 	public void query(String query) throws UnsupportedEncodingException {

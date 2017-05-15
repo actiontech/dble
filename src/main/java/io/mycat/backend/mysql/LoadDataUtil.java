@@ -36,7 +36,7 @@ public class LoadDataUtil
 
 
                     String s =(i==loadDataDataSize-1)?line: line + loadData.getLineTerminatedBy();
-                    byte[] bytes = s.getBytes(loadData.getCharset());
+                    byte[] bytes = s.getBytes(CharsetUtil.getJavaCharset(loadData.getCharset()));
                     bos.write(bytes);
 
 

@@ -115,7 +115,6 @@ public class FilterPusher {
 			JoinNode jn = (JoinNode) qtn;
 			List<Item> DNFNodetoPushToLeft = new LinkedList<Item>();
 			List<Item> DNFNodetoPushToRight = new LinkedList<Item>();
-			// @bug1531 filters copyed by on condition
 			List<Item> leftCopyedPushFilters = new LinkedList<Item>();
 			List<Item> rightCopyedPushFilters = new LinkedList<Item>();
 			List<Item> DNFNodeToCurrent = new LinkedList<Item>();
@@ -136,7 +135,6 @@ public class FilterPusher {
 					DNFNodeToCurrent.add(filter);
 				}
 			}
-			// modify by czf where的所有的条件应该都可以被copy到where条件中下推
 			if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
 				// 将左条件的表达式，推导到join filter的右条件上
 				rightCopyedPushFilters
@@ -165,6 +163,7 @@ public class FilterPusher {
 				// 合并起来
 				DNFNodetoPushToRight.addAll(rightCopyedPushFilters);
 				DNFNodetoPushToLeft.addAll(leftCopyedPushFilters);
+
 				refreshPdFilters(jn, DNFNodetoPushToLeft);
 				refreshPdFilters(jn, DNFNodetoPushToRight);
 				jn.setLeftNode(pushFilter(jn.getLeftNode(), DNFNodetoPushToLeft));
@@ -260,13 +259,9 @@ public class FilterPusher {
 	 * 
 	 * @param DNF
 	 *            要复制的DNF filter
-	 * @param other
-	 *            要复制的目标节点
 	 * @param qnColumns
 	 *            源节点的join字段
 	 * @param otherColumns
-	 *            目标节点的join字段
-	 * @throws QueryException
 	 */
 	private static List<Item> copyFilterToJoinOnColumns(List<Item> DNF, List<Item> qnColumns, List<Item> otherColumns) {
 		List<Item> newIFilterToPush = new LinkedList<Item>();
@@ -287,19 +282,6 @@ public class FilterPusher {
 		return null;
 	}
 
-	/**
-	 * 将连接列上的约束复制到目标节点内
-	 * 
-	 * @param DNF
-	 *            要复制的DNF filter
-	 * @param other
-	 *            要复制的目标节点
-	 * @param qnColumns
-	 *            源节点的join字段
-	 * @param otherColumns
-	 *            目标节点的join字段
-	 * @throws QueryException
-	 */
 	private static void refreshPdFilters(PlanNode qtn, List<Item> filters) {
 		for (int index = 0; index < filters.size(); index++) {
 			Item toPsFilter = filters.get(index);

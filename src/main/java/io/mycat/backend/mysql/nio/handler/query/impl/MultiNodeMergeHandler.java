@@ -222,6 +222,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 				HeapItem firstItem = queues.get(conn).take();
 				heap.add(firstItem);
 			}
+			boolean filterFinished = false;
 			while (!heap.isEmpty()) {
 				if (terminate.get())
 					return;
@@ -232,9 +233,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 					BlockingQueue<HeapItem> topitemQueue = queues.get(top.getIndex());
 					HeapItem item = topitemQueue.take();
 					heap.replaceTop(item);
+					if (filterFinished) {
+						continue;
+					}
 					if (nextHandler.rowResponse(top.getRowData(), top.getRowPacket(), this.isLeft, top.getIndex())) {
-						// should still send eof,so could not return
-						break;
+						filterFinished = true;
 					}
 				}
 			}

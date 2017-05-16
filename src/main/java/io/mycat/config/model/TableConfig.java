@@ -85,7 +85,10 @@ public class TableConfig {
 		this.name = name;
 		String theDataNodes[] = SplitUtil.split(dataNode, ',', '$', '-');
 		if (theDataNodes == null || theDataNodes.length <= 0) {
-			throw new IllegalArgumentException("invalid table dataNodes: " + dataNode);
+			throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
+		}
+		if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
+			throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
 		}
 		dataNodes = new ArrayList<String>(theDataNodes.length);
 		for (String dn : theDataNodes) {

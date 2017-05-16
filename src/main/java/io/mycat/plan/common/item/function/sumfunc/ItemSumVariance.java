@@ -147,10 +147,13 @@ public class ItemSumVariance extends ItemSumNum {
 		long partCount = args.get(0).valInt().longValue();
 		double partSum = args.get(1).valReal().doubleValue();
 		double partVariane = args.get(2).valReal().doubleValue();
-		count += partCount;
-		double partSqarSum = partVariane * partCount + partSum * partSum / partCount;
-		squareSum += partSqarSum;
-		sum += partSum;
+		if (partCount != 0) {
+		    	count += partCount;
+			double partSqarSum = partVariane * partCount + partSum * partSum / partCount;
+			squareSum += partSqarSum;
+			sum += partSum;
+		}
+		
 		return false;
 	}
 

@@ -169,28 +169,31 @@ public class SubQueryPreProcessor {
 			}
 			if (isNotIn) {
 				((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
+				Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+				((JoinNode) result.query).query(joinFilter);
+				result.filter = joinFilter;
 			} else {
-				Item joinFrilter = null;
+				Item joinFilter = null;
 				if (((filter instanceof ItemFuncGt) && !neeEexchange)
 						|| ((filter instanceof ItemFuncLt) && neeEexchange)) {
-					joinFrilter = FilterUtils.GreaterThan(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.GreaterThan(leftColumn, rightJoinColumn);
 				} else if (((filter instanceof ItemFuncLt) && !neeEexchange)
 						|| ((filter instanceof ItemFuncGt) && neeEexchange)) {
-					joinFrilter = FilterUtils.LessThan(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.LessThan(leftColumn, rightJoinColumn);
 				} else if (((filter instanceof ItemFuncGe) && !neeEexchange)
 						|| ((filter instanceof ItemFuncLe) && neeEexchange)) {
-					joinFrilter = FilterUtils.GreaterEqual(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.GreaterEqual(leftColumn, rightJoinColumn);
 				} else if (((filter instanceof ItemFuncLe) && !neeEexchange)
 						|| ((filter instanceof ItemFuncGe) && neeEexchange)) {
-					joinFrilter = FilterUtils.LessEqual(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.LessEqual(leftColumn, rightJoinColumn);
 				} else if (filter instanceof ItemFuncNe) {
-					joinFrilter = FilterUtils.NotEqual(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.NotEqual(leftColumn, rightJoinColumn);
 				} else {
 					//equal or in
-					joinFrilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+					joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
 				}
-				((JoinNode) result.query).query(joinFrilter);
-				result.filter = joinFrilter;
+				((JoinNode) result.query).query(joinFilter);
+				result.filter = joinFilter;
 			}
 			if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {
 				result.query.setAlias(qtn.query.getPureName());

@@ -91,12 +91,11 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotiflyService
         this.zookeeperListen = zookeeperListen;
 
         // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath();
-        schemaPath = schemaPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_CACHE.getKey();
+        String cachePath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_CACHE.getKey();
 
-        currZkPath = schemaPath;
+        currZkPath = cachePath;
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addListen(schemaPath, this);
+        this.zookeeperListen.addListen(cachePath, this);
 
         // 生成xml与类的转换信息
         parseEcacheXMl = new EhcacheParseXmlImpl(xmlParseBase);

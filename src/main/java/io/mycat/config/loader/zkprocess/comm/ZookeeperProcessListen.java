@@ -75,7 +75,6 @@ public class ZookeeperProcessListen {
     * 方法描述
     * @param key
     * @param path
-    * @param cacheNotiflySercie
     * @创建日期 2016年9月19日
     */
     public void watchPath(String key, String path) {

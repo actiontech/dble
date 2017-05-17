@@ -97,8 +97,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotiflyService
         this.zookeeperListen = zookeeperListen;
 
         // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath();
-        schemaPath = schemaPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FOW_ZK_PATH_SCHEMA.getKey();
+        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FOW_ZK_PATH_SCHEMA.getKey();
 
         currZkPath = schemaPath;
         // 将当前自己注册为事件接收对象

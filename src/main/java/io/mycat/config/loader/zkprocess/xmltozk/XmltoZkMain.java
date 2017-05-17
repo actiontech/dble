@@ -21,6 +21,11 @@ import io.mycat.util.ZKUtils;
 public class XmltoZkMain {
 
     public static void main(String[] args) throws JAXBException, InterruptedException {
+        initFileToZK();
+        System.out.println("XmltoZkMain Finished");
+    }
+
+    public static void initFileToZK()throws JAXBException, InterruptedException {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
@@ -60,9 +65,7 @@ public class XmltoZkMain {
 
         // 加载通知进程
         zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
-
     }
-
     private static CuratorFramework buildConnection(String url) {
     	return ZKUtils.getConnection();
     }

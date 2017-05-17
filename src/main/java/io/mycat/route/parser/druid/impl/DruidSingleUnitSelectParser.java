@@ -26,7 +26,7 @@ import io.mycat.server.response.InformationSchemaProfiling;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
-public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
+public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
 			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
@@ -103,7 +103,7 @@ public class DruidSingleUnitSelectParser extends DruidBaseSelectParser {
 			super.visitorParse(schema, rrs, stmt, visitor);
 			// 更改canRunInReadDB属性
 			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-					&& rrs.isAutocommit() == false) {
+					&& !rrs.isAutocommit()) {
 				rrs.setCanRunInReadDB(false);
 			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {

@@ -18,6 +18,7 @@ public class ServerParserShowTest {
                 "SHOW FULL TABLES FROM TESTDB LIKE 'XX%'",
                 "SHOW FULL TABLES IN TESTDB",
                 "SHOW FULL TABLES IN TESTDB LIKE 'XX%'",
+                "SHOW FULL TABLES IN TESTDB where Table_type != 'VIEW'",
                 "show full tables",
                 "show full tables from testdb",
                 "show full tables from testdb like 'xx%'",
@@ -72,6 +73,7 @@ public class ServerParserShowTest {
         };
 
         int[] testResult = {
+                ServerParseShow.FULLTABLES,
                 ServerParseShow.FULLTABLES,
                 ServerParseShow.FULLTABLES,
                 ServerParseShow.FULLTABLES,

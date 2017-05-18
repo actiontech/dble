@@ -17,6 +17,7 @@ import io.mycat.config.Fields;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.UserConfig;
+import io.mycat.meta.SchemaMeta;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
@@ -66,9 +67,14 @@ public class ShowFullTables
 
         //分库的schema，直接从SchemaConfig中获取所有表名
         Map<String,String> parm = buildFields(c,stmt);
-        Set<String> tableSet = getTableSet(c, parm);
+        Set<String> tableSet = getTableSet(c, parm,cSchema);
 
-
+        //在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
+        SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
+        Map meta = null;
+        if(schemata != null){
+            meta = schemata.getTableMetas();
+        }
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
@@ -94,6 +100,9 @@ public class ShowFullTables
          packetId = eof.packetId;
 
         for (String name : tableSet) {
+            if(meta.get(name) == null){
+                continue;
+            }
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
             row.add(StringUtil.encode("SHARDING TABLE", c.getCharset()));
@@ -114,13 +123,21 @@ public class ShowFullTables
     public static Set<String> getTableSet(ServerConnection c, String stmt)
     {
         Map<String,String> parm = buildFields(c,stmt);
-       return getTableSet(c, parm);
+       return getTableSet(c, parm,c.getSchema());
 
     }
 
 
-    private static Set<String> getTableSet(ServerConnection c, Map<String, String> parm)
+    private static Set<String> getTableSet(ServerConnection c, Map<String, String> parm,String cSchema)
     {
+        //在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
+        SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
+        Map meta = null;
+        if(schemata != null){
+            meta = schemata.getTableMetas();
+        }
+
+
         TreeSet<String> tableSet = new TreeSet<String>();
         MycatConfig conf = MycatServer.getInstance().getConfig();
 
@@ -134,15 +151,18 @@ public class ShowFullTables
                 if (null !=parm.get(SCHEMA_KEY) && parm.get(SCHEMA_KEY).toUpperCase().equals(name.toUpperCase())  ){
 
                     if(null==parm.get("LIKE_KEY")){
-                        tableSet.addAll(schemas.get(name).getTables().keySet());
+                        for (String tname : schemas.get(name).getTables().keySet()){
+                            if(meta.get(tname) != null){
+                                tableSet.add(tname);
+                            }
+                        }
                     }else{
                         String p = "^" + parm.get("LIKE_KEY").replaceAll("%", ".*");
                         Pattern pattern = Pattern.compile(p,Pattern.CASE_INSENSITIVE);
                         Matcher ma ;
-
                         for (String tname : schemas.get(name).getTables().keySet()){
                             ma=pattern.matcher(tname);
-                            if(ma.matches()){
+                            if(ma.matches() && meta.get(tname) != null){
                                 tableSet.add(tname);
                             }
                         }

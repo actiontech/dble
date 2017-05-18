@@ -258,10 +258,20 @@ public 	static int tableCheck(String stmt, int offset) {
 			                            "\\s*$";
 
 
+	public static String FULL_TABLE_EXPECTION = "^\\s*(show){1}" +
+			"(\\s+full){1}" +
+			"(\\s+tables){1}" +
+			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+			"(\\s+(where){1}\\s+((. *){0,})\\s*){0,1}" +
+			"\\s*$";
+
 	public static int showTableType(String sql){
 
 		Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 		Matcher ma = pattern.matcher(sql);
+
+		Pattern patternExpection = Pattern.compile(FULL_TABLE_EXPECTION, Pattern.CASE_INSENSITIVE);
+		Matcher mb = patternExpection.matcher(sql);
 
 		if(ma.matches()){
 				if (ma.group(2) != null) {
@@ -269,6 +279,8 @@ public 	static int tableCheck(String stmt, int offset) {
 				} else {
 					return TABLES;
 				}
+		}else if(mb.matches()){
+			return FULLTABLES;
 		}else{
 			return OTHER;
 		}

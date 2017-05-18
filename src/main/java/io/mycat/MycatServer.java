@@ -23,44 +23,14 @@
  */
 package io.mycat;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.channels.AsynchronousChannelGroup;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
-import io.mycat.backend.mysql.xa.CoordinatorLogEntry;
-import io.mycat.backend.mysql.xa.ParticipantLogEntry;
-import io.mycat.backend.mysql.xa.TxState;
-import io.mycat.backend.mysql.xa.XARecoverCallback;
-import io.mycat.backend.mysql.xa.XASessionCheck;
-import io.mycat.backend.mysql.xa.XAStateLog;
+import io.mycat.backend.mysql.xa.*;
 import io.mycat.backend.mysql.xa.recovery.Repository;
 import io.mycat.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import io.mycat.buffer.BufferPool;
@@ -77,19 +47,9 @@ import io.mycat.log.transaction.TxnLogProcessor;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
 import io.mycat.meta.ProxyMetaManager;
-import io.mycat.net.AIOAcceptor;
-import io.mycat.net.AIOConnector;
-import io.mycat.net.NIOAcceptor;
-import io.mycat.net.NIOConnector;
-import io.mycat.net.NIOProcessor;
-import io.mycat.net.NIOReactorPool;
-import io.mycat.net.SocketAcceptor;
-import io.mycat.net.SocketConnector;
+import io.mycat.net.*;
 import io.mycat.route.RouteService;
-import io.mycat.route.sequence.handler.DistributedSequenceHandler;
-import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
-import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
-import io.mycat.route.sequence.handler.SequenceHandler;
+import io.mycat.route.sequence.handler.*;
 import io.mycat.server.ServerConnectionFactory;
 import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
@@ -101,6 +61,20 @@ import io.mycat.util.ExecutorUtil;
 import io.mycat.util.NameableExecutor;
 import io.mycat.util.TimeUtil;
 import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author mycat
@@ -247,14 +221,16 @@ public class MycatServer {
 
 	private SequenceHandler initSequenceHandler(int seqHandlerType) {
 		switch (seqHandlerType) {
-		case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
-			return IncrSequenceTimeHandler.getInstance();
-		case SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED:
-			return DistributedSequenceHandler.getInstance(MycatServer.getInstance().getConfig().getSystem());
-		case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
-			return IncrSequenceZKHandler.getInstance();
-		default:
-			throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
+			case SystemConfig.SEQUENCEHANDLER_MYSQLDB:
+				return IncrSequenceMySQLHandler.getInstance();
+			case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
+				return IncrSequenceTimeHandler.getInstance();
+			case SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED:
+				return DistributedSequenceHandler.getInstance(MycatServer.getInstance().getConfig().getSystem());
+			case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
+				return IncrSequenceZKHandler.getInstance();
+			default:
+				throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
 		}
 	}
 	public MyCatMemory getMyCatMemory() {

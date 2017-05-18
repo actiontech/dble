@@ -37,6 +37,7 @@ public final class SystemConfig {
 
 	public static final String SYS_HOME = "MYCAT_HOME";
 	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
 	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
 	public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
 	public static final int SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT = 4;

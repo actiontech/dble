@@ -101,6 +101,7 @@ public class FilterPusher {
 		}
 
 		Item filterInWhere = qtn.getWhereFilter();
+		//left/right join: where filter can't be push to child
 		if (filterInWhere != null) {
 			List<Item> splits = FilterUtils.splitFilter(filterInWhere);
 			qtn.query(null);

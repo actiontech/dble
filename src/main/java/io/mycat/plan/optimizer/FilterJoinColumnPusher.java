@@ -40,7 +40,8 @@ public class FilterJoinColumnPusher {
 		}
 
 		Item filterInWhere = qtn.getWhereFilter();
-		if (filterInWhere != null) {
+		//left/right join: where filter can't be push to child
+		if (filterInWhere != null && (!(qtn.type() == PlanNode.PlanNodeType.JOIN) || ((JoinNode) qtn).isInnerJoin())) {
 			List<Item> splits = FilterUtils.splitFilter(filterInWhere);
 			List<Item> nonJoinFilter = new ArrayList<Item>();
 			for (Item filter : splits) {
@@ -126,9 +127,7 @@ public class FilterJoinColumnPusher {
 	/**
 	 * 是否是可能得ER关系Filter： 1.Filter必须是=关系 2.Filter必须是Column = Column
 	 * 3.Filter的key和value必须来自于不同的两张表 ex:a.id=b.id true a.id=b.id+1 false
-	 * 
-	 * @param filter
-	 * @return
+	 *
 	 */
 	private static boolean isPossibleERJoinColumnFilter(PlanNode node, Item ifilter) {
 		if (!(ifilter instanceof ItemFuncEqual))

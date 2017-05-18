@@ -184,9 +184,15 @@ public class MySQLPlanNodeVisitor {
 			joinNode.setInnerJoin();
 			break;
 		case LEFT_OUTER_JOIN:
+			if (joinTables.getCondition() == null) {
+				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "left join without join_condition!");
+			}
 			joinNode.setLeftOuterJoin();
 			break;
 		case RIGHT_OUTER_JOIN:
+			if (joinTables.getCondition() == null) {
+				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "right join without join_condition!");
+			}
 			joinNode.setRightOuterJoin();
 			break;
 		case NATURAL_JOIN:// col?

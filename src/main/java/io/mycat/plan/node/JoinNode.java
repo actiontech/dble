@@ -234,15 +234,6 @@ public class JoinNode extends PlanNode {
 		return this;
 	}
 
-	/**
-	 * 或者称为full join
-	 */
-	public JoinNode setOuterJoin() {
-		this.leftOuter = true;
-		this.rightOuter = true;
-		return this;
-	}
-
 	public boolean getLeftOuter() {
 		return this.leftOuter;
 	}
@@ -263,9 +254,6 @@ public class JoinNode extends PlanNode {
 		return (!this.getLeftOuter()) && (!this.getRightOuter());
 	}
 
-	public boolean isOuterJoin() {
-		return (this.getLeftOuter()) && (this.getRightOuter());
-	}
 
 	public boolean isNeedOptimizeJoinOrder() {
 		return this.needOptimizeJoinOrder;
@@ -392,8 +380,6 @@ public class JoinNode extends PlanNode {
 			ToStringUtil.appendln(sb, tabContent + "type: " + "right outter join");
 		} else if (this.isLeftOuterJoin()) {
 			ToStringUtil.appendln(sb, tabContent + "type: " + "left outter join");
-		} else if (this.isOuterJoin()) {
-			ToStringUtil.appendln(sb, tabContent + "type: " + "outter join");
 		}
 		ToStringUtil.appendln(sb, tabContent + "joinFilter: " + ToStringUtil.itemListString(this.getJoinFilter()));
 		ToStringUtil.appendln(sb, tabContent + "otherJoinOnFilter: " + ToStringUtil.itemString(this.otherJoinOnFilter));

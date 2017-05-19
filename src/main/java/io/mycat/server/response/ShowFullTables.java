@@ -69,12 +69,6 @@ public class ShowFullTables
         Map<String,String> parm = buildFields(c,stmt);
         Set<String> tableSet = getTableSet(c, parm,cSchema);
 
-        //在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
-        SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
-        Map meta = null;
-        if(schemata != null){
-            meta = schemata.getTableMetas();
-        }
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
@@ -100,9 +94,6 @@ public class ShowFullTables
          packetId = eof.packetId;
 
         for (String name : tableSet) {
-            if(meta.get(name) == null){
-                continue;
-            }
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
             row.add(StringUtil.encode("SHARDING TABLE", c.getCharset()));

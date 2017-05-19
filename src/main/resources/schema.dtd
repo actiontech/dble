@@ -56,10 +56,7 @@
   writeType CDATA #IMPLIED
   switchType  CDATA #IMPLIED
   slaveThreshold  CDATA #IMPLIED
-  tempReadHostAvailable CDATA #IMPLIED
-  filters CDATA #IMPLIED
-  logTime CDATA #IMPLIED
-    slaveIDs CDATA #IMPLIED>
+  tempReadHostAvailable CDATA #IMPLIED>
 
 <!ELEMENT writeHost (readHost)*>
 <!ATTLIST writeHost

@@ -68,19 +68,18 @@ public class PhysicalDBPool {
 
 	protected final ReentrantLock switchLock = new ReentrantLock();
 
-	private final int banlance;
+	private final int balance;
 	private final Random random = new Random();
 	private final Random wnrandom = new Random();
 	private String[] schemas;
 	private final DataHostConfig dataHostConfig;
-	private String slaveIDs;
 
 	public PhysicalDBPool(String name, DataHostConfig conf, PhysicalDatasource[] writeSources,
 			Map<Integer, PhysicalDatasource[]> readSources, int balance) {
 		this.hostName = name;
 		this.dataHostConfig = conf;
 		this.writeSources = writeSources;
-		this.banlance = balance;
+		this.balance = balance;
 
 		Iterator<Map.Entry<Integer, PhysicalDatasource[]>> entryItor = readSources.entrySet().iterator();
 		while (entryItor.hasNext()) {
@@ -211,14 +210,6 @@ public class PhysicalDBPool {
 		} finally {
 			adjustLock.writeLock().unlock();
 		}
-	}
-
-	public String getSlaveIDs() {
-		return slaveIDs;
-	}
-
-	public void setSlaveIDs(String slaveIDs) {
-		this.slaveIDs = slaveIDs;
 	}
 
 	public String getHostName() {
@@ -552,7 +543,7 @@ public class PhysicalDBPool {
 
 		PhysicalDatasource theNode = null;
 		ArrayList<PhysicalDatasource> okSources = null;
-		switch (banlance) {
+		switch (balance) {
 		case BALANCE_ALL_BACK: {
 			// all read nodes and the stand by masters
 			okSources = getAllActiveRWSources(true, false, checkSlaveSynStatus());
@@ -725,11 +716,6 @@ public class PhysicalDBPool {
 		}
 	}
 
-	//
-	public int getBalance() {
-		return banlance;
-	}
-
 	private boolean isAlive(PhysicalDatasource theSource) {
 		return theSource.isAlive();
 	}
@@ -753,8 +739,7 @@ public class PhysicalDBPool {
 	 * @param includeWriteNode
 	 *            if include write nodes
 	 * @param includeCurWriteNode
-	 *            if include current active write node. invalid when
-	 *            <code>includeWriteNode<code> is false
+	 *            if include current active write node. invalid when <code>includeWriteNode<code> is false
 	 * @param filterWithSlaveThreshold
 	 *
 	 * @return

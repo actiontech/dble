@@ -54,10 +54,7 @@ public class DataHostConfig {
 	private String connectionInitSql;
     private int slaveThreshold = -1;
 	private final int switchType;
-	private String filters="mergeStat";
-	private long logTime=300000;
 	private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
-	private String slaveIDs;
 
 	public DataHostConfig(String name,
 			DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts,int switchType,int slaveThreshold, boolean tempReadHostAvailable) {
@@ -127,14 +124,6 @@ public class DataHostConfig {
 		this.minCon = minCon;
 	}
 
-	public String getSlaveIDs() {
-		return slaveIDs;
-	}
-
-	public void setSlaveIDs(String slaveIDs) {
-		this.slaveIDs = slaveIDs;
-	}
-
 	public int getBalance() {
 		return balance;
 	}
@@ -169,23 +158,8 @@ public class DataHostConfig {
         }
 	}
 
-	public String getFilters() {
-		return filters;
-	}
-
-	public void setFilters(String filters) {
-		this.filters = filters;
-	}
-
-	public long getLogTime() {
-		return logTime;
-	}
-
 	public boolean isShowClusterSql() {
 		return this.isShowClusterSql;
 	}
 
-	public void setLogTime(long logTime) {
-		this.logTime = logTime;
-	}
 }

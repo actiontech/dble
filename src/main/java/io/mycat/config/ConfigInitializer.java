@@ -268,7 +268,6 @@ public class ConfigInitializer {
 		}
 		
 		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance());
-		pool.setSlaveIDs(conf.getSlaveIDs());
 		return pool;
 	}
 

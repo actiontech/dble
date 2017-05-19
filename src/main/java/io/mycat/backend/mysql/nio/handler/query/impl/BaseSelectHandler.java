@@ -30,12 +30,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
 	private RouteResultsetNode rrss;
 
-	/**
-	 * @param route
-	 * @param autocommit
-	 * @param orderBys
-	 * @param session
-	 */
+
 	public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, NonBlockingSession session) {
 		super(id, session);
 		this.rrss = rrss;

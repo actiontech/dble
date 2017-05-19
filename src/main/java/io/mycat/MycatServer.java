@@ -129,7 +129,7 @@ public class MycatServer {
 	private NIOProcessor[] processors;
 	private SocketConnector connector;
 	private NameableExecutor businessExecutor;
-	private NameableExecutor ownJobExecutor;
+	private NameableExecutor complexQueryExecutor;
 	private NameableExecutor timerExecutor;
 	private ListeningExecutorService listeningExecutorService;
 	private  InterProcessMutex dnindexLock;
@@ -194,8 +194,8 @@ public class MycatServer {
 		return catletClassLoader;
 	}
 
-	public NameableExecutor getOwnJobExecutor() {
-		return ownJobExecutor;
+	public NameableExecutor getComplexQueryExecutor() {
+		return complexQueryExecutor;
 	}
 
 	public String genXATXID() {
@@ -327,7 +327,7 @@ public class MycatServer {
 			}
 		}
 		businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
-		ownJobExecutor = ExecutorUtil.createCached("ownJobExecutor", 1);
+		complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
 		timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 

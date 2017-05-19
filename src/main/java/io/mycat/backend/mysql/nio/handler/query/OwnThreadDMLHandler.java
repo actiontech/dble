@@ -42,7 +42,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
 	 *            有可能会用到的参数
 	 */
 	protected final void startOwnThread(final Object... objects) {
-		MycatServer.getInstance().getOwnJobExecutor().execute(new Runnable() {
+		MycatServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
 				if (terminate.get())

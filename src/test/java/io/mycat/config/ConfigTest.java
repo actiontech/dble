@@ -198,7 +198,7 @@ public class ConfigTest {
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
 		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(),conf, writeSources,
-				readSourcesMap, conf.getBalance(), conf.getWriteType());
+				readSourcesMap, conf.getBalance());
 		return pool;
 	}
 

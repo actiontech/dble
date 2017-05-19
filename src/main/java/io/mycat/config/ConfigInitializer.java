@@ -267,8 +267,7 @@ public class ConfigInitializer {
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
 		
-		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance(),
-				conf.getWriteType());
+		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance());
 		pool.setSlaveIDs(conf.getSlaveIDs());
 		return pool;
 	}

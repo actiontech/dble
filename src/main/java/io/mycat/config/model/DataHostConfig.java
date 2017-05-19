@@ -46,7 +46,6 @@ public class DataHostConfig {
 	private int maxCon = 128;// 保持后端数据通道的默认最大值
 	private int minCon = 10;
 	private int balance = PhysicalDBPool.BALANCE_NONE;
-	private int writeType = PhysicalDBPool.WRITE_ONLYONE_NODE;
 	private final DBHostConfig[] writeHosts;
 	private final Map<Integer, DBHostConfig[]> readHosts;
 	private String hearbeatSQL;
@@ -97,13 +96,7 @@ public class DataHostConfig {
 		this.connectionInitSql = connectionInitSql;
 	}
 
-	public int getWriteType() {
-		return writeType;
-	}
 
-	public void setWriteType(int writeType) {
-		this.writeType = writeType;
-	}
 
 	public String getName() {
 		return name;

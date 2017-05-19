@@ -724,12 +724,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			//如果 tempReadHostAvailable 设置大于 0 则表示写主机如果挂掉， 临时的读服务依然可用
 			String tempReadHostAvailableStr = element.getAttribute("tempReadHostAvailable");
 			boolean tempReadHostAvailable = !tempReadHostAvailableStr.equals("") && Integer.parseInt(tempReadHostAvailableStr) > 0;
-			/**
-			 * 读取 写类型
-			 * 这里只支持 0 - 所有写操作仅配置的第一个 writeHost
-			 */
-			String writeTypStr = element.getAttribute("writeType");
-			int writeType = "".equals(writeTypStr) ? PhysicalDBPool.WRITE_ONLYONE_NODE : Integer.parseInt(writeTypStr);
+
 			String filters = element.getAttribute("filters");
 			String logTimeStr = element.getAttribute("logTime");
 			String slaveIDs = element.getAttribute("slaveIDs");
@@ -767,7 +762,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 			hostConf.setMaxCon(maxCon);
 			hostConf.setMinCon(minCon);
 			hostConf.setBalance(balance);
-			hostConf.setWriteType(writeType);
 			hostConf.setHearbeatSQL(heartbeatSQL);
 			hostConf.setConnectionInitSql(initConSQL);
 			hostConf.setFilters(filters);

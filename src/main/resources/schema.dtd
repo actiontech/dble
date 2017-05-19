@@ -45,7 +45,7 @@
 <!ATTLIST dataNode name CDATA #REQUIRED>
 <!ATTLIST dataNode dataHost CDATA #REQUIRED>
 <!ATTLIST dataNode database CDATA #REQUIRED>
-
+<!-- dbDriver and dbType will be ignored,just for compatibility -->
 <!ELEMENT dataHost (heartbeat,(connectionInitSql*),(writeHost+))>
 <!ATTLIST dataHost
   balance CDATA #REQUIRED
@@ -59,7 +59,9 @@
   tempReadHostAvailable CDATA #IMPLIED
   filters CDATA #IMPLIED
   logTime CDATA #IMPLIED
-    slaveIDs CDATA #IMPLIED>
+  slaveIDs CDATA #IMPLIED
+  dbDriver CDATA #IMPLIED
+  dbType CDATA #IMPLIED>
 
 <!ELEMENT writeHost (readHost)*>
 <!ATTLIST writeHost

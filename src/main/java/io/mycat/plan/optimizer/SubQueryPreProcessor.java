@@ -169,9 +169,9 @@ public class SubQueryPreProcessor {
 			}
 			if (isNotIn) {
 				((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
-				Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
-				((JoinNode) result.query).query(joinFilter);
-				result.filter = joinFilter;
+				ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+				((JoinNode) result.query).addJoinFilter(joinFilter);
+				result.filter = null;
 			} else {
 				Item joinFilter = null;
 				if (((filter instanceof ItemFuncGt) && !neeEexchange)

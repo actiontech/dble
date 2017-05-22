@@ -95,12 +95,11 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotiflyS
         this.zookeeperListen = zookeeperListen;
 
         // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath();
-        schemaPath = schemaPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
+        String sequencePath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
 
-        currZkPath = schemaPath;
+        currZkPath = sequencePath;
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addListen(schemaPath, this);
+        this.zookeeperListen.addListen(sequencePath, this);
 
     }
 

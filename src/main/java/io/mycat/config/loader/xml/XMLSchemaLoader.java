@@ -650,7 +650,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 		return dnName == null || dnName.length() == 0;
 	}
 
-	private DBHostConfig createDBHostConf(String dataHost, Element node, int maxCon, int minCon, String filters, long logTime) {
+	private DBHostConfig createDBHostConf(String dataHost, Element node, int maxCon, int minCon) {
 		
 		String nodeHost = node.getAttribute("host");
 		String nodeUrl = node.getAttribute("url");
@@ -679,8 +679,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 		DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty,password);
 		conf.setMaxCon(maxCon);
 		conf.setMinCon(minCon);
-		conf.setFilters(filters);
-		conf.setLogTime(logTime);
 		conf.setWeight(weight); 	//新增权重
 		return conf;
 	}
@@ -724,16 +722,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			//如果 tempReadHostAvailable 设置大于 0 则表示写主机如果挂掉， 临时的读服务依然可用
 			String tempReadHostAvailableStr = element.getAttribute("tempReadHostAvailable");
 			boolean tempReadHostAvailable = !tempReadHostAvailableStr.equals("") && Integer.parseInt(tempReadHostAvailableStr) > 0;
-			/**
-			 * 读取 写类型
-			 * 这里只支持 0 - 所有写操作仅配置的第一个 writeHost
-			 */
-			String writeTypStr = element.getAttribute("writeType");
-			int writeType = "".equals(writeTypStr) ? PhysicalDBPool.WRITE_ONLYONE_NODE : Integer.parseInt(writeTypStr);
-			String filters = element.getAttribute("filters");
-			String logTimeStr = element.getAttribute("logTime");
-			String slaveIDs = element.getAttribute("slaveIDs");
-			long logTime = "".equals(logTimeStr) ? PhysicalDBPool.LONG_TIME : Long.parseLong(logTimeStr) ;
+
 			//读取心跳语句
 			String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 			//读取 初始化sql配置,用于oracle
@@ -748,14 +737,14 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<Integer, DBHostConfig[]>(2);
 			for (int w = 0; w < writeDbConfs.length; w++) {
 				Element writeNode = (Element) writeNodes.item(w);
-				writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon,filters,logTime);
+				writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
 				NodeList readNodes = writeNode.getElementsByTagName("readHost");
 				//读取对应的每一个readHost
 				if (readNodes.getLength() != 0) {
 					DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
 					for (int r = 0; r < readDbConfs.length; r++) {
 						Element readNode = (Element) readNodes.item(r);
-						readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon,filters, logTime);
+						readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon);
 					}
 					readHostsMap.put(w, readDbConfs);
 				}
@@ -767,12 +756,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 			hostConf.setMaxCon(maxCon);
 			hostConf.setMinCon(minCon);
 			hostConf.setBalance(balance);
-			hostConf.setWriteType(writeType);
 			hostConf.setHearbeatSQL(heartbeatSQL);
 			hostConf.setConnectionInitSql(initConSQL);
-			hostConf.setFilters(filters);
-			hostConf.setLogTime(logTime);
-			hostConf.setSlaveIDs(slaveIDs);
 			dataHosts.put(hostConf.getName(), hostConf);
 		}
 	}

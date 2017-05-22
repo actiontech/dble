@@ -105,8 +105,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService 
         this.zookeeperListen = zookeeperListen;
 
         // 获得当前集群的名称
-        String serverPath = zookeeperListen.getBasePath();
-        serverPath = serverPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
+        String serverPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
 
         currZkPath = serverPath;
         // 将当前自己注册为事件接收对象

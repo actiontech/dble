@@ -2,7 +2,7 @@
 *.pydevproject
 .metadata
 .gradle
-bin/
+/bin/
 /tmp/
 *.tmp
 *.bak
@@ -115,5 +115,8 @@ hs_err_pid*
 src/main/resources/server.xml
 src/main/resources/schema.xml 
 src/main/resources/rule.xml
+src/main/resources/zkconf/server.xml
+src/main/resources/zkconf/schema.xml 
+src/main/resources/zkconf/rule.xml
 conf/dnindex.properties
 version.txt

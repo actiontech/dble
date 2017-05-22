@@ -126,8 +126,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 	@Override
 	public void onResult(SQLQueryResult<Map<String, String>> result) {
 		if (result.isSuccess()) {
-			int balance = heartbeat.getSource().getDbPool().getBalance();
-            
 			PhysicalDatasource source = heartbeat.getSource();
 			int switchType = source.getHostConfig().getSwitchType();
 			Map<String, String> resultResult = result.getResult();

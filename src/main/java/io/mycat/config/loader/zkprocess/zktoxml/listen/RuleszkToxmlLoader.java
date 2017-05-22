@@ -99,8 +99,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotiflyService {
         this.zookeeperListen = zookeeperListen;
 
         // 获得当前集群的名称
-        String RulesPath = zookeeperListen.getBasePath();
-        RulesPath = RulesPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
+        String RulesPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
 
         currZkPath = RulesPath;
         // 将当前自己注册为事件接收对象

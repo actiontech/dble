@@ -1,12 +1,8 @@
 package io.mycat.config.loader.zkprocess.xmltozk;
 
-import java.util.concurrent.TimeUnit;
-
 import javax.xml.bind.JAXBException;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
@@ -20,10 +16,18 @@ import io.mycat.config.loader.zkprocess.xmltozk.listen.RulesxmlTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.SchemasxmlTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.SequenceTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.ServerxmlTozkLoader;
+import io.mycat.util.ZKUtils;
+
+import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
 
 public class XmltoZkMain {
 
-    public static void main(String[] args) throws JAXBException, InterruptedException {
+    public static void main(String[] args) throws Exception {
+        initFileToZK();
+        System.out.println("XmltoZkMain Finished");
+    }
+
+    public static void initFileToZK() throws Exception {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
@@ -35,7 +39,7 @@ public class XmltoZkMain {
         zkListen.setBasePath(basePath);
 
         // 获得zk的连接信息
-        CuratorFramework zkConn = buildConnection(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_URL));
+        CuratorFramework zkConn = ZKUtils.getConnection();
 
         // 获得公共的xml转换器对象
         XmlProcessBase xmlProcess = new XmlProcessBase();
@@ -64,25 +68,8 @@ public class XmltoZkMain {
         // 加载通知进程
         zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
 
-    }
-
-    private static CuratorFramework buildConnection(String url) {
-        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(url, new ExponentialBackoffRetry(100, 6));
-
-        // start connection
-        curatorFramework.start();
-        // wait 3 second to establish connect
-        try {
-            curatorFramework.blockUntilConnected(3, TimeUnit.SECONDS);
-            if (curatorFramework.getZookeeperClient().isConnected()) {
-                return curatorFramework.usingNamespace("");
-            }
-        } catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
-        }
-
-        // fail situation
-        curatorFramework.close();
-        throw new RuntimeException("failed to connect to zookeeper service : " + url);
+        //Initialized flag
+        String confInitialized = basePath + ZK_CONF_INITED;
+        zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
     }
 }

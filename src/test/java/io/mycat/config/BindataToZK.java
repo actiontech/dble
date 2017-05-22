@@ -1,4 +1,4 @@
-package io.mycat.config.loader.zkprocess.xmltozk;
+package io.mycat.config;
 
 import com.google.common.io.Files;
 import io.mycat.config.loader.console.ZookeeperPath;

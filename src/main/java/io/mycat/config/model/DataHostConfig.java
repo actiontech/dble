@@ -46,7 +46,6 @@ public class DataHostConfig {
 	private int maxCon = 128;// 保持后端数据通道的默认最大值
 	private int minCon = 10;
 	private int balance = PhysicalDBPool.BALANCE_NONE;
-	private int writeType = PhysicalDBPool.WRITE_ONLYONE_NODE;
 	private final DBHostConfig[] writeHosts;
 	private final Map<Integer, DBHostConfig[]> readHosts;
 	private String hearbeatSQL;
@@ -55,10 +54,7 @@ public class DataHostConfig {
 	private String connectionInitSql;
     private int slaveThreshold = -1;
 	private final int switchType;
-	private String filters="mergeStat";
-	private long logTime=300000;
 	private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
-	private String slaveIDs;
 
 	public DataHostConfig(String name,
 			DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts,int switchType,int slaveThreshold, boolean tempReadHostAvailable) {
@@ -97,13 +93,7 @@ public class DataHostConfig {
 		this.connectionInitSql = connectionInitSql;
 	}
 
-	public int getWriteType() {
-		return writeType;
-	}
 
-	public void setWriteType(int writeType) {
-		this.writeType = writeType;
-	}
 
 	public String getName() {
 		return name;
@@ -132,14 +122,6 @@ public class DataHostConfig {
 
 	public void setMinCon(int minCon) {
 		this.minCon = minCon;
-	}
-
-	public String getSlaveIDs() {
-		return slaveIDs;
-	}
-
-	public void setSlaveIDs(String slaveIDs) {
-		this.slaveIDs = slaveIDs;
 	}
 
 	public int getBalance() {
@@ -176,23 +158,8 @@ public class DataHostConfig {
         }
 	}
 
-	public String getFilters() {
-		return filters;
-	}
-
-	public void setFilters(String filters) {
-		this.filters = filters;
-	}
-
-	public long getLogTime() {
-		return logTime;
-	}
-
 	public boolean isShowClusterSql() {
 		return this.isShowClusterSql;
 	}
 
-	public void setLogTime(long logTime) {
-		this.logTime = logTime;
-	}
 }

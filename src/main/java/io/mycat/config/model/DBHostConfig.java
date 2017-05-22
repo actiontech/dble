@@ -35,8 +35,6 @@ public class DBHostConfig {
     private final String encryptPassword; //密文
 	private int maxCon ;
 	private int minCon ;
-	private String filters="mergeStat";
-	private long logTime = 300000;
 	private int weight;				
 
 	public DBHostConfig(String hostName, String ip, int port, String url,
@@ -94,25 +92,9 @@ public class DBHostConfig {
 	public String getUser() {
 		return user;
 	}
-	public String getFilters() {
-		return filters;
-	}
-
-	public void setFilters(String filters) {
-		this.filters = filters;
-	}
 	public String getPassword() {
 		return password;
 	}
-
-	public long getLogTime() {
-		return logTime;
-	}
-
-	public void setLogTime(long logTime) {
-		this.logTime = logTime;
-	}
-
 	public int getWeight() {
 		return weight;
 	}

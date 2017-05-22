@@ -18,14 +18,16 @@ import io.mycat.config.loader.zkprocess.xmltozk.listen.SequenceTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.ServerxmlTozkLoader;
 import io.mycat.util.ZKUtils;
 
+import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
+
 public class XmltoZkMain {
 
-    public static void main(String[] args) throws JAXBException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         initFileToZK();
         System.out.println("XmltoZkMain Finished");
     }
 
-    public static void initFileToZK()throws JAXBException, InterruptedException {
+    public static void initFileToZK() throws Exception {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
@@ -37,7 +39,7 @@ public class XmltoZkMain {
         zkListen.setBasePath(basePath);
 
         // 获得zk的连接信息
-        CuratorFramework zkConn = buildConnection(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_URL));
+        CuratorFramework zkConn = ZKUtils.getConnection();
 
         // 获得公共的xml转换器对象
         XmlProcessBase xmlProcess = new XmlProcessBase();
@@ -65,8 +67,9 @@ public class XmltoZkMain {
 
         // 加载通知进程
         zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
-    }
-    private static CuratorFramework buildConnection(String url) {
-    	return ZKUtils.getConnection();
+
+        //Initialized flag
+        String confInitialized = basePath + ZK_CONF_INITED;
+        zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
     }
 }

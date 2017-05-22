@@ -185,17 +185,17 @@ public enum ZookeeperPath {
     * @字段说明 ZK_LOCAL_WRITE_PATH
     */
     ZK_LOCAL_WRITE_PATH("./"),
-    // /**zk写入本地的路径信息
-    // * @字段说明 ZK_LOCAL_WRITE_PATH
-    // */
-    // ZK_LOCAL_WRITE_PATH("zkdownload/"),
 
     /**
      * zk本地配制目录信息
      * @字段说明 ZK_LOCAL_WRITE_PATH
      */
     ZK_LOCAL_CFG_PATH("/zkconf/"),
-
+    /**
+     * zk本地配制目录信息
+     * @字段说明 ZK_LOCAL_WRITE_PATH
+     */
+    ZK_CONF_INITED("confInitialized"),
     ;
     /**
      * 配制的key的信息

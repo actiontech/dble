@@ -31,6 +31,10 @@ import io.mycat.config.loader.zkprocess.zktoxml.listen.ServerzkToxmlLoader;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.util.ZKUtils;
 
+import javax.xml.bind.JAXBException;
+
+import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
+
 /**
  * 将xk的信息转换为xml文件的操作
 * 源文件名：ZktoxmlMain.java
@@ -62,46 +66,26 @@ public class ZktoXmlMain {
      * @创建日期 2016年9月21日
     */
     public static void loadZktoFile() throws Exception {
-        // 得到基本路径
-        String basePath = ZKUtils.getZKBasePath();
         // 获得zk的连接信息
         CuratorFramework zkConn = buildConnection(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_URL));
-        String confInitialized = basePath + "confInitialized";
-        //init conf if not
-        if (zkConn.checkExists().forPath(confInitialized) == null) {
-            String confLockPath = basePath + "confLock";
-            InterProcessMutex confLock = new InterProcessMutex(zkConn, confLockPath);
-            //someone acquired the lock
-            if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                //loop wait for initialized
-                while (true) {
-                    if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                    } else {
-                        try {
-                            if (zkConn.checkExists().forPath(confInitialized) == null) {
-                                XmltoZkMain.initFileToZK();
-                                zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
-                            }
-                            break;
-                        } finally {
-                            confLock.release();
-                        }
-                    }
-                }
-            } else {
-                try {
-                    XmltoZkMain.initFileToZK();
-                    zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
-                } finally {
-                    confLock.release();
-                }
-            }
-        }
+
+        initZKIfNot( zkConn);
+
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
-        zkListen.setBasePath(basePath);
+        zkListen.setBasePath(ZKUtils.getZKBasePath());
+        initLocalConfFromZK(zkListen, zkConn);
 
+        // 加载watch
+        loadZkWatch(zkListen.getWatchPath(), zkConn, zkListen);
+
+        // 创建临时节点
+        createTempNode("/mycat/mycat-cluster-1/line", "tmpNode1", zkConn);
+
+
+    }
+
+    private static void initLocalConfFromZK(ZookeeperProcessListen zkListen, CuratorFramework zkConn) throws JAXBException {
         // 获得公共的xml转换器对象
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
@@ -123,7 +107,7 @@ public class ZktoXmlMain {
         // 将bindata目录的数据进行转换到本地文件
         ZKUtils.addChildPathCache(ZKUtils.getZKBasePath()+"bindata",new BinDataPathChildrenCacheListener());
 
-         //ruledata
+        //ruledata
         ZKUtils.addChildPathCache(ZKUtils.getZKBasePath()+"ruledata",new RuleDataPathChildrenCacheListener());
 
         // 初始化xml转换操作
@@ -131,23 +115,48 @@ public class ZktoXmlMain {
 
         // 通知所有人
         zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
+    }
 
-        // 加载watch
-        loadZkWatch(zkListen.getWatchPath(), zkConn, zkListen);
-
-        // 创建临时节点
-        createTempNode("/mycat/mycat-cluster-1/line", "tmpNode1", zkConn);
-
-
+    private static void initZKIfNot(CuratorFramework zkConn) throws Exception {
+        String basePath = ZKUtils.getZKBasePath();
+        String confInitialized = basePath + ZK_CONF_INITED;
+        //init conf if not
+        if (zkConn.checkExists().forPath(confInitialized) == null) {
+            String confLockPath = basePath + "confLock";
+            InterProcessMutex confLock = new InterProcessMutex(zkConn, confLockPath);
+            //someone acquired the lock
+            if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
+                //loop wait for initialized
+                while (true) {
+                    if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
+                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                    } else {
+                        try {
+                            if (zkConn.checkExists().forPath(confInitialized) == null) {
+                                XmltoZkMain.initFileToZK();
+                            }
+                            break;
+                        } finally {
+                            confLock.release();
+                        }
+                    }
+                }
+            } else {
+                try {
+                    XmltoZkMain.initFileToZK();
+                } finally {
+                    confLock.release();
+                }
+            }
+        }
     }
 
     private static void loadZkWatch(Set<String> setPaths, final CuratorFramework zkConn,
-            final ZookeeperProcessListen zkListen) throws Exception {
-
+                                    final ZookeeperProcessListen zkListen) throws Exception {
         if (null != setPaths && !setPaths.isEmpty()) {
             for (String path : setPaths) {
-            	NodeCache node = runWatch(zkConn, path, zkListen);
-            	node.start();
+                NodeCache node = runWatch(zkConn, path, zkListen);
+                node.start();
                 LOGGER.info("ZktoxmlMain loadZkWatch path:" + path + " regist success");
             }
         }

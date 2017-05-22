@@ -81,7 +81,7 @@ public class MySQLPlanNodeVisitor {
 
 		SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
 		MergeNode mergeNode = new MergeNode();
-		if (sqlSelectQuery.getOperator() == SQLUnionOperator.UNION) {
+		if (sqlSelectQuery.getOperator() == SQLUnionOperator.UNION || sqlSelectQuery.getOperator() == SQLUnionOperator.DISTINCT) {
 			mergeNode.setUnion(true);
 		}
 		mergeNode.addChild(mtvleft.getTableNode());

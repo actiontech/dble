@@ -184,13 +184,13 @@ public class MySQLPlanNodeVisitor {
 			joinNode.setInnerJoin();
 			break;
 		case LEFT_OUTER_JOIN:
-			if (joinTables.getCondition() == null) {
+			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0)) {
 				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "left join without join_condition!");
 			}
 			joinNode.setLeftOuterJoin();
 			break;
 		case RIGHT_OUTER_JOIN:
-			if (joinTables.getCondition() == null) {
+			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0)) {
 				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "right join without join_condition!");
 			}
 			joinNode.setRightOuterJoin();

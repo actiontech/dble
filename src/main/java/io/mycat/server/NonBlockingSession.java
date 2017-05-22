@@ -46,6 +46,7 @@ import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.backend.mysql.nio.handler.KillConnectionHandler;
 import io.mycat.backend.mysql.nio.handler.LockTablesHandler;
 import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
+import io.mycat.backend.mysql.nio.handler.MultiNodeDdlHandler;
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.backend.mysql.nio.handler.UnLockTablesHandler;
@@ -90,6 +91,7 @@ public class NonBlockingSession implements Session {
     // life-cycle: each sql execution
     private volatile SingleNodeHandler singleNodeHandler;
     private volatile MultiNodeQueryHandler multiNodeHandler;
+    private volatile MultiNodeDdlHandler multiNodeDdlHandler;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
     private volatile String xaTXID;
@@ -202,20 +204,42 @@ public class NonBlockingSession implements Session {
 			if (this.isPrepared()) {
 				this.setPrepared(false);
 			}
-		} else { 
-			multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
-			if (this.isPrepared()) {
-				multiNodeHandler.setPrepared(true);
-			}
-			try {
-				multiNodeHandler.execute();
-			} catch (Exception e) {
-				handleSpecial(rrs, source.getSchema(), false);
-				LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
-				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-			}
-			if (this.isPrepared()) {
-				this.setPrepared(false);
+		} else {
+		    	if (rrs.getSqlType() != ServerParse.DDL) {
+			    /**
+			     * here, just a try! The sync is the superfluous, because there are hearbeats at every backend node.
+			     * We don't do 2pc or 3pc. Beause mysql(that is, resource manager) don't support that for ddl statements.
+			     */
+			    	multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
+				if (this.isPrepared()) {
+				    	multiNodeHandler.setPrepared(true);
+				}
+				try {
+				    	multiNodeHandler.execute();
+				} catch (Exception e) {
+				    	handleSpecial(rrs, source.getSchema(), false);
+					LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+					source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+				}
+				if (this.isPrepared()) {
+				    	this.setPrepared(false);
+				}
+			} else {
+			    	multiNodeDdlHandler = new MultiNodeDdlHandler(type, rrs, this);
+				if (this.isPrepared()) {
+				    	multiNodeDdlHandler.setPrepared(true);
+				}
+				try {
+				    	multiNodeDdlHandler.execute();
+				} catch (Exception e) {
+				    	handleSpecial(rrs, source.getSchema(), false);
+					LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+					source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+				}
+				if (this.isPrepared()) {
+				    	this.setPrepared(false);
+				}
+
 			}
 		}
     }
@@ -605,6 +629,13 @@ public class NonBlockingSession implements Session {
             singleHander.clearResources();
             singleNodeHandler = null;
         }
+
+	MultiNodeDdlHandler multiDdlHandler = multiNodeDdlHandler;
+        if (multiDdlHandler != null) {
+            	multiDdlHandler.clearResources();
+		multiNodeDdlHandler = null;
+        }
+	
         MultiNodeQueryHandler multiHandler = multiNodeHandler;
         if (multiHandler != null) {
             multiHandler.clearResources();

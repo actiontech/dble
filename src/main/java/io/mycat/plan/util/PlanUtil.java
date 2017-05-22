@@ -43,7 +43,7 @@ public class PlanUtil {
 	 * 查找obj在node树当中真正属于的tablenode的column 如果obj不是Column类型返回null
 	 * <查找的column必须是table的上级的column>
 	 * 
-	 * @param obj
+	 * @param column
 	 * @param node
 	 * @return 找到的那个tablenode以及column属性
 	 */
@@ -225,8 +225,7 @@ public class PlanUtil {
 				ItemFunc sub = (ItemFunc) subItem;
 				if (!(sub.functype().equals(Functype.EQ_FUNC)))
 					continue;
-				boolean isJoinKey = isJoinKey((ItemFuncEqual) sub, join);
-				if (isJoinKey) {
+				if (join.isInnerJoin() && isJoinKey((ItemFuncEqual) sub, join)) {
 					joinFilters.add(sub);
 					join.addJoinFilter((ItemFuncEqual) sub);
 				}

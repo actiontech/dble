@@ -40,7 +40,7 @@
 	<tableRule name="sharding-by-hash-str">
 		<rule>
 			<columns>id</columns>
-			<algorithm>hashSting</algorithm>
+			<algorithm>hashString</algorithm>
 		</rule>
 	</tableRule>
 
@@ -91,7 +91,7 @@
 	</function>
 	
 	<!-- 固定Hash 分区 ，string 类型-->
-	<function name="hashSting" class="io.mycat.route.function.PartitionByString">
+	<function name="hashString" class="io.mycat.route.function.PartitionByString">
 		<property name="partitionCount">8</property>
 		<property name="partitionLength">128</property> 
 		<property name="hashSlice">0:2</property> 

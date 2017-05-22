@@ -26,6 +26,7 @@ package io.mycat.backend.mysql.nio;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mycat.MycatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,11 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
 	@Override
 	public void handle(byte[] data) {
-		offerData(data, source.getProcessor().getExecutor());
+		if(source.isComplexQuery()){
+			offerData(data, MycatServer.getInstance().getComplexQueryExecutor());
+		}else {
+			offerData(data, source.getProcessor().getExecutor());
+		}
 	}
 
 	@Override

@@ -116,6 +116,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 			for (BaseSelectHandler exeHandler : exeHandlers) {
 				MySQLConnection exeConn = exeHandler.initConnection();
 				if (exeConn != null) {
+					exeConn.setComplexQuery(true);
 					BlockingQueue<HeapItem> queue = new LinkedBlockingQueue<HeapItem>(queueSize);
 					queues.put(exeConn, queue);
 					exeHandler.execute(exeConn);
@@ -222,6 +223,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 				HeapItem firstItem = queues.get(conn).take();
 				heap.add(firstItem);
 			}
+			boolean filterFinished = false;
 			while (!heap.isEmpty()) {
 				if (terminate.get())
 					return;
@@ -232,9 +234,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 					BlockingQueue<HeapItem> topitemQueue = queues.get(top.getIndex());
 					HeapItem item = topitemQueue.take();
 					heap.replaceTop(item);
+					if (filterFinished) {
+						continue;
+					}
 					if (nextHandler.rowResponse(top.getRowData(), top.getRowPacket(), this.isLeft, top.getIndex())) {
-						// should still send eof,so could not return
-						break;
+						filterFinished = true;
 					}
 				}
 			}
@@ -268,6 +272,13 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
 	@Override
 	protected void recycleResources() {
+		synchronized (exeHandlers) {
+			if(!terminate.get()) {
+				for (BaseSelectHandler exeHandler : exeHandlers) {
+					terminatePreHandler(exeHandler);
+				}
+			}
+		}
 		Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iter = this.queues.entrySet().iterator();
 		while (iter.hasNext()) {
 			Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iter.next();

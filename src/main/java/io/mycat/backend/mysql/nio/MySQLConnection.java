@@ -71,6 +71,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
 	private volatile int txIsolation;
 	private volatile boolean autocommit;
+	private volatile boolean complexQuery;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -161,6 +162,7 @@ public class MySQLConnection extends BackendAIOConnection {
 		this.fromSlaveDB = fromSlaveDB;
 		// 每个初始化好的连接第一次必需同步一下,以免server.xml 和下面mysql节点不一致时不下发
 		this.txIsolation = -1;
+		this.complexQuery = false;
 	}
 	public void setRunning(boolean running) {
 		isRunning = running;
@@ -528,6 +530,15 @@ public class MySQLConnection extends BackendAIOConnection {
 		}
 	}
 
+
+	public boolean isComplexQuery() {
+		return complexQuery;
+	}
+
+	public void setComplexQuery(boolean complexQuery) {
+		this.complexQuery = complexQuery;
+	}
+
 	@Override
 	public void close(String reason) {
 		this.terminate(reason);
@@ -569,6 +580,7 @@ public class MySQLConnection extends BackendAIOConnection {
 			this.close("syn status unkown ");
 			return;
 		}
+		complexQuery = false;
 		metaDataSyned = true;
 		attachment = null;
 		statusSync = null;

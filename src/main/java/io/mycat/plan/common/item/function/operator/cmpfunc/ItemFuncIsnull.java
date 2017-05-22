@@ -22,6 +22,7 @@ public class ItemFuncIsnull extends ItemBoolFunc {
 
 	public ItemFuncIsnull(Item a) {
 		super(a);
+		withIsNull = true;
 	}
 
 	@Override

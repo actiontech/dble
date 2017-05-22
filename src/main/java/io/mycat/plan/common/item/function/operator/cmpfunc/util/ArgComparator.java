@@ -284,7 +284,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = true;
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 
@@ -307,7 +307,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = (true);
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 
 		}
 	}
@@ -332,7 +332,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = true;
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 
@@ -351,7 +351,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = (true);
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 
@@ -374,7 +374,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = (true);
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 
@@ -409,7 +409,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = (true);
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 
@@ -531,7 +531,7 @@ public class ArgComparator {
 			}
 			if (ac.setNull)
 				ac.owner.nullValue = (true);
-			return ac.a.nullValue ? -1 : 1;
+			return -1;
 		}
 	}
 

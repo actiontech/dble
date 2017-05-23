@@ -28,6 +28,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 	private final boolean autocommit;
 	private volatile int fieldCounts = -1;
 
+
 	private RouteResultsetNode rrss;
 
 
@@ -70,6 +71,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
 		conn.execute(rrss, session.getSource(), autocommit);
 	}
 
+	public RouteResultsetNode getRrss() {
+		return rrss;
+	}
 	@Override
 	public void okResponse(byte[] ok, BackendConnection conn) {
 		conn.syncAndExcute();

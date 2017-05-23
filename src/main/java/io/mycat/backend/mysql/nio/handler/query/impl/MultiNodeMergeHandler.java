@@ -41,7 +41,6 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
 	private final int queueSize;
 	private final ReentrantLock lock;
-
 	private List<BaseSelectHandler> exeHandlers;
 	// 对应MultiSource的row结果的blockingquene,if rowend, add NullHeapItem into queue;
 	private Map<MySQLConnection, BlockingQueue<HeapItem>> queues;
@@ -104,6 +103,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 //		this.queues = new ConcurrentHashMap<MySQLConnection, BlockingQueue<HeapItem>>();
 //		this.merges.add(this);
 //	}
+
+
+	public List<BaseSelectHandler> getExeHandlers() {
+		return exeHandlers;
+	}
 
 	public RouteResultsetNode[] getRouteSources() {
 		return this.route;

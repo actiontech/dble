@@ -21,7 +21,7 @@
  * https://code.google.com/p/opencloudb/.
  *
  */
-package io.mycat.route;
+package io.mycat.route.util;
 
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;

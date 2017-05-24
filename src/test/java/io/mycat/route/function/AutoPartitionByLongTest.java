@@ -63,4 +63,38 @@ public class AutoPartitionByLongTest {
 		String idVal="6000001";
 		Assert.assertEquals(true, 0==autoPartition.calculate(idVal)); 
 	}
+
+	@Test
+	public void test3()  {
+		AutoPartitionByLong autoPartition=new AutoPartitionByLong();
+		autoPartition.setMapFile("autopartition-long.txt");
+		autoPartition.setDefaultNode(0);
+		autoPartition.init();
+
+		Integer[] res =  autoPartition.calculateRange("-1","9999999999");
+		Assert.assertEquals(3,res.length);
+
+		res =  autoPartition.calculateRange("-1","10000000");
+		Assert.assertEquals(3,res.length);
+
+		res =  autoPartition.calculateRange("-1","100");
+		Assert.assertEquals(3,res.length);
+
+		res =  autoPartition.calculateRange("0","100");
+		Assert.assertEquals(1,res.length);
+
+		res =  autoPartition.calculateRange("0","100000");
+		Assert.assertEquals(1,res.length);
+
+
+		res =  autoPartition.calculateRange("2000009","3999999");
+		Assert.assertEquals(1,res.length);
+
+		res =  autoPartition.calculateRange("2000009","5999999");
+		Assert.assertEquals(2,res.length);
+
+
+	}
+
+
 }

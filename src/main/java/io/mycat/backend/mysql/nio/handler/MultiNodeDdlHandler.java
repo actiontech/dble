@@ -311,18 +311,24 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 			if (--nodeCount > 0)
 				return;
 
-			try {
-			    	if (session.isPrepared()) {
-				    	handler.setPrepared(true);
+			if (errConnection == null) {
+			    	try {
+				    	if (session.isPrepared()) {
+					    	handler.setPrepared(true);
+					}
+					handler.execute();
+				} catch (Exception e) {
+				    	session.handleSpecial(orirrs, source.getSchema(), false);
+					LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
+					source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 				}
-				handler.execute();
-			} catch (Exception e) {
-				session.handleSpecial(orirrs, source.getSchema(), false);
-				LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
-				source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-			}
-			if (session.isPrepared()) {
-				session.setPrepared(false);
+				if (session.isPrepared()) {
+				    	session.setPrepared(false);
+				}
+			} else {
+			    	handleDdl();
+				session.handleSpecial(rrs, session.getSource().getSchema(), false);
+				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
 			lock.unlock();

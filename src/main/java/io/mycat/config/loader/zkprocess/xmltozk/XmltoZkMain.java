@@ -2,6 +2,7 @@ package io.mycat.config.loader.zkprocess.xmltozk;
 
 import javax.xml.bind.JAXBException;
 
+import io.mycat.MycatServer;
 import org.apache.curator.framework.CuratorFramework;
 
 import io.mycat.config.loader.console.ZookeeperPath;
@@ -67,9 +68,10 @@ public class XmltoZkMain {
 
         // 加载通知进程
         zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
-
-        //Initialized flag
-        String confInitialized = basePath + ZK_CONF_INITED;
-        zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
+        if (MycatServer.getInstance().getProcessors() != null) {
+            //Initialized flag
+            String confInitialized = basePath + ZK_CONF_INITED;
+            zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
+        }
     }
 }

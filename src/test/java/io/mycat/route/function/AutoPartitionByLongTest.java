@@ -94,6 +94,9 @@ public class AutoPartitionByLongTest {
 		Assert.assertEquals(2,res.length);
 
 
+		res =  autoPartition.calculateRange("2000009","59999999");
+		Assert.assertEquals(3,res.length);
+
 	}
 
 

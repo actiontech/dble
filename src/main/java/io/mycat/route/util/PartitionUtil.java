@@ -32,8 +32,8 @@ import io.mycat.util.StringUtil;
  */
 public final class PartitionUtil {
 
-	private static final int MAX_PARTITION_LENGTH = 1024;
-    // 分区长度:数据段分布定义，其中取模的数一定要是2^n， 因为这里使用x % 2^n == x & (2^n - 1)等式，来优化性能。
+    // 分区最大长度:数据段分布定义，如果取模的数是2^n， 使用x % 2^n == x & (2^n - 1)等式，来优化性能。
+    private static final int MAX_PARTITION_LENGTH = 2880;
     private int partitionLength ;
 
 	// %转换为&操作的换算数值
@@ -51,7 +51,7 @@ public final class PartitionUtil {
      * @param count 表示定义的分区数
      * @param length 表示对应每个分区的取值长度
      * 注意：其中count,length两个数组的长度必须是一致的。
-     * 约束：1024 = sum((count[i]*length[i])). count和length两个向量的点积恒最大为1024
+     * 约束：MAX_PARTITION_LENGTH >=sum((count[i]*length[i]))
      * </pre>
      */
     public PartitionUtil(int[] count, int[] length) {

@@ -84,8 +84,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotiflyService {
         this.setCurator(curator);
 
         // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath();
-        schemaPath = schemaPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
+        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
 
         currZkPath = schemaPath;
         // 将当前自己注册为事件接收对象

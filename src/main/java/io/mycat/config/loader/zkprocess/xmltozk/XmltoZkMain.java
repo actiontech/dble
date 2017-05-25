@@ -32,11 +32,8 @@ public class XmltoZkMain {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
-        // 得到集群名称
-        String custerName = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID);
         // 得到基本路径
-        String basePath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_BASE.getKey();
-        basePath = basePath + ZookeeperPath.ZK_SEPARATOR.getKey() + custerName;
+        String basePath = ZKUtils.getZKBasePath();
         zkListen.setBasePath(basePath);
 
         // 获得zk的连接信息

@@ -21,15 +21,15 @@ public enum ZookeeperPath {
 
     /**
      * 最基础的mycat节点
-     * @字段说明 FLOW_ZK_PATH_LINE
+     * @字段说明 FLOW_ZK_PATH_ONLINE
      */
     FLOW_ZK_PATH_BASE("mycat"),
 
     /**
      * 在当前在线的节点
-    * @字段说明 FLOW_ZK_PATH_LINE
+    * @字段说明 FLOW_ZK_PATH_ONLINE
     */
-    FLOW_ZK_PATH_LINE("line"),
+    FLOW_ZK_PATH_ONLINE("online"),
 
     /**
      * schema父路径
@@ -188,14 +188,15 @@ public enum ZookeeperPath {
 
     /**
      * zk本地配制目录信息
-     * @字段说明 ZK_LOCAL_WRITE_PATH
+     * @字段说明 ZK_LOCAL_CFG_PATH
      */
     ZK_LOCAL_CFG_PATH("/zkconf/"),
     /**
-     * zk本地配制目录信息
-     * @字段说明 ZK_LOCAL_WRITE_PATH
+     * conf 是否初始化过的标记
+     * @字段说明 ZK_CONF_INITED
      */
     ZK_CONF_INITED("confInitialized"),
+
     ;
     /**
      * 配制的key的信息

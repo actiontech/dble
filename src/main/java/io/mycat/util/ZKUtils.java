@@ -12,6 +12,8 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryForever;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +92,18 @@ public class ZKUtils {
 
         Thread.sleep(8000);
     }
-
+    /**
+     * 创建临时节点测试
+     * 方法描述
+     * @param parent
+     * @param node
+     * @throws Exception
+     * @创建日期 2016年9月20日
+     */
+    public static void createTempNode(String parent, String node) throws Exception {
+        String path = ZKPaths.makePath(parent, node);
+        curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path);
+    }
     private static void addChildPathCache(CuratorFramework client, final String path, final boolean addChild, final ExecutorService executor) throws Exception {
         /**
          * 监听子节点的变化情况

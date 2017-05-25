@@ -367,11 +367,11 @@ public class MycatConfig {
 			this._cluster = this.cluster;
 			this._firewall = this.firewall;
 			this._erRelations = this.erRelations ;
-
-			if (!isLoadAll) {
-				DsDiff diff = dsdiff(newDataHosts);
-				diff.apply();
-			}
+//			comment BY huqing.yan and will reopen later
+//			if (!isLoadAll) {
+//				DsDiff diff = dsdiff(newDataHosts);
+//				diff.apply();
+//			}
 			// new 处理
 			// 1、启动新的数据源心跳
 			// 2、执行新的配置

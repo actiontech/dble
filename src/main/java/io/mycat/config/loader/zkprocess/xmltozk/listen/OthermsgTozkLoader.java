@@ -1,15 +1,20 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotiflyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.manager.response.ShowBinlogStatus;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
+
+import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
+import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_STATUS;
 
 /**
  * 其他一些信息加载到zk中
@@ -53,31 +58,38 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotiflyService {
     @Override
     public boolean notiflyProcess() throws Exception {
         // 添加line目录，用作集群中节点，在线的基本目录信息
-        String line = currZkPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_LINE.getKey();
+        String line = currZkPath + ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), line);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + line + " success");
 
         // 添加序列目录信息
-        String seqLine = currZkPath + ZookeeperPath.ZK_SEPARATOR.getKey()
-                + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
+        String seqLine = currZkPath + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
         seqLine = seqLine + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INSTANCE.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqLine);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLine + " success");
 
-        String seqLeader = currZkPath + ZookeeperPath.ZK_SEPARATOR.getKey()
-                + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
+        String seqLeader = currZkPath + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
         seqLeader = seqLeader + ZookeeperPath.ZK_SEPARATOR.getKey()
                 + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_LEADER.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqLeader);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLeader + " success");
 
-        String incrSeq = currZkPath + ZookeeperPath.ZK_SEPARATOR.getKey()
-                + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
+        String incrSeq = currZkPath + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
         incrSeq = incrSeq + ZookeeperPath.ZK_SEPARATOR.getKey()
                 + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INCREMENT_SEQ.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), incrSeq);
-
-        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLine + " success");
-        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLeader + " success");
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + incrSeq + " success");
+
+        String binlogPauseStatusPath = currZkPath + BINLOG_PAUSE_STATUS;
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), binlogPauseStatusPath);
+        this.getCurator().setData().forPath(binlogPauseStatusPath, ShowBinlogStatus.BinlogPauseStatus.OFF.toString().getBytes(StandardCharsets.UTF_8));
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + binlogPauseStatusPath + " success");
+
+        String binlogPauseInstances = currZkPath + BINLOG_PAUSE_INSTANCES;
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), binlogPauseInstances);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + binlogPauseInstances + " success");
+
+
 
         return true;
     }

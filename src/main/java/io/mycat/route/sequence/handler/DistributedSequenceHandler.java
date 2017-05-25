@@ -1,14 +1,11 @@
 package io.mycat.route.sequence.handler;
 
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
+import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.model.SystemConfig;
+import io.mycat.route.util.PropertiesUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
@@ -21,11 +18,13 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.config.model.SystemConfig;
-import io.mycat.route.util.PropertiesUtil;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 基于ZK与本地配置的分布式ID生成器(可以通过ZK获取集群（机房）唯一InstanceID，也可以通过配置文件配置InstanceID)
@@ -76,7 +75,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final static String PATH = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_BASE.getKey()
             + io.mycat.config.loader.zkprocess.comm.ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID)
             + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
-    // private final static String PATH = "/mycat/sequence";
     private final static String INSTANCE_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
             + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INSTANCE.getKey();
     private final static String LEADER_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()

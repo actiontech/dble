@@ -87,8 +87,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotiflyService 
         this.setCurator(curator);
 
         // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath();
-        schemaPath = schemaPath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
+        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
 
         currZkPath = schemaPath;
         // 将当前自己注册为事件接收对象
@@ -153,7 +152,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotiflyService 
      * 将xml文件的信息写入到zk中
     * 方法描述
     * @param basePath 基本路径
-    * @param schema schema文件的信息
+    * @param Server server文件的信息
     * @throws Exception 异常信息
     * @创建日期 2016年9月17日
     */

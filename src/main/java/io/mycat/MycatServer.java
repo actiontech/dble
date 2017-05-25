@@ -662,12 +662,12 @@ public class MycatServer {
 
 	}
 
-	private boolean isUseZkSwitch()
-	{
-		MycatConfig mycatConfig=config;
-		boolean isUseZkSwitch=	mycatConfig.getSystem().isUseZKSwitch();
-		String loadZk=ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_FLAG);
-		return (isUseZkSwitch&&"true".equalsIgnoreCase(loadZk))   ;
+	private boolean isUseZkSwitch() {
+		return isUseZK() && config.getSystem().isUseZKSwitch();
+	}
+
+	public boolean isUseZK() {
+		return Boolean.parseBoolean(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_FLAG));
 	}
 
 	public TxnLogProcessor getTxnLogProcessor() {

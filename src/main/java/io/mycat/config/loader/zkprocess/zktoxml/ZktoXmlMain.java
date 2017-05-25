@@ -1,39 +1,29 @@
 package io.mycat.config.loader.zkprocess.zktoxml;
 
-import java.io.PrintStream;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
-
-import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.CreateMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.console.ZkNofiflyCfg;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.BinDataPathChildrenCacheListener;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.EcacheszkToxmlLoader;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.RuleDataPathChildrenCacheListener;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.RuleszkToxmlLoader;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.SchemaszkToxmlLoader;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.SequenceTopropertiesLoader;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.ServerzkToxmlLoader;
+import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
+import io.mycat.config.loader.zkprocess.zktoxml.listen.*;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.JAXBException;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
+import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_STATUS;
 
 /**
  * 将xk的信息转换为xml文件的操作
@@ -53,7 +43,6 @@ public class ZktoXmlMain {
     * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
-
     public static void main(String[] args) throws Exception {
         loadZktoFile();
         System.out.println("ZktoXmlMain Finished");
@@ -67,21 +56,17 @@ public class ZktoXmlMain {
     */
     public static void loadZktoFile() throws Exception {
         // 获得zk的连接信息
-        CuratorFramework zkConn = buildConnection(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_URL));
-
+        CuratorFramework zkConn = ZKUtils.getConnection();
+        //if first start,init zk
         initZKIfNot( zkConn);
-
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
         zkListen.setBasePath(ZKUtils.getZKBasePath());
         initLocalConfFromZK(zkListen, zkConn);
-
         // 加载watch
         loadZkWatch(zkListen.getWatchPath(), zkConn, zkListen);
-
-        // 创建临时节点
-        createTempNode("/mycat/mycat-cluster-1/line", "tmpNode1", zkConn);
-
+        // 创建online状态
+        ZKUtils.createTempNode(ZKUtils.getZKBasePath()+ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 
     }
 
@@ -109,6 +94,8 @@ public class ZktoXmlMain {
 
         //ruledata
         ZKUtils.addChildPathCache(ZKUtils.getZKBasePath()+"ruledata",new RuleDataPathChildrenCacheListener());
+        //
+        new BinlogPauseStatusListener(zkListen, zkConn);
 
         // 初始化xml转换操作
         xmlProcess.initJaxbClass();
@@ -122,7 +109,7 @@ public class ZktoXmlMain {
         String confInitialized = basePath + ZK_CONF_INITED;
         //init conf if not
         if (zkConn.checkExists().forPath(confInitialized) == null) {
-            String confLockPath = basePath + "confLock";
+            String confLockPath = basePath + "lock/confInit.lock";
             InterProcessMutex confLock = new InterProcessMutex(zkConn, confLockPath);
             //someone acquired the lock
             if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
@@ -163,23 +150,6 @@ public class ZktoXmlMain {
     }
 
     /**
-     * 创建临时节点测试
-    * 方法描述
-    * @param parent
-    * @param node
-    * @param zkConn
-    * @throws Exception
-    * @创建日期 2016年9月20日
-    */
-    private static void createTempNode(String parent, String node, final CuratorFramework zkConn) throws Exception {
-
-        String path = ZKPaths.makePath(parent, node);
-
-        zkConn.create().withMode(CreateMode.EPHEMERAL).inBackground().forPath(path);
-
-    }
-
-    /**
      * 进行zk的watch操作
     * 方法描述
     * @param zkConn zk的连接信息
@@ -205,8 +175,4 @@ public class ZktoXmlMain {
 		});
 		return cache;
 	}
-
-    private static CuratorFramework buildConnection(String url) {
-    	return ZKUtils.getConnection();
-    }
 }

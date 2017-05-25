@@ -142,15 +142,7 @@ public class ZkMultLoader {
 
     }
 
-    /**
-     * 创建配制信息
-     * 方法描述
-     * @param configKey 配制的当前路径名称信息
-     * @param filterInnerMap  最终的信息是否为map
-     * @param configDirectory 配制的目录
-     * @param restDirectory 子目录信息
-     * @创建日期 2016年9月11日
-     */
+
     public boolean createPath(String path) {
 
         // 得到当前的目录信息

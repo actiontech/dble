@@ -12,7 +12,7 @@ import io.mycat.config.loader.zkprocess.entity.Schemas;
 import io.mycat.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import io.mycat.config.loader.zkprocess.entity.schema.datanode.DataNode;
 import io.mycat.config.loader.zkprocess.entity.schema.schema.Schema;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import io.mycat.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
@@ -33,7 +33,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class SchemasxmlTozkLoader extends ZkMultLoader implements NotiflyService {
+public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -94,16 +94,16 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotiflyService
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Schemas schema = this.parseSchemaXmlService.parseXmlToBean(SCHEMA_PATH);
 
-        LOGGER.info("SchemasxmlTozkLoader notiflyProcessxml to zk schema Object  :" + schema);
+        LOGGER.info("SchemasxmlTozkLoader notifyProcess xml to zk schema Object  :" + schema);
 
         // 将实体信息写入至zk中
         this.xmlTozkSchemasJson(currZkPath, schema);
 
-        LOGGER.info("SchemasxmlTozkLoader notiflyProcess xml to zk is success");
+        LOGGER.info("SchemasxmlTozkLoader notifyProcess xml to zk is success");
 
         return true;
     }

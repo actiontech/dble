@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -37,7 +37,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class ServerxmlTozkLoader extends ZkMultLoader implements NotiflyService {
+public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -98,10 +98,10 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotiflyService 
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Server server = this.parseServerXMl.parseXmlToBean(SERVER_PATH);
-        LOGGER.info("ServerxmlTozkLoader notiflyProcessxml to zk server Object  :" + server);
+        LOGGER.info("ServerxmlTozkLoader notifyProcessxml to zk server Object  :" + server);
         // 将实体信息写入至zk中
         this.xmlTozkServerJson(currZkPath, server);
 
@@ -113,7 +113,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotiflyService 
         // 将文件上传
         this.checkAndwriteString(currZkPath, INDEX_TOCHARSET_PATH, charSetValue);
 
-        LOGGER.info("ServerxmlTozkLoader notiflyProcess xml to zk is success");
+        LOGGER.info("ServerxmlTozkLoader notifyProcess xml to zk is success");
 
         return true;
     }

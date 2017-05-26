@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Schemas;
 import io.mycat.config.loader.zkprocess.entity.schema.datahost.DataHost;
@@ -39,7 +39,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class SchemaszkToxmlLoader extends ZkMultLoader implements NotiflyService {
+public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -108,7 +108,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotiflyService
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群schema目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf schemaDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -120,18 +120,18 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotiflyService
 
         Schemas schema = this.zktoSchemasBean(zkDirectory);
 
-        LOGGER.info("SchemasLoader notiflyProcess zk to object  zk schema Object  :" + schema);
+        LOGGER.info("SchemasLoader notifyProcess zk to object  zk schema Object  :" + schema);
 
         String path = SchemaszkToxmlLoader.class.getClassLoader()
                 .getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey()).getPath();
         path=new File(path).getPath()+File.separator;
         path += WRITEPATH;
 
-        LOGGER.info("SchemasLoader notiflyProcess zk to object writePath :" + path);
+        LOGGER.info("SchemasLoader notifyProcess zk to object writePath :" + path);
 
         this.parseSchemaXmlService.parseToXmlWrite(schema, path, "schema");
 
-        LOGGER.info("SchemasLoader notiflyProcess zk to object zk schema      write :" + path + " is success");
+        LOGGER.info("SchemasLoader notifyProcess zk to object zk schema      write :" + path + " is success");
 
         if(MycatServer.getInstance().getProcessors()!=null)
           ReloadConfig.reload_all();

@@ -1,7 +1,7 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
 import io.mycat.MycatServer;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -22,23 +22,20 @@ import static io.mycat.manager.response.ShowBinlogStatus.*;
 /**
  * Created by huqing.yan on 2017/5/25.
  */
-public class BinlogPauseStatusListener  extends ZkMultLoader implements NotiflyService {
+public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusListener.class);
     private final String currZkPath;
 
     public BinlogPauseStatusListener(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
 
         this.setCurator(curator);
-
-        String  binlogPauseStatusPath = zookeeperListen.getBasePath() + BINLOG_PAUSE_STATUS;
-
-        currZkPath = binlogPauseStatusPath;
+        currZkPath = zookeeperListen.getBasePath() + BINLOG_PAUSE_STATUS;
         // 将当前自己注册为事件接收对象
         zookeeperListen.addListen(zookeeperListen.getBasePath() + KW_BINLOG_PAUSE, this);
         zookeeperListen.watchPath(zookeeperListen.getBasePath() + KW_BINLOG_PAUSE, KW_BINLOG_PAUSE_STATUS);
     }
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         if (MycatServer.getInstance().getProcessors() == null) {
             return true;
         }
@@ -57,7 +54,7 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotiflyS
         // 从当前的下一级开始进行遍历,获得到
         ZkDataImpl zkDdata = (ZkDataImpl) StatusDirectory.getSubordinateInfo().get(0);
         String strStatus = zkDdata.getDataValue();
-        LOGGER.info("BinlogPauseStatusListener notiflyProcess zk to object  :" + strStatus);
+        LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strStatus);
 
         String instancePath = ZKPaths.makePath(basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
         ShowBinlogStatus.BinlogPauseStatus status =ShowBinlogStatus.BinlogPauseStatus.valueOf(strStatus);

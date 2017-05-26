@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.console.ZkNofiflyCfg;
 
 /**
  * 进行zookeeper操作的监控器器父类信息
@@ -32,7 +32,7 @@ public class ZookeeperProcessListen {
     /**
      * 所有更新缓存操作的集合
      */
-    private Map<String, NotiflyService> listenCache = new HashMap<String, NotiflyService>();
+    private Map<String, NotifyService> listenCache = new HashMap<String, NotifyService>();
 
     /**
      * 监控的路径信息
@@ -64,10 +64,10 @@ public class ZookeeperProcessListen {
      * 添加缓存更新操作
      * 
      * @param key
-     * @param cacheNotiflySercie
+     * @param cacheNotifySercie
      */
-    public void addListen(String key, NotiflyService cacheNotiflySercie) {
-        listenCache.put(key, cacheNotiflySercie);
+    public void addListen(String key, NotifyService cacheNotifySercie) {
+        listenCache.put(key, cacheNotifySercie);
     }
 
     /**
@@ -126,14 +126,14 @@ public class ZookeeperProcessListen {
      *            缓存模块的key
      * @return true 当前缓存模块数据更新成功，false，当前缓存数据更新失败
      */
-    public boolean notifly(String key) {
+    public boolean notify(String key) {
         boolean result = false;
 
         if (null != key && !"".equals(key)) {
 
             // 进行配制加载所有
-            if (ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey().equals(key)) {
-                this.notiflyAll();
+            if (ZkNotifyCfg.ZK_NOTIFY_LOAD_ALL.getKey().equals(key)) {
+                this.notifyAllNode();
             }
             // 如果是具体的单独更新，则进行单业务的业务刷新
             else {
@@ -141,13 +141,13 @@ public class ZookeeperProcessListen {
 
                 if (null != watchListen) {
                     // 取得具体的业务监听信息
-                    NotiflyService cacheService = listenCache.get(watchListen);
+                    NotifyService cacheService = listenCache.get(watchListen);
 
                     if (null != cacheService) {
                         try {
-                            result = cacheService.notiflyProcess();
+                            result = cacheService.notifyProcess();
                         } catch (Exception e) {
-                            lOG.error("ZookeeperProcessListen notifly key :" + key + " error:Exception info:", e);
+                            lOG.error("ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
                         }
                     }
                 }
@@ -160,21 +160,21 @@ public class ZookeeperProcessListen {
     /**
      * 进行通知所有缓存进行更新操作
      */
-    private void notiflyAll() {
+    private void notifyAllNode() {
 
-        Iterator<Entry<String, NotiflyService>> notiflyIter = listenCache.entrySet().iterator();
+        Iterator<Entry<String, NotifyService>> notifyIter = listenCache.entrySet().iterator();
 
-        Entry<String, NotiflyService> item = null;
+        Entry<String, NotifyService> item = null;
 
-        while (notiflyIter.hasNext()) {
-            item = notiflyIter.next();
+        while (notifyIter.hasNext()) {
+            item = notifyIter.next();
 
             // 进行缓存更新通知操作
             if (null != item.getValue()) {
                 try {
-                    item.getValue().notiflyProcess();
+                    item.getValue().notifyProcess();
                 } catch (Exception e) {
-                    lOG.error("ZookeeperProcessListen notiflyAll key :" + item.getKey() + ";value " + item.getValue()
+                    lOG.error("ZookeeperProcessListen notifyAllNode key :" + item.getKey() + ";value " + item.getValue()
                             + ";error:Exception info:", e);
                 }
             }

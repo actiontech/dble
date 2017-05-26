@@ -4,7 +4,7 @@ import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import io.mycat.config.loader.zkprocess.console.ZkNofiflyCfg;
+import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import io.mycat.config.loader.zkprocess.zktoxml.listen.*;
@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
-import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_STATUS;
 
 /**
  * 将xk的信息转换为xml文件的操作
@@ -101,7 +100,7 @@ public class ZktoXmlMain {
         xmlProcess.initJaxbClass();
 
         // 通知所有人
-        zkListen.notifly(ZkNofiflyCfg.ZK_NOTIFLY_LOAD_ALL.getKey());
+        zkListen.notify(ZkNotifyCfg.ZK_NOTIFY_LOAD_ALL.getKey());
     }
 
     private static void initZKIfNot(CuratorFramework zkConn) throws Exception {
@@ -169,7 +168,7 @@ public class ZktoXmlMain {
 				String notPath = cache.getCurrentData().getPath();
 				LOGGER.info("NodeCache changed, path is: " + notPath);
 				// 进行通知更新
-				zkListen.notifly(notPath);
+				zkListen.notify(notPath);
 				LOGGER.info("ZktoxmlMain runWatch  process path  event over");
 			}
 		});

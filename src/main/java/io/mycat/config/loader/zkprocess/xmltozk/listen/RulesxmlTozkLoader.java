@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.console.ParseParamEnum;
 import io.mycat.config.loader.zkprocess.entity.Property;
@@ -40,7 +40,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class RulesxmlTozkLoader extends ZkMultLoader implements NotiflyService {
+public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -95,14 +95,14 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotiflyService {
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Rules Rules = this.parseRulesXMl.parseXmlToBean(RULE_PATH);
-        LOGGER.info("RulesxmlTozkLoader notiflyProcessxml to zk Rules Object  :" + Rules);
+        LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk Rules Object  :" + Rules);
         // 将实体信息写入至zk中
         this.xmlTozkRulesJson(currZkPath, Rules);
 
-        LOGGER.info("RulesxmlTozkLoader notiflyProcess xml to zk is success");
+        LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk is success");
 
         return true;
     }

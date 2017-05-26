@@ -1,7 +1,7 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
@@ -27,7 +27,7 @@ import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_STATUS;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class OthermsgTozkLoader extends ZkMultLoader implements NotiflyService {
+public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -56,7 +56,7 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotiflyService {
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 添加line目录，用作集群中节点，在线的基本目录信息
         String line = currZkPath + ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), line);

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.cache.Ehcache;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
@@ -39,7 +39,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class EcacheszkToxmlLoader extends ZkMultLoader implements NotiflyService {
+public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -102,7 +102,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotiflyService
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
 
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -115,7 +115,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotiflyService
         // 进行写入操作
         zktoEhcacheWrite(zkDirectory);
 
-        LOGGER.info("EcacheszkToxmlLoader notiflyProcess   zk ehcache write success ");
+        LOGGER.info("EcacheszkToxmlLoader notifyProcess   zk ehcache write success ");
 
         return true;
     }

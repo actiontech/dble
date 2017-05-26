@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Server;
@@ -47,7 +47,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService {
+public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -116,7 +116,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService 
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群server目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf serverDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -135,7 +135,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService 
             server.getSystem().setNewValue(currSer.getSystem());
         }
 
-        LOGGER.info("ServerzkToxmlLoader notiflyProcess zk to object  zk server Object  :" + server);
+        LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object  zk server Object  :" + server);
 
         // 数配制信息写入文件
         String path = ServerzkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
@@ -143,11 +143,11 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService 
         path=new File(path).getPath()+File.separator;
         path += WRITEPATH;
 
-        LOGGER.info("ServerzkToxmlLoader notiflyProcess zk to object writePath :" + path);
+        LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object writePath :" + path);
 
         this.parseServerXMl.parseToXmlWrite(server, path, "server");
 
-        LOGGER.info("ServerzkToxmlLoader notiflyProcess zk to object zk server      write :" + path + " is success");
+        LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object zk server      write :" + path + " is success");
 
         // 得到server对象的目录信息
         DataInf indexToCharSet = this.getZkData(zkDirectory, INDEX_TOCHARSET_PATH);
@@ -159,7 +159,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotiflyService 
                 this.writeProperties(dataImpl.getName(), dataImpl.getValue());
             }
 
-            LOGGER.info("ServerzkToxmlLoader notiflyProcess zk to write index_to_charset.properties is success");
+            LOGGER.info("ServerzkToxmlLoader notifyProcess zk to write index_to_charset.properties is success");
         }
         if(MycatServer.getInstance().getProcessors()!=null)
         ReloadConfig.reload();

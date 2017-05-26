@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.console.ParseParamEnum;
 import io.mycat.config.loader.zkprocess.entity.Property;
@@ -47,7 +47,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class RuleszkToxmlLoader extends ZkMultLoader implements NotiflyService {
+public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -110,7 +110,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotiflyService {
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群Rules目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -121,12 +121,12 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotiflyService {
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) RulesDirectory.getSubordinateInfo().get(0);
         Rules Rules = this.zktoRulesBean(zkDirectory);
 
-        LOGGER.info("RuleszkToxmlLoader notiflyProcess zk to object  zk Rules Object  :" + Rules);
+        LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object  zk Rules Object  :" + Rules);
 
         // 将mapfile信息写入到文件 中
         writeMapFileAddFunction(Rules.getFunction());
 
-        LOGGER.info("RuleszkToxmlLoader notiflyProcess write mapFile is success ");
+        LOGGER.info("RuleszkToxmlLoader notifyProcess write mapFile is success ");
 
         // 数配制信息写入文件
         String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
@@ -134,11 +134,11 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotiflyService {
         path=new File(path).getPath()+File.separator;
         path  =path+WRITEPATH;
 
-        LOGGER.info("RuleszkToxmlLoader notiflyProcess zk to object writePath :" + path);
+        LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object writePath :" + path);
 
         this.parseRulesXMl.parseToXmlWrite(Rules, path, "rule");
 
-        LOGGER.info("RuleszkToxmlLoader notiflyProcess zk to object zk Rules      write :" + path + " is success");
+        LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object zk Rules      write :" + path + " is success");
 
         if(MycatServer.getInstance().getProcessors()!=null)
         ReloadConfig.reload();

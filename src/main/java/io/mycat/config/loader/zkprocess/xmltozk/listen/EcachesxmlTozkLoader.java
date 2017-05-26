@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.cache.Ehcache;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
@@ -33,7 +33,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class EcachesxmlTozkLoader extends ZkMultLoader implements NotiflyService {
+public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -94,14 +94,14 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotiflyService
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Ehcache Ehcache = this.parseEcacheXMl.parseXmlToBean(EHCACHE_PATH);
-        LOGGER.info("EhcachexmlTozkLoader notiflyProcessxml to zk Ehcache Object  :" + Ehcache);
+        LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk Ehcache Object  :" + Ehcache);
         // 将实体信息写入至zk中
         this.xmlTozkEhcacheJson(currZkPath, Ehcache);
 
-        LOGGER.info("EhcachexmlTozkLoader notiflyProcess xml to zk is success");
+        LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk is success");
 
         return true;
     }
@@ -110,7 +110,7 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotiflyService
      * 将xml文件的信息写入到zk中
     * 方法描述
     * @param basePath 基本路径
-    * @param schema schema文件的信息
+    * @param ehcache 文件的信息
     * @throws Exception 异常信息
     * @创建日期 2016年9月17日
     */

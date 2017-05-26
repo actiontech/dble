@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotiflyService;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -28,7 +28,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 * 文件描述：TODO
 * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
 */
-public class SequenceTozkLoader extends ZkMultLoader implements NotiflyService {
+public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
@@ -87,29 +87,29 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotiflyService {
     }
 
     @Override
-    public boolean notiflyProcess() throws Exception {
+    public boolean notifyProcess() throws Exception {
 
         // 将zk序列配配制信息入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_CONF);
 
-        LOGGER.info("SequenceTozkLoader notiflyProcess sequence_conf to zk success");
+        LOGGER.info("SequenceTozkLoader notifyProcess sequence_conf to zk success");
 
         // 将zk的db方式信息入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_DB_CONF);
 
-        LOGGER.info("SequenceTozkLoader notiflyProcess sequence_db_conf to zk success");
+        LOGGER.info("SequenceTozkLoader notifyProcess sequence_db_conf to zk success");
 
         // 将zk的分布式信息入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_DISTRIBUTED_CONF);
 
-        LOGGER.info("SequenceTozkLoader notiflyProcess sequence_distributed_conf to zk success");
+        LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to zk success");
 
         // 将时间序列入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_TIME_CONF);
 
-        LOGGER.info("SequenceTozkLoader notiflyProcess sequence_time_conf to zk success");
+        LOGGER.info("SequenceTozkLoader notifyProcess sequence_time_conf to zk success");
 
-        LOGGER.info("SequenceTozkLoader notiflyProcess xml to zk is success");
+        LOGGER.info("SequenceTozkLoader notifyProcess xml to zk is success");
 
         return true;
     }

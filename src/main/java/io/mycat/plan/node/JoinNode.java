@@ -2,11 +2,19 @@ package io.mycat.plan.node;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 
 import io.mycat.config.model.ERTable;
 import io.mycat.plan.Order;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
+
+import io.mycat.plan.common.item.Item.ItemType;
+import io.mycat.plan.common.item.ItemField;
+import io.mycat.plan.NamedField;
+import io.mycat.config.ErrorCode;
+import io.mycat.plan.common.exception.MySQLOutPutException;
+
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.util.FilterUtils;
 import io.mycat.plan.util.PlanUtil;
@@ -42,6 +50,8 @@ public class JoinNode extends PlanNode {
 	// sort-merge-join时右节点的排序属性
 	private List<Order> rightJoinOnOrders = new ArrayList<Order>();
 	private boolean isRightOrderMatch = false;
+
+    	private HashSet<String> usingFields;
 
 	/**
 	 * <pre>
@@ -104,6 +114,54 @@ public class JoinNode extends PlanNode {
 		nameContext.setSelectFirst(false);
 		if (otherJoinOnFilter != null)
 			otherJoinOnFilter = setUpItem(otherJoinOnFilter);
+	}
+
+    	public void setUpUsingFields(HashSet<String> fields) {
+	    	this.usingFields = fields;
+	}
+
+    	protected void dealStarColumn() {
+		List<Item> newSels = new ArrayList<Item>();
+		HashSet<String> fds = new HashSet<String>();
+		for (Item selItem : columnsSelected) {
+			if (selItem.isWild()) {
+				ItemField wildField = (ItemField) selItem;
+				if (wildField.tableName==null || wildField.tableName.length()==0) {
+					for (NamedField field : innerFields.keySet()) {
+					    	if (usingFields != null) {
+						    	if (usingFields.contains(field.name) && fds.contains(field.name)) {
+							    	continue;
+							} else {
+							    	fds.add(field.name);
+							}
+						}
+						ItemField col = new ItemField(null, field.table, field.name);
+						newSels.add(col);
+					}
+				} else {
+					String selTable = wildField.tableName;
+					boolean found = false;
+					for (NamedField field : innerFields.keySet()) {
+						if (selTable != null && selTable.equals(field.table)
+								|| (selTable == null && field.table == null)) {
+							ItemField col = new ItemField(null, field.table, field.name);
+							newSels.add(col);
+							found = true;
+						} else if (found) {
+							// a.* ->a.id,a.id1,b.id 找到b.id时退出
+							break;
+						}
+					}
+					if (!found) {
+						throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+								"child table " + selTable + " not exist!");
+					}
+				}
+			} else {
+				newSels.add(selItem);
+			}
+		}
+		columnsSelected = newSels;
 	}
 
 	/**

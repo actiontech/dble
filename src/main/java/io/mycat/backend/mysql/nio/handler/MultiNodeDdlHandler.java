@@ -23,39 +23,19 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
-import io.mycat.backend.mysql.LoadDataUtil;
 import io.mycat.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoCommitNodesHandler;
 import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
-import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
-import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.log.transaction.TxnLogHelper;
-import io.mycat.memory.unsafe.row.UnsafeRow;
-import io.mycat.net.mysql.BinaryRowDataPacket;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.FieldPacket;
-import io.mycat.net.mysql.OkPacket;
-import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
@@ -64,9 +44,12 @@ import io.mycat.server.NonBlockingSession;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.mycat.server.parser.ServerParse;
-import io.mycat.util.FormatUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author guoji.ma@gmail.com
@@ -74,21 +57,16 @@ import io.mycat.util.FormatUtil;
 public class MultiNodeDdlHandler extends MultiNodeHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
-    	private final String stmt = "select 1";
+	private final String stmt = "select 1";
 	private final RouteResultset rrs;
-    	private final RouteResultset orirrs;
+	private final RouteResultset orirrs;
 	private final NonBlockingSession session;
 	private final boolean sessionAutocommit;
-    	private final MultiNodeQueryHandler handler;
+	private final MultiNodeQueryHandler handler;
 
-    	private final ReentrantLock lock;
+	private final ReentrantLock lock;
 
-    	private long selectRows;
-
-	private long startTime;
-	private long netInBytes;
-	private long netOutBytes;
-    	private boolean prepared;
+	private boolean prepared;
 	protected volatile boolean terminated;
 
 	private ErrorPacket err;
@@ -116,8 +94,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     
 	protected void reset(int initCount) {
 		super.reset(initCount);
-		this.netInBytes = 0;
-		this.netOutBytes = 0;
 		this.terminated = false;
 	}
 
@@ -135,7 +111,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 		}
 		
 		MycatConfig conf = MycatServer.getInstance().getConfig();
-		startTime = System.currentTimeMillis();
 		LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
 		StringBuilder sb = new StringBuilder();
 		for (final RouteResultsetNode node : rrs.getNodes()) {
@@ -170,27 +145,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 			return;
 		}
 		conn.setResponseHandler(this);
-		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart()&&!node.isModifySQL());
-	}
-
-    	private void handleDdl() {
-	    	if(errConnection == null) {
-		    	return;
-		}
-		
-		StringBuilder s = new StringBuilder();
-		s.append(rrs.toString());
-		
-		s.append(", failed={");
-		for (int i=0; i < errConnection.size(); i++) {
-		    	BackendConnection conn = errConnection.get(i);
-			s.append("\n ").append(FormatUtil.format(i + 1, 3));
-			s.append(" -> ").append(conn.compactInfo());
-		}
-		s.append("\n}");
-		LOGGER.warn(s.toString());
-		
-		return;
+		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart());
 	}
     
 	@Override
@@ -212,8 +167,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 			}
 			errConnection.add(conn);
 			if (--nodeCount <= 0) {
-			    	handleDdl();
-				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
@@ -240,8 +193,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 			}
 			errConnection.add(conn);
 			if (--nodeCount <= 0) {
-			    	handleDdl();
-				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
@@ -270,9 +221,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 				setFail(err.toString());
 			if (--nodeCount > 0)
 				return;
-			
-			handleDdl();
-			session.handleSpecial(rrs, session.getSource().getSchema(), false);
 			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 		} finally {
 			lock.unlock();
@@ -290,21 +238,20 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("on row end reseponse " + conn);
 		}
-		
-		this.netOutBytes += eof.length;
+
 		if (errorRepsponsed.get()) {
 			return;
 		}
 
 		final ServerConnection source = session.getSource();
 		if (clearIfSessionClosed(session)) {
-				return;
+			return;
 		}
 
 		lock.lock();
 		try {
-		    	if (this.isFail() || session.closed()) {
-			    	tryErrorFinished(true);
+			if (this.isFail() || session.closed()) {
+				tryErrorFinished(true);
 				return;
 			}
 
@@ -312,22 +259,16 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 				return;
 
 			if (errConnection == null) {
-			    	try {
-				    	if (session.isPrepared()) {
-					    	handler.setPrepared(true);
+				try {
+					if (session.isPrepared()) {
+						handler.setPrepared(true);
 					}
 					handler.execute();
 				} catch (Exception e) {
-				    	session.handleSpecial(orirrs, source.getSchema(), false);
 					LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
 					source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
 				}
-				if (session.isPrepared()) {
-				    	session.setPrepared(false);
-				}
 			} else {
-			    	handleDdl();
-				session.handleSpecial(rrs, session.getSource().getSchema(), false);
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
 		} finally {
@@ -338,37 +279,15 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
 				     boolean isLeft, BackendConnection conn) {
-		this.netOutBytes += header.length;
-		this.netOutBytes += eof.length;
 		for (int i = 0, len = fields.size(); i < len; ++i) {
 			byte[] field = fields.get(i);
-			this.netOutBytes += field.length;
 		}
 	}
-
-	public void handleDataProcessException(Exception e) {
-		if (!errorRepsponsed.get()) {
-			this.error = e.toString();
-			LOGGER.warn("caught exception ", e);
-			setFail(e.toString());
-			this.tryErrorFinished(true);
-		}
-	}
-
 	@Override
 	public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
 	    	/* It is impossible arriving here, because we set limit to 0 */
 		if (errorRepsponsed.get()) {
 			return true;
-		}
-		
-		lock.lock();
-		try {
-			this.selectRows++;
-		} catch (Exception e) {
-			handleDataProcessException(e);
-		} finally {
-			lock.unlock();
 		}
 		return false;
 	}
@@ -391,43 +310,17 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     	
 	protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
 		ServerConnection source = session.getSource();
-		if (source.isAutocommit() && !source.isTxstart() && conn.isModifiedSQLExecuted()) {
-			if (nodeCount < 0) {
-				return;
-			}
-			//隐式分布式事务，自动发起commit or rollback
-			if (txOperation == AutoTxOperation.COMMIT) {
-				if (session.getXaState() == null) {
-					NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-					autoHandler.commit();
-				} else {
-					XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-					autoHandler.commit();
-				}
-			} else {
-				if (session.getXaState() == null) {
-					NormalAutoRollbackNodesHandler autoHandler =
-					    new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-					autoHandler.rollback();
-				} else {
-					XAAutoRollbackNodesHandler autoHandler =
-					    new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-					autoHandler.rollback();
-				}
-			}
-		} else {
-			boolean inTransaction = !source.isAutocommit() || source.isTxstart();
-			if (!inTransaction) {
-				// 普通查询
-				session.releaseConnection(conn);
-			}
-			// 显示分布式事务
-			if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
-				source.setTxInterrupt("ROLLBACK");
-			}
-			if (nodeCount == 0) {
-				session.getSource().write(data);
-			}
+		boolean inTransaction = !source.isAutocommit() || source.isTxstart();
+		if (!inTransaction) {
+			// 普通查询
+			session.releaseConnection(conn);
+		}
+		// 显示分布式事务
+		if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
+			source.setTxInterrupt("ROLLBACK");
+		}
+		if (nodeCount == 0) {
+			session.getSource().write(data);
 		}
 	}
 }

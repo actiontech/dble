@@ -98,9 +98,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		this.canRunInReadDB = canRunInReadDB;
 	}
 
-	public boolean getCanRunInReadDB() {
-		return this.canRunInReadDB;
-	}
 
 	/**
 	 * 这里的逻辑是为了优化，实现：非业务sql可以在负载均衡走slave的效果。因为业务sql一般是非自动提交，

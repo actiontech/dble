@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
+import io.mycat.plan.node.JoinNode;
 import org.apache.commons.lang.StringUtils;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -266,8 +267,15 @@ public class ItemField extends ItemIdent {
 						getReferTables().clear();
 						this.getReferTables().add(coutField.planNode);
 						columnFromMeta = this;
-					} else
+					} else {
+						if (planNode.type() == PlanNodeType.JOIN) {
+							JoinNode jn = (JoinNode) planNode;
+							if (jn.getUsingFields() != null && jn.getUsingFields().contains(columnFromMeta.getItemName().toLowerCase())) {
+								continue;
+							}
+						}
 						throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "42S22", "duplicate column:" + this);
+					}
 				}
 			}
 		} else {

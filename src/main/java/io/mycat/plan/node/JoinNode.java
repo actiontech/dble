@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 
+import com.alibaba.druid.sql.ast.SQLExpr;
 import io.mycat.config.model.ERTable;
 import io.mycat.plan.Order;
 import io.mycat.plan.PlanNode;
@@ -19,6 +20,7 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.util.FilterUtils;
 import io.mycat.plan.util.PlanUtil;
 import io.mycat.plan.util.ToStringUtil;
+import io.mycat.util.StringUtil;
 
 
 public class JoinNode extends PlanNode {
@@ -51,7 +53,7 @@ public class JoinNode extends PlanNode {
 	private List<Order> rightJoinOnOrders = new ArrayList<Order>();
 	private boolean isRightOrderMatch = false;
 
-    	private HashSet<String> usingFields;
+	private HashSet<String> usingFields;
 
 	/**
 	 * <pre>
@@ -102,11 +104,49 @@ public class JoinNode extends PlanNode {
 	private void buildJoinFilters() {
 		nameContext.setFindInSelect(false);
 		nameContext.setSelectFirst(false);
+
 		for (int index = 0; index < joinFilter.size(); index++) {
 			Item bf = joinFilter.get(index);
 			bf = setUpItem(bf);
 			joinFilter.set(index, (ItemFuncEqual) bf);
 		}
+		//or using(column_list)
+		if (usingFields == null) {
+			return;
+		}
+		for (String using : usingFields) {
+			using = StringUtil.removeBackQuote(using);
+			String lName = findTbNameByUsing(this.getLeftNode(), using);
+			String rName = findTbNameByUsing(this.getRightNode(), using);
+			Item filter = setUpItem(genJoinFilter(using, lName, rName));
+			joinFilter.add((ItemFuncEqual) filter);
+		}
+	}
+
+	private String findTbNameByUsing(PlanNode node, String using) {
+		String table = node.getCombinedName();
+		if (table != null) {
+			return table;
+		}
+		boolean found = false;
+		for (NamedField field : node.getOuterFields().keySet()) {
+			if (field.name.equalsIgnoreCase(using)) {
+				if (!found) {
+					found = true;
+					table = field.table;
+				} else {
+					throw new MySQLOutPutException(ErrorCode.ER_NON_UNIQ_ERROR, "23000",
+							" Column '" + using + "' in from clause is ambiguous");
+				}
+			}
+		}
+		return table;
+	}
+
+	private ItemFuncEqual genJoinFilter(String using, String leftJoinNode, String rightJoinNode) {
+		ItemField column1 = new ItemField(null, leftJoinNode, using);
+		ItemField column2 = new ItemField(null, rightJoinNode, using);
+		return new ItemFuncEqual(column1, column2);
 	}
 
 	private void buildOtherJoinOn() {
@@ -116,52 +156,30 @@ public class JoinNode extends PlanNode {
 			otherJoinOnFilter = setUpItem(otherJoinOnFilter);
 	}
 
-    	public void setUpUsingFields(HashSet<String> fields) {
-	    	this.usingFields = fields;
+	public HashSet<String> getUsingFields() {
+		return usingFields;
 	}
 
-    	protected void dealStarColumn() {
-		List<Item> newSels = new ArrayList<Item>();
-		HashSet<String> fds = new HashSet<String>();
-		for (Item selItem : columnsSelected) {
-			if (selItem.isWild()) {
-				ItemField wildField = (ItemField) selItem;
-				if (wildField.tableName==null || wildField.tableName.length()==0) {
-					for (NamedField field : innerFields.keySet()) {
-					    	if (usingFields != null) {
-						    	if (usingFields.contains(field.name) && fds.contains(field.name)) {
-							    	continue;
-							} else {
-							    	fds.add(field.name);
-							}
-						}
-						ItemField col = new ItemField(null, field.table, field.name);
-						newSels.add(col);
-					}
+	public void setUsingFields(HashSet<String> usingFields) {
+		this.usingFields = usingFields;
+	}
+
+	@Override
+	protected void dealSingleStarColumn(List<Item> newSels) {
+		if(usingFields != null){
+			super.dealSingleStarColumn(newSels);
+		}else {
+			HashSet<String> fds = new HashSet<String>();
+			for (NamedField field : innerFields.keySet()) {
+				if (usingFields.contains(field.name) && fds.contains(field.name)) {
+					continue;
 				} else {
-					String selTable = wildField.tableName;
-					boolean found = false;
-					for (NamedField field : innerFields.keySet()) {
-						if (selTable != null && selTable.equals(field.table)
-								|| (selTable == null && field.table == null)) {
-							ItemField col = new ItemField(null, field.table, field.name);
-							newSels.add(col);
-							found = true;
-						} else if (found) {
-							// a.* ->a.id,a.id1,b.id 找到b.id时退出
-							break;
-						}
-					}
-					if (!found) {
-						throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-								"child table " + selTable + " not exist!");
-					}
+					fds.add(field.name);
 				}
-			} else {
-				newSels.add(selItem);
+				ItemField col = new ItemField(null, field.table, field.name);
+				newSels.add(col);
 			}
 		}
-		columnsSelected = newSels;
 	}
 
 	/**

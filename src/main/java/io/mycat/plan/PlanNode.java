@@ -160,8 +160,6 @@ public abstract class PlanNode {
 	protected int unGlobalTableCount = 0;
 
 	protected List<Item> nestLoopFilters = null;
-	
-
 	public abstract String getPureName();
 
 	/* 当前节点的高度 */
@@ -371,17 +369,19 @@ public abstract class PlanNode {
 			}
 		}
 	}
-
+	protected void dealSingleStarColumn(List<Item> newSels){
+		for (NamedField field : innerFields.keySet()) {
+			ItemField col = new ItemField(null, field.table, field.name);
+			newSels.add(col);
+		}
+	}
 	protected void dealStarColumn() {
 		List<Item> newSels = new ArrayList<Item>();
 		for (Item selItem : columnsSelected) {
 			if (selItem.isWild()) {
 				ItemField wildField = (ItemField) selItem;
 				if (wildField.tableName==null || wildField.tableName.length()==0) {
-					for (NamedField field : innerFields.keySet()) {
-						ItemField col = new ItemField(null, field.table, field.name);
-						newSels.add(col);
-					}
+					dealSingleStarColumn(newSels);
 				} else {
 					String selTable = wildField.tableName;
 					boolean found = false;

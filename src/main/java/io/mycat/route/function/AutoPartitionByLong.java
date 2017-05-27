@@ -72,12 +72,45 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 			throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(),e);
 		}
 	}
+
+	/**
+	 * 判断是不是存在不在表格里面的边际条件
+	 * @param columnValue
+	 * @return
+	 */
+	public boolean isUseDefaultNode(String columnValue)  {
+		try {
+			long value = Long.parseLong(columnValue);
+			Integer rst = null;
+			for (LongRange longRang : this.longRongs) {
+				if (value <= longRang.valueEnd && value >= longRang.valueStart) {
+					return false;
+				}
+			}
+			//数据超过范围，暂时使用配置的默认节点
+			if (rst == null && defaultNode >= 0) {
+				return true;
+			}
+		} catch (NumberFormatException e){
+			throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(),e);
+		}
+		return false;
+	}
+
 	
 	@Override
 	public Integer[] calculateRange(String beginValue, String endValue)  {
 		Integer begin = 0, end = 0;
-		begin = calculate(beginValue);
-		end = calculate(endValue);
+		if(isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)){//如果beginValue或者是endValue中存在边际条件
+			begin = 0;
+			end = longRongs.length -1;
+		}else {
+			begin = calculate(beginValue);
+			end = calculate(endValue);
+		}
+
+
+
 		if (begin == null || end == null) {
 			return new Integer[0];
 		}

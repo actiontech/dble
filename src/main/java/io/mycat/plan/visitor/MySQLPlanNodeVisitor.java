@@ -2,6 +2,7 @@ package io.mycat.plan.visitor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLLimit;
@@ -209,12 +210,7 @@ public class MySQLPlanNodeVisitor {
 			Item ifilter = ev.getItem();
 			addJoinOnColumns(ifilter, joinNode);
 		} else if (joinTables.getUsing() != null && joinTables.getUsing().size() != 0) {
-			String lName = joinNode.getLeftNode().getCombinedName();
-			String rName = joinNode.getRightNode().getCombinedName();
-			List<ItemFuncEqual> filterList = this.getUsingFilter(joinTables.getUsing(), lName, rName);
-			for (ItemFuncEqual filter : filterList){
-				addJoinOnColumns(filter, joinNode);
-			}
+			joinNode.setUsingFields(this.getUsingFields(joinTables.getUsing()));
 		}
 		this.tableNode = joinNode;
 		return true;
@@ -363,6 +359,14 @@ public class MySQLPlanNodeVisitor {
 		} else {
 			joinNode.setOtherJoinOnFilter(ifilter);
 		}
+	}
+
+	private HashSet<String> getUsingFields(List<SQLExpr> using) {
+		HashSet<String> fds = new HashSet<String>();
+		for (SQLExpr us : using) {
+			fds.add(StringUtil.removeBackQuote(us.toString().toLowerCase()));
+		}
+		return fds;
 	}
 
 	private List<ItemFuncEqual> getUsingFilter(List<SQLExpr> using, String leftJoinNode, String rightJoinNode) {

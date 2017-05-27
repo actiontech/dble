@@ -166,6 +166,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 				errConnection = new ArrayList<BackendConnection>();
 			}
 			errConnection.add(conn);
+			if (!conn.syncAndExcute()) {
+				return;
+			}
 			if (--nodeCount <= 0) {
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -180,9 +183,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 		ErrorPacket errPacket = new ErrorPacket();
 		errPacket.packetId = ++packetId;
 		errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
-		errPacket.message = StringUtil.encode(e.getMessage(), session.getSource().getCharset());
+		errPacket.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
 		err = errPacket;
-		
+
 		lock.lock();
 		try {
 			if (!terminated) {
@@ -192,6 +195,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 				errConnection = new ArrayList<BackendConnection>();
 			}
 			errConnection.add(conn);
+			if (!conn.syncAndExcute()) {
+				return;
+			}
 			if (--nodeCount <= 0) {
 				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
 			}
@@ -214,11 +220,13 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 		errPacket.read(data);
 		errPacket.packetId = 1;
 		err = errPacket;
-		
 		lock.lock();
 		try {
 			if (!isFail())
 				setFail(err.toString());
+			if (!conn.syncAndExcute()) {
+				return;
+			}
 			if (--nodeCount > 0)
 				return;
 			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
@@ -230,7 +238,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     	/* arriving here is impossible */
 	@Override
 	public void okResponse(byte[] data, BackendConnection conn) {
-	    	LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
+		if(!conn.syncAndExcute()) {
+			LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
+		}
 	}
 
 	@Override

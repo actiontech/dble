@@ -92,7 +92,7 @@ public class PartitionBylongTest {
 	public void testCalculate5() {
 		PartitionByLong rule = new PartitionByLong();
 		rule.setPartitionCount("3");
-		rule.setPartitionLength("512");
+		rule.setPartitionLength("1440");
 		thrown.expect(RuntimeException.class);
 		rule.init();
 	}
@@ -330,7 +330,27 @@ public class PartitionBylongTest {
 		Integer[] expect = new Integer[] { 1, 0 };
 		checkCalculateRange(expect, fact);
 	}
-
+	@Test
+	public void testCalculate16() {
+		PartitionByLong rule = new PartitionByLong();
+		rule.setPartitionCount("8");
+		rule.setPartitionLength("360");
+		rule.init();
+		String value = "0";
+		Assert.assertEquals(true, 0 == rule.calculate(value));
+		value = "359";
+		Assert.assertEquals(true, 0 == rule.calculate(value));
+		value = "360";
+		Assert.assertEquals(true, 1 == rule.calculate(value));
+		value = "719";
+		Assert.assertEquals(true, 1 == rule.calculate(value));
+		value = "720";
+		Assert.assertEquals(true, 2 == rule.calculate(value));
+		value = "2879";
+		Assert.assertEquals(true, 7 == rule.calculate(value));
+		value = "2880";
+		Assert.assertEquals(true, 0 == rule.calculate(value));
+	}
 	private void checkCalculateRange(Integer[] expect, Integer[] fact) {
 		Assert.assertEquals(true, expect.length == fact.length);
 		for (int i = 0; i < expect.length; i++) {

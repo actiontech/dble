@@ -130,10 +130,10 @@ public class JoinNode extends PlanNode {
 		}
 		boolean found = false;
 		for (NamedField field : node.getOuterFields().keySet()) {
-			if (field.name.equalsIgnoreCase(using)) {
+			if (field.getName().equalsIgnoreCase(using)) {
 				if (!found) {
 					found = true;
-					table = field.table;
+					table = field.getTable();
 				} else {
 					throw new MySQLOutPutException(ErrorCode.ER_NON_UNIQ_ERROR, "23000",
 							" Column '" + using + "' in from clause is ambiguous");
@@ -171,12 +171,12 @@ public class JoinNode extends PlanNode {
 		}else {
 			HashSet<String> fds = new HashSet<String>();
 			for (NamedField field : innerFields.keySet()) {
-				if (usingFields.contains(field.name) && fds.contains(field.name)) {
+				if (usingFields.contains(field.getName()) && fds.contains(field.getName())) {
 					continue;
 				} else {
-					fds.add(field.name);
+					fds.add(field.getName());
 				}
-				ItemField col = new ItemField(null, field.table, field.name);
+				ItemField col = new ItemField(null, field.getTable(), field.getName());
 				newSels.add(col);
 			}
 		}

@@ -166,7 +166,7 @@ public class JoinNode extends PlanNode {
 
 	@Override
 	protected void dealSingleStarColumn(List<Item> newSels) {
-		if(usingFields != null){
+		if(usingFields == null){
 			super.dealSingleStarColumn(newSels);
 		}else {
 			HashSet<String> fds = new HashSet<String>();

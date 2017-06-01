@@ -45,26 +45,32 @@ public final class ServerParseShow {
 		int i = offset;
 		for (; i < stmt.length(); i++) {
 			switch (stmt.charAt(i)) {
-			case ' ':
-                continue;
-                case 'F':
-                case 'f':
-              return fullTableCheck(stmt,i) ;
-			case '/':
-			case '#':
-				i = ParseUtil.comment(stmt, i);
-				continue;
-			case 'M':
-			case 'm':
-				return mycatCheck(stmt, i);
-			case 'D':
-			case 'd':
-				return dataCheck(stmt, i);
-			case 'T':
-			case 't':
-				return tableCheck(stmt, i);
-			default:
-				return OTHER;
+				case ' ':
+				case '\r':
+				case '\n':
+				case '\t':
+					continue;
+				case 'F':
+				case 'f':
+					return fullTableCheck(stmt, i);
+				case '/':
+				case '#':
+					i = ParseUtil.comment(stmt, i);
+					continue;
+				case 'M':
+				case 'm':
+					return mycatCheck(stmt, i);
+				case 'D':
+				case 'd':
+					return dataCheck(stmt, i);
+				case 'T':
+				case 't':
+					return tableCheck(stmt, i);
+				case 'S':
+				case 's':
+					return schemasCheck(stmt, i);
+				default:
+					return OTHER;
 			}
 		}
 		return OTHER;
@@ -221,6 +227,29 @@ public 	static int tableCheck(String stmt, int offset) {
 					&& (c4 == 'S' || c4 == 's')
 					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
 							.charAt(offset)))) {
+				return DATABASES;
+			}
+		}
+		return OTHER;
+	}
+
+	//show schemas
+	static int schemasCheck(String stmt, int offset) {
+		if (stmt.length() > offset + "chemas".length()) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			char c3 = stmt.charAt(++offset);
+			char c4 = stmt.charAt(++offset);
+			char c5 = stmt.charAt(++offset);
+			char c6 = stmt.charAt(++offset);
+			if ((c1 == 'C' || c1 == 'c')
+					&& (c2 == 'H' || c2 == 'h')
+					&& (c3 == 'E' || c3 == 'e')
+					&& (c4 == 'M' || c4 == 'm')
+					&& (c5 == 'A' || c5 == 'a')
+					&& (c6 == 'S' || c6 == 's')
+					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+					.charAt(offset)))) {
 				return DATABASES;
 			}
 		}

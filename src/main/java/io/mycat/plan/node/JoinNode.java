@@ -195,12 +195,15 @@ public class JoinNode extends PlanNode {
 		if(usingFields == null){
 			super.dealSingleStarColumn(newSels);
 		}else {
-			HashSet<String> fds = new HashSet<String>();
+			PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
+			String table = findTbNameByUsing(driverNode, usingFields.get(0));
+			for (String fieldName : usingFields) {
+				ItemField col = new ItemField(null, table, fieldName);
+				newSels.add(col);
+			}
 			for (NamedField field : innerFields.keySet()) {
-				if (usingFields.contains(field.getName()) && fds.contains(field.getName())) {
+				if (usingFields.contains(field.getName())) {
 					continue;
-				} else {
-					fds.add(field.getName());
 				}
 				ItemField col = new ItemField(null, field.getTable(), field.getName());
 				newSels.add(col);

@@ -39,7 +39,8 @@ public final class ServerParseShow {
 	public static final int MYCAT_STATUS = 3;
 	public static final int MYCAT_CLUSTER = 4;
 	public static final int TABLES = 5;
-    public static final int FULLTABLES =65;
+    public static final int FULLTABLES =6;
+    public static final int CHARSET = 7;
 
 	public static int parse(String stmt, int offset) {
 		int i = offset;
@@ -69,6 +70,9 @@ public final class ServerParseShow {
 				case 'S':
 				case 's':
 					return schemasCheck(stmt, i);
+				case 'C':
+				case 'c':
+					return charsetCheck(stmt, i);
 				default:
 					return OTHER;
 			}
@@ -251,6 +255,29 @@ public 	static int tableCheck(String stmt, int offset) {
 					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
 					.charAt(offset)))) {
 				return DATABASES;
+			}
+		}
+		return OTHER;
+	}
+
+	//show charset
+	static int charsetCheck(String stmt, int offset) {
+		if (stmt.length() > offset + "harset".length()) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			char c3 = stmt.charAt(++offset);
+			char c4 = stmt.charAt(++offset);
+			char c5 = stmt.charAt(++offset);
+			char c6 = stmt.charAt(++offset);
+			if ((c1 == 'H' || c1 == 'h')
+					&& (c2 == 'A' || c2 == 'a')
+					&& (c3 == 'R' || c3 == 'r')
+					&& (c4 == 'S' || c4 == 's')
+					&& (c5 == 'E' || c5 == 'e')
+					&& (c6 == 'T' || c6 == 't')
+					&& (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+					.charAt(offset)))) {
+				return CHARSET;
 			}
 		}
 		return OTHER;

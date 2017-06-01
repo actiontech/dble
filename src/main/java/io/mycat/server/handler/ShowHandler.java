@@ -45,23 +45,25 @@ public final class ShowHandler {
 
 		int type = ServerParseShow.parse(stmt, offset);
 		switch (type) {
-		case ServerParseShow.DATABASES:
-			ShowDatabases.response(c);
-			break;
-		case ServerParseShow.TABLES:
-			ShowTables.response(c, stmt, type);
-			break;
-		case ServerParseShow.FULLTABLES:
-			ShowFullTables.response(c, stmt, type);
-			break;
-		case ServerParseShow.MYCAT_STATUS:
-			ShowMyCatStatus.response(c);
-			break;
-		case ServerParseShow.MYCAT_CLUSTER:
-			ShowMyCATCluster.response(c);
-			break;
-		default:
-			c.execute(stmt, ServerParse.SHOW);
+			case ServerParseShow.DATABASES:
+				ShowDatabases.response(c);
+				break;
+			case ServerParseShow.TABLES:
+				ShowTables.response(c, stmt, type);
+				break;
+			case ServerParseShow.FULLTABLES:
+				ShowFullTables.response(c, stmt, type);
+				break;
+			case ServerParseShow.MYCAT_STATUS:
+				ShowMyCatStatus.response(c);
+				break;
+			case ServerParseShow.MYCAT_CLUSTER:
+				ShowMyCATCluster.response(c);
+				break;
+			case ServerParseShow.CHARSET:
+				stmt = stmt.toLowerCase().replaceFirst("charset","character set");
+			default:
+				c.execute(stmt, ServerParse.SHOW);
 		}
 	}
 

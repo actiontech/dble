@@ -1,26 +1,22 @@
 package io.mycat.plan.node;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashSet;
-
-import com.alibaba.druid.sql.ast.SQLExpr;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.model.ERTable;
+import io.mycat.plan.NamedField;
 import io.mycat.plan.Order;
 import io.mycat.plan.PlanNode;
-import io.mycat.plan.common.item.Item;
-
-import io.mycat.plan.common.item.Item.ItemType;
-import io.mycat.plan.common.item.ItemField;
-import io.mycat.plan.NamedField;
-import io.mycat.config.ErrorCode;
 import io.mycat.plan.common.exception.MySQLOutPutException;
-
+import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.util.FilterUtils;
 import io.mycat.plan.util.PlanUtil;
 import io.mycat.plan.util.ToStringUtil;
 import io.mycat.util.StringUtil;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 
 public class JoinNode extends PlanNode {
@@ -53,7 +49,7 @@ public class JoinNode extends PlanNode {
 	private List<Order> rightJoinOnOrders = new ArrayList<Order>();
 	private boolean isRightOrderMatch = false;
 
-	private HashSet<String> usingFields;
+	private List<String> usingFields;
 
 	/**
 	 * <pre>
@@ -156,11 +152,11 @@ public class JoinNode extends PlanNode {
 			otherJoinOnFilter = setUpItem(otherJoinOnFilter);
 	}
 
-	public HashSet<String> getUsingFields() {
+	public List<String> getUsingFields() {
 		return usingFields;
 	}
 
-	public void setUsingFields(HashSet<String> usingFields) {
+	public void setUsingFields(List<String> usingFields) {
 		this.usingFields = usingFields;
 	}
 

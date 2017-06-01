@@ -361,8 +361,8 @@ public class MySQLPlanNodeVisitor {
 		}
 	}
 
-	private HashSet<String> getUsingFields(List<SQLExpr> using) {
-		HashSet<String> fds = new HashSet<String>();
+	private List<String> getUsingFields(List<SQLExpr> using) {
+		List<String> fds = new ArrayList<String>(using.size());
 		for (SQLExpr us : using) {
 			fds.add(StringUtil.removeBackQuote(us.toString().toLowerCase()));
 		}

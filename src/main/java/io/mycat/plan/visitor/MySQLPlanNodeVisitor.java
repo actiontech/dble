@@ -186,18 +186,18 @@ public class MySQLPlanNodeVisitor {
 			joinNode.setInnerJoin();
 			break;
 		case LEFT_OUTER_JOIN:
-			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0)) {
+			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0) && !joinTables.isNatural()) {
 				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "left join without join_condition!");
 			}
 			joinNode.setLeftOuterJoin();
 			break;
 		case RIGHT_OUTER_JOIN:
-			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0)) {
+			if ((joinTables.getCondition() == null) && (joinTables.getUsing() == null || joinTables.getUsing().size() == 0) && !joinTables.isNatural()) {
 				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "right join without join_condition!");
 			}
 			joinNode.setRightOuterJoin();
 			break;
-		case NATURAL_JOIN:// col?
+		case NATURAL_JOIN:// never happen
 			break;
 		default:
 			break;
@@ -207,10 +207,11 @@ public class MySQLPlanNodeVisitor {
 		if (cond != null) {
 			MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 			cond.accept(ev);
-			Item ifilter = ev.getItem();
-			addJoinOnColumns(ifilter, joinNode);
+			addJoinOnColumns(ev.getItem(), joinNode);
 		} else if (joinTables.getUsing() != null && joinTables.getUsing().size() != 0) {
 			joinNode.setUsingFields(this.getUsingFields(joinTables.getUsing()));
+		}else if(joinTables.isNatural()){
+			joinNode.setNatural(true);
 		}
 		this.tableNode = joinNode;
 		return true;

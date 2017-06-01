@@ -296,9 +296,18 @@ public abstract class PlanNode {
 					tmpFieldTable = subAlias;
 				tmpFieldName = coutField.getName();
 				NamedField tmpField = new NamedField(tmpFieldTable,tmpFieldName,coutField.planNode);
+				if (innerFields.containsKey(tmpField) && getParent() != null)
+					throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '"+tmpFieldName+"'");
 				innerFields.put(tmpField, coutField);
 			}
 		}
+		if (type() == PlanNodeType.JOIN) {
+			JoinNode jn = (JoinNode) this;
+			if (jn.isNatural()) {
+				jn.genUsingByNatural();
+			}
+		}
+
 	}
 
 	protected void setUpSelects() {

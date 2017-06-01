@@ -17,6 +17,7 @@ import io.mycat.util.StringUtil;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 public class JoinNode extends PlanNode {
@@ -24,6 +25,7 @@ public class JoinNode extends PlanNode {
 	public PlanNodeType type() {
 		return PlanNodeType.JOIN;
 	}
+
 
 	public enum Strategy {
 		SORTMERGE, NESTLOOP
@@ -51,6 +53,7 @@ public class JoinNode extends PlanNode {
 
 	private List<String> usingFields;
 
+	private boolean isNatural = false;
 	/**
 	 * <pre>
 	 * leftOuterJoin:
@@ -101,22 +104,42 @@ public class JoinNode extends PlanNode {
 		nameContext.setFindInSelect(false);
 		nameContext.setSelectFirst(false);
 
-		for (int index = 0; index < joinFilter.size(); index++) {
-			Item bf = joinFilter.get(index);
-			bf = setUpItem(bf);
-			joinFilter.set(index, (ItemFuncEqual) bf);
+		if (usingFields != null) {
+			for (String using : usingFields) {
+				using = StringUtil.removeBackQuote(using);
+				String lName = findTbNameByUsing(this.getLeftNode(), using);
+				String rName = findTbNameByUsing(this.getRightNode(), using);
+				Item filter = setUpItem(genJoinFilter(using, lName, rName));
+				joinFilter.add((ItemFuncEqual) filter);
+			}
+		}else{
+			for (int index = 0; index < joinFilter.size(); index++) {
+				Item bf = joinFilter.get(index);
+				bf = setUpItem(bf);
+				joinFilter.set(index, (ItemFuncEqual) bf);
+			}
 		}
-		//or using(column_list)
-		if (usingFields == null) {
-			return;
+	}
+
+	public void genUsingByNatural() {
+		List<String> using = getFieldList(this.getLeftNode());
+		List<String> rightFiled = getFieldList(this.getRightNode());
+		using.retainAll(rightFiled);
+		this.setUsingFields(using);
+	}
+
+	private List<String> getFieldList(PlanNode node) {
+		List<String> fields = new ArrayList<>();
+		Set<String> checkDup = new HashSet<>();
+		for (NamedField field : node.getOuterFields().keySet()) {
+			String fieldName = field.getName().toLowerCase();
+			if (checkDup.contains(fieldName)) {
+				throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", " Duplicate column name '" + fieldName + "'");
+			}
+			checkDup.add(fieldName);
+			fields.add(fieldName);
 		}
-		for (String using : usingFields) {
-			using = StringUtil.removeBackQuote(using);
-			String lName = findTbNameByUsing(this.getLeftNode(), using);
-			String rName = findTbNameByUsing(this.getRightNode(), using);
-			Item filter = setUpItem(genJoinFilter(using, lName, rName));
-			joinFilter.add((ItemFuncEqual) filter);
-		}
+		return fields;
 	}
 
 	private String findTbNameByUsing(PlanNode node, String using) {
@@ -160,6 +183,13 @@ public class JoinNode extends PlanNode {
 		this.usingFields = usingFields;
 	}
 
+	public boolean isNatural() {
+		return isNatural;
+	}
+
+	public void setNatural(boolean natural) {
+		isNatural = natural;
+	}
 	@Override
 	protected void dealSingleStarColumn(List<Item> newSels) {
 		if(usingFields == null){

@@ -222,7 +222,7 @@ public class ItemField extends ItemIdent {
 				for (NamedField coutField : firstNode.getOuterFields().keySet()) {
 					if (tmpFieldName.equalsIgnoreCase(coutField.getName())) {
 						if (!found) {
-							tmpFieldName = coutField.getTable();
+							tmpFieldTable = coutField.getTable();
 							found = true;
 						} else {
 							throw new MySQLOutPutException(ErrorCode.ER_BAD_FIELD_ERROR, "(42S22",

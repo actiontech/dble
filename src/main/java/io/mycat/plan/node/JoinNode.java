@@ -131,7 +131,9 @@ public class JoinNode extends PlanNode {
 		List<String> using = getFieldList(this.getLeftNode());
 		List<String> rightFiled = getFieldList(this.getRightNode());
 		using.retainAll(rightFiled);
-		this.setUsingFields(using);
+		if(using.size()>0) {
+			this.setUsingFields(using);
+		}
 	}
 
 	private List<String> getFieldList(PlanNode node) {

@@ -2,7 +2,6 @@ package io.mycat.plan.visitor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLLimit;

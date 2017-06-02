@@ -202,16 +202,29 @@ public class MySQLPlanNodeVisitor {
 		default:
 			break;
 		}
-
+		int condTypeCnt = 0;
+		if (joinTables.isNatural()) {
+			condTypeCnt++;
+			joinNode.setNatural(true);
+		}
 		SQLExpr cond = joinTables.getCondition();
 		if (cond != null) {
+			condTypeCnt++;
+			if(condTypeCnt>1){
+				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000",
+						"You have an error in your SQL syntax;check the manual that corresponds to your MySQL server version for the right syntax to use near '"+cond.toString()+"'");
+			}
 			MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
 			cond.accept(ev);
 			addJoinOnColumns(ev.getItem(), joinNode);
-		} else if (joinTables.getUsing() != null && joinTables.getUsing().size() != 0) {
+		}
+		if (joinTables.getUsing() != null && joinTables.getUsing().size() != 0) {
+			condTypeCnt++;
+			if(condTypeCnt>1){
+				throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000",
+						"You have an error in your SQL syntax;check the manual that corresponds to your MySQL server version for the right syntax to use near '"+joinTables.getUsing().toString()+"'");
+			}
 			joinNode.setUsingFields(this.getUsingFields(joinTables.getUsing()));
-		}else if(joinTables.isNatural()){
-			joinNode.setNatural(true);
 		}
 		this.tableNode = joinNode;
 		return true;
@@ -368,16 +381,5 @@ public class MySQLPlanNodeVisitor {
 			fds.add(StringUtil.removeBackQuote(us.toString().toLowerCase()));
 		}
 		return fds;
-	}
-
-	private List<ItemFuncEqual> getUsingFilter(List<SQLExpr> using, String leftJoinNode, String rightJoinNode) {
-		List<ItemFuncEqual> filterList = new ArrayList<ItemFuncEqual>();
-		for (SQLExpr us : using) {
-			ItemField column1 = new ItemField(null, leftJoinNode, StringUtil.removeBackQuote(us.toString()));
-			ItemField column2 = new ItemField(null, rightJoinNode, StringUtil.removeBackQuote(us.toString()));
-			ItemFuncEqual arg = new ItemFuncEqual(column1, column2);
-			filterList.add(arg);
-		}
-		return filterList;
 	}
 }

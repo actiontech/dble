@@ -109,6 +109,9 @@ public class JoinNode extends PlanNode {
 				using = StringUtil.removeBackQuote(using);
 				String lName = findTbNameByUsing(this.getLeftNode(), using);
 				String rName = findTbNameByUsing(this.getRightNode(), using);
+				if(lName.equals(rName)){
+					throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '"+lName+"'");
+				}
 				Item filter = setUpItem(genJoinFilter(using, lName, rName));
 				joinFilter.add((ItemFuncEqual) filter);
 			}
@@ -116,6 +119,9 @@ public class JoinNode extends PlanNode {
 			for (int index = 0; index < joinFilter.size(); index++) {
 				Item bf = joinFilter.get(index);
 				bf = setUpItem(bf);
+				if(bf.getReferTables().size()==1){
+					throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '"+this.getLeftNode().getPureName()+"'");
+				}
 				joinFilter.set(index, (ItemFuncEqual) bf);
 			}
 		}

@@ -23,13 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
@@ -48,6 +41,10 @@ import io.mycat.statistic.HeartbeatRecorder;
 import io.mycat.util.IntegerUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
+
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 /**
@@ -137,7 +134,7 @@ public class ShowHeartbeatDetail {
 		}
 		if(hb!=null){
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			List<HeartbeatRecorder.Record> heatbeartRecorders = hb.getRecorder().getRecordsAll();  
+			Queue<HeartbeatRecorder.Record> heatbeartRecorders = hb.getRecorder().getRecordsAll();
 			for(HeartbeatRecorder.Record record : heatbeartRecorders){
 				RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 				row.add(StringUtil.encode(name,charset));

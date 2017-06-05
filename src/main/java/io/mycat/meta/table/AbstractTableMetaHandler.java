@@ -36,13 +36,19 @@ public abstract class AbstractTableMetaHandler {
 	private TableConfig tbConfig;
 	private AtomicInteger nodesNumber;
 	protected String schema;
-	public AbstractTableMetaHandler( String schema,  TableConfig tbConfig){
+	private Set<String> selfNode;
+	public AbstractTableMetaHandler( String schema,  TableConfig tbConfig, Set<String> selfNode){
 		this.tbConfig = tbConfig;
 		this.nodesNumber = new AtomicInteger(tbConfig.getDataNodes().size());
 		this.schema = schema;
+		this.selfNode = selfNode;
 	}
 	public void execute(){
 		for (String dataNode : tbConfig.getDataNodes()) {
+			if (selfNode != null && selfNode.contains(dataNode)) {
+				this.countdown();
+				return;
+			}
 			try {
 				tbConfig.getReentrantReadWriteLock().writeLock().lock();
 				ConcurrentMap<String, List<String>> map = new ConcurrentHashMap<>();

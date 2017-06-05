@@ -1,44 +1,10 @@
 package io.mycat.meta;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddColumn;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddIndex;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropColumnItem;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropIndex;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropKey;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropPrimaryKey;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableItem;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTruncateStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
@@ -46,9 +12,11 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.mycat.MycatServer;
+import io.mycat.backend.datasource.PhysicalDBNode;
+import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
@@ -63,6 +31,13 @@ import io.mycat.meta.table.TableMetaCheckHandler;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ProxyMetaManager {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);
@@ -137,7 +112,7 @@ public class ProxyMetaManager {
 	/**
 	 * Checking the existence of the database in which the view is to be created
 	 * 
-	 * @param db
+	 * @param schema
 	 * @return
 	 */
 	public boolean checkDbExists(String schema) {
@@ -378,14 +353,34 @@ public class ProxyMetaManager {
 //		return vm.getViewNode();
 //	}
 
+	private Set<String> getSelfNodes(MycatConfig config) {
+		Set<String> selfNode = null;
+		for (Map.Entry<String, PhysicalDBPool> entry : config.getDataHosts().entrySet()) {
+			PhysicalDBPool host = entry.getValue();
+			DBHostConfig wHost = host.getSource().getConfig();
+			if (("localhost".equalsIgnoreCase(wHost.getIp())||"127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == config.getSystem().getServerPort()) {
+				for (Map.Entry<String, PhysicalDBNode> nodeEntry : config.getDataNodes().entrySet()) {
+					if (nodeEntry.getValue().getDbPool().getHostName().equals(host.getHostName())) {
+						if (selfNode == null) {
+							selfNode = new HashSet<>(2);
+						}
+						selfNode.add(nodeEntry.getKey());
+					}
+				}
+				break;
+			}
+		}
+		return selfNode;
+	}
 	public void init()  {
 		MycatConfig config = MycatServer.getInstance().getConfig();
-		SchemaMetaHandler handler = new SchemaMetaHandler(config);
+		Set<String> selfNode = getSelfNodes(config);
+		SchemaMetaHandler handler = new SchemaMetaHandler(config, selfNode);
 		handler.execute();
 		SystemConfig system = config.getSystem();
 		if (system.getCheckTableConsistency() == 1) {
 			scheduler= Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
-			checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+			checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
 		}
 	}
 	public void terminate(){
@@ -396,15 +391,15 @@ public class ProxyMetaManager {
 		catalogs.clear();
 	}
 	//定时检查不同分片表结构一致性
-	private Runnable tableStructureCheckTask() {
+	private Runnable tableStructureCheckTask(final Set<String> selfNode) {
 		return new Runnable() {
 			@Override
 			public void run() {
-				tableStructureCheck();
+				tableStructureCheck(selfNode);
 			}
 		};
 	}
-	private void tableStructureCheck() {
+	private void tableStructureCheck(Set<String> selfNode) {
 		for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
 			if (!checkDbExists(schema.getName())) {
 				continue;
@@ -413,7 +408,7 @@ public class ProxyMetaManager {
 				if (!checkTableExists(schema.getName(), table.getName())) {
 					continue;
 				}
-				AbstractTableMetaHandler handler = new TableMetaCheckHandler(schema.getName(), table);
+				AbstractTableMetaHandler handler = new TableMetaCheckHandler(schema.getName(), table, selfNode);
 				handler.execute();
 			}
 		}

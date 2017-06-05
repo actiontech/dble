@@ -5,10 +5,12 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.meta.ProxyMetaManager;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 
+import java.util.Set;
+
 public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 
-	public TableMetaCheckHandler(String schema, TableConfig tbConfig) {
-		super(schema, tbConfig);
+	public TableMetaCheckHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
+		super(schema, tbConfig, selfNode);
 	}
 
 	@Override

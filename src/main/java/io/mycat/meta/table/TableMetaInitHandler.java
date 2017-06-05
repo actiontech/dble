@@ -4,10 +4,12 @@ import io.mycat.MycatServer;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 
+import java.util.Set;
+
 public class TableMetaInitHandler extends AbstractTableMetaHandler {
 	private MultiTableMetaHandler multiTableMetaHandler;
-	public TableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, TableConfig tbConfig) {
-		super(schema, tbConfig);
+	public TableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, TableConfig tbConfig, Set<String> selfNode) {
+		super(schema, tbConfig, selfNode);
 		this.multiTableMetaHandler = multiTableMetaHandler;
 	}
 

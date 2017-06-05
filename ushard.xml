@@ -70,7 +70,7 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>druid</artifactId>
-			<version>1.0.31</version>
+			<version>1.0.28</version>
 		</dependency>
 		<dependency>
 			<groupId>mysql</groupId>
@@ -393,6 +393,57 @@
 						</configuration>
 					</execution>
 					<execution>
+						<id>SystemConfig</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/java/io/mycat/config/model/SystemConfig.java</file>
+							<outputFile>${project.basedir}/src/main/java/io/mycat/config/model/SystemConfig.java</outputFile>
+							<replacements>
+								<replacement>
+									<token>MYCAT_HOME</token>
+									<value>USHARD_HOME</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>init_zk_data</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/assembly/bin/init_zk_data.sh</file>
+							<outputFile>${project.basedir}/src/main/assembly/bin/init_zk_data.sh</outputFile>
+							<replacements>
+								<replacement>
+									<token>MYCAT</token>
+									<value>USHARD</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>startup_nowrap</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/assembly/bin/startup_nowrap.sh</file>
+							<outputFile>${project.basedir}/src/main/assembly/bin/startup_nowrap.sh</outputFile>
+							<replacements>
+								<replacement>
+									<token>MYCAT</token>
+									<value>USHARD</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
 						<id>schema.dtd</id>
 						<phase>process-sources</phase>
 						<goals>
@@ -586,7 +637,7 @@
 								<!-- 启动内存配置 -->
 								<maxStackSize>128</maxStackSize>
 								<systemProperties>
-									<systemProperty>MYCAT_HOME=.</systemProperty>
+									<systemProperty>USHARD_HOME=.</systemProperty>
 								</systemProperties>
 								<extraArguments>
 									<extraArgument>-server </extraArgument>

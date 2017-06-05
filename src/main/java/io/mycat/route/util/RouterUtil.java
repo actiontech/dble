@@ -213,7 +213,7 @@ public class RouterUtil {
 	}
 
 
-	public static RouteResultset routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs){
+	public static RouteResultset routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLNonTransientException {
 		String stmt = getFixedSql(removeSchema(rrs.getStatement(),schemaInfo.schema));
 		List<String> dataNodes = new ArrayList<>();
 		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
@@ -232,7 +232,12 @@ public class RouterUtil {
 		}
 		rrs.setNodes(nodes);
 		rrs.setFinishedRoute(true);
-		MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
+		try {
+			MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
+		} catch (InterruptedException e) {
+			String msg = e.toString() + ",sql:" + stmt;
+			throw new SQLNonTransientException();
+		}
 		return rrs;
 	}
 

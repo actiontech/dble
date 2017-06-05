@@ -56,11 +56,17 @@ public class ProxyMetaManager {
 	private String genLockKey(String schema, String tbName){
 		return schema+"."+tbName;
 	}
-	public void addMetaLock(String schema, String tbName) {
+	public void addMetaLock(String schema, String tbName) throws InterruptedException {
 		metalock.lock();
 		try {
-			lockTables.add(genLockKey(schema, tbName));
-		} finally {
+			String lockKey = genLockKey(schema, tbName);
+			while(lockTables.contains(lockKey)){
+				condRelease.await();
+			}
+			lockTables.add(lockKey);
+		}catch (InterruptedException e) {
+			throw e;
+		}  finally {
 			metalock.unlock();
 		}
 	}

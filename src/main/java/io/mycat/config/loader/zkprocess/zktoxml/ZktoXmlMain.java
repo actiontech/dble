@@ -1,5 +1,6 @@
 package io.mycat.config.loader.zkprocess.zktoxml;
 
+import io.mycat.MycatServer;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
@@ -21,8 +22,6 @@ import javax.xml.bind.JAXBException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
-import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
 
 /**
  * 将xk的信息转换为xml文件的操作
@@ -105,7 +104,7 @@ public class ZktoXmlMain {
 
     private static void initZKIfNot(CuratorFramework zkConn) throws Exception {
         String basePath = ZKUtils.getZKBasePath();
-        String confInitialized = basePath + ZK_CONF_INITED;
+        String confInitialized = basePath + ZookeeperPath.ZK_CONF_INITED.getKey();
         //init conf if not
         if (zkConn.checkExists().forPath(confInitialized) == null) {
             String confLockPath = basePath + "lock/confInit.lock";

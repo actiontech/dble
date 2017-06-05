@@ -1,6 +1,7 @@
 package io.mycat.config.loader.zkprocess.xmltozk;
 
 import io.mycat.MycatServer;
+import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -13,8 +14,6 @@ import io.mycat.config.loader.zkprocess.xmltozk.listen.SchemasxmlTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.SequenceTozkLoader;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.ServerxmlTozkLoader;
 import io.mycat.util.ZKUtils;
-
-import static io.mycat.config.loader.console.ZookeeperPath.ZK_CONF_INITED;
 
 public class XmltoZkMain {
 
@@ -60,9 +59,8 @@ public class XmltoZkMain {
 
         // 加载通知进程
         zkListen.notify(ZkNotifyCfg.ZK_NOTIFY_LOAD_ALL.getKey());
-        if (MycatServer.getInstance().getProcessors() != null) {
-            //Initialized flag
-            String confInitialized = basePath + ZK_CONF_INITED;
+        String confInitialized = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_CONF_INITED.getKey();
+        if (zkConn.checkExists().forPath(confInitialized) == null) {
             zkConn.create().creatingParentContainersIfNeeded().forPath(confInitialized);
         }
     }

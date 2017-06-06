@@ -187,7 +187,6 @@ public class RouterUtil {
 	 *
 	 * @param rrs		          数据路由集合
 	 * @param dataNode  	数据库所在节点
-	 * @param stmt   		执行语句
 	 * @return 				数据路由集合
 	 * 
 	 * @author mycat
@@ -215,11 +214,13 @@ public class RouterUtil {
 
 	public static RouteResultset routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLNonTransientException {
 		String stmt = getFixedSql(removeSchema(rrs.getStatement(),schemaInfo.schema));
-		List<String> dataNodes = new ArrayList<>();
+		List<String> dataNodes;
 		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
 		TableConfig tc = tables.get(schemaInfo.table);
 		if (tables != null && (tc != null)) {
 			dataNodes = tc.getDataNodes();
+		} else {
+			throw new SQLNonTransientException("table '" + schemaInfo.table + "' doesn't exist");
 		}
 		Iterator<String> iterator1 = dataNodes.iterator();
 		int nodeSize = dataNodes.size();
@@ -235,8 +236,7 @@ public class RouterUtil {
 		try {
 			MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
 		} catch (InterruptedException e) {
-			String msg = e.toString() + ",sql:" + stmt;
-			throw new SQLNonTransientException();
+			throw new SQLNonTransientException(e.toString() + ",sql:" + stmt);
 		}
 		return rrs;
 	}

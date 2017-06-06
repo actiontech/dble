@@ -604,9 +604,9 @@ public class ProxyMetaManager {
 				String indexName = StringUtil.removeBackQuote(statement.getName().getSimpleName());
 				TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
 				if (statement.getType() == null) {
-					addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, statement.getItems());
+					addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, itemsToColumns(statement.getItems()));
 				} else if (statement.getType().equals("UNIQUE")) {
-					addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, statement.getItems());
+					addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, itemsToColumns(statement.getItems()));
 				}
 			} catch (Exception e) {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
@@ -616,19 +616,30 @@ public class ProxyMetaManager {
 		}
 	}
 	private void addIndex(TableMeta.Builder tmBuilder, SQLAlterTableAddIndex addIndex) {
-		String indexName = StringUtil.removeBackQuote(addIndex.getName().getSimpleName());
+		List<SQLExpr> columnExprs = itemsToColumns(addIndex.getItems());
+		Set<String> indexNames = null;
+		if (addIndex.getName() == null) {
+			indexNames = new HashSet<>();
+			for (IndexMeta index : tmBuilder.getIndexList()) {
+				indexNames.add(index.getName());
+			}
+		}
+		String indexName = MetaHelper.genIndexName(addIndex.getName(), columnExprs, indexNames);
 		if (addIndex.isUnique()) {
-			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, addIndex.getItems());
+			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, columnExprs);
 		} else {
-			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, addIndex.getItems());
+			addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, columnExprs);
 		}
 	}
-
-	private void addIndex(String indexName, TableMeta.Builder tmBuilder, INDEX_TYPE indexType, List<SQLSelectOrderByItem> items){
+	private List<SQLExpr> itemsToColumns(List<SQLSelectOrderByItem> items){
 		List<SQLExpr> columnExprs = new ArrayList<SQLExpr>();
 		for (SQLSelectOrderByItem item :items) {
 			columnExprs.add(item.getExpr());
 		}
+		return columnExprs;
+	}
+	private void addIndex(String indexName, TableMeta.Builder tmBuilder, INDEX_TYPE indexType, List<SQLExpr> columnExprs){
+
 		IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
 		tmBuilder.addIndex(indexMeta);
 	}

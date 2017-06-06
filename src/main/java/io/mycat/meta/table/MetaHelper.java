@@ -74,7 +74,7 @@ public class MetaHelper {
 		return tmBuilder.build();
 	}
 
-	private static String genIndexName(SQLName srcIndexName, List<SQLExpr> columnExprs, Set<String> indexNames){
+	public static String genIndexName(SQLName srcIndexName, List<SQLExpr> columnExprs, Set<String> indexNames){
 		String indexName = null;
 		if (srcIndexName != null) {
 			indexName = StringUtil.removeBackQuote(srcIndexName.getSimpleName());

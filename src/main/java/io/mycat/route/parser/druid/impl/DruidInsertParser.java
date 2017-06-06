@@ -173,7 +173,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private RouteResultset routeByERParentKey( RouteResultset rrs, TableConfig tc, String joinKeyVal)
 			throws SQLNonTransientException {
 		if (tc.getDirectRouteTC() != null) {
-			Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(1);
+			Set<ColumnRoutePair> parentColVal = new HashSet<>(1);
 			ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
 			parentColVal.add(pair);
 			Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
@@ -188,18 +188,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		return null;
 	}
-	/**
-	 * 单条insert（非批量）
-	 * @param schema
-	 * @param rrs
-	 * @param partitionColumn
-	 * @param tableName
-	 * @param insertStmt
-	 * @throws SQLNonTransientException
-	 */
-	private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
-		int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
-		SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
+
+	private String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
 		String shardingValue = null;
 		if(valueExpr instanceof SQLIntegerExpr) {
 			SQLIntegerExpr intExpr = (SQLIntegerExpr)valueExpr;
@@ -208,6 +198,23 @@ public class DruidInsertParser extends DefaultDruidParser {
 			SQLCharExpr charExpr = (SQLCharExpr)valueExpr;
 			shardingValue = charExpr.getText();
 		}
+		if (shardingValue == null) {
+			throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" +valueExpr.toString());
+		}
+		return shardingValue;
+	}
+	/**
+	 * 单条insert（非批量）
+	 * @param schemaInfo
+	 * @param rrs
+	 * @param partitionColumn
+	 * @param insertStmt
+	 * @throws SQLNonTransientException
+	 */
+	private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
+		int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
+		SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
+		String shardingValue = shardingValueToSting(valueExpr);
 		TableConfig tableConfig = schemaInfo.schemaConfig.getTables().get(schemaInfo.table);
 		AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
 		Integer nodeIndex = algorithm.calculate(shardingValue);
@@ -244,8 +251,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 	/**
 	 * insert into .... select .... 或insert into table() values (),(),....
 	 *
-	 * @param schema
+	 * @param schemaInfo
 	 * @param rrs
+	 * @param partitionColumn
 	 * @param insertStmt
 	 * @throws SQLNonTransientException
 	 */
@@ -258,7 +266,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		int columnNum = getTableColumns(schemaInfo, insertStmt);
 		int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
 		List<ValuesClause> valueClauseList = insertStmt.getValuesList();
-		Map<Integer, List<ValuesClause>> nodeValuesMap = new HashMap<Integer, List<ValuesClause>>();
+		Map<Integer, List<ValuesClause>> nodeValuesMap = new HashMap<>();
 		TableConfig tableConfig = schema.getTables().get(tableName);
 		AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
 		for (ValuesClause valueClause : valueClauseList) {
@@ -269,15 +277,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				throw new SQLNonTransientException(msg);
 			}
 			SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-			String shardingValue = null;
-			if (expr instanceof SQLIntegerExpr) {
-				SQLIntegerExpr intExpr = (SQLIntegerExpr) expr;
-				shardingValue = intExpr.getNumber() + "";
-			} else if (expr instanceof SQLCharExpr) {
-				SQLCharExpr charExpr = (SQLCharExpr) expr;
-				shardingValue = charExpr.getText();
-			}
-
+			String shardingValue = shardingValueToSting(expr);
 			Integer nodeIndex = algorithm.calculate(shardingValue);
 			// 没找到插入的分片
 			if (nodeIndex == null) {
@@ -365,12 +365,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 				return i;
 			}
 		}
-		if (shardingColIndex == -1) {
-			String msg = "bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + insertStmt;
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
-		}
-		return shardingColIndex;
+		String msg = "bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + insertStmt;
+		LOGGER.warn(msg);
+		throw new SQLNonTransientException(msg);
 	}
 
 	private int getTableColumns(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt)
@@ -391,7 +388,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 	/**
 	 * 寻找joinKey的索引
 	 *
-	 * @param columns
+	 * @param schemaInfo
+	 * @param insertStmt
 	 * @param joinKey
 	 * @return -1表示没找到，>=0表示找到了
 	 * @throws SQLNonTransientException
@@ -423,7 +421,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 
 		int autoIncrement = -1;
 		int idxGlobal = -1;
-		int colSize = -1;
+		int colSize;
 		// insert 没有带列名：insert into t values(xxx,xxx)
 		if (columns == null || columns.size() <= 0) {
 			if (isAutoIncrement) {
@@ -467,7 +465,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				sb.append(",").append(tc.getPrimaryKey());
 				colSize++;
 			}
-			if (isGlobalCheck && idxGlobal <= -1){
+			if (isGlobalCheck ){
 				idxGlobal = isAutoIncrement ? columns.size() + 1 : columns.size();
 				sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
 				colSize++;
@@ -502,7 +500,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					throw new SQLNonTransientException(msg);
 				}
 				SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr)exp;
-				if(!flag && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
+				if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
 					flag = true;
 					onDuplicateGlobalColumn(sb);
 				} else {
@@ -512,7 +510,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					sb.append(",");
 				}
 			}
-			if (!flag) {
+			if (isGlobalCheck && !flag) {
 				sb.append(",");
 				onDuplicateGlobalColumn(sb);
 			}

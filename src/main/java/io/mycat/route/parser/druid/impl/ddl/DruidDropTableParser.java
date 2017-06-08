@@ -28,7 +28,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 }

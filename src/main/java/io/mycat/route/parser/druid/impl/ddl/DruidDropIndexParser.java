@@ -22,14 +22,14 @@ public class DruidDropIndexParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
-		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement)stmt;
 		String schemaName = schema == null ? null : schema.getName();
+		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, dropStmt.getTableName());
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 }

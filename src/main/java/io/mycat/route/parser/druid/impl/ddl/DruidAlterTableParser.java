@@ -70,7 +70,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			}else if(alterItem instanceof MySqlAlterTableChangeColumn
 					||alterItem instanceof MySqlAlterTableModifyColumn
 					|| alterItem instanceof SQLAlterTableDropColumnItem){
-				List<SQLName> columnList  = new ArrayList<SQLName>();
+				List<SQLName> columnList  = new ArrayList<>();
 				if(alterItem instanceof MySqlAlterTableChangeColumn){
 					columnList.add(((MySqlAlterTableChangeColumn) alterItem).getColumnName());
 				}else if(alterItem instanceof MySqlAlterTableModifyColumn) {
@@ -79,11 +79,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 					columnList = ((SQLAlterTableDropColumnItem) alterItem).getColumns();
 				}
 
-				if(this.columnInfluenceCheck(columnList,schema,schemaInfo.table)) {
-					support = false;
-				}else {
-					support = true;
-				}
+				support = !this.columnInfluenceCheck(columnList, schemaInfo.schemaConfig, schemaInfo.table);
 			}
 		}
 		if (!support) {
@@ -96,21 +92,19 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(alterTable);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
-
-	
 
 	private String modifyColumnIfAlter(SchemaInfo schemaInfo, String sql, SQLAlterTableStatement alterStatement) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 		if (orgTbMeta == null)
 			return sql;
-		List<String> cols = new ArrayList<String>();
+		List<String> cols = new ArrayList<>();
 		for (ColumnMeta column : orgTbMeta.getColumnsList()) {
 			cols.add(column.getName());
 		}
-		List<SQLAlterTableItem> newAlterItems = new ArrayList<SQLAlterTableItem>();
+		List<SQLAlterTableItem> newAlterItems = new ArrayList<>();
 		for (SQLAlterTableItem alterItem : alterStatement.getItems()) {
 			if (alterItem instanceof SQLAlterTableAddColumn) {
 				addColumn(cols, (SQLAlterTableAddColumn) alterItem, newAlterItems);
@@ -267,9 +261,6 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 	 * the function is check if the columns contains the import column
 	 * true -- yes the sql did not to exec
 	 * false -- safe the sql can be exec
-	 * @param columnList
-	 * @param schema
-	 * @return
 	 */
 	private boolean columnInfluenceCheck(List<SQLName> columnList,SchemaConfig schema,String table){
 		for(SQLName name : columnList){
@@ -284,9 +275,6 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 	 * this function is check if the name is the important column in any tables
 	 * true -- the column influence some important column
 	 * false -- safe
-	 * @param name
-	 * @param schema
-	 * @return
 	 */
 	private boolean influenceKeyColumn(SQLName name,SchemaConfig schema,String tableName){
 		String  columnName = name.toString();

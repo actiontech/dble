@@ -49,21 +49,21 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		}
 
 		//如果这个不是no_sharing表格那么就需要这么进行检查
-		if(!RouterUtil.isNoSharding(schema,schemaInfo.table)){
+		if(!RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
 			sharingTableCheck(createStmt);
 		}
 
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
-			String sql= addColumnIfCreate(rrs.getStatement(), createStmt);
+			String sql= addColumnIfCreate(createStmt);
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(createStmt);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 
-	private String addColumnIfCreate(String sql, MySqlCreateTableStatement createStmt) {
+	private String addColumnIfCreate(MySqlCreateTableStatement createStmt) {
 		removeGlobalColumnIfExist(createStmt);
 		createStmt.getTableElementList().add(GlobalTableUtil.createMycatColumn());
 		return createStmt.toString();
@@ -78,8 +78,8 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			if (sqlName != null) {
 				String simpleName = sqlName.getSimpleName();
 				simpleName = StringUtil.removeBackQuote(simpleName);
-				if (tableElement instanceof SQLColumnDefinition && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equalsIgnoreCase(simpleName)) {
-					((SQLCreateTableStatement) statement).getTableElementList().remove(tableElement);
+				if (GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equalsIgnoreCase(simpleName)) {
+					statement.getTableElementList().remove(tableElement);
 					break;
 				}
 			}
@@ -88,7 +88,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
 	/**
 	 * 检查创建的表格里面是不是有我们不支持的参数
-	 * @throws SQLNonTransientException
 	 */
 	private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
 		//创建新表分片属性禁止
@@ -109,7 +108,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			} else {
 				strEngine = engine.toString();
 			}
-			if (!"InnoDB".equalsIgnoreCase(strEngine.toString())) {
+			if (!"InnoDB".equalsIgnoreCase(strEngine)) {
 				String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
 				LOGGER.warn(msg);
 				throw new SQLNonTransientException(msg);

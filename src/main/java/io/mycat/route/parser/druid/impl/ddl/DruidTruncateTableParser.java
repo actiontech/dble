@@ -17,13 +17,14 @@ public class DruidTruncateTableParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
 			throws SQLNonTransientException {
+		String schemaName = schema == null ? null : schema.getName();
 		SQLTruncateStatement truncateTable = (SQLTruncateStatement) stmt;
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema.getName(), truncateTable.getTableSources().get(0));
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, truncateTable.getTableSources().get(0));
 		if (schemaInfo == null) {
 			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
-		rrs = RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}
 }

@@ -474,7 +474,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 
 		sb.append(" values");
-		String tableKey = schemaInfo.schema + "_" + schemaInfo.table;
+		String tableKey = StringUtil.getFullName(schemaInfo.schema, schemaInfo.table);
 		List<ValuesClause> vcl = insert.getValuesList();
 		if (vcl != null && vcl.size() > 1) { // 批量insert
 			for (int j = 0; j < vcl.size(); j++) {

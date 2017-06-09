@@ -697,9 +697,8 @@ public class ProxyMetaManager {
 	}
 	private void addIndex(TableMeta.Builder tmBuilder, SQLAlterTableAddIndex addIndex) {
 		List<SQLExpr> columnExprs = itemsToColumns(addIndex.getItems());
-		Set<String> indexNames = null;
+		Set<String> indexNames = new HashSet<>();
 		if (addIndex.getName() == null) {
-			indexNames = new HashSet<>();
 			for (IndexMeta index : tmBuilder.getIndexList()) {
 				indexNames.add(index.getName());
 			}

@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.util.ZKUtils;
@@ -49,8 +50,8 @@ public class ShowBinlogStatus {
 	}
 	public static final String KW_BINLOG_PAUSE ="binlog_pause";
 	public static final String KW_BINLOG_PAUSE_STATUS ="status";
-	public static final String BINLOG_PAUSE_STATUS = KW_BINLOG_PAUSE + "/" + KW_BINLOG_PAUSE_STATUS;
-	public static final String BINLOG_PAUSE_INSTANCES ="binlog_pause/instances";
+	public static final String BINLOG_PAUSE_STATUS = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + KW_BINLOG_PAUSE_STATUS;
+	public static final String BINLOG_PAUSE_INSTANCES = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
 	public static final String BINLOG_PAUSE_LOCK ="lock/binlogStatus.lock";
 	private static final int FIELD_COUNT = 6;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);

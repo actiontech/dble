@@ -116,7 +116,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 1,将集群server目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf serverDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -161,8 +161,8 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
             LOGGER.info("ServerzkToxmlLoader notifyProcess zk to write index_to_charset.properties is success");
         }
-        if(MycatServer.getInstance().getProcessors()!=null)
-        ReloadConfig.reload();
+        if (!isAll && MycatServer.getInstance().getProcessors() != null)
+            ReloadConfig.reload();
         return true;
     }
 

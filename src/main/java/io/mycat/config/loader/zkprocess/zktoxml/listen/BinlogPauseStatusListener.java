@@ -35,7 +35,7 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         zookeeperListen.watchPath(zookeeperListen.getBasePath() + KW_BINLOG_PAUSE, KW_BINLOG_PAUSE_STATUS);
     }
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         if (MycatServer.getInstance().getProcessors() == null) {
             return true;
         }

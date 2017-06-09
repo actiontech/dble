@@ -1,29 +1,12 @@
 package io.mycat.route.util;
 
-import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
-
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
+import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.rule.RuleConfig;
@@ -39,6 +22,18 @@ import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
 import io.mycat.sqlengine.mpp.LoadData;
+import io.mycat.util.StringUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLNonTransientException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
+import static io.mycat.meta.DDLInfo.DDLStatus;
 
 /**
  * 从ServerRouterUtil中抽取的一些公用方法，路由解析工具类
@@ -212,7 +207,7 @@ public class RouterUtil {
 	}
 
 
-	public static RouteResultset routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLNonTransientException {
+	public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLNonTransientException {
 		String stmt = getFixedSql(removeSchema(rrs.getStatement(),schemaInfo.schema));
 		List<String> dataNodes;
 		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
@@ -235,13 +230,23 @@ public class RouterUtil {
 		rrs.setFinishedRoute(true);
 		try {
 			MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
-		} catch (InterruptedException e) {
+			if(MycatServer.getInstance().isUseZK()){
+				String nodeName = StringUtil.getFullName(schemaInfo.schema, schemaInfo.table);
+				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
+						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey();
+				CuratorFramework zkConn = ZKUtils.getConnection();
+				while (zkConn.checkExists().forPath(lockPath + "syncMeta.lock") != null || zkConn.checkExists().forPath(lockPath + nodeName) != null) {
+					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+				}
+				ZKUtils.createTempNode(lockPath, nodeName);
+				MycatServer.getInstance().getTmManager().notifyClusterDDL(schemaInfo.schema, schemaInfo.table, rrs.getStatement(), DDLStatus.INIT);
+			}
+		} catch (Exception e) {
+			MycatServer.getInstance().getTmManager().removeMetaLock(schemaInfo.schema, schemaInfo.table);
 			throw new SQLNonTransientException(e.toString() + ",sql:" + stmt);
 		}
-		return rrs;
 	}
 
-	
 
 	/**
 	 * 处理SQL

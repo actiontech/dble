@@ -108,7 +108,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 1,将集群schema目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf schemaDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -133,8 +133,8 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
         LOGGER.info("SchemasLoader notifyProcess zk to object zk schema      write :" + path + " is success");
 
-        if(MycatServer.getInstance().getProcessors()!=null)
-          ReloadConfig.reload_all();
+        if (!isAll && MycatServer.getInstance().getProcessors() != null)
+            ReloadConfig.reload_all();
         return true;
     }
 

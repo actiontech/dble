@@ -87,7 +87,7 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
 
         // 将zk序列配配制信息入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_CONF);

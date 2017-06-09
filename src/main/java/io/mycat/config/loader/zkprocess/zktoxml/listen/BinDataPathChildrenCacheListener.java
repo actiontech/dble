@@ -18,23 +18,21 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
     @Override public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
         ChildData data = event.getData();
         switch (event.getType()) {
-
             case CHILD_ADDED:
-
-                add(data.getPath().substring(data.getPath().lastIndexOf("/")+1),event.getData().getData()) ;
+            case CHILD_UPDATED:
+                add(data);
                 break;
             case CHILD_REMOVED:
-                delete(data.getPath().substring(data.getPath().lastIndexOf("/")+1),event.getData().getData()); ;
-                break;
-            case CHILD_UPDATED:
-                add(data.getPath().substring(data.getPath().lastIndexOf("/")+1),event.getData().getData()) ;
+                delete(data);
                 break;
             default:
                 break;
         }
     }
 
-    private void add(String name,byte[] data) throws IOException {
+    private void add(ChildData childData) throws IOException {
+        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/")+1);
+        byte[] data = childData.getData();
         File file = new File(
                 SystemConfig.getHomePath() + File.separator + "conf" ,
                 name);
@@ -45,12 +43,13 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
         }
     }
 
-    private void delete(String name,byte[] data) throws IOException {
+    private void delete(ChildData childData) throws IOException {
+        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/")+1);
         File file = new File(
                 SystemConfig.getHomePath() + File.separator + "conf" ,
                 name);
-        if(file.exists())
-         file.delete();
+        if (file.exists())
+            file.delete();
     }
 
 }

@@ -94,7 +94,7 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 1,读取本地的xml文件
         Schemas schema = this.parseSchemaXmlService.parseXmlToBean(SCHEMA_PATH);
 

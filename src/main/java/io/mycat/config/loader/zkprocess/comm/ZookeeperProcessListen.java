@@ -145,7 +145,7 @@ public class ZookeeperProcessListen {
 
                     if (null != cacheService) {
                         try {
-                            result = cacheService.notifyProcess();
+                            result = cacheService.notifyProcess(false);
                         } catch (Exception e) {
                             lOG.error("ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
                         }
@@ -172,7 +172,7 @@ public class ZookeeperProcessListen {
             // 进行缓存更新通知操作
             if (null != item.getValue()) {
                 try {
-                    item.getValue().notifyProcess();
+                    item.getValue().notifyProcess(true);
                 } catch (Exception e) {
                     lOG.error("ZookeeperProcessListen notifyAllNode key :" + item.getKey() + ";value " + item.getValue()
                             + ";error:Exception info:", e);

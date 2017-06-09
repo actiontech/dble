@@ -102,7 +102,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
 
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);

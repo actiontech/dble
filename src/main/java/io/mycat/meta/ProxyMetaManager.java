@@ -16,6 +16,9 @@ import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -31,13 +34,22 @@ import io.mycat.meta.table.TableMetaCheckHandler;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.util.StringUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static io.mycat.config.loader.console.ZookeeperPath.FLOW_ZK_PATH_ONLINE;
+import static io.mycat.meta.DDLInfo.DDLStatus;
 
 public class ProxyMetaManager {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);
@@ -49,8 +61,8 @@ public class ProxyMetaManager {
 	private ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> checkTaskHandler;
 	public ProxyMetaManager() {
-		this.catalogs = new ConcurrentHashMap<String, SchemaMeta>();
-		this.lockTables= new HashSet<String>();
+		this.catalogs = new ConcurrentHashMap<>();
+		this.lockTables= new HashSet<>();
 	}
 
 	private String genLockKey(String schema, String tbName){
@@ -64,9 +76,7 @@ public class ProxyMetaManager {
 				condRelease.await();
 			}
 			lockTables.add(lockKey);
-		}catch (InterruptedException e) {
-			throw e;
-		}  finally {
+		}finally {
 			metalock.unlock();
 		}
 	}
@@ -93,17 +103,12 @@ public class ProxyMetaManager {
 	/**
 	 * synchronously getting schemas from cluster. just for show databases
 	 * command
-	 * 
-	 * @return
+	 *
 	 */
 	public synchronized Map<String, SchemaMeta> getSchemas() {
 		return catalogs;
 	}
 
-	/**
-	 * @param schema
-	 * @return 是否真实create
-	 */
 	public boolean createDatabase(String schema) {
 		SchemaMeta schemaMeta = catalogs.get(schema);
 		if (schemaMeta == null) {
@@ -117,29 +122,21 @@ public class ProxyMetaManager {
 
 	/**
 	 * Checking the existence of the database in which the view is to be created
-	 * 
-	 * @param schema
-	 * @return
+	 *
 	 */
-	public boolean checkDbExists(String schema) {
-		if (schema == null)
-			return false;
-		return this.catalogs.containsKey(schema);
+	private boolean checkDbExists(String schema) {
+		return schema != null && this.catalogs.containsKey(schema);
 	}
 
-	public boolean checkTableExists(String schema, String strTable) {
-		if(!checkDbExists(schema))
-			return false;
-		if (strTable == null)
-			return false;
-		return this.catalogs.get(schema).getTableMetas().containsKey(strTable);
+	private boolean checkTableExists(String schema, String strTable) {
+		return checkDbExists(schema) && strTable != null && this.catalogs.get(schema).getTableMetas().containsKey(strTable);
 	}
 
 	public List<String> getTableNames(String schema) {
 		List<String> tbNames;
 		SchemaMeta schemaMeta = catalogs.get(schema);
 		if (schemaMeta == null)
-			return new ArrayList<String>();
+			return new ArrayList<>();
 		tbNames = schemaMeta.getTables();
 		Collections.sort(tbNames);
 		return tbNames;
@@ -378,7 +375,37 @@ public class ProxyMetaManager {
 		}
 		return selfNode;
 	}
-	public void init()  {
+	public void init() throws Exception {
+		if (MycatServer.getInstance().isUseZK()) {
+			String ddlPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey();
+			String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
+					+ ZookeeperPath.ZK_DDL.getKey() ;
+			CuratorFramework zkConn = ZKUtils.getConnection();
+			//CHECK DDL LOCK PATH HAS NOT CHILD
+			while (zkConn.getChildren().forPath(lockPath).size() > 0) {
+				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+			}
+			boolean createSuccess = false;
+			while(!createSuccess) {
+				try {
+					//syncMeta LOCK ,if another server start, it may failed
+					ZKUtils.createTempNode(lockPath, "syncMeta.lock");
+					createSuccess= true;
+				} catch (Exception e) {
+					LOGGER.warn("createTempNode syncMeta.lock fialed",e);
+					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+				}
+			}
+
+			initMeta();
+			ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
+			// syncMeta UNLOCK
+			zkConn.delete().forPath(lockPath + ZookeeperPath.ZK_SEPARATOR.getKey() + "syncMeta.lock");
+		} else {
+			initMeta();
+		}
+	}
+	public void initMeta(){
 		MycatConfig config = MycatServer.getInstance().getConfig();
 		Set<String> selfNode = getSelfNodes(config);
 		SchemaMetaHandler handler = new SchemaMetaHandler(config, selfNode);
@@ -419,34 +446,60 @@ public class ProxyMetaManager {
 			}
 		}
 	}
-
-	/**
-	 * 有sql语句执行了,需要查看是否有DDL语句
-	 * 
-	 * @param sql
-	 */
 	public void updateMetaData(String schema, String sql, boolean isSuccess) {
-		// 是否是ddl语句，是ddl语句的okresponse则需要通知tmmanager
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLStatement statement = parser.parseStatement();
 		if (statement instanceof MySqlCreateTableStatement) {
-			createTable(schema, (MySqlCreateTableStatement) statement, isSuccess);
+			createTable(schema, sql, (MySqlCreateTableStatement) statement, isSuccess);
 		} else if (statement instanceof SQLDropTableStatement) {
-			dropTable(schema, (SQLDropTableStatement) statement, isSuccess);
+			dropTable(schema, sql, (SQLDropTableStatement) statement, isSuccess);
 		} else if (statement instanceof SQLAlterTableStatement) {
-			alterTable(schema, (SQLAlterTableStatement) statement, isSuccess);
+			alterTable(schema, sql, (SQLAlterTableStatement) statement, isSuccess);
 		} else if (statement instanceof SQLTruncateStatement) {
 			// TODO:Sequence?
 		} else if (statement instanceof SQLCreateIndexStatement) {
-			createIndex(schema, (SQLCreateIndexStatement) statement, isSuccess);
+			createIndex(schema, sql, (SQLCreateIndexStatement) statement, isSuccess);
 		} else if (statement instanceof SQLDropIndexStatement) {
-			dropIndex(schema, (SQLDropIndexStatement) statement, isSuccess);
+			dropIndex(schema, sql, (SQLDropIndexStatement) statement, isSuccess);
 		} else {
 			// TODO: further
 		}
 	}
 
-	private void createTable(String schema, MySqlCreateTableStatement statement, boolean isSuccess) {
+	public void notifyClusterDDL(String schema, String table, String sql, DDLStatus ddlStatus) throws Exception {
+		CuratorFramework zkConn = ZKUtils.getConnection();
+		DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ddlStatus);
+		String nodeName = StringUtil.getFullName(schema, table);
+		String nodePath = ZKPaths.makePath(ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey(), nodeName);
+		if (zkConn.checkExists().forPath(nodePath) == null) {
+			zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+		} else {
+			zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+			//zkLock， the other instance get the lock,than wait
+			//TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
+			boolean finished = false;
+			String instancePath = ZKPaths.makePath(nodePath, ZookeeperPath.ZK_PATH_INSTANCE.getKey());
+			zkConn.create().forPath(instancePath);
+			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
+			distributeLock.acquire();
+			try {
+				ZKUtils.createTempNode(instancePath, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+				List<String> preparedList = zkConn.getChildren().forPath(instancePath);
+				List<String> onlineList = zkConn.getChildren().forPath(ZKUtils.getZKBasePath() + FLOW_ZK_PATH_ONLINE.getKey());
+				if(preparedList.size() == onlineList.size()) {
+					finished =true;
+				}
+			} finally {
+				distributeLock.release();
+			}
+			if (finished) {
+				zkConn.delete().deletingChildrenIfNeeded().forPath(instancePath);
+				zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
+			}
+		}
+	}
+
+	private void createTable(String schema, String sql, MySqlCreateTableStatement statement, boolean isSuccess) {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, statement.getTableSource());
 		try {
 			if(!isSuccess){
@@ -458,15 +511,20 @@ public class ProxyMetaManager {
 			LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 		} finally {
 			removeMetaLock(schema, schemaInfo.table);
+			if (MycatServer.getInstance().isUseZK()) {
+				try {
+					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+				} catch (Exception e) {
+					LOGGER.warn("notifyClusterDDL error", e);
+				}
+			}
 		}
 	}
 
 	/**
 	 * In fact, it only have single table
-	 * @param schema
-	 * @param statement
 	 */
-	private void dropTable(String schema, SQLDropTableStatement statement, boolean isSuccess) { 
+	private void dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess) {
 		for (SQLExprTableSource table : statement.getTableSources()) {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, table);
 			try {
@@ -478,6 +536,14 @@ public class ProxyMetaManager {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 			} finally {
 				removeMetaLock(schema, schemaInfo.table);
+
+				if (MycatServer.getInstance().isUseZK()) {
+					try {
+						notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+					} catch (Exception e) {
+						LOGGER.warn("notifyClusterDDL error", e);
+					}
+				}
 			}
 		}
 	}
@@ -520,7 +586,7 @@ public class ProxyMetaManager {
 //		}
 //	}
 
-	private void alterTable(String schema, SQLAlterTableStatement alterStatement, boolean isSuccess) {
+	private void alterTable(String schema, String sql, SQLAlterTableStatement alterStatement, boolean isSuccess) {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, alterStatement.getTableSource());
 		try{
 			if(!isSuccess){
@@ -530,7 +596,7 @@ public class ProxyMetaManager {
 			if (orgTbMeta == null)
 				return;
 			TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
-			List<ColumnMeta> cols = new ArrayList<ColumnMeta>();
+			List<ColumnMeta> cols = new ArrayList<>();
 			cols.addAll(orgTbMeta.getColumnsList());
 			int autoColumnIndex = -1;
 			for (SQLAlterTableItem alterItem : alterStatement.getItems()) {
@@ -587,9 +653,16 @@ public class ProxyMetaManager {
 			LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
 		} finally {
 			removeMetaLock(schema, schemaInfo.table);
+			if (MycatServer.getInstance().isUseZK()) {
+				try {
+					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+				} catch (Exception e) {
+					LOGGER.warn("notifyClusterDDL error", e);
+				}
+			}
 		}
 	}
-	private void createIndex(String schema, SQLCreateIndexStatement statement, boolean isSuccess){
+	private void createIndex(String schema, String sql, SQLCreateIndexStatement statement, boolean isSuccess){
 		SQLTableSource tableSource = statement.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
 			SQLExprTableSource exprTableSource = (SQLExprTableSource) tableSource;
@@ -612,6 +685,13 @@ public class ProxyMetaManager {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 			} finally {
 				removeMetaLock(schema, schemaInfo.table);
+				if (MycatServer.getInstance().isUseZK()) {
+					try {
+						notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+					} catch (Exception e) {
+						LOGGER.warn("notifyClusterDDL error", e);
+					}
+				}
 			}
 		}
 	}
@@ -632,7 +712,7 @@ public class ProxyMetaManager {
 		}
 	}
 	private List<SQLExpr> itemsToColumns(List<SQLSelectOrderByItem> items){
-		List<SQLExpr> columnExprs = new ArrayList<SQLExpr>();
+		List<SQLExpr> columnExprs = new ArrayList<>();
 		for (SQLSelectOrderByItem item :items) {
 			columnExprs.add(item.getExpr());
 		}
@@ -643,7 +723,7 @@ public class ProxyMetaManager {
 		IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
 		tmBuilder.addIndex(indexMeta);
 	}
-	private void dropIndex(String schema, SQLDropIndexStatement dropIndexStatement, boolean isSuccess){
+	private void dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess){
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, dropIndexStatement.getTableName());
 		TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
 		try {
@@ -659,15 +739,22 @@ public class ProxyMetaManager {
 			LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
 		} finally {
 			removeMetaLock(schema, schemaInfo.table);
+			if (MycatServer.getInstance().isUseZK()) {
+				try {
+					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+				} catch (Exception e) {
+					LOGGER.warn("notifyClusterDDL error", e);
+				}
+			}
 		}
 	}
 	private void dropIndex(TableMeta.Builder tmBuilder, String dropName) {
-		List<IndexMeta> indexs = new ArrayList<IndexMeta>();
+		List<IndexMeta> indexs = new ArrayList<>();
 		indexs.addAll(tmBuilder.getIndexList());
 		if (dropIndex(indexs, dropName)) {
 			tmBuilder.clearIndex().addAllIndex(indexs);
 		} else {
-			List<IndexMeta> uniques = new ArrayList<IndexMeta>();
+			List<IndexMeta> uniques = new ArrayList<>();
 			uniques.addAll(tmBuilder.getUniIndexList());
 			dropIndex(uniques, dropName);
 			tmBuilder.clearUniIndex().addAllUniIndex(uniques);
@@ -753,21 +840,7 @@ public class ProxyMetaManager {
 		}
 		boolean isFirst = changeColumn.isFirst();
 		SQLExpr afterColumn = changeColumn.getAfterColumn();
-		int changeIndex = -1;
-		if (isFirst) {
-			changeIndex = 0;
-		} else if (afterColumn != null) {
-			String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
-			for (int i = 0; i < columnMetas.size(); i++) {
-				String colName = columnMetas.get(i).getName();
-				if (afterColName.equalsIgnoreCase(colName)) {
-					changeIndex = i + 1;
-					break;
-				}
-			}
-		} else {
-			changeIndex = columnMetas.size();
-		}
+		int changeIndex = getChangeIndex(isFirst, afterColumn, columnMetas);
 		ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(changeColumn.getNewColumnDefinition());
 		columnMetas.add(changeIndex, cmBuilder.build());
 		if (cmBuilder.getAutoIncre()) {
@@ -802,21 +875,7 @@ public class ProxyMetaManager {
 		}
 		boolean isFirst = modifyColumn.isFirst();
 		SQLExpr afterColumn = modifyColumn.getAfterColumn();
-		int modifyIndex = -1;
-		if (isFirst) {
-			modifyIndex = 0;
-		} else if (afterColumn != null) {
-			String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
-			for (int i = 0; i < columnMetas.size(); i++) {
-				String colName = columnMetas.get(i).getName();
-				if (afterColName.equalsIgnoreCase(colName)) {
-					modifyIndex = i + 1;
-					break;
-				}
-			}
-		} else {
-			modifyIndex = columnMetas.size();
-		}
+		int modifyIndex = getChangeIndex(isFirst, afterColumn, columnMetas);
 		ColumnMeta.Builder cmBuilder = MetaHelper.makeColumnMeta(modifyColDef);
 		columnMetas.add(modifyIndex, cmBuilder.build());
 		if (cmBuilder.getAutoIncre()) {
@@ -824,4 +883,24 @@ public class ProxyMetaManager {
 		}
 		return autoColumnIndex;
 	}
+
+	private int getChangeIndex(boolean isFirst, SQLExpr afterColumn, List<ColumnMeta> columnMetas ){
+		int changeIndex = -1;
+		if (isFirst) {
+			changeIndex = 0;
+		} else if (afterColumn != null) {
+			String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
+			for (int i = 0; i < columnMetas.size(); i++) {
+				String colName = columnMetas.get(i).getName();
+				if (afterColName.equalsIgnoreCase(colName)) {
+					changeIndex = i + 1;
+					break;
+				}
+			}
+		} else {
+			changeIndex = columnMetas.size();
+		}
+		return changeIndex;
+	}
+
 }

@@ -104,7 +104,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
 
         // 1,将集群server目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
@@ -137,8 +137,8 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
         LOGGER.info("SequenceTozkLoader notifyProcess xml to local properties is success");
 
-        if(MycatServer.getInstance().getProcessors()!=null)
-        ReloadConfig.reload();
+        if (!isAll && MycatServer.getInstance().getProcessors() != null)
+            ReloadConfig.reload();
         return true;
     }
 
@@ -146,7 +146,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
      * 将xml文件的信息写入到zk中
     * 方法描述
     * @param basePath 基本路径
-    * @param schema schema文件的信息
+    * @param name schema文件的信息
     * @throws Exception 异常信息
     * @创建日期 2016年9月17日
     */
@@ -200,7 +200,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
      * 将xml文件的信息写入到zk中
      * 方法描述
      * @param basePath 基本路径
-     * @param schema schema文件的信息
+     * @param name schema文件的信息
      * @throws Exception 异常信息
      * @创建日期 2016年9月17日
      */

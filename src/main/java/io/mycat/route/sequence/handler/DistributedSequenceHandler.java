@@ -73,10 +73,10 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private long nextID = 0L;
 
     private final static String PATH = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_BASE.getKey()
-            + io.mycat.config.loader.zkprocess.comm.ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID)
+            + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID)
             + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
     private final static String INSTANCE_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
-            + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INSTANCE.getKey();
+            + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
     private final static String LEADER_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
             + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_LEADER.getKey();
     private SystemConfig mycatConfig;

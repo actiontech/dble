@@ -110,7 +110,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 1,将集群Rules目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
@@ -140,8 +140,8 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object zk Rules      write :" + path + " is success");
 
-        if(MycatServer.getInstance().getProcessors()!=null)
-        ReloadConfig.reload();
+        if (!isAll && MycatServer.getInstance().getProcessors() != null)
+            ReloadConfig.reload();
 
         return true;
     }

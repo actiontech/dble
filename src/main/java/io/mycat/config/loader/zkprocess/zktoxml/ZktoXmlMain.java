@@ -10,6 +10,7 @@ import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import io.mycat.config.loader.zkprocess.zktoxml.listen.*;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.manager.response.ReloadConfig;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.NodeCache;
@@ -100,6 +101,9 @@ public class ZktoXmlMain {
 
         // 通知所有人
         zkListen.notify(ZkNotifyCfg.ZK_NOTIFY_LOAD_ALL.getKey());
+        if (MycatServer.getInstance().getProcessors() != null) {
+            ReloadConfig.reload_all();
+        }
     }
 
     private static void initZKIfNot(CuratorFramework zkConn) throws Exception {

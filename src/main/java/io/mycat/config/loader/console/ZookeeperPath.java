@@ -121,11 +121,8 @@ public enum ZookeeperPath {
      */
     FLOW_ZK_PATH_SEQUENCE_COMMON("common"),
 
-    /**
-     * 用来存放序列值的信息
-     * @字段说明 FLOW_ZK_PATH_SERVER_AUTH
-     */
-    FLOW_ZK_PATH_SEQUENCE_INSTANCE("instance"),
+
+   ZK_PATH_INSTANCE("instance"),
 
     /**
      * 用来存放序列值的
@@ -196,7 +193,9 @@ public enum ZookeeperPath {
      * @字段说明 ZK_CONF_INITED
      */
     ZK_CONF_INITED("confInitialized"),
-
+    //use for sync ddl meta data
+    ZK_DDL("ddl"),
+    ZK_LOCK("lock"),
     ;
     /**
      * 配制的key的信息

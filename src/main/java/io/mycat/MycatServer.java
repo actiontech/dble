@@ -40,6 +40,7 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.classloader.DynaClassLoader;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.entity.server.System;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
@@ -397,7 +398,11 @@ public class MycatServer {
 			txnLogProcessor.start();
 		}
 		tmManager = new ProxyMetaManager();
-		tmManager.init();
+		try {
+			tmManager.init();
+		}catch(Exception e){
+			throw new IOException(e);
+		}
 
 
 		//XA Init recovery Log
@@ -475,7 +480,7 @@ public class MycatServer {
 	public void reloadMetaData(){
 		tmManager.terminate();
 		tmManager = new ProxyMetaManager();
-		tmManager.init();
+		tmManager.initMeta();
 	}
 
 	public void reloadDnIndex()
@@ -961,12 +966,4 @@ public class MycatServer {
 		return listeningExecutorService;
 	}
 
-	public static void main(String[] args) throws Exception {
-		String path = ZKUtils.getZKBasePath() + "bindata";
-		CuratorFramework zk = ZKUtils.getConnection();
-        if(zk.checkExists().forPath(path)==null);
-
-		byte[] data=	zk.getData().forPath(path);
-		System.out.println(data.length);
-	}
 }

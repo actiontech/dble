@@ -98,7 +98,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 1,读取本地的xml文件
         Server server = this.parseServerXMl.parseXmlToBean(SERVER_PATH);
         LOGGER.info("ServerxmlTozkLoader notifyProcessxml to zk server Object  :" + server);

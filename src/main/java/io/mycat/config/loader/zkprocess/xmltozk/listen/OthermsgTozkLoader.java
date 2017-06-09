@@ -56,7 +56,7 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public boolean notifyProcess(boolean isAll) throws Exception {
         // 添加line目录，用作集群中节点，在线的基本目录信息
         String line = currZkPath + ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), line);
@@ -64,7 +64,7 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
         // 添加序列目录信息
         String seqLine = currZkPath + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
-        seqLine = seqLine + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INSTANCE.getKey();
+        seqLine = seqLine + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqLine);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLine + " success");
 
@@ -89,8 +89,14 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), binlogPauseInstances);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + binlogPauseInstances + " success");
 
+        String ddlPath = currZkPath + ZookeeperPath.ZK_DDL.getKey();
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), ddlPath);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + ddlPath + " success");
 
-
+        String ddlLockPath = currZkPath + ZookeeperPath.ZK_LOCK.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey()
+                + ZookeeperPath.ZK_DDL.getKey() ;
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), ddlLockPath);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + ddlLockPath + " success");
         return true;
     }
 

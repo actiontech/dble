@@ -45,7 +45,6 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         if(distributeLock.isAcquiredInThisProcess()){
             return true;
         }
-        // 1,将集群Rules目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取

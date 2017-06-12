@@ -111,9 +111,6 @@ public class ShowBinlogStatus {
 						}
 						//query: show master status
 						getQueryResult(c.getCharset());
-						while (sourceCount.get() > 0) {
-							LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
-						}
 						writeResponse(c);
 						zkConn.setData().forPath(binlogStatusPath, BinlogPauseStatus.OFF.toString().getBytes(StandardCharsets.UTF_8));
 						zkConn.delete().forPath(ZKPaths.makePath(binlogPause,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
@@ -138,9 +135,6 @@ public class ShowBinlogStatus {
 					errMsg = null;
 					waitAllSession();
 					getQueryResult(c.getCharset());
-					while (sourceCount.get() > 0) {
-						LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
-					}
 					writeResponse(c);
 				} finally {
 					MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
@@ -223,6 +217,9 @@ public class ShowBinlogStatus {
 					});
 			SQLJob sqlJob = new SQLJob(SHOW_BINLOG_QUERY, pool.getSchemas()[0], resultHandler, source);
 			sqlJob.run();
+		}
+		while (sourceCount.get() > 0) {
+			LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
 		}
 	}
 

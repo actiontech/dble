@@ -25,6 +25,7 @@ package io.mycat.route.sequence.handler;
 
 import java.util.Map;
 
+import io.mycat.config.util.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,8 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
 	public synchronized long nextId(String prefixName) {
 		Map<String, String> paraMap = this.getParaValMap(prefixName);
 		if (null == paraMap) {
-			throw new RuntimeException("fetch Param Values error.");
+			throw new ConfigException("can't find definition for sequence :"
+					+ prefixName);
 		}
 		Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
 		Long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));

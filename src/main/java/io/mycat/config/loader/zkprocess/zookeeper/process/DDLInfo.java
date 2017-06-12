@@ -1,4 +1,4 @@
-package io.mycat.meta;
+package io.mycat.config.loader.zkprocess.zookeeper.process;
 
 /**
  * Created by huqing.yan on 2017/6/7.
@@ -10,24 +10,24 @@ public class DDLInfo {
 	private String schema;
 	private String sql;
 	private String from;
-	private String status;
+	private DDLStatus status;
 	private String split =";";
-	DDLInfo(String schema, String sql, String from, DDLStatus ddlStatus) {
+	public DDLInfo(String schema, String sql, String from, DDLStatus ddlStatus) {
 		this.schema = schema;
 		this.sql = sql;
 		this.from = from;
-		this.status = ddlStatus.toString();
+		this.status = ddlStatus;
 	}
-	DDLInfo(String info){
+	public DDLInfo(String info){
 		String[] infos = info.split(split);
 		this.schema = infos[0];
 		this.sql = infos[1];
 		this.from = infos[2];
-		this.status = infos[3];
+		this.status = DDLStatus.valueOf(infos[3]);
 	}
 	@Override
 	public String toString(){
-		return schema +split +sql +split +from +split +status;
+		return schema +split +sql +split +from +split +status.toString();
 	}
 
 	public String getFrom() {
@@ -42,7 +42,7 @@ public class DDLInfo {
 		return sql;
 	}
 
-	public String getStatus() {
+	public DDLStatus getStatus() {
 		return status;
 	}
 

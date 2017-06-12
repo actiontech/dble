@@ -27,7 +27,11 @@ public class ZKUtils {
     static CuratorFramework curatorFramework = null;
 
     static {
-        curatorFramework = createConnection();
+        try {
+            curatorFramework = createConnection();
+        } catch (RuntimeException e) {
+            System.exit(-1);
+        }
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {

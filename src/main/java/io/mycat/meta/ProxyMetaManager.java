@@ -19,6 +19,7 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
@@ -49,7 +50,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.mycat.config.loader.console.ZookeeperPath.FLOW_ZK_PATH_ONLINE;
-import static io.mycat.meta.DDLInfo.DDLStatus;
+import static io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
 
 public class ProxyMetaManager {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);

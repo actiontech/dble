@@ -142,8 +142,9 @@ public class ZktoXmlMain {
                                     final ZookeeperProcessListen zkListen) throws Exception {
         if (null != setPaths && !setPaths.isEmpty()) {
             for (String path : setPaths) {
-                NodeCache node = runWatch(zkConn, path, zkListen);
-                node.start();
+                final NodeCache node = new NodeCache(zkConn, path);
+                node.start(true);
+                runWatch(node, zkListen);
                 LOGGER.info("ZktoxmlMain loadZkWatch path:" + path + " regist success");
             }
         }
@@ -152,15 +153,13 @@ public class ZktoXmlMain {
     /**
      * 进行zk的watch操作
     * 方法描述
-    * @param zkConn zk的连接信息
-    * @param path 路径信息
+    * @param cache NodeCache
     * @param zkListen 监控路径信息
     * @throws Exception
     * @创建日期 2016年9月20日
     */
-	private static NodeCache runWatch(final CuratorFramework zkConn, String path, final ZookeeperProcessListen zkListen)
+	private static void runWatch(final NodeCache cache, final ZookeeperProcessListen zkListen)
 			throws Exception {
-		final NodeCache cache = new NodeCache(zkConn, path);
 		cache.getListenable().addListener(new NodeCacheListener() {
 
 			@Override
@@ -173,6 +172,5 @@ public class ZktoXmlMain {
 				LOGGER.info("ZktoxmlMain runWatch  process path  event over");
 			}
 		});
-		return cache;
 	}
 }

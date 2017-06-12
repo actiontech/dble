@@ -6,6 +6,7 @@ import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
+import io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
@@ -40,24 +41,21 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
             return true;
         }
         String basePath = ZKUtils.getZKBasePath();
-        String lockPath = basePath + BINLOG_PAUSE_LOCK;
-        InterProcessMutex distributeLock = new InterProcessMutex(this.getCurator(), lockPath);
-        if(distributeLock.isAcquiredInThisProcess()){
-            return true;
-        }
         // 通过组合模式进行zk目录树的加载
         DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
         this.getTreeDirectory(currZkPath, BINLOG_PAUSE_STATUS, StatusDirectory);
-
         // 从当前的下一级开始进行遍历,获得到
         ZkDataImpl zkDdata = (ZkDataImpl) StatusDirectory.getSubordinateInfo().get(0);
-        String strStatus = zkDdata.getDataValue();
-        LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strStatus);
+        String strPauseInfo = zkDdata.getDataValue();
+        LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
+        BinlogPause pauseInfo  = new BinlogPause(strPauseInfo);
+        if(pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+            return true; //self node
+        }
         String instancePath = ZKPaths.makePath(basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-        ShowBinlogStatus.BinlogPauseStatus status =ShowBinlogStatus.BinlogPauseStatus.valueOf(strStatus);
-        switch (status) {
+        switch (pauseInfo.getStatus()) {
             case ON:
                 MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
                 ShowBinlogStatus.waitAllSession();

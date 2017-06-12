@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.mycat.meta.DDLInfo.DDLStatus;
+import static io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
 
 /**
  * 从ServerRouterUtil中抽取的一些公用方法，路由解析工具类

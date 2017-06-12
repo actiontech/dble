@@ -1,10 +1,10 @@
 package io.mycat.meta;
 
 import io.mycat.MycatServer;
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.meta.DDLInfo.DDLStatus;
+import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
 import io.mycat.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -34,6 +34,9 @@ public class DDLChildListener implements PathChildrenCacheListener {
 			case CHILD_UPDATED:
 				updateMeta(childData);
 				break;
+			case CHILD_REMOVED:
+				deleteNode(childData);
+				break;
 			default:
 				break;
 		}
@@ -41,11 +44,12 @@ public class DDLChildListener implements PathChildrenCacheListener {
 
 	private void lockTableByNewNode(ChildData childData) throws Exception {
 		String data = new String(childData.getData(), StandardCharsets.UTF_8);
+		LOGGER.info("DDL node "+childData.getPath() +" created , and data is "+data);
 		DDLInfo ddlInfo = new DDLInfo(data);
 		if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
 			return; //self node
 		}
-		if (DDLStatus.INIT != DDLStatus.valueOf(ddlInfo.getStatus())) {
+		if (DDLStatus.INIT != ddlInfo.getStatus()) {
 			return;
 		}
 		String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
@@ -62,14 +66,20 @@ public class DDLChildListener implements PathChildrenCacheListener {
 
 	private void updateMeta(ChildData childData) {
 		String data = new String(childData.getData(), StandardCharsets.UTF_8);
+		LOGGER.info("DDL node "+childData.getPath() +" updated , and data is "+data);
 		DDLInfo ddlInfo = new DDLInfo(data);
 		if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
 			return; //self node
 		}
-		DDLStatus status = DDLStatus.valueOf(ddlInfo.getStatus());
-		if(DDLStatus.INIT.equals(status)){
+		if (DDLStatus.INIT == ddlInfo.getStatus()) {
 			return;
 		}
-		MycatServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(status));
+		MycatServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(ddlInfo.getStatus()));
+	}
+
+	private void deleteNode(ChildData childData){
+		String data = new String(childData.getData(), StandardCharsets.UTF_8);
+		DDLInfo ddlInfo = new DDLInfo(data);
+		LOGGER.info("DDL node "+childData.getPath() +" removed , and DDL info is "+ddlInfo.toString());
 	}
 }

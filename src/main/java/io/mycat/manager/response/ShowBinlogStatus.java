@@ -14,6 +14,7 @@ import java.util.concurrent.locks.LockSupport;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -43,11 +44,9 @@ import io.mycat.sqlengine.SQLQueryResultListener;
 import io.mycat.util.StringUtil;
 
 import static io.mycat.config.loader.console.ZookeeperPath.FLOW_ZK_PATH_ONLINE;
+import static io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause.*;
 
 public class ShowBinlogStatus {
-	public static enum BinlogPauseStatus {
-		ON, OFF
-	}
 	public static final String KW_BINLOG_PAUSE ="binlog_pause";
 	public static final String KW_BINLOG_PAUSE_STATUS ="status";
 	public static final String BINLOG_PAUSE_STATUS = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + KW_BINLOG_PAUSE_STATUS;
@@ -96,7 +95,8 @@ public class ShowBinlogStatus {
 						errMsg = null;
 						//notify zk to wait all session
 						String binlogStatusPath = basePath + BINLOG_PAUSE_STATUS;
-						zkConn.setData().forPath(binlogStatusPath, BinlogPauseStatus.ON.toString().getBytes(StandardCharsets.UTF_8));
+						BinlogPause pauseOnInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.ON);
+						zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
 						waitAllSession();
 						//tell zk this instance has prepared
 						String binlogPause = basePath + BINLOG_PAUSE_INSTANCES;
@@ -112,7 +112,8 @@ public class ShowBinlogStatus {
 						//query: show master status
 						getQueryResult(c.getCharset());
 						writeResponse(c);
-						zkConn.setData().forPath(binlogStatusPath, BinlogPauseStatus.OFF.toString().getBytes(StandardCharsets.UTF_8));
+						BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
+						zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
 						zkConn.delete().forPath(ZKPaths.makePath(binlogPause,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
 						List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
 						while (releaseList.size() != 0) {

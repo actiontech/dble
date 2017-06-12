@@ -82,7 +82,6 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
         String binlogPauseStatusPath = currZkPath + BINLOG_PAUSE_STATUS;
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), binlogPauseStatusPath);
-        this.getCurator().setData().forPath(binlogPauseStatusPath, ShowBinlogStatus.BinlogPauseStatus.OFF.toString().getBytes(StandardCharsets.UTF_8));
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + binlogPauseStatusPath + " success");
 
         String binlogPauseInstances = currZkPath + BINLOG_PAUSE_INSTANCES;

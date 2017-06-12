@@ -64,8 +64,6 @@ public class ZktoXmlMain {
         initLocalConfFromZK(zkListen, zkConn);
         // 加载watch
         loadZkWatch(zkListen.getWatchPath(), zkConn, zkListen);
-        // 创建online状态
-        ZKUtils.createTempNode(ZKUtils.getZKBasePath()+ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 
     }
 

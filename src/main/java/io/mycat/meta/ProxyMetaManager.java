@@ -396,8 +396,10 @@ public class ProxyMetaManager {
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
 				}
 			}
-
 			initMeta();
+			// 创建online状态
+			ZKUtils.createTempNode(ZKUtils.getZKBasePath()+ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+
 			ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
 			// syncMeta UNLOCK
 			zkConn.delete().forPath(lockPath + ZookeeperPath.ZK_SEPARATOR.getKey() + "syncMeta.lock");

@@ -18,6 +18,9 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import static io.mycat.manager.response.ShowBinlogStatus.*;
 
 /**
@@ -54,21 +57,30 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         if(pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
             return true; //self node
         }
-        String instancePath = ZKPaths.makePath(basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        String binlogPause = basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
+        String instancePath = ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
         switch (pauseInfo.getStatus()) {
             case ON:
                 MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
-                ShowBinlogStatus.waitAllSession();
-                String binlogPause = basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
-                try {
-                    ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-                } catch (Exception e) {
-                    LOGGER.warn("create binlogPause instance failed", e);
+                if (ShowBinlogStatus.waitAllSession()) {
+                    try {
+                        ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+                    } catch (Exception e) {
+                        LOGGER.warn("create binlogPause instance failed", e);
+                    }
                 }
                 break;
+            case TIMEOUT:
+                ShowBinlogStatus.setWaiting(false);
+                break;
             case OFF:
+                while(ShowBinlogStatus.isWaiting()){
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                }
                 try {
-                    this.getCurator().delete().forPath(instancePath);
+                    if (this.getCurator().checkExists().forPath(instancePath) != null) {
+                        this.getCurator().delete().forPath(instancePath);
+                    }
                 } catch (Exception e) {
                     LOGGER.warn("delete binlogPause instance failed", e);
                 } finally {

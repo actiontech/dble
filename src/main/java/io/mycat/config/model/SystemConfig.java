@@ -101,6 +101,7 @@ public final class SystemConfig {
 	private int catletClassCheckSeconds = 60;
 	// sql execute timeout (second)
 	private long sqlExecuteTimeout = 300;
+	private long showBinlogStatusTimeout = 60* 1000;
 	private long processorCheckPeriod;
 	private long xaSessionCheckPeriod;
 	private long xaLogCleanPeriod;
@@ -138,10 +139,10 @@ public final class SystemConfig {
 	private long checkTableConsistencyPeriod = CHECKTABLECONSISTENCYPERIOD;
 	private int useGlobleTableCheck = 1;	// 全局表一致性检查开关
 	private long glableTableCheckPeriod;
+
 	/**
 	 * Mycat 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
 	 */
-
 	/**
 	 * 是否启用Off Heap for Merge  1-启用，0-不启用
 	 */
@@ -580,6 +581,14 @@ public final class SystemConfig {
 		this.sqlExecuteTimeout = sqlExecuteTimeout;
 	}
 
+
+	public long getShowBinlogStatusTimeout() {
+		return showBinlogStatusTimeout;
+	}
+
+	public void setShowBinlogStatusTimeout(long showBinlogStatusTimeout) {
+		this.showBinlogStatusTimeout = showBinlogStatusTimeout;
+	}
 	public String getClusterHeartbeatPass() {
 		return clusterHeartbeatPass;
 	}
@@ -760,6 +769,7 @@ public final class SystemConfig {
 				+ managerExecutor + ", idleTimeout=" + idleTimeout
 				+ ", catletClassCheckSeconds=" + catletClassCheckSeconds
 				+ ", sqlExecuteTimeout=" + sqlExecuteTimeout
+				+ ", showBinlogStatusTimeout=" + showBinlogStatusTimeout
 				+ ", processorCheckPeriod=" + processorCheckPeriod
 				+ ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod
 				+ ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod

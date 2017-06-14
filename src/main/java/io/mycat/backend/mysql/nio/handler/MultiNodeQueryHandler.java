@@ -826,7 +826,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 			}
 			//隐式分布式事务，自动发起commit or rollback
 			if (txOperation == AutoTxOperation.COMMIT) {
-				session.checkBackupStatus();
+				if(!conn.isDDL()) {
+					session.checkBackupStatus();
+				}
 				if (session.getXaState() == null) {
 					NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
 					autoHandler.commit();

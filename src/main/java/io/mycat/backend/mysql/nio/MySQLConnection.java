@@ -682,7 +682,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	public boolean isModifiedSQLExecuted() {
 		return modifiedSQLExecuted;
 	}
-
+	@Override
 	public boolean isDDL() {
 		return isDDL;
 	}

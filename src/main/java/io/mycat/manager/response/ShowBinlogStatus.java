@@ -15,6 +15,7 @@ import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause;
+import io.mycat.util.TimeUtil;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -51,12 +52,13 @@ public class ShowBinlogStatus {
 	public static final String KW_BINLOG_PAUSE_STATUS ="status";
 	public static final String BINLOG_PAUSE_STATUS = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + KW_BINLOG_PAUSE_STATUS;
 	public static final String BINLOG_PAUSE_INSTANCES = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
-	public static final String BINLOG_PAUSE_LOCK ="lock/binlogStatus.lock";
+	private static final String BINLOG_PAUSE_LOCK ="lock/binlogStatus.lock";
 	private static final int FIELD_COUNT = 6;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
 	private static final String[] FIELDS = new String[]{"File","Position","Binlog_Do_DB","Binlog_Ignore_DB","Executed_Gtid_Set"};
+	private static volatile boolean waiting = false;
 	static {
 		int i = 0;
 		byte packetId = 0;
@@ -77,6 +79,7 @@ public class ShowBinlogStatus {
 
 	public static void execute(ManagerConnection c) {
 		boolean isUseZK = MycatServer.getInstance().isUseZK();
+		long timeout = MycatServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
 		if (isUseZK) {
 			CuratorFramework zkConn = ZKUtils.getConnection();
 			String basePath = ZKUtils.getZKBasePath();
@@ -95,26 +98,39 @@ public class ShowBinlogStatus {
 						errMsg = null;
 						//notify zk to wait all session
 						String binlogStatusPath = basePath + BINLOG_PAUSE_STATUS;
+						String binlogPause = basePath + BINLOG_PAUSE_INSTANCES;
 						BinlogPause pauseOnInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.ON);
 						zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
-						waitAllSession();
-						//tell zk this instance has prepared
-						String binlogPause = basePath + BINLOG_PAUSE_INSTANCES;
-						ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-						//check all session waiting status
-						List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
-						List<String> onlineList = zkConn.getChildren().forPath(basePath + FLOW_ZK_PATH_ONLINE.getKey());
-						// TODO: While waiting, a new instance of MyCat is upping and working.
-						while (preparedList.size() < onlineList.size()) {
-							preparedList = zkConn.getChildren().forPath(binlogPause);
-							LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+						long beginTime = TimeUtil.currentTimeMillis();
+						boolean isAllPaused = waitAllSession(c,timeout,beginTime);
+						if(isAllPaused) {
+							//tell zk this instance has prepared
+							ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+							//check all session waiting status
+							List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
+							List<String> onlineList = zkConn.getChildren().forPath(basePath + FLOW_ZK_PATH_ONLINE.getKey());
+							// TODO: While waiting, a new instance of MyCat is upping and working.
+							while (preparedList.size() < onlineList.size()) {
+								//TIMEOUT
+								if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
+									isAllPaused = false;
+									errMsg = "timeout while waiting for unfinished distributed transactions.";
+									logger.warn(errMsg);
+									BinlogPause pauseTimeoutInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.TIMEOUT);
+									zkConn.setData().forPath(binlogStatusPath, pauseTimeoutInfo.toString().getBytes(StandardCharsets.UTF_8));
+									break;
+								}
+								preparedList = zkConn.getChildren().forPath(binlogPause);
+								LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+							}
+							if (isAllPaused) {
+								getQueryResult(c.getCharset());
+							}
 						}
-						//query: show master status
-						getQueryResult(c.getCharset());
 						writeResponse(c);
 						BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
 						zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-						zkConn.delete().forPath(ZKPaths.makePath(binlogPause,ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
+						zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
 						List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
 						while (releaseList.size() != 0) {
 							releaseList = zkConn.getChildren().forPath(binlogPause);
@@ -134,8 +150,9 @@ public class ShowBinlogStatus {
 			} else {
 				try {
 					errMsg = null;
-					waitAllSession();
-					getQueryResult(c.getCharset());
+					if (waitAllSession(c, timeout, TimeUtil.currentTimeMillis())) {
+						getQueryResult(c.getCharset());
+					}
 					writeResponse(c);
 				} finally {
 					MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
@@ -168,9 +185,66 @@ public class ShowBinlogStatus {
 		}
 	}
 
-	public static void waitAllSession() {
-		logger.info("waiting all transaction sessions which are not finished.");
+	public static boolean isWaiting() {
+		return waiting;
+	}
 
+	public static void setWaiting(boolean waiting) {
+		ShowBinlogStatus.waiting = waiting;
+	}
+
+	public static boolean waitAllSession() {
+		logger.info("waiting all sessions of distributed transaction which are not finished.");
+		waiting = true;
+		List<NonBlockingSession> fcList = getNeedWaitSession();
+		while (!fcList.isEmpty()) {
+			LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+			Iterator<NonBlockingSession> sListIterator = fcList.iterator();
+			while (sListIterator.hasNext()) {
+				NonBlockingSession session = sListIterator.next();
+				if (!session.isNeedWaitFinished()) {
+					sListIterator.remove();
+				}
+			}
+			if(!waiting){
+				logger.warn("stop waiting all sessions of distributed transaction");
+				waiting = false;
+				return false;
+			}
+		}
+		waiting = false;
+		logger.info("all sessions of distributed transaction  are paused.");
+		return true;
+	}
+
+	private static boolean waitAllSession(ManagerConnection c, long timeout, long beginTime) {
+		logger.info("waiting all sessions of distributed transaction which are not finished.");
+		List<NonBlockingSession> fcList = getNeedWaitSession();
+		while (!fcList.isEmpty()) {
+			LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+			Iterator<NonBlockingSession> sListIterator = fcList.iterator();
+			while (sListIterator.hasNext()) {
+				NonBlockingSession session = sListIterator.next();
+				if (!session.isNeedWaitFinished()) {
+					sListIterator.remove();
+				}
+			}
+			if (c.isClosed()) {
+				errMsg = "client closed while waiting for unfinished distributed transactions.";
+				logger.warn(errMsg);
+				return false;
+			}
+			if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
+				errMsg = "timeout while waiting for unfinished distributed transactions.";
+				logger.warn(errMsg);
+				return false;
+			}
+		}
+		logger.info("all sessions of distributed transaction  are paused.");
+		return true;
+	}
+
+	private static List<NonBlockingSession> getNeedWaitSession() {
 		List<NonBlockingSession> fcList = new ArrayList<>();
 		for (NIOProcessor process : MycatServer.getInstance().getProcessors()) {
 			for (FrontendConnection front : process.getFrontends().values()) {
@@ -184,17 +258,13 @@ public class ShowBinlogStatus {
 				}
 			}
 		}
-		while (!fcList.isEmpty()) {
-			Iterator<NonBlockingSession> sListIterator = fcList.iterator();
-			while (sListIterator.hasNext()) {
-				NonBlockingSession session = sListIterator.next();
-				if (!session.isNeedWaitFinished()) {
-					sListIterator.remove();
-				}
-			}
-		}
-		logger.info("all transaction session are paused.");
+		return fcList;
 	}
+
+	/**
+	 * getQueryResult: show master status
+	 * @param charset
+	 */
 	private static void getQueryResult(final String charset){
 		Collection<PhysicalDBPool> allPools = MycatServer.getInstance().getConfig().getDataHosts().values();
 		sourceCount = new AtomicInteger(allPools.size());

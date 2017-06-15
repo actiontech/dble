@@ -106,6 +106,10 @@ public class ZKUtils {
      */
     public static void createTempNode(String parent, String node) throws Exception {
         String path = ZKPaths.makePath(parent, node);
+        createTempNode(path);
+    }
+
+    public static void createTempNode(String path) throws Exception {
         curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path);
     }
     private static void addChildPathCache(CuratorFramework client, final String path, final boolean addChild, final ExecutorService executor) throws Exception {

@@ -56,20 +56,18 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         if(pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
             return true; //self node
         }
-        String binlogPause = basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
-        String instancePath = ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        String instancePath = ZKPaths.makePath(basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
             MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
             if (ShowBinlogStatus.waitAllSession(pauseInfo.getFrom())) {
                 try {
-                    ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+                    ZKUtils.createTempNode(instancePath);
                 } catch (Exception e) {
                     LOGGER.warn("create binlogPause instance failed", e);
                 }
             } else {
                 cleanResource(instancePath);
             }
-
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.TIMEOUT) {
             LOGGER.warn("BinlogPauseStatusListener received timeout");
             ShowBinlogStatus.setWaiting(false);

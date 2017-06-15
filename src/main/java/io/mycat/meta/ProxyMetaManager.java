@@ -62,6 +62,7 @@ public class ProxyMetaManager {
 	private Condition condRelease = metalock.newCondition();
 	private ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> checkTaskHandler;
+	public static String syncMetaLock = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()+ "syncMeta.lock";
 	public ProxyMetaManager() {
 		this.catalogs = new ConcurrentHashMap<>();
 		this.lockTables= new HashSet<>();
@@ -379,32 +380,42 @@ public class ProxyMetaManager {
 	}
 	public void init() throws Exception {
 		if (MycatServer.getInstance().isUseZK()) {
-			String ddlPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey();
-			String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
-					+ ZookeeperPath.ZK_DDL.getKey() ;
-			CuratorFramework zkConn = ZKUtils.getConnection();
-			//CHECK DDL LOCK PATH HAS NOT CHILD
-			while (zkConn.getChildren().forPath(lockPath).size() > 0) {
-				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-			}
+			//add syncMeta.lock the other DDL will wait
 			boolean createSuccess = false;
-			while(!createSuccess) {
+			int times = 0;
+			while (!createSuccess) {
 				try {
 					//syncMeta LOCK ,if another server start, it may failed
-					ZKUtils.createTempNode(lockPath, "syncMeta.lock");
-					createSuccess= true;
+					ZKUtils.createTempNode(syncMetaLock);
+					createSuccess = true;
 				} catch (Exception e) {
-					LOGGER.warn("createTempNode syncMeta.lock fialed",e);
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+					if (times % 60 == 0) {
+						LOGGER.warn("createTempNode syncMeta.lock failed", e);
+						times = 0;
+					}
+					times++;
 				}
+			}
+			String ddlPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey();
+			CuratorFramework zkConn = ZKUtils.getConnection();
+			//WAIT DDL PATH HAS NOT CHILD
+			times = 0;
+			while (zkConn.getChildren().forPath(ddlPath).size() > 0) {
+				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+				if (times % 60 == 0) {
+					LOGGER.warn("waiting for DDL in " + ddlPath);
+					times = 0;
+				}
+				times++;
 			}
 			initMeta();
 			// 创建online状态
 			ZKUtils.createTempNode(ZKUtils.getZKBasePath()+ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-
+			//创建 监视
 			ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
 			// syncMeta UNLOCK
-			zkConn.delete().forPath(lockPath + ZookeeperPath.ZK_SEPARATOR.getKey() + "syncMeta.lock");
+			zkConn.delete().forPath(syncMetaLock);
 		} else {
 			initMeta();
 		}
@@ -498,9 +509,6 @@ public class ProxyMetaManager {
 			}
 			if (finished) {
 				zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
-				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
-						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey()+nodeName;
-				zkConn.delete().forPath(lockPath);
 			}
 		}
 	}

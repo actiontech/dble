@@ -246,7 +246,6 @@ public class RouterUtil {
 		rrs.setSchema(schemaInfo.schema);
 		rrs.setTable(schemaInfo.table);
 		rrs.setFinishedRoute(true);
-
 	}
 
 

@@ -479,11 +479,11 @@ public class ProxyMetaManager {
 			zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
 		} else {
 			zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-			//zkLock， the other instance get the lock,than wait
 			//TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
 			boolean finished = false;
 			String instancePath = ZKPaths.makePath(nodePath, ZookeeperPath.ZK_PATH_INSTANCE.getKey());
 			zkConn.create().forPath(instancePath);
+			//zkLock， if the other instance get the lock,this instance will wait
 			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
 			distributeLock.acquire();
 			try {
@@ -497,8 +497,10 @@ public class ProxyMetaManager {
 				distributeLock.release();
 			}
 			if (finished) {
-				zkConn.delete().deletingChildrenIfNeeded().forPath(instancePath);
 				zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
+				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
+						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey()+nodeName;
+				zkConn.delete().forPath(lockPath);
 			}
 		}
 	}

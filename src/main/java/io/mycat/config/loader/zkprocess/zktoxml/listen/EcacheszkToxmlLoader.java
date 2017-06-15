@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.cache.Ehcache;
@@ -28,6 +29,12 @@ import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * 进行从ecache.xml加载到zk中加载
@@ -44,43 +51,36 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(EcacheszkToxmlLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
     /**
      * 缓存文件名称
-    * @字段说明 CACHESERVER_NAME
     */
     private static final String CACHESERVER_NAME = "cacheservice.properties";
 
     /**
      * 缓存的xml文件配制信息
-    * @字段说明 EHCACHE_NAME
     */
     private static final String EHCACHE_NAME = "ehcache.xml";
 
     /**
      * ehcache的xml的转换信息
-    * @字段说明 parseEhcacheXMl
     */
     private final ParseXmlServiceInf<Ehcache> parseEcacheXMl;
 
     /**
      * 表的路由信息
-    * @字段说明 parseJsonService
     */
     private ParseJsonServiceInf<Ehcache> parseJsonEhcacheService = new EhcacheJsonParse();
 
     /**
      * 监控类信息
-    * @字段说明 zookeeperListen
     */
     private ZookeeperProcessListen zookeeperListen;
 
@@ -141,10 +141,8 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
         parseEcacheXMl.parseToXmlWrite(ehcache, outputPath, null);
 
-        // 设置zk监控的路径信息
-        String watchPath = zkDirectory.getName();
-        watchPath = watchPath + ZookeeperPath.ZK_SEPARATOR.getKey() + EHCACHE_NAME;
-        this.zookeeperListen.watchPath(currZkPath, watchPath);
+        // 设置zk监控
+        this.zookeeperListen.watchPath(currZkPath, EHCACHE_NAME);
 
         // 写入cacheservice.properties的信息
         DataInf cacheserZkDirectory = this.getZkData(zkDirectory, CACHESERVER_NAME);
@@ -153,52 +151,13 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
             ZkDataImpl cacheData = (ZkDataImpl) cacheserZkDirectory;
 
             // 写入文件cacheservice.properties
-            this.writeCacheservice(cacheData.getName(), cacheData.getValue());
-
-            String watchServerPath = zkDirectory.getName();
-            watchServerPath = watchPath + ZookeeperPath.ZK_SEPARATOR.getKey() + CACHESERVER_NAME;
-            this.zookeeperListen.watchPath(currZkPath, watchServerPath);
-        }
-
-    }
-
-    /**
-     * 读取 mapFile文件的信息
-    * 方法描述
-    * @param name 名称信息
-    * @return
-    * @创建日期 2016年9月18日
-    */
-    private void writeCacheservice(String name, String value) {
-
-        // 加载数据
-        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-
-        checkNotNull(path, "write ecache file curr Path :" + path + " is null! must is not null");
-        path=new File(path).getPath()+File.separator;
-        path  += name;
-
-        ByteArrayInputStream input = null;
-        byte[] buffers = new byte[3];
-        FileOutputStream output = null;
-
-        try {
-            int readIndex = -1;
-            input = new ByteArrayInputStream(value.getBytes());
-            output = new FileOutputStream(path);
-
-            while ((readIndex = input.read(buffers)) != -1) {
-                output.write(buffers, 0, readIndex);
+            try {
+                ConfFileRWUtils.writeFile(cacheData.getName(), cacheData.getValue());
+            } catch (IOException e) {
+                LOGGER.error("EcacheszkToxmlLoader wirteMapFile IOException", e);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesxmlTozkLoader readMapFile IOException", e);
-
-        } finally {
-            IOUtils.close(output);
-            IOUtils.close(input);
+            this.zookeeperListen.watchPath(currZkPath, CACHESERVER_NAME);
         }
 
     }
-
 }

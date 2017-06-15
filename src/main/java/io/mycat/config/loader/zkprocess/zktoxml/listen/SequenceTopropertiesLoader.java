@@ -1,12 +1,5 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import io.mycat.MycatServer;
 import io.mycat.manager.response.ReloadConfig;
 import io.mycat.util.ResourceUtil;
@@ -17,15 +10,15 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.NotifyService;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
+import io.mycat.config.loader.zkprocess.comm.*;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.manager.response.ReloadConfig;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 进行从sequence加载到zk中加载
@@ -42,54 +35,45 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTopropertiesLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
     /**
      * 后缀名
-    * @字段说明 PROPERTIES_SUFFIX
     */
     private static final String PROPERTIES_SUFFIX = ".properties";
 
     /**
      * 序列配制信息
-    * @字段说明 PROPERTIES_SEQUENCE_CONF
     */
     private static final String PROPERTIES_SEQUENCE_CONF = "sequence_conf";
 
     /**
      * db序列配制信息
-     * @字段说明 PROPERTIES_SEQUENCE_CONF
      */
     private static final String PROPERTIES_SEQUENCE_DB_CONF = "sequence_db_conf";
 
     /**
      * 分布式的序列配制
-     * @字段说明 PROPERTIES_SEQUENCE_CONF
      */
     private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
     /**
      * 时间的序列配制
-     * @字段说明 PROPERTIES_SEQUENCE_CONF
      */
     private static final String PROPERTIES_SEQUENCE_TIME_CONF = "sequence_time_conf";
 
     /**
      * 监控路径信息
-    * @字段说明 zookeeperListen
     */
     private ZookeeperProcessListen zookeeperListen;
 
-    public SequenceTopropertiesLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
+    public SequenceTopropertiesLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
 
         this.setCurator(curator);
 
@@ -127,12 +111,12 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_db_conf to local properties success");
 
         // 将zk的分布式信息入本地文件
-        this.seqWriteOneZkToProperties(currZkPath, PROPERTIES_SEQUENCE_DISTRIBUTED_CONF, sequenceDirectory);
+        this.seqWriteOneZkToProperties(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF, sequenceDirectory);
 
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to local properties success");
 
         // 将zk时间序列入本地文件
-        this.seqWriteOneZkToProperties(currZkPath, PROPERTIES_SEQUENCE_TIME_CONF, sequenceDirectory);
+        this.seqWriteOneZkToProperties(PROPERTIES_SEQUENCE_TIME_CONF, sequenceDirectory);
 
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_time_conf to local properties success");
 
@@ -163,7 +147,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
             ZkDataImpl commData = (ZkDataImpl) this.getZkData(zkDirectory, writeFile);
 
             // 读取公共节点的信息
-            this.writeMapFile(commData.getName(), commData.getValue());
+            ConfFileRWUtils.writeFile(commData.getName(), commData.getValue());
 
             String seqComm = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_COMMON.getKey();
             seqComm = seqComm + ZookeeperPath.ZK_SEPARATOR.getKey() + commData.getName();
@@ -187,9 +171,9 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
             if (null != clusterData) {
                 // 读取当前集群中特有的节点的信息
-                this.writeMapFile(clusterData.getName(), clusterData.getValue());
+                ConfFileRWUtils.writeFile(clusterData.getName(), clusterData.getValue());
 
-                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_COMMON.getKey();
+                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey();
                 seqCluster = seqCluster + ZookeeperPath.ZK_SEPARATOR.getKey() + clusterData.getName();
 
                 this.zookeeperListen.watchPath(currZkPath, seqCluster);
@@ -200,12 +184,11 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
     /**
      * 将xml文件的信息写入到zk中
      * 方法描述
-     * @param basePath 基本路径
      * @param name schema文件的信息
      * @throws Exception 异常信息
      * @创建日期 2016年9月17日
      */
-    private void seqWriteOneZkToProperties(String basePath, String name, DiretoryInf seqDirectory) throws Exception {
+    private void seqWriteOneZkToProperties(String name, DiretoryInf seqDirectory) throws Exception {
         // 读取当前节的信息
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory,
                 ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_COMMON.getKey());
@@ -242,7 +225,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
             if (null != clusterData) {
                 // comm路径的监控路径
-                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_COMMON.getKey();
+                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey();
                 seqCluster = seqCluster + ZookeeperPath.ZK_SEPARATOR.getKey() + clusterData.getName();
 
                 this.zookeeperListen.watchPath(currZkPath, seqCluster);
@@ -252,49 +235,10 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
         // 如果配制了单独节点的信息,以公共的名称，写入当前的值
         if (clusterData != null && commData != null) {
             // 读取公共节点的信息
-            this.writeMapFile(commData.getName(), clusterData.getValue());
+            ConfFileRWUtils.writeFile(commData.getName(), clusterData.getValue());
         } else if (commData != null) {
             // 读取当前集群中特有的节点的信息
-            this.writeMapFile(commData.getName(), commData.getValue());
-        }
-    }
-
-    /**
-     * 读取 mapFile文件的信息
-    * 方法描述
-    * @param name 名称信息
-    * @return
-    * @创建日期 2016年9月18日
-    */
-    private void writeMapFile(String name, String value) {
-
-        // 加载数据
-        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-
-        checkNotNull(path, "write Map file curr Path :" + path + " is null! must is not null");
-
-        path=new File(path).getPath()+File.separator;
-        path  += name;
-
-        ByteArrayInputStream input = null;
-        byte[] buffers = new byte[256];
-        FileOutputStream output = null;
-
-        try {
-            int readIndex = -1;
-            input = new ByteArrayInputStream(value.getBytes());
-            output = new FileOutputStream(path);
-
-            while ((readIndex = input.read(buffers)) != -1) {
-                output.write(buffers, 0, readIndex);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesxmlTozkLoader readMapFile IOException", e);
-
-        } finally {
-            IOUtils.close(output);
-            IOUtils.close(input);
+            ConfFileRWUtils.writeFile(commData.getName(), commData.getValue());
         }
     }
 

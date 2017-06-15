@@ -1,19 +1,12 @@
 package io.mycat.config.loader.zkprocess.xmltozk;
 
-import io.mycat.MycatServer;
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
-import org.apache.curator.framework.CuratorFramework;
-
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
+import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.EcachesxmlTozkLoader;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.OthermsgTozkLoader;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.RulesxmlTozkLoader;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.SchemasxmlTozkLoader;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.SequenceTozkLoader;
-import io.mycat.config.loader.zkprocess.xmltozk.listen.ServerxmlTozkLoader;
+import io.mycat.config.loader.zkprocess.xmltozk.listen.*;
 import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
 
 public class XmltoZkMain {
 
@@ -46,13 +39,13 @@ public class XmltoZkMain {
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         // 进行序列信息入zk中
-        new SequenceTozkLoader(zkListen, zkConn, xmlProcess);
+        new SequenceTozkLoader(zkListen, zkConn);
 
         // 缓存配制信息
         new EcachesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         // 将其他信息加载的zk中
-        new OthermsgTozkLoader(zkListen, zkConn, xmlProcess);
+        new OthermsgTozkLoader(zkListen, zkConn);
 
         // 初始化xml转换操作
         xmlProcess.initJaxbClass();

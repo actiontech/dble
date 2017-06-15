@@ -13,7 +13,6 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.manager.response.ShowBinlogStatus;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

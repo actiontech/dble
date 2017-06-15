@@ -3,15 +3,11 @@ package io.mycat.config.loader.zkprocess.xmltozk.listen;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.manager.response.ShowBinlogStatus;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
 
 import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
 import static io.mycat.manager.response.ShowBinlogStatus.BINLOG_PAUSE_STATUS;
@@ -31,18 +27,15 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(OthermsgTozkLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
-    public OthermsgTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
+    public OthermsgTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
 
         this.setCurator(curator);
 

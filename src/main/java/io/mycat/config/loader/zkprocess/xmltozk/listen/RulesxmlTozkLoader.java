@@ -1,20 +1,8 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import io.mycat.util.ResourceUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.console.ParseParamEnum;
@@ -29,6 +17,13 @@ import io.mycat.config.loader.zkprocess.parse.entryparse.rule.json.FunctionJsonP
 import io.mycat.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 进行从rule.xml加载到zk中加载
@@ -45,37 +40,31 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(RulesxmlTozkLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
     /**
      * Rules文件的路径信息
-    * @字段说明 SCHEMA_PATH
     */
     private static final String RULE_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "rule.xml";
 
     /**
      * Rules的xml的转换信息
-    * @字段说明 parseRulesXMl
     */
     private ParseXmlServiceInf<Rules> parseRulesXMl;
 
     /**
      * 表的路由信息
-    * @字段说明 parseJsonService
     */
     private ParseJsonServiceInf<List<TableRule>> parseJsonTableRuleService = new TableRuleJsonParse();
 
     /**
      * 表对应的字段信息
-    * @字段说明 parseJsonFunctionService
     */
     private ParseJsonServiceInf<List<Function>> parseJsonFunctionService = new FunctionJsonParse();
 
@@ -112,22 +101,22 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
      * 将xml文件的信息写入到zk中
     * 方法描述
     * @param basePath 基本路径
-    * @param schema schema文件的信息
+    * @param rules 件的信息
     * @throws Exception 异常信息
     * @创建日期 2016年9月17日
     */
-    private void xmlTozkRulesJson(String basePath, Rules Rules) throws Exception {
+    private void xmlTozkRulesJson(String basePath, Rules rules) throws Exception {
         // tablerune节点信息
         String tableRulePath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE_TABLERULE.getKey();
-        String tableRuleJson = this.parseJsonTableRuleService.parseBeanToJson(Rules.getTableRule());
+        String tableRuleJson = this.parseJsonTableRuleService.parseBeanToJson(rules.getTableRule());
         this.checkAndwriteString(basePath, tableRulePath, tableRuleJson);
 
         // 读取mapFile文件,并加入到function中
-        this.readMapFileAddFunction(Rules.getFunction());
+        this.readMapFileAddFunction(rules.getFunction());
 
         // 方法设置信息
         String functionPath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE_FUNCTION.getKey();
-        String functionJson = this.parseJsonFunctionService.parseBeanToJson(Rules.getFunction());
+        String functionJson = this.parseJsonFunctionService.parseBeanToJson(rules.getFunction());
         this.checkAndwriteString(basePath, functionPath, functionJson);
     }
 
@@ -151,8 +140,12 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
                         Property mapFilePro = new Property();
                         mapFilePro.setName(property.getValue());
                         // 加载属性的值信息
-                        mapFilePro.setValue(this.readMapFile(property.getValue()));
-                        tempData.add(mapFilePro);
+                        try {
+                            mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
+                            tempData.add(mapFilePro);
+                        }catch(IOException e){
+                            LOGGER.error("RulesxmlTozkLoader readMapFile IOException", e);
+                        }
                     }
                 }
                 // 将数据添加的集合中
@@ -162,41 +155,4 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
             }
         }
     }
-
-    /**
-     * 读取 mapFile文件的信息
-    * 方法描述
-    * @param name 名称信息
-    * @return
-    * @创建日期 2016年9月18日
-    */
-    private String readMapFile(String name) {
-
-        StringBuilder mapFileStr = new StringBuilder();
-
-        String path = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + name;
-        // 加载数据
-        InputStream input = ResourceUtil.getResourceAsStream(path);
-
-        checkNotNull(input, "read Map file curr Path :" + path + " is null! must is not null");
-
-        byte[] buffers = new byte[256];
-
-        try {
-            int readIndex = -1;
-
-            while ((readIndex = input.read(buffers)) != -1) {
-                mapFileStr.append(new String(buffers, 0, readIndex));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesxmlTozkLoader readMapFile IOException", e);
-
-        } finally {
-            IOUtils.close(input);
-        }
-
-        return mapFileStr.toString();
-    }
-
 }

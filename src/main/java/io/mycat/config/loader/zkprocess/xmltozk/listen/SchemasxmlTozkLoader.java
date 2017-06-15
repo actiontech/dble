@@ -37,43 +37,36 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemasxmlTozkLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
     /**
      * schema文件的路径信息
-    * @字段说明 SCHEMA_PATH
     */
     private static final String SCHEMA_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "schema.xml";
 
     /**
-     * schema类与xml转换服务 
-    * @字段说明 parseSchemaService
+     * schema类与xml转换服务
     */
     private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
 
     /**
      * 进行将schema
-    * @字段说明 parseJsonSchema
     */
     private ParseJsonServiceInf<List<Schema>> parseJsonSchema = new SchemaJsonParse();
 
     /**
      * 进行将dataNode
-     * @字段说明 parseJsonSchema
      */
     private ParseJsonServiceInf<List<DataNode>> parseJsonDataNode = new DataNodeJsonParse();
 
     /**
      * 进行将dataNode
-     * @字段说明 parseJsonSchema
      */
     private ParseJsonServiceInf<List<DataHost>> parseJsonDataHost = new DataHostJsonParse();
 

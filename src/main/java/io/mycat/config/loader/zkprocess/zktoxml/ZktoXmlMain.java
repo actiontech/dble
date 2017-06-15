@@ -2,8 +2,6 @@ package io.mycat.config.loader.zkprocess.zktoxml;
 
 import io.mycat.MycatServer;
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.console.ZkNotifyCfg;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
@@ -81,7 +79,7 @@ public class ZktoXmlMain {
         new RuleszkToxmlLoader(zkListen, zkConn, xmlProcess);
 
         // 将序列配制信息加载
-        new SequenceTopropertiesLoader(zkListen, zkConn, xmlProcess);
+        new SequenceTopropertiesLoader(zkListen, zkConn);
 
         // 进行ehcache转换
         new EcacheszkToxmlLoader(zkListen, zkConn, xmlProcess);
@@ -89,9 +87,6 @@ public class ZktoXmlMain {
         // 将bindata目录的数据进行转换到本地文件
         ZKUtils.addChildPathCache(ZKUtils.getZKBasePath()+"bindata",new BinDataPathChildrenCacheListener());
 
-        //ruledata
-        ZKUtils.addChildPathCache(ZKUtils.getZKBasePath()+"ruledata",new RuleDataPathChildrenCacheListener());
-        //
         new BinlogPauseStatusListener(zkListen, zkConn);
 
         // 初始化xml转换操作

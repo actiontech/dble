@@ -1,18 +1,8 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.io.IOException;
-import java.io.InputStream;
-
-import io.mycat.util.ResourceUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.cache.Ehcache;
@@ -22,6 +12,15 @@ import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.parse.entryparse.cache.json.EhcacheJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.cache.xml.EhcacheParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.ResourceUtil;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * 进行从ecache.xml加载到zk中加载
@@ -38,43 +37,36 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
     /**
      * 日志
-    * @字段说明 LOGGER
     */
     private static final Logger LOGGER = LoggerFactory.getLogger(EcachesxmlTozkLoader.class);
 
     /**
-     * 当前文件中的zkpath信息 
-    * @字段说明 currZkPath
+     * 当前文件中的zkpath信息
     */
     private final String currZkPath;
 
     /**
      * Ehcache文件的路径信息
-    * @字段说明 SCHEMA_PATH
     */
     private static final String EHCACHE_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "ehcache.xml";
 
     /**
      * 缓存文件名称
-    * @字段说明 CACHESERVER_NAME
     */
     private static final String CACHESERVER_NAME = "cacheservice.properties";
 
     /**
      * 缓存的xml文件配制信息
-    * @字段说明 EHCACHE_NAME
     */
     private static final String EHCACHE_NAME = "ehcache.xml";
 
     /**
      * ehcache的xml的转换信息
-    * @字段说明 parseEhcacheXMl
     */
     private final ParseXmlServiceInf<Ehcache> parseEcacheXMl;
 
     /**
      * 表的路由信息
-    * @字段说明 parseJsonService
     */
     private ParseJsonServiceInf<Ehcache> parseJsonEhcacheService = new EhcacheJsonParse();
 
@@ -123,43 +115,11 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
         // 读取文件信息
         String cacheServicePath = ZookeeperPath.ZK_SEPARATOR.getKey() + CACHESERVER_NAME;
-        String serviceValue = this.readSeqFile(CACHESERVER_NAME);
-        this.checkAndwriteString(basePath, cacheServicePath, serviceValue);
-    }
-
-    /**
-     * 读取 mapFile文件的信息
-    * 方法描述
-    * @param name 名称信息
-    * @return
-    * @创建日期 2016年9月18日
-    */
-    private String readSeqFile(String name) {
-
-        StringBuilder mapFileStr = new StringBuilder();
-
-        String path = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + name;
-        // 加载数据
-        InputStream input = ResourceUtil.getResourceAsStream(path);
-
-        checkNotNull(input, "read SeqFile file curr Path :" + path + " is null! must is not null");
-
-        byte[] buffers = new byte[256];
-
         try {
-            int readIndex = -1;
-
-            while ((readIndex = input.read(buffers)) != -1) {
-                mapFileStr.append(new String(buffers, 0, readIndex));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            String serviceValue = ConfFileRWUtils.readFile(CACHESERVER_NAME);
+            this.checkAndwriteString(basePath, cacheServicePath, serviceValue);
+        }catch (IOException e) {
             LOGGER.error("EhcachexmlTozkLoader readMapFile IOException", e);
-        } finally {
-            IOUtils.close(input);
         }
-
-        return mapFileStr.toString();
     }
-
 }

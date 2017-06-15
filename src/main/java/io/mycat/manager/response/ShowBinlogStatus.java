@@ -193,8 +193,10 @@ public class ShowBinlogStatus {
 		ShowBinlogStatus.waiting = waiting;
 	}
 
-	public static boolean waitAllSession() {
+	public static boolean waitAllSession(String from) {
 		logger.info("waiting all sessions of distributed transaction which are not finished.");
+		long timeout = MycatServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
+		long beginTime = TimeUtil.currentTimeMillis();
 		waiting = true;
 		List<NonBlockingSession> fcList = getNeedWaitSession();
 		while (!fcList.isEmpty()) {
@@ -207,9 +209,26 @@ public class ShowBinlogStatus {
 				}
 			}
 			if(!waiting){
-				logger.warn("stop waiting all sessions of distributed transaction");
 				waiting = false;
+				logger.warn("stop waiting all sessions of distributed transaction");
 				return false;
+			}
+			if ((TimeUtil.currentTimeMillis() > beginTime + timeout)){
+				try {
+					if (ZKUtils.getConnection().getChildren().forPath(ZKUtils.getZKBasePath() + FLOW_ZK_PATH_ONLINE.getKey()).contains(from)) {
+						logger.warn("timeout and the from mycat node " + from + " is offline");
+						waiting = false;
+						MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
+						logger.warn("stop waiting all sessions of distributed transaction");
+						return false;
+					}
+				} catch (Exception e) {
+					logger.warn("timeout and try to check mycat node " + from + " failed", e);
+					waiting = false;
+					MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
+					logger.warn("stop waiting all sessions of distributed transaction");
+					return false;
+				}
 			}
 		}
 		waiting = false;

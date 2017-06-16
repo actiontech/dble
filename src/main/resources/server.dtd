@@ -40,7 +40,7 @@
 <!ELEMENT group (property) >
 <!ATTLIST group name NMTOKEN #REQUIRED>
 
-<!ELEMENT firewall (whitehost*,blacklist*) >
+<!ELEMENT firewall (whitehost?,blacklist?) >
 <!ELEMENT whitehost (host*)>
 <!ELEMENT blacklist (property*)>
 <!ATTLIST blacklist check NMTOKEN #REQUIRED>

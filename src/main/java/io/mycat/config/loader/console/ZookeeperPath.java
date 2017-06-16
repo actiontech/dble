@@ -84,7 +84,6 @@ public enum ZookeeperPath {
     /**
      * 配制的防火墙信息,如黑白名单信息
      */
-    //TODO:Firewall
     FLOW_ZK_PATH_SERVER_FIREWALL("firewall"),
 
 

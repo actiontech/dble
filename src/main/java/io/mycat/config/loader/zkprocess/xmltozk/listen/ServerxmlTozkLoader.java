@@ -4,11 +4,13 @@ import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Server;
+import io.mycat.config.loader.zkprocess.entity.server.FireWall;
 import io.mycat.config.loader.zkprocess.entity.server.System;
-import io.mycat.config.loader.zkprocess.entity.server.user.User;
+import io.mycat.config.loader.zkprocess.entity.server.User;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import io.mycat.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
+import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.FireWallJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.SystemJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
@@ -59,9 +61,11 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     private ParseJsonServiceInf<System> parseJsonSystem = new SystemJsonParse();
 
     /**
-     * system信息
+     * user信息
      */
     private ParseJsonServiceInf<List<User>> parseJsonUser = new UserJsonParse();
+
+    private ParseJsonServiceInf<FireWall> parseJsonFireWall = new FireWallJsonParse();
 
     public ServerxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
@@ -106,9 +110,18 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
         String defaultSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
         this.checkAndwriteString(basePath, defaultSystem, defaultSystemValue);
 
+        // 设置firewall信息
+        String firewallStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey();
+        String firewallValueStr = this.parseJsonFireWall.parseBeanToJson(server.getFirewall());
+        if(firewallValueStr ==null){
+            firewallValueStr="{}";
+        }
+        this.checkAndwriteString(basePath, firewallStr, firewallValueStr);
         // 设置用户信息
         String userStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey();
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
         this.checkAndwriteString(basePath, userStr, userValueStr);
+
+
     }
 }

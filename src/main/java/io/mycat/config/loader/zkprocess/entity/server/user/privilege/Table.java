@@ -4,31 +4,18 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by huqing.yan on 2017/6/16.
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "schema",namespace="privileges")
-public class PriSchema {
+@XmlType(name = "table",namespace="privileges")
+public class Table {
 	@XmlAttribute(required = true)
 	protected String name;
 	@XmlAttribute(required = true)
 	protected String dml;
-	protected List<PriTable> table;
 
-	public List<PriTable> getTables() {
-		if (this.table == null) {
-			table = new ArrayList<>();
-		}
-		return table;
-	}
-
-	public void setTables(List<PriTable> tables) {
-		this.table = tables;
-	}
 	public String getName() {
 		return name;
 	}
@@ -46,6 +33,6 @@ public class PriSchema {
 	}
 	@Override
 	public String toString() {
-		return "schema{" + "name='" + name + '\'' + ", dml='" + dml + '\'' + ", tables=" + table + '}';
+		return "table{" + "name='" + name + '\'' + ", dml='" + dml + '}';
 	}
 }

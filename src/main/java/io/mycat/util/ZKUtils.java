@@ -109,6 +109,9 @@ public class ZKUtils {
     public static void createTempNode(String path) throws Exception {
         curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path);
     }
+    public static String getSyncMetaLockPath(){
+        return getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()+ "syncMeta.lock";
+    }
     private static void addChildPathCache(CuratorFramework client, final String path, final boolean addChild, final ExecutorService executor) throws Exception {
         /**
          * 监听子节点的变化情况

@@ -12,21 +12,20 @@ import com.alibaba.fastjson.util.IOUtils;
 
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Server;
+import io.mycat.config.loader.zkprocess.entity.server.FireWall;
 import io.mycat.config.loader.zkprocess.entity.server.System;
-import io.mycat.config.loader.zkprocess.entity.server.user.User;
+import io.mycat.config.loader.zkprocess.entity.server.User;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import io.mycat.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
+import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.FireWallJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.SystemJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
-import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.manager.response.ReloadConfig;
@@ -77,10 +76,11 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
     private ParseJsonServiceInf<System> parseJsonSystem = new SystemJsonParse();
 
     /**
-     * system信息
+     * user信息
      */
     private ParseJsonServiceInf<List<User>> parseJsonUser = new UserJsonParse();
 
+    private ParseJsonServiceInf<FireWall> parseJsonFireWall = new FireWallJsonParse();
     /**
      * zk监控路径
     */
@@ -151,6 +151,12 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         server.setSystem(systemValue);
 
         this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_DEFAULT.getKey());
+        // 得到firewall的信息
+        DataInf firewallZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey());
+        FireWall fireWall = parseJsonFireWall.parseJsonToBean(firewallZkDirectory.getDataValue());
+        server.setFirewall(fireWall);
+        // firewall路径的监控
+        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey());
 
         // 得到user的信息
         DataInf userZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey());
@@ -159,6 +165,8 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         // 用户路径的监控
         this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey());
+
+
 
         return server;
     }

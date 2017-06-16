@@ -1,21 +1,31 @@
 package io.mycat.config.loader.zkprocess.entity.server.user.privilege;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by huqing.yan on 2017/6/16.
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "table",namespace="privileges")
-public class PriTable {
+@XmlType(name = "schema",namespace="privileges")
+public class Schema {
 	@XmlAttribute(required = true)
 	protected String name;
 	@XmlAttribute(required = true)
 	protected String dml;
+	protected List<Table> table;
 
+	public List<Table> getTables() {
+		if (this.table == null) {
+			table = new ArrayList<>();
+		}
+		return table;
+	}
+
+	public void setTables(List<Table> tables) {
+		this.table = tables;
+	}
 	public String getName() {
 		return name;
 	}
@@ -33,6 +43,6 @@ public class PriTable {
 	}
 	@Override
 	public String toString() {
-		return "table{" + "name='" + name + '\'' + ", dml='" + dml + '}';
+		return "schema{" + "name='" + name + '\'' + ", dml='" + dml + '\'' + ", tables=" + table + '}';
 	}
 }

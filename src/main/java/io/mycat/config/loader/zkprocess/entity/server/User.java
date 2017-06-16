@@ -1,17 +1,16 @@
-package io.mycat.config.loader.zkprocess.entity.server.user;
+package io.mycat.config.loader.zkprocess.entity.server;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.mycat.config.loader.zkprocess.entity.Named;
+import io.mycat.config.loader.zkprocess.entity.Propertied;
+import io.mycat.config.loader.zkprocess.entity.Property;
+import io.mycat.config.loader.zkprocess.entity.server.user.Privileges;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
-
-import io.mycat.config.loader.zkprocess.entity.Named;
-import io.mycat.config.loader.zkprocess.entity.Propertied;
-import io.mycat.config.loader.zkprocess.entity.Property;
-import io.mycat.config.loader.zkprocess.entity.server.user.privilege.Privileges;
+import java.util.ArrayList;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "user")

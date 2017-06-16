@@ -62,7 +62,7 @@ public class ProxyMetaManager {
 	private Condition condRelease = metalock.newCondition();
 	private ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> checkTaskHandler;
-	public static String syncMetaLock = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()+ "syncMeta.lock";
+
 	public ProxyMetaManager() {
 		this.catalogs = new ConcurrentHashMap<>();
 		this.lockTables= new HashSet<>();
@@ -386,7 +386,7 @@ public class ProxyMetaManager {
 			while (!createSuccess) {
 				try {
 					//syncMeta LOCK ,if another server start, it may failed
-					ZKUtils.createTempNode(syncMetaLock);
+					ZKUtils.createTempNode(ZKUtils.getSyncMetaLockPath());
 					createSuccess = true;
 				} catch (Exception e) {
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
@@ -415,7 +415,7 @@ public class ProxyMetaManager {
 			//创建 监视
 			ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
 			// syncMeta UNLOCK
-			zkConn.delete().forPath(syncMetaLock);
+			zkConn.delete().forPath(ZKUtils.getSyncMetaLockPath());
 		} else {
 			initMeta();
 		}

@@ -1,9 +1,8 @@
-package io.mycat.config.loader.zkprocess.entity.server.user.privilege;
+package io.mycat.config.loader.zkprocess.entity.server.user;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
+import io.mycat.config.loader.zkprocess.entity.server.user.privilege.Schema;
+
+import javax.xml.bind.annotation.*;
 import java.util.List;
 
 /**
@@ -14,7 +13,7 @@ import java.util.List;
 public class Privileges {
 	@XmlAttribute(required = true)
 	protected Boolean check;
-	protected List<PriSchema> schema;
+	protected List<Schema> schema;
 	public Boolean getCheck() {
 		return check;
 	}
@@ -23,11 +22,11 @@ public class Privileges {
 		this.check = check;
 	}
 
-	public List<PriSchema> getSchema() {
+	public List<Schema> getSchema() {
 		return schema;
 	}
 
-	public void setSchema(List<PriSchema> schema) {
+	public void setSchema(List<Schema> schema) {
 		this.schema = schema;
 	}
 	@Override

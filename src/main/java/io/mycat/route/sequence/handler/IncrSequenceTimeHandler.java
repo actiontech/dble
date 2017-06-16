@@ -53,11 +53,19 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 
 
 	/**
-	* 64位ID (42(毫秒)+5(机器ID)+5(业务编码)+12(重复累加))
-	* @author sw
-	*/
+	 * Deprecated:
+	 * 64位ID (42(毫秒)+5(机器ID)+5(业务编码)+12(重复累加))
+	 * @author sw
+	 *
+	 * Now:
+	 * 64位ID (30(毫秒)+5(机器ID)+5(业务编码)+12(重复累加)+12(毫秒))
+	 */
 	static class IdWorker {
 		private final static long twepoch = 1288834974657L;
+	    	private final static long timestampLowBits = 12L;
+	    	private final static long timestampHighMask = 0x3FFFFFFF000L;
+	    	private final static long timestampLowMask = 0xFFF;
+	    
 		// 机器标识位数
 		private final static long workerIdBits = 5L;
 		// 数据中心标识位数
@@ -68,11 +76,13 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		private final static long maxDatacenterId = -1L ^ (-1L << datacenterIdBits);
 		// 毫秒内自增位
 		private final static long sequenceBits = 12L;
+
+	    	private final static long sequenceShift = timestampLowBits;
 		// 机器ID偏左移12位
-		private final static long workerIdShift = sequenceBits;
-		private final static long datacenterIdShift = sequenceBits + workerIdBits;
+		private final static long workerIdShift = sequenceBits + timestampLowBits;
+		private final static long datacenterIdShift = workerIdBits + sequenceBits + timestampLowBits;
 		// 时间毫秒左移22位
-		private final static long timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;
+		private final static long timestampHighShift = datacenterIdBits + workerIdBits + sequenceBits + timestampLowBits;
 
 		private final static long sequenceMask = -1L ^ (-1L << sequenceBits);
 
@@ -96,11 +106,12 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		public synchronized long nextId() {
 			long timestamp = timeGen();
 			if (timestamp < lastTimestamp) {
-			try {
-				throw new Exception("Clock moved backwards.  Refusing to generate id for "+ (lastTimestamp - timestamp) + " milliseconds");
-			} catch (Exception e) {
-				LOGGER.error("error",e);
-			}
+			    	try {
+				    	throw new Exception("Clock moved backwards.  Refusing to generate id for "
+							    + (lastTimestamp - timestamp) + " milliseconds");
+				} catch (Exception e) {
+				    	LOGGER.error("error",e);
+				}
 			}
 
 			if (lastTimestamp == timestamp) {
@@ -114,10 +125,13 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 				sequence = 0;
 			}
 			lastTimestamp = timestamp;
+			
 			// ID偏移组合生成最终的ID，并返回ID
-			long nextId = ((timestamp - twepoch) << timestampLeftShift)
-					| (datacenterId << datacenterIdShift)
-					| (workerId << workerIdShift) | sequence;
+			long nextId = (((timestamp - twepoch) & timestampHighMask) << timestampHighShift)
+			    | (datacenterId << datacenterIdShift)
+			    | (workerId << workerIdShift)
+			    | (sequence << sequenceShift)
+			    | ((timestamp - twepoch) & timestampLowMask);
 
 			return nextId;
 		}
@@ -133,12 +147,13 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		private long timeGen() {
 			return System.currentTimeMillis();
 		}
-
-
-
 	}
 
-
-
-
+    	public static void main(String[] args) {
+	    	int i;
+		
+		for (i = 0; i < 10; i++) {
+		    	System.out.println(workey.nextId());
+		}
+	}
 }

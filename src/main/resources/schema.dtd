@@ -23,7 +23,7 @@
 <!ATTLIST schema dataNode CDATA #IMPLIED>
 <!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
 
-<!ELEMENT table (property*,(childTable*))>
+<!ELEMENT table (childTable*)>
 <!ATTLIST table name CDATA #REQUIRED>
 <!ATTLIST table nameSuffix CDATA #IMPLIED>
 <!ATTLIST table dataNode CDATA #REQUIRED>
@@ -35,7 +35,7 @@
 <!ATTLIST table type NMTOKEN #IMPLIED>
 
 
-<!ELEMENT childTable (property*,(childTable*))>
+<!ELEMENT childTable (childTable*)>
 <!ATTLIST childTable name NMTOKEN #REQUIRED>
 <!ATTLIST childTable joinKey NMTOKEN #REQUIRED>
 <!ATTLIST childTable parentKey NMTOKEN #REQUIRED>
@@ -43,7 +43,7 @@
 <!ATTLIST childTable autoIncrement NMTOKEN #IMPLIED>
 
 
-<!ELEMENT dataNode (property*)>
+<!ELEMENT dataNode EMPTY>
 <!ATTLIST dataNode name CDATA #REQUIRED>
 <!ATTLIST dataNode dataHost CDATA #REQUIRED>
 <!ATTLIST dataNode database CDATA #REQUIRED>
@@ -72,7 +72,7 @@
 
 <!ELEMENT heartbeat (#PCDATA)>
 <!ELEMENT connectionInitSql (#PCDATA)>
-<!ELEMENT readHost (property*) >
+<!ELEMENT readHost EMPTY >
 <!ATTLIST readHost
   host NMTOKEN #REQUIRED
   url CDATA #REQUIRED

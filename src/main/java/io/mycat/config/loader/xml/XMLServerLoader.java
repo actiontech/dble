@@ -130,8 +130,8 @@ public class XMLServerLoader {
                     if (null == uc) {
                         throw new ConfigException("[user: " + user + "] doesn't exist in [host: " + host + "]");
                     }
-                    if (!uc.isManager()&&(uc.getSchemas() == null || uc.getSchemas().size() == 0)) {
-                        throw new ConfigException("[host: " + host + "] contains one root privileges user: " + user);
+					if (!uc.isManager() && (uc.getSchemas() == null || uc.getSchemas().size() == 0)) {
+						throw new ConfigException("[host: " + host + "] contains one root privileges user: " + user);
                     }
                     userConfigs.add(uc);
                 }
@@ -219,7 +219,7 @@ public class XMLServerLoader {
     	
     	NodeList privilegesNodes = node.getElementsByTagName("privileges");
     	int privilegesNodesLength = privilegesNodes.getLength();		
-		for (int i = 0; i < privilegesNodesLength; ++i) {			
+		for (int i = 0; i < privilegesNodesLength; i++) {
 			Element privilegesNode = (Element) privilegesNodes.item(i);
 			String check = privilegesNode.getAttribute("check");
          	if (null != check) {

@@ -1,0 +1,38 @@
+package io.mycat.config.loader.zkprocess.entity.server.user.privilege;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlType;
+
+/**
+ * Created by huqing.yan on 2017/6/16.
+ */
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "table",namespace="privileges")
+public class PriTable {
+	@XmlAttribute(required = true)
+	protected String name;
+	@XmlAttribute(required = true)
+	protected String dml;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDml() {
+		return dml;
+	}
+
+	public void setDml(String dml) {
+		this.dml = dml;
+	}
+	@Override
+	public String toString() {
+		return "table{" + "name='" + name + '\'' + ", dml='" + dml + '}';
+	}
+}

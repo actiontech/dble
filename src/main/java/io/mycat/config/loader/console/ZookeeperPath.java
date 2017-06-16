@@ -79,7 +79,6 @@ public enum ZookeeperPath {
     /**
      * 配制的用户信息
      */
-    //TODO:user.privileges IS READY?
     FLOW_ZK_PATH_SERVER_USER("user"),
 
     /**

@@ -11,6 +11,7 @@ import javax.xml.bind.annotation.XmlType;
 import io.mycat.config.loader.zkprocess.entity.Named;
 import io.mycat.config.loader.zkprocess.entity.Propertied;
 import io.mycat.config.loader.zkprocess.entity.Property;
+import io.mycat.config.loader.zkprocess.entity.server.user.privilege.Privileges;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "user")
@@ -20,6 +21,8 @@ public class User implements Propertied, Named {
     protected String name;
 
     protected List<Property> property;
+
+    protected Privileges privileges;
 
     public String getName() {
         return name;
@@ -45,9 +48,23 @@ public class User implements Propertied, Named {
         this.getProperty().add(property);
     }
 
+    public Privileges getPrivileges() {
+        return privileges;
+    }
+
+    public void setPrivileges(Privileges privileges) {
+        this.privileges = privileges;
+    }
+
     @Override
     public String toString() {
-        return "User{" + "name='" + name + '\'' + ", property=" + property + '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append("User{" + "name='").append(name).append('\'').append(", property=").append(property);
+        if (privileges != null) {
+            sb.append(", privileges=").append(privileges);
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
 }

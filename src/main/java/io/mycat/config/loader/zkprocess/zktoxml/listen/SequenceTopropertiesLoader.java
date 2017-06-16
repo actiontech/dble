@@ -63,10 +63,6 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
      */
     private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
-    /**
-     * 时间的序列配制
-     */
-    private static final String PROPERTIES_SEQUENCE_TIME_CONF = "sequence_time_conf";
 
     /**
      * 监控路径信息
@@ -115,10 +111,6 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to local properties success");
 
-        // 将zk时间序列入本地文件
-        this.seqWriteOneZkToProperties(PROPERTIES_SEQUENCE_TIME_CONF, sequenceDirectory);
-
-        LOGGER.info("SequenceTozkLoader notifyProcess sequence_time_conf to local properties success");
 
         LOGGER.info("SequenceTozkLoader notifyProcess xml to local properties is success");
 
@@ -155,30 +147,6 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
             this.zookeeperListen.watchPath(currZkPath, seqComm);
 
         }
-
-        // 集群中特有的节点的配制信息
-        ZkDirectoryImpl zkClusterDir = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory,
-                ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey());
-
-        if (null != zkClusterDir) {
-
-            String clusterName = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
-
-            String nodeName = name + "-" + clusterName + PROPERTIES_SUFFIX;
-
-            // 读取cluster目录下的数据
-            ZkDataImpl clusterData = (ZkDataImpl) this.getZkData(zkClusterDir, nodeName);
-
-            if (null != clusterData) {
-                // 读取当前集群中特有的节点的信息
-                ConfFileRWUtils.writeFile(clusterData.getName(), clusterData.getValue());
-
-                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey();
-                seqCluster = seqCluster + ZookeeperPath.ZK_SEPARATOR.getKey() + clusterData.getName();
-
-                this.zookeeperListen.watchPath(currZkPath, seqCluster);
-            }
-        }
     }
 
     /**
@@ -207,36 +175,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
             this.zookeeperListen.watchPath(currZkPath, seqComm);
         }
-
-        // 集群中特有的节点的配制信息
-        ZkDirectoryImpl zkClusterDir = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory,
-                ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey());
-
-        ZkDataImpl clusterData = null;
-
-        if (null != zkClusterDir) {
-
-            String clusterName = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
-
-            String nodeName = name + "-" + clusterName + PROPERTIES_SUFFIX;
-
-            // 读取cluster目录下的数据
-            clusterData = (ZkDataImpl) this.getZkData(zkClusterDir, nodeName);
-
-            if (null != clusterData) {
-                // comm路径的监控路径
-                String seqCluster = ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey();
-                seqCluster = seqCluster + ZookeeperPath.ZK_SEPARATOR.getKey() + clusterData.getName();
-
-                this.zookeeperListen.watchPath(currZkPath, seqCluster);
-            }
-        }
-
-        // 如果配制了单独节点的信息,以公共的名称，写入当前的值
-        if (clusterData != null && commData != null) {
-            // 读取公共节点的信息
-            ConfFileRWUtils.writeFile(commData.getName(), clusterData.getValue());
-        } else if (commData != null) {
+        if (commData != null) {
             // 读取当前集群中特有的节点的信息
             ConfFileRWUtils.writeFile(commData.getName(), commData.getValue());
         }

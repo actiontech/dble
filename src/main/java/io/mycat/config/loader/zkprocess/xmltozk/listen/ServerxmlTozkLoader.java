@@ -2,8 +2,6 @@ package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Server;
 import io.mycat.config.loader.zkprocess.entity.server.System;
@@ -89,42 +87,9 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
         // 将实体信息写入至zk中
         this.xmlTozkServerJson(currZkPath, server);
 
-        // 2,读取集群中的节点信息
-        this.writeClusterNode(currZkPath);
-
         LOGGER.info("ServerxmlTozkLoader notifyProcess xml to zk is success");
 
         return true;
-    }
-
-    /**
-     * 写入集群节点的信息
-    * 方法描述
-    * @throws Exception
-    * @创建日期 2016年9月17日
-    */
-    private void writeClusterNode(String basePath) throws Exception {
-        // 1，读取集群节点信息
-        String[] zkNodes = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTER_NODES)
-                .split(ZkParamCfg.ZK_CFG_CLUSTER_NODES_SEPARATE.getKey());
-
-        if (null != zkNodes && zkNodes.length > 0) {
-            for (String node : zkNodes) {
-                String nodePath = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "server-" + node + ".xml";
-                // 将当前的xml文件写入到zk中
-                Server serverNode = this.parseServerXMl.parseXmlToBean(nodePath);
-
-                LOGGER.info("ServerxmlTozkLoader writeClusterNode to zk server Object  :" + serverNode);
-
-                // 如果当前不存在此配制文件则不写入
-                if (null != serverNode) {
-                    // 以集群的节点的名称写入
-                    this.xmlTozkClusterNodeJson(basePath, node, serverNode);
-
-                    LOGGER.info("ServerxmlTozkLoader writeClusterNode xml to zk is success");
-                }
-            }
-        }
     }
 
     /**
@@ -145,12 +110,5 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
         String userStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey();
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
         this.checkAndwriteString(basePath, userStr, userValueStr);
-    }
-
-    private void xmlTozkClusterNodeJson(String basePath, String node, Server server) throws Exception {
-        // 设置集群中的节点信息
-        basePath = basePath + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_CLUSTER.getKey();
-        String clusterSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
-        this.checkAndwriteString(basePath, node, clusterSystemValue);
     }
 }

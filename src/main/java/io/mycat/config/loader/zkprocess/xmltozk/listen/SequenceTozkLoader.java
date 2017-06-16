@@ -1,13 +1,16 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
 import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.*;
+import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
+import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
 
 /**
  * 进行从sequence加载到zk中加载
@@ -52,10 +55,6 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
      */
     private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
-    /**
-     * 时间的序列配制
-     */
-    private static final String PROPERTIES_SEQUENCE_TIME_CONF = "sequence_time_conf";
 
     public SequenceTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator ) {
 
@@ -88,10 +87,6 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to zk success");
 
-        // 将时间序列入zk
-        this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_TIME_CONF);
-
-        LOGGER.info("SequenceTozkLoader notifyProcess sequence_time_conf to zk success");
 
         LOGGER.info("SequenceTozkLoader notifyProcess xml to zk is success");
 
@@ -114,33 +109,15 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
         String readFile = name + PROPERTIES_SUFFIX;
         // 读取公共节点的信息
         String commSequence = ConfFileRWUtils.readFile(readFile);
+        if(name.equals(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF)){
+            Properties props = new Properties();
+            props.load(new StringReader(commSequence));
+            if (!"ZK".equals(props.getProperty("INSTANCEID"))) {
+                LOGGER.info("The property of INSTANCEID in " +readFile + " is not zk,no need to store in zk");
+                return;
+            }
+        }
         String sequenceZkPath = commPath + readFile;
         this.checkAndwriteString(basePath, sequenceZkPath, commSequence);
-
-        // 集群中特有的节点的配制信息
-        String culsterPath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_CLUSTER.getKey()
-                + ZookeeperPath.ZK_SEPARATOR.getKey();
-
-        String[] clusters = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTER_NODES)
-                .split(ZkParamCfg.ZK_CFG_CLUSTER_NODES_SEPARATE.getKey());
-
-        if (null != clusters) {
-            String nodeName = null;
-            for (String clusterName : clusters) {
-                nodeName = name + "-" + clusterName + PROPERTIES_SUFFIX;
-                // 读取当前集群中特有的节点的信息
-                try {
-                    String clusterSequence = ConfFileRWUtils.readFile(nodeName);
-                    // 如果配制了特定节点的信息,则将往上入zk中
-                    if (null != clusterSequence) {
-                        String seqclusterZkPath = culsterPath + nodeName;
-                        this.checkAndwriteString(basePath, seqclusterZkPath, clusterSequence);
-                    }
-                }catch(IOException e){
-                    LOGGER.error("SequenceTozkLoader readMapFile IOException", e);
-                }
-            }
-
-        }
     }
 }

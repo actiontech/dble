@@ -72,10 +72,7 @@ public class ZKUtils {
     }
 
     public static void addChildPathCache(String path, PathChildrenCacheListener listener) {
-        NameableExecutor businessExecutor = MycatServer.getInstance().getBusinessExecutor();
-        ExecutorService executor = businessExecutor == null ? Executors.newFixedThreadPool(5) :
-                businessExecutor;
-
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         try {
             /**
              * 监听子节点的变化情况

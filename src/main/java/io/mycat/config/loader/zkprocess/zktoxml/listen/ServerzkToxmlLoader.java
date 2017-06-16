@@ -116,14 +116,6 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) serverDirectory.getSubordinateInfo().get(0);
         Server server = this.zktoServerBean(zkDirectory);
 
-        // 读取当前集群中当前节点的特殊的配制信息
-        Server currSer = this.zktoServerBeanByCurrNode(zkDirectory);
-
-        // 为当前的参数赋新值
-        if (null != currSer) {
-            server.getSystem().setNewValue(currSer.getSystem());
-        }
-
         LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object  zk server Object  :" + server);
 
         // 数配制信息写入文件
@@ -171,48 +163,6 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         return server;
     }
 
-    /**
-     * 加载当前节点的特殊配制信息
-    * 方法描述
-    * @param zkDirectory
-    * @return
-    * @创建日期 2016年9月17日
-    */
-    private Server zktoServerBeanByCurrNode(DiretoryInf zkDirectory) {
 
-        Server server = null;
-
-        // 得到集群节点的配制信息
-        DiretoryInf directory = this.getZkDirectory(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_CLUSTER.getKey());
-
-        if (null != directory) {
-
-            // 获得当前myid的名称
-            String myid = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
-
-            // 获邓当前节点的信息
-            DataInf currDataCfg = this.getZkData(directory, myid);
-
-            // 如果当前节点存在配制信息，则加载
-            if (null != currDataCfg) {
-                server = new Server();
-
-                System systemValue = parseJsonSystem.parseJsonToBean(currDataCfg.getDataValue());
-                server.setSystem(systemValue);
-
-                if (currDataCfg instanceof ZkDataImpl) {
-                    ZkDataImpl zkData = (ZkDataImpl) currDataCfg;
-
-                    // 监控的路径信息
-                    String defaultWatchPath = ZookeeperPath.FLOW_ZK_PATH_SERVER_CLUSTER.getKey();
-                    defaultWatchPath = defaultWatchPath + ZookeeperPath.ZK_SEPARATOR.getKey() + zkData.getName();
-
-                    this.zookeeperListen.watchPath(currZkPath, defaultWatchPath);
-                }
-            }
-        }
-
-        return server;
-    }
 
 }

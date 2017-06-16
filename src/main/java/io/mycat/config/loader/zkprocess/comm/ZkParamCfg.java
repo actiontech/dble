@@ -36,17 +36,6 @@ public enum ZkParamCfg {
     * @字段说明 zk_CFG_MYID
     */
     ZK_CFG_MYID("myid"),
-    /**
-     * 集群中所有节点的名称信息
-    * @字段说明 ZK_CFG_CLUSTER_NODES
-    */
-    ZK_CFG_CLUSTER_NODES("clusterNodes"),
-
-    /**
-     * 集群中所有节点的名称信息的分隔符
-    * @字段说明 ZK_CFG_CLUSTER_NODES
-    */
-    ZK_CFG_CLUSTER_NODES_SEPARATE(","),
 
     ;
 

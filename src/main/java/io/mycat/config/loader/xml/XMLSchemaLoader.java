@@ -726,12 +726,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
 			//读取心跳语句
 			String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
-			//读取 初始化sql配置,用于oracle
-			NodeList connectionInitSqlList = element.getElementsByTagName("connectionInitSql");
-			String initConSQL = null;
-			if (connectionInitSqlList.getLength() > 0) {
-				initConSQL = connectionInitSqlList.item(0).getTextContent();
-			}
+
 			//读取writeHost
 			NodeList writeNodes = element.getElementsByTagName("writeHost");
 			DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
@@ -758,7 +753,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 			hostConf.setMinCon(minCon);
 			hostConf.setBalance(balance);
 			hostConf.setHearbeatSQL(heartbeatSQL);
-			hostConf.setConnectionInitSql(initConSQL);
 			dataHosts.put(hostConf.getName(), hostConf);
 		}
 	}

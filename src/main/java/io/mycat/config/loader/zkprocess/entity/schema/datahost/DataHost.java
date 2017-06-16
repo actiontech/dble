@@ -1,14 +1,13 @@
 package io.mycat.config.loader.zkprocess.entity.schema.datahost;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.mycat.config.loader.zkprocess.entity.Named;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
-
-import io.mycat.config.loader.zkprocess.entity.Named;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
@@ -36,18 +35,13 @@ public class DataHost implements Named {
     @XmlAttribute(required = true)
     protected String name;
     @XmlAttribute
-    protected Integer writeType;
-    @XmlAttribute
     protected Integer switchType;
     @XmlAttribute
     protected Integer slaveThreshold;
-    @XmlAttribute(required = true)
-    protected String dbType;
-    @XmlAttribute(required = true)
-    protected String dbDriver;
+    @XmlAttribute
+    protected Integer tempReadHostAvailable;
 
     protected String heartbeat;
-    protected String connectionInitSql;
 
     protected List<WriteHost> writeHost;
 
@@ -57,14 +51,6 @@ public class DataHost implements Named {
 
     public void setHeartbeat(String heartbeat) {
         this.heartbeat = heartbeat;
-    }
-
-    public String getConnectionInitSql() {
-        return connectionInitSql;
-    }
-
-    public void setConnectionInitSql(String connectionInitSql) {
-        this.connectionInitSql = connectionInitSql;
     }
 
     public List<WriteHost> getWriteHost() {
@@ -110,29 +96,7 @@ public class DataHost implements Named {
         this.balance = balance;
     }
 
-    public String getDbType() {
-        return dbType;
-    }
 
-    public void setDbType(String dbType) {
-        this.dbType = dbType;
-    }
-
-    public String getDbDriver() {
-        return dbDriver;
-    }
-
-    public void setDbDriver(String dbDriver) {
-        this.dbDriver = dbDriver;
-    }
-
-    public Integer getWriteType() {
-        return writeType;
-    }
-
-    public void setWriteType(Integer writeType) {
-        this.writeType = writeType;
-    }
 
     public Integer getSwitchType() {
         return switchType;
@@ -150,6 +114,14 @@ public class DataHost implements Named {
         this.slaveThreshold = slaveThreshold;
     }
 
+
+    public Integer getTempReadHostAvailable() {
+        return tempReadHostAvailable;
+    }
+
+    public void setTempReadHostAvailable(Integer tempReadHostAvailable) {
+        this.tempReadHostAvailable = tempReadHostAvailable;
+    }
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -161,20 +133,14 @@ public class DataHost implements Named {
         builder.append(minCon);
         builder.append(", name=");
         builder.append(name);
-        builder.append(", writeType=");
-        builder.append(writeType);
         builder.append(", switchType=");
         builder.append(switchType);
         builder.append(", slaveThreshold=");
         builder.append(slaveThreshold);
-        builder.append(", dbType=");
-        builder.append(dbType);
-        builder.append(", dbDriver=");
-        builder.append(dbDriver);
+        builder.append(", tempReadHostAvailable=");
+        builder.append(tempReadHostAvailable);
         builder.append(", heartbeat=");
         builder.append(heartbeat);
-        builder.append(", connectionInitSql=");
-        builder.append(connectionInitSql);
         builder.append(", writeHost=");
         builder.append(writeHost);
         builder.append("]");

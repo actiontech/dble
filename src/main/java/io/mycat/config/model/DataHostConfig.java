@@ -51,7 +51,6 @@ public class DataHostConfig {
 	private String hearbeatSQL;
     private boolean isShowSlaveSql=false;
     private boolean isShowClusterSql=false;
-	private String connectionInitSql;
     private int slaveThreshold = -1;
 	private final int switchType;
 	private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
@@ -82,17 +81,6 @@ public class DataHostConfig {
 	public int getSwitchType() {
 		return switchType;
 	}
-
-	public String getConnectionInitSql()
-	{
-		return connectionInitSql;
-	}
-
-	public void setConnectionInitSql(String connectionInitSql)
-	{
-		this.connectionInitSql = connectionInitSql;
-	}
-
 
 
 	public String getName() {

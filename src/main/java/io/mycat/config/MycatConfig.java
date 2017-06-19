@@ -106,12 +106,12 @@ public class MycatConfig {
 		int sosndbuf = 0;
 		int soNoDelay = 0;
 		if (isFrontChannel) {
-			sorcvbuf = system.getFrontsocketsorcvbuf();
-			sosndbuf = system.getFrontsocketsosndbuf();
+			sorcvbuf = system.getFrontSocketSoRcvbuf();
+			sosndbuf = system.getFrontSocketSoSndbuf();
 			soNoDelay = system.getFrontSocketNoDelay();
 		} else {
-			sorcvbuf = system.getBacksocketsorcvbuf();
-			sosndbuf = system.getBacksocketsosndbuf();
+			sorcvbuf = system.getBackSocketSoRcvbuf();
+			sosndbuf = system.getBackSocketSoSndbuf();
 			soNoDelay = system.getBackSocketNoDelay();
 		}
 		
@@ -123,10 +123,9 @@ public class MycatConfig {
 		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 		
 		con.setMaxPacketSize(system.getMaxPacketSize());
-		con.setPacketHeaderSize(system.getPacketHeaderSize());
 		con.setIdleTimeout(system.getIdleTimeout());
 		con.setCharset(system.getCharset());
-
+		con.setReadBufferChunk(sorcvbuf);
 	}
 
 	public Map<String, UserConfig> getUsers() {

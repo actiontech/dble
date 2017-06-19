@@ -126,7 +126,6 @@ public final class SystemConfig {
 	private long clearBigSqLResultSetMapMs=10*60*1000;
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCAL_TIME;
 	private int usingAIO = 0;
-	private int packetHeaderSize = 4;
 	private int maxPacketSize = 16 * 1024 * 1024;
 	private int serverNodeId =1;
 	private int useCompression =0;	
@@ -367,13 +366,6 @@ public final class SystemConfig {
 		this.sequnceHandlerType = sequnceHandlerType;
 	}
 
-	public int getPacketHeaderSize() {
-		return packetHeaderSize;
-	}
-
-	public void setPacketHeaderSize(int packetHeaderSize) {
-		this.packetHeaderSize = packetHeaderSize;
-	}
 
 	public int getMaxPacketSize() {
 		return maxPacketSize;
@@ -597,22 +589,6 @@ public final class SystemConfig {
 		this.clusterHeartbeatPass = clusterHeartbeatPass;
 	}
 
-	public int getFrontsocketsorcvbuf() {
-		return frontSocketSoRcvbuf;
-	}
-
-	public int getFrontsocketsosndbuf() {
-		return frontSocketSoSndbuf;
-	}
-
-	public int getBacksocketsorcvbuf() {
-		return backSocketSoRcvbuf;
-	}
-
-	public int getBacksocketsosndbuf() {
-		return backSocketSoSndbuf;
-	}
-
 
 	public int getTxIsolation() {
 		return txIsolation;
@@ -788,8 +764,7 @@ public final class SystemConfig {
 				+ ", bufferUsagePercent="+bufferUsagePercent
 				+ ", clearBigSqLResultSetMapMs="+clearBigSqLResultSetMapMs
 				+ ", sequnceHandlerType=" + sequnceHandlerType
-				+ ", usingAIO=" + usingAIO 
-				+ ", packetHeaderSize=" + packetHeaderSize 
+				+ ", usingAIO=" + usingAIO
 				+ ", maxPacketSize=" + maxPacketSize
 				+ ", serverNodeId=" + serverNodeId
 				+ "]";

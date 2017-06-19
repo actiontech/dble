@@ -17,7 +17,7 @@ public class TestDirectByteBufferPool {
     public void testAllocate() {
         int pageSize = 1024 * 1024 * 100;
         int allocTimes = 1024;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8,0);
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8);
         long start = System.currentTimeMillis();
         for (int i = 0; i < allocTimes; i++) {
             //System.out.println("allocate "+i);
@@ -41,7 +41,7 @@ public class TestDirectByteBufferPool {
         int size = 256;
         int pageSize = size * 4;
         int allocTimes = 8;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2,0);
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2);
 
         Map<Long, ByteBuffer> buffs = new HashMap<Long, ByteBuffer>(8);
         ByteBuffer byteBuffer = null;
@@ -79,7 +79,7 @@ public class TestDirectByteBufferPool {
         int size = 256;
         int pageSize = size * 4;
         int allocTimes = 9;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2,0);
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2);
         long start = System.currentTimeMillis();
         ByteBuffer byteBuffer = null;
         List<ByteBuffer> buffs = new ArrayList<ByteBuffer>();
@@ -103,7 +103,7 @@ public class TestDirectByteBufferPool {
         int size = 256;
         int pageSize = size * 4;
         int allocTimes = 9;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2,0);
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 2);
         long start = System.currentTimeMillis();
         ByteBuffer byteBuffer = null;
         List<ByteBuffer> buffs = new ArrayList<ByteBuffer>();
@@ -127,7 +127,7 @@ public class TestDirectByteBufferPool {
         int size = 512;
         int pageSize = 1024*1024;
         int allocTimes = 9;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 512, (short) 64,0);
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 512, (short) 64);
         ByteBuffer byteBuffer = pool.allocate(1024);
         String str = "DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8)";
         ByteBuffer newByteBuffer = null;

@@ -29,7 +29,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 		this.pool = pool;
 		this.columnCount = columnCount;
 		this.writeBuffer = pool.allocate();
-		this.file = new FileStore("nioMapped:AresMemory", "rw");
+		this.file = new FileStore("nioMapped:Memory", "rw");
 		if (charset != null)
 			this.charset = charset;
 	}

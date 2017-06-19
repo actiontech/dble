@@ -25,18 +25,16 @@ public class DirectByteBufferPool implements BufferPool{
     private AtomicInteger prevAllocatedPage;
     private final  int pageSize;
     private final short pageCount;
-    private final int conReadBuferChunk ;
     /**
      * 记录对线程ID->该线程的所使用Direct Buffer的size
      */
     private final ConcurrentMap<Long,Long> memoryUsage;
 
-    public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount,int conReadBuferChunk) {
+    public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];
         this.chunkSize = chunkSize;
         this.pageSize = pageSize;
         this.pageCount = pageCount;
-        this.conReadBuferChunk = conReadBuferChunk;
         prevAllocatedPage = new AtomicInteger(0);
         for (int i = 0; i < pageCount; i++) {
             allPages[i] = new ByteBufferPage(ByteBuffer.allocateDirect(pageSize), chunkSize);
@@ -44,9 +42,6 @@ public class DirectByteBufferPool implements BufferPool{
         memoryUsage = new ConcurrentHashMap<>();
     }
 
-    public BufferArray allocateArray() {
-        return new BufferArray(this);
-    }
     /**
      * TODO 当页不够时，考虑扩展内存池的页的数量...........
      * @param buffer
@@ -162,9 +157,5 @@ public class DirectByteBufferPool implements BufferPool{
         return 0;
     }
 
-
-    public int getConReadBuferChunk() {
-        return conReadBuferChunk;
-    }
 
 }

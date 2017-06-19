@@ -235,7 +235,7 @@ public class FileStore {
 		int index = newName.indexOf(':');
 		String scheme = newName.substring(0, index);
 		if (!FileCounter.getInstance().increament() && "nioMapped".equals(scheme)) {
-			newName = "nio:AresDisk";
+			newName = "nio:Disk";
 		}
 		try {
 			FilePath path = FilePath.get(newName).createTempFile(SUFFIX_TEMP_FILE, true);
@@ -246,7 +246,7 @@ public class FileStore {
 				logger.info("no memory to mapped file,change to disk file");
 				// memory is used by other user
 				FileCounter.getInstance().decrement();
-				newName = "nio:AresDisk";
+				newName = "nio:Disk";
 				FilePath path = FilePath.get(newName).createTempFile(SUFFIX_TEMP_FILE, true);
 				this.files.add(path.open(mode));
 				this.fileNames.add(path.toString());

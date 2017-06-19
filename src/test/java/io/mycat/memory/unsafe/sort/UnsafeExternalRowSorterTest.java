@@ -49,8 +49,6 @@ public class UnsafeExternalRowSorterTest {
     public  void  testUnsafeExternalRowSorter() throws NoSuchFieldException, IllegalAccessException, IOException {
         MyCatMemory myCatMemory = new MyCatMemory();
         MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
-        DataNodeDiskManager blockManager = myCatMemory.getBlockManager();
-        SerializerManager serializerManager = myCatMemory.getSerializerManager();
         MycatPropertyConf conf = myCatMemory.getConf();
         DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
                 Thread.currentThread().getId());

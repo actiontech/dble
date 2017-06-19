@@ -46,6 +46,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.log.transaction.TxnLogProcessor;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
+import io.mycat.memory.unsafe.Platform;
 import io.mycat.meta.ProxyMetaManager;
 import io.mycat.net.*;
 import io.mycat.route.RouteService;
@@ -319,10 +320,13 @@ public class MycatServer {
 		short bufferPoolPageNumber = system.getBufferPoolPageNumber();
 		//minimum allocation unit
 		short bufferPoolChunkSize = system.getBufferPoolChunkSize();
-		
-		bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize,
-				bufferPoolPageNumber,system.getFrontSocketSoRcvbuf());;
-		totalNetWorkBufferSize = bufferPoolPageSize*bufferPoolPageNumber;
+		totalNetWorkBufferSize = bufferPoolPageSize * bufferPoolPageNumber;
+		if(totalNetWorkBufferSize> Platform.getMaxDirectMemory()){
+			LOGGER .error("Direct BufferPool size lager than MaxDirectMemory");
+			java.lang.System.exit(-1);
+		}
+		bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize, bufferPoolPageNumber);
+
 		
 			/**
 		 * Off Heap For Merge/Order/Group/Limit 初始化
@@ -556,21 +560,21 @@ public class MycatServer {
 			@Override
 			public void run() {
 				try {
-					BufferPool bufferPool=getBufferPool();
-				    long bufferSize=bufferPool.size();
-				    long bufferCapacity=bufferPool.capacity();
-					long bufferUsagePercent=(bufferCapacity-bufferSize)*100/bufferCapacity;
-					if(bufferUsagePercent<config.getSystem().getBufferUsagePercent()){
-						Map<String, UserStat> map =UserStatAnalyzer.getInstance().getUserStatMap();
-						Set<String> userSet=config.getUsers().keySet();
-					for (String user : userSet) {
-						UserStat userStat = map.get(user);
-						if(userStat!=null){
-							SqlResultSizeRecorder recorder=userStat.getSqlResultSizeRecorder();
-							//System.out.println(recorder.getSqlResultSet().size());
-							recorder.clearSqlResultSet();
+					BufferPool bufferPool = getBufferPool();
+					long bufferSize = bufferPool.size();
+					long bufferCapacity = bufferPool.capacity();
+					long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
+					if (bufferUsagePercent < config.getSystem().getBufferUsagePercent()) {
+						Map<String, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
+						Set<String> userSet = config.getUsers().keySet();
+						for (String user : userSet) {
+							UserStat userStat = map.get(user);
+							if (userStat != null) {
+								SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
+								//System.out.println(recorder.getSqlResultSet().size());
+								recorder.clearSqlResultSet();
+							}
 						}
-					}
 					}
 				} catch (Exception e) {
 					LOGGER.warn("resultSetMapClear err " + e);

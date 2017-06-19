@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
-import io.mycat.buffer.BufferArray;
 import io.mycat.net.FrontendConnection;
 
 /**
@@ -67,7 +66,7 @@ public class EOFPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, c.getPacketHeaderSize() + size,writeSocketIfFull);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);
@@ -86,16 +85,6 @@ public class EOFPacket extends MySQLPacket {
         return "MySQL EOF Packet";
     }
 
-	public void write(BufferArray bufferArray) {
-		int size = calcPacketSize();
-		ByteBuffer buffer = bufferArray.checkWriteBuffer(packetHeaderSize
-				+ size);
-		BufferUtil.writeUB3(buffer, size);
-		buffer.put(packetId);
-		buffer.put(fieldCount);
-		BufferUtil.writeUB2(buffer, warningCount);
-		BufferUtil.writeUB2(buffer, status);
-	}
 	public byte[] toBytes() {
 		int size = calcPacketSize();
 		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);

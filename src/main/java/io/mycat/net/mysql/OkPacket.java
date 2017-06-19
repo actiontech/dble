@@ -90,7 +90,7 @@ public class OkPacket extends MySQLPacket {
 	public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
 
 		int size = calcPacketSize();
-		buffer = c.checkWriteBuffer(buffer, c.getPacketHeaderSize() + size,
+		buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,
 				true);
 		BufferUtil.writeUB3(buffer, calcPacketSize());
 		buffer.put(packetId);

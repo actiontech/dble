@@ -4,7 +4,6 @@ package io.mycat.memory;
 import com.google.common.annotations.VisibleForTesting;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.memory.unsafe.Platform;
-import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.memory.mm.MemoryManager;
 import io.mycat.memory.unsafe.memory.mm.ResultMergeMemoryManager;
 import io.mycat.memory.unsafe.storage.DataNodeDiskManager;
@@ -76,7 +75,7 @@ public class MyCatMemory {
 		assert maxOnHeapMemory > 0;
 
 		resultSetBufferSize =
-				(long)((Platform.getMaxDirectMemory()-2*totalNetWorkBufferSize)*DIRECT_SAFETY_FRACTION);
+				(long)((Platform.getMaxDirectMemory()-totalNetWorkBufferSize)*DIRECT_SAFETY_FRACTION);
 
 		assert resultSetBufferSize > 0;
 
@@ -173,7 +172,7 @@ public class MyCatMemory {
 
 	}
 
-		public MycatPropertyConf getConf() {
+	public MycatPropertyConf getConf() {
 		return conf;
 	}
 

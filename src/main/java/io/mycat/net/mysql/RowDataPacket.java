@@ -30,7 +30,6 @@ import java.util.List;
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
-import io.mycat.buffer.BufferArray;
 import io.mycat.net.FrontendConnection;
 
 /**
@@ -98,7 +97,7 @@ public class RowDataPacket extends MySQLPacket {
 	@Override
 	public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
 			boolean writeSocketIfFull) {
-		bb = c.checkWriteBuffer(bb, c.getPacketHeaderSize(), writeSocketIfFull);
+		bb = c.checkWriteBuffer(bb, MySQLPacket.packetHeaderSize, writeSocketIfFull);
 		BufferUtil.writeUB3(bb, calcPacketSize());
 		bb.put(packetId);
 		for (int i = 0; i < fieldCount; i++) {
@@ -135,27 +134,6 @@ public class RowDataPacket extends MySQLPacket {
 		return "MySQL RowData Packet";
 	}
 
-	public void write(BufferArray bufferArray) {
-		int size = calcPacketSize();
-		ByteBuffer buffer = bufferArray.checkWriteBuffer(packetHeaderSize + size);
-		BufferUtil.writeUB3(buffer, size);
-		buffer.put(packetId);
-		for (int i = 0; i < fieldCount; i++) {
-			byte[] fv = fieldValues.get(i);
-			if (fv == null) {
-				buffer = bufferArray.checkWriteBuffer(1);
-				buffer.put(RowDataPacket.NULL_MARK);
-			} else if (fv.length == 0) {
-				buffer = bufferArray.checkWriteBuffer(1);
-				buffer.put(RowDataPacket.EMPTY_MARK);
-			} else {
-				buffer = bufferArray.checkWriteBuffer(BufferUtil
-						.getLength(fv.length));
-				BufferUtil.writeLength(buffer, fv.length);
-				bufferArray.write(fv);
-			}
-		}
-	}
 	public byte[] toBytes() {
 		int size = calcPacketSize();
 		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize); 

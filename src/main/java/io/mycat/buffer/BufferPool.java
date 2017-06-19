@@ -16,9 +16,7 @@ public interface BufferPool {
     public void recycle(ByteBuffer theBuf);
     public long capacity();
     public long size();
-    public int getConReadBuferChunk();
     public  int getSharedOptsCount();
     public int getChunkSize();
     public ConcurrentMap<Long,Long> getNetDirectMemoryUsage();
-    public BufferArray allocateArray();
 }

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.mycat.net.mysql.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +58,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected final NetworkChannel channel;
 	protected NIOProcessor processor;
 	protected NIOHandler handler;
-
-	protected int packetHeaderSize;
+	protected int readBufferChunk;
 	protected int maxPacketSize;
 	protected volatile ByteBuffer readBuffer;
 	protected volatile ByteBuffer writeBuffer;
@@ -183,16 +183,10 @@ public abstract class AbstractConnection implements NIOConnection {
 		return channel;
 	}
 
-	public int getPacketHeaderSize() {
-		return packetHeaderSize;
-	}
 
-	public void setPacketHeaderSize(int packetHeaderSize) {
-		this.packetHeaderSize = packetHeaderSize;
-	}
 
-	public int getMaxPacketSize() {
-		return maxPacketSize;
+	public void setReadBufferChunk(int readBufferChunk) {
+		this.readBufferChunk = readBufferChunk;
 	}
 
 	public void setMaxPacketSize(int maxPacketSize) {
@@ -339,7 +333,7 @@ public abstract class AbstractConnection implements NIOConnection {
 							LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
 						}
 						recycle(readBuffer);
-						readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getConReadBuferChunk());
+						readBuffer = processor.getBufferPool().allocate(readBufferChunk);
 					} else {
 						if (readBuffer != null) {
 							readBuffer.clear();
@@ -369,10 +363,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			}
 		}
 	}
-	
-	private boolean isConReadBuffer(ByteBuffer buffer) {
-		return buffer.capacity() == processor.getBufferPool().getConReadBuferChunk() && buffer.isDirect();
-	}
+
 	
 	private ByteBuffer ensureFreeSpaceOfReadBuffer(ByteBuffer buffer,
 			int offset, final int pkgLength) {
@@ -557,7 +548,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 	
 	protected int getPacketLength(ByteBuffer buffer, int offset) {
-		int headerSize = getPacketHeaderSize();
+		int headerSize = MySQLPacket.packetHeaderSize;
 		if ( isSupportCompress() ) {
 			headerSize = 7;
 		}

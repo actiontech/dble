@@ -122,7 +122,7 @@ public class CommandPacket extends MySQLPacket {
 	        c.write(buffer);	        
         } catch(java.nio.BufferOverflowException e1) { 
         	//fixed issues #98 #1072
-        	buffer =  c.checkWriteBuffer(buffer, c.getPacketHeaderSize() + calcPacketSize(), false);
+        	buffer =  c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + calcPacketSize(), false);
 	        BufferUtil.writeUB3(buffer, calcPacketSize());
 	        buffer.put(packetId);
 	        buffer.put(command);

@@ -27,6 +27,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Deprecated:
+ *
  * 基于ZK与本地配置的分布式ID生成器(可以通过ZK获取集群（机房）唯一InstanceID，也可以通过配置文件配置InstanceID)
  * ID结构：long 64位，ID最大可占63位
  * |current time millis(微秒时间戳38位,可以使用17年)|clusterId（机房或者ZKid，通过配置文件配置5位）|instanceId（实例ID，可以通过ZK或者配置文件获取，5位）|threadId（线程ID，9位）|increment(自增,6位)
@@ -40,26 +42,30 @@ import java.util.concurrent.TimeUnit;
  * @version 1.0
  * @time 00:08:03 2016/5/3
  *
+ * Now:
+ *
  * clusterId 4bits
+ *
+ * |threadId(线程ID)|instanceId(实例ID)|clusterId(机房ID)|increment(自增)|current time millis(时间戳39位,可以使用17年)|
  */
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
     private static DistributedSequenceHandler instance;
 
-    private final long timestampBits = 39L;
-    private final long clusterIdBits = 4L;
-    private final long instanceIdBits = 5L;
     private final long threadIdBits = 9L;
+    private final long instanceIdBits = 5L;
+    private final long clusterIdBits = 4L;
     private final long incrementBits = 6L;
+    private final long timestampBits = 39L;
 
     private final long timestampMask = (1L << timestampBits) - 1L;
 
-    private final long incrementShift = 0L;
-    private final long threadIdShift = incrementShift + incrementBits;
-    private final long instanceIdShift = threadIdShift + threadIdBits;
-    private final long clusterIdShift = instanceIdShift + instanceIdBits;
-    private final long timestampShift = clusterIdShift + clusterIdBits;
+    private final long timestampShift = 0;
+    private final long incrementShift = timestampShift + timestampBits;
+    private final long clusterIdShift = incrementShift + incrementBits;
+    private final long instanceIdShift = clusterIdShift + clusterIdBits;
+    private final long threadIdShift = instanceIdShift + instanceIdBits;
 
     private final long maxIncrement = 1L << incrementBits;
     private final long maxThreadId = 1L << threadIdBits;
@@ -225,7 +231,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         }
         threadLastTime.set(time);
         return ((time & timestampMask) << timestampShift) | (((threadID.get() % maxThreadId) << threadIdShift))
-                | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | a;
+	    | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | (a << incrementShift);
     }
 
     private synchronized Long getNextThreadID() {

@@ -39,14 +39,16 @@ import java.util.concurrent.TimeUnit;
  * @author Hash Zhang
  * @version 1.0
  * @time 00:08:03 2016/5/3
+ *
+ * clusterId 4bits
  */
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
     private static DistributedSequenceHandler instance;
 
-    private final long timestampBits = 38L;
-    private final long clusterIdBits = 5L;
+    private final long timestampBits = 39L;
+    private final long clusterIdBits = 4L;
     private final long instanceIdBits = 5L;
     private final long threadIdBits = 9L;
     private final long incrementBits = 6L;
@@ -62,7 +64,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long maxIncrement = 1L << incrementBits;
     private final long maxThreadId = 1L << threadIdBits;
     private final long maxinstanceId = 1L << instanceIdBits;
-    private final long maxclusterId = 1L << instanceIdBits;
+    private final long maxclusterId = 1L << clusterIdBits;
 
     private volatile long instanceId;
     private long clusterId;
@@ -159,6 +161,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         } catch (Exception e) {
             // do nothing
         }
+	
         this.leaderSelector = new LeaderSelector(client, PATH.concat(LEADER_PATH), this);
         this.leaderSelector.autoRequeue();
         this.leaderSelector.start();
@@ -262,8 +265,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             }
             if (children != null) {
                 for (String child : children) {
-                    String data = new String(
-                            client.getData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child))));
+                    String data = new String(client.getData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child))));
                     if (!"ready".equals(data)) {
                         mark[Integer.parseInt(data)] = 1;
                     }
@@ -287,8 +289,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                         String data = new String(client.getData().forPath(PATH.concat("/instance/" + child)));
                         if ("ready".equals(data)) {
                             int i = nextFree();
-                            client.setData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child)),
-                                    ("" + i).getBytes());
+                            client.setData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child)), ("" + i).getBytes());
                             mark2[i] = 1;
                         } else {
                             mark2[Integer.parseInt(data)] = 1;
@@ -300,6 +301,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         }, 0L, 3L, TimeUnit.SECONDS);
+	
         while (true) {
             Thread.currentThread().yield();
         }
@@ -308,6 +310,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private int nextFree() {
         for (int i = 0; i < mark.length; i++) {
             if (i == 1) {
+		/* myself, please check in takeLeadership(): this.instanceId = 1; */
                 continue;
             }
             if (mark[i] != 1) {

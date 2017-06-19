@@ -78,10 +78,8 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		private final static long sequenceBits = 12L;
 
 	    	private final static long sequenceShift = timestampLowBits;
-		// 机器ID偏左移12位
 		private final static long workerIdShift = sequenceBits + timestampLowBits;
 		private final static long datacenterIdShift = workerIdBits + sequenceBits + timestampLowBits;
-		// 时间毫秒左移22位
 		private final static long timestampHighShift = datacenterIdBits + workerIdBits + sequenceBits + timestampLowBits;
 
 		private final static long sequenceMask = -1L ^ (-1L << sequenceBits);

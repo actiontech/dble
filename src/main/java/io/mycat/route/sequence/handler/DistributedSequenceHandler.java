@@ -61,8 +61,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
 
     private final long timestampMask = (1L << timestampBits) - 1L;
 
-    private final long timestampShift = 0;
-    private final long incrementShift = timestampShift + timestampBits;
+    private final long incrementShift = timestampBits;
     private final long clusterIdShift = incrementShift + incrementBits;
     private final long instanceIdShift = clusterIdShift + clusterIdBits;
     private final long threadIdShift = instanceIdShift + instanceIdBits;
@@ -230,8 +229,8 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             threadInc.set(a + 1L);
         }
         threadLastTime.set(time);
-        return ((time & timestampMask) << timestampShift) | (((threadID.get() % maxThreadId) << threadIdShift))
-	    | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | (a << incrementShift);
+        return  (((threadID.get() % maxThreadId) << threadIdShift))
+	    | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | (a << incrementShift)|(time & timestampMask);
     }
 
     private synchronized Long getNextThreadID() {

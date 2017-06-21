@@ -31,7 +31,7 @@ public class DistributedSequenceHandlerTest {
         testingServer = new TestingServer();
         testingServer.start();
         for (int i = 0; i < 16; i++) {
-            distributedSequenceHandler[i] = new DistributedSequenceHandler(mycatConfig.getSystem());
+            distributedSequenceHandler[i] = new DistributedSequenceHandler();
             distributedSequenceHandler[i].initializeZK(testingServer.getConnectString());
             distributedSequenceHandler[i].nextId("");
         }
@@ -124,10 +124,10 @@ public class DistributedSequenceHandlerTest {
 
             idSet = new HashSet<>();
             MycatConfig mycatConfig = new MycatConfig();
-            distributedSequenceHandler[leader] = new DistributedSequenceHandler(mycatConfig.getSystem());
+            distributedSequenceHandler[leader] = new DistributedSequenceHandler();
             distributedSequenceHandler[leader].initializeZK(testingServer.getConnectString());
             distributedSequenceHandler[leader].nextId("");
-            distributedSequenceHandler[leader2] = new DistributedSequenceHandler(mycatConfig.getSystem());
+            distributedSequenceHandler[leader2] = new DistributedSequenceHandler();
             distributedSequenceHandler[leader2].initializeZK(testingServer.getConnectString());
             distributedSequenceHandler[leader2].nextId("");
             System.out.println("新加入两个节点后");

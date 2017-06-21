@@ -236,7 +236,7 @@ public class MycatServer {
 			case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
 				return IncrSequenceTimeHandler.getInstance();
 			case SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED:
-				return DistributedSequenceHandler.getInstance(MycatServer.getInstance().getConfig().getSystem());
+				return DistributedSequenceHandler.getInstance();
 			case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
 				return IncrSequenceZKHandler.getInstance();
 			default:

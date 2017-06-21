@@ -40,7 +40,7 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
     }
     @Override
     public boolean notifyProcess(boolean isAll) throws Exception {
-        if (MycatServer.getInstance().getProcessors() == null) {
+        if (isAll) {
             return true;
         }
         String basePath = ZKUtils.getZKBasePath();

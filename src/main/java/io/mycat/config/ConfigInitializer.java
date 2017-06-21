@@ -97,7 +97,7 @@ public class ConfigInitializer {
 		}
 		
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED) {
-			DistributedSequenceHandler.getInstance(system).load();
+			DistributedSequenceHandler.getInstance().load();
 		}
 		
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT) {

@@ -86,8 +86,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
     private final static String LEADER_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
             + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_LEADER.getKey();
-    private SystemConfig mycatConfig;
-    private String ID;
 
     private int mark[];
     private volatile boolean isLeader = false;
@@ -103,9 +101,9 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private ScheduledExecutorService leaderExecutor;
     private final long SELF_CHECK_PERIOD = 10L;
 
-    public static DistributedSequenceHandler getInstance(SystemConfig systemConfig) {
+    public static DistributedSequenceHandler getInstance() {
         if (instance == null) {
-            instance = new DistributedSequenceHandler(systemConfig);
+            instance = new DistributedSequenceHandler();
         }
         return instance;
     }
@@ -136,11 +134,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
 
     public void setClient(CuratorFramework client) {
         this.client = client;
-    }
-
-    public DistributedSequenceHandler(SystemConfig mycatConfig) {
-        this.mycatConfig = mycatConfig;
-        ID = mycatConfig.getBindIp() + mycatConfig.getServerPort();
     }
 
     public void load() {

@@ -1,9 +1,5 @@
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -14,6 +10,10 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.util.StringUtil;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * show Sysconfig param detail info
@@ -101,11 +101,9 @@ public class ShowSysParam {
 	
 	private static final String[] PARAMNAMES = {
 		"processors",
-		"processorBufferChunk",
 		"processorBufferPool",
 		"processorExecutor",
 		"sequnceHandlerType",
-		"Mysql_packetHeaderSize",
 		"Mysql_maxPacketSize",
 		"Mysql_idleTimeout",
 		"Mysql_charset",
@@ -120,11 +118,9 @@ public class ShowSysParam {
 	
 	private static final String[] PARAM_DESCRIPTION = {
 		"主要用于指定系统可用的线程数，默认值为Runtime.getRuntime().availableProcessors()方法返回的值。主要影响processorBufferPool、processorBufferLocalPercent、processorExecutor属性。NIOProcessor的个数也是由这个属性定义的，所以调优的时候可以适当的调高这个属性。",
-		"指定每次分配Socket Direct Buffer的大小，默认是4096个字节。这个属性也影响buffer pool的长度。",
 		"指定bufferPool计算 比例值。由于每次执行NIO读、写操作都需要使用到buffer，系统初始化的时候会建立一定长度的buffer池来加快读、写的效率，减少建立buffer的时间",
 		"主要用于指定NIOProcessor上共享的businessExecutor固定线程池大小。Server在需要处理一些异步逻辑的时候会把任务提交到这个线程池中。新版本中这个连接池的使用频率不是很大了，可以设置一个较小的值。",
 		"指定使用全局序列的类型。",
-		"指定Mysql协议中的报文头长度。默认4",
 		"指定Mysql协议可以携带的数据最大长度。默认16M",
 		"指定连接的空闲超时时间。某连接在发起空闲检查下，发现距离上次使用超过了空闲时间，那么这个连接会被回收，就是被直接的关闭掉。默认30分钟",
 		"连接的初始化字符集。默认为utf8",

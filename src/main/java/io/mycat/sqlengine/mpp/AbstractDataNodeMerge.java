@@ -40,11 +40,6 @@ public abstract class AbstractDataNodeMerge implements Runnable{
     public PackWraper END_FLAG_PACK = new PackWraper();
 
 
-    /**
-     * 是否执行流式结果集输出
-     */
-
-    protected boolean isStreamOutputResult = false;
 
     /**
      * rowData缓存队列
@@ -61,13 +56,6 @@ public abstract class AbstractDataNodeMerge implements Runnable{
         this.multiQueryHandler = handler;
     }
 
-    public boolean isStreamOutputResult() {
-        return isStreamOutputResult;
-    }
-
-    public void setStreamOutputResult(boolean streamOutputResult) {
-        isStreamOutputResult = streamOutputResult;
-    }
 
     /**
      * Add a row pack, and may be wake up a business thread to work if not running.

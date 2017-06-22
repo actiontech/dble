@@ -53,7 +53,7 @@ public class UnsafeExternalSorterSuite {
   static final SerializerManager serializerManager = new SerializerManager();
   static  final MycatPropertyConf conf = new MycatPropertyConf();
 
-  static final DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true,serializerManager);
+  static final DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true);
   static DataNodeFileManager diskBlockManager ;
 
   // Use integer comparison for comparing prefixes (which are partition ids, in this case)

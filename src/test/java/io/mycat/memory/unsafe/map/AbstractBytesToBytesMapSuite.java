@@ -62,7 +62,7 @@ public abstract class AbstractBytesToBytesMapSuite {
   final LinkedList<File> spillFilesCreated = new LinkedList<File>();
   File tempDir;
 
-  DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true,serializerManager);
+  DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true);
 
 
 /*

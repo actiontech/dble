@@ -19,7 +19,7 @@ public class BlockManagerTest {
     public  void testNewDiskBlockManager() throws IOException {
         MycatPropertyConf conf = new MycatPropertyConf();
         SerializerManager serializerManager = new SerializerManager();
-        DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true,serializerManager);
+        DataNodeDiskManager blockManager = new DataNodeDiskManager(conf,true);
         DataNodeFileManager diskBlockManager = blockManager.diskBlockManager();
         /**
          * 生成一个文本文件

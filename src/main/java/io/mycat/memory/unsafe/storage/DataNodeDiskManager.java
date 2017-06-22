@@ -15,12 +15,10 @@ public class DataNodeDiskManager {
 
     private MycatPropertyConf conf;
     private  boolean deleteFilesOnStop;
-    private  SerializerManager serializerManager;
 
-    public DataNodeDiskManager(MycatPropertyConf conf, boolean deleteFilesOnStop, SerializerManager  serializerManager){
+    public DataNodeDiskManager(MycatPropertyConf conf, boolean deleteFilesOnStop){
         this.conf = conf;
         this.deleteFilesOnStop = deleteFilesOnStop;
-        this.serializerManager = serializerManager;
     }
 
     public DataNodeFileManager diskBlockManager() throws IOException {

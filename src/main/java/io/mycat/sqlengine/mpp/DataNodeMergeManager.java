@@ -7,8 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.apache.log4j.Logger;
 
@@ -42,13 +40,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
     private static Logger LOGGER = Logger.getLogger(DataNodeMergeManager.class);
 
-    /**
-     * key为datanode的分片节点名字
-     * value为对应的排序器
-     * 目前，没有使用！
-     */
-    private ConcurrentMap<String, UnsafeExternalRowSorter> unsafeRows =
-            new ConcurrentHashMap<String,UnsafeExternalRowSorter>();
+
     /**
      * 全局sorter，排序器
      */
@@ -200,12 +192,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         }
 
 
-        if(conf.getBoolean("server.stream.output.result",false)
-                && globalSorter == null
-                && unsafeRowGrouper == null){
-                setStreamOutputResult(true);
-        }else {
-
             /**
              * 1.schema 
              */
@@ -237,7 +223,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
                     false,/**是否使用基数排序*/
                     false/**不排序*/);
-        }
     }
 
 	private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
@@ -345,7 +330,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
                         iters = globalSorter.sort();
 
-                    }else if (!isStreamOutputResult){
+                    }else {
 
                         iters = globalMergeResult.sort();
 
@@ -422,8 +407,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
      * 释放DataNodeMergeManager所申请的资源
      */
     public void clear() {
-
-        unsafeRows.clear();
 
         if(unsafeRowGrouper!=null){
             unsafeRowGrouper.free();

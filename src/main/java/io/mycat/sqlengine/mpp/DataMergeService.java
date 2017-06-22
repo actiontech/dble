@@ -168,16 +168,6 @@ public class DataMergeService extends AbstractDataNodeMerge {
 			tmp.setLimit(rrs.getLimitStart(), rrs.getLimitSize());
 			sorter = tmp;
 		}
-
-		if (MycatServer.getInstance().
-				getConfig().getSystem().
-				getUseStreamOutput() == 1
-				&& grouper == null
-				&& sorter == null) {
-			setStreamOutputResult(true);
-		}else {
-			setStreamOutputResult(false);
-		}
 	}
 
 

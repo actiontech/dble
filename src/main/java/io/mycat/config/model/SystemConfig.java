@@ -54,7 +54,6 @@ public final class SystemConfig {
 	private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512*1024*4;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-	private final  static String RESERVED_SYSTEM_MEMORY_BYTES = "384m";
 	private final static String MEMORY_PAGE_SIZE = "1m";
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
@@ -154,10 +153,12 @@ public final class SystemConfig {
 	 * DiskRowWriter写磁盘是临时写Buffer，单位为K
 	 */
 	private String spillsFileBufferSize;
+
 	/**
-	 * 启用结果集流输出，不经过merge模块,
+	 * 排序时，内存不够时，将已经排序的结果集
+	 * 写入到临时目录
 	 */
-	private int useStreamOutput;
+	private String dataNodeSortedTempDir;
 	/**
 	 * 该变量仅在Merge使用On Heap
 	 * 内存方式时起作用，如果使用Off Heap内存方式
@@ -167,7 +168,6 @@ public final class SystemConfig {
 	 * 以保证在On Heap上大结果集计算时情况，能快速响应其他
 	 * 连接操作。
 	 */
-	private String systemReserveMemorySize;
 	private String XARecoveryLogBaseDir;
 	private String XARecoveryLogBaseName;
 	private String transactionLogBaseDir;
@@ -221,8 +221,6 @@ public final class SystemConfig {
 		this.useOffHeapForMerge = 1;
 		this.memoryPageSize = MEMORY_PAGE_SIZE;
 		this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
-		this.useStreamOutput = 0;
-		this.systemReserveMemorySize = RESERVED_SYSTEM_MEMORY_BYTES;
 		this.XARecoveryLogBaseDir = SystemConfig.getHomePath()+"/tmlogs/";
 		this.XARecoveryLogBaseName ="tmlog";
 		this.transactionLogBaseDir = SystemConfig.getHomePath()+File.separatorChar+DEFAULT_TRANSACTION_BASE_DIR;
@@ -235,7 +233,18 @@ public final class SystemConfig {
 		this.nestLoopConnSize = DEFAULT_NESTLOOP_CONN_SIZE;
 		this.mappedFileSize = DEFAULT_MAPPEDFILE_SIZE;
 		this.useJoinStrategy = DEFAULT_USE_JOINSTRATEGY;
+		this.dataNodeSortedTempDir = SystemConfig.getHomePath()+"/sortDirs";
 	}
+
+
+	public String getDataNodeSortedTempDir() {
+		return dataNodeSortedTempDir;
+	}
+
+	public void setDataNodeSortedTempDir(String dataNodeSortedTempDir) {
+		this.dataNodeSortedTempDir = dataNodeSortedTempDir;
+	}
+
 
 	public int getTransactionRatateSize() {
 		return transactionRatateSize;
@@ -283,22 +292,6 @@ public final class SystemConfig {
 
 	public void setSpillsFileBufferSize(String spillsFileBufferSize) {
 		this.spillsFileBufferSize = spillsFileBufferSize;
-	}
-
-	public int getUseStreamOutput() {
-		return useStreamOutput;
-	}
-
-	public void setUseStreamOutput(int useStreamOutput) {
-		this.useStreamOutput = useStreamOutput;
-	}
-
-	public String getSystemReserveMemorySize() {
-		return systemReserveMemorySize;
-	}
-
-	public void setSystemReserveMemorySize(String systemReserveMemorySize) {
-		this.systemReserveMemorySize = systemReserveMemorySize;
 	}
 
 	public boolean isUseZKSwitch() {
@@ -767,6 +760,7 @@ public final class SystemConfig {
 				+ ", usingAIO=" + usingAIO
 				+ ", maxPacketSize=" + maxPacketSize
 				+ ", serverNodeId=" + serverNodeId
+				+ ", dataNodeSortedTempDir=" + dataNodeSortedTempDir
 				+ "]";
 	}
 

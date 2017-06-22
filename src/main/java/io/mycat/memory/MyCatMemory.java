@@ -27,10 +27,6 @@ public class MyCatMemory {
 	private static Logger LOGGER = Logger.getLogger(MyCatMemory.class);
 
 	public final  static double DIRECT_SAFETY_FRACTION  = 0.7;
-	private final long systemReserveBufferSize;
-
-	private final long memoryPageSize;
-	private final long spillsFileBufferSize;
 	private final long resultSetBufferSize;
 	private final int numCores;
 
@@ -52,27 +48,15 @@ public class MyCatMemory {
 		LOGGER.info("useOffHeapForMerge = " + system.getUseOffHeapForMerge());
 		LOGGER.info("memoryPageSize = " + system.getMemoryPageSize());
 		LOGGER.info("spillsFileBufferSize = " + system.getSpillsFileBufferSize());
-		LOGGER.info("useStreamOutput = " + system.getUseStreamOutput());
-		LOGGER.info("systemReserveMemorySize = " + system.getSystemReserveMemorySize());
 		LOGGER.info("totalNetWorkBufferSize = " + JavaUtils.bytesToString2(totalNetWorkBufferSize));
-
+		LOGGER.info("dataNodeSortedTempDir = "+ system.getDataNodeSortedTempDir());
 		this.conf = new MycatPropertyConf();
 		numCores = Runtime.getRuntime().availableProcessors();
 
-		this.systemReserveBufferSize = JavaUtils.
-				byteStringAsBytes(system.getSystemReserveMemorySize());
-		this.memoryPageSize = JavaUtils.
-				byteStringAsBytes(system.getMemoryPageSize());
-
-		this.spillsFileBufferSize = JavaUtils.
-				byteStringAsBytes(system.getSpillsFileBufferSize());
 
 		/**
 		 * 目前merge，order by ，limit 没有使用On Heap内存
 		 */
-		long maxOnHeapMemory =  (Platform.getMaxHeapMemory()-systemReserveBufferSize);
-
-		assert maxOnHeapMemory > 0;
 
 		resultSetBufferSize =
 				(long)((Platform.getMaxDirectMemory()-totalNetWorkBufferSize)*DIRECT_SAFETY_FRACTION);
@@ -94,13 +78,6 @@ public class MyCatMemory {
 			conf.set("server.memory.offHeap.enabled","false");
 		}
 
-		if(system.getUseStreamOutput() == 1){
-			conf.set("server.stream.output.result","true");
-		}else{
-			conf.set("server.stream.output.result","false");
-		}
-
-
 		if(system.getMemoryPageSize() != null){
 			conf.set("server.buffer.pageSize",system.getMemoryPageSize());
 		}else{
@@ -114,19 +91,19 @@ public class MyCatMemory {
 			conf.set("server.merge.file.buffer","32k");
 		}
 
+		conf.set("server.local.dirs",system.getDataNodeSortedTempDir());
 		conf.set("server.pointer.array.len","8k")
 			.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
-		LOGGER.info("resultSetBufferSize: " +
-				JavaUtils.bytesToString2(resultSetBufferSize));
+		LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 
 		resultMergeMemoryManager =
-				new ResultMergeMemoryManager(conf,numCores,maxOnHeapMemory);
+				new ResultMergeMemoryManager(conf,numCores,0);
 
 
 		serializerManager = new SerializerManager();
 
-		blockManager = new DataNodeDiskManager(conf,true,serializerManager);
+		blockManager = new DataNodeDiskManager(conf,true);
 
 	}
 
@@ -134,9 +111,6 @@ public class MyCatMemory {
 	@VisibleForTesting
 	public MyCatMemory() throws NoSuchFieldException, IllegalAccessException {
 		this.system = null;
-		this.systemReserveBufferSize = 0;
-		this.memoryPageSize = 0;
-		this.spillsFileBufferSize = 0;
 		conf = new MycatPropertyConf();
 		numCores = Runtime.getRuntime().availableProcessors();
 
@@ -158,8 +132,7 @@ public class MyCatMemory {
 		conf.set("server.memory.offHeap.enabled","true")
 				.set("server.pointer.array.len","8K")
 				.set("server.buffer.pageSize","1m")
-				.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize))
-				.set("server.stream.output.result","false");
+				.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
 		LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 
@@ -168,7 +141,7 @@ public class MyCatMemory {
 
 		serializerManager = new SerializerManager();
 
-		blockManager = new DataNodeDiskManager(conf,true,serializerManager);
+		blockManager = new DataNodeDiskManager(conf,true);
 
 	}
 

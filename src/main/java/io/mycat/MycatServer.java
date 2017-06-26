@@ -58,10 +58,7 @@ import io.mycat.sqlengine.SQLJob;
 import io.mycat.statistic.stat.SqlResultSizeRecorder;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
-import io.mycat.util.ExecutorUtil;
-import io.mycat.util.NameableExecutor;
-import io.mycat.util.TimeUtil;
-import io.mycat.util.ZKUtils;
+import io.mycat.util.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
@@ -76,6 +73,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author mycat
@@ -121,6 +120,7 @@ public class MycatServer {
 	 */
 	private MyCatMemory serverMemory = null;
 
+	private final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
 	public static final MycatServer getInstance() {
 		return INSTANCE;
 	}
@@ -170,8 +170,7 @@ public class MycatServer {
 		//记录启动时间
 		this.startupTime = TimeUtil.currentTimeMillis();
 		if (isUseZkSwitch()) {
-			String path = ZKUtils.getZKBasePath() + "lock/dnindex.lock";
-			dnindexLock = new InterProcessMutex(ZKUtils.getConnection(), path);
+			dnindexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
 		}
 		xaSessionCheck = new XASessionCheck();
 		sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
@@ -271,8 +270,17 @@ public class MycatServer {
 		}
 	}
 
+	public ReentrantReadWriteLock getConfLock() {
+		return confLock;
+	}
+
 	public MycatConfig getConfig() {
-		return config;
+		confLock.readLock().lock();
+		try {
+			return config;
+		} finally {
+			confLock.readLock().unlock();
+		}
 	}
 
 	public void beforeStart() {
@@ -431,7 +439,8 @@ public class MycatServer {
 			if (!"0".equals(index)) {
 				LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
 			}
-			node.init(Integer.parseInt(index));
+			int activeIndex = node.init(Integer.parseInt(index));
+			saveDataHostIndex(node.getHostName(), activeIndex);
 			node.startHeartbeat();
 		}
 		
@@ -462,7 +471,7 @@ public class MycatServer {
 			try {
 				File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
 				dnindexLock.acquire(30, TimeUnit.SECONDS);
-				String path = ZKUtils.getZKBasePath() + "bindata/dnindex.properties";
+				String path = KVPathUtil.getDnIndexNode();
 				CuratorFramework zk = ZKUtils.getConnection();
 				if (zk.checkExists().forPath(path) == null) {
 					zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
@@ -621,7 +630,7 @@ public class MycatServer {
 			if (newIndex.equals(oldIndex)) {
 				return;
 			}
-			
+
 			dnIndexProperties.setProperty(dataHost, newIndex);
 			LOGGER.info("save DataHost index  " + dataHost + " cur index " + curIndex);
 
@@ -633,28 +642,27 @@ public class MycatServer {
 			fileOut = new FileOutputStream(file);
 			dnIndexProperties.store(fileOut, "update");
 
-			if(isUseZkSwitch()) {
+			if (isUseZkSwitch()) {
 				// save to  zk
 				try {
-					dnindexLock.acquire(30,TimeUnit.SECONDS)   ;
-					String path = ZKUtils.getZKBasePath() + "bindata/dnindex.properties";
+					dnindexLock.acquire(30, TimeUnit.SECONDS);
+					String path = KVPathUtil.getDnIndexNode();
 					CuratorFramework zk = ZKUtils.getConnection();
-					if(zk.checkExists().forPath(path)==null) {
+					if (zk.checkExists().forPath(path) == null) {
 						zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
-					} else{
-						byte[] data=	zk.getData().forPath(path);
-						ByteArrayOutputStream out=new ByteArrayOutputStream();
-						Properties properties=new Properties();
+					} else {
+						byte[] data = zk.getData().forPath(path);
+						ByteArrayOutputStream out = new ByteArrayOutputStream();
+						Properties properties = new Properties();
 						properties.load(new ByteArrayInputStream(data));
-						 if(!String.valueOf(curIndex).equals(properties.getProperty(dataHost))) {
-							 properties.setProperty(dataHost, String.valueOf(curIndex));
-							 properties.store(out, "update");
-							 zk.setData().forPath(path, out.toByteArray());
-						 }
+						if (!String.valueOf(curIndex).equals(properties.getProperty(dataHost))) {
+							properties.setProperty(dataHost, String.valueOf(curIndex));
+							properties.store(out, "update");
+							zk.setData().forPath(path, out.toByteArray());
+						}
 					}
-
-				}finally {
-				 dnindexLock.release();
+				} finally {
+					dnindexLock.release();
 				}
 			}
 		} catch (Exception e) {
@@ -667,7 +675,6 @@ public class MycatServer {
 				}
 			}
 		}
-
 	}
 
 	private boolean isUseZkSwitch() {

@@ -24,10 +24,9 @@
 package io.mycat.route.sequence.handler;
 
 
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.route.util.PropertiesUtil;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
@@ -60,11 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceHandler.class);
-    private final static String PATH = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_BASE.getKey()
-            + ZookeeperPath.ZK_SEPARATOR.getKey()
-            + io.mycat.config.loader.zkprocess.comm.ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID)
-            + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey()
-            + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_INCREMENT_SEQ.getKey();
+    private final static String PATH = KVPathUtil.getSequencesIncrPath()+ "/";
     private final static String LOCK = "/lock";
     private final static String SEQ = "/seq";
     private final static IncrSequenceZKHandler instance = new IncrSequenceZKHandler();
@@ -119,7 +114,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         String table = key.substring(0, key.indexOf(KEY_MIN_NAME));
         InterProcessSemaphoreMutex interProcessSemaphoreMutex = interProcessSemaphoreMutexThreadLocal.get();
         if (interProcessSemaphoreMutex == null) {
-            interProcessSemaphoreMutex = new InterProcessSemaphoreMutex(client, PATH + "/" + table + SEQ + LOCK);
+            interProcessSemaphoreMutex = new InterProcessSemaphoreMutex(client, PATH + table + SEQ + LOCK);
             interProcessSemaphoreMutexThreadLocal.set(interProcessSemaphoreMutex);
         }
         Map<String, Map<String, String>> tableParaValMap = tableParaValMapThreadLocal.get();
@@ -132,7 +127,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             paraValMap = new ConcurrentHashMap<>();
             tableParaValMap.put(table, paraValMap);
 
-            String seqPath = PATH + ZookeeperPath.ZK_SEPARATOR.getKey() + table + SEQ;
+            String seqPath = PATH + table + SEQ;
 
             Stat stat = this.client.checkExists().forPath(seqPath);
 
@@ -143,7 +138,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 try {
                     String val = props.getProperty(table + KEY_MIN_NAME);
                     client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT)
-                            .forPath(PATH + "/" + table + SEQ, val.getBytes());
+                            .forPath(PATH + table + SEQ, val.getBytes());
                 } catch (Exception e) {
                     LOGGER.debug("Node exists! Maybe other instance is initializing!");
                 }
@@ -194,8 +189,8 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             }
             long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME))
                     - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
-            long now = Long.parseLong(new String(client.getData().forPath(PATH + "/" + prefixName + SEQ)));
-            client.setData().forPath(PATH + "/" + prefixName + SEQ, ((now + period + 1) + "").getBytes());
+            long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
+            client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
 
             paraValMap.put(prefixName + KEY_MAX_NAME, (now + period + 1) + "");
             paraValMap.put(prefixName + KEY_MIN_NAME, (now + 1) + "");

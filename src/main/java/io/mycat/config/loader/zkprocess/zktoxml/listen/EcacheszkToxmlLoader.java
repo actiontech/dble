@@ -29,6 +29,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,16 +61,6 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
     private final String currZkPath;
 
     /**
-     * 缓存文件名称
-    */
-    private static final String CACHESERVER_NAME = "cacheservice.properties";
-
-    /**
-     * 缓存的xml文件配制信息
-    */
-    private static final String EHCACHE_NAME = "ehcache.xml";
-
-    /**
      * ehcache的xml的转换信息
     */
     private final ParseXmlServiceInf<Ehcache> parseEcacheXMl;
@@ -86,29 +77,22 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
     public EcacheszkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
-
         this.setCurator(curator);
-
         this.zookeeperListen = zookeeperListen;
-
-        // 获得当前集群的名称
-        String cachePath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_CACHE.getKey();
-
-        currZkPath = cachePath;
+        currZkPath = KVPathUtil.getCachePath();
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addListen(cachePath, this);
-
+        this.zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         parseEcacheXMl = new EhcacheParseXmlImpl(xmlParseBase);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
 
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, ZookeeperPath.FLOW_ZK_PATH_CACHE.getKey(), RulesDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.CACHE, RulesDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) RulesDirectory.getSubordinateInfo().get(0);
@@ -131,21 +115,21 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
     private void zktoEhcacheWrite(ZkDirectoryImpl zkDirectory) {
 
         // 得到schema对象的目录信息
-        DataInf ehcacheZkDirectory = this.getZkData(zkDirectory, EHCACHE_NAME);
+        DataInf ehcacheZkDirectory = this.getZkData(zkDirectory, KVPathUtil.EHCACHE_NAME);
 
         Ehcache ehcache = parseJsonEhcacheService.parseJsonToBean(ehcacheZkDirectory.getDataValue());
 
         String outputPath = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         outputPath=new File(outputPath).getPath()+File.separator;
-        outputPath += EHCACHE_NAME;
+        outputPath += KVPathUtil.EHCACHE_NAME;
 
         parseEcacheXMl.parseToXmlWrite(ehcache, outputPath, null);
 
         // 设置zk监控
-        this.zookeeperListen.watchPath(currZkPath, EHCACHE_NAME);
+        this.zookeeperListen.addWatch(KVPathUtil.getEhcacheNamePath(),this);
 
         // 写入cacheservice.properties的信息
-        DataInf cacheserZkDirectory = this.getZkData(zkDirectory, CACHESERVER_NAME);
+        DataInf cacheserZkDirectory = this.getZkData(zkDirectory, KVPathUtil.CACHESERVER_NAME);
 
         if (null != cacheserZkDirectory) {
             ZkDataImpl cacheData = (ZkDataImpl) cacheserZkDirectory;
@@ -156,7 +140,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
             } catch (IOException e) {
                 LOGGER.error("EcacheszkToxmlLoader wirteMapFile IOException", e);
             }
-            this.zookeeperListen.watchPath(currZkPath, CACHESERVER_NAME);
+            this.zookeeperListen.addWatch(KVPathUtil.getCacheServerNamePath(),this);
         }
 
     }

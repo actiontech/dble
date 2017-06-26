@@ -15,6 +15,7 @@ import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.SystemJsonP
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     /**
      * server文件的路径信息
     */
-    private static final String SERVER_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "server.xml";
+    private static final String SERVER_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "server.xml";
 
 
     /**
@@ -69,22 +70,16 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     public ServerxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
-
         this.setCurator(curator);
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath = KVPathUtil.getConfServerPath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(schemaPath, this);
-
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         parseServerXMl = new ServerParseXmlImpl(xmlParseBase);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Server server = this.parseServerXMl.parseXmlToBean(SERVER_PATH);
         LOGGER.info("ServerxmlTozkLoader notifyProcessxml to zk server Object  :" + server);
@@ -106,21 +101,18 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     */
     private void xmlTozkServerJson(String basePath, Server server) throws Exception {
         // 设置默认的节点信息
-        String defaultSystem = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_DEFAULT.getKey();
         String defaultSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
-        this.checkAndwriteString(basePath, defaultSystem, defaultSystemValue);
+        this.checkAndwriteString(basePath, KVPathUtil.DEFAULT, defaultSystemValue);
 
         // 设置firewall信息
-        String firewallStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey();
         String firewallValueStr = this.parseJsonFireWall.parseBeanToJson(server.getFirewall());
         if(firewallValueStr ==null){
             firewallValueStr="{}";
         }
-        this.checkAndwriteString(basePath, firewallStr, firewallValueStr);
+        this.checkAndwriteString(basePath, KVPathUtil.FIREWALL, firewallValueStr);
         // 设置用户信息
-        String userStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey();
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
-        this.checkAndwriteString(basePath, userStr, userValueStr);
+        this.checkAndwriteString(basePath, KVPathUtil.USER, userValueStr);
 
 
     }

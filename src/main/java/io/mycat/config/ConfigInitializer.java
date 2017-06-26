@@ -23,6 +23,7 @@
  */
 package io.mycat.config;
 
+import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
@@ -70,6 +71,9 @@ public class ConfigInitializer {
 		if (loadDataHost) {
 			this.dataHosts = initDataHosts(schemaLoader);
 			this.dataNodes = initDataNodes(schemaLoader);
+		} else {
+			this.dataHosts = MycatServer.getInstance().getConfig().getDataHosts();
+			this.dataNodes = MycatServer.getInstance().getConfig().getDataNodes();
 		}
 		
 		//权限管理
@@ -171,51 +175,41 @@ public class ConfigInitializer {
 	}
 	
 	public void testConnection() {
-		
 		// 实际链路的连接测试		
 		if (this.dataNodes != null && this.dataHosts != null) {
 			Map<String, Boolean> map = new HashMap<String, Boolean>();
-			
-			for (PhysicalDBNode dataNode : dataNodes.values()) {			
-				String database = dataNode.getDatabase();		
+			for (PhysicalDBNode dataNode : dataNodes.values()) {
+				String database = dataNode.getDatabase();
 				PhysicalDBPool pool = dataNode.getDbPool();
-				
-				for (PhysicalDatasource ds : pool.getAllDataSources()) {				
+
+				for (PhysicalDatasource ds : pool.getAllDataSources()) {
 					String key = ds.getName() + "_" + database;
-					if (map.get(key) == null) {						
-						map.put( key, false );
-						
-						boolean isConnected = false;
+					if (map.get(key) == null) {
+						map.put(key, false);
 						try {
-							isConnected = ds.testConnection( database );		
-							map.put( key, isConnected );
+							boolean isConnected = ds.testConnection(database);
+							map.put(key, isConnected);
 						} catch (IOException e) {
-							LOGGER.warn("test conn error:", e);
+							LOGGER.warn("test conn "+key+" error:", e);
 						}
-					}								
+					}
 				}
 			}
-			
-			//
 			boolean isConnectivity = true;
 			for (Map.Entry<String, Boolean> entry : map.entrySet()) {
 				String key = entry.getKey();
 				Boolean value = entry.getValue();
-				if ( !value && isConnectivity ) {
+				if (!value && isConnectivity) {
 					LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
 					isConnectivity = false;
-					
 				} else {
 					LOGGER.info("SelfCheck### test " + key + " database connection success ");
 				}
 			}
-			
-			if ( !isConnectivity ) {
+			if (!isConnectivity) {
 				throw new ConfigException("SelfCheck### there are some datasource connection failed, pls check!");
 			}
-				
 		}
-		
 	}
 
 	public SystemConfig getSystem() {

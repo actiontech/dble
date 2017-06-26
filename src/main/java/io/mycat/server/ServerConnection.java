@@ -27,7 +27,6 @@ import io.mycat.MycatServer;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
@@ -40,11 +39,9 @@ import io.mycat.server.parser.ServerParse;
 import io.mycat.server.response.Heartbeat;
 import io.mycat.server.response.Ping;
 import io.mycat.server.util.SchemaUtil;
-import io.mycat.util.SplitUtil;
-import io.mycat.util.StringUtil;
-import io.mycat.util.TimeUtil;
-import io.mycat.util.ZKUtils;
+import io.mycat.util.*;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +52,7 @@ import java.sql.SQLNonTransientException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+
 
 /**
  * @author mycat
@@ -148,10 +146,6 @@ public class ServerConnection extends FrontendConnection {
 		}
 	}
 
-	public boolean isTxInterrupted()
-	{
-		return txInterrupted;
-	}
 	public NonBlockingSession getSession2() {
 		return session;
 	}
@@ -219,7 +213,7 @@ public class ServerConnection extends FrontendConnection {
 		}
 
 		// 路由计算
-		RouteResultset rrs = null;
+		RouteResultset rrs;
 		try {
 			rrs = MycatServer.getInstance().getRouterservice()
 					.route(MycatServer.getInstance().getConfig().getSystem(),
@@ -259,9 +253,9 @@ public class ServerConnection extends FrontendConnection {
 		}
 	}
 
-	public void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
+	private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
 		// 路由计算
-		RouteResultset rrs = null;
+		RouteResultset rrs;
 		try {
 			rrs = MycatServer.getInstance().getRouterservice()
 					.route(MycatServer.getInstance().getConfig().getSystem(),
@@ -286,13 +280,18 @@ public class ServerConnection extends FrontendConnection {
 			MycatServer.getInstance().getTmManager().addMetaLock(schema, table);
 			if(MycatServer.getInstance().isUseZK()){
 				String nodeName = StringUtil.getFullName(schema, table);
-				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
-						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey();
+				String ddlPath = KVPathUtil.getDDLPath();
+				String nodePth = ZKPaths.makePath(ddlPath, nodeName);
 				CuratorFramework zkConn = ZKUtils.getConnection();
-				while (zkConn.checkExists().forPath(lockPath + "syncMeta.lock") != null || zkConn.checkExists().forPath(lockPath + nodeName) != null) {
+				int times = 0;
+				while (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+					if (times % 60 == 0) {
+						LOGGER.warn("waiting for syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath);
+						times = 0;
+					}
+					times++;
 				}
-				ZKUtils.createTempNode(lockPath, nodeName);
 				MycatServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
 			}
 		} catch (Exception e) {

@@ -47,11 +47,12 @@ public final class SwitchDataSource {
         for (String key : pair.getKey()) {
         	PhysicalDBPool dn = dns.get(key);
             if (dn != null) {
-                int m = dn.getActivedIndex();
+                int m = dn.getActiveIndex();
                 int n = (idx == null) ? dn.next(m) : idx.intValue();
                 if (dn.switchSource(n, false, "MANAGER")) {
                     ++count;
                 }
+                //TODO:ELSE?
             }
         }
         OkPacket packet = new OkPacket();

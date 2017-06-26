@@ -1,11 +1,12 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,20 +58,14 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
 
     public SequenceTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator ) {
-
         this.setCurator(curator);
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath = KVPathUtil.getSequencesPath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(schemaPath, this);
-
+        zookeeperListen.addToInit(this);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
 
         // 将zk序列配配制信息入zk
         this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_CONF);
@@ -88,8 +83,6 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to zk success");
 
 
-        LOGGER.info("SequenceTozkLoader notifyProcess xml to zk is success");
-
         return true;
     }
 
@@ -103,9 +96,6 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
     */
     private void sequenceTozk(String basePath, String name) throws Exception {
         // 读取当前节的信息
-        String commPath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_COMMON.getKey()
-                + ZookeeperPath.ZK_SEPARATOR.getKey();
-
         String readFile = name + PROPERTIES_SUFFIX;
         // 读取公共节点的信息
         String commSequence = ConfFileRWUtils.readFile(readFile);
@@ -117,7 +107,7 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
                 return;
             }
         }
-        String sequenceZkPath = commPath + readFile;
+        String sequenceZkPath = ZKPaths.makePath(KVPathUtil.SEQUENCE_COMMON, readFile);
         this.checkAndwriteString(basePath, sequenceZkPath, commSequence);
     }
 }

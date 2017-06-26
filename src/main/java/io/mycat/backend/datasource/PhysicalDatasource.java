@@ -339,8 +339,8 @@ public abstract class PhysicalDatasource {
 		this.conMap.clearConnections(reason, this);
 	}
 
-    	public void clearConsByDying() {
-	    	clearCons("smooth dying");
+	public void clearConsByDying() {
+		clearCons("smooth dying");
 		this.dbPool.delRDs(this);
 	}
 
@@ -413,9 +413,9 @@ public abstract class PhysicalDatasource {
 	}
 
 	public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
-				  final Object attachment) throws IOException {
-	    	if (dying.get()) {
-		    	closeByDyingAll();
+							  final Object attachment) throws IOException {
+		if (dying.get()) {
+			closeByDyingAll();
 			LOGGER.info(this.name + "will to die");
 			throw new IOException(this.name + "will to die");
 		}

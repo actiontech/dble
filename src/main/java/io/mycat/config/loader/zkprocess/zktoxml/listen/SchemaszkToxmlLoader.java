@@ -1,15 +1,5 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
-import java.io.File;
-import java.util.List;
-
-import io.mycat.MycatServer;
-import io.mycat.manager.response.ReloadConfig;
-import io.mycat.util.ResourceUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -28,6 +18,14 @@ import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
+import io.mycat.util.ResourceUtil;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.List;
 
 /**
  * 进行schema的文件从zk中加载
@@ -77,36 +75,25 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
      */
     private ParseJsonServiceInf<List<DataHost>> parseJsonDataHost = new DataHostJsonParse();
 
-    /**
-     * zk的监控路径信息
-    */
-    private ZookeeperProcessListen zookeeperListen;
 
     public SchemaszkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
-
+                                XmlProcessBase xmlParseBase, ConfigStatusListener confListener) {
         this.setCurator(curator);
-
-        this.zookeeperListen = zookeeperListen;
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FOW_ZK_PATH_SCHEMA.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath = KVPathUtil.getConfSchemaPath();
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addListen(schemaPath, this);
-
+        zookeeperListen.addToInit( this);
         // 生成xml与类的转换信息
         this.parseSchemaXmlService = new SchemasParseXmlImpl(xmlParseBase);
+        confListener.addChild(this);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群schema目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf schemaDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_SCHEMA.getKey(), schemaDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.SCHEMA, schemaDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) schemaDirectory.getSubordinateInfo().get(0);
@@ -125,41 +112,32 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
         LOGGER.info("SchemasLoader notifyProcess zk to object zk schema      write :" + path + " is success");
 
-        if (!isAll && MycatServer.getInstance().getProcessors() != null)
-            ReloadConfig.reload_all();
         return true;
     }
 
     /**
      * 将zk上面的信息转换为javabean对象
-    * 方法描述
-    * @param zkDirectory
-    * @return
-    * @创建日期 2016年9月17日
     */
     private Schemas zktoSchemasBean(ZkDirectoryImpl zkDirectory) {
         Schemas schema = new Schemas();
 
         // 得到schema对象的目录信息
-        DataInf schemaZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_SCHEMA.getKey());
+        DataInf schemaZkDirectory = this.getZkData(zkDirectory, KVPathUtil.SCHEMA_SCHEMA);
         List<Schema> schemaList = parseJsonSchema.parseJsonToBean(schemaZkDirectory.getDataValue());
         schema.setSchema(schemaList);
 
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_SCHEMA.getKey());
 
         // 得到dataNode的信息
-        DataInf dataNodeZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATANODE.getKey());
+        DataInf dataNodeZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DATA_NODE);
         List<DataNode> dataNodeList = parseJsonDataNode.parseJsonToBean(dataNodeZkDirectory.getDataValue());
         schema.setDataNode(dataNodeList);
 
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATANODE.getKey());
 
         // 得到dataNode的信息
-        DataInf dataHostZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATAHOST.getKey());
+        DataInf dataHostZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DATA_HOST);
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(dataHostZkDirectory.getDataValue());
         schema.setDataHost(dataHostList);
 
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATAHOST.getKey());
 
         return schema;
 

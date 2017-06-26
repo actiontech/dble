@@ -1,11 +1,10 @@
 package io.mycat.route.sequence.handler;
 
 
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.util.PropertiesUtil;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
@@ -78,14 +77,10 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private ThreadLocal<Long> threadLastTime = new ThreadLocal<>();
     private ThreadLocal<Long> threadID = new ThreadLocal<>();
     private long nextID = 0L;
-
-    private final static String PATH = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_BASE.getKey()
-            + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID)
-            + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE.getKey();
-    private final static String INSTANCE_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
-            + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
-    private final static String LEADER_PATH = ZookeeperPath.ZK_SEPARATOR.getKey()
-            + ZookeeperPath.FLOW_ZK_PATH_SEQUENCE_LEADER.getKey();
+    private final static String PATH = KVPathUtil.getSequencesPath();
+    private final static String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
+    private SystemConfig mycatConfig;
+    private String ID;
 
     private int mark[];
     private volatile boolean isLeader = false;
@@ -156,14 +151,13 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         try {
-            if (client.checkExists().forPath(PATH.concat(INSTANCE_PATH)) == null) {
-                client.create().creatingParentContainersIfNeeded().forPath(PATH.concat(INSTANCE_PATH));
+            if (client.checkExists().forPath(INSTANCE_PATH) == null) {
+                client.create().creatingParentContainersIfNeeded().forPath(INSTANCE_PATH);
             }
         } catch (Exception e) {
             // do nothing
         }
-	
-        this.leaderSelector = new LeaderSelector(client, PATH.concat(LEADER_PATH), this);
+        this.leaderSelector = new LeaderSelector(client, KVPathUtil.getSequencesLeaderPath(), this);
         this.leaderSelector.autoRequeue();
         this.leaderSelector.start();
         Runnable runnable = new Runnable() {
@@ -261,12 +255,12 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             if (this.slavePath != null) {
                 client.delete().forPath(slavePath);
             }
-            if (client.checkExists().forPath(PATH.concat(INSTANCE_PATH)) != null) {
-                children = client.getChildren().forPath(PATH.concat(INSTANCE_PATH));
+            if (client.checkExists().forPath(INSTANCE_PATH) != null) {
+                children = client.getChildren().forPath(INSTANCE_PATH);
             }
             if (children != null) {
                 for (String child : children) {
-                    String data = new String(client.getData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child))));
+                    String data = new String(client.getData().forPath(INSTANCE_PATH.concat("/").concat(child)));
                     if (!"ready".equals(data)) {
                         mark[Integer.parseInt(data)] = 1;
                     }
@@ -284,13 +278,13 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                     while (!client.isStarted()) {
                         Thread.currentThread().yield();
                     }
-                    List<String> children = client.getChildren().forPath(PATH.concat(INSTANCE_PATH));
+                    List<String> children = client.getChildren().forPath(INSTANCE_PATH);
                     int mark2[] = new int[(int) maxinstanceId];
                     for (String child : children) {
                         String data = new String(client.getData().forPath(PATH.concat("/instance/" + child)));
                         if ("ready".equals(data)) {
                             int i = nextFree();
-                            client.setData().forPath(PATH.concat(INSTANCE_PATH.concat("/").concat(child)), ("" + i).getBytes());
+                            client.setData().forPath(INSTANCE_PATH.concat("/").concat(child), ("" + i).getBytes());
                             mark2[i] = 1;
                         } else {
                             mark2[Integer.parseInt(data)] = 1;

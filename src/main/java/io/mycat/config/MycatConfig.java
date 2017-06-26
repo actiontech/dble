@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import io.mycat.MycatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -329,8 +331,8 @@ public class MycatConfig {
 		Map<ERTable, Set<ERTable>> newErRelations,
 		FirewallConfig newFirewall,
 		boolean isLoadAll) {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
+		final ReentrantReadWriteLock lock = MycatServer.getInstance().getConfLock();
+		lock.writeLock().lock();
 		try {
 			// old 处理
 			// 1、停止老的数据源心跳
@@ -366,6 +368,7 @@ public class MycatConfig {
 				if (newDataHosts != null) {
 					for (PhysicalDBPool newDbPool : newDataHosts.values()) {
 						if (newDbPool != null) {
+							MycatServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
 							newDbPool.startHeartbeat();
 						}
 					}
@@ -378,7 +381,7 @@ public class MycatConfig {
 			this.firewall = newFirewall;
 			this.erRelations = newErRelations;
 		} finally {
-			lock.unlock();
+			lock.writeLock().unlock();
 		}
 	}
 

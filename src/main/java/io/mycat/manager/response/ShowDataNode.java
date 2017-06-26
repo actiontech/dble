@@ -165,7 +165,7 @@ public final class ShowDataNode {
 		if (ds != null) {
 			int active = ds.getActiveCountForSchema(node.getDatabase());
 			int idle = ds.getIdleCountForSchema(node.getDatabase());
-			row.add(IntegerUtil.toBytes(pool.getActivedIndex()));
+			row.add(IntegerUtil.toBytes(pool.getActiveIndex()));
 			row.add(IntegerUtil.toBytes(active));
 			row.add(IntegerUtil.toBytes(idle));
 			row.add(IntegerUtil.toBytes(ds.getSize()));

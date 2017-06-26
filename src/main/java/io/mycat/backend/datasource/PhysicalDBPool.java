@@ -33,10 +33,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import io.mycat.MycatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.heartbeat.DBHeartbeat;
 import io.mycat.backend.mysql.nio.handler.GetConnectionHandler;
@@ -63,14 +63,13 @@ public class PhysicalDBPool {
 	protected Map<Integer, PhysicalDatasource[]> readSources;
 	private Collection<PhysicalDatasource> allDs;
 
-	protected volatile int activedIndex;
+	protected volatile int activeIndex;
 	protected volatile boolean initSuccess;
 
 	protected final ReentrantLock switchLock = new ReentrantLock();
 
 	private final int balance;
 	private final Random random = new Random();
-	private final Random wnrandom = new Random();
 	private String[] schemas;
 	private final DataHostConfig dataHostConfig;
 
@@ -222,7 +221,7 @@ public class PhysicalDBPool {
 	}
 
 	public PhysicalDatasource getSource() {
-		return writeSources[activedIndex];
+		return writeSources[activeIndex];
 	}
 
 	public boolean isSlave(PhysicalDatasource ds) {
@@ -236,7 +235,7 @@ public class PhysicalDBPool {
 				break;
 			}
 		}
-		islave = (currentIndex == activedIndex);
+		islave = (currentIndex == activeIndex);
 
 		return islave;
 	}
@@ -245,8 +244,8 @@ public class PhysicalDBPool {
 		return initSuccess;
 	}
 
-	public int getActivedIndex() {
-		return activedIndex;
+	public int getActiveIndex() {
+		return activeIndex;
 	}
 
 	public int next(int i) {
@@ -265,7 +264,7 @@ public class PhysicalDBPool {
 				&& curDsHbStatus != DBHeartbeat.OK_STATUS && getSources().length > 1) {
 			// try to see if need switch datasource
 			if (curDsHbStatus != DBHeartbeat.INIT_STATUS && curDsHbStatus != DBHeartbeat.OK_STATUS) {
-				int curIndex = getActivedIndex();
+				int curIndex = getActiveIndex();
 				int nextId = next(curIndex);
 				PhysicalDatasource[] allWriteNodes = getSources();
 				while (true) {
@@ -304,25 +303,26 @@ public class PhysicalDBPool {
 		if (!checkIndex(newIndex)) {
 			return false;
 		}
-
 		final ReentrantLock lock = this.switchLock;
 		lock.lock();
 		try {
-			int current = activedIndex;
+			int current = activeIndex;
 			if (current != newIndex) {
 				// switch index
-				activedIndex = newIndex;
-
+				activeIndex = newIndex;
 				// init again
-				this.init(activedIndex);
-
-				// clear all connections
-				this.getSources()[current].clearCons("switch datasource");
-
-				// write log
-				LOGGER.warn(switchMessage(current, newIndex, false, reason));
-
-				return true;
+				int result =this.init(activeIndex);
+				if (result >= 0) {
+					MycatServer.getInstance().saveDataHostIndex(hostName, result);
+					// clear all connections
+					this.getSources()[current].clearCons("switch datasource");
+					// write log
+					LOGGER.warn(switchMessage(current, result, isAlarm, reason));
+					return true;
+				} else {
+					LOGGER.warn(switchMessage(current, newIndex, true, reason)+", but failed");
+					return false;
+				}
 			}
 		} finally {
 			lock.unlock();
@@ -344,38 +344,31 @@ public class PhysicalDBPool {
 		return i < writeSources.length ? i : (i - writeSources.length);
 	}
 
-	public void init(int index) {
+	public int init(int index) {
 		if (!checkIndex(index)) {
 			index = 0;
 		}
 
-		int active = -1;
 		for (int i = 0; i < writeSources.length; i++) {
 			int j = loop(i + index);
 			if (initSource(j, writeSources[j])) {
 				// 不切换时，如果主写挂了,不允许切换过去
 				boolean isNotSwitchDs = (dataHostConfig.getSwitchType() == DataHostConfig.NOT_SWITCH_DS);
 				if (isNotSwitchDs && j > 0) {
-					break;
+					return j;
 				}
-
-				active = j;
-				activedIndex = active;
+				activeIndex = j;
 				initSuccess = true;
-				LOGGER.info(getMessage(active, " init success"));
-
-				// only init one write datasource
-				MycatServer.getInstance().saveDataHostIndex(hostName, activedIndex);
-				break;
+				LOGGER.info(getMessage(j, " init success"));
+				return activeIndex;
 			}
 		}
 
-		if (!checkIndex(active)) {
-			initSuccess = false;
-			StringBuilder s = new StringBuilder();
-			s.append(Alarms.DEFAULT).append(hostName).append(" init failure");
-			LOGGER.error(s.toString());
-		}
+		initSuccess = false;
+		StringBuilder s = new StringBuilder();
+		s.append(Alarms.DEFAULT).append(hostName).append(" init failure");
+		LOGGER.error(s.toString());
+		return -1;
 	}
 
 	private boolean checkIndex(int i) {
@@ -415,9 +408,6 @@ public class PhysicalDBPool {
 			}
 		}
 		LOGGER.info("init result :" + getConHandler.getStatusInfo());
-		// for (BackendConnection c : list) {
-		// c.release();
-		// }
 		return !list.isEmpty();
 	}
 
@@ -747,7 +737,7 @@ public class PhysicalDBPool {
 	private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean includeCurWriteNode,
 			boolean filterWithSlaveThreshold) {
 
-		int curActive = activedIndex;
+		int curActive = activeIndex;
 
 		Collection<PhysicalDatasource> all;
 		Map<Integer, PhysicalDatasource[]> rs;

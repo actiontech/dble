@@ -23,10 +23,21 @@
  */
 package io.mycat.manager.response;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
+import io.mycat.util.KVPathUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,30 +58,88 @@ import io.mycat.net.mysql.OkPacket;
  */
 public final class RollbackConfig {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RollbackConfig.class);
-
+	private static String errorMsg;
 	public static void execute(ManagerConnection c) {
-		final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
-		lock.lock();
-		try {
-			if (rollback()) {
-				StringBuilder s = new StringBuilder();
-				s.append(c).append("Rollback config success by manager");
-				LOGGER.warn(s.toString());
-				OkPacket ok = new OkPacket();
-				ok.packetId = 1;
-				ok.affectedRows = 1;
-				ok.serverStatus = 2;
-				ok.message = "Rollback config success".getBytes();
-				ok.write(c);
-			} else {
-				c.writeErrMessage(ErrorCode.ER_YES, "Rollback config failure");
+		if (MycatServer.getInstance().isUseZK()) {
+			CuratorFramework zkConn = ZKUtils.getConnection();
+			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
+			try {
+				if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
+					c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+				} else {
+					try {
+						final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
+						lock.lock();
+						try {
+							errorMsg = null;
+							if (!rollback()) {
+								writeErrorResult(c);
+								return;
+							}
+							XmltoZkMain.rollbackConf();
+							//tell zk this instance has prepared
+							ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+							//check all session waiting status
+							List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+							List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+							// TODO: While waiting, a new instance of MyCat is upping and working.
+							while (preparedList.size() < onlineList.size()) {
+								LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+								onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+								preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+							}
+							for (String child : preparedList) {
+								zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(),child));
+							}
+							writeOKResult(c);
+						} catch (Exception e) {
+							LOGGER.warn("reload config failure",e);
+							errorMsg = e.toString();
+							writeErrorResult(c);
+						} finally {
+							lock.unlock();
+						}
+					} finally {
+						distributeLock.release();
+					}
+				}
+			} catch (Exception e) {
+				LOGGER.warn("reload config failure",e);
+				errorMsg = e.toString();
+				writeErrorResult(c);
 			}
-		} finally {
-			lock.unlock();
+		} else {
+			final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
+			lock.lock();
+			try {
+				errorMsg = null;
+				if (rollback()) {
+					writeOKResult(c);
+				} else {
+					writeErrorResult(c);
+				}
+			} finally {
+				lock.unlock();
+			}
 		}
 	}
-
-	private static boolean rollback() {
+	private static void writeOKResult(ManagerConnection c) {
+		StringBuilder s = new StringBuilder();
+		s.append(c).append("Rollback config success by manager");
+		LOGGER.info(s.toString());
+		OkPacket ok = new OkPacket();
+		ok.packetId = 1;
+		ok.affectedRows = 1;
+		ok.serverStatus = 2;
+		ok.message = "Rollback config success".getBytes();
+		ok.write(c);
+	}
+	private static void writeErrorResult(ManagerConnection c) {
+		String sb = "Rollback config failure.The reason is " + errorMsg;
+		LOGGER.warn(sb+"." + String.valueOf(c));
+		c.writeErrMessage(ErrorCode.ER_YES, sb);
+	}
+	public static boolean rollback() {
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 		Map<String, UserConfig> users = conf.getBackupUsers();
 		Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
@@ -81,6 +150,7 @@ public final class RollbackConfig {
 
 		// 检查可回滚状态
 		if (!conf.canRollback()) {
+			errorMsg ="Conf can not be rollback because of no old version";
 			return false;
 		}
 
@@ -88,9 +158,10 @@ public final class RollbackConfig {
 		// 如果回滚已经存在的pool
 		boolean rollbackStatus = true;
 		for (PhysicalDBPool dn : dataHosts.values()) {
-			dn.init(dn.getActivedIndex());
+			dn.init(dn.getActiveIndex());
 			if (!dn.isInitSuccess()) {
 				rollbackStatus = false;
+				errorMsg ="dataHost"+dn.getHostName()+" inited failure";
 				break;
 			}
 		}
@@ -102,7 +173,6 @@ public final class RollbackConfig {
 			}
 			return false;
 		}
-
 		// 应用回滚
 		conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
 

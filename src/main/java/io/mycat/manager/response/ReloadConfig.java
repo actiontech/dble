@@ -23,20 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
@@ -46,6 +32,9 @@ import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.config.ConfigInitializer;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
@@ -54,6 +43,18 @@ import io.mycat.config.util.DnPropertyUtil;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.net.NIOProcessor;
 import io.mycat.net.mysql.OkPacket;
+import io.mycat.util.KVPathUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.utils.ZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -62,34 +63,96 @@ import io.mycat.net.mysql.OkPacket;
 public final class ReloadConfig {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
-
+	private static String errorMsg;
 	public static void execute(ManagerConnection c, final boolean loadAll) {
-		
 		// reload @@config_all 校验前一次的事务完成情况
 		if ( loadAll && !NIOProcessor.backends_old.isEmpty() ) {
 			c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
 			return;
 		}
-		
-		final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();		
-		lock.lock();
-		try {
-			ListenableFuture<Boolean> listenableFuture = MycatServer.getInstance().getListeningExecutorService().submit(
-				new Callable<Boolean>() {
-					@Override
-					public Boolean call() throws Exception {
-						return loadAll ? reload_all() : reload();
+		if (MycatServer.getInstance().isUseZK()) {
+			CuratorFramework zkConn = ZKUtils.getConnection();
+			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
+			try {
+				if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
+					c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+				} else {
+					try {
+						final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
+						lock.lock();
+						try {
+							errorMsg = null;
+							boolean isSuccess = loadAll ? reload_all() : reload();
+							if (!isSuccess) {
+								writeErrorResult(c);
+								return;
+							}
+							XmltoZkMain.writeConfFileToZK(loadAll);
+							//tell zk this instance has prepared
+							ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+							//check all session waiting status
+							List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+							List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+							// TODO: While waiting, a new instance of MyCat is upping and working.
+							while (preparedList.size() < onlineList.size()) {
+								LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+								onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+								preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+							}
+							for (String child : preparedList) {
+								zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(),child));
+							}
+							writeOKResult(c);
+						} catch (Exception e) {
+							LOGGER.warn("reload config failure",e);
+							errorMsg = e.toString();
+							writeErrorResult(c);
+						} finally {
+							lock.unlock();
+						}
+					} finally {
+						distributeLock.release();
 					}
 				}
-			);
-			Futures.addCallback(listenableFuture, new ReloadCallBack(c), MycatServer.getInstance().getListeningExecutorService());
-		} finally {
-			lock.unlock();
+			} catch (Exception e) {
+				LOGGER.warn("reload config failure",e);
+				errorMsg = e.toString();
+				writeErrorResult(c);
+			}
+		} else {
+			final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
+			lock.lock();
+			try {
+				errorMsg = null;
+				boolean isSuccess = loadAll ? reload_all() : reload();
+				if (isSuccess) {
+					writeOKResult(c);
+				} else {
+					writeErrorResult(c);
+				}
+			}
+			finally {
+				lock.unlock();
+			}
 		}
 	}
 
+	private static void writeOKResult(ManagerConnection c) {
+		LOGGER.info("send ok package to client " + String.valueOf(c));
+		OkPacket ok = new OkPacket();
+		ok.packetId = 1;
+		ok.affectedRows = 1;
+		ok.serverStatus = 2;
+		ok.message = "Reload config success".getBytes();
+		ok.write(c);
+	}
+	private static void writeErrorResult(ManagerConnection c) {
+		String sb = "Reload config failure.The reason is " + errorMsg;
+		LOGGER.warn(sb+"." + String.valueOf(c));
+		c.writeErrMessage(ErrorCode.ER_YES, sb);
+	}
 	public static boolean reload_all() {
-		/**
+		/*
 		 *  1、载入新的配置
 		 *  1.1、ConfigInitializer 初始化l, 基本自检
 		 *  1.2、DataNode/DataHost 实际链路检测
@@ -105,7 +168,7 @@ public final class ReloadConfig {
 		/* 1.2、实际链路检测 */
 		loader.testConnection();
 
-		/**
+		/*
 		 *  2、承接
 		 *  2.1、老的 dataSource 继续承接新建请求
 		 *  2.2、新的 dataSource 开始初始化， 完毕后交由 2.3
@@ -121,9 +184,8 @@ public final class ReloadConfig {
 		/* 2.2、新的 dataHosts 初始化 */
 		for (PhysicalDBPool dbPool : newDataHosts.values()) {					
 			String hostName = dbPool.getHostName();
-			
 			// 设置 schemas
-			ArrayList<String> dnSchemas = new ArrayList<String>(30);
+			ArrayList<String> dnSchemas = new ArrayList<>(30);
 			for (PhysicalDBNode dn : newDataNodes.values()) {
 				if (dn.getDbPool().getHostName().equals(hostName)) {
 					dnSchemas.add(dn.getDatabase());
@@ -144,18 +206,17 @@ public final class ReloadConfig {
 			}
 		}
 		
-		/**
+		/*
 		 *  TODO： 确认初始化情况
-		 *    
+		 *
 		 *  新的 dataHosts 是否初始化成功
 		 */
-		if ( isReloadStatusOK ) {
-			
+		if (isReloadStatusOK) {
 			/* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
 			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
 
 			/* 2.4、 处理旧的资源 */
-			LOGGER.warn("1. clear old backend connection(size): " + NIOProcessor.backends_old.size());
+			LOGGER.info("1. clear old backend connection(size): " + NIOProcessor.backends_old.size());
 			
 			// 清除前一次 reload 转移出去的 old Cons
 			Iterator<BackendConnection> iter = NIOProcessor.backends_old.iterator();
@@ -164,7 +225,6 @@ public final class ReloadConfig {
 				con.close("clear old datasources");
 				iter.remove();	
 			}
-			
 			Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
 			for (PhysicalDBPool dbPool : oldDataHosts.values()) {			
 				dbPool.stopHeartbeat();
@@ -183,27 +243,27 @@ public final class ReloadConfig {
 					}
 				}				
 			}			
-			LOGGER.warn("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
+			LOGGER.info("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
 
 			//清理缓存
 			MycatServer.getInstance().getCacheService().clearCache();
 			MycatServer.getInstance().reloadMetaData();
 			return true;
-			
 		} else {
 			// 如果重载不成功，则清理已初始化的资源。
-			LOGGER.warn("reload failed, clear previously created datasources ");
+			LOGGER.info("reload failed, clear previously created datasources ");
 			for (PhysicalDBPool dbPool : newDataHosts.values()) {
 				dbPool.clearDataSources("reload config");
 				dbPool.stopHeartbeat();
 			}
+			errorMsg = "Init DbPool failed";
 			return false;
 		}
 	}
 
     public static boolean reload() {
 	/* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
-    	ConfigInitializer loader = new ConfigInitializer(true);
+    	ConfigInitializer loader = new ConfigInitializer(false);
         Map<String, UserConfig> users = loader.getUsers();
         Map<String, SchemaConfig> schemas = loader.getSchemas();
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
@@ -218,33 +278,5 @@ public final class ReloadConfig {
         MycatServer.getInstance().reloadMetaData();
         return true;
     }
-    
-    /* 异步执行回调类，用于回写数据给用户等 */
-    private static class ReloadCallBack implements FutureCallback<Boolean> {
-		private ManagerConnection mc;
 
-		private ReloadCallBack(ManagerConnection c) {
-			this.mc = c;
-		}
-
-		@Override
-		public void onSuccess(Boolean result) {
-			if (result) {
-				LOGGER.warn("send ok package to client " + String.valueOf(mc));
-				OkPacket ok = new OkPacket();
-				ok.packetId = 1;
-				ok.affectedRows = 1;
-				ok.serverStatus = 2;
-				ok.message = "Reload config success".getBytes();
-				ok.write(mc);
-			} else {
-				mc.writeErrMessage(ErrorCode.ER_YES, "Reload config failure");
-			}
-		}
-
-		@Override
-		public void onFailure(Throwable t) {
-			mc.writeErrMessage(ErrorCode.ER_YES, "Reload config failure");
-		}
-	}
 }

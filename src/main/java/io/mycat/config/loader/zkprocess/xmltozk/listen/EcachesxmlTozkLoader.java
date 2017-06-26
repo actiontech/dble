@@ -12,15 +12,12 @@ import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.parse.entryparse.cache.json.EhcacheJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.cache.xml.EhcacheParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.util.ResourceUtil;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * 进行从ecache.xml加载到zk中加载
@@ -45,20 +42,6 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
     */
     private final String currZkPath;
 
-    /**
-     * Ehcache文件的路径信息
-    */
-    private static final String EHCACHE_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "ehcache.xml";
-
-    /**
-     * 缓存文件名称
-    */
-    private static final String CACHESERVER_NAME = "cacheservice.properties";
-
-    /**
-     * 缓存的xml文件配制信息
-    */
-    private static final String EHCACHE_NAME = "ehcache.xml";
 
     /**
      * ehcache的xml的转换信息
@@ -72,24 +55,19 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
     public EcachesxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
-
         this.setCurator(curator);
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_CACHE.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath = KVPathUtil.getCachePath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(schemaPath, this);
+        zookeeperListen.addToInit(this);
 
         // 生成xml与类的转换信息
         parseEcacheXMl = new EhcacheParseXmlImpl(xmlParseBase);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
-        Ehcache Ehcache = this.parseEcacheXMl.parseXmlToBean(EHCACHE_PATH);
+        Ehcache Ehcache = this.parseEcacheXMl.parseXmlToBean(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + KVPathUtil.EHCACHE_NAME);
         LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk Ehcache Object  :" + Ehcache);
         // 将实体信息写入至zk中
         this.xmlTozkEhcacheJson(currZkPath, Ehcache);
@@ -109,15 +87,13 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
     */
     private void xmlTozkEhcacheJson(String basePath, Ehcache ehcache) throws Exception {
         // ehcache节点信息
-        String ehcacheFile = ZookeeperPath.ZK_SEPARATOR.getKey() + EHCACHE_NAME;
         String ehcacheJson = this.parseJsonEhcacheService.parseBeanToJson(ehcache);
-        this.checkAndwriteString(basePath, ehcacheFile, ehcacheJson);
+        this.checkAndwriteString(basePath, KVPathUtil.EHCACHE_NAME, ehcacheJson);
 
         // 读取文件信息
-        String cacheServicePath = ZookeeperPath.ZK_SEPARATOR.getKey() + CACHESERVER_NAME;
         try {
-            String serviceValue = ConfFileRWUtils.readFile(CACHESERVER_NAME);
-            this.checkAndwriteString(basePath, cacheServicePath, serviceValue);
+            String serviceValue = ConfFileRWUtils.readFile(KVPathUtil.CACHESERVER_NAME);
+            this.checkAndwriteString(basePath, KVPathUtil.CACHESERVER_NAME, serviceValue);
         }catch (IOException e) {
             LOGGER.error("EhcachexmlTozkLoader readMapFile IOException", e);
         }

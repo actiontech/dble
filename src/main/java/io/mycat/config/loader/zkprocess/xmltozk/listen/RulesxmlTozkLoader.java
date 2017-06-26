@@ -17,6 +17,7 @@ import io.mycat.config.loader.zkprocess.parse.entryparse.rule.json.FunctionJsonP
 import io.mycat.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
     /**
      * Rules文件的路径信息
     */
-    private static final String RULE_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "rule.xml";
+    private static final String RULE_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "rule.xml";
 
     /**
      * Rules的xml的转换信息
@@ -70,22 +71,16 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     public RulesxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
-
         this.setCurator(curator);
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath = KVPathUtil.getConfRulePath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(schemaPath, this);
-
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         parseRulesXMl = new RuleParseXmlImpl(xmlParseBase);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Rules Rules = this.parseRulesXMl.parseXmlToBean(RULE_PATH);
         LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk Rules Object  :" + Rules);
@@ -107,17 +102,15 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
     */
     private void xmlTozkRulesJson(String basePath, Rules rules) throws Exception {
         // tablerune节点信息
-        String tableRulePath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE_TABLERULE.getKey();
         String tableRuleJson = this.parseJsonTableRuleService.parseBeanToJson(rules.getTableRule());
-        this.checkAndwriteString(basePath, tableRulePath, tableRuleJson);
+        this.checkAndwriteString(basePath, KVPathUtil.TABLE_RULE, tableRuleJson);
 
         // 读取mapFile文件,并加入到function中
         this.readMapFileAddFunction(rules.getFunction());
 
         // 方法设置信息
-        String functionPath = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_RULE_FUNCTION.getKey();
         String functionJson = this.parseJsonFunctionService.parseBeanToJson(rules.getFunction());
-        this.checkAndwriteString(basePath, functionPath, functionJson);
+        this.checkAndwriteString(basePath, KVPathUtil.FUNCTION, functionJson);
     }
 
     /**

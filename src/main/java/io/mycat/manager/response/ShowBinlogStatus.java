@@ -1,34 +1,14 @@
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
-
-import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause;
-import io.mycat.util.TimeUtil;
-import io.mycat.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.utils.ZKPaths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
+import io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.NIOProcessor;
@@ -42,17 +22,26 @@ import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
 import io.mycat.sqlengine.SQLQueryResult;
 import io.mycat.sqlengine.SQLQueryResultListener;
+import io.mycat.util.KVPathUtil;
 import io.mycat.util.StringUtil;
+import io.mycat.util.TimeUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.utils.ZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static io.mycat.config.loader.console.ZookeeperPath.FLOW_ZK_PATH_ONLINE;
-import static io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+
+import static io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause.BinlogPauseStatus;
 
 public class ShowBinlogStatus {
-	public static final String KW_BINLOG_PAUSE ="binlog_pause";
-	public static final String KW_BINLOG_PAUSE_STATUS ="status";
-	public static final String BINLOG_PAUSE_STATUS = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + KW_BINLOG_PAUSE_STATUS;
-	public static final String BINLOG_PAUSE_INSTANCES = KW_BINLOG_PAUSE + ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.ZK_PATH_INSTANCE.getKey();
-	private static final String BINLOG_PAUSE_LOCK ="lock/binlogStatus.lock";
 	private static final int FIELD_COUNT = 6;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -82,8 +71,7 @@ public class ShowBinlogStatus {
 		long timeout = MycatServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
 		if (isUseZK) {
 			CuratorFramework zkConn = ZKUtils.getConnection();
-			String basePath = ZKUtils.getZKBasePath();
-			String lockPath = basePath + BINLOG_PAUSE_LOCK;
+			String lockPath = KVPathUtil.getBinlogPauseLockPath();
 			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, lockPath);
 			try {
 				//zkLock， the other instance cant't get lock before finished
@@ -97,8 +85,8 @@ public class ShowBinlogStatus {
 					} else {
 						errMsg = null;
 						//notify zk to wait all session
-						String binlogStatusPath = basePath + BINLOG_PAUSE_STATUS;
-						String binlogPause = basePath + BINLOG_PAUSE_INSTANCES;
+						String binlogStatusPath = KVPathUtil.getBinlogPauseStatus();
+						String binlogPause = KVPathUtil.getBinlogPauseInstance();
 						BinlogPause pauseOnInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.ON);
 						zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
 						long beginTime = TimeUtil.currentTimeMillis();
@@ -108,7 +96,7 @@ public class ShowBinlogStatus {
 							ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 							//check all session waiting status
 							List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
-							List<String> onlineList = zkConn.getChildren().forPath(basePath + FLOW_ZK_PATH_ONLINE.getKey());
+							List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
 							// TODO: While waiting, a new instance of MyCat is upping and working.
 							while (preparedList.size() < onlineList.size()) {
 								//TIMEOUT
@@ -120,8 +108,9 @@ public class ShowBinlogStatus {
 									zkConn.setData().forPath(binlogStatusPath, pauseTimeoutInfo.toString().getBytes(StandardCharsets.UTF_8));
 									break;
 								}
-								preparedList = zkConn.getChildren().forPath(binlogPause);
 								LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+								onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+								preparedList = zkConn.getChildren().forPath(binlogPause);
 							}
 							if (isAllPaused) {
 								getQueryResult(c.getCharset());
@@ -215,7 +204,7 @@ public class ShowBinlogStatus {
 			}
 			if ((TimeUtil.currentTimeMillis() > beginTime + timeout)){
 				try {
-					if (ZKUtils.getConnection().getChildren().forPath(ZKUtils.getZKBasePath() + FLOW_ZK_PATH_ONLINE.getKey()).contains(from)) {
+					if (ZKUtils.getConnection().getChildren().forPath(KVPathUtil.getOnlinePath()).contains(from)) {
 						logger.warn("timeout and the from mycat node " + from + " is offline");
 						waiting = false;
 						MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);

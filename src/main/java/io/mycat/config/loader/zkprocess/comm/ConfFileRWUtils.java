@@ -2,8 +2,10 @@ package io.mycat.config.loader.zkprocess.comm;
 
 import com.alibaba.fastjson.util.IOUtils;
 import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.util.ResourceUtil;
 
 import java.io.*;
+import java.util.ResourceBundle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -13,9 +15,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class ConfFileRWUtils {
 	public static String readFile(String name) throws IOException {
 		StringBuilder mapFileStr = new StringBuilder();
-		String path = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + name;
+		String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;
 		// 加载数据
-		InputStream input = ConfFileRWUtils.class.getResourceAsStream(path);
+		InputStream input = ResourceUtil.getResourceAsStream(path);
 		checkNotNull(input, "read file curr Path :" + path + " is null! It must be not null");
 		byte[] buffers = new byte[256];
 		try {
@@ -31,7 +33,7 @@ public class ConfFileRWUtils {
 
 	public static void writeFile(String name, String value) throws IOException {
 		// 加载数据
-		String path = ConfFileRWUtils.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey()).getPath();
+		String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
 		checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");
 		path = new File(path).getPath() + File.separator + name;
 

@@ -236,7 +236,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
 				if (curDatasourceHB != DBHeartbeat.INIT_STATUS
 				    && curDatasourceHB != DBHeartbeat.OK_STATUS) {
-					int curIndex = pool.getActivedIndex();
+					int curIndex = pool.getActiveIndex();
 					int nextId = pool.next(curIndex);
 					PhysicalDatasource[] allWriteNodes = pool.getSources();
 					while (true) {

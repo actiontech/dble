@@ -1,21 +1,18 @@
 package io.mycat.config.loader.zkprocess.zookeeper.process;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
+import com.google.gson.Gson;
+import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
+import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
-import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * 进行zk获取数据类信息
@@ -75,7 +72,7 @@ public class ZkMultLoader {
                 zkDirectory.add(directory);
 
                 for (String childPath : childPathList) {
-                    this.getTreeDirectory(path + ZookeeperPath.ZK_SEPARATOR.getKey() + childPath, childPath, directory);
+                    this.getTreeDirectory(ZKPaths.makePath(path, childPath), childPath, directory);
                 }
             }
             // 添加当前的数据节点信息

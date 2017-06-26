@@ -1,18 +1,12 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import java.util.List;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.entity.Schemas;
 import io.mycat.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import io.mycat.config.loader.zkprocess.entity.schema.datanode.DataNode;
 import io.mycat.config.loader.zkprocess.entity.schema.schema.Schema;
-import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import io.mycat.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
@@ -21,6 +15,12 @@ import io.mycat.config.loader.zkprocess.parse.entryparse.schema.json.DataNodeJso
 import io.mycat.config.loader.zkprocess.parse.entryparse.schema.json.SchemaJsonParse;
 import io.mycat.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * 进行从xml加载到zk中加载
@@ -48,7 +48,7 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
     /**
      * schema文件的路径信息
     */
-    private static final String SCHEMA_PATH = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + "schema.xml";
+    private static final String SCHEMA_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "schema.xml";
 
     /**
      * schema类与xml转换服务
@@ -72,22 +72,16 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
     public SchemasxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
             XmlProcessBase xmlParseBase) {
-
         this.setCurator(curator);
-
-        // 获得当前集群的名称
-        String schemaPath = zookeeperListen.getBasePath() + ZookeeperPath.FOW_ZK_PATH_SCHEMA.getKey();
-
-        currZkPath = schemaPath;
+        currZkPath =  KVPathUtil.getConfSchemaPath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(schemaPath, this);
-
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         this.parseSchemaXmlService = new SchemasParseXmlImpl(xmlParseBase);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
         Schemas schema = this.parseSchemaXmlService.parseXmlToBean(SCHEMA_PATH);
 
@@ -112,24 +106,21 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
     private void xmlTozkSchemasJson(String basePath, Schemas schema) throws Exception {
 
         // 设置schema目录的值
-        String schemaStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SCHEMA_SCHEMA.getKey();
 
         String schemaValueStr = this.parseJsonSchema.parseBeanToJson(schema.getSchema());
 
-        this.checkAndwriteString(basePath, schemaStr, schemaValueStr);
+        this.checkAndwriteString(basePath, KVPathUtil.SCHEMA_SCHEMA, schemaValueStr);
         // 设置datanode
-        String dataNodeStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATANODE.getKey();
 
         String dataNodeValueStr = this.parseJsonDataNode.parseBeanToJson(schema.getDataNode());
 
-        this.checkAndwriteString(basePath, dataNodeStr, dataNodeValueStr);
+        this.checkAndwriteString(basePath, KVPathUtil.DATA_NODE, dataNodeValueStr);
 
         // 设置dataHost
-        String dataHostStr = ZookeeperPath.ZK_SEPARATOR.getKey() + ZookeeperPath.FLOW_ZK_PATH_SCHEMA_DATAHOST.getKey();
 
         String dataHostValueStr = this.parseJsonDataHost.parseBeanToJson(schema.getDataHost());
 
-        this.checkAndwriteString(basePath, dataHostStr, dataHostValueStr);
+        this.checkAndwriteString(basePath, KVPathUtil.DATA_HOST, dataHostValueStr);
 
     }
 

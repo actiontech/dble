@@ -11,6 +11,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.manager.response.ShowBinlogStatus;
+import io.mycat.util.KVPathUtil;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -20,29 +21,23 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.mycat.manager.response.ShowBinlogStatus.*;
+import static io.mycat.util.KVPathUtil.BINLOG_PAUSE_STATUS;
 
 /**
  * Created by huqing.yan on 2017/5/25.
  */
-public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifyService {
+public class BinlogPauseStatusListener extends ZkMultLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusListener.class);
     private final String currZkPath;
 
     public BinlogPauseStatusListener(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
-
         this.setCurator(curator);
-        currZkPath = zookeeperListen.getBasePath() + BINLOG_PAUSE_STATUS;
-        // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(zookeeperListen.getBasePath() + KW_BINLOG_PAUSE, this);
-        zookeeperListen.watchPath(zookeeperListen.getBasePath() + KW_BINLOG_PAUSE, KW_BINLOG_PAUSE_STATUS);
+        currZkPath = KVPathUtil.getBinlogPauseStatus();
+        zookeeperListen.addWatch(currZkPath, this);
     }
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
-        if (isAll) {
-            return true;
-        }
-        String basePath = ZKUtils.getZKBasePath();
+    public boolean notifyProcess() throws Exception {
+        String basePath = KVPathUtil.BASE_PATH;
         // 通过组合模式进行zk目录树的加载
         DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
@@ -56,7 +51,7 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         if(pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
             return true; //self node
         }
-        String instancePath = ZKPaths.makePath(basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
             MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
             if (ShowBinlogStatus.waitAllSession(pauseInfo.getFrom())) {

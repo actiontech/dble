@@ -1,15 +1,5 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
-import io.mycat.MycatServer;
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.manager.response.ReloadConfig;
-import io.mycat.util.ResourceUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.util.IOUtils;
-
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -28,7 +18,8 @@ import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.manager.response.ReloadConfig;
+import io.mycat.util.KVPathUtil;
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,36 +72,25 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
     private ParseJsonServiceInf<List<User>> parseJsonUser = new UserJsonParse();
 
     private ParseJsonServiceInf<FireWall> parseJsonFireWall = new FireWallJsonParse();
-    /**
-     * zk监控路径
-    */
-    private ZookeeperProcessListen zookeeperListen;
 
     public ServerzkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
-
+                               XmlProcessBase xmlParseBase, ConfigStatusListener confListener) {
         this.setCurator(curator);
-
-        this.zookeeperListen = zookeeperListen;
-
-        // 获得当前集群的名称
-        String serverPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey();
-
-        currZkPath = serverPath;
+        currZkPath = KVPathUtil.getConfServerPath();
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addListen(serverPath, this);
-
+        zookeeperListen.addToInit( this);
         // 生成xml与类的转换信息
         parseServerXMl = new ServerParseXmlImpl(xmlParseBase);
+        confListener.addChild(this);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群server目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf serverDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER.getKey(), serverDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.SERVER, serverDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) serverDirectory.getSubordinateInfo().get(0);
@@ -129,9 +109,6 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object zk server      write :" + path + " is success");
 
-
-        if (!isAll && MycatServer.getInstance().getProcessors() != null)
-            ReloadConfig.reload();
         return true;
     }
 
@@ -146,27 +123,19 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         Server server = new Server();
 
         // 得到server对象的目录信息
-        DataInf serverZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_DEFAULT.getKey());
+        DataInf serverZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DEFAULT);
         System systemValue = parseJsonSystem.parseJsonToBean(serverZkDirectory.getDataValue());
         server.setSystem(systemValue);
 
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_DEFAULT.getKey());
         // 得到firewall的信息
-        DataInf firewallZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey());
+        DataInf firewallZkDirectory = this.getZkData(zkDirectory, KVPathUtil.FIREWALL);
         FireWall fireWall = parseJsonFireWall.parseJsonToBean(firewallZkDirectory.getDataValue());
         server.setFirewall(fireWall);
-        // firewall路径的监控
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_FIREWALL.getKey());
 
         // 得到user的信息
-        DataInf userZkDirectory = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey());
+        DataInf userZkDirectory = this.getZkData(zkDirectory, KVPathUtil.USER);
         List<User> userList = parseJsonUser.parseJsonToBean(userZkDirectory.getDataValue());
         server.setUser(userList);
-
-        // 用户路径的监控
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_SERVER_USER.getKey());
-
-
 
         return server;
     }

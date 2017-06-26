@@ -16,7 +16,6 @@ import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
@@ -34,6 +33,7 @@ import io.mycat.meta.table.SchemaMetaHandler;
 import io.mycat.meta.table.TableMetaCheckHandler;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
+import io.mycat.util.KVPathUtil;
 import io.mycat.util.StringUtil;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -50,8 +50,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static io.mycat.config.loader.console.ZookeeperPath.FLOW_ZK_PATH_ONLINE;
 import static io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
+import static io.mycat.util.KVPathUtil.DDL_INSTANCE;
 
 public class ProxyMetaManager {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);
@@ -386,7 +386,7 @@ public class ProxyMetaManager {
 			while (!createSuccess) {
 				try {
 					//syncMeta LOCK ,if another server start, it may failed
-					ZKUtils.createTempNode(ZKUtils.getSyncMetaLockPath());
+					ZKUtils.createTempNode(KVPathUtil.getSyncMetaLockPath());
 					createSuccess = true;
 				} catch (Exception e) {
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
@@ -397,7 +397,7 @@ public class ProxyMetaManager {
 					times++;
 				}
 			}
-			String ddlPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey();
+			String ddlPath = KVPathUtil.getDDLPath();
 			CuratorFramework zkConn = ZKUtils.getConnection();
 			//WAIT DDL PATH HAS NOT CHILD
 			times = 0;
@@ -411,11 +411,11 @@ public class ProxyMetaManager {
 			}
 			initMeta();
 			// 创建online状态
-			ZKUtils.createTempNode(ZKUtils.getZKBasePath()+ZookeeperPath.FLOW_ZK_PATH_ONLINE.getKey(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+			ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 			//创建 监视
 			ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
 			// syncMeta UNLOCK
-			zkConn.delete().forPath(ZKUtils.getSyncMetaLockPath());
+			zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
 		} else {
 			initMeta();
 		}
@@ -485,14 +485,14 @@ public class ProxyMetaManager {
 		CuratorFramework zkConn = ZKUtils.getConnection();
 		DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ddlStatus);
 		String nodeName = StringUtil.getFullName(schema, table);
-		String nodePath = ZKPaths.makePath(ZKUtils.getZKBasePath() + ZookeeperPath.ZK_DDL.getKey(), nodeName);
+		String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
 		if (zkConn.checkExists().forPath(nodePath) == null) {
 			zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
 		} else {
 			zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
 			//TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
 			boolean finished = false;
-			String instancePath = ZKPaths.makePath(nodePath, ZookeeperPath.ZK_PATH_INSTANCE.getKey());
+			String instancePath = ZKPaths.makePath(nodePath, DDL_INSTANCE);
 			zkConn.create().forPath(instancePath);
 			//zkLock， if the other instance get the lock,this instance will wait
 			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
@@ -500,8 +500,8 @@ public class ProxyMetaManager {
 			try {
 				ZKUtils.createTempNode(instancePath, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 				List<String> preparedList = zkConn.getChildren().forPath(instancePath);
-				List<String> onlineList = zkConn.getChildren().forPath(ZKUtils.getZKBasePath() + FLOW_ZK_PATH_ONLINE.getKey());
-				if(preparedList.size() == onlineList.size()) {
+				List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+				if(preparedList.size() >= onlineList.size()) {
 					finished =true;
 				}
 			} finally {

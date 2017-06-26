@@ -1,6 +1,5 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
-import io.mycat.MycatServer;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
@@ -20,7 +19,7 @@ import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
 import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.manager.response.ReloadConfig;
+import io.mycat.util.KVPathUtil;
 import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -74,36 +73,24 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     */
     private ParseJsonServiceInf<List<Function>> parseJsonFunctionService = new FunctionJsonParse();
 
-    /**
-     * zk的监控路径信息
-    */
-    private ZookeeperProcessListen zookeeperListen;
-
     public RuleszkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
-
+                              XmlProcessBase xmlParseBase, ConfigStatusListener confListener) {
         this.setCurator(curator);
-
-        this.zookeeperListen = zookeeperListen;
-
-        // 获得当前集群的名称
-        String RulesPath = zookeeperListen.getBasePath() + ZookeeperPath.FLOW_ZK_PATH_RULE.getKey();
-
-        currZkPath = RulesPath;
+        currZkPath = KVPathUtil.getConfRulePath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addListen(RulesPath, this);
-
+        zookeeperListen.addToInit( this);
         // 生成xml与类的转换信息
         parseRulesXMl = new RuleParseXmlImpl(xmlParseBase);
+        confListener.addChild(this);
     }
 
     @Override
-    public boolean notifyProcess(boolean isAll) throws Exception {
+    public boolean notifyProcess() throws Exception {
         // 1,将集群Rules目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
         DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, ZookeeperPath.FLOW_ZK_PATH_RULE.getKey(), RulesDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.RULES, RulesDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) RulesDirectory.getSubordinateInfo().get(0);
@@ -127,9 +114,6 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object zk Rules      write :" + path + " is success");
 
-        if (!isAll && MycatServer.getInstance().getProcessors() != null)
-            ReloadConfig.reload();
-
         return true;
     }
 
@@ -144,20 +128,14 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
         Rules Rules = new Rules();
 
         // tablerule信息
-        DataInf RulesZkData = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_RULE_TABLERULE.getKey());
+        DataInf RulesZkData = this.getZkData(zkDirectory, KVPathUtil.TABLE_RULE);
         List<TableRule> tableRuleData = parseJsonTableRuleService.parseJsonToBean(RulesZkData.getDataValue());
         Rules.setTableRule(tableRuleData);
 
-        // tablerule的监控
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_RULE_TABLERULE.getKey());
-
         // 得到function信息
-        DataInf functionZkData = this.getZkData(zkDirectory, ZookeeperPath.FLOW_ZK_PATH_RULE_FUNCTION.getKey());
+        DataInf functionZkData = this.getZkData(zkDirectory, KVPathUtil.FUNCTION);
         List<Function> functionList = parseJsonFunctionService.parseJsonToBean(functionZkData.getDataValue());
         Rules.setFunction(functionList);
-
-        // function的监控
-        this.zookeeperListen.watchPath(currZkPath, ZookeeperPath.FLOW_ZK_PATH_RULE_FUNCTION.getKey());
 
         return Rules;
     }

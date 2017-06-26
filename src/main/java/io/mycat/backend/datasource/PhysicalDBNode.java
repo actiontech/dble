@@ -23,6 +23,7 @@
  */
 package io.mycat.backend.datasource;
 
+import io.mycat.MycatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,12 @@ public class PhysicalDBNode {
 						   + schema + " and datanode db is " + this.database);
 		}
 		if (!dbPool.isInitSuccess()) {
-			dbPool.init(dbPool.activedIndex);
+			int activeIndex = dbPool.init(dbPool.activeIndex);
+			if(activeIndex>=0) {
+				MycatServer.getInstance().saveDataHostIndex(dbPool.getHostName(), activeIndex);
+			}else{
+				throw new RuntimeException(dbPool.getHostName() +" init source error ");
+			}
 		}
 	}
 	
@@ -132,7 +138,7 @@ public class PhysicalDBNode {
 			}
 		
 		} else {
-			throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActivedIndex());
+			throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
 		}
 	}
 
@@ -144,7 +150,7 @@ public class PhysicalDBNode {
 			writeSource.setWriteCount();
 			return writeSource.getConnection(schema, autoCommit);
 		} else {
-			throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActivedIndex());
+			throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
 		}
 	}
 //	public void getConnection(String schema,boolean autoCommit, RouteResultsetNode rrs,
@@ -160,7 +166,7 @@ public class PhysicalDBNode {
 //
 //		} else {
 //			throw new IllegalArgumentException("Invalid DataSource:"
-//					+ dbPool.getActivedIndex());
+//					+ dbPool.getActiveIndex());
 //		}
 //	}
 }

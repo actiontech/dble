@@ -4,7 +4,7 @@ package io.mycat.config.loader.zkprocess.zookeeper.process;
  * Created by huqing.yan on 2017/6/12.
  */
 public class BinlogPause {
-	public static enum BinlogPauseStatus {
+	public enum BinlogPauseStatus {
 		ON, OFF, TIMEOUT
 	}
 	private String from;

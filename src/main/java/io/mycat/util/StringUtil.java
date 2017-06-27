@@ -506,7 +506,9 @@ public class StringUtil {
 		}
 		return str;
 	}
-
+	public static String getFullName(String schema, String tableName, char split) {
+		return String.format("`%s`"+split+"`%s`", schema, tableName);
+	}
 	public static String getFullName(String schema, String tableName) {
 		return String.format("`%s`.`%s`", schema, tableName);
 	}

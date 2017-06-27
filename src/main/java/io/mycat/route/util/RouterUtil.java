@@ -807,7 +807,8 @@ public class RouterUtil {
 						if (LOGGER.isDebugEnabled()) {
 							LOGGER.debug("try to find cache by primary key ");
 						}
-						String tableKey = schema.getName() + '_' + tableName;
+
+						String tableKey =  StringUtil.getFullName(schema.getName(),tableName,'_');
 						boolean allFound = true;
 						for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id
 																		// in(1,2,3)多主键

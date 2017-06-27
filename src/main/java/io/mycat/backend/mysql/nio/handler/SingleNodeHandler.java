@@ -70,17 +70,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	private long netOutBytes;
 	private long selectRows;
 
-    	private String priamaryKeyTable = null;
+	private String priamaryKeyTable = null;
 	private int primaryKeyIndex = -1;
 	
 	private boolean prepared;
 	private int fieldCount;
 	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 
-    	private volatile boolean isDefaultNodeShowTable;
-    	private volatile boolean isDefaultNodeShowFullTable;
-    	private  Set<String> shardingTablesSet;
-    	private volatile boolean waitingResponse;
+	private volatile boolean isDefaultNodeShowTable;
+	private volatile boolean isDefaultNodeShowFullTable;
+	private Set<String> shardingTablesSet;
+	private volatile boolean waitingResponse;
 	
 	public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
 		this.rrs = rrs;
@@ -254,7 +254,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		ServerConnection source = session.getSource();
 		conn.recordSql(source.getHost(), source.getSchema(), node.getStatement());
-        	// 判断是调用存储过程的话不能在这里释放链接
+        // 判断是调用存储过程的话不能在这里释放链接
 		if (!rrs.isCallStatement()||(rrs.isCallStatement()&&rrs.getProcedure().isResultSimpleValue())) 
 		{
 			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
@@ -315,7 +315,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 		String primaryKey = null;
 		if (rrs.hasPrimaryKeyToCache()) {
-		    	String[] items = rrs.getPrimaryKeyItems();
+		    String[] items = rrs.getPrimaryKeyItems();
 			priamaryKeyTable = items[0];
 			primaryKey = items[1];
 		}
@@ -334,9 +334,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 			// find primary key index
 			if (primaryKey != null && primaryKeyIndex == -1) {
-			    	String fieldName = new String(fieldPk.name);
+				String fieldName = new String(fieldPk.name);
 				if (primaryKey.equalsIgnoreCase(fieldName)) {
-				    	primaryKeyIndex = i;
+					primaryKeyIndex = i;
 				}
 			}
 			
@@ -392,7 +392,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		RowDataPacket rowDataPk = null;
 		// cache primaryKey-> dataNode
 		if (primaryKeyIndex != -1) {
-		    	rowDataPk = new RowDataPacket(fieldCount);
+		    rowDataPk = new RowDataPacket(fieldCount);
 			rowDataPk.read(row);
 			String primaryKey = new String(rowDataPk.fieldValues.get(primaryKeyIndex));
 			RouteResultsetNode rNode = (RouteResultsetNode)conn.getAttachment();
@@ -402,7 +402,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		if (prepared) {
 			if (rowDataPk == null) {
-			    	rowDataPk = new RowDataPacket(fieldCount);
+			    rowDataPk = new RowDataPacket(fieldCount);
 				rowDataPk.read(row);
 			}
 			BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();

@@ -164,6 +164,6 @@ public class PartitionByDateTest {
 		partition.setsPartionDay("10");
 		partition.setDefaultNode(0);
 		partition.init(); 
-		Assert.assertEquals(true, null == partition.calculate("2012-12-31"));
+		Assert.assertEquals(true, 0 == partition.calculate("2012-12-31"));
 	}
 }

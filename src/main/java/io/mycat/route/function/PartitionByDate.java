@@ -30,7 +30,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	private String dateFormat;
 
 	private long beginDate;
-	private long partionTime;
+	private long partitionTime;
 	private long endDate;
 	private int nCount;
 	private int defaultNode = -1;
@@ -41,13 +41,13 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	@Override
 	public void init() {
 		try {
-			partionTime = Integer.parseInt(sPartionDay) * oneDay;
+			partitionTime = Integer.parseInt(sPartionDay) * oneDay;
 			
 			beginDate = new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
 
 			if(sEndDate!=null&&!sEndDate.equals("")){
 			    endDate = new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
-			    nCount = (int) ((endDate - beginDate) / partionTime) + 1;
+			    nCount = (int) ((endDate - beginDate) / partitionTime) + 1;
 			}
 			formatter = new ThreadLocal<SimpleDateFormat>() {
 				@Override
@@ -65,17 +65,17 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 		try {
 			long targetTime = formatter.get().parse(columnValue).getTime();
 			if (targetTime < beginDate) {
-				return (defaultNode >= 0) && (nCount != 0) ? defaultNode : null;
+				return (defaultNode >= 0) ? defaultNode : null;
 			}
-			int targetPartition = (int) ((targetTime - beginDate) / partionTime);
-			
+			int targetPartition = (int) ((targetTime - beginDate) / partitionTime);
+
 			if(targetTime>endDate && nCount!=0){
 				targetPartition = targetPartition%nCount;
 			}
 			return targetPartition;
 
 		} catch (ParseException e) {
-			throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please check if the format satisfied.").toString(),e);
+			throw new IllegalArgumentException("columnValue:" + columnValue + " Please check if the format satisfied.",e);
 		}
 	}
 
@@ -86,7 +86,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 			Date beginDate = format.parse(beginValue);
 			Date endDate = format.parse(endValue);
 			Calendar cal = Calendar.getInstance();
-			List<Integer> list = new ArrayList<Integer>();
+			List<Integer> list = new ArrayList<>();
 			while(beginDate.getTime() <= endDate.getTime()){
 				Integer nodeValue = this.calculate(format.format(beginDate));
 				if(Collections.frequency(list, nodeValue) < 1) list.add(nodeValue);
@@ -123,9 +123,6 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
 	public void setDateFormat(String dateFormat) {
 		this.dateFormat = dateFormat;
-	}
-	public String getsEndDate() {
-		return this.sEndDate;
 	}
 	public void setsEndDate(String sEndDate) {
 		this.sEndDate = sEndDate;

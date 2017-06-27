@@ -24,7 +24,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
 			throw new SQLNonTransientException(msg);
 		}
 		String schemaName = schema == null ? null : schema.getName();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, dropTable.getTableSources().get(0));
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, dropTable.getTableSources().get(0));
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

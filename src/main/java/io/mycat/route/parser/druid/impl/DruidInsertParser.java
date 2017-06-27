@@ -48,7 +48,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SQLExprTableSource tableSource = insert.getTableSource();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, tableSource);
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

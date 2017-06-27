@@ -51,7 +51,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			throws SQLException {
 		SQLAlterTableStatement alterTable = (SQLAlterTableStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, alterTable.getTableSource());
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, alterTable.getTableSource());
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
@@ -502,8 +503,17 @@ public class ProxyMetaManager {
 		}
 	}
 
+	//no need to check user
+	private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource){
+		try {
+			return SchemaUtil.getSchemaInfo(null, schema, tableSource);
+		}catch(SQLException e){// is should not happen
+			LOGGER.warn("getSchemaInfo error",e);
+			return null;
+		}
+	}
 	private void createTable(String schema, String sql, MySqlCreateTableStatement statement, boolean isSuccess) {
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, statement.getTableSource());
+		SchemaInfo schemaInfo = getSchemaInfo(schema, statement.getTableSource());
 		try {
 			if(!isSuccess){
 				return;
@@ -529,7 +539,7 @@ public class ProxyMetaManager {
 	 */
 	private void dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess) {
 		for (SQLExprTableSource table : statement.getTableSources()) {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, table);
+			SchemaInfo schemaInfo = getSchemaInfo(schema, table);
 			try {
 				if(!isSuccess){
 					return;
@@ -590,7 +600,7 @@ public class ProxyMetaManager {
 //	}
 
 	private void alterTable(String schema, String sql, SQLAlterTableStatement alterStatement, boolean isSuccess) {
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, alterStatement.getTableSource());
+		SchemaInfo schemaInfo = getSchemaInfo(schema, alterStatement.getTableSource());
 		try{
 			if(!isSuccess){
 				return;
@@ -669,7 +679,7 @@ public class ProxyMetaManager {
 		SQLTableSource tableSource = statement.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
 			SQLExprTableSource exprTableSource = (SQLExprTableSource) tableSource;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, exprTableSource);
+			SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
 			try{
 				if(!isSuccess){
 					return;
@@ -726,7 +736,7 @@ public class ProxyMetaManager {
 		tmBuilder.addIndex(indexMeta);
 	}
 	private void dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess){
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, dropIndexStatement.getTableName());
+		SchemaInfo schemaInfo = getSchemaInfo(schema, dropIndexStatement.getTableName());
 		TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
 		try {
 			if(!isSuccess){

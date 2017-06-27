@@ -49,7 +49,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			}
 		} else {
 			SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, deleteTableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, deleteTableSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

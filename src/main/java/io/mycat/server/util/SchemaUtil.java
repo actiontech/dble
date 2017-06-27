@@ -14,6 +14,7 @@ import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.UserConfig;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
@@ -54,8 +55,7 @@ public class SchemaUtil
         }
         return null;
     }
-
-	public static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
+	public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
 		SchemaInfo schemaInfo = new SchemaInfo();
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
@@ -74,12 +74,24 @@ public class SchemaUtil
 			schemaInfo.table = schemaInfo.table.toLowerCase();
 			schemaInfo.schema = schemaInfo.schema.toLowerCase();
 		}
-		SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
-		if (schemaConfig == null && !MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)&& !INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
-			return null;
+		if(MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema)||INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)){
+			return schemaInfo;
 		}
-		schemaInfo.schemaConfig = schemaConfig;
-		return schemaInfo;
+		else{
+			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
+			if (schemaConfig == null) {
+				return null;
+			}
+			if (user != null) {
+				UserConfig userConfig = MycatServer.getInstance().getConfig().getUsers().get(user);
+				if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
+					String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
+					throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+				}
+			}
+			schemaInfo.schemaConfig = schemaConfig;
+			return schemaInfo;
+		}
 	}
 	
 	public static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt)
@@ -122,7 +134,7 @@ public class SchemaUtil
 
 	private static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLExprTableSource table, SQLStatement stmt)
 			throws SQLException {
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, table);
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(),schema, table);
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
@@ -171,11 +183,9 @@ public class SchemaUtil
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer("SchemaInfo{");
-            sb.append("table='").append(table).append('\'');
-            sb.append(", schema='").append(schema).append('\'');
-            sb.append('}');
-            return sb.toString();
+			return "SchemaInfo{" + "table='" + table + '\'' +
+					", schema='" + schema + '\'' +
+					'}';
         }
     }
 

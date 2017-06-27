@@ -19,7 +19,7 @@ public class DruidTruncateTableParser extends DefaultDruidParser {
 			throws SQLException {
 		String schemaName = schema == null ? null : schema.getName();
 		SQLTruncateStatement truncateTable = (SQLTruncateStatement) stmt;
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, truncateTable.getTableSources().get(0));
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, truncateTable.getTableSources().get(0));
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

@@ -64,7 +64,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				return schema;
 			}
 		} else {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, (SQLExprTableSource) tableSource);
             //数据库校验
 			if (schemaInfo == null) {
 				String msg = "No database selected";

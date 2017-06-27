@@ -62,7 +62,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			}
 			
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, fromSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

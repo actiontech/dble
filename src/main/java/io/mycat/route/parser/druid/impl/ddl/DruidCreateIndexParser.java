@@ -25,7 +25,7 @@ public class DruidCreateIndexParser extends DefaultDruidParser {
 		SQLTableSource tableSource = createStmt.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
 			String schemaName = schema == null ? null : schema.getName();
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, (SQLExprTableSource) tableSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

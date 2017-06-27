@@ -87,7 +87,7 @@ public class BatchInsertSequence implements Catlet {
 			MySqlInsertStatement insert = (MySqlInsertStatement)statement;
 			if(insert.getValuesList()!=null){
 				String schemaName = schema == null ? null : schema.getName();
-				SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
+				SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, insert.getTableSource());
 				if (schemaInfo == null) {
 					String msg = "No database selected";
 					throw new SQLException(msg,"3D000",ErrorCode.ER_NO_DB_ERROR);

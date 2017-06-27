@@ -293,7 +293,7 @@ public class ExplainHandler {
             return null;
         }
         try {
-            if (ServerParse.INSERT == sqlType && isInsertSeq(stmt, schema)) {
+            if (ServerParse.INSERT == sqlType && isInsertSeq(c, stmt, schema)) {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
@@ -318,12 +318,12 @@ public class ExplainHandler {
         }
     }
 
-    private static boolean isInsertSeq(String stmt, SchemaConfig schema) throws SQLException {
+    private static boolean isInsertSeq(ServerConnection c,String stmt, SchemaConfig schema) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         MySqlInsertStatement statement = (MySqlInsertStatement) parser.parseStatement();
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = statement.getTableSource();
-        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
+        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), schemaName, tableSource);
         if(schemaInfo == null){
             String msg = "No database selected";
             throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

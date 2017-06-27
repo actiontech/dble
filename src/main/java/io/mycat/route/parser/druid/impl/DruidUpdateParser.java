@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.ERTable;
@@ -46,7 +48,7 @@ import io.mycat.util.StringUtil;
  */
 public class DruidUpdateParser extends DefaultDruidParser {
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
         MySqlUpdateStatement update = (MySqlUpdateStatement) stmt;
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
@@ -65,8 +67,8 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, (SQLExprTableSource) tableSource);
             //数据库校验
 			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
+				String msg = "No database selected";
+				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
 			//权限控制
 			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){

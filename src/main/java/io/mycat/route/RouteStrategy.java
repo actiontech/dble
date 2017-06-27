@@ -1,11 +1,11 @@
 package io.mycat.route;
 
-import java.sql.SQLNonTransientException;
-
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.server.ServerConnection;
+
+import java.sql.SQLException;
 
 /**
  * 路由策略接口
@@ -15,5 +15,5 @@ import io.mycat.server.ServerConnection;
 public interface RouteStrategy {
 	public RouteResultset route(SystemConfig sysConfig,
 			SchemaConfig schema,int sqlType, String origSQL, String charset, ServerConnection sc, LayerCachePool cachePool)
-			throws SQLNonTransientException;
+			throws SQLException;
 }

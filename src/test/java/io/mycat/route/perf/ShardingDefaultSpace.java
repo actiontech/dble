@@ -23,6 +23,7 @@
  */
 package io.mycat.route.perf;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import io.mycat.SimpleCachePool;
@@ -50,7 +51,7 @@ public class ShardingDefaultSpace {
     /**
      * 路由到defaultSpace的性能测试
      */
-    public void testDefaultSpace() throws SQLNonTransientException {
+    public void testDefaultSpace() throws SQLException {
         SchemaConfig schema = this.getSchema();
         String sql = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {

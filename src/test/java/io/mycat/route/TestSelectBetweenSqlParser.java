@@ -1,5 +1,6 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class TestSelectBetweenSqlParser {
 	}
 
 	@Test
-	public void testBetweenSqlRoute() throws SQLNonTransientException {
+	public void testBetweenSqlRoute() throws SQLException {
 		String sql = "select * from offer_detail where offer_id between 1 and 33";
 		SchemaConfig schema = schemaMap.get("cndb");
 		RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(new SystemConfig(),schema, -1, sql, null,

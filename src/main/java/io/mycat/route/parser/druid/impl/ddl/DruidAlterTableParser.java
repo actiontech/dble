@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl.ddl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeCo
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
 
 import io.mycat.MycatServer;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
@@ -46,13 +48,13 @@ import io.mycat.util.StringUtil;
 public class DruidAlterTableParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
 		SQLAlterTableStatement alterTable = (SQLAlterTableStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, alterTable.getTableSource());
 		if (schemaInfo == null) {
-			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-			throw new SQLNonTransientException(msg);
+			String msg = "No database selected";
+			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 		}
 		boolean support = false;
 		for (SQLAlterTableItem alterItem : alterTable.getItems()) {

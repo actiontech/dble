@@ -1,5 +1,6 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class DruidMysqlHavingTest
 	}
 
 	@Test
-	public void testHaving() throws SQLNonTransientException {
+	public void testHaving() throws SQLException {
 		String sql = "select avg(offer_id) avgofferid, member_id from offer_detail group by member_id having avgofferid > 100";
 		SchemaConfig schema = schemaMap.get("cndb");
         RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,

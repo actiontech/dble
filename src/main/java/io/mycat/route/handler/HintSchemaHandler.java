@@ -1,5 +1,6 @@
 package io.mycat.route.handler;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class HintSchemaHandler implements HintHandler {
 	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema,
 			int sqlType, String realSQL, String charset, ServerConnection sc,
 			LayerCachePool cachePool, String hintSQLValue,int hintSqlType, Map hintMap)
-			throws SQLNonTransientException {
+			throws SQLException {
 	    SchemaConfig tempSchema = MycatServer.getInstance().getConfig().getSchemas().get(hintSQLValue);
 		if (tempSchema != null) {
 			return routeStrategy.route(sysConfig, tempSchema, sqlType, realSQL, charset, sc, cachePool);

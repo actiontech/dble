@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -14,6 +15,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.MycatServer;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
@@ -29,7 +31,7 @@ import io.mycat.server.util.SchemaUtil.SchemaInfo;
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
+			MycatSchemaStatVisitor visitor) throws SQLException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
 		String schemaName = schema == null ? null : schema.getName();
@@ -62,8 +64,8 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
 			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
+				String msg = "No database selected";
+				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
 			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
@@ -91,7 +93,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 				return schema;
 			}
 			if (schemaInfo.schemaConfig == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+				String msg = "No Supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
 			if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {

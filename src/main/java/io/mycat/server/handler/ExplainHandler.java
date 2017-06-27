@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
@@ -309,15 +310,15 @@ public class ExplainHandler {
         }
     }
 
-    private static boolean isInsertSeq(String stmt, SchemaConfig schema) throws SQLNonTransientException {
+    private static boolean isInsertSeq(String stmt, SchemaConfig schema) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         MySqlInsertStatement statement = (MySqlInsertStatement) parser.parseStatement();
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = statement.getTableSource();
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
         if(schemaInfo == null){
-            String msg = "No Database is selected Or defined";
-            throw new SQLNonTransientException(msg);
+            String msg = "No database selected";
+            throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
         }
         String tableName = schemaInfo.table;
         schema = schemaInfo.schemaConfig;

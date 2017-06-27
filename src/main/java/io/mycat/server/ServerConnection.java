@@ -25,6 +25,8 @@ package io.mycat.server;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -241,11 +243,20 @@ public class ServerConnection extends FrontendConnection {
 							schema, type, sql, this.charset, this);
 
 		} catch (Exception e) {
-			StringBuilder s = new StringBuilder();
-			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(),e);
-			String msg = e.getMessage();
-			writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
-			return;
+			if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
+				SQLException sqle = (SQLException)e;
+				StringBuilder s = new StringBuilder();
+				LOGGER.warn(s.append(this).append(sql).toString() + " err:" + sqle.toString(), sqle);
+				String msg = sqle.getMessage();
+				writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
+				return;
+			}else {
+				StringBuilder s = new StringBuilder();
+				LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
+				String msg = e.getMessage();
+				writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+				return;
+			}
 		}
 		if (rrs != null) {
 			// session执行

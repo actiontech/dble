@@ -5,6 +5,7 @@ import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 /**
@@ -21,14 +22,14 @@ public interface DruidParser {
 	 * @param schema
 	 * @param stmt
 	 */
-	SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLNonTransientException;
+	SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLException;
 	
 	/**
 	 * 子类可覆盖（如果该方法解析得不到表名、字段等信息的，就覆盖该方法，覆盖成空方法，然后通过statementPparse去解析）
 	 * 通过visitor解析：有些类型的Statement通过visitor解析得不到表名、
 	 * @param stmt
 	 */
-	SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,MycatSchemaStatVisitor visitor) throws SQLNonTransientException;
+	SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,MycatSchemaStatVisitor visitor) throws SQLException;
 	
 	/**
 	 * 改写sql：加limit，加group by、加order by如有些没有加limit的可以通过该方法增加
@@ -37,7 +38,7 @@ public interface DruidParser {
 	 * @param stmt
 	 * @throws SQLNonTransientException
 	 */
-	void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,LayerCachePool cachePool) throws SQLNonTransientException;
+	void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,LayerCachePool cachePool) throws SQLException;
 	/**
 	 * 获取解析到的信息
 	 * @return

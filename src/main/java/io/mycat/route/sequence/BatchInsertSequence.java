@@ -28,6 +28,7 @@ import io.mycat.sqlengine.EngineCtx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 /**
@@ -90,8 +91,8 @@ public class BatchInsertSequence implements Catlet {
 				String schemaName = schema == null ? null : schema.getName();
 				SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, insert.getTableSource());
 				if (schemaInfo == null) {
-					String msg = "No MyCAT Database is selected Or defined";
-					throw new SQLNonTransientException(msg);
+					String msg = "No database selected";
+					throw new SQLException(msg,"3D000",ErrorCode.ER_NO_DB_ERROR);
 				}
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 				if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){

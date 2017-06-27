@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -8,6 +9,7 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
@@ -27,7 +29,7 @@ import io.mycat.server.util.SchemaUtil.SchemaInfo;
 public class DruidDeleteParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
 		String schemaName = schema == null ? null : schema.getName();
 		MySqlDeleteStatement delete = (MySqlDeleteStatement) stmt;
 		SQLTableSource tableSource = delete.getTableSource();
@@ -49,8 +51,8 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, deleteTableSource);
 			if (schemaInfo == null) {
-				String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-				throw new SQLNonTransientException(msg);
+				String msg = "No database selected";
+				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
 			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;

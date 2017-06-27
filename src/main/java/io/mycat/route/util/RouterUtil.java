@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
@@ -28,6 +29,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -119,7 +121,7 @@ public class RouterUtil {
 		return count;
 	}
 
-	public static RouteResultset routeFromParser(DruidParser druidParser, SchemaConfig schema, RouteResultset rrs, SQLStatement statement, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor visitor) throws SQLNonTransientException{
+	public static RouteResultset routeFromParser(DruidParser druidParser, SchemaConfig schema, RouteResultset rrs, SQLStatement statement, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor visitor) throws SQLException {
 		schema = druidParser.parser(schema, rrs, statement, originSql,cachePool,visitor);
 		if(rrs.isFinishedExecute()){
 			return null;
@@ -207,7 +209,7 @@ public class RouterUtil {
 	}
 
 
-	public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLNonTransientException {
+	public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
 		String stmt = getFixedSql(removeSchema(rrs.getStatement(),schemaInfo.schema));
 		List<String> dataNodes;
 		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
@@ -215,7 +217,8 @@ public class RouterUtil {
 		if (tables != null && (tc != null)) {
 			dataNodes = tc.getDataNodes();
 		} else {
-			throw new SQLNonTransientException("table '" + schemaInfo.table + "' doesn't exist");
+			String msg = "Table '"+schemaInfo.schema+"."+schemaInfo.table+"' doesn't exist";
+			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 		}
 		Iterator<String> iterator1 = dataNodes.iterator();
 		int nodeSize = dataNodes.size();
@@ -551,7 +554,7 @@ public class RouterUtil {
 	}
 
 	public static void routeToRandomNode(RouteResultset rrs,
-			SchemaConfig schema, String tableName) {
+			SchemaConfig schema, String tableName) throws SQLException {
 		String dataNode = getRandomDataNode(schema, tableName); 
 		routeToSingleNode(rrs,dataNode);
 	}
@@ -565,12 +568,15 @@ public class RouterUtil {
 	 * @author mycat
 	 */
 	private static String getRandomDataNode(SchemaConfig schema,
-			String table) {
+			String table) throws SQLException {
 		String dataNode = null;
 		Map<String, TableConfig> tables = schema.getTables();
 		TableConfig tc;
 		if (tables != null && (tc = tables.get(table)) != null) {
 			dataNode = tc.getRandomDataNode();
+		} else {
+			String msg = "Table '"+schema.getName()+"."+table+"' doesn't exist";
+			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 		}
 		return dataNode;
 	}
@@ -637,7 +643,7 @@ public class RouterUtil {
 	 */
 	public static RouteResultset tryRouteForTables(SchemaConfig schema, DruidShardingParseInfo ctx,
 			RouteCalculateUnit routeUnit, RouteResultset rrs, boolean isSelect, LayerCachePool cachePool)
-			throws SQLNonTransientException {
+			throws SQLException {
 		
 		List<String> tables = ctx.getTables();
 		
@@ -671,9 +677,8 @@ public class RouterUtil {
 		for(String tableName : tables) {
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if(tableConfig == null) {
-				String msg = "can't find table define in schema "+ tableName + " schema:" + schema.getName();
-				LOGGER.warn(msg);
-				throw new SQLNonTransientException(msg);
+				String msg = "Table '"+schema.getName()+"."+tableName+"' doesn't exist";
+				throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 			}
 			
 			if (!tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
@@ -714,12 +719,11 @@ public class RouterUtil {
 	 */
 	public static RouteResultset tryRouteForOneTable(SchemaConfig schema, DruidShardingParseInfo ctx,
 			RouteCalculateUnit routeUnit, String tableName, RouteResultset rrs, boolean isSelect,
-			LayerCachePool cachePool) throws SQLNonTransientException {
+			LayerCachePool cachePool) throws SQLException {
 		TableConfig tc = schema.getTables().get(tableName);
 		if(tc == null) {
-			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
+			String msg = "Table '"+schema.getName()+"."+tableName+"' doesn't exist";
+			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 		}
 
 		

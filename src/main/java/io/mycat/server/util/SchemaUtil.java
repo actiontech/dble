@@ -1,26 +1,16 @@
 package io.mycat.server.util;
 
-import java.sql.SQLNonTransientException;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-
 import io.mycat.MycatServer;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
@@ -28,7 +18,12 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
 
-import static io.mycat.server.parser.ServerParseShow.FULL_TABLE_CHECK;
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static io.mycat.server.parser.ServerParseShow.TABLE_PAT;
 
 /**
@@ -88,7 +83,7 @@ public class SchemaUtil
 	}
 	
 	public static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 			return isNoSharding(source, schema, ((MySqlSelectQueryBlock) sqlSelectQuery).getFrom(), selectStmt);
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
@@ -98,7 +93,7 @@ public class SchemaUtil
 		}
 	}
 	private static SchemaInfo isNoSharding(ServerConnection source,String schema, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		SQLSelectQuery left = sqlSelectQuery.getLeft();
 		SQLSelectQuery right = sqlSelectQuery.getRight();
 		SchemaInfo leftInfo = isNoSharding(source, schema, left, stmt);
@@ -112,7 +107,7 @@ public class SchemaUtil
 		return StringUtil.equals(leftInfo.schema, rightInfo.schema)?leftInfo:null;
 	}
 	private static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLTableSource tables, SQLStatement stmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		if (tables instanceof SQLExprTableSource) {
 			return isNoSharding(source, schema, (SQLExprTableSource) tables, stmt);
 		} else if (tables instanceof SQLJoinTableSource) {
@@ -126,11 +121,11 @@ public class SchemaUtil
 	}
 
 	private static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLExprTableSource table, SQLStatement stmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schema, table);
 		if (schemaInfo == null) {
-			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-			throw new SQLNonTransientException(msg);
+			String msg = "No database selected";
+			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 		}
 		Checktype chekctype = Checktype.SELECT;
 		if (stmt instanceof MySqlUpdateStatement) {
@@ -153,7 +148,7 @@ public class SchemaUtil
 	}
 	
 	public static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLJoinTableSource tables, SQLStatement stmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		SQLTableSource left = tables.getLeft();
 		SQLTableSource right = tables.getRight();
 		SchemaInfo leftInfo = isNoSharding(source, schema, left, stmt);

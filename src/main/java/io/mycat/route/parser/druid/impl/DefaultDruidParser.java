@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +44,7 @@ public class DefaultDruidParser implements DruidParser {
 	 * @param schema
 	 * @param stmt
 	 */
-	public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLNonTransientException {
+	public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLException {
 		ctx = new DruidShardingParseInfo();
 		//通过visitor解析
 		schema = visitorParse(schema, rrs,stmt,schemaStatVisitor);
@@ -60,7 +61,7 @@ public class DefaultDruidParser implements DruidParser {
 	 */
 	@Override
 	public void changeSql(SchemaConfig schema, RouteResultset rrs,
-			SQLStatement stmt,LayerCachePool cachePool) throws SQLNonTransientException {
+			SQLStatement stmt,LayerCachePool cachePool) throws SQLException {
 		
 	}
 
@@ -71,7 +72,7 @@ public class DefaultDruidParser implements DruidParser {
 	 */
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
 		stmt.accept(visitor);
 		if(visitor.getNotSupportMsg()!= null){
 			throw new SQLNonTransientException(visitor.getNotSupportMsg());

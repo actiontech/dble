@@ -1,5 +1,6 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class DruidMysqlCreateTableTest
 	}
 
 	@Test
-	public void testCreate() throws SQLNonTransientException {
+	public void testCreate() throws SQLException {
 
 		SchemaConfig schema = schemaMap.get("mysqldb");
         RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, originSql1, null,
@@ -66,7 +67,7 @@ public class DruidMysqlCreateTableTest
 	}
 
    // @Test
-    public void testInsert() throws SQLNonTransientException {
+    public void testInsert() throws SQLException {
 
         SchemaConfig schema = schemaMap.get("mysqldb");
         RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, "insert into autoslot (id,sid) values(1,2) ", null,

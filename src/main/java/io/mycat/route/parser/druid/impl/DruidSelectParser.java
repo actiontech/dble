@@ -1,6 +1,7 @@
 package io.mycat.route.parser.druid.impl;
 
 import java.sql.SQLNonTransientException;
+import java.sql.SQLException;
 import java.util.*;
 
 import com.alibaba.druid.sql.ast.*;
@@ -48,7 +49,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-			MycatSchemaStatVisitor visitor) throws SQLNonTransientException {
+			MycatSchemaStatVisitor visitor) throws SQLException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
 		String schemaName = schema == null ? null : schema.getName();
@@ -76,8 +77,8 @@ public class DruidSelectParser extends DefaultDruidParser {
 				SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 				schemaInfo = SchemaUtil.getSchemaInfo(schemaName, fromSource);
 				if (schemaInfo == null) {
-					String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-					throw new SQLNonTransientException(msg);
+					String msg = "No database selected";
+					throw new SQLException(msg,"3D000",ErrorCode.ER_NO_DB_ERROR);
 				}
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
@@ -106,7 +107,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 					return schema;
 				}
 				if (schemaInfo.schemaConfig == null) {
-					String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
+					String msg = "No Supported, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
 				if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
@@ -121,8 +122,8 @@ public class DruidSelectParser extends DefaultDruidParser {
 		        }
 				TableConfig tc= schema.getTables().get(schemaInfo.table);
 				if (tc == null) {
-					String msg = "can't find table [" + schemaInfo.table + "] define in schema:" + schema.getName();
-					throw new SQLNonTransientException(msg);
+					String msg = "Table '"+schema.getName()+"."+schemaInfo.table+"' doesn't exist";
+					throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 				}
 				super.visitorParse(schema, rrs, stmt, visitor);
 				if(visitor.isHasSubQuery()){
@@ -154,7 +155,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 
 	private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-										 MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLNonTransientException {
+										 MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
 		if (mysqlSelectQuery.getOrderBy() != null) {
 			rrs.setSqlStatement(stmt);
 			rrs.setNeedOptimizer(true);
@@ -171,7 +172,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 //		}
 	}
 
-	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLNonTransientException {
+	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLException {
 		List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
 		for (SQLSelectItem item : selectList) {
 			SQLExpr itemExpr = item.getExpr();
@@ -199,7 +200,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 			} else if (itemExpr instanceof SQLAllColumnExpr) {
 				TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(),tc.getName());
 				if (tbMeta == null) {
-					String msg = "can't find table [" + tc.getName() + "] define in schema:" + schema.getName();
+					String msg = "Meta data of table '"+schema.getName()+"."+tc.getName()+"' doesn't exist";
 					LOGGER.warn(msg);
 					throw new SQLNonTransientException(msg);
 				}
@@ -289,7 +290,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 		}
 	}
 	private Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-													  SQLSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLNonTransientException {
+													  SQLSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
 		Map<String, String> aliaColumns = new HashMap<String, String>();
 		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 		List<String> havingColsName = new ArrayList<String>();
@@ -445,7 +446,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 //		return map;
 //	}
 	private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt)
-			throws SQLNonTransientException {
+			throws SQLException {
 		SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 		if (schemaInfo == null) {
 			rrs.setSqlStatement(selectStmt);
@@ -462,7 +463,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	 */
 	@Override
 	public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
-			throws SQLNonTransientException {
+			throws SQLException {
 		if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
 			return;
 		}
@@ -528,7 +529,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 
 	private void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
-			throws SQLNonTransientException {
+			throws SQLException {
 		if (rrs.isFinishedRoute()) {
 			return;// 避免重复路由
 		}

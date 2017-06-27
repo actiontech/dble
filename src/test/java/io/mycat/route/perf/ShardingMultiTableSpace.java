@@ -23,6 +23,7 @@
  */
 package io.mycat.route.perf;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import io.mycat.SimpleCachePool;
@@ -52,7 +53,7 @@ public class ShardingMultiTableSpace {
      * 
      * @throws SQLNonTransientException
      */
-    public void testTableSpace() throws SQLNonTransientException {
+    public void testTableSpace() throws SQLException {
         SchemaConfig schema = getSchema();
         String sql = "select id,member_id,gmt_create from offer where member_id in ('1','22','333','1124','4525')";
         for (int i = 0; i < total; i++) {

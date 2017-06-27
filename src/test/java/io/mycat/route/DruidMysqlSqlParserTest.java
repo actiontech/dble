@@ -1,5 +1,6 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class DruidMysqlSqlParserTest
 	}
 
 	@Test
-	public void testLimitPage() throws SQLNonTransientException {
+	public void testLimitPage() throws SQLException {
 		String sql = "select * from offer order by id desc limit 5,10";
 		SchemaConfig schema = schemaMap.get("mysqldb");
         RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,
@@ -75,7 +76,7 @@ public class DruidMysqlSqlParserTest
 	}
 
 	@Test
-	public void testLockTableSql() throws SQLNonTransientException{
+	public void testLockTableSql() throws SQLException {
 		String sql = "lock tables goods write";
 		SchemaConfig schema = schemaMap.get("TESTDB");
 		RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, ServerParse.LOCK, sql, null, null, cachePool);

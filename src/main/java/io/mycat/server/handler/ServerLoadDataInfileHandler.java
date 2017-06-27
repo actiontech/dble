@@ -35,6 +35,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -386,7 +387,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             		
             		rrs.setNodes(nodes);
                     return rrs;
-                } catch (SQLNonTransientException e)
+                } catch (SQLException e)
                 {
                     throw new RuntimeException(e);
                 }

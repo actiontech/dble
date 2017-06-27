@@ -1,5 +1,6 @@
 package io.mycat.route.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
 
@@ -20,7 +21,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
 	@Override
 	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String origSQL,
-			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLNonTransientException {
+			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
 
 		RouteResultset rrs = new RouteResultset(origSQL, sqlType, sc.getSession2());
 
@@ -56,18 +57,18 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	 * 通过解析AST语法树类来寻找路由
 	 */
 	public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
-			String charset, LayerCachePool cachePool) throws SQLNonTransientException;
+			String charset, LayerCachePool cachePool) throws SQLException;
 
 	/**
 	 * 路由信息指令, 如 SHOW、SELECT@@、DESCRIBE
 	 */
 	public abstract RouteResultset routeSystemInfo(SchemaConfig schema, int sqlType, String stmt, RouteResultset rrs)
-			throws SQLSyntaxErrorException;
+			throws SQLException;
 
 	/**
 	 * 解析 Show 之类的语句
 	 */
 	public abstract RouteResultset analyseShowSQL(SchemaConfig schema, RouteResultset rrs, String stmt)
-			throws SQLNonTransientException;
+			throws SQLException;
 
 }

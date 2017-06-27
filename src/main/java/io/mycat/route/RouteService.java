@@ -23,18 +23,10 @@
  */
 package io.mycat.route;
 
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
-import java.util.HashMap;
-import java.util.Map;
-
-import io.mycat.config.Versions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.cache.CachePool;
 import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
+import io.mycat.config.Versions;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
@@ -43,6 +35,13 @@ import io.mycat.route.handler.HintHandlerFactory;
 import io.mycat.route.handler.HintSQLHandler;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RouteService {
     private static final Logger LOGGER = LoggerFactory
@@ -68,7 +67,7 @@ public class RouteService {
 
 	public RouteResultset route(SystemConfig sysconf, SchemaConfig schema,
 			int sqlType, String stmt, String charset, ServerConnection sc)
-			throws SQLNonTransientException {
+			throws SQLException {
 		RouteResultset rrs = null;
 		String cacheKey = null;
 

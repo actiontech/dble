@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl.ddl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import com.alibaba.druid.sql.ast.SQLName;
@@ -12,6 +13,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 
+import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -26,7 +28,7 @@ import io.mycat.util.StringUtil;
 public class DruidCreateTableParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
 		MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement)stmt;
 		//创建新表select from禁止
 		if(createStmt.getSelect() != null) {
@@ -44,8 +46,8 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, createStmt.getTableSource());
 		if (schemaInfo == null) {
-			String msg = "No MyCAT Database is selected Or defined, sql:" + stmt;
-			throw new SQLNonTransientException(msg);
+			String msg = "No database selected";
+			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 		}
 
 		//如果这个不是no_sharing表格那么就需要这么进行检查

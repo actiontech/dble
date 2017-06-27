@@ -1,5 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,6 +23,7 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
@@ -42,14 +44,14 @@ import io.mycat.util.StringUtil;
 public class DruidInsertParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
-			throws SQLNonTransientException {
+			throws SQLException {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SQLExprTableSource tableSource = insert.getTableSource();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(schemaName, tableSource);
 		if (schemaInfo == null) {
-			String msg = "No MyCAT Database is selected Or defined";
-			throw new SQLNonTransientException(msg);
+			String msg = "No database selected";
+			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 		}
 		if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
@@ -64,12 +66,12 @@ public class DruidInsertParser extends DefaultDruidParser {
 		// 整个schema都不分库或者该表不拆分
 		TableConfig tc = schema.getTables().get(tableName);
 		if (tc == null) {
-			String msg = "can't find table [" + tableName + "] define in schema:" + schema.getName();
-			throw new SQLNonTransientException(msg);
+			String msg = "Table '"+schema.getName()+"."+tableName+"' doesn't exist";
+			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 		}
 		if (insert.getQuery() != null) {
 			// insert into .... select ....
-			String msg = "TODO:insert into .... select .... not supported!";
+			String msg = "insert into .... select .... not supported!";
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
@@ -375,7 +377,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
 			TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
 			if (tbMeta == null) {
-				String msg = "can't find table [" + schemaInfo.table + "] define in schema:" + schemaInfo.schema;
+				String msg = "Meta data of table '"+schemaInfo.schema+"."+schemaInfo.table+"' doesn't exist";
 				LOGGER.warn(msg);
 				throw new SQLNonTransientException(msg);
 			}

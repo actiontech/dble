@@ -23,6 +23,7 @@
  */
 package io.mycat.route.perf;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 import io.mycat.SimpleCachePool;
@@ -47,7 +48,7 @@ public class NoShardingSpace {
 		schema = schemaLoader.getSchemas().get("dubbo");
     }
 
-    public void testDefaultSpace() throws SQLNonTransientException {
+    public void testDefaultSpace() throws SQLException {
         SchemaConfig schema = this.schema;
         String stmt = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {
@@ -55,7 +56,7 @@ public class NoShardingSpace {
         }
     }
 
-    public static void main(String[] args) throws SQLNonTransientException {
+    public static void main(String[] args) throws SQLException {
         NoShardingSpace test = new NoShardingSpace();
         System.currentTimeMillis();
 

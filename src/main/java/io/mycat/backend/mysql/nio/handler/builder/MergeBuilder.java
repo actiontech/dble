@@ -1,12 +1,8 @@
 package io.mycat.backend.mysql.nio.handler.builder;
 
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
-
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.builder.BaseHandlerBuilder.MySQLNodeType;
 import io.mycat.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
@@ -21,6 +17,10 @@ import io.mycat.route.parser.druid.impl.DruidSingleUnitSelectParser;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
+
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 
 public class MergeBuilder {
 	private boolean needCommonFlag;
@@ -52,7 +52,7 @@ public class MergeBuilder {
 	 * @throws SQLNonTransientException 
 	 * @throws SQLSyntaxErrorException
 	 */
-	public RouteResultset construct() throws SQLNonTransientException  {
+	public RouteResultset construct() throws SQLException {
 		pdVisitor.visit();
 		String sql = pdVisitor.getSql().toString();
 		SQLStatementParser parser = new MySqlStatementParser(sql);

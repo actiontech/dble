@@ -1,18 +1,10 @@
 package io.mycat.route.impl;
 
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.base.Strings;
-
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
@@ -21,6 +13,12 @@ import io.mycat.route.parser.druid.DruidParserFactory;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+import java.util.List;
 
 public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	
@@ -29,7 +27,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	@Override
 	public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
 			String originSql, RouteResultset rrs, String charset,
-			LayerCachePool cachePool) throws SQLNonTransientException {
+			LayerCachePool cachePool) throws SQLException {
 		SQLStatementParser parser = new MySqlStatementParser(originSql);
 		MycatSchemaStatVisitor visitor = null;
 		SQLStatement statement;
@@ -80,7 +78,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	 */
 	@Override
 	public RouteResultset analyseShowSQL(SchemaConfig schema,
-			RouteResultset rrs, String stmt) throws SQLSyntaxErrorException {
+			RouteResultset rrs, String stmt) throws SQLException {
 		String upStmt = stmt.toUpperCase();
 		int tabInd = upStmt.indexOf(" TABLES");
 		if (tabInd > 0) {// show tables
@@ -227,7 +225,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 //	}
 
 	public RouteResultset routeSystemInfo(SchemaConfig schema, int sqlType,
-			String stmt, RouteResultset rrs) throws SQLSyntaxErrorException {
+			String stmt, RouteResultset rrs) throws SQLException {
 		switch(sqlType){
 		case ServerParse.SHOW:// if origSQL is like show tables
 			return analyseShowSQL(schema, rrs, stmt);
@@ -250,7 +248,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	 * @author mycat
 	 */
 	private static RouteResultset analyseDescrSQL(SchemaConfig schema,
-			RouteResultset rrs, String stmt, int ind) {
+			RouteResultset rrs, String stmt, int ind) throws SQLException {
 		
 		final String MATCHED_FEATURE = "DESCRIBE ";
 		final String MATCHED2_FEATURE = "DESC ";

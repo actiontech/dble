@@ -38,7 +38,7 @@ public class HintCatletHandler implements HintHandler {
 	 * @throws SQLNonTransientException
 	 */
 	@Override
-	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema,
+	public RouteResultset route(SchemaConfig schema,
 			int sqlType, String realSQL, String charset, ServerConnection sc,
 			LayerCachePool cachePool, String hintSQLValue,int hintSqlType, Map hintMap)
 			throws SQLNonTransientException {
@@ -51,7 +51,7 @@ public class HintCatletHandler implements HintHandler {
 		try {
 			Catlet catlet = (Catlet) MycatServer.getInstance()
 					.getCatletClassLoader().getInstanceofClass(cateletClass);
-			catlet.route(sysConfig, schema, sqlType, realSQL,charset, sc, cachePool);
+			catlet.route(schema, sqlType, realSQL,charset, sc, cachePool);
 			catlet.processSQL(realSQL, new EngineCtx(sc.getSession2()));
 		} catch (Exception e) {
 			LOGGER.warn("catlet error "+e);

@@ -230,24 +230,10 @@ public class RouterUtil {
 			nodes[i].setSource(rrs);
 		}
 		rrs.setNodes(nodes);
+		rrs.setSchema(schemaInfo.schema);
+		rrs.setTable(schemaInfo.table);
 		rrs.setFinishedRoute(true);
-		try {
-			MycatServer.getInstance().getTmManager().addMetaLock(schemaInfo.schema, schemaInfo.table);
-			if(MycatServer.getInstance().isUseZK()){
-				String nodeName = StringUtil.getFullName(schemaInfo.schema, schemaInfo.table);
-				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
-						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey();
-				CuratorFramework zkConn = ZKUtils.getConnection();
-				while (zkConn.checkExists().forPath(lockPath + "syncMeta.lock") != null || zkConn.checkExists().forPath(lockPath + nodeName) != null) {
-					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-				}
-				ZKUtils.createTempNode(lockPath, nodeName);
-				MycatServer.getInstance().getTmManager().notifyClusterDDL(schemaInfo.schema, schemaInfo.table, rrs.getStatement(), DDLStatus.INIT);
-			}
-		} catch (Exception e) {
-			MycatServer.getInstance().getTmManager().removeMetaLock(schemaInfo.schema, schemaInfo.table);
-			throw new SQLNonTransientException(e.toString() + ",sql:" + stmt);
-		}
+
 	}
 
 

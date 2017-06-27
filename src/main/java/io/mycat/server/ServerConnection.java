@@ -27,8 +27,15 @@ import java.io.IOException;
 import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
+import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import io.mycat.util.StringUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,32 +205,24 @@ public class ServerConnection extends FrontendConnection {
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
-					"No MyCAT Database selected");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"No MyCAT Database selected");
 			return null;
 		}
-		SchemaConfig schema = MycatServer.getInstance().getConfig()
-				.getSchemas().get(db);
+		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 		if (schema == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
-					"Unknown MyCAT Database '" + db + "'");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"Unknown MyCAT Database '" + db + "'");
 			return null;
 		}
 
 		// 路由计算
 		RouteResultset rrs = null;
 		try {
-			rrs = MycatServer
-					.getInstance()
-					.getRouterservice()
+			rrs = MycatServer.getInstance().getRouterservice()
 					.route(MycatServer.getInstance().getConfig().getSystem(),
 							schema, type, sql, this.charset, this);
 
 		} catch (Exception e) {
-			StringBuilder s = new StringBuilder();
-			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(),e);
-			String msg = e.getMessage();
-			writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+			executeException(e, sql);
 			return null;
 		}
 		return rrs;
@@ -236,34 +235,57 @@ public class ServerConnection extends FrontendConnection {
 		// 路由计算
 		RouteResultset rrs = null;
 		try {
-			rrs = MycatServer
-					.getInstance()
-					.getRouterservice()
+			rrs = MycatServer.getInstance().getRouterservice()
 					.route(MycatServer.getInstance().getConfig().getSystem(),
 							schema, type, sql, this.charset, this);
-
-		} catch (Exception e) {
-			if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
-				SQLException sqle = (SQLException)e;
-				StringBuilder s = new StringBuilder();
-				LOGGER.warn(s.append(this).append(sql).toString() + " err:" + sqle.toString(), sqle);
-				String msg = sqle.getMessage();
-				writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
-				return;
-			}else {
-				StringBuilder s = new StringBuilder();
-				LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
-				String msg = e.getMessage();
-				writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+			if (rrs == null) {
 				return;
 			}
+			if (rrs.getSqlType() == ServerParse.DDL) {
+				addTableMetaLock(rrs);
+			}
+		} catch (Exception e) {
+			executeException(e, sql);
+			return;
 		}
-		if (rrs != null) {
 			// session执行
-			session.execute(rrs, type);
+		session.execute(rrs, type);
+	}
+	private void addTableMetaLock(RouteResultset rrs) throws SQLNonTransientException {
+		String schema = rrs.getSchema();
+		String table =rrs.getTable();
+		try {
+			MycatServer.getInstance().getTmManager().addMetaLock(schema, table);
+			if(MycatServer.getInstance().isUseZK()){
+				String nodeName = StringUtil.getFullName(schema, table);
+				String lockPath = ZKUtils.getZKBasePath() + ZookeeperPath.ZK_LOCK .getKey()+ ZookeeperPath.ZK_SEPARATOR.getKey()
+						+ ZookeeperPath.ZK_DDL.getKey() + ZookeeperPath.ZK_SEPARATOR.getKey();
+				CuratorFramework zkConn = ZKUtils.getConnection();
+				while (zkConn.checkExists().forPath(lockPath + "syncMeta.lock") != null || zkConn.checkExists().forPath(lockPath + nodeName) != null) {
+					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+				}
+				ZKUtils.createTempNode(lockPath, nodeName);
+				MycatServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
+			}
+		} catch (Exception e) {
+			MycatServer.getInstance().getTmManager().removeMetaLock(schema, table);
+			throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
 		}
 	}
-
+	private void executeException(Exception e, String sql){
+		if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
+			SQLException sqle = (SQLException)e;
+			StringBuilder s = new StringBuilder();
+			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + sqle.toString(), sqle);
+			String msg = sqle.getMessage();
+			writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
+		}else {
+			StringBuilder s = new StringBuilder();
+			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
+			String msg = e.getMessage();
+			writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+		}
+	}
 	/**
 	 * 事务沒有commit 直接begin
 	 */

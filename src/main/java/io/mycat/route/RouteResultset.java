@@ -40,7 +40,9 @@ import io.mycat.util.FormatUtil;
 public final class RouteResultset implements Serializable {
 	private static final long serialVersionUID = 3906972758236875720L;
 	private final String srcStatement;// 原始语句
-	private String statement; 
+	private String statement;
+	private String schema;
+	private String table;
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
     private SQLStatement sqlStatement; 
@@ -79,7 +81,6 @@ public final class RouteResultset implements Serializable {
     private Boolean runOnSlave = null;	// 默认null表示不施加影响
 
     private NonBlockingSession session;
-     
 
     public NonBlockingSession getSession() {
 		return session;
@@ -312,7 +313,23 @@ public final class RouteResultset implements Serializable {
         this.statement = statement;
     }
 
-    public boolean isCallStatement() {
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
+	public String getTable() {
+		return table;
+	}
+
+	public void setTable(String table) {
+		this.table = table;
+	}
+
+	public boolean isCallStatement() {
         return callStatement;
     }
 
@@ -396,5 +413,4 @@ public final class RouteResultset implements Serializable {
         s.append("\n}");
         return s.toString();
     }
-
 }

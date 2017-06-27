@@ -115,10 +115,10 @@ public class RouteService {
                         	 * fixed by zhuam
                         	 */
                     		int hintSqlType = ServerParse.parse( hintSql ) & 0xff;     
-                    		rrs = hintHandler.route(sysconf, schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,hintSqlType,hintMap);
+                    		rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,hintSqlType,hintMap);
                     		
                     	} else {                    		
-                    		rrs = hintHandler.route(sysconf, schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,sqlType,hintMap);
+                    		rrs = hintHandler.route( schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,sqlType,hintMap);
                     	}
  
                     }else{
@@ -132,7 +132,7 @@ public class RouteService {
 			}
 		} else {
 			stmt = stmt.trim();
-			rrs = RouteStrategyFactory.getRouteStrategy().route(sysconf, schema, sqlType, stmt,
+			rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt,
 					charset, sc, tableId2DataNodeCache);
 		}
 

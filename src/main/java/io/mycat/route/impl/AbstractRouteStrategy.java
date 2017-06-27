@@ -1,38 +1,34 @@
 package io.mycat.route.impl;
 
-import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteStrategy;
 import io.mycat.server.ServerConnection;
 import io.mycat.sqlengine.mpp.LoadData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
 
 	@Override
-	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String origSQL,
-			String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
+	public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
+								String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
 
 		RouteResultset rrs = new RouteResultset(origSQL, sqlType, sc.getSession2());
 
-		/**
+		/*
 		 * 优化debug loaddata输出cache的日志会极大降低性能
 		 */
 		if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.loadDataHint)) {
 			rrs.setCacheAble(false);
 		}
 
-        /**
+        /*
          * rrs携带ServerConnection的autocommit状态用于在sql解析的时候遇到
          * select ... for update的时候动态设定RouteResultsetNode的canRunInReadDB属性
          */

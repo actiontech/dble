@@ -2,7 +2,6 @@ package io.mycat.catlets;
 
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.server.ServerConnection;
 import io.mycat.sqlengine.EngineCtx;
 /**
@@ -20,8 +19,8 @@ public interface Catlet {
 	 */
 	void processSQL(String sql, EngineCtx ctx);
 	
-	void route(SystemConfig sysConfig, SchemaConfig schema,
-			int sqlType, String realSQL, String charset, ServerConnection sc,
-			LayerCachePool cachePool) ;
+	void route(SchemaConfig schema,
+			   int sqlType, String realSQL, String charset, ServerConnection sc,
+			   LayerCachePool cachePool) ;
 	//void setRoute(RouteResultset rrs);
 }

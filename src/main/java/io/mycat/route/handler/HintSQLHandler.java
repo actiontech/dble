@@ -39,12 +39,12 @@ public class HintSQLHandler implements HintHandler {
 	}
 
 	@Override
-	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema,
+	public RouteResultset route(SchemaConfig schema,
 			int sqlType, String realSQL, String charset, ServerConnection sc,
 			LayerCachePool cachePool, String hintSQLValue,int hintSqlType, Map hintMap)
             throws SQLException {
 		
-		RouteResultset rrs = routeStrategy.route(sysConfig, schema, hintSqlType,
+		RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
 				hintSQLValue, charset, sc, cachePool);
 		
 		// 替换RRS中的SQL执行

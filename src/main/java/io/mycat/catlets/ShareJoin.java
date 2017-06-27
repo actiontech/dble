@@ -59,7 +59,6 @@ public class ShareJoin implements Catlet {
  	private int joinKeyType = Fields.FIELD_TYPE_LONG; // 默认 join 字段为int型
  	
 	//重新路由使用
-	private SystemConfig sysConfig; 
 	private SchemaConfig schema;
 	private int sqltype; 
 	private String charset; 
@@ -69,10 +68,9 @@ public class ShareJoin implements Catlet {
 		this.rrs =rrs;
 	}	
 	
-	public void route(SystemConfig sysConfig, SchemaConfig schema,int sqlType, String realSQL, String charset, ServerConnection sc,	LayerCachePool cachePool) {
+	public void route(SchemaConfig schema, int sqlType, String realSQL, String charset, ServerConnection sc, LayerCachePool cachePool) {
 		int rs = ServerParse.parse(realSQL);
 		this.sqltype = rs & 0xff;
-		this.sysConfig=sysConfig; 
 		this.schema=schema;
 		this.charset=charset; 
 		this.sc=sc;	
@@ -109,7 +107,7 @@ public class ShareJoin implements Catlet {
 	private void getRoute(String sql){
 		try {
 		  if (joinParser!=null){
-			rrs =RouteStrategyFactory.getRouteStrategy().route(sysConfig, schema, sqltype,sql,charset, sc, cachePool);
+			rrs =RouteStrategyFactory.getRouteStrategy().route(schema, sqltype,sql,charset, sc, cachePool);
 		  }
 		} catch (Exception e) {
 			

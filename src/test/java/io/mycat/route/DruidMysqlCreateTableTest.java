@@ -1,7 +1,6 @@
 package io.mycat.route;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +21,6 @@ import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.util.StringUtil;
 import junit.framework.Assert;
@@ -53,7 +51,7 @@ public class DruidMysqlCreateTableTest
 	public void testCreate() throws SQLException {
 
 		SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, originSql1, null,
+        RouteResultset rrs = routeStrategy.route(schema, -1, originSql1, null,
                 null, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
       String sql=  rrs.getNodes()[0].getStatement();
@@ -70,7 +68,7 @@ public class DruidMysqlCreateTableTest
     public void testInsert() throws SQLException {
 
         SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, "insert into autoslot (id,sid) values(1,2) ", null,
+        RouteResultset rrs = routeStrategy.route(schema, -1, "insert into autoslot (id,sid) values(1,2) ", null,
                 null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
 

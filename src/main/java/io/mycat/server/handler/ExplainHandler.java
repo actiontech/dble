@@ -301,12 +301,20 @@ public class ExplainHandler {
             return MycatServer.getInstance().getRouterservice()
                     .route(system, schema, sqlType, stmt, c.getCharset(), c);
         } catch (Exception e) {
-            StringBuilder s = new StringBuilder();
-            logger.warn(s.append(c).append(stmt).toString() + " error:" + e);
-            String msg = e.getMessage();
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e
-                    .getClass().getSimpleName() : msg);
-            return null;
+            if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
+                SQLException sqle = (SQLException)e;
+                StringBuilder s = new StringBuilder();
+                logger.warn(s.append(c).append(stmt).toString() + " error:" + sqle);
+                String msg = sqle.getMessage();
+                c.writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
+                return null;
+            }else {
+                StringBuilder s = new StringBuilder();
+                logger.warn(s.append(c).append(stmt).toString() + " error:" + e);
+                String msg = e.getMessage();
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+                return null;
+            }
         }
     }
 

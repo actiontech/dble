@@ -24,14 +24,12 @@
 package io.mycat.route.perf;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 
 /**
@@ -55,7 +53,7 @@ public class ShardingDefaultSpace {
         SchemaConfig schema = this.getSchema();
         String sql = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(new SystemConfig(),schema,-1, sql, null, null,cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema,-1, sql, null, null,cachePool);
         }
     }
 

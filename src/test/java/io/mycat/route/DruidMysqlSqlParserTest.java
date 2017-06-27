@@ -1,7 +1,6 @@
 package io.mycat.route;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import java.util.Map;
 
 import org.junit.Test;
@@ -11,7 +10,6 @@ import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
@@ -34,7 +32,7 @@ public class DruidMysqlSqlParserTest
 	public void testLimitPage() throws SQLException {
 		String sql = "select * from offer order by id desc limit 5,10";
 		SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,
+        RouteResultset rrs = routeStrategy.route(schema, -1, sql, null,
                 null, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
         Assert.assertEquals(5, rrs.getLimitStart());
@@ -45,7 +43,7 @@ public class DruidMysqlSqlParserTest
         Assert.assertEquals("dn2", rrs.getNodes()[1].getName());
 
         sql= rrs.getNodes()[0].getStatement() ;
-        rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,
+        rrs = routeStrategy.route(schema, -1, sql, null,
                 null, cachePool);
         Assert.assertEquals(0, rrs.getNodes()[0].getLimitStart());
         Assert.assertEquals(15, rrs.getNodes()[0].getLimitSize());
@@ -53,7 +51,7 @@ public class DruidMysqlSqlParserTest
         Assert.assertEquals(15, rrs.getLimitSize());
 		
         sql="select * from offer1 order by id desc limit 5,10" ;
-        rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,
+        rrs = routeStrategy.route(schema, -1, sql, null,
                 null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(5, rrs.getLimitStart());
@@ -64,7 +62,7 @@ public class DruidMysqlSqlParserTest
 
 
         sql="select * from offer1 order by id desc limit 10" ;
-        rrs = routeStrategy.route(new SystemConfig(), schema, -1, sql, null,
+        rrs = routeStrategy.route(schema, -1, sql, null,
                 null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(0, rrs.getLimitStart());
@@ -79,7 +77,7 @@ public class DruidMysqlSqlParserTest
 	public void testLockTableSql() throws SQLException {
 		String sql = "lock tables goods write";
 		SchemaConfig schema = schemaMap.get("TESTDB");
-		RouteResultset rrs = routeStrategy.route(new SystemConfig(), schema, ServerParse.LOCK, sql, null, null, cachePool);
+		RouteResultset rrs = routeStrategy.route(schema, ServerParse.LOCK, sql, null, null, cachePool);
 		Assert.assertEquals(3, rrs.getNodes().length);
 	}
 

@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.catlets.Catlet;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.sqlengine.AllJobFinishedListener;
@@ -35,9 +34,9 @@ public class MyHellowJoin implements Catlet {
 	}
 
 	@Override
-	public void route(SystemConfig sysConfig, SchemaConfig schema, int sqlType,
-			String realSQL, String charset, ServerConnection sc,
-			LayerCachePool cachePool) {
+	public void route(SchemaConfig schema, int sqlType,
+					  String realSQL, String charset, ServerConnection sc,
+					  LayerCachePool cachePool) {
 		
 		
 	}

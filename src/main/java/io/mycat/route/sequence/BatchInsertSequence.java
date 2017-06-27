@@ -44,7 +44,6 @@ public class BatchInsertSequence implements Catlet {
 	private SequenceHandler sequenceHandler;//sequence处理对象
 	
 	//重新路由使用
-	private SystemConfig sysConfig;
 	private SchemaConfig schema;
 	private int sqltype; 
 	private String charset; 
@@ -72,12 +71,11 @@ public class BatchInsertSequence implements Catlet {
 	}
 
 	@Override
-	public void route(SystemConfig sysConfig, SchemaConfig schema, int sqlType,
-			String realSQL, String charset, ServerConnection sc,
-			LayerCachePool cachePool) {
+	public void route(SchemaConfig schema, int sqlType,
+					  String realSQL, String charset, ServerConnection sc,
+					  LayerCachePool cachePool) {
 		int rs = ServerParse.parse(realSQL);
 		this.sqltype = rs & 0xff;
-		this.sysConfig=sysConfig; 
 		this.schema=schema;
 		this.charset=charset; 
 		this.sc=sc;	
@@ -150,7 +148,7 @@ public class BatchInsertSequence implements Catlet {
 	 */
 	private void getRoute(String sql){
 		try {
-			rrs =RouteStrategyFactory.getRouteStrategy().route(sysConfig, schema, sqltype,sql,charset, sc, cachePool);
+			rrs =RouteStrategyFactory.getRouteStrategy().route(schema, sqltype,sql,charset, sc, cachePool);
 		} catch (Exception e) {
 			LOGGER.error("BatchInsertSequence.getRoute(String sql)",e);
 		}

@@ -10,7 +10,6 @@ import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
@@ -25,17 +24,14 @@ public class HintDataNodeHandler implements HintHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HintSchemaHandler.class);
 
 	@Override
-	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, String realSQL,
+	public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL,
 			String charset, ServerConnection sc, LayerCachePool cachePool, String hintSQLValue,int hintSqlType, Map hintMap)
 					throws SQLNonTransientException {
-		
-		String stmt = realSQL;
-		
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("route datanode sql hint from " + stmt);
+			LOGGER.debug("route datanode sql hint from " + realSQL);
 		}
 		
-		RouteResultset rrs = new RouteResultset(stmt, sqlType, sc.getSession2());
+		RouteResultset rrs = new RouteResultset(realSQL, sqlType, sc.getSession2());
 		PhysicalDBNode dataNode = MycatServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
 		if (dataNode != null) {			
 			rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());

@@ -28,7 +28,7 @@ public class HintMasterDBHandler implements HintHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
 
 	@Override
-	public RouteResultset route(SystemConfig sysConfig, SchemaConfig schema, int sqlType, 
+	public RouteResultset route(SchemaConfig schema, int sqlType,
 			String realSQL, String charset,
 			ServerConnection sc, LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
 			throws SQLException {
@@ -40,7 +40,7 @@ public class HintMasterDBHandler implements HintHandler {
 //		LOGGER.debug("hintSQLValue: " + hintSQLValue); // master/slave
 		
 		RouteResultset rrs = RouteStrategyFactory.getRouteStrategy()
-									.route(sysConfig, schema, sqlType, 
+									.route(schema, sqlType,
 										realSQL, charset, sc, cachePool);
 		
 		LOGGER.debug("schema.rrs(): " + rrs); // master

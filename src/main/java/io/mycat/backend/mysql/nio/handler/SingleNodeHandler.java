@@ -29,6 +29,7 @@ import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
 import io.mycat.config.ErrorCode;
+import io.mycat.cache.LayerCachePool;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.log.transaction.TxnLogHelper;
@@ -68,15 +69,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	private long netInBytes;
 	private long netOutBytes;
 	private long selectRows;
+
+	private String priamaryKeyTable = null;
+	private int primaryKeyIndex = -1;
 	
 	private boolean prepared;
 	private int fieldCount;
 	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 
-    private volatile boolean isDefaultNodeShowTable;
-    private volatile boolean isDefaultNodeShowFullTable;
-    private  Set<String> shardingTablesSet;
-    private volatile boolean waitingResponse;
+	private volatile boolean isDefaultNodeShowTable;
+	private volatile boolean isDefaultNodeShowFullTable;
+	private Set<String> shardingTablesSet;
+	private volatile boolean waitingResponse;
 	
 	public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
 		this.rrs = rrs;
@@ -268,8 +272,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 				netInBytes += rrs.getStatement().getBytes().length;
 			}
 			//查询结果派发
-			QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
-					rrs.getSqlType(), rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
+			QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
+								  netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
 			QueryResultDispatcher.dispatchQuery( queryResult );
 		}
 	}
@@ -309,6 +313,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			this.netOutBytes += field.length;
 		}
 
+		String primaryKey = null;
+		if (rrs.hasPrimaryKeyToCache()) {
+		    String[] items = rrs.getPrimaryKeyItems();
+			priamaryKeyTable = items[0];
+			primaryKey = items[1];
+		}
+
 		header[3] = ++packetId;
 		ServerConnection source = session.getSource();
 		buffer = source.writeToBuffer(header, allocBuffer());
@@ -320,6 +331,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
  			FieldPacket fieldPk = new FieldPacket();
  			fieldPk.read(field);
  			fieldPackets.add(fieldPk);
+
+			// find primary key index
+			if (primaryKey != null && primaryKeyIndex == -1) {
+				String fieldName = new String(fieldPk.name);
+				if (primaryKey.equalsIgnoreCase(fieldName)) {
+					primaryKeyIndex = i;
+				}
+			}
 			
 			buffer = source.writeToBuffer(field, buffer);
 		}
@@ -359,7 +378,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		this.netOutBytes += row.length;
 		this.selectRows++;
-		
+
 		if (isDefaultNodeShowTable || isDefaultNodeShowFullTable) {
 			RowDataPacket rowDataPacket = new RowDataPacket(1);
 			rowDataPacket.read(row);
@@ -369,10 +388,23 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			}
 		}
 		row[3] = ++packetId;
-		
-		if ( prepared ) {			
-			RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
+
+		RowDataPacket rowDataPk = null;
+		// cache primaryKey-> dataNode
+		if (primaryKeyIndex != -1) {
+		    rowDataPk = new RowDataPacket(fieldCount);
 			rowDataPk.read(row);
+			String primaryKey = new String(rowDataPk.fieldValues.get(primaryKeyIndex));
+			RouteResultsetNode rNode = (RouteResultsetNode)conn.getAttachment();
+			LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
+			pool.putIfAbsent(priamaryKeyTable, primaryKey, rNode.getName());
+		}
+		
+		if (prepared) {
+			if (rowDataPk == null) {
+			    rowDataPk = new RowDataPacket(fieldCount);
+				rowDataPk.read(row);
+			}
 			BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
 			binRowDataPk.read(fieldPackets, rowDataPk);
 			binRowDataPk.packetId = rowDataPk.packetId;

@@ -30,7 +30,6 @@ import java.util.Map;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.server.NonBlockingSession;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.util.FormatUtil;
 
@@ -68,8 +67,6 @@ public final class RouteResultset implements Serializable {
 	// 是否完成了执行
 	private boolean isFinishedExecute = false;
 
-    //是否自动提交，此属性主要用于记录ServerConnection上的autocommit状态
-	private boolean autocommit = true;
 
     private boolean isLoadData=false;
 
@@ -79,12 +76,6 @@ public final class RouteResultset implements Serializable {
     // 强制走 master，可以通过 RouteResultset的属性canRunInReadDB=false
     // 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
     private Boolean runOnSlave = null;	// 默认null表示不施加影响
-
-    private NonBlockingSession session;
-
-    public NonBlockingSession getSession() {
-		return session;
-	}
 
 	public boolean isNeedOptimizer() {
 		return needOptimizer;
@@ -146,12 +137,11 @@ public final class RouteResultset implements Serializable {
         this.globalTableFlag = globalTableFlag;
     }
 
-    public RouteResultset(String stmt, int sqlType, NonBlockingSession session) {
+    public RouteResultset(String stmt, int sqlType) {
         this.statement = stmt;
 		this.srcStatement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
-        this.session = session;
     }
 
     public void copyLimitToNodes() {
@@ -355,15 +345,6 @@ public final class RouteResultset implements Serializable {
 			}
 		}
 	}
-
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
-    }
-
     public Boolean getCanRunInReadDB() {
         return canRunInReadDB;
     }

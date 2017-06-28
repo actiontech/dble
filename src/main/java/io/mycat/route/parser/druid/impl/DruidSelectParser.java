@@ -28,6 +28,7 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.handler.MysqlInformationSchemaHandler;
 import io.mycat.server.handler.MysqlProcHandler;
 import io.mycat.server.response.InformationSchemaProfiling;
@@ -49,7 +50,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-			MycatSchemaStatVisitor visitor) throws SQLException {
+									 MycatSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
 		String schemaName = schema == null ? null : schema.getName();
@@ -75,7 +76,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 			SchemaInfo schemaInfo;
 			if (mysqlFrom instanceof SQLExprTableSource){
 				SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-				schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, fromSource);
+				schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
 				if (schemaInfo == null) {
 					String msg = "No database selected";
 					throw new SQLException(msg,"3D000",ErrorCode.ER_NO_DB_ERROR);
@@ -83,7 +84,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
 				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
-					MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
+					MysqlInformationSchemaHandler.handle(schemaInfo, sc);
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
@@ -91,7 +92,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 				if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
 						&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 					// 兼容MySQLWorkbench
-					MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
+					MysqlProcHandler.handle(rrs.getStatement(), sc);
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
@@ -102,7 +103,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
 						&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
 						&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-					InformationSchemaProfiling.response(rrs.getSession().getSource());
+					InformationSchemaProfiling.response(sc);
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
@@ -110,7 +111,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 					String msg = "No Supported, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
-				if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+				if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
 					String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 					throw new SQLNonTransientException(msg);
 				}
@@ -125,7 +126,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 					String msg = "Table '"+schema.getName()+"."+schemaInfo.table+"' doesn't exist";
 					throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 				}
-				super.visitorParse(schema, rrs, stmt, visitor);
+				super.visitorParse(schema, rrs, stmt, visitor, sc);
 				if(visitor.isHasSubQuery()){
 					rrs.setSqlStatement(selectStmt);
 					rrs.setNeedOptimizer(true);
@@ -134,21 +135,21 @@ public class DruidSelectParser extends DefaultDruidParser {
 				parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
 				// 更改canRunInReadDB属性
 				if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-						&& !rrs.isAutocommit()) {
+						&& !sc.isAutocommit()) {
 					rrs.setCanRunInReadDB(false);
 				}
 			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
-				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
+				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
 				if (rrs.isFinishedRoute()) {
 					return schema;
 				}
 			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery ) {
-			schema = executeComplexSQL(schemaName, schema, rrs, selectStmt);
+			schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
 			if (rrs.isFinishedRoute()) {
 				return schema;
 			}
-			super.visitorParse(schema, rrs, stmt, visitor);
+			super.visitorParse(schema, rrs, stmt, visitor, sc);
 		}
 		
 		return schema;
@@ -445,9 +446,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 //		}
 //		return map;
 //	}
-	private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt)
+	private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
 			throws SQLException {
-		SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+		SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 		if (schemaInfo == null) {
 			rrs.setSqlStatement(selectStmt);
 			rrs.setNeedOptimizer(true);

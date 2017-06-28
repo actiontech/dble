@@ -75,7 +75,7 @@ public class RouteService {
 		 *  SELECT 类型的SQL, 检测,debug 模式下不缓存
 		 */
 		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled()) {
-			cacheKey = (schema == null ? "NULL_" : schema.getName()) + stmt;
+			cacheKey = (schema == null ? "NULL" : schema.getName())+"_"+sc.getUser()+"_" + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
 			if (rrs != null) {
 				return rrs;

@@ -74,7 +74,7 @@ public class Explain2Handler {
 			}
 			
 			RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
-			RouteResultset	rrs =  new RouteResultset(sql, ServerParse.SELECT, c.getSession2());
+			RouteResultset	rrs =  new RouteResultset(sql, ServerParse.SELECT);
 			node.setSource(rrs);
 			EMPTY_ARRAY[0] = node; 
 			rrs.setNodes(EMPTY_ARRAY);

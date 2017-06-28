@@ -42,11 +42,10 @@ public final class RouteResultCopy {
 	}
 
 	public static RouteResultset RRCopy(RouteResultset rrs, int sqlType, String stmt) {
-		RouteResultset rr = new RouteResultset(stmt, sqlType, rrs.getSession());
+		RouteResultset rr = new RouteResultset(stmt, sqlType);
 		rr.setRunOnSlave(rrs.getRunOnSlave());
 		rr.setFinishedRoute(rrs.isFinishedRoute());
 		rr.setGlobalTable(rrs.isGlobalTable());
-		rr.setAutocommit(rrs.isAutocommit());
 		rr.setCanRunInReadDB(rrs.getCanRunInReadDB());
 
 		RouteResultsetNode[] ns = rrs.getNodes();

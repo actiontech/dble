@@ -37,6 +37,7 @@ import io.mycat.meta.protocol.MyCatMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
@@ -47,13 +48,13 @@ import io.mycat.util.StringUtil;
  *
  */
 public class DruidUpdateParser extends DefaultDruidParser {
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
 			throws SQLException {
         MySqlUpdateStatement update = (MySqlUpdateStatement) stmt;
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
-        	SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, (SQLJoinTableSource) tableSource, stmt);
+        	SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, (SQLJoinTableSource) tableSource, stmt);
 			if (schemaInfo == null) {
 				String msg = "updating multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
@@ -64,14 +65,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				return schema;
 			}
 		} else {
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, (SQLExprTableSource) tableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
             //数据库校验
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
 			//权限控制
-			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
+			if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
@@ -84,7 +85,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				return schema;
 	        }
 			TableConfig tc = schema.getTables().get(tableName);
-			super.visitorParse(schema, rrs, stmt, visitor);
+			super.visitorParse(schema, rrs, stmt, visitor, sc);
 			if (tc!=null && tc.isGlobalTable()) {
 				if (GlobalTableUtil.useGlobleTableCheck()) {
 					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());

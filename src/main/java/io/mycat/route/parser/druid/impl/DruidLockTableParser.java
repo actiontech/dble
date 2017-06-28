@@ -13,6 +13,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.SplitUtil;
 
@@ -22,7 +23,7 @@ import io.mycat.util.SplitUtil;
  */
 public class DruidLockTableParser extends DefaultDruidParser{
 	@Override
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
 			throws SQLNonTransientException {
 		// 对于lock tables table1 write, table2
 		// read类型的多表锁语句，DruidParser只能解析出table1，

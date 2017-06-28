@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.mycat.server.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +44,12 @@ public class DefaultDruidParser implements DruidParser {
 	 * 使用MycatSchemaStatVisitor解析,得到tables、tableAliasMap、conditions等
 	 * @param schema
 	 * @param stmt
+	 * @param sc
 	 */
-	public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLException {
+	public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, MycatSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
 		ctx = new DruidShardingParseInfo();
 		//通过visitor解析
-		schema = visitorParse(schema, rrs,stmt,schemaStatVisitor);
+		schema = visitorParse(schema, rrs,stmt,schemaStatVisitor, sc);
 		
 		//改写sql：如insert语句主键自增长的可以
 		changeSql(schema, rrs, stmt, cachePool);
@@ -69,9 +71,10 @@ public class DefaultDruidParser implements DruidParser {
 	 * 子类可覆盖（如果该方法解析得不到表名、字段等信息的，就覆盖该方法，覆盖成空方法，然后通过statementPparse去解析）
 	 * 通过visitor解析：有些类型的Statement通过visitor解析得不到表名、
 	 * @param stmt
+	 * @param sc
 	 */
 	@Override
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
 			throws SQLException {
 		stmt.accept(visitor);
 		if(visitor.getNotSupportMsg()!= null){

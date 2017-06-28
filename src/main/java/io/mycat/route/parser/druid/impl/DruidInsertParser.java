@@ -35,6 +35,7 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
@@ -43,17 +44,17 @@ import io.mycat.util.StringUtil;
 
 public class DruidInsertParser extends DefaultDruidParser {
 	@Override
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
 			throws SQLException {
 		MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SQLExprTableSource tableSource = insert.getTableSource();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, tableSource);
+		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
 		if (schemaInfo == null) {
 			String msg = "No database selected";
 			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 		}
-		if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
+		if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
@@ -97,7 +98,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		// childTable的insert直接在解析过程中完成路由
 		if (tc.getParentTC()!= null) {
-			parserChildTable(schemaInfo, rrs, insert);
+			parserChildTable(schemaInfo, rrs, insert, sc);
 			return schema;
 		}
 		String partitionColumn = tc.getPartitionColumn();
@@ -135,7 +136,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1);
 	}
 	
-	private RouteResultset parserChildTable(SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
+	private RouteResultset parserChildTable(SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insertStmt, ServerConnection sc) throws SQLNonTransientException {
 		SchemaConfig schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
 		TableConfig tc = schema.getTables().get(tableName);
@@ -161,7 +162,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("find root parent's node sql " + findRootTBSql);
 		}
-		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, rrs.getSession());
+		FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
 		String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
 		if (dn == null) {
 			throw new SQLNonTransientException("can't find (root) parent sharding node for sql:" + sql);

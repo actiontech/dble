@@ -14,18 +14,19 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.impl.DefaultDruidParser;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
 public class DruidCreateIndexParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-			MycatSchemaStatVisitor visitor) throws SQLException {
+									 MycatSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
 		SQLCreateIndexStatement createStmt = (SQLCreateIndexStatement) stmt;
 		SQLTableSource tableSource = createStmt.getTable();
 		if (tableSource instanceof SQLExprTableSource) {
 			String schemaName = schema == null ? null : schema.getName();
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, (SQLExprTableSource) tableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);

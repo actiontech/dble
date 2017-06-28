@@ -17,6 +17,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
@@ -28,7 +29,7 @@ import io.mycat.server.util.SchemaUtil.SchemaInfo;
  */
 public class DruidDeleteParser extends DefaultDruidParser {
 	@Override
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor)
+	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
 			throws SQLException {
 		String schemaName = schema == null ? null : schema.getName();
 		MySqlDeleteStatement delete = (MySqlDeleteStatement) stmt;
@@ -38,7 +39,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			tableSource = fromSource;
 		}
 		if (tableSource instanceof SQLJoinTableSource) {
-			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, (SQLJoinTableSource) tableSource, stmt);
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, (SQLJoinTableSource) tableSource, stmt);
 			if (schemaInfo == null) {
 				String msg = "deleting from multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
@@ -49,12 +50,12 @@ public class DruidDeleteParser extends DefaultDruidParser {
 			}
 		} else {
 			SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, deleteTableSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
-			if(!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
+			if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
@@ -64,7 +65,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
 				RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 				return schema;
 	        }
-			super.visitorParse(schema, rrs, stmt, visitor);
+			super.visitorParse(schema, rrs, stmt, visitor, sc);
 			TableConfig tc = schema.getTables().get(schemaInfo.table);
 			if (tc != null && tc.isGlobalTable()) {
 				rrs.setGlobalTable(true);

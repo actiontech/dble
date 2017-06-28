@@ -60,10 +60,10 @@ public class MergeBuilder {
 		MycatSchemaStatVisitor visitor = new MycatSchemaStatVisitor();
 		DruidParser druidParser = new DruidSingleUnitSelectParser();
 
-		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT, session);
+		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
 		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
 		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(node.getReferedTableNodes().get(0).getSchema());
-		return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor);
+		return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource());
 
 	}
 

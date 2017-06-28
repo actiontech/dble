@@ -4,6 +4,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
+import io.mycat.server.ServerConnection;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -21,15 +22,17 @@ public interface DruidParser {
 	 * 使用MycatSchemaStatVisitor解析,得到tables、tableAliasMap、conditions等
 	 * @param schema
 	 * @param stmt
+	 * @param sc
 	 */
-	SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql,LayerCachePool cachePool,MycatSchemaStatVisitor schemaStatVisitor) throws SQLException;
+	SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, MycatSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException;
 	
 	/**
 	 * 子类可覆盖（如果该方法解析得不到表名、字段等信息的，就覆盖该方法，覆盖成空方法，然后通过statementPparse去解析）
 	 * 通过visitor解析：有些类型的Statement通过visitor解析得不到表名、
 	 * @param stmt
+	 * @param sc
 	 */
-	SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,MycatSchemaStatVisitor visitor) throws SQLException;
+	SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc) throws SQLException;
 	
 	/**
 	 * 改写sql：加limit，加group by、加order by如有些没有加limit的可以通过该方法增加

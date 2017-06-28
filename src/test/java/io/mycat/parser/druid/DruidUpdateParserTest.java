@@ -92,7 +92,7 @@ public class DruidUpdateParserTest {
         when((schemaConfig).getTables()).thenReturn(tables);
         when(tables.get(tableName)).thenReturn(tableConfig);
         when(tableConfig.getParentTC()).thenReturn(null);
-        RouteResultset routeResultset = new RouteResultset(sql, 11, null);
+        RouteResultset routeResultset = new RouteResultset(sql, 11);
         Class c = DruidUpdateParser.class;
         Method method = c.getDeclaredMethod("confirmShardColumnNotUpdated", new Class[]{SQLUpdateStatement.class, SchemaConfig.class, String.class, String.class, String.class, RouteResultset.class});
         method.setAccessible(true);

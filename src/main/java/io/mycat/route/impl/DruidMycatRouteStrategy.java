@@ -12,6 +12,7 @@ import io.mycat.route.parser.druid.DruidParser;
 import io.mycat.route.parser.druid.DruidParserFactory;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,8 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	
 	@Override
 	public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
-			String originSql, RouteResultset rrs, String charset,
-			LayerCachePool cachePool) throws SQLException {
+												String originSql, RouteResultset rrs, String charset,
+												LayerCachePool cachePool, ServerConnection sc) throws SQLException {
 		SQLStatementParser parser = new MySqlStatementParser(originSql);
 		MycatSchemaStatVisitor visitor = null;
 		SQLStatement statement;
@@ -54,7 +55,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 
 
 		DruidParser druidParser = DruidParserFactory.create(statement);
-		return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, visitor);
+		return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, visitor, sc);
 		
 	}
 

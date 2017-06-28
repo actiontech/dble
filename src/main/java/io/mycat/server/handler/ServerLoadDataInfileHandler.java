@@ -36,7 +36,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -326,7 +325,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
     private RouteResultset tryDirectRoute(String sql, String[] lineList)
     {
 
-        RouteResultset rrs = new RouteResultset(sql, ServerParse.INSERT, serverConnection.getSession2());
+        RouteResultset rrs = new RouteResultset(sql, ServerParse.INSERT);
         rrs.setLoadData(true);
         if (tableConfig == null && schema.getDataNode() != null)
         {
@@ -530,10 +529,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         statement.setFileName(fn);
         //在这里使用替换方法替换掉SQL语句中的 IGNORE X LINES 防止每个物理节点都IGNORE X个元素
         String srcStatement = this.ignoreLinesDelete(statement.toString());
-        RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL, serverConnection.getSession2());
+        RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL);
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
-        rrs.setAutocommit(serverConnection.isAutocommit());
         rrs.setFinishedRoute(true);
         int size = routeMap.size();
         RouteResultsetNode[] routeResultsetNodes = new RouteResultsetNode[size];

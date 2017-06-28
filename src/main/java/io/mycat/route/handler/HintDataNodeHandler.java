@@ -31,7 +31,7 @@ public class HintDataNodeHandler implements HintHandler {
 			LOGGER.debug("route datanode sql hint from " + realSQL);
 		}
 		
-		RouteResultset rrs = new RouteResultset(realSQL, sqlType, sc.getSession2());
+		RouteResultset rrs = new RouteResultset(realSQL, sqlType);
 		PhysicalDBNode dataNode = MycatServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
 		if (dataNode != null) {			
 			rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());

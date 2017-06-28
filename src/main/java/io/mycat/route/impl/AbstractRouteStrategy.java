@@ -19,7 +19,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
 								String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
 
-		RouteResultset rrs = new RouteResultset(origSQL, sqlType, sc.getSession2());
+		RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
 		/*
 		 * 优化debug loaddata输出cache的日志会极大降低性能
@@ -28,20 +28,12 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 			rrs.setCacheAble(false);
 		}
 
-        /*
-         * rrs携带ServerConnection的autocommit状态用于在sql解析的时候遇到
-         * select ... for update的时候动态设定RouteResultsetNode的canRunInReadDB属性
-         */
-		if (sc != null ) {
-			rrs.setAutocommit(sc.isAutocommit());
-		}
-
 		if (schema == null) {
-			rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool);
+			rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
 		} else {
 			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, origSQL, rrs);
 			if (returnedSet == null) {
-				rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool);
+				rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
 			}
 		}
 
@@ -53,7 +45,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	 * 通过解析AST语法树类来寻找路由
 	 */
 	public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
-			String charset, LayerCachePool cachePool) throws SQLException;
+														 String charset, LayerCachePool cachePool, ServerConnection sc) throws SQLException;
 
 	/**
 	 * 路由信息指令, 如 SHOW、SELECT@@、DESCRIBE

@@ -22,6 +22,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
+import io.mycat.server.ServerConnection;
 import io.mycat.server.handler.MysqlInformationSchemaHandler;
 import io.mycat.server.handler.MysqlProcHandler;
 import io.mycat.server.response.InformationSchemaProfiling;
@@ -31,7 +32,7 @@ import io.mycat.server.util.SchemaUtil.SchemaInfo;
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 	@Override
 	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-			MycatSchemaStatVisitor visitor) throws SQLException {
+									 MycatSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
 		SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
 		String schemaName = schema == null ? null : schema.getName();
@@ -50,26 +51,26 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 				return schema;
 			}
 			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
-				SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+				SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 				if (schemaInfo != null) {
 					rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 					RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 					return schemaInfo.schemaConfig;
 				} else{
-					super.visitorParse(schema, rrs, stmt, visitor);
+					super.visitorParse(schema, rrs, stmt, visitor, sc);
 					return schema;
 				}
 			}
 			
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(rrs.getSession().getSource().getUser(), schemaName, fromSource);
+			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
 			if (schemaInfo == null) {
 				String msg = "No database selected";
 				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
 			}
 			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
-				MysqlInformationSchemaHandler.handle(schemaInfo, rrs.getSession().getSource());
+				MysqlInformationSchemaHandler.handle(schemaInfo, sc);
 				rrs.setFinishedExecute(true);
 				return schema;
 			}
@@ -77,7 +78,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
 					&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 				// 兼容MySQLWorkbench
-				MysqlProcHandler.handle(rrs.getStatement(), rrs.getSession().getSource());
+				MysqlProcHandler.handle(rrs.getStatement(), sc);
 				rrs.setFinishedExecute(true);
 				return schema;
 			}
@@ -88,7 +89,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
 					&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
 					&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-				InformationSchemaProfiling.response(rrs.getSession().getSource());
+				InformationSchemaProfiling.response(sc);
 				rrs.setFinishedExecute(true);
 				return schema;
 			}
@@ -96,26 +97,26 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 				String msg = "No Supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
-			if (!MycatPrivileges.checkPrivilege(rrs.getSession().getSource(), schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+			if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			}
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			schema = schemaInfo.schemaConfig;
-			super.visitorParse(schema, rrs, stmt, visitor);
+			super.visitorParse(schema, rrs, stmt, visitor, sc);
 			// 更改canRunInReadDB属性
 			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-					&& !rrs.isAutocommit()) {
+					&& !sc.isAutocommit()) {
 				rrs.setCanRunInReadDB(false);
 			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(rrs.getSession().getSource(), schemaName, selectStmt.getSelect().getQuery(), selectStmt);
+			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
 			if (schemaInfo != null) {
 				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 				return schemaInfo.schemaConfig;
 			} else{
-				super.visitorParse(schema, rrs, stmt, visitor);
+				super.visitorParse(schema, rrs, stmt, visitor, sc);
 			}
 		}
 		return schema;

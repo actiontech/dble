@@ -50,10 +50,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SQLExprTableSource tableSource = insert.getTableSource();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
-		if (schemaInfo == null) {
-			String msg = "No database selected";
-			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-		}
 		if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)){
 			String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 			throw new SQLNonTransientException(msg);

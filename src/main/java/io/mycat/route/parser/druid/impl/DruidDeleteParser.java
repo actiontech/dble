@@ -51,10 +51,6 @@ public class DruidDeleteParser extends DefaultDruidParser {
 		} else {
 			SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
-			if (schemaInfo == null) {
-				String msg = "No database selected";
-				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-			}
 			if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;
 				throw new SQLNonTransientException(msg);

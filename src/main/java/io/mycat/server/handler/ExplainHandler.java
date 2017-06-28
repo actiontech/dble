@@ -324,10 +324,6 @@ public class ExplainHandler {
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = statement.getTableSource();
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), schemaName, tableSource);
-        if(schemaInfo == null){
-            String msg = "No database selected";
-            throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-        }
         String tableName = schemaInfo.table;
         schema = schemaInfo.schemaConfig;
         TableConfig tableConfig = schema.getTables().get(tableName);

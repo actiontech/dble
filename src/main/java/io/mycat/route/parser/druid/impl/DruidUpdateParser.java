@@ -66,11 +66,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			}
 		} else {
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
-            //数据库校验
-			if (schemaInfo == null) {
-				String msg = "No database selected";
-				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-			}
 			//权限控制
 			if(!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)){
 				String msg = "The statement DML privilege check is not passed, sql:" + stmt;

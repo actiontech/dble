@@ -14,6 +14,7 @@ import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
@@ -68,7 +69,8 @@ public class SchemaUtil
 			schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
 		}
 		if (schemaInfo.schema == null) {
-			return null;
+			String msg = "No database selected";
+			throw new SQLException(msg,"3D000",ErrorCode.ER_NO_DB_ERROR);
 		}
 		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
 			schemaInfo.table = schemaInfo.table.toLowerCase();
@@ -80,7 +82,8 @@ public class SchemaUtil
 		else{
 			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
 			if (schemaConfig == null) {
-				return null;
+				String msg = "Table " + StringUtil.getFullName(schemaInfo.schema, schemaInfo.table) + " doesn't exist";
+				throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 			}
 			if (user != null) {
 				UserConfig userConfig = MycatServer.getInstance().getConfig().getUsers().get(user);
@@ -135,10 +138,6 @@ public class SchemaUtil
 	private static SchemaInfo isNoSharding(ServerConnection source, String schema, SQLExprTableSource table, SQLStatement stmt)
 			throws SQLException {
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(),schema, table);
-		if (schemaInfo == null) {
-			String msg = "No database selected";
-			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-		}
 		Checktype chekctype = Checktype.SELECT;
 		if (stmt instanceof MySqlUpdateStatement) {
 			chekctype = Checktype.UPDATE;

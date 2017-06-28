@@ -26,10 +26,6 @@ public class DruidDropIndexParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropStmt.getTableName());
-		if (schemaInfo == null) {
-			String msg = "No database selected";
-			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-		}
 		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}

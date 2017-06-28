@@ -53,10 +53,6 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		SQLAlterTableStatement alterTable = (SQLAlterTableStatement) stmt;
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, alterTable.getTableSource());
-		if (schemaInfo == null) {
-			String msg = "No database selected";
-			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-		}
 		boolean support = false;
 		for (SQLAlterTableItem alterItem : alterTable.getItems()) {
 			if (alterItem instanceof SQLAlterTableAddColumn

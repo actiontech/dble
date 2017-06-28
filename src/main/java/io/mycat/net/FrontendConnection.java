@@ -201,18 +201,27 @@ public abstract class FrontendConnection extends AbstractConnection {
 		}
 	}
 
-	public void writeErrMessage(int errno, String msg) {
-		writeErrMessage((byte) 1, errno, msg);
+	public void writeErrMessage(String SQLState, String msg, int vendorCode) {
+		writeErrMessage((byte) 1, vendorCode, SQLState, msg);
 	}
 
-	public void writeErrMessage(byte id, int errno, String msg) {
+	public void writeErrMessage(int vendorCode, String msg) {
+		writeErrMessage((byte) 1, vendorCode, msg);
+	}
+
+	public void writeErrMessage(byte id, int vendorCode, String msg) {
+		writeErrMessage(id, vendorCode, "HY000", msg);
+	}
+
+	private void writeErrMessage(byte id, int vendorCode, String SQLState, String msg) {
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = id;
-		err.errno = errno;
+		err.errno = vendorCode;
+		err.sqlState = encodeString(SQLState, charset);
 		err.message = encodeString(msg, charset);
 		err.write(this);
 	}
-	
+
 	public void initDB(byte[] data) {
 		
 		MySQLMessage mm = new MySQLMessage(data);

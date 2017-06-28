@@ -64,10 +64,6 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-			if (schemaInfo == null) {
-				String msg = "No database selected";
-				throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-			}
 			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
 				MysqlInformationSchemaHandler.handle(schemaInfo, sc);

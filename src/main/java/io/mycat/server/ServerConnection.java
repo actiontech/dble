@@ -273,12 +273,15 @@ public class ServerConnection extends FrontendConnection {
 		}
 	}
 	private void executeException(Exception e, String sql){
-		if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
-			SQLException sqle = (SQLException)e;
-			StringBuilder s = new StringBuilder();
-			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + sqle.toString(), sqle);
+		if(e instanceof SQLException) {
+			SQLException sqle = (SQLException) e;
 			String msg = sqle.getMessage();
-			writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
+			StringBuilder s = new StringBuilder();
+			LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
+			int vendorCode = sqle.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqle.getErrorCode();
+			String SQLState = StringUtil.isEmpty(sqle.getSQLState()) ? "HY000" : sqle.getSQLState();
+			String errorMsg = msg == null ? sqle.getClass().getSimpleName() : msg;
+			writeErrMessage(SQLState, errorMsg, vendorCode);
 		}else {
 			StringBuilder s = new StringBuilder();
 			LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);

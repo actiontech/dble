@@ -21,10 +21,6 @@ public class DruidTruncateTableParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SQLTruncateStatement truncateTable = (SQLTruncateStatement) stmt;
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, truncateTable.getTableSources().get(0));
-		if (schemaInfo == null) {
-			String msg = "No database selected";
-			throw new SQLException(msg,"3D000", ErrorCode.ER_NO_DB_ERROR);
-		}
 		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}

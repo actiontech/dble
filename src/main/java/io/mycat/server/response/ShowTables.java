@@ -1,18 +1,13 @@
 package io.mycat.server.response;
 
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.google.common.base.Strings;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.meta.SchemaMeta;
 import io.mycat.net.mysql.EOFPacket;
@@ -21,27 +16,49 @@ import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
-import io.mycat.server.util.SchemaUtil;
 import io.mycat.util.StringUtil;
 
-import static io.mycat.server.parser.ServerParseShow.FULL_TABLE_CHECK;
-import static io.mycat.server.parser.ServerParseShow.TABLE_CHECK;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * show tables impl
- * @author yanglixue
  *
+ * @author yanglixue
  */
 public class ShowTables {
-    private static final String SCHEMA_KEY = "schemaName";
-    private static final String LIKE_KEY = "like";
-
+	private static final String LIKE_KEY = "like";
+	private static String TABLE_PAT = "^\\s*(show){1}" +
+			"(\\s+full){0,1}" +
+			"(\\s+tables){1}" +
+			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
+			"((\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*)|(\\s+(where){1}\\s+((. *){0,})\\s*)){0,1}" +
+			"\\s*$";
+	public static Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 	public static void response(ServerConnection c, String stmt, boolean isFull) {
-		String showSchema = SchemaUtil.parseShowTableSchema(stmt);
+		String showSchema = getShowTableFrom(stmt);
+		if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			showSchema = showSchema.toLowerCase();
+		}
 		String cSchema = showSchema == null ? c.getSchema() : showSchema;
+		if (cSchema == null) {
+			c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+			return;
+		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(cSchema);
 		if (schema == null) {
-			c.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "No database selected");
+			c.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
+			return;
+		}
+
+		MycatConfig conf = MycatServer.getInstance().getConfig();
+		UserConfig user = conf.getUsers().get(c.getUser());
+		if (user == null || !user.getSchemas().contains(cSchema)) {
+			c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
 			return;
 		}
 		//不分库的schema，show tables从后端 mysql中查
@@ -50,71 +67,64 @@ public class ShowTables {
 			c.execute(stmt, ServerParse.SHOW);
 			return;
 		}
-		responseDirect(c, stmt, isFull);
+		responseDirect(c, stmt, cSchema, isFull);
 	}
 
-	private static void responseDirect(ServerConnection c, String stmt, boolean isFull) {
+	private static void responseDirect(ServerConnection c, String stmt, String cSchema, boolean isFull) {
+		ByteBuffer buffer = c.allocate();
+		Map<String, String> tableMap = getTableSet(stmt, cSchema);
 		if (isFull) {
-			responseDirectShowFullTables(c, stmt);
+			byte packetId = writeFullTablesHeader(buffer, c, tableMap, cSchema);
+			writeRowEof(buffer, c, packetId);
 		} else {
-			responseDirectShowTables(c, stmt);
+			byte packetId = writeTablesHeader(buffer, c, tableMap, cSchema);
+			writeRowEof(buffer, c, packetId);
 		}
+
+		c.recycle(buffer);
 	}
-	private static void responseDirectShowFullTables(ServerConnection c, String stmt) {
+
+	public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
 		int FIELD_COUNT = 2;
 		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 		EOFPacket eof = new EOFPacket();
-		Map<String, String> parm = buildShowFullTablesFields(c, stmt);
-		Set<String> tableSet = getTableSet(c, parm, c.getSchema());
 		int i = 0;
 		byte packetId = 0;
 		header.packetId = ++packetId;
-		fields[i] = PacketUtil.getField("Tables in " + parm.get(SCHEMA_KEY), Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
 		fields[i].packetId = ++packetId;
-		fields[i+1] = PacketUtil.getField("Table_type  " , Fields.FIELD_TYPE_VAR_STRING);
-		fields[i+1].packetId = ++packetId;
+		fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i + 1].packetId = ++packetId;
 		eof.packetId = ++packetId;
-		ByteBuffer buffer = c.allocate();
 		// write header
-		buffer = header.write(buffer, c,true);
+		buffer = header.write(buffer, c, true);
 		// write fields
 		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c,true);
+			buffer = field.write(buffer, c, true);
 		}
-		// write eof
-		buffer = eof.write(buffer, c,true);
-		// write rows
-		packetId = eof.packetId;
-		for (String name : tableSet) {
+		buffer = eof.write(buffer, c, true);
+		for (String name : tableMap.keySet()) {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
-			row.add(StringUtil.encode("SHARDING TABLE", c.getCharset()));
+			row.add(StringUtil.encode(tableMap.get(name), c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c,true);
+			buffer = row.write(buffer, c, true);
 		}
-		// write last eof
-		EOFPacket lastEof = new EOFPacket();
-		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c,true);
-
-		// post write
-		c.write(buffer);
+		return packetId;
 	}
-	private static void responseDirectShowTables(ServerConnection c, String stmt) {
+
+	public static byte writeTablesHeader(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
 		int FIELD_COUNT = 1;
 		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 		EOFPacket eof = new EOFPacket();
-		Map<String, String> parm = buildShowTablesFields(c, stmt);
-		Set<String> tableSet = getTableSet(c, parm, c.getSchema());
 		int i = 0;
 		byte packetId = 0;
 		header.packetId = ++packetId;
-		fields[i] = PacketUtil.getField("Tables in " + parm.get(SCHEMA_KEY), Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
 		fields[i].packetId = ++packetId;
 		eof.packetId = ++packetId;
-		ByteBuffer buffer = c.allocate();
 		// write header
 		buffer = header.write(buffer, c, true);
 		// write fields
@@ -122,16 +132,17 @@ public class ShowTables {
 			buffer = field.write(buffer, c, true);
 		}
 		// write eof
-		buffer = eof.write(buffer, c, true);
-
-		// write rows
-		packetId = eof.packetId;
-		for (String name : tableSet) {
+		eof.write(buffer, c, true);
+		for (String name : tableMap.keySet()) {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
 			row.packetId = ++packetId;
 			buffer = row.write(buffer, c, true);
 		}
+		return packetId;
+	}
+	private static void writeRowEof(ByteBuffer buffer, ServerConnection c, byte packetId) {
+
 		// write last eof
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
@@ -141,97 +152,53 @@ public class ShowTables {
 		c.write(buffer);
 	}
 
-	public static Set<String> getTableSet(ServerConnection c, String stmt, boolean isFull) {
-		Map<String, String> parm = buildFields(c, stmt, isFull);
-		return getTableSet(c, parm, c.getSchema());
-	}
-
-    private static Set<String> getTableSet(ServerConnection c, Map<String, String> parm,String cSchema)
-    {
+	public static Map<String, String> getTableSet(String stmt, String cSchema) {
 		//在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
 		SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
 		if (schemata == null) {
-			return new HashSet<>();
+			return new HashMap<>();
 		}
 		Map meta = schemata.getTableMetas();
-		TreeSet<String> tableSet = new TreeSet<>();
-		MycatConfig conf = MycatServer.getInstance().getConfig();
+		TreeMap<String, String> tableMap = new TreeMap<>();
+		Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
+		String like =getShowTableLike(stmt);
+		if (null == like) {
+			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+				String tbName = tbConfig.getName();
+				if (meta.get(tbName) != null) {
+					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+					tableMap.put(tbName, tbType);
+				}
+			}
+		} else {
+			String p = "^" + like.replaceAll("%", ".*");
+			Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
+			Matcher ma;
 
-		Map<String, UserConfig> users = conf.getUsers();
-		UserConfig user = users == null ? null : users.get(c.getUser());
-		if (user != null) {
-			Map<String, SchemaConfig> schemas = conf.getSchemas();
-			for (String name : schemas.keySet()) {
-				if (null != parm.get(SCHEMA_KEY) && parm.get(SCHEMA_KEY).toUpperCase().equals(name.toUpperCase())) {
-					if (null == parm.get(LIKE_KEY)) {
-						//tableSet.addAll(schemas.get(name).getTables().keySet());
-						for (String tname : schemas.get(name).getTables().keySet()) {
-							if (meta.get(tname) != null) {
-								tableSet.add(tname);
-							}
-						}
-					} else {
-						String p = "^" + parm.get(LIKE_KEY).replaceAll("%", ".*");
-						Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
-						Matcher ma;
-
-						for (String tname : schemas.get(name).getTables().keySet()) {
-							ma = pattern.matcher(tname);
-							if (ma.matches() && meta.get(tname) != null) {
-								tableSet.add(tname);
-							}
-						}
-					}
+			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+				String tbName = tbConfig.getName();
+				ma = pattern.matcher(tbName);
+				if (ma.matches() && meta.get(tbName) != null) {
+					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+					tableMap.put(tbName, tbType);
 				}
 			}
 		}
-		return tableSet;
+		return tableMap;
 	}
 
-	private static Map<String, String> buildFields(ServerConnection c, String stmt, boolean isFull) {
-		if (isFull) {
-			return buildShowFullTablesFields(c, stmt);
-		} else {
-			return buildShowTablesFields(c, stmt);
+	public static String getShowTableFrom(String sql) {
+		Matcher ma = pattern.matcher(sql);
+		if (ma.matches()) {
+			return ma.group(6);
 		}
+		return null;
 	}
-	private static Map<String, String> buildShowFullTablesFields(ServerConnection c, String stmt) {
-		Map<String,String> map = new HashMap<>();
-		Pattern pattern = Pattern.compile(FULL_TABLE_CHECK,Pattern.CASE_INSENSITIVE);
-		Matcher ma = pattern.matcher(stmt);
-		if(ma.find()){
-			String schemaName=ma.group(6);
-			if (null !=schemaName && (!"".equals(schemaName)) && (!"null".equals(schemaName))){
-				map.put(SCHEMA_KEY, schemaName);
-			}
-			String like = ma.group(9);
-			if (null !=like && (!"".equals(like)) && (!"null".equals(like))){
-				map.put(LIKE_KEY, like);
-			}
+	private static String getShowTableLike(String sql) {
+		Matcher ma = pattern.matcher(sql);
+		if (ma.matches()) {
+			return ma.group(10);
 		}
-		if(null==map.get(SCHEMA_KEY)){
-			map.put(SCHEMA_KEY, c.getSchema());
-		}
-		return  map;
+		return null;
 	}
-	private static Map<String, String> buildShowTablesFields(ServerConnection c, String stmt) {
-		Map<String, String> map = new HashMap<>();
-		Pattern pattern = Pattern.compile(TABLE_CHECK,Pattern.CASE_INSENSITIVE);
-		Matcher ma = pattern.matcher(stmt);
-		if (ma.find()) {
-			String schemaName = ma.group(5);
-			if (null != schemaName && (!"".equals(schemaName)) && (!"null".equals(schemaName))) {
-				map.put(SCHEMA_KEY, schemaName);
-			}
-			String like = ma.group(8);
-			if (null != like && (!"".equals(like)) && (!"null".equals(like))) {
-				map.put(LIKE_KEY, like);
-			}
-		}
-		if (null == map.get(SCHEMA_KEY)) {
-			map.put(SCHEMA_KEY, c.getSchema());
-		}
-		return map;
-	}
-	
 }

@@ -23,15 +23,13 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
-import com.google.common.base.Strings;
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
-import io.mycat.config.ErrorCode;
 import io.mycat.cache.LayerCachePool;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.model.SchemaConfig;
 import io.mycat.log.transaction.TxnLogHelper;
 import io.mycat.net.mysql.*;
 import io.mycat.route.RouteResultset;
@@ -50,7 +48,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+
 /**
  * @author mycat
  */
@@ -75,11 +74,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	
 	private boolean prepared;
 	private int fieldCount;
-	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
+	private List<FieldPacket> fieldPackets = new ArrayList<>();
 
 	private volatile boolean isDefaultNodeShowTable;
 	private volatile boolean isDefaultNodeShowFullTable;
-	private Set<String> shardingTablesSet;
+	private String showTableSchema;
+	private Map<String,String> shardingTablesMap;
 	private volatile boolean waitingResponse;
 	
 	public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -93,16 +93,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		}
 		this.session = session;
 		ServerConnection source = session.getSource();
-		String schema = source.getSchema();
-		if (schema != null && ServerParse.SHOW == rrs.getSqlType()) {
-			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schema);
-			int type = ServerParseShow.showTableType(rrs.getStatement());
-			isDefaultNodeShowTable = (ServerParseShow.TABLES == type && !Strings.isNullOrEmpty(schemaConfig.getDataNode()));
-			isDefaultNodeShowFullTable = (ServerParseShow.FULLTABLES == type && !Strings.isNullOrEmpty(schemaConfig.getDataNode()));
-			if (isDefaultNodeShowTable) {
-				shardingTablesSet = ShowTables.getTableSet(source, rrs.getStatement(),false);
-			} else if (isDefaultNodeShowFullTable) {
-				shardingTablesSet = ShowTables.getTableSet(source, rrs.getStatement(),true);
+		if (ServerParse.SHOW == rrs.getSqlType()) {
+			int type = ServerParseShow.showTableType(rrs.getSrcStatement());
+			if (ServerParseShow.TABLES == type || ServerParseShow.FULLTABLES == type) {
+				String showSchema = ShowTables.getShowTableFrom(rrs.getSrcStatement());
+				if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+					showSchema = showSchema.toLowerCase();
+				}
+				showTableSchema = showSchema == null ? source.getSchema() : showSchema;
+				shardingTablesMap = ShowTables.getTableSet(rrs.getSrcStatement(),showTableSchema);
+				isDefaultNodeShowTable = ServerParseShow.TABLES == type;
+				isDefaultNodeShowFullTable = ServerParseShow.FULLTABLES == type;
 			}
 		}
 	}
@@ -306,7 +307,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
 			boolean isLeft, BackendConnection conn) {
-		
+		ServerConnection source = session.getSource();
+		if (isDefaultNodeShowTable || isDefaultNodeShowFullTable) {
+			buffer = allocBuffer();
+			if (isDefaultNodeShowTable) {
+				packetId = ShowTables.writeTablesHeader(buffer, source,shardingTablesMap, showTableSchema);
+
+			} else if (isDefaultNodeShowFullTable) {
+				packetId = ShowTables.writeFullTablesHeader(buffer, source,shardingTablesMap, showTableSchema);
+			}
+			return;
+		}
 		this.netOutBytes += header.length;
 		for (int i = 0, len = fields.size(); i < len; ++i) {
 			byte[] field = fields.get(i);
@@ -321,7 +332,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		}
 
 		header[3] = ++packetId;
-		ServerConnection source = session.getSource();
 		buffer = source.writeToBuffer(header, allocBuffer());
 		for (int i = 0, len = fields.size(); i < len; ++i) {
 			byte[] field = fields.get(i);
@@ -347,25 +357,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		eof[3] = ++packetId;
 		buffer = source.writeToBuffer(eof, buffer);
-
-		if (isDefaultNodeShowTable) {
-			
-			for (String name : shardingTablesSet) {
-				RowDataPacket row = new RowDataPacket(1);
-				row.add(StringUtil.encode(name, source.getCharset()));
-				row.packetId = ++packetId;
-				buffer = row.write(buffer, source, true);
-			}
-			
-		} else if (isDefaultNodeShowFullTable) {
-			for (String name : shardingTablesSet) {
-				RowDataPacket row = new RowDataPacket(2);
-				row.add(StringUtil.encode(name, source.getCharset()));
-				row.add(StringUtil.encode("SHARDING TABLE", source.getCharset()));
-				row.packetId = ++packetId;
-				buffer = row.write(buffer, source, true);
-			}
-		}
 	}
 
 	/**
@@ -383,7 +374,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			RowDataPacket rowDataPacket = new RowDataPacket(1);
 			rowDataPacket.read(row);
 			String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getSource().getCharset());
-			if (shardingTablesSet.contains(table)) {
+			if (shardingTablesMap.containsKey(table)) {
 				return false;
 			}
 		}

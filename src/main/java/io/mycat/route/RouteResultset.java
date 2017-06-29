@@ -267,6 +267,10 @@ public final class RouteResultset implements Serializable {
 
     }
 
+	public String getSrcStatement() {
+		return srcStatement;
+	}
+
     public String getStatement() {
         return statement;
     }

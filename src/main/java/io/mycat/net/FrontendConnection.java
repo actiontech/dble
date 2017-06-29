@@ -177,6 +177,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 	}
 
 	public void setSchema(String schema) {
+		if (schema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+			schema = schema.toLowerCase();
+		}
 		this.schema = schema;
 	}
 

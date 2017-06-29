@@ -24,6 +24,7 @@
 package io.mycat.server.parser;
 
 import io.mycat.route.parser.util.ParseUtil;
+import io.mycat.server.response.ShowTables;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,7 +54,7 @@ public final class ServerParseShow {
 					continue;
 				case 'F':
 				case 'f':
-					return fullTableCheck(stmt, i);
+					return showTableType(stmt);
 				case '/':
 				case '#':
 					i = ParseUtil.comment(stmt, i);
@@ -66,7 +67,7 @@ public final class ServerParseShow {
 					return dataCheck(stmt, i);
 				case 'T':
 				case 't':
-					return tableCheck(stmt, i);
+					return showTableType(stmt);
 				case 'S':
 				case 's':
 					return schemasCheck(stmt, i);
@@ -173,42 +174,7 @@ public final class ServerParseShow {
 		return OTHER;
 	}
 
-	public static String FULL_TABLE_CHECK = "^\\s*(show){1}" +
-			"(\\s+full){1}" +
-			"(\\s+tables){1}" +
-			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
-			"(\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*){0,1}" +
-			"\\s*$";
 
-	public static int fullTableCheck(String  stmt,int offset )
-    {
-
-		if(isShowTableMatched(stmt,FULL_TABLE_CHECK))
-        {
-         return FULLTABLES;
-        }
-        return OTHER;
-    }
-
-	// SHOW TABLE
-
-	public static String TABLE_CHECK = "^\\s*(show){1}" +
-							"(\\s+tables){1}" +
-							"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
-							"(\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*){0,1}" +
-							"\\s*$";
-
-public 	static int tableCheck(String stmt, int offset) {
-
-    boolean flag = isShowTableMatched(stmt, TABLE_CHECK);
-
-    if (flag) {
-        return TABLES;
-    }
-
-    return OTHER;
-
-}
 
 	private static boolean isShowTableMatched(String stmt, String pat1) {
 		Pattern pattern = Pattern.compile(pat1, Pattern.CASE_INSENSITIVE);
@@ -306,38 +272,16 @@ public 	static int tableCheck(String stmt, int offset) {
 		return OTHER;
 	}
 
-	public static String TABLE_PAT = "^\\s*(show){1}" +
-										"(\\s+full){0,1}" +
-										"(\\s+tables){1}" +
-										"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
-										"(\\s+(like){1}\\s+\\'(. *){0,}\\'\\s*){0,1}" +
-			                            "\\s*$";
-
-
-	public static String FULL_TABLE_EXPECTION = "^\\s*(show){1}" +
-			"(\\s+full){1}" +
-			"(\\s+tables){1}" +
-			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
-			"(\\s+(where){1}\\s+((. *){0,})\\s*){0,1}" +
-			"\\s*$";
-
-	public static int showTableType(String sql){
-
-		Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
+	public static int showTableType(String sql) {
+		Pattern pattern = ShowTables.pattern;
 		Matcher ma = pattern.matcher(sql);
-
-		Pattern patternExpection = Pattern.compile(FULL_TABLE_EXPECTION, Pattern.CASE_INSENSITIVE);
-		Matcher mb = patternExpection.matcher(sql);
-
-		if(ma.matches()){
-				if (ma.group(2) != null) {
-					return FULLTABLES;
-				} else {
-					return TABLES;
-				}
-		}else if(mb.matches()){
-			return FULLTABLES;
-		}else{
+		if (ma.matches()) {
+			if (ma.group(2) != null) {
+				return FULLTABLES;
+			} else {
+				return TABLES;
+			}
+		} else {
 			return OTHER;
 		}
 	}

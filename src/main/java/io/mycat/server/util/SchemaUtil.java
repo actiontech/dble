@@ -14,7 +14,6 @@ import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.UserConfig;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
@@ -23,10 +22,6 @@ import io.mycat.util.StringUtil;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static io.mycat.server.parser.ServerParseShow.TABLE_PAT;
 
 /**
  * Created by magicdoom on 2016/1/26.
@@ -47,15 +42,6 @@ public class SchemaUtil
 		return null;
 	}
 
-    public static String parseShowTableSchema(String sql)
-    {
-        Matcher ma = pattern.matcher(sql);
-        if(ma.matches()&&ma.groupCount()>=6)
-        {
-          return  ma.group(6);
-        }
-        return null;
-    }
 	public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
 		SchemaInfo schemaInfo = new SchemaInfo();
 		SQLExpr expr = tableSource.getExpr();
@@ -187,7 +173,4 @@ public class SchemaUtil
 					'}';
         }
     }
-
-private  static     Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
-
 }

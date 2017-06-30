@@ -120,12 +120,5 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			LOGGER.warn(msg);
 			throw new SQLNonTransientException(msg);
 		}
-
-		// 创建新表的时候自增属性禁止
-		if(createStmt.getTableOptions().get("AUTO_INCREMENT") != null){
-			String msg = "create table with AUTO_INCREMENT not supported:" + createStmt;
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
-		}
 	}
 }

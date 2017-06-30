@@ -39,7 +39,7 @@ public class DDLRouteTest {
     @Test
     public void testSpecialCharDDL() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        CacheService cacheService = new CacheService();
+        CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
 
         // alter table test
@@ -70,7 +70,7 @@ public class DDLRouteTest {
     @Test
     public void testDDL() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        CacheService cacheService = new CacheService();
+        CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
 
         // create table/view/function/..
@@ -246,7 +246,7 @@ public class DDLRouteTest {
     @Test
     public void testDDLDefaultNode() throws Exception {
         SchemaConfig schema = schemaMap.get("solo1");
-        CacheService cacheService = new CacheService();
+        CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
 
         // create table/view/function/..

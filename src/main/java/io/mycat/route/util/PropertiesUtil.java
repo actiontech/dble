@@ -2,6 +2,7 @@ package io.mycat.route.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Enumeration;
 import java.util.Properties;
 
 /**
@@ -25,5 +26,20 @@ public class PropertiesUtil {
             throw new java.lang.RuntimeException(e);
         }
         return props;
+    }
+    public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames){
+        Properties props = loadProps(propsFile);
+        if(isLowerCaseTableNames){
+            Properties newProps = new Properties();
+            Enumeration<?> enu = props.propertyNames();
+            while (enu.hasMoreElements()) {
+                String key = (String) enu.nextElement();
+                newProps.setProperty(key.toLowerCase(),props.getProperty(key));
+            }
+            props.clear();
+            return newProps;
+        }else{
+            return props;
+        }
     }
 }

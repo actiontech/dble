@@ -23,12 +23,13 @@
  */
 package io.mycat.cache;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 /**
  * cache service for other component default using memory cache encache
@@ -42,11 +43,11 @@ public class CacheService {
 	private final Map<String, CachePoolFactory> poolFactorys = new HashMap<String, CachePoolFactory>();
 	private final Map<String, CachePool> allPools = new HashMap<String, CachePool>();
 
-	public CacheService() {
+	public CacheService(boolean isLowerCaseTableNames) {
 
 		// load cache pool defined
 		try {
-			init();
+			init(isLowerCaseTableNames);
 		} catch (Exception e) {
 			if (e instanceof RuntimeException) {
 				throw (RuntimeException) e;
@@ -61,7 +62,7 @@ public class CacheService {
 		return this.allPools;
 	}
 
-	private void init() throws Exception {
+	private void init(boolean isLowerCaseTableNames) throws Exception {
 		Properties props = new Properties();
 		props.load(CacheService.class
 				.getResourceAsStream("/cacheservice.properties"));
@@ -109,7 +110,9 @@ public class CacheService {
 										+ parent + " the child cache is:"
 										+ child);
 					}
-
+					if(isLowerCaseTableNames){
+						child = child.toLowerCase();
+					}
 					int size = Integer.valueOf(valueItems[0]);
 					int timeOut = Integer.valueOf(valueItems[1]);
 					((DefaultLayedCachePool) pool).createChildCache(child,

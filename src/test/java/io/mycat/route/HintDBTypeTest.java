@@ -37,7 +37,7 @@ public class HintDBTypeTest {
         SchemaConfig schema = schemaMap.get("TESTDB");
        //使用注解（新注解，/*!mycat*/），runOnSlave=false 强制走主节点
         String sql = "/*!mycat:db_type=master*/select * from employee where sharding_id=1";
-        CacheService cacheService = new CacheService();
+        CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
         RouteResultset rrs = routerService.route(new SystemConfig(), schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());

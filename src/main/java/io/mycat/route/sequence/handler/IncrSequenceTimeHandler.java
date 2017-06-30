@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import io.mycat.route.util.PropertiesUtil;
 import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 public class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
 
-	private static final String SEQUENCE_DB_PROPS = "sequence_time_conf.properties";
+	private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";
 	private static final IncrSequenceTimeHandler instance = new IncrSequenceTimeHandler();
 	private static IdWorker workey = new IdWorker(1,1);
 
@@ -25,26 +26,12 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 
 	public void load(){
 		// load sequnce properties
-		Properties props = loadProps(SEQUENCE_DB_PROPS);
+		Properties props = PropertiesUtil.loadProps(SEQUENCE_TIME_PROPS);
 
 		long workid = Long.parseLong(props.getProperty("WORKID"));
 		long dataCenterId = Long.parseLong(props.getProperty("DATAACENTERID"));
 
 		workey = new IdWorker(workid,dataCenterId);
-	}
-	private Properties loadProps(String propsFile){
-		Properties props = new Properties();
-		InputStream inp = Thread.currentThread().getContextClassLoader().getResourceAsStream(propsFile);
-
-		if (inp == null) {
-			throw new java.lang.RuntimeException("time sequnce properties not found " + propsFile);
-		}
-		try {
-			props.load(inp);
-		} catch (IOException e) {
-			throw new java.lang.RuntimeException(e);
-		}
-		return props;
 	}
 	@Override
 	public long nextId(String prefixName) {

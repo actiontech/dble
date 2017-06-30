@@ -43,22 +43,16 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         return IncrSequenceMySQLHandlerHolder.instance;
     }
 
-    public IncrSequenceMySQLHandler() {
-
-        load();
-    }
-
-    public void load() {
+    public void load(boolean isLowerCaseTableNames) {
         // load sequnce properties
-        Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
+        Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS, isLowerCaseTableNames);
         removeDesertedSequenceVals(props);
         putNewSequenceVals(props);
     }
 
 
     private void removeDesertedSequenceVals(Properties props) {
-        Iterator<Map.Entry<String, SequenceVal>> i = seqValueMap.entrySet()
-                .iterator();
+        Iterator<Map.Entry<String, SequenceVal>> i = seqValueMap.entrySet().iterator();
         while (i.hasNext()) {
             Map.Entry<String, SequenceVal> entry = i.next();
             if (!props.containsKey(entry.getKey())) {

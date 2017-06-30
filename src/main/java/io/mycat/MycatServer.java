@@ -155,7 +155,7 @@ public class MycatServer {
 		this.isOnline = new AtomicBoolean(true);
 		
 		//缓存服务初始化
-		cacheService = new CacheService();
+		cacheService = new CacheService(config.getSystem().isLowerCaseTableNames());
 		
 		//路由计算初始化
 		routerService = new RouteService(cacheService);

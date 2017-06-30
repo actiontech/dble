@@ -89,7 +89,7 @@ public class ConfigInitializer {
 		
 		//不同类型的全局序列处理器的配置加载
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_MYSQLDB) {
-			IncrSequenceMySQLHandler.getInstance().load();
+			IncrSequenceMySQLHandler.getInstance().load(system.isLowerCaseTableNames());
 		}
 
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_LOCAL_TIME) {
@@ -101,7 +101,7 @@ public class ConfigInitializer {
 		}
 		
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT) {
-			IncrSequenceZKHandler.getInstance().load();
+			IncrSequenceZKHandler.getInstance().load(system.isLowerCaseTableNames());
 		}
 		
 		/**

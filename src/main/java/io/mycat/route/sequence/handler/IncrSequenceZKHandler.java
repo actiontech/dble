@@ -80,8 +80,8 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private ThreadLocal<InterProcessSemaphoreMutex> interProcessSemaphoreMutexThreadLocal = new ThreadLocal<>();
     private Properties props;
 
-    public void load() {
-        props = PropertiesUtil.loadProps(FILE_NAME);
+    public void load(boolean isLowerCaseTableNames) {
+        props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ZkConfig.getInstance().getZkURL();
         try {
             initializeZK(props, zkAddress);
@@ -227,7 +227,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
 
     public static void main(String[] args) throws UnsupportedEncodingException {
         IncrSequenceZKHandler incrSequenceZKHandler = new IncrSequenceZKHandler();
-        incrSequenceZKHandler.load();
+        incrSequenceZKHandler.load(false);
         System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
         System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
         System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));

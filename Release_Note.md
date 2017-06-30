@@ -1,3 +1,35 @@
+DATE:2017/06/29  
+VERSION 2.17.06.0  
+CONTENT:  
+## 1.feature
+1.移除writeType参数，等效于原来writeType =0  
+2.conf/index_to_charset.properties的内容固化到代码   
+3.show @@binlog.status  ，显示节点间事务一致的binlog线   
+4.增强explain执行计划  
+5.show tables时,不显示未创建的表，show full tables 拆分表的type会显示为SHARDING TABLE，global表会显示为GLOBAL TABLE  
+6.ddl 执行前做一次心跳检查  
+7.多表查询中using()结果未合并重复列 #103  
+8.natural join #97  
+## 2.fix bugs  
+1.配置为自循环不会去拉取meta信息 #146  
+2.自增序列部分算法缺陷及改进  
+3.单节点查询不加入主键缓存bug #160   
+4.租户权限不不隔离的问题 #164  
+5.show full tables from db，当db为不存在的db时，多发包导致乱序  #159
+6.数字范围算法(AutoPartitionByLong),有默认节点时，between...and...可能路由错误 #145
+## 3.不兼容项
+配置 ：
+sequence_conf.properties 库表名要用"\`"包起来,用"."连接  
+sequence_db_conf.properties  库表名要用"\`"包起来,用"."连接  
+cacheservice.properties 库表名要用"\`"包起来，用"_"连接。  
+自增序列部分算法  
+A.本地时间戳方式  
+ID= (30(毫秒时间戳前30位)+5(机器ID)+5(业务编码)+12(重复累加)+12(毫秒时间戳后12位)  
+B.分布式ZK ID 生成器     
+ID= 63位二进制 (9(线程ID) +5(实例ID)+4(机房ID)+6(重复累加) +39(毫秒求模,可用17年))  
+
+------  
+
 DATE:2017/04/20  
 VERSION 2.17.04.0  
 CONTENT:  

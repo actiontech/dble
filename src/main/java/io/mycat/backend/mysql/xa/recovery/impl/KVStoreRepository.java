@@ -53,12 +53,18 @@ public class KVStoreRepository implements Repository {
 	public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
 		String data = null;
 		try {
-			byte[] raw = zkConn.getData().forPath(logPath);
-			if (raw != null) {
-				data = new String(raw, StandardCharsets.UTF_8);
+			if (zkConn.checkExists().forPath(logPath) != null) {
+				try {
+					byte[] raw = zkConn.getData().forPath(logPath);
+					if (raw != null) {
+						data = new String(raw, StandardCharsets.UTF_8);
+					}
+				} catch (Exception e) {
+					logger.warn("KVStoreRepository.getAllCoordinatorLogEntries error", e);
+				}
 			}
-		} catch (Exception e) {
-			logger.warn("KVStoreRepository.getAllCoordinatorLogEntries error", e);
+		} catch (Exception e2) {
+			logger.warn("KVStoreRepository error", e2);
 		}
 		if (data == null) {
 			return Collections.emptyList();

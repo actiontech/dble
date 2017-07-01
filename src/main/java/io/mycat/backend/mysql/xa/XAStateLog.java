@@ -37,7 +37,6 @@ public class XAStateLog {
 	private static AtomicBoolean hasLeader = new AtomicBoolean(false);
 	private static volatile boolean isWriting = false;
 	private static Condition waitWriting = lock.newCondition();
-	private static volatile boolean writeResult = false;
 	private static ReentrantLock lockNum = new ReentrantLock();
 	private static AtomicInteger batchNum = new AtomicInteger(0);
 	private static Set<Long> waitSet = new CopyOnWriteArraySet<>();
@@ -92,7 +91,7 @@ public class XAStateLog {
 			lockNum.lock();
 			try {
 				isWriting = true;
-				writeResult = false;
+				boolean writeResult = false;
 				// copy memoryRepository
 				List<CoordinatorLogEntry> logs = new ArrayList<>();
 				ReentrantLock lockmap = ((InMemoryRepository) inMemoryRepository).getLock();
@@ -127,11 +126,10 @@ public class XAStateLog {
 						}
 					}
 					isWriting = false;
-					boolean result = mapResult.get(Thread.currentThread().getId());
 					mapResult.remove(Thread.currentThread().getId());
 					// 1.wakeup follower to return 2.wake up waiting threads continue
 					waitWriting.signalAll();
-					return result;
+					return writeResult;
 				} finally {
 					lock.unlock();
 				}

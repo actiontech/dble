@@ -24,8 +24,7 @@ public class DnPropertyUtil {
 	 */
 	public static Properties loadDnIndexProps() {
 		Properties prop = new Properties();
-		File file = new File(SystemConfig.getHomePath(), "conf"
-				+ File.separator + "dnindex.properties");
+		File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
 		if (!file.exists()) {
 			return prop;
 		}

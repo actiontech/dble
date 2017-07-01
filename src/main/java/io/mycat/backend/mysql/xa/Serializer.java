@@ -10,9 +10,9 @@ public class Serializer {
     private static final String START_ARRAY = "[";
     private static final String START_OBJECT = "{";
     private static final String END_OBJECT = "}";
-    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    public String toJSON(CoordinatorLogEntry coordinatorLogEntry) {
+    public static String toJSON(CoordinatorLogEntry coordinatorLogEntry) {
         StringBuilder strBuilder = new StringBuilder(600);
         strBuilder.append(START_OBJECT);
         strBuilder.append(QUOTE).append(CoordinatorLogEntry.ID).append(QUOTE).append(":").append(QUOTE).append(coordinatorLogEntry.getId()).append(QUOTE);

@@ -33,6 +33,7 @@ import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.mysql.xa.*;
 import io.mycat.backend.mysql.xa.recovery.Repository;
 import io.mycat.backend.mysql.xa.recovery.impl.FileSystemRepository;
+import io.mycat.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.DirectByteBufferPool;
 import io.mycat.cache.CacheService;
@@ -43,6 +44,7 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.config.util.DnPropertyUtil;
 import io.mycat.log.transaction.TxnLogProcessor;
 import io.mycat.manager.ManagerConnectionFactory;
 import io.mycat.memory.MyCatMemory;
@@ -73,7 +75,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -89,7 +90,6 @@ public class MycatServer {
 	
 	private static final MycatServer INSTANCE = new MycatServer();
 	private static final Logger LOGGER = LoggerFactory.getLogger("Server");
-	private static final Repository fileRepository = new FileSystemRepository();
 	private AtomicBoolean backupLocked;
 
 	//全局序列号
@@ -161,7 +161,7 @@ public class MycatServer {
 		routerService = new RouteService(cacheService);
 		
 		// load datanode active index from properties
-		dnIndexProperties = loadDnIndexProps();
+		dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
 
 		//catlet加载器
 		catletClassLoader = new DynaClassLoader(SystemConfig.getHomePath()
@@ -217,7 +217,17 @@ public class MycatServer {
 				seq = xaIDInc.incrementAndGet();
 			}
 		}
-		return "'"+NAME+"Server." + this.getConfig().getSystem().getServerNodeId() + "." + seq + "'";
+		StringBuilder id = new StringBuilder();
+		id.append("'"+NAME+"Server.");
+		if (isUseZK()) {
+			id.append(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+		} else {
+			id.append(this.getConfig().getSystem().getServerNodeId());
+		}
+		id.append(".");
+		id.append(seq);
+		id.append("'");
+		return id.toString();
 	}
 
 	private void genXidSeq(String xaID) {
@@ -284,10 +294,7 @@ public class MycatServer {
 	}
 
 	public void beforeStart() {
-		String home = SystemConfig.getHomePath();
-
-
-		//ZkConfig.instance().initZk();
+		SystemConfig.getHomePath();
 	}
 
 	public void startup() throws IOException {
@@ -499,7 +506,7 @@ public class MycatServer {
 	{
 		if(MycatServer.getInstance().getProcessors()==null) return;
 		// load datanode active index from properties
-		dnIndexProperties = loadDnIndexProps();
+		dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
 		// init datahost
 		Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
 		LOGGER.info("reInitialize dataHost ...");
@@ -590,29 +597,6 @@ public class MycatServer {
 				}
 			};
 		};
-	}
-
-	private Properties loadDnIndexProps() {
-		Properties prop = new Properties();
-		File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
-		if (!file.exists()) {
-			return prop;
-		}
-		FileInputStream filein = null;
-		try {
-			filein = new FileInputStream(file);
-			prop.load(filein);
-		} catch (Exception e) {
-			LOGGER.warn("load DataNodeIndex err:" + e);
-		} finally {
-			if (filein != null) {
-				try {
-					filein.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-		return prop;
 	}
 
 	/**
@@ -959,7 +943,8 @@ public class MycatServer {
 
 	/** covert the collection to array **/
 	private CoordinatorLogEntry[] getCoordinatorLogEntries(){
-		Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(); 
+		Repository fileRepository = isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
+		Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries();
 		fileRepository.close();
 		if(allCoordinatorLogEntries == null){return new CoordinatorLogEntry[0];}
 		if(allCoordinatorLogEntries.size()==0){return new CoordinatorLogEntry[0];}

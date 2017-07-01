@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectStreamException;
-import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
@@ -34,22 +33,18 @@ import io.mycat.config.model.SystemConfig;
  * Created by zhangchao on 2016/10/13.
  */
 public class FileSystemRepository implements Repository{
-    public static final Logger logger = LoggerFactory
-            .getLogger(FileSystemRepository.class);
+    public static final Logger logger = LoggerFactory.getLogger(FileSystemRepository.class);
     private VersionedFile file;
     private FileChannel rwChannel = null;
 
-    public FileSystemRepository()  {
-           init();
+    public FileSystemRepository() {
+        init();
     }
 
     @Override
     public void init(){
-//        ConfigProperties configProperties = Configuration.getConfigProperties();
-//        String baseDir = configProperties.getLogBaseDir();
-//        String baseName = configProperties.getLogBaseName();
-        MycatConfig config = MycatServer.getInstance().getConfig();
-        SystemConfig systemConfig = config.getSystem();
+        MycatConfig mycatconfig = MycatServer.getInstance().getConfig();
+        SystemConfig systemConfig = mycatconfig.getSystem();
 
         String baseDir =systemConfig.getXARecoveryLogBaseDir();
         String baseName = systemConfig.getXARecoveryLogBaseName();
@@ -63,8 +58,6 @@ public class FileSystemRepository implements Repository{
         file = new VersionedFile(baseDir, baseName, ".log");
 
     }
-
-    private Serializer serializer = new Serializer();
 
     @Override
     public void put(String id, CoordinatorLogEntry coordinatorLogEntry) {
@@ -86,7 +79,7 @@ public class FileSystemRepository implements Repository{
 
     private void write(CoordinatorLogEntry coordinatorLogEntry,
                        boolean flushImmediately) throws IOException {
-        String str = serializer.toJSON(coordinatorLogEntry);
+        String str = Serializer.toJSON(coordinatorLogEntry);
         byte[] buffer = str.getBytes();
         ByteBuffer buff = ByteBuffer.wrap(buffer);
         writeToFile(buff, flushImmediately);
@@ -111,6 +104,7 @@ public class FileSystemRepository implements Repository{
         } catch (FileNotFoundException firstStart) {
             // the file could not be opened for reading;
             // merely return the default empty vector
+            logger.warn("FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
         }
         if (fis != null) {
             return readFromInputStream(fis);
@@ -119,9 +113,9 @@ public class FileSystemRepository implements Repository{
         return Collections.emptyList();
     }
 
-    public static Collection<CoordinatorLogEntry> readFromInputStream(
+    private static Collection<CoordinatorLogEntry> readFromInputStream(
             InputStream in) {
-        Map<String, CoordinatorLogEntry> coordinatorLogEntries = new HashMap<String, CoordinatorLogEntry>();
+        Map<String, CoordinatorLogEntry> coordinatorLogEntries = new HashMap<>();
         BufferedReader br = null;
         try {
             InputStreamReader isr = new InputStreamReader(in);
@@ -135,10 +129,10 @@ public class FileSystemRepository implements Repository{
         return coordinatorLogEntries.values();
     }
 
-    static Map<String, CoordinatorLogEntry> readContent(BufferedReader br)
+    private static Map<String, CoordinatorLogEntry> readContent(BufferedReader br)
             throws IOException {
 
-        Map<String, CoordinatorLogEntry> coordinatorLogEntries = new HashMap<String, CoordinatorLogEntry>();
+        Map<String, CoordinatorLogEntry> coordinatorLogEntries = new HashMap<>();
         try {
             String line;
             while ((line = br.readLine()) != null) {
@@ -152,18 +146,13 @@ public class FileSystemRepository implements Repository{
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
-        } catch (StreamCorruptedException unexpectedEOF) {
-            logger.info(
-                    "Unexpected EOF - logfile not closed properly last time?",
-                    unexpectedEOF);
-            // merely return what was read so far...
         } catch (ObjectStreamException unexpectedEOF) {
-            logger.info(
+            logger.warn(
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (DeserialisationException unexpectedEOF) {
-            logger.info("Unexpected EOF - logfile not closed properly last time? "
+            logger.warn("Unexpected EOF - logfile not closed properly last time? "
                     + unexpectedEOF);
         }
         return coordinatorLogEntries;
@@ -178,11 +167,9 @@ public class FileSystemRepository implements Repository{
         }
     }
 
-    private static Deserializer deserializer = new Deserializer();
-
     private static CoordinatorLogEntry deserialize(String line)
             throws DeserialisationException {
-        return deserializer.fromJSON(line);
+        return Deserializer.fromJSON(line);
     }
 
     @Override
@@ -195,7 +182,7 @@ public class FileSystemRepository implements Repository{
 
     }
 
-    protected void closeOutput() throws IllegalStateException {
+    private void closeOutput() throws IllegalStateException {
         try {
             if (file != null) {
                 file.close();
@@ -217,12 +204,7 @@ public class FileSystemRepository implements Repository{
 			rwChannel.force(false);
 			file.discardBackupVersion();
 			return true;
-		} catch (FileNotFoundException firstStart) {
-			// the file could not be opened for reading;
-			// merely return the default empty vector
-			logger.warn("Failed to write checkpoint", firstStart);
-			return false;
-		} catch (Exception e) {
+		}catch (Exception e) {
 			logger.warn("Failed to write checkpoint", e);
 			return false;
 		}
@@ -230,12 +212,11 @@ public class FileSystemRepository implements Repository{
 
     /**
      * create the log base dir
-     * @param baseDir
      */
-    public void createBaseDir(String baseDir){
-        File baseDirFolder = new File (baseDir);
-        if (!baseDirFolder.exists()){
-                baseDirFolder.mkdirs();
+    private void createBaseDir(String baseDir){
+        File baseDirFolder = new File(baseDir);
+        if (!baseDirFolder.exists()) {
+            baseDirFolder.mkdirs();
         }
     }
 

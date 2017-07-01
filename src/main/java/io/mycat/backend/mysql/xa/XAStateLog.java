@@ -2,7 +2,6 @@ package io.mycat.backend.mysql.xa;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.mycat.MycatServer;
+import io.mycat.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +24,15 @@ import io.mycat.backend.mysql.xa.recovery.impl.InMemoryRepository;
 
 public class XAStateLog {
 	public static final Logger logger = LoggerFactory.getLogger(XAStateLog.class);
-	public static final Repository fileRepository = new FileSystemRepository();
-	public static final Repository inMemoryRepository = new InMemoryRepository();
+	private static final Repository fileRepository;
+	static {
+		if (MycatServer.getInstance().isUseZK()) {
+			fileRepository = new KVStoreRepository();
+		} else {
+			fileRepository = new FileSystemRepository();
+		}
+	}
+	private static final Repository inMemoryRepository = new InMemoryRepository();
 	private static ReentrantLock lock = new ReentrantLock();
 	private static AtomicBoolean hasLeader = new AtomicBoolean(false);
 	private static volatile boolean isWriting = false;
@@ -32,8 +40,8 @@ public class XAStateLog {
 	private static volatile boolean writeResult = false;
 	private static ReentrantLock lockNum = new ReentrantLock();
 	private static AtomicInteger batchNum = new AtomicInteger(0);
-	private static Set<Long> waitSet = new CopyOnWriteArraySet<Long>();
-	private static ConcurrentMap<Long,Boolean> mapResult = new ConcurrentHashMap<Long,Boolean>();
+	private static Set<Long> waitSet = new CopyOnWriteArraySet<>();
+	private static ConcurrentMap<Long,Boolean> mapResult = new ConcurrentHashMap<>();
 	public static boolean saveXARecoverylog(String xaTXID, TxState sessionState) {
 		CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
 		coordinatorLogEntry.setTxState(sessionState);
@@ -52,7 +60,7 @@ public class XAStateLog {
 		updateXARecoverylog(xaTXID, mysqlCon, mysqlCon.getXaStatus());
 	}
 
-	public static void updateXARecoverylog(String xaTXID, MySQLConnection mysqlCon, TxState txState) {
+	private static void updateXARecoverylog(String xaTXID, MySQLConnection mysqlCon, TxState txState) {
 		updateXARecoverylog(xaTXID, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
 	}
 
@@ -114,9 +122,8 @@ public class XAStateLog {
 				lock.lock();
 				try {
 					if(writeResult){
-						Iterator<Long> it = mapResult.keySet().iterator();
-						while(it.hasNext()){
-							mapResult.put(it.next(),true);
+						for (Long aLong : mapResult.keySet()) {
+							mapResult.put(aLong, true);
 						}
 					}
 					isWriting = false;
@@ -173,12 +180,8 @@ public class XAStateLog {
 	}
 
 	public static void cleanCompleteRecoverylog() {
-		Iterator<CoordinatorLogEntry> coordinatorLogIterator = inMemoryRepository.getAllCoordinatorLogEntries().iterator();
-		while (coordinatorLogIterator.hasNext()) {
-			CoordinatorLogEntry entry = coordinatorLogIterator.next();
-			if (entry.getTxState() != TxState.TX_COMMITED_STATE && entry.getTxState() != TxState.TX_ROLLBACKED_STATE) {
-				continue;
-			} else {
+		for (CoordinatorLogEntry entry : inMemoryRepository.getAllCoordinatorLogEntries()) {
+			if (entry.getTxState() == TxState.TX_COMMITED_STATE || entry.getTxState() == TxState.TX_ROLLBACKED_STATE) {
 				inMemoryRepository.remove(entry.getId());
 			}
 		}

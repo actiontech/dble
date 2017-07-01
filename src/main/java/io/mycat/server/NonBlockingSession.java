@@ -671,14 +671,11 @@ public class NonBlockingSession implements Session {
         return source.isClosed();
     }
 
-    private String genXATXID() {
-        return MycatServer.getInstance().genXATXID();
-    }
 
 	public void setXATXEnabled(boolean xaTXEnabled) {
 		if (xaTXEnabled && this.xaTXID == null) {
 			LOGGER.info("XA Transaction enabled ,con " + this.getSource());
-			xaTXID = genXATXID();
+			xaTXID = MycatServer.getInstance().genXATXID();
 			xaState = TxState.TX_INITIALIZE_STATE;
 		} else if (!xaTXEnabled && this.xaTXID != null) {
 			LOGGER.info("XA Transaction disabled ,con " + this.getSource());

@@ -142,6 +142,8 @@ public class KVPathUtil {
 	public static String getBinlogPauseLockPath() {
 		return LOCK_BASE_PATH + "binlogStatus.lock";
 	}
-	//lock path:end---------------------------------
+
+	//depth:2,child node of base_path
+	public static final String XALOG = BASE_PATH + "xalog" + SEPARATOR;
 
 }

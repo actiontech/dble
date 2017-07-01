@@ -491,6 +491,11 @@
                                     <token>mycat</token>
                                     <value>ushard</value>
                                 </replacement>
+								<replacement>
+									<token>MYCAT_HOME</token>
+									<value>USHARD_HOME</value>
+								</replacement>
+
                             </replacements>
                         </configuration>
                     </execution>

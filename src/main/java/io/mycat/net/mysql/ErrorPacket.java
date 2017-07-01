@@ -83,16 +83,6 @@ public class ErrorPacket extends MySQLPacket {
 		}
 		message = mm.readBytes();
 	}
-
-	public byte[] writeToBytes(FrontendConnection c) {
-		ByteBuffer buffer = c.allocate();
-		buffer = write(buffer, c, false);
-		buffer.flip();
-		byte[] data = new byte[buffer.limit()];
-		buffer.get(data);
-		c.recycle(buffer);
-		return data;
-	}
 	public byte[] toBytes() {
 		int size = calcPacketSize();
 		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);

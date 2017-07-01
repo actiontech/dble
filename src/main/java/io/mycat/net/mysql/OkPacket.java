@@ -87,17 +87,6 @@ public class OkPacket extends MySQLPacket {
 			this.message = mm.readBytesWithLength();
 		}
 	}
-
-	public byte[] writeToBytes(FrontendConnection c) {
-		ByteBuffer buffer = c.allocate();
-		this.write(buffer, c);
-		buffer.flip();
-		byte[] data = new byte[buffer.limit()];
-		buffer.get(data);
-		c.recycle(buffer);
-		return data;
-	}
-
 	public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
 
 		int size = calcPacketSize();

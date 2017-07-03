@@ -67,7 +67,7 @@ public final class UnsafeExternalRowSorter {
            myCatMemory.getSerializerManager(),
             recordComparator,
       prefixComparator,
-      myCatMemory.getConf().getSizeAsBytes("mycat.pointer.array.len","16K"),
+      myCatMemory.getConf().getSizeAsBytes("server.pointer.array.len","16K"),
       pageSizeBytes,
       canUseRadixSort,
       enableSort);

@@ -29,7 +29,7 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.SQLQueryResult;
 import io.mycat.util.StringUtil;

@@ -7,11 +7,12 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import io.mycat.config.Versions;
 import io.mycat.config.loader.zkprocess.entity.rule.function.Function;
 import io.mycat.config.loader.zkprocess.entity.rule.tablerule.TableRule;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io.mycat/", name = "rule")
+@XmlRootElement(namespace = "http://io."+ Versions.ROOT_PREFIX+"/", name = "rule")
 public class Rules {
 
     /**

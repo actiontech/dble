@@ -46,12 +46,10 @@ import java.util.Map;
 public class RouteService {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RouteService.class);
-    public static final String MYCAT_HINT_TYPE = "_mycatHintType";
+    public static final String HINT_TYPE = "_serverHintType";
     private final CachePool sqlRouteCache;
 	private final LayerCachePool tableId2DataNodeCache;	
 
-	private final String OLD_MYCAT_HINT = "/*!mycat:"; 	// 处理自定义分片注解, 注解格式：/*!mycat: type = value */ sql
-	private final String NEW_MYCAT_HINT = "/*#mycat:"; 	// 新的注解格式:/* !mycat: type = value */ sql，oldMycatHint的格式不兼容直连mysql
     private final String HINT_SPLIT = "=";
 
 
@@ -98,11 +96,12 @@ public class RouteService {
                 int firstSplitPos = hint.indexOf(HINT_SPLIT);                
                 if(firstSplitPos > 0 ){
                     Map hintMap=    parseHint(hint);
-                	String hintType = (String) hintMap.get(MYCAT_HINT_TYPE);
+                	String hintType = (String) hintMap.get(HINT_TYPE);
                     String hintSql = (String) hintMap.get(hintType);
                     if( hintSql.length() == 0 ) {
-                    	LOGGER.warn("comment int sql must meet :/*!mycat:type=value*/ or /*#mycat:type=value*/ or /*mycat:type=value*/: "+stmt);
-                    	throw new SQLSyntaxErrorException("comment int sql must meet :/*!mycat:type=value*/ or /*#mycat:type=value*/ or /*mycat:type=value*/: "+stmt);
+                    	String msg = "comment in sql must meet :/*!"+ Versions.ANNOTATION_NAME+"type=value*/ or /*#"+ Versions.ANNOTATION_NAME+"type=value*/ or /*"+ Versions.ANNOTATION_NAME+"type=value*/: "+stmt;
+                    	LOGGER.warn(msg);
+                    	throw new SQLSyntaxErrorException(msg);
                     }
                     String realSQL = stmt.substring(endPos + "*/".length()).trim();
 
@@ -126,8 +125,9 @@ public class RouteService {
                     }
                     
                 }else{//fixed by runfriends@126.com
-                	LOGGER.warn("comment in sql must meet :/*!mycat:type=value*/ or /*#mycat:type=value*/ or /*mycat:type=value*/: "+stmt);
-                	throw new SQLSyntaxErrorException("comment in sql must meet :/*!mcat:type=value*/ or /*#mycat:type=value*/ or /*mycat:type=value*/: "+stmt);
+					String msg = "comment in sql must meet :/*!"+ Versions.ANNOTATION_NAME+"type=value*/ or /*#"+ Versions.ANNOTATION_NAME+"type=value*/ or /*"+ Versions.ANNOTATION_NAME+"type=value*/: "+stmt;
+                	LOGGER.warn(msg);
+                	throw new SQLSyntaxErrorException(msg);
                 }
 			}
 		} else {
@@ -218,7 +218,7 @@ public class RouteService {
             }
             if(map.isEmpty())
             {
-              map.put(MYCAT_HINT_TYPE,key)  ;
+              map.put(HINT_TYPE,key)  ;
             }
             map.put(key,value.trim());
 

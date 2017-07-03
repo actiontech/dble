@@ -33,7 +33,7 @@ import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;

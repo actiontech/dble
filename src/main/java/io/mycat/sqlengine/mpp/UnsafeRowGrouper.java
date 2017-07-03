@@ -117,7 +117,7 @@ public class UnsafeRowGrouper {
 				groupKeySchema,
 				dataNodeMemoryManager,
 				2*1024,
-				conf.getSizeAsBytes("mycat.buffer.pageSize", "1m"),
+				conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
 				false);
 	}
 

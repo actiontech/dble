@@ -232,12 +232,9 @@
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
-				<excludes>
-					<exclude>**/.svn/**</exclude>
-                    <exclude>rule_template.xml</exclude>
-                    <exclude>schema_template.xml</exclude>
-                    <exclude>server_template.xml</exclude>
-				</excludes>
+				<includes>
+					<include>*.dtd</include>
+				</includes>
 			</resource>
 		</resources>
 		<testResources>
@@ -410,6 +407,23 @@
 						</configuration>
 					</execution>
 					<execution>
+						<id>IncrSequenceMySQLHandler</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/java/io/mycat/route/sequence/handler/SequenceVal.java</file>
+							<outputFile>${project.basedir}/src/main/java/io/mycat/route/sequence/handler/SequenceVal.java</outputFile>
+							<replacements>
+								<replacement>
+									<token>mycat_seq_nextval</token>
+									<value>ushard_seq_nextval</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
 						<id>init_zk_data</id>
 						<phase>process-sources</phase>
 						<goals>
@@ -461,24 +475,28 @@
 						</configuration>
 					</execution>
                     <execution>
-                        <id>log4j2.xml</id>
+                        <id>dbseq.sql</id>
                         <phase>process-sources</phase>
                         <goals>
                             <goal>replace</goal>
                         </goals>
                         <configuration>
-                            <file>${project.basedir}/src/main/resources/log4j2.xml</file>
-                            <outputFile>${project.basedir}/src/main/resources/log4j2.xml</outputFile>
+                            <file>${project.basedir}/src/main/resources/dbseq.sql</file>
+                            <outputFile>${project.basedir}/src/main/resources/dbseq.sql</outputFile>
                             <replacements>
                                 <replacement>
                                     <token>mycat</token>
                                     <value>ushard</value>
                                 </replacement>
+								<replacement>
+									<token>MYCAT</token>
+									<value>USHARD</value>
+								</replacement>
                             </replacements>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>1log4j2.xml</id>
+                        <id>log4j2.xml</id>
                         <phase>process-sources</phase>
                         <goals>
                             <goal>replace</goal>
@@ -512,6 +530,40 @@
 								<replacement>
 									<token>mycat</token>
 									<value>ushard</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>MycatServer.java</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/java/io/mycat/MycatServer.java</file>
+							<outputFile>${project.basedir}/src/main/java/io/mycat/MycatServer.java</outputFile>
+							<replacements>
+								<replacement>
+									<token>MyCat_</token>
+									<value>Ushard_</value>
+								</replacement>
+							</replacements>
+						</configuration>
+					</execution>
+					<execution>
+						<id>GlobalTableUtil.java</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/java/io/mycat/server/util/GlobalTableUtil.java</file>
+							<outputFile>${project.basedir}/src/main/java/io/mycat/server/util/GlobalTableUtil.java</outputFile>
+							<replacements>
+								<replacement>
+									<token>_mycat_op_time</token>
+									<value>_ushard_op_time</value>
 								</replacement>
 							</replacements>
 						</configuration>
@@ -554,6 +606,10 @@
 								<replacement>
 									<token>@annotation-name@</token>
 									<value>ushard:</value>
+								</replacement>
+								<replacement>
+									<token>@root_prefix@</token>
+									<value>ushard</value>
 								</replacement>
 							</replacements>
 						</configuration>

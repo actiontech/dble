@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.config.Versions;
 import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 /**
@@ -121,7 +122,7 @@ public class DynaClassLoader {
 		 */
 		public Class<?> loadClass(String name) throws ClassNotFoundException {
 			if (name.startsWith("java") || name.startsWith("sun")
-					|| name.startsWith("io.mycat")) {
+					|| name.startsWith("io."+ Versions.ROOT_PREFIX)) {
 				return super.loadClass(name);
 			}
 			DynaClass dynaClass = loadedDynaClassMap.get(name);

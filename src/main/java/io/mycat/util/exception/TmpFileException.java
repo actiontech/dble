@@ -1,9 +1,7 @@
 package io.mycat.util.exception;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.MessageFormat;
-import java.util.Locale;
 import java.util.Properties;
 
 
@@ -11,17 +9,19 @@ public class TmpFileException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 	private static final Properties MESSAGES = new Properties();
 	static {
-		try {
-			InputStream in = TmpFileException.class.getResourceAsStream("/io/mycat/util/exception/res/_messages_en.prop");
-			if (in != null) {
-				MESSAGES.load(in);
-			}
-			String language = Locale.getDefault().getLanguage();
-			if (!"en".equals(language)) {
-
-			}
-		} catch (IOException e) {
-		}
+		MESSAGES.put("5301","Could not open file {0}");
+		MESSAGES.put("5302","Could not force file {0}");
+		MESSAGES.put("5303","Could not sync file {0}");
+		MESSAGES.put("5304","Reading from {0} failed");
+		MESSAGES.put("5305","Writing to {0} failed");
+		MESSAGES.put("5306","Error while renaming file {0} to {1}");
+		MESSAGES.put("5307","Cannot delete file {0}");
+		MESSAGES.put("5308","IO Exception: {0}");
+		MESSAGES.put("5309","Reading from {0} failed,index out of bounds");
+		MESSAGES.put("5310","Hex a decimal string with odd number of characters: {0}");
+		MESSAGES.put("5311","Hex a decimal string contains non-hex character: {0}");
+		MESSAGES.put("5312","Invalid value {0} for parameter {1}");
+		MESSAGES.put("5313","Error while creating file {0}");
 	}
 
 	private TmpFileException(String message) {
@@ -43,11 +43,7 @@ public class TmpFileException extends RuntimeException {
 	}
 
 	private static String translate(String key, String... params) {
-		String message = null;
-		if (MESSAGES != null) {
-			// Tomcat sets final static fields to null sometimes
-			message = MESSAGES.getProperty(key);
-		}
+		String message = MESSAGES.getProperty(key);
 		if (message == null) {
 			message = "(Message " + key + " not found)";
 		}
@@ -109,16 +105,4 @@ public class TmpFileException extends RuntimeException {
 		return get(errorCode * 10, e.toString(), message);
 	}
 
-	/**
-	 * Gets a exception meaning this value is invalid.
-	 * 
-	 * @param param
-	 *            the name of the parameter
-	 * @param value
-	 *            the value passed
-	 * @return the IllegalArgumentException object
-	 */
-	public static TmpFileException getInvalidValueException(int errorCode, String param, Object value) {
-		return get(errorCode, value == null ? "null" : value.toString(), param);
-	}
 }

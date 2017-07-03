@@ -110,7 +110,7 @@ public final class ShowHelp {
         // show
         helps.put("show @@time.current", "Report current timestamp");
         helps.put("show @@time.startup", "Report startup timestamp");
-        helps.put("show @@version", "Report Mycat Server version");
+        helps.put("show @@version", "Report Server version");
         helps.put("show @@server", "Report server status");
         helps.put("show @@threadpool", "Report threadPool status");
         helps.put("show @@database", "Report databases");
@@ -145,10 +145,10 @@ public final class ShowHelp {
         helps.put("show @@slow where schema = ?", "Report schema slow sql");
         helps.put("show @@slow where datanode = ?", "Report datanode slow sql");
         helps.put("show @@sysparam", "Report system param");
-        helps.put("show @@syslog limit=?", "Report system mycat.log");
-        helps.put("show @@white", "show mycat white host ");
-        helps.put("show @@white.set=?,?", "set mycat white host,[ip,user]");
-		helps.put("show @@directmemory=1 or 2", "show mycat direct memory usage");
+        helps.put("show @@syslog limit=?", "Report system log");
+        helps.put("show @@white", "show server white host ");
+        helps.put("show @@white.set=?,?", "set server white host,[ip,user]");
+		helps.put("show @@directmemory=1 or 2", "show server direct memory usage");
         
         // switch
         helps.put("switch @@datasource name:index", "Switch dataSource");
@@ -176,8 +176,8 @@ public final class ShowHelp {
         helps.put("reload @@sqlstat=close", "Close real-time sql stat analyzer");
         
         // offline/online
-        helps.put("offline", "Change MyCat status to OFF");
-        helps.put("online", "Change MyCat status to ON");
+        helps.put("offline", "Change Server status to OFF");
+        helps.put("online", "Change Server status to ON");
 
         // clear
         helps.put("clear @@slow where schema = ?", "Clear slow sql by schema");

@@ -70,7 +70,7 @@ public class HeartbeatPacket extends MySQLPacket {
 
     @Override
     protected String getPacketInfo() {
-        return "Mycat Heartbeat Packet";
+        return "Heartbeat Packet";
     }
 
 }

@@ -68,7 +68,7 @@ public final class SystemConfig {
 	private static final boolean DEFAULT_USE_ZK_SWITCH = true;
 	private static final boolean DEFAULT_LOWER_CASE = true;
 	private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
-	private static final String DEFAULT_TRANSACTION_BASE_NAME = "mycat-tx";
+	private static final String DEFAULT_TRANSACTION_BASE_NAME = "server-tx";
 	private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
 	private static final long CHECKTABLECONSISTENCYPERIOD = 30 * 60 * 1000;
 	// 全局表一致性检测任务，默认24小时调度一次
@@ -128,7 +128,7 @@ public final class SystemConfig {
 	private int usingAIO = 0;
 	private int packetHeaderSize = 4;
 	private int maxPacketSize = 16 * 1024 * 1024;
-	private int mycatNodeId=1;
+	private int serverNodeId =1;
 	private int useCompression =0;	
 	private int useSqlStat = 1;
 	
@@ -742,12 +742,12 @@ public final class SystemConfig {
 		this.usingAIO = usingAIO;
 	}
 
-	public int getMycatNodeId() {
-		return mycatNodeId;
+	public int getServerNodeId() {
+		return serverNodeId;
 	}
 
-	public void setMycatNodeId(int mycatNodeId) {
-		this.mycatNodeId = mycatNodeId;
+	public void setServerNodeId(int serverNodeId) {
+		this.serverNodeId = serverNodeId;
 	}
 
 	@Override
@@ -791,7 +791,7 @@ public final class SystemConfig {
 				+ ", usingAIO=" + usingAIO 
 				+ ", packetHeaderSize=" + packetHeaderSize 
 				+ ", maxPacketSize=" + maxPacketSize
-				+ ", mycatNodeId=" + mycatNodeId
+				+ ", serverNodeId=" + serverNodeId
 				+ "]";
 	}
 

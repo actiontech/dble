@@ -22,6 +22,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
 
+import io.mycat.config.Versions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,7 @@ public class XmlProcessBase {
 
             if (null != name) {
                 marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE mycat:%1$s SYSTEM \"%1$s.dtd\">", name));
+                        String.format("<!DOCTYPE "+ Versions.ROOT_PREFIX+":%1$s SYSTEM \"%1$s.dtd\">", name));
             }
 
             Path path = Paths.get(inputPath);
@@ -149,7 +150,7 @@ public class XmlProcessBase {
 
             if (null != name) {
                 marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE mycat:%1$s SYSTEM \"%1$s.dtd\">", name));
+                        String.format("<!DOCTYPE "+Versions.ROOT_PREFIX+":%1$s SYSTEM \"%1$s.dtd\">", name));
             }
 
             if (null != map && !map.isEmpty()) {

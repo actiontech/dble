@@ -208,13 +208,4 @@ public final class FirewallConfig {
 			}
 			} 
 	}
-//	public static void main(String[] args) throws Exception {
-//        List<UserConfig> userConfigs = new ArrayList<UserConfig>();
-//        UserConfig user = new UserConfig();
-//        user.setName("mycat");
-//        userConfigs.add(user);
-//		updateToFile("127.0.0.1",userConfigs);
-//	}
-	
-	
 }

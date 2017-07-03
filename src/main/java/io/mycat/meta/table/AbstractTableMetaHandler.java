@@ -19,7 +19,7 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.sqlengine.OneRawSQLQueryResultHandler;
 import io.mycat.sqlengine.SQLJob;
 import io.mycat.sqlengine.SQLQueryResult;

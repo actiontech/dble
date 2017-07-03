@@ -7,12 +7,13 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import io.mycat.config.Versions;
 import io.mycat.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import io.mycat.config.loader.zkprocess.entity.schema.datanode.DataNode;
 import io.mycat.config.loader.zkprocess.entity.schema.schema.Schema;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io.mycat/", name = "schema")
+@XmlRootElement(namespace = "http://io."+ Versions.ROOT_PREFIX+"/", name = "schema")
 public class Schemas {
     /**
      * 配制的逻辑表信息

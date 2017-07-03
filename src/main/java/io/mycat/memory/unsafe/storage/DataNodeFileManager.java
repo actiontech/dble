@@ -65,7 +65,7 @@ public class DataNodeFileManager {
     this.deleteFilesOnStop = deleteFilesOnStop;
 
 
-    subDirsPerLocalDir = conf.getInt("mycat.diskStore.subDirectories", 64);
+    subDirsPerLocalDir = conf.getInt("server.diskStore.subDirectories", 64);
     localDirs  = createLocalDirs(conf);
     if (localDirs.isEmpty()) {
       System.exit(-1);
@@ -138,7 +138,7 @@ public class DataNodeFileManager {
    */
   private  List<File> createLocalDirs(MycatPropertyConf conf) {
 
-    String rootDirs = conf.getString("mycat.local.dirs","datanode");
+    String rootDirs = conf.getString("server.local.dirs","datanode");
 
     String rdir[] = rootDirs.split(",");
     List<File> dirs = new ArrayList<File>();

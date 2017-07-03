@@ -26,6 +26,7 @@ package io.mycat.server.parser;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.mycat.config.Versions;
 import io.mycat.route.parser.util.ParseUtil;
 
 /**
@@ -696,7 +697,7 @@ public final class ServerParse {
 //  /*!mycat: sql=SELECT * FROM test where id=99 */set @pin=1;
 //                    call p_test(@pin,@pout);
 //                    select @pout;
-                    if(stmt.startsWith("/*!mycat:")||stmt.startsWith("/*#mycat:")||stmt.startsWith("/*mycat:"))
+                    if(stmt.startsWith("/*!"+ Versions.ANNOTATION_NAME)||stmt.startsWith("/*#"+ Versions.ANNOTATION_NAME)||stmt.startsWith("/*"+ Versions.ANNOTATION_NAME))
                     {
                         Matcher matcher = callPattern.matcher(stmt);
                         if (matcher.find()) {

@@ -90,35 +90,35 @@ public class MyCatMemory {
 		 */
 
 		if(system.getUseOffHeapForMerge()== 1){
-			conf.set("mycat.memory.offHeap.enabled","true");
+			conf.set("server.memory.offHeap.enabled","true");
 		}else{
-			conf.set("mycat.memory.offHeap.enabled","false");
+			conf.set("server.memory.offHeap.enabled","false");
 		}
 
 		if(system.getUseStreamOutput() == 1){
-			conf.set("mycat.stream.output.result","true");
+			conf.set("server.stream.output.result","true");
 		}else{
-			conf.set("mycat.stream.output.result","false");
+			conf.set("server.stream.output.result","false");
 		}
 
 
 		if(system.getMemoryPageSize() != null){
-			conf.set("mycat.buffer.pageSize",system.getMemoryPageSize());
+			conf.set("server.buffer.pageSize",system.getMemoryPageSize());
 		}else{
-			conf.set("mycat.buffer.pageSize","1m");
+			conf.set("server.buffer.pageSize","1m");
 		}
 
 
 		if(system.getSpillsFileBufferSize() != null){
-			conf.set("mycat.merge.file.buffer",system.getSpillsFileBufferSize());
+			conf.set("server.merge.file.buffer",system.getSpillsFileBufferSize());
 		}else{
-			conf.set("mycat.merge.file.buffer","32k");
+			conf.set("server.merge.file.buffer","32k");
 		}
 
-		conf.set("mycat.pointer.array.len","8k")
-			.set("mycat.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
+		conf.set("server.pointer.array.len","8k")
+			.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
-		LOGGER.info("mycat.memory.offHeap.size: " +
+		LOGGER.info("resultSetBufferSize: " +
 				JavaUtils.bytesToString2(resultSetBufferSize));
 
 		resultMergeMemoryManager =
@@ -156,13 +156,13 @@ public class MyCatMemory {
 		 * mycat.direct.output.result
 		 * mycat.local.dir
 		 */
-		conf.set("mycat.memory.offHeap.enabled","true")
-				.set("mycat.pointer.array.len","8K")
-				.set("mycat.buffer.pageSize","1m")
-				.set("mycat.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize))
-				.set("mycat.stream.output.result","false");
+		conf.set("server.memory.offHeap.enabled","true")
+				.set("server.pointer.array.len","8K")
+				.set("server.buffer.pageSize","1m")
+				.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize))
+				.set("server.stream.output.result","false");
 
-		LOGGER.info("mycat.memory.offHeap.size: " + JavaUtils.bytesToString2(resultSetBufferSize));
+		LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 
 		resultMergeMemoryManager =
 				new ResultMergeMemoryManager(conf,numCores,maxOnHeapMemory);

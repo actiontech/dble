@@ -23,6 +23,9 @@
  */
 package io.mycat.cache;
 
+import io.mycat.cache.impl.EnchachePooFactory;
+import io.mycat.cache.impl.LevelDBCachePooFactory;
+import io.mycat.cache.impl.MapDBCachePooFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,9 +146,23 @@ public class CacheService {
 
 	private void createPoolFactory(String factryType, String factryClassName)
 			throws Exception {
-		CachePoolFactory factry = (CachePoolFactory) Class.forName(
-				factryClassName).newInstance();
-		poolFactorys.put(factryType, factry);
+		String lowerClass = factryClassName.toLowerCase();
+		switch(lowerClass){
+			case "ehcache":
+				poolFactorys.put(factryType, new EnchachePooFactory());
+				break;
+			case "leveldb":
+				poolFactorys.put(factryType, new LevelDBCachePooFactory());
+				break;
+			case "mapdb":
+				poolFactorys.put(factryType, new MapDBCachePooFactory());
+				break;
+			default:
+				CachePoolFactory factry = (CachePoolFactory) Class.forName(
+						factryClassName).newInstance();
+				poolFactorys.put(factryType, factry);
+		}
+
 
 	}
 

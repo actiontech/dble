@@ -1,3 +1,4 @@
+syntax = "proto2";
 package io.mycat.meta.protocol;
 
 option java_package = "io.mycat.meta.protocol";

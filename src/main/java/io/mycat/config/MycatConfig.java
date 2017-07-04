@@ -56,8 +56,6 @@ public class MycatConfig {
 	private static final int RELOAD_ALL = 3;
 
 	private volatile SystemConfig system;
-	private volatile MycatCluster cluster;
-	private volatile MycatCluster _cluster;
 	private volatile FirewallConfig firewall;
 	private volatile FirewallConfig _firewall;
 	private volatile Map<String, UserConfig> users;
@@ -90,7 +88,6 @@ public class MycatConfig {
 		}
 		
 		this.firewall = confInit.getFirewall();
-		this.cluster = confInit.getCluster();
 		
 		//初始化重加载配置时间
 		this.reloadTime = TimeUtil.currentTimeMillis();
@@ -185,14 +182,6 @@ public class MycatConfig {
 		return _erRelations;
 	}
 
-	public MycatCluster getCluster() {
-		return cluster;
-	}
-
-	public MycatCluster getBackupCluster() {
-		return _cluster;
-	}
-
 	public FirewallConfig getFirewall() {
 		return firewall;
 	}
@@ -215,16 +204,16 @@ public class MycatConfig {
 
 	public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
 			Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
-			Map<ERTable, Set<ERTable>> newErRelations, MycatCluster newCluster, FirewallConfig newFirewall,
+			Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
 			boolean reloadAll) {
 		
-		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newCluster, newFirewall, reloadAll);
+		apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, reloadAll);
 		this.reloadTime = TimeUtil.currentTimeMillis();
 		this.status = reloadAll ? RELOAD_ALL : RELOAD;
 	}
 
 	public boolean canRollback() {
-		if (_users == null || _schemas == null || _dataNodes == null || _dataHosts == null || _cluster == null
+		if (_users == null || _schemas == null || _dataNodes == null || _dataHosts == null
 		    || _firewall == null || status == ROLLBACK) {
 			return false;
 		} else {
@@ -234,9 +223,9 @@ public class MycatConfig {
 
 	public void rollback(Map<String, UserConfig> users, Map<String, SchemaConfig> schemas,
 			Map<String, PhysicalDBNode> dataNodes, Map<String, PhysicalDBPool> dataHosts,
-			Map<ERTable, Set<ERTable>> erRelations, MycatCluster cluster, FirewallConfig firewall) {
+			Map<ERTable, Set<ERTable>> erRelations, FirewallConfig firewall) {
 		
-		apply(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall, status==RELOAD_ALL);
+		apply(users, schemas, dataNodes, dataHosts, erRelations, firewall, status==RELOAD_ALL);
 		this.rollbackTime = TimeUtil.currentTimeMillis();
 		this.status = ROLLBACK;
 	}
@@ -339,7 +328,6 @@ public class MycatConfig {
 		Map<String, PhysicalDBNode> newDataNodes,
 		Map<String, PhysicalDBPool> newDataHosts, 
 		Map<ERTable, Set<ERTable>> newErRelations,
-		MycatCluster newCluster,
 		FirewallConfig newFirewall,
 		boolean isLoadAll) {
 		final ReentrantLock lock = this.lock;
@@ -364,7 +352,6 @@ public class MycatConfig {
 			
 			this._users = this.users;
 			this._schemas = this.schemas;
-			this._cluster = this.cluster;
 			this._firewall = this.firewall;
 			this._erRelations = this.erRelations ;
 //			comment BY huqing.yan and will reopen later
@@ -389,7 +376,6 @@ public class MycatConfig {
 			}			
 			this.users = newUsers;
 			this.schemas = newSchemas;
-			this.cluster = newCluster;
 			this.firewall = newFirewall;
 			this.erRelations = newErRelations;
 		} finally {

@@ -537,7 +537,7 @@
 								</replacement>
 								<replacement>
 									<token>io.mycat.MycatStartup</token>
-									<value>com.actionsky.ushard.MycatStartup</value>
+									<value>com.actionsky.ushard.UshardStartup</value>
 								</replacement>
 							</replacements>
 						</configuration>
@@ -750,6 +750,34 @@
 							</filters>
 							<relocations>
 								<relocation>
+									<pattern>io.mycat.Mycat</pattern>
+									<shadedPattern>com.actionsky.ushard.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.config.Mycat</pattern>
+									<shadedPattern>com.actionsky.ushard.config.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.config.model.Mycat</pattern>
+									<shadedPattern>com.actionsky.ushard.config.model.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.memory.MyCat</pattern>
+									<shadedPattern>com.actionsky.ushard.memory.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.memory.unsafe.utils.Mycat</pattern>
+									<shadedPattern>com.actionsky.ushard.memory.unsafe.utils.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.route.parser.druid.Mycat</pattern>
+									<shadedPattern>com.actionsky.ushard.route.parser.druid.Ushard</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.mycat.route.impl.DruidMycatRouteStrategy</pattern>
+									<shadedPattern>com.actionsky.ushard.route.impl.DruidUshardRouteStrategy</shadedPattern>
+								</relocation>
+								<relocation>
 									<pattern>io.mycat</pattern>
 									<shadedPattern>com.actionsky.ushard</shadedPattern>
 								</relocation>
@@ -771,7 +799,7 @@
 					<daemons>
 						<daemon>
 							<id>ushard</id>
-							<mainClass>com.actionsky.ushard.MycatStartup</mainClass>
+							<mainClass>com.actionsky.ushard.UshardStartup</mainClass>
 							<commandLineArguments>
 								<commandLineArgument>start</commandLineArgument>
 							</commandLineArguments>

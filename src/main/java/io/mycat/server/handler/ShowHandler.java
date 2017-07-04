@@ -27,8 +27,6 @@ import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.parser.ServerParseShow;
 import io.mycat.server.response.ShowDatabases;
-import io.mycat.server.response.ShowMyCATCluster;
-import io.mycat.server.response.ShowMyCatStatus;
 import io.mycat.server.response.ShowTables;
 import io.mycat.util.StringUtil;
 
@@ -52,12 +50,6 @@ public final class ShowHandler {
 				break;
 			case ServerParseShow.FULLTABLES:
 				ShowTables.response(c, stmt, true);
-				break;
-			case ServerParseShow.MYCAT_STATUS:
-				ShowMyCatStatus.response(c);
-				break;
-			case ServerParseShow.MYCAT_CLUSTER:
-				ShowMyCATCluster.response(c);
 				break;
 			case ServerParseShow.CHARSET:
 				stmt = stmt.toLowerCase().replaceFirst("charset","character set");

@@ -430,13 +430,13 @@
 						<configuration>
 							<protocVersion>2.6.1</protocVersion> <!-- 2.4.1, 2.5.0, 2.6.1, 3.3.0 -->
 							<inputDirectories>
-								<include>${project.basedir}src/main/assembly/ushard</include>
+								<include>src/main/assembly/ushard</include>
 							</inputDirectories>
 							<outputTargets>
 								<outputTarget>
 									<type>java</type>
 									<addSources>none</addSources>
-									<outputDirectory>${project.basedir}src/main/java</outputDirectory>
+									<outputDirectory>src/main/java</outputDirectory>
 								</outputTarget>
 							</outputTargets>
 						</configuration>

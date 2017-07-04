@@ -87,22 +87,19 @@ public class ItemFuncIf extends ItemFunc {
 
 	@Override
 	public String valStr() {
-		switch (fieldType()) {
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		if (fieldType() == FieldTypes.MYSQL_TYPE_DATETIME || fieldType() == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return valStringFromDatetime();
-		case MYSQL_TYPE_DATE:
+		} else if (fieldType() == FieldTypes.MYSQL_TYPE_DATE) {
 			return valStringFromDate();
-		case MYSQL_TYPE_TIME:
+		} else if (fieldType() == FieldTypes.MYSQL_TYPE_TIME) {
 			return valStringFromTime();
-		default: {
+		} else {
 			Item item = args.get(0).valBool() ? args.get(1) : args.get(2);
 			String res;
 			if ((res = item.valStr()) != null) {
 				nullValue = false;
 				return res;
 			}
-		}
 		}
 		nullValue = true;
 		return null;

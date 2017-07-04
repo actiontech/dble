@@ -58,26 +58,20 @@ public class Hardware {
 	 *         the size could not be determined
 	 */
 	public static long getSizeOfPhysicalMemory() {
-		switch (OperatingSystem.getCurrentOperatingSystem()) {
-			case LINUX:
-				return getSizeOfPhysicalMemoryForLinux();
-				
-			case WINDOWS:
-				return getSizeOfPhysicalMemoryForWindows();
-				
-			case MAC_OS:
-				return getSizeOfPhysicalMemoryForMac();
-				
-			case FREE_BSD:
-				return getSizeOfPhysicalMemoryForFreeBSD();
-				
-			case UNKNOWN:
-				LOG.error("Cannot determine size of physical memory for unknown operating system");
-				return -1;
-				
-			default:
-				LOG.error("Unrecognized OS: " + OperatingSystem.getCurrentOperatingSystem());
-				return -1;
+		if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.LINUX) {
+			return getSizeOfPhysicalMemoryForLinux();
+		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.WINDOWS) {
+			return getSizeOfPhysicalMemoryForWindows();
+		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.MAC_OS) {
+			return getSizeOfPhysicalMemoryForMac();
+		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.FREE_BSD) {
+			return getSizeOfPhysicalMemoryForFreeBSD();
+		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.UNKNOWN) {
+			LOG.error("Cannot determine size of physical memory for unknown operating system");
+			return -1;
+		} else {
+			LOG.error("Unrecognized OS: " + OperatingSystem.getCurrentOperatingSystem());
+			return -1;
 		}
 	}
 

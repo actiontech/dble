@@ -78,26 +78,22 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
 			return;
 		}
 
-		switch (args.get(0).resultType()) {
-		case REAL_RESULT:
-		case STRING_RESULT:
+		ItemResult i = args.get(0).resultType();
+		if (i == ItemResult.REAL_RESULT || i == ItemResult.STRING_RESULT) {
 			hybrid_type = ItemResult.REAL_RESULT;
 			decimals = Math.min(decimals_to_set, NOT_FIXED_DEC);
 			maxLength = floatLength(decimals);
-			break;
-		case INT_RESULT:
-			/* Here we can keep INT_RESULT */
+
+		} else if (i == ItemResult.INT_RESULT) {/* Here we can keep INT_RESULT */
 			hybrid_type = ItemResult.INT_RESULT;
 			decimals = 0;
-			break;
+
 		/* fall through */
-		case DECIMAL_RESULT: {
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			hybrid_type = ItemResult.DECIMAL_RESULT;
 			decimals_to_set = Math.min(DECIMAL_MAX_SCALE, decimals_to_set);
 			decimals = Math.min(decimals_to_set, DECIMAL_MAX_SCALE);
-			break;
-		}
-		default:
+		} else {
 			assert (false); /* This result type isn't handled */
 		}
 	}

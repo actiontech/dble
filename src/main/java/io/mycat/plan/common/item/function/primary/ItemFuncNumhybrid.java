@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
+import io.mycat.plan.common.item.FieldTypes;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.time.MySQLTime;
@@ -42,28 +43,20 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 
 	@Override
 	public BigDecimal valReal() {
-		switch (hybrid_type) {
-		case DECIMAL_RESULT: {
+		if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			BigDecimal val = decimalOp();
 			if (val == null)
-				return BigDecimal.ZERO; // null is set
-			return val;
-		}
-		case INT_RESULT: {
+				return BigDecimal.ZERO; // null is setreturn val;
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			BigInteger result = intOp();
 			return new BigDecimal(result);
-		}
-		case REAL_RESULT:
+		} else if (hybrid_type == ItemResult.REAL_RESULT) {
 			return realOp();
-		case STRING_RESULT: {
-			switch (fieldType()) {
-			case MYSQL_TYPE_TIME:
-			case MYSQL_TYPE_DATE:
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP:
+		} else if (hybrid_type == ItemResult.STRING_RESULT) {
+			FieldTypes i = fieldType();
+			if (i == FieldTypes.MYSQL_TYPE_TIME || i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 				return valRealFromDecimal();
-			default:
-				break;
+			} else {
 			}
 			String res = strOp();
 			if (res == null)
@@ -75,36 +68,31 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 					logger.error(res + " to BigDecimal error!", e);
 				}
 			}
-		}
-		default:
+		} else {
 		}
 		return BigDecimal.ZERO;
 	}
 
 	@Override
 	public BigInteger valInt() {
-		switch (hybrid_type) {
-		case DECIMAL_RESULT: {
+		if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			BigDecimal val = decimalOp();
 			if (val == null)
 				return BigInteger.ZERO;
 			return val.toBigInteger();
-		}
-		case INT_RESULT:
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			return intOp();
-		case REAL_RESULT:
+		} else if (hybrid_type == ItemResult.REAL_RESULT) {
 			return realOp().toBigInteger();
-		case STRING_RESULT: {
-			switch (fieldType()) {
-			case MYSQL_TYPE_DATE:
+		} else if (hybrid_type == ItemResult.STRING_RESULT) {
+			FieldTypes i = fieldType();
+			if (i == FieldTypes.MYSQL_TYPE_DATE) {
 				return new BigDecimal(valIntFromDate()).toBigInteger();
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP:
+			} else if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 				return new BigDecimal(valIntFromDatetime()).toBigInteger();
-			case MYSQL_TYPE_TIME:
+			} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
 				return new BigDecimal(valIntFromTime()).toBigInteger();
-			default:
-				break;
+			} else {
 			}
 			String res = strOp();
 			if (res == null)
@@ -114,8 +102,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 			} catch (Exception e) {
 				logger.error(res + " to BigInteger error!", e);
 			}
-		}
-		default:
+		} else {
 		}
 		return BigInteger.ZERO;
 	}
@@ -123,30 +110,22 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 	@Override
 	public BigDecimal valDecimal() {
 		BigDecimal val = null;
-		switch (hybrid_type) {
-		case DECIMAL_RESULT:
+		if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			val = decimalOp();
-			break;
-		case INT_RESULT: {
+
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			BigInteger result = intOp();
 			val = new BigDecimal(result);
-			break;
-		}
-		case REAL_RESULT: {
+		} else if (hybrid_type == ItemResult.REAL_RESULT) {
 			BigDecimal result = realOp();
 			val = result;
-			break;
-		}
-		case STRING_RESULT: {
-			switch (fieldType()) {
-			case MYSQL_TYPE_DATE:
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP:
+		} else if (hybrid_type == ItemResult.STRING_RESULT) {
+			FieldTypes i = fieldType();
+			if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 				return valDecimalFromDate();
-			case MYSQL_TYPE_TIME:
+			} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
 				return valDecimalFromTime();
-			default:
-				break;
+			} else {
 			}
 			String res = strOp();
 			if (res == null)
@@ -156,10 +135,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 			} catch (Exception e) {
 				val = null;
 			}
-			break;
-		}
-		case ROW_RESULT:
-		default:
+		} else {
 		}
 		return val;
 	}
@@ -167,42 +143,32 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 	@Override
 	public String valStr() {
 		String str = null;
-		switch (hybrid_type) {
-		case DECIMAL_RESULT: {
+		if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			BigDecimal val = decimalOp();
 			if (val == null)
-				return null; // null is set
-			str = val.toString();
-			break;
-		}
-		case INT_RESULT: {
+				return null; // null is setstr = val.toString();
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			BigInteger nr = intOp();
 			if (nullValue)
 				return null; /* purecov: inspected */
 			str = nr.toString();
-			break;
-		}
-		case REAL_RESULT: {
+		} else if (hybrid_type == ItemResult.REAL_RESULT) {
 			BigDecimal nr = realOp();
 			if (nullValue)
 				return null; /* purecov: inspected */
 			str = nr.toString();
-			break;
-		}
-		case STRING_RESULT:
-			switch (fieldType()) {
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP:
+		} else if (hybrid_type == ItemResult.STRING_RESULT) {
+			FieldTypes i = fieldType();
+			if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 				return valStringFromDatetime();
-			case MYSQL_TYPE_DATE:
+			} else if (i == FieldTypes.MYSQL_TYPE_DATE) {
 				return valStringFromDate();
-			case MYSQL_TYPE_TIME:
+			} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
 				return valStringFromTime();
-			default:
-				break;
+			} else {
 			}
 			return strOp();
-		default:
+		} else {
 		}
 		return str;
 	}
@@ -210,14 +176,12 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 	@Override
 	public boolean getDate(MySQLTime ltime, long flags) {
 		assert (fixed == true);
-		switch (fieldType()) {
-		case MYSQL_TYPE_DATE:
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		FieldTypes i = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return dateOp(ltime, flags);
-		case MYSQL_TYPE_TIME:
+		} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
 			return getDateFromTime(ltime);
-		default:
+		} else {
 			return getDateFromNonTemporal(ltime, flags);
 		}
 	}
@@ -225,15 +189,14 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 	@Override
 	public boolean getTime(MySQLTime ltime) {
 		assert (fixed == true);
-		switch (fieldType()) {
-		case MYSQL_TYPE_TIME:
+		FieldTypes i = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_TIME) {
 			return timeOp(ltime);
-		case MYSQL_TYPE_DATE:
+		} else if (i == FieldTypes.MYSQL_TYPE_DATE) {
 			return getTimeFromDate(ltime);
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		} else if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return getTimeFromDatetime(ltime);
-		default:
+		} else {
 			return getTimeFromNonTemporal(ltime);
 		}
 	}

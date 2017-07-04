@@ -217,19 +217,18 @@ public class MycatPrivileges implements FrontendPrivileges {
 			return true;
 		}
 		int index = -1;
-		switch (chekctype) {
-		case INSERT:
+		if (chekctype == Checktype.INSERT) {
 			index = 0;
-			break;
-		case UPDATE:
+
+		} else if (chekctype == Checktype.UPDATE) {
 			index = 1;
-			break;
-		case SELECT:
+
+		} else if (chekctype == Checktype.SELECT) {
 			index = 2;
-			break;
-		case DELETE:
+
+		} else if (chekctype == Checktype.DELETE) {
 			index = 3;
-			break;
+
 		}
 		if (tablePrivilege.getDml()[index] > 0) {
 			return true;

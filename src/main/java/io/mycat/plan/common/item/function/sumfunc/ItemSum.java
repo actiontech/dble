@@ -226,13 +226,12 @@ public abstract class ItemSum extends ItemResultField {
 		}
 
 		aggr = null;
-		switch (aggregator) {
-		case DISTINCT_AGGREGATOR:
+		if (aggregator == AggregatorType.DISTINCT_AGGREGATOR) {
 			aggr = new AggregatorDistinct(this, store);
-			break;
-		case SIMPLE_AGGREGATOR:
+
+		} else if (aggregator == AggregatorType.SIMPLE_AGGREGATOR) {
 			aggr = new AggregatorSimple(this);
-			break;
+
 		}
 		;
 		return aggr != null ? FALSE : TRUE;

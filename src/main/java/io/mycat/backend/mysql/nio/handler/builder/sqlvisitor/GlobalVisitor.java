@@ -27,23 +27,23 @@ public class GlobalVisitor extends MysqlVisitor {
 		if (!visited) {
 			replaceableSqlBuilder.clear();
 			sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
-			switch (query.type()) {
-			case TABLE:
+			PlanNodeType i = query.type();
+			if (i == PlanNodeType.TABLE) {
 				visit((TableNode) query);
-				break;
-			case JOIN:
+
+			} else if (i == PlanNodeType.JOIN) {
 				visit((JoinNode) query);
-				break;
-			case QUERY:
+
+			} else if (i == PlanNodeType.QUERY) {
 				visit((QueryNode) query);
-				break;
-			case MERGE:
+
+			} else if (i == PlanNodeType.MERGE) {
 				visit((MergeNode) query);
-				break;
-			case NONAME:
+
+			} else if (i == PlanNodeType.NONAME) {
 				visit((NoNameNode) query);
-				break;
-			default:
+
+			} else {
 				throw new RuntimeException("not implement yet!");
 			}
 			visited = true;

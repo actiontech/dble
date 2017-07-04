@@ -43,13 +43,12 @@ public abstract class MemoryManager {
    */
 public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode memoryMode) {
   synchronized (this) {
-      switch (memoryMode) {
-          case ON_HEAP:
-              onHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
-              break;
-          case OFF_HEAP:
-              offHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
-              break;
+      if (memoryMode == MemoryMode.ON_HEAP) {
+          onHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
+
+      } else if (memoryMode == MemoryMode.OFF_HEAP) {
+          offHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
+
       }
    }
 
@@ -124,17 +123,17 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
     int safetyFactor = 16;
     long maxTungstenMemory = 0L;
 
-    switch (tungstenMemoryMode()){
-      case ON_HEAP:
-			synchronized (this) {
-				maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
-			}
-        break;
-      case OFF_HEAP:
-			synchronized (this) {
-				maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
-			}
-        break;
+    MemoryMode i = tungstenMemoryMode();
+    if (i == MemoryMode.ON_HEAP) {
+      synchronized (this) {
+        maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
+      }
+
+    } else if (i == MemoryMode.OFF_HEAP) {
+      synchronized (this) {
+        maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
+      }
+
     }
 
     long size = ByteArrayMethods.nextPowerOf2(maxTungstenMemory / cores / safetyFactor);
@@ -148,11 +147,11 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
    * Allocates memory for use by Unsafe/Tungsten code.
    */
   public final MemoryAllocator tungstenMemoryAllocator() {
-    switch (tungstenMemoryMode()){
-      case ON_HEAP:
-        return MemoryAllocator.HEAP;
-      case OFF_HEAP:
-        return MemoryAllocator.UNSAFE;
+    MemoryMode i = tungstenMemoryMode();
+    if (i == MemoryMode.ON_HEAP) {
+      return MemoryAllocator.HEAP;
+    } else if (i == MemoryMode.OFF_HEAP) {
+      return MemoryAllocator.UNSAFE;
     }
     return null;
   }

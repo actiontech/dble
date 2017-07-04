@@ -38,14 +38,14 @@ public class PushDownVisitor extends MysqlVisitor {
 			replaceableSqlBuilder.clear();
 			sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
 			// 在已经visited的情况下，pushdownvisitor只要进行table名称的替换即可
-			switch (query.type()) {
-			case TABLE:
+			PlanNode.PlanNodeType i = query.type();
+			if (i == PlanNode.PlanNodeType.TABLE) {
 				visit((TableNode) query);
-				break;
-			case JOIN:
+
+			} else if (i == PlanNode.PlanNodeType.JOIN) {
 				visit((JoinNode) query);
-				break;
-			default:
+
+			} else {
 				throw new RuntimeException("not implement yet!");
 			}
 			visited = true;
@@ -170,8 +170,8 @@ public class PushDownVisitor extends MysqlVisitor {
 				ItemSum funCol = (ItemSum) col;
 				String funName = funCol.funcName().toUpperCase();
 				String colName = pdName;
-				switch (funCol.sumType()) {
-				case AVG_FUNC: {
+				ItemSum.Sumfunctype i = funCol.sumType();
+				if (i == ItemSum.Sumfunctype.AVG_FUNC) {
 					String colNameSum = colName.replace(funName + "(", "SUM(");
 					colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
 					String colNameCount = colName.replace(funName + "(", "COUNT(");
@@ -181,18 +181,14 @@ public class PushDownVisitor extends MysqlVisitor {
 						pushDownTableInfos.add(null);
 						pushDownTableInfos.add(null);
 					}
-				}
 					continue;
-				case STD_FUNC:
-				case VARIANCE_FUNC: {
-					// variance:下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
+				} else if (i == ItemSum.Sumfunctype.STD_FUNC || i == ItemSum.Sumfunctype.VARIANCE_FUNC) {
 					String colNameCount = colName.replace(funName + "(", "COUNT(");
 					colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
 					String colNameSum = colName.replace(funName + "(", "SUM(");
 					colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
 					String colNameVar = colName.replace(funName + "(", "VARIANCE(");
 					colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VARIANCE"));
-					// VARIANCE
 					sqlBuilder.append(colNameCount).append(",").append(colNameSum).append(",").append(colNameVar)
 							.append(",");
 					if (addPushDownTableInfo) {
@@ -200,10 +196,7 @@ public class PushDownVisitor extends MysqlVisitor {
 						pushDownTableInfos.add(null);
 						pushDownTableInfos.add(null);
 					}
-				}
 					continue;
-				default:
-					break;
 				}
 			}
 			sqlBuilder.append(pdName);

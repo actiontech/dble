@@ -101,12 +101,11 @@ public class CompareLike {
 	}
 
 	public boolean compare(String s) {
-		switch (type) {
-		case IS_NULL:
+		if (type == CompareType.IS_NULL) {
 			return s != null;
-		case FULL_MATCH:
+		} else if (type == CompareType.FULL_MATCH) {
 			return StringUtil.equalsIgnoreCase(patternString, s);
-		default:
+		} else {
 			return compareAt(s, 0, 0, s.length(), patternChars, patternTypes);
 		}
 	}

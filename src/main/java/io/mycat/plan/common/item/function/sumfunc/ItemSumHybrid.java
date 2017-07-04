@@ -40,17 +40,14 @@ public abstract class ItemSumHybrid extends ItemSum {
 		value = Field.getFieldItem(funcName(), null, item.fieldType().numberValue(), item.charsetIndex,
 				item.maxLength, item.decimals, (item.maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG));
 
-		switch (hybrid_type = item.resultType()) {
-		case INT_RESULT:
-		case DECIMAL_RESULT:
-		case STRING_RESULT:
+		ItemResult i = hybrid_type = item.resultType();
+		if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT || i == ItemResult.STRING_RESULT) {
 			maxLength = item.maxLength;
-			break;
-		case REAL_RESULT:
+
+		} else if (i == ItemResult.REAL_RESULT) {
 			maxLength = floatLength(decimals);
-			break;
-		case ROW_RESULT:
-		default:
+
+		} else {
 			assert (false);
 		}
 		charsetIndex = item.charsetIndex;

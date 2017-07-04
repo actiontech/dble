@@ -47,18 +47,17 @@ public class ItemFuncTrim extends ItemStrFunc {
 
 	@Override
 	public final String funcName() {
-		switch (mTrimMode) {
-		case DEFAULT:
+		if (mTrimMode == TRIM_TYPE_ENUM.DEFAULT) {
 			return "TRIM";
-		case BOTH:
+		} else if (mTrimMode == TRIM_TYPE_ENUM.BOTH) {
 			return "TRIM";
-		case LEADING:
+		} else if (mTrimMode == TRIM_TYPE_ENUM.LEADING) {
 			return "LTRIM";
-		case TRAILING:
+		} else if (mTrimMode == TRIM_TYPE_ENUM.TRAILING) {
 			return "RTRIM";
-		case LTRIM:
+		} else if (mTrimMode == TRIM_TYPE_ENUM.LTRIM) {
 			return "LTRIM";
-		case RTRIM:
+		} else if (mTrimMode == TRIM_TYPE_ENUM.RTRIM) {
 			return "RTRIM";
 		}
 		return null;
@@ -91,22 +90,21 @@ public class ItemFuncTrim extends ItemStrFunc {
 	@Override
 	public SQLExpr toExpression() {
 		SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
-		switch (mTrimMode) {
-		case LTRIM:
+		if (mTrimMode == TRIM_TYPE_ENUM.LTRIM) {
 			method.setMethodName("LTRIM");
 			method.addParameter(args.get(0).toExpression());
-			break;
-		case RTRIM:
+
+		} else if (mTrimMode == TRIM_TYPE_ENUM.RTRIM) {
 			method.setMethodName("RTRIM");
 			method.addParameter(args.get(0).toExpression());
-			break;
-		default:
+
+		} else {
 			method.setMethodName("TRIM");
 			method.addParameter(args.get(0).toExpression());
-			if (this.getArgCount() > 1){
+			if (this.getArgCount() > 1) {
 				method.putAttribute(ItemFuncKeyWord.FROM, args.get(1).toExpression());
 			}
-			if(mTrimMode!=TRIM_TYPE_ENUM.DEFAULT){
+			if (mTrimMode != TRIM_TYPE_ENUM.DEFAULT) {
 				method.putAttribute(ItemFuncKeyWord.TRIM_TYPE, mTrimMode.toString());
 			}
 		}

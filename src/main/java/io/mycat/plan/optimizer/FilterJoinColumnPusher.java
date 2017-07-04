@@ -56,16 +56,16 @@ public class FilterJoinColumnPusher {
 				qtn.query(FilterUtils.and(nonJoinFilter));
 			}
 		}
-		switch (qtn.type()) {
-		case QUERY:
+		PlanNode.PlanNodeType i = qtn.type();
+		if (i == PlanNode.PlanNodeType.QUERY) {
 			if (DNFNodeToPush.isEmpty()) {
 				return qtn;
 			}
 			refreshPdFilters(qtn, DNFNodeToPush);
 			PlanNode child = pushFilter(qtn.getChild(), DNFNodeToPush);
 			((QueryNode) qtn).setChild(child);
-			break;
-		case JOIN:
+
+		} else if (i == PlanNode.PlanNodeType.JOIN) {
 			JoinNode jn = (JoinNode) qtn;
 			PlanUtil.findJoinKeysAndRemoveIt(DNFNodeToPush, jn);
 			if (DNFNodeToPush.isEmpty()) {
@@ -111,15 +111,13 @@ public class FilterJoinColumnPusher {
 					jn.query(FilterUtils.and(DNFNodeToPush));
 				}
 			}
-			break;
-		case MERGE:
+
+		} else if (i == PlanNode.PlanNodeType.MERGE) {
 			List<PlanNode> children = qtn.getChildren();
 			for (int index = 0; index < children.size(); index++) {
 				pushFilter(children.get(index), new ArrayList<Item>());
 			}
-			break;
-		default:
-			break;
+
 		}
 		return qtn;
 	}

@@ -101,15 +101,14 @@ public class ItemFuncCase extends ItemFunc {
 
 	@Override
 	public String valStr() {
-		switch (fieldType()) {
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		FieldTypes i = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return valStringFromDatetime();
-		case MYSQL_TYPE_DATE:
+		} else if (i == FieldTypes.MYSQL_TYPE_DATE) {
 			return valStringFromDate();
-		case MYSQL_TYPE_TIME:
+		} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
 			return valStringFromTime();
-		default: {
+		} else {
 			Item item = findItem();
 			if (item != null) {
 				String res;
@@ -118,7 +117,6 @@ public class ItemFuncCase extends ItemFunc {
 					return res;
 				}
 			}
-		}
 		}
 		nullValue = true;
 		return null;

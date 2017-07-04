@@ -101,18 +101,14 @@ public class ArgComparator {
 	public int setCompareFunc(ItemFunc ownerarg, ItemResult type) {
 		owner = ownerarg;
 		func = comparator_matrix[type.ordinal()][isOwnerEqualFunc() == true ? 1 : 0];
-		switch (type) {
-		case ROW_RESULT:
-			// 未实现
+		if (type == ItemResult.ROW_RESULT) {// 未实现
 			return 1;
-		case STRING_RESULT: {
+		} else if (type == ItemResult.STRING_RESULT) {
 			if (func instanceof CompareString)
 				func = new CompareBinaryString();
 			else if (func instanceof CompareEString)
 				func = new CompareEBinaryString();
-			break;
-		}
-		case INT_RESULT: {
+		} else if (type == ItemResult.INT_RESULT) {
 			if (a.isTemporal() && b.isTemporal()) {
 				func = isOwnerEqualFunc() ? new CompareETimePacked() : new CompareTimePacked();
 			} else if (func instanceof CompareIntSigned) {
@@ -120,11 +116,8 @@ public class ArgComparator {
 			} else if (func instanceof CompareEInt) {
 				//
 			}
-			break;
-		}
-		case DECIMAL_RESULT:
-			break;
-		case REAL_RESULT: {
+		} else if (type == ItemResult.DECIMAL_RESULT) {
+		} else if (type == ItemResult.REAL_RESULT) {
 			if (a.decimals < Item.NOT_FIXED_DEC && b.decimals < Item.NOT_FIXED_DEC) {
 				precision = 5 / Math.pow(10, (Math.max(a.decimals, b.decimals) + 1));
 				if (func instanceof CompareReal)
@@ -132,9 +125,7 @@ public class ArgComparator {
 				else if (func instanceof CompareEReal)
 					func = new CompareERealFixed();
 			}
-			break;
-		}
-		default:
+		} else {
 		}
 		return 0;
 	}

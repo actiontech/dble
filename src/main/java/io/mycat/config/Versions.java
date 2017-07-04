@@ -46,10 +46,10 @@ public abstract class Versions {
         }
 
         // 重新拼接mycat version字节数组
-        byte[] newMycatVersion = new byte[mysqlVersionPart.length + SERVER_VERSION.length - startIndex];
-        System.arraycopy(mysqlVersionPart, 0, newMycatVersion, 0, mysqlVersionPart.length);
-        System.arraycopy(SERVER_VERSION, startIndex, newMycatVersion, mysqlVersionPart.length,
+        byte[] newVersion = new byte[mysqlVersionPart.length + SERVER_VERSION.length - startIndex];
+        System.arraycopy(mysqlVersionPart, 0, newVersion, 0, mysqlVersionPart.length);
+        System.arraycopy(SERVER_VERSION, startIndex, newVersion, mysqlVersionPart.length,
                 SERVER_VERSION.length - startIndex);
-        SERVER_VERSION = newMycatVersion;
+        SERVER_VERSION = newVersion;
     }
 }

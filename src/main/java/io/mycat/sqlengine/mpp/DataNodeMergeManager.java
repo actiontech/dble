@@ -66,16 +66,16 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     /**
      * sorter需要的上下文环境
      */
-    private final MyCatMemory myCatMemory;
+    private final MyCatMemory serverMemory;
     private final MemoryManager memoryManager;
     private final MycatPropertyConf conf;
     
 
     public DataNodeMergeManager(MultiNodeQueryHandler handler, RouteResultset rrs) {
         super(handler,rrs);
-        this.myCatMemory = MycatServer.getInstance().getMyCatMemory();
-        this.memoryManager = myCatMemory.getResultMergeMemoryManager();
-        this.conf = myCatMemory.getConf();
+        this.serverMemory = MycatServer.getInstance().getServerMemory();
+        this.memoryManager = serverMemory.getResultMergeMemoryManager();
+        this.conf = serverMemory.getConf();
     }
 
 
@@ -191,7 +191,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
              */
             globalSorter = new UnsafeExternalRowSorter(
                     dataNodeMemoryManager,
-                    myCatMemory,
+                    serverMemory,
                     schema,
                     prefixComparator, prefixComputer,
                     conf.getSizeAsBytes("server.buffer.pageSize","1m"),
@@ -230,7 +230,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
             globalMergeResult = new UnsafeExternalRowSorter(
                     dataNodeMemoryManager,
-                    myCatMemory,
+                    serverMemory,
                     schema,
                     prefixComparator,
                     prefixComputer,

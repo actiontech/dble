@@ -171,7 +171,7 @@ public class XMLServerLoader {
 				Map<String, Object> props = ConfigUtil.loadElements(e);
 				String password = (String) props.get("password");
 				String usingDecrypt = (String) props.get("usingDecrypt");
-				String passwordDecrypt = DecryptUtil.mycatDecrypt(usingDecrypt, name, password);
+				String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
 				user.setName(name);
 				user.setPassword(passwordDecrypt);
 				user.setEncryptPassword(password);

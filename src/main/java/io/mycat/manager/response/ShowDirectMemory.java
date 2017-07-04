@@ -115,7 +115,7 @@ public class ShowDirectMemory {
 
             if(useOffHeapForMerge == 1) {
                 ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
-                        getMyCatMemory().
+                        getServerMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
                 for (Long key : concurrentHashMap.keySet()) {
 
@@ -203,7 +203,7 @@ public class ShowDirectMemory {
                  * 结果集合并时，总共消耗的DirectMemory内存
                  */
                 ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
-                        getMyCatMemory().
+                        getServerMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
                 for (Map.Entry<Long, Long> entry : concurrentHashMap.entrySet()) {
                     usedforMerge += entry.getValue();

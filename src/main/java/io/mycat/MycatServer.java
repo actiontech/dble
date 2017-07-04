@@ -118,7 +118,7 @@ public class MycatServer {
 	/**
 	 * Mycat 内存管理类
 	 */
-	private MyCatMemory myCatMemory = null;
+	private MyCatMemory serverMemory = null;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -242,8 +242,8 @@ public class MycatServer {
 				throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
 		}
 	}
-	public MyCatMemory getMyCatMemory() {
-		return myCatMemory;
+	public MyCatMemory getServerMemory() {
+		return serverMemory;
 	}
 
 	public XASessionCheck getXaSessionCheck() {
@@ -329,7 +329,7 @@ public class MycatServer {
 		 */
 		if(system.getUseOffHeapForMerge() == 1){
 			try {
-				myCatMemory = new MyCatMemory(system,totalNetWorkBufferSize);
+				serverMemory = new MyCatMemory(system,totalNetWorkBufferSize);
 			} catch (NoSuchFieldException e) {
 				LOGGER .error("NoSuchFieldException",e);
 			} catch (IllegalAccessException e) {

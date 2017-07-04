@@ -280,8 +280,8 @@ public final class UnsafeFixedWidthAggregationMap {
     return new UnsafeKVExternalSorter(
       groupingKeySchema,
       aggregationBufferSchema,
-      MycatServer.getInstance().getMyCatMemory().getBlockManager(),
-      MycatServer.getInstance().getMyCatMemory().getSerializerManager(),
+      MycatServer.getInstance().getServerMemory().getBlockManager(),
+      MycatServer.getInstance().getServerMemory().getSerializerManager(),
       map.getPageSizeBytes(),
       map);
   }

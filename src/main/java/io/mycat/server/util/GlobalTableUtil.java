@@ -42,7 +42,7 @@ public class GlobalTableUtil{
 	private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTableUtil.class);
 	private static Map<String, TableConfig> globalTableMap = new ConcurrentHashMap<>();
 	/** 全局表 保存修改时间戳 的字段名，用于全局表一致性检查 */
-	public static final String GLOBAL_TABLE_MYCAT_COLUMN = "_mycat_op_time";
+	public static final String GLOBAL_TABLE_CHECK_COLUMN = "_mycat_op_time";
 	public static final String COUNT_COLUMN = "record_count";
 	public static final String MAX_COLUMN = "max_timestamp";
 	public static final String INNER_COLUMN = "inner_col_exist";
@@ -58,10 +58,10 @@ public class GlobalTableUtil{
 		getGlobalTable();	// 初始化 globalTableMap
 	}
 
-	public static SQLColumnDefinition createMycatColumn(){
+	public static SQLColumnDefinition createCheckColumn(){
 		SQLColumnDefinition column = new SQLColumnDefinition();
 		column.setDataType(new SQLCharacterDataType("bigint"));
-		column.setName(new SQLIdentifierExpr(GLOBAL_TABLE_MYCAT_COLUMN));
+		column.setName(new SQLIdentifierExpr(GLOBAL_TABLE_CHECK_COLUMN));
 		column.setComment(new SQLCharExpr("全局表保存修改时间戳的字段名"));
 		return column;
 	}
@@ -69,11 +69,11 @@ public class GlobalTableUtil{
 	public static boolean isInnerColExist(SchemaInfo schemaInfo ,TableMeta orgTbMeta) {
 		for (int i = 0; i < orgTbMeta.getColumnsList().size(); i++) {
 			String column = orgTbMeta.getColumnsList().get(i).getName();
-			if (column.equalsIgnoreCase(GLOBAL_TABLE_MYCAT_COLUMN))
+			if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN))
 				return true;
 		}
 		StringBuilder warnStr = new StringBuilder(schemaInfo.schema).append(".").append(schemaInfo.table)
-				.append(" inner column: ").append(GLOBAL_TABLE_MYCAT_COLUMN).append(" is not exist.");
+				.append(" inner column: ").append(GLOBAL_TABLE_CHECK_COLUMN).append(" is not exist.");
 		LOGGER.warn(warnStr.toString());
 		return false; // tableName 全局表没有内部列
 	}
@@ -207,10 +207,10 @@ public class GlobalTableUtil{
 							LOGGER.warn(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
 						}finally{
 							if(columnsList == null 
-									|| columnsList.indexOf(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN) == -1){
+									|| columnsList.indexOf(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) == -1){
 								LOGGER.warn(map.getDataNode() + "." + map.getTableName() 
 										+ " inner column: " 
-										+ GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN
+										+ GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN
 										+ " is not exist.");
 							}else{
 								LOGGER.debug("columnsList: " + columnsList);

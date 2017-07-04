@@ -13,7 +13,6 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 
-import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -64,7 +63,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
 	private String addColumnIfCreate(MySqlCreateTableStatement createStmt) {
 		removeGlobalColumnIfExist(createStmt);
-		createStmt.getTableElementList().add(GlobalTableUtil.createMycatColumn());
+		createStmt.getTableElementList().add(GlobalTableUtil.createCheckColumn());
 		return createStmt.toString();
 	}
 
@@ -77,7 +76,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			if (sqlName != null) {
 				String simpleName = sqlName.getSimpleName();
 				simpleName = StringUtil.removeBackQuote(simpleName);
-				if (GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equalsIgnoreCase(simpleName)) {
+				if (GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equalsIgnoreCase(simpleName)) {
 					statement.getTableElementList().remove(tableElement);
 					break;
 				}

@@ -50,7 +50,7 @@ abstract class BaseHandlerBuilder {
 	/* 当前的最后一个handler */
 	protected DMLResponseHandler currentLast;
 	private PlanNode node;
-	protected MycatConfig mycatConfig;
+	protected MycatConfig config;
 	/* 是否可以全下推 */
 	protected boolean canPushDown = false;
 	/* 是否需要common中的handler，包括group by，order by，limit等 */
@@ -66,8 +66,8 @@ abstract class BaseHandlerBuilder {
 				: MySQLNodeType.SLAVE;
 		this.node = node;
 		this.hBuilder = hBuilder;
-		this.mycatConfig = MycatServer.getInstance().getConfig();
-		if (mycatConfig.getSchemas().isEmpty())
+		this.config = MycatServer.getInstance().getConfig();
+		if (config.getSchemas().isEmpty())
 			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "current router config is empty!");
 	}
 
@@ -410,7 +410,7 @@ abstract class BaseHandlerBuilder {
 	}
 
 	protected TableConfig getTableConfig(String schema, String table) {
-		SchemaConfig schemaConfig = this.mycatConfig.getSchemas().get(schema);
+		SchemaConfig schemaConfig = this.config.getSchemas().get(schema);
 		if (schemaConfig == null)
 			return null;
 		return schemaConfig.getTables().get(table);

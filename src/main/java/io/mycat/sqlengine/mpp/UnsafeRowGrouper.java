@@ -83,7 +83,7 @@ public class UnsafeRowGrouper {
 	private StructType groupKeySchema ;
 	private StructType aggBufferSchema;
 	private UnsafeRow emptyAggregationBuffer;
-	private final MyCatMemory myCatMemory;
+	private final MyCatMemory serverMemory;
 	private final MemoryManager memoryManager;
 	private final MycatPropertyConf conf;
 
@@ -99,9 +99,9 @@ public class UnsafeRowGrouper {
                 this.sortColumnsByIndex =  columns !=null ? toSortColumnsByIndex(columns,columToIndx):null;
 		this.groupKeyfieldCount = columns != null?columns.length:0;
 		this.valuefieldCount = columToIndx != null?columToIndx.size():0;
-		this.myCatMemory = MycatServer.getInstance().getMyCatMemory();
-		this.memoryManager = myCatMemory.getResultMergeMemoryManager();
-		this.conf = myCatMemory.getConf();
+		this.serverMemory = MycatServer.getInstance().getServerMemory();
+		this.memoryManager = serverMemory.getResultMergeMemoryManager();
+		this.conf = serverMemory.getConf();
 
 		logger.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString():"null"));
 

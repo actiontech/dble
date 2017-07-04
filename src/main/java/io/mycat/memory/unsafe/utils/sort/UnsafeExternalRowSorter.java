@@ -50,7 +50,7 @@ public final class UnsafeExternalRowSorter {
   }
 
   public UnsafeExternalRowSorter(DataNodeMemoryManager dataNodeMemoryManager,
-                                 @Nonnull MyCatMemory myCatMemory,
+                                 @Nonnull MyCatMemory memory,
                                  StructType schema,
                                  PrefixComparator prefixComparator,
                                  PrefixComputer prefixComputer,
@@ -63,11 +63,11 @@ public final class UnsafeExternalRowSorter {
       this.recordComparator =  new RowComparator(schema);
     sorter = UnsafeExternalSorter.create(
             dataNodeMemoryManager,
-            myCatMemory.getBlockManager(),
-           myCatMemory.getSerializerManager(),
+            memory.getBlockManager(),
+           memory.getSerializerManager(),
             recordComparator,
       prefixComparator,
-      myCatMemory.getConf().getSizeAsBytes("server.pointer.array.len","16K"),
+      memory.getConf().getSizeAsBytes("server.pointer.array.len","16K"),
       pageSizeBytes,
       canUseRadixSort,
       enableSort);

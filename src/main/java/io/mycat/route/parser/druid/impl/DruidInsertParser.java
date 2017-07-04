@@ -434,7 +434,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					sb.append(",");
 				}
 				sb.append(column);
-				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					idxGlobal = i; // 找到 内部列的索引位置
 				}
 			}
@@ -447,7 +447,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 				else
 					sb.append(columns.get(i).toString());
 				String column = StringUtil.removeBackQuote(insert.getColumns().get(i).toString());
-				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+				if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					String msg = "In insert Syntax, you can't set value for Global check column!";
 					LOGGER.warn(msg);
 					throw new SQLNonTransientException(msg);
@@ -466,7 +466,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			}
 			if (isGlobalCheck ){
 				idxGlobal = isAutoIncrement ? columns.size() + 1 : columns.size();
-				sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+				sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
 				colSize++;
 			}
 			sb.append(")");
@@ -499,7 +499,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 					throw new SQLNonTransientException(msg);
 				}
 				SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr)exp;
-				if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
+				if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
 					flag = true;
 					onDuplicateGlobalColumn(sb);
 				} else {
@@ -518,9 +518,9 @@ public class DruidInsertParser extends DefaultDruidParser {
 	}
 
 	private static void onDuplicateGlobalColumn(StringBuilder sb){
-		sb.append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+		sb.append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
 		sb.append("=values(");
-		sb.append(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN);
+		sb.append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
 		sb.append(")");
 	}
 

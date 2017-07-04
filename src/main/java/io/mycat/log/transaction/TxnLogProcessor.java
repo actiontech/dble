@@ -28,8 +28,8 @@ public class TxnLogProcessor extends Thread {
 	public TxnLogProcessor(BufferPool bufferPool) {
 		this.dateFormat = new ISO8601DateFormat();
 		this.queue = new LinkedBlockingQueue<TxnBinaryLog>(256);
-		MycatConfig mycatconfig = MycatServer.getInstance().getConfig();
-        SystemConfig systemConfig = mycatconfig.getSystem();
+		MycatConfig config = MycatServer.getInstance().getConfig();
+        SystemConfig systemConfig = config.getSystem();
 		this.store = new DailyRotateLogStore(systemConfig.getTransactionLogBaseDir(), systemConfig.getTransactionLogBaseName(),"log",systemConfig.getTransactionRatateSize());
 	}
 

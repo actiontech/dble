@@ -3,9 +3,9 @@ VERSION 2.17.06.0
 CONTENT:  
 ## 1.feature
 1.移除writeType参数，等效于原来writeType =0  
-2.conf/index_to_charset.properties的内容固化到代码   
-3.show @@binlog.status  ，显示节点间事务一致的binlog线   
-4.增强explain执行计划  
+2.conf/index_to_charset.properties的内容固化到代码 #77     
+3.show @@binlog.status  ，显示节点间事务一致的binlog线 #118   
+4.增强explain执行计划#143   
 5.show tables时,不显示未创建的表，show full tables 拆分表的type会显示为SHARDING TABLE，global表会显示为GLOBAL TABLE  
 6.ddl 执行前做一次心跳检查  
 7.多表查询中using()结果未合并重复列 #103  
@@ -15,20 +15,81 @@ CONTENT:
 2.自增序列部分算法缺陷及改进  
 3.单节点查询不加入主键缓存bug #160   
 4.租户权限不不隔离的问题 #164  
-5.show full tables from db，当db为不存在的db时，多发包导致乱序  #159
+5.show full tables from db，当db为不存在的db时，多发包导致乱序  #159   
 6.数字范围算法(AutoPartitionByLong),有默认节点时，between...and...可能路由错误 #145
 ## 3.不兼容项
-配置 ：
-sequence_conf.properties 库表名要用"\`"包起来,用"."连接  
-sequence_db_conf.properties  库表名要用"\`"包起来,用"."连接  
-cacheservice.properties 库表名要用"\`"包起来，用"_"连接。  
-自增序列部分算法  
-A.本地时间戳方式  
+#### 3.1 全局序列配置 ：
+##### 3.1.1 sequence_conf.properties 
+库表名要用"\`"包起来,用"."连接  
+##### 3.1.2 sequence_db_conf.properties  
+库表名要用"\`"包起来,用"."连接  
+#### 3.2 缓存配置
+3.2.1 cacheservice.properties 库表名要用"\`"包起来，用"_"连接。  
+#### 3.3 自增序列部分算法  
+##### 3.3.1.本地时间戳方式  
 ID= (30(毫秒时间戳前30位)+5(机器ID)+5(业务编码)+12(重复累加)+12(毫秒时间戳后12位)  
-B.分布式ZK ID 生成器     
+##### 3.3.2.分布式ZK ID 生成器     
 ID= 63位二进制 (9(线程ID) +5(实例ID)+4(机房ID)+6(重复累加) +39(毫秒求模,可用17年))  
+#### 3.4 server.xml  
+3.4.1 mycatNodeId 改为serverNodeId  
 
-------  
+## 4.ushard分支 #117  
+如果不需要混淆成字母类(eg:A.class),maven编译增加参数：  
+-Dneed.obfuscate=false ,默认为true  
+#### 4.1 客户端登录信息 
+显示ushard相关字样  
+#### 4.2 注解
+注解内部原本用mycat的改为ushard  
+#### 4.3 全局序列 
+数据库方式全局序列需要的dbseq.sql 已经重新生成，mycat已经用ushard替换，表结构相关名称改变   
+#### 4.4 配置
+##### 4.4.1 xml的使用规约  
+mycat改为ushard ,例如：server的根节点写法是：  
+
+```
+<!DOCTYPE ushard:server SYSTEM "server.dtd">
+```  
+
+```
+<ushard:server xmlns:ushard="http://io.ushard/">
+```  
+
+##### 4.4.2 cacheservice.properties 
+此配置中需要指定类名用于反射加载缓存池类型，可使用简称   
+ehcache  
+leveldb  
+mapdb  
+来指代原有类名(不区分大小写)，mycat分支下兼容原有方式和简称方式。  
+原有方式如下，按顺序与简称方式一一对应。  
+io.mycat.cache.impl.EnchachePooFactory  
+io.mycat.cache.impl.LevelDBCachePooFactory  
+io.mycat.cache.impl.MapDBCachePooFactory   
+和简称方式。  
+##### 4.4.3 rule.xml  
+rule.xml配置当中需要指定类名用于反射加载拆分算法，可使用简称    
+Hash  
+StringHash  
+Enum  
+NumberRange  
+Date  
+PatternRange  
+来指代原有类名(不区分大小写)，mycat分支下兼容原有方式和简称方式。  
+原有方式如下，按顺序与简称方式一一对应。  
+io.mycat.route.function.PartitionByLong(固定Hash 分区)  
+io.mycat.route.function.PartitionByString(String固定Hash 分区)   
+io.mycat.route.function.PartitionByFileMap(枚举方式)  
+io.mycat.route.function.AutoPartitionByLong(数字范围)  
+io.mycat.route.function.PartitionByDate(日期分区)  
+io.mycat.route.function.PartitionByPattern(取模范围约束)  
+#### 4.5 全局表检查  
+启用全局表检查时候，列名由_mycat_op_time改为_ushard_op_time  
+#### 4.6 日志
+日志路径logs/ushard.log。
+里面涉及到的包名从io.mycat 改为com.actionsky.com
+   
+------   
+  
+ 
 
 DATE:2017/04/20  
 VERSION 2.17.04.0  

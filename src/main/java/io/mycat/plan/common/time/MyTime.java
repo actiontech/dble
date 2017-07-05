@@ -791,9 +791,9 @@ public class MyTime {
 	 * 
 	 * @param nr
 	 *            Number to convert.
-	 * @param OUT
+	 * @param ltime
 	 *            ltime Variable to convert to.
-	 * @param OUT
+	 * @param warnings
 	 *            warnings Warning vector.
 	 * @retval false OK
 	 * @retval true No. is out of range
@@ -846,17 +846,15 @@ public class MyTime {
 	}
 
 	public static long TIME_to_ulonglong(final MySQLTime my_time) {
-		switch (my_time.time_type) {
-		case MYSQL_TIMESTAMP_DATETIME:
+		if (my_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
 			return TIME_to_ulonglong_datetime(my_time);
-		case MYSQL_TIMESTAMP_DATE:
+		} else if (my_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE) {
 			return TIME_to_ulonglong_date(my_time);
-		case MYSQL_TIMESTAMP_TIME:
+		} else if (my_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
 			return TIME_to_ulonglong_time(my_time);
-		case MYSQL_TIMESTAMP_NONE:
-		case MYSQL_TIMESTAMP_ERROR:
+		} else if (my_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_NONE || my_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_ERROR) {
 			return 0;
-		default:
+		} else {
 			assert (false);
 		}
 		return 0;
@@ -937,15 +935,13 @@ public class MyTime {
 	 * @return Packed numeric time/date/datetime representation.
 	 */
 	public static long TIME_to_longlong_packed(final MySQLTime ltime) {
-		switch (ltime.time_type) {
-		case MYSQL_TIMESTAMP_DATE:
+		if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE) {
 			return TIME_to_longlong_date_packed(ltime);
-		case MYSQL_TIMESTAMP_DATETIME:
+		} else if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
 			return TIME_to_longlong_datetime_packed(ltime);
-		case MYSQL_TIMESTAMP_TIME:
+		} else if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
 			return TIME_to_longlong_time_packed(ltime);
-		case MYSQL_TIMESTAMP_NONE:
-		case MYSQL_TIMESTAMP_ERROR:
+		} else if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_NONE || ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_ERROR) {
 			return 0;
 		}
 		assert (false);
@@ -955,7 +951,7 @@ public class MyTime {
 	/**
 	 * Convert packed numeric datetime representation to MYSQL_TIME.
 	 * 
-	 * @param OUT
+	 * @param ltime
 	 *            ltime The datetime variable to convert to.
 	 * @param tmp
 	 *            The packed numeric datetime value.
@@ -987,7 +983,7 @@ public class MyTime {
 	/**
 	 * Convert packed numeric date representation to MYSQL_TIME.
 	 * 
-	 * @param OUT
+	 * @param ltime
 	 *            ltime The date variable to convert to.
 	 * @param tmp
 	 *            The packed numeric date value.
@@ -1000,8 +996,8 @@ public class MyTime {
 	/**
 	 * Convert time packed numeric representation to time.
 	 * 
-	 * @param OUT
-	 *            ltime The MYSQL_TIME variable to set.
+	 * @param ltime
+	 *            The MYSQL_TIME variable to set.
 	 * @param tmp
 	 *            The packed numeric representation.
 	 */
@@ -1133,17 +1129,15 @@ public class MyTime {
 	 * reserved.
 	 */
 	public static String my_TIME_to_str(final MySQLTime l_time, int dec) {
-		switch (l_time.time_type) {
-		case MYSQL_TIMESTAMP_DATETIME:
+		if (l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
 			return my_datetime_to_str(l_time, dec);
-		case MYSQL_TIMESTAMP_DATE:
+		} else if (l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE) {
 			return my_date_to_str(l_time);
-		case MYSQL_TIMESTAMP_TIME:
+		} else if (l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
 			return my_time_to_str(l_time, dec);
-		case MYSQL_TIMESTAMP_NONE:
-		case MYSQL_TIMESTAMP_ERROR:
+		} else if (l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_NONE || l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_ERROR) {
 			return null;
-		default:
+		} else {
 			return null;
 		}
 	}
@@ -1194,8 +1188,8 @@ public class MyTime {
 	/**
 	 * Round time value to the given precision.
 	 * 
-	 * @param IN
-	 *            /OUT ltime The value to round.
+	 * @param ltime
+	 * 			The value to round.
 	 * @param dec
 	 *            Precision.
 	 * @return False on success, true on error.
@@ -1211,8 +1205,8 @@ public class MyTime {
 	/**
 	 * Round datetime value to the given precision.
 	 * 
-	 * @param IN
-	 *            /OUT ltime The value to round.
+	 * @param ltime
+	 *            ltime The value to round.
 	 * @param dec
 	 *            Precision.
 	 * @return False on success, true on error.
@@ -1233,32 +1227,31 @@ public class MyTime {
 
 		sign = (interval.neg ? -1 : 1);
 
-		switch (int_type) {
-		case SECOND:
-		case SECOND_MICROSECOND:
-		case MICROSECOND:
-		case MINUTE:
-		case HOUR:
-		case MINUTE_MICROSECOND:
-		case MINUTE_SECOND:
-		case HOUR_MICROSECOND:
-		case HOUR_SECOND:
-		case HOUR_MINUTE:
-		case DAY_MICROSECOND:
-		case DAY_SECOND:
-		case DAY_MINUTE:
-		case DAY_HOUR: {
+		if (int_type == MySqlIntervalUnit.SECOND
+				|| int_type == MySqlIntervalUnit.SECOND_MICROSECOND
+				|| int_type == MySqlIntervalUnit.MICROSECOND
+				|| int_type == MySqlIntervalUnit.MINUTE
+				|| int_type == MySqlIntervalUnit.HOUR
+				|| int_type == MySqlIntervalUnit.MINUTE_MICROSECOND
+				|| int_type == MySqlIntervalUnit.MINUTE_SECOND
+				|| int_type == MySqlIntervalUnit.HOUR_MICROSECOND
+				|| int_type == MySqlIntervalUnit.HOUR_SECOND
+				|| int_type == MySqlIntervalUnit.HOUR_MINUTE
+				|| int_type == MySqlIntervalUnit.DAY_MICROSECOND
+				|| int_type == MySqlIntervalUnit.DAY_SECOND
+				|| int_type == MySqlIntervalUnit.DAY_MINUTE
+				|| int_type == MySqlIntervalUnit.DAY_HOUR) {
 			long sec, days, daynr, microseconds, extra_sec;
 			ltime.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME; // Return
-																					// full
-																					// date
+			// full
+			// date
 			microseconds = ltime.second_part + sign * interval.second_part;
 			extra_sec = microseconds / 1000000L;
 			microseconds = microseconds % 1000000L;
 
 			sec = ((ltime.day - 1) * 3600 * 24L + ltime.hour * 3600 + ltime.minute * 60 + ltime.second
 					+ sign * (long) (interval.day * 3600 * 24L + interval.hour * 3600 + interval.minute * (60)
-							+ interval.second))
+					+ interval.second))
 					+ extra_sec;
 			if (microseconds < 0) {
 				microseconds += (1000000L);
@@ -1285,10 +1278,7 @@ public class MyTime {
 			ltime.year = ptrYear.get();
 			ltime.month = ptrMonth.get();
 			ltime.day = ptrDay.get();
-			break;
-		}
-		case DAY:
-		case WEEK:
+		} else if (int_type == MySqlIntervalUnit.DAY || int_type == MySqlIntervalUnit.WEEK) {
 			period = (calc_daynr(ltime.year, ltime.month, ltime.day) + sign * (long) interval.day);
 			/* Daynumber from year 0 to 9999-12-31 */
 			if (period > MAX_DAY_NUMBER)
@@ -1300,17 +1290,15 @@ public class MyTime {
 			ltime.year = ptrYear.get();
 			ltime.month = ptrMonth.get();
 			ltime.day = ptrDay.get();
-			break;
-		case YEAR:
+
+		} else if (int_type == MySqlIntervalUnit.YEAR) {
 			ltime.year += sign * (long) interval.year;
 			if (ltime.year >= 10000)
 				return true;
 			if (ltime.month == 2 && ltime.day == 29 && calc_days_in_year(ltime.year) != 366)
 				ltime.day = 28; // Was leap-year
-			break;
-		case YEAR_MONTH:
-		case QUARTER:
-		case MONTH:
+
+		} else if (int_type == MySqlIntervalUnit.YEAR_MONTH || int_type == MySqlIntervalUnit.QUARTER || int_type == MySqlIntervalUnit.MONTH) {
 			period = (ltime.year * 12 + sign * (long) interval.year * 12 + ltime.month - 1
 					+ sign * (long) interval.month);
 			if (period >= 120000L)
@@ -1323,8 +1311,8 @@ public class MyTime {
 				if (ltime.month == 2 && calc_days_in_year(ltime.year) == 366)
 					ltime.day++; // Leap-year
 			}
-			break;
-		default:
+
+		} else {
 			return true;
 		}
 
@@ -1335,7 +1323,7 @@ public class MyTime {
 	/**
 	 * Convert double value to datetime value with a warning.
 	 * 
-	 * @param nr
+	 * @param db
 	 *            The value to convert from.
 	 * @param[out] ltime The variable to convert to.
 	 * @param flags
@@ -1431,10 +1419,10 @@ public class MyTime {
 	 * 
 	 * The time value is added to the current datetime value.
 	 * 
-	 * @param IN
-	 *            ltime Time value to convert from.
-	 * @param OUT
-	 *            ltime2 Datetime value to convert to.
+	 * @param ltime
+	 *             Time value to convert from.
+	 * @param ltime2
+	 *             Datetime value to convert to.
 	 */
 	public static void time_to_datetime(final MySQLTime ltime, MySQLTime ltime2) {
 		java.util.Calendar cal1 = ltime.toCalendar();
@@ -1498,11 +1486,11 @@ public class MyTime {
 	 * Convert a datetime from broken-down MYSQL_TIME representation to
 	 * corresponding TIMESTAMP value.
 	 * 
-	 * @param thd
+	 * @param
 	 *            - current thread
 	 * @param t
 	 *            - datetime in broken-down representation,
-	 * @param in_dst_time_gap
+	 * @param
 	 *            - pointer to bool which is set to true if t represents value
 	 *            which doesn't exists (falls into the spring time-gap) or to
 	 *            false otherwise.
@@ -1518,44 +1506,38 @@ public class MyTime {
 	}
 
 	public static long TIME_to_longlong_packed(final MySQLTime ltime, FieldTypes type) {
-		switch (type) {
-		case MYSQL_TYPE_TIME:
+		if (type == FieldTypes.MYSQL_TYPE_TIME) {
 			return TIME_to_longlong_time_packed(ltime);
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return TIME_to_longlong_datetime_packed(ltime);
-		case MYSQL_TYPE_DATE:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATE) {
 			return TIME_to_longlong_date_packed(ltime);
-		default:
+		} else {
 			return TIME_to_longlong_packed(ltime);
 		}
 	}
 
 	public static void TIME_from_longlong_packed(MySQLTime ltime, FieldTypes type, long packed_value) {
-		switch (type) {
-		case MYSQL_TYPE_TIME:
+		if (type == FieldTypes.MYSQL_TYPE_TIME) {
 			TIME_from_longlong_time_packed(ltime, packed_value);
-			break;
-		case MYSQL_TYPE_DATE:
+
+		} else if (type == FieldTypes.MYSQL_TYPE_DATE) {
 			TIME_from_longlong_date_packed(ltime, packed_value);
-			break;
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+
+		} else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			TIME_from_longlong_datetime_packed(ltime, packed_value);
-			break;
-		default:
+
+		} else {
 			assert (false);
 			ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
-			break;
+
 		}
 	}
 
 	/**
 	 * Unpack packed numeric temporal value to date/time value and then convert
 	 * to decimal representation.
-	 * 
-	 * @param OUT
-	 *            dec The variable to write to.
+	 *
 	 * @param type
 	 *            MySQL field type.
 	 * @param packed_value
@@ -1565,18 +1547,16 @@ public class MyTime {
 	 */
 	public static BigDecimal my_decimal_from_datetime_packed(FieldTypes type, long packed_value) {
 		MySQLTime ltime = new MySQLTime();
-		switch (type) {
-		case MYSQL_TYPE_TIME:
+		if (type == FieldTypes.MYSQL_TYPE_TIME) {
 			TIME_from_longlong_time_packed(ltime, packed_value);
 			return time2my_decimal(ltime);
-		case MYSQL_TYPE_DATE:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATE) {
 			TIME_from_longlong_date_packed(ltime, packed_value);
 			return ulonglong2decimal(TIME_to_ulonglong_date(ltime));
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			TIME_from_longlong_datetime_packed(ltime, packed_value);
 			return date2my_decimal(ltime);
-		default:
+		} else {
 			assert (false);
 			return ulonglong2decimal(0);
 		}
@@ -1584,18 +1564,16 @@ public class MyTime {
 
 	public static long longlong_from_datetime_packed(FieldTypes type, long packed_value) {
 		MySQLTime ltime = new MySQLTime();
-		switch (type) {
-		case MYSQL_TYPE_TIME:
+		if (type == FieldTypes.MYSQL_TYPE_TIME) {
 			TIME_from_longlong_time_packed(ltime, packed_value);
 			return TIME_to_ulonglong_time(ltime);
-		case MYSQL_TYPE_DATE:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATE) {
 			TIME_from_longlong_date_packed(ltime, packed_value);
 			return TIME_to_ulonglong_date(ltime);
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		} else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			TIME_from_longlong_datetime_packed(ltime, packed_value);
 			return TIME_to_ulonglong_datetime(ltime);
-		default:
+		} else {
 			return 0;
 		}
 	}
@@ -1610,8 +1588,6 @@ public class MyTime {
 	 * 
 	 * @param ltime
 	 *            Date value to convert from.
-	 * @param dec
-	 *            Decimal value to convert to.
 	 */
 	public static BigDecimal time2my_decimal(final MySQLTime ltime) {
 		String stmp = String.format("%02d%02d%02d.%06d", ltime.hour, ltime.minute, ltime.second, ltime.second_part);
@@ -1623,8 +1599,6 @@ public class MyTime {
 	 * 
 	 * @param ltime
 	 *            Date value to convert from.
-	 * @param dec
-	 *            Decimal value to convert to.
 	 */
 	public static BigDecimal date2my_decimal(final MySQLTime ltime) {
 		String stmp = String.format("%04d%02d%02d%02d%02d%02d.%06d", ltime.year, ltime.month, ltime.day, ltime.hour,
@@ -1985,12 +1959,10 @@ public class MyTime {
 	/**
 	 * Add nanoseconds to a datetime value with rounding.
 	 * 
-	 * @param IN
-	 *            /OUT ltime MYSQL_TIME variable to add to.
-	 * @param nanosecons
+	 * @param ltime
+	 *            MYSQL_TIME variable to add to.
+	 * @param nanoseconds
 	 *            Nanosecons value.
-	 * @param IN
-	 *            /OUT warnings Warning flag vector.
 	 * @retval False on success, true on error.
 	 */
 	private static boolean datetime_add_nanoseconds_with_round(MySQLTime ltime, long nanoseconds) {
@@ -2146,81 +2118,80 @@ public class MyTime {
 		}
 
 		BoolPtr negPtr = new BoolPtr(interval.neg);
-		switch (unit) {
-		case YEAR:
+		if (unit == MySqlIntervalUnit.YEAR) {
 			interval.year = value;
-			break;
-		case QUARTER:
+
+		} else if (unit == MySqlIntervalUnit.QUARTER) {
 			interval.month = (value * 3);
-			break;
-		case MONTH:
+
+		} else if (unit == MySqlIntervalUnit.MONTH) {
 			interval.month = value;
-			break;
-		case WEEK:
+
+		} else if (unit == MySqlIntervalUnit.WEEK) {
 			interval.day = (value * 7);
-			break;
-		case DAY:
+
+		} else if (unit == MySqlIntervalUnit.DAY) {
 			interval.day = value;
-			break;
-		case HOUR:
+
+		} else if (unit == MySqlIntervalUnit.HOUR) {
 			interval.hour = value;
-			break;
-		case MINUTE:
+
+		} else if (unit == MySqlIntervalUnit.MINUTE) {
 			interval.minute = value;
-			break;
-		case SECOND:
+
+		} else if (unit == MySqlIntervalUnit.SECOND) {
 			interval.second = value;
-			break;
-		case MICROSECOND:
+
+		} else if (unit == MySqlIntervalUnit.MICROSECOND) {
 			interval.second_part = value;
-			break;
-		case YEAR_MONTH: // Allow YEAR-MONTH YYYYYMM
+
+		} else if (unit == MySqlIntervalUnit.YEAR_MONTH) {
 			if (get_interval_info(arg, str_value, negPtr, 2, array, false))
 				return true;
 			interval.year = array[0];
 			interval.month = array[1];
-			break;
-		case DAY_HOUR:
+
+		} else if (unit == MySqlIntervalUnit.DAY_HOUR) {
 			if (get_interval_info(arg, str_value, negPtr, 2, array, false))
 				return true;
 			interval.day = array[0];
 			interval.hour = array[1];
-			break;
-		case DAY_MINUTE:
+
+		} else if (unit == MySqlIntervalUnit.DAY_MINUTE) {
 			if (get_interval_info(arg, str_value, negPtr, 3, array, false))
 				return true;
 			interval.day = array[0];
 			interval.hour = array[1];
 			interval.minute = array[2];
-			break;
-		case DAY_SECOND:
+
+		} else if (unit == MySqlIntervalUnit.DAY_SECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 4, array, false))
 				return true;
 			interval.day = array[0];
 			interval.hour = array[1];
 			interval.minute = array[2];
 			interval.second = array[3];
-			break;
-		case HOUR_MINUTE:
+
+		} else if (unit == MySqlIntervalUnit.HOUR_MINUTE) {
 			if (get_interval_info(arg, str_value, negPtr, 2, array, false))
 				return true;
 			interval.hour = array[0];
 			interval.minute = array[1];
-			break;
-		case HOUR_SECOND:
+
+		} else if (unit == MySqlIntervalUnit.HOUR_SECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 3, array, false))
 				return true;
 			interval.hour = array[0];
 			interval.minute = array[1];
 			interval.second = array[2];
-			break;
-		case MINUTE_SECOND:
+
+		} else if (unit == MySqlIntervalUnit.MINUTE_SECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 2, array, false))
 				return true;
 			interval.minute = array[0];
 			interval.second = array[1];
-			break;
-		case DAY_MICROSECOND:
+
+		} else if (unit == MySqlIntervalUnit.DAY_MICROSECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 5, array, true))
 				return true;
 			interval.day = array[0];
@@ -2228,28 +2199,28 @@ public class MyTime {
 			interval.minute = array[2];
 			interval.second = array[3];
 			interval.second_part = array[4];
-			break;
-		case HOUR_MICROSECOND:
+
+		} else if (unit == MySqlIntervalUnit.HOUR_MICROSECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 4, array, true))
 				return true;
 			interval.hour = array[0];
 			interval.minute = array[1];
 			interval.second = array[2];
 			interval.second_part = array[3];
-			break;
-		case MINUTE_MICROSECOND:
+
+		} else if (unit == MySqlIntervalUnit.MINUTE_MICROSECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 3, array, true))
 				return true;
 			interval.minute = array[0];
 			interval.second = array[1];
 			interval.second_part = array[2];
-			break;
-		case SECOND_MICROSECOND:
+
+		} else if (unit == MySqlIntervalUnit.SECOND_MICROSECOND) {
 			if (get_interval_info(arg, str_value, negPtr, 2, array, true))
 				return true;
 			interval.second = array[0];
 			interval.second_part = array[1];
-			break;
+
 		}
 		interval.neg = negPtr.get();
 		return false;
@@ -2351,7 +2322,7 @@ public class MyTime {
 	 * 
 	 * @param format
 	 *            date/time format specification
-	 * @param val
+	 * @param val_str
 	 *            String to decode
 	 * @param l_time
 	 *            Store result here

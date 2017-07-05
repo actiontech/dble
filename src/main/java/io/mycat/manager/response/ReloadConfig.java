@@ -45,7 +45,6 @@ import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.config.ConfigInitializer;
 import io.mycat.config.ErrorCode;
-import io.mycat.config.MycatCluster;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
@@ -101,7 +100,6 @@ public final class ReloadConfig {
 		Map<String, PhysicalDBNode> newDataNodes = loader.getDataNodes();
 		Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
 		Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
-		MycatCluster newCluster = loader.getCluster();
 		FirewallConfig newFirewall = loader.getFirewall();
 		
 		/* 1.2、实际链路检测 */
@@ -154,7 +152,7 @@ public final class ReloadConfig {
 		if ( isReloadStatusOK ) {
 			
 			/* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
-			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newCluster, newFirewall, true);
+			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
 
 			/* 2.4、 处理旧的资源 */
 			LOGGER.warn("1. clear old backend connection(size): " + NIOProcessor.backends_old.size());
@@ -211,11 +209,10 @@ public final class ReloadConfig {
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
         Map<String, PhysicalDBPool> dataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
-        MycatCluster cluster = loader.getCluster();
         FirewallConfig firewall = loader.getFirewall();
         
 		/* 2、在老的配置上， 应用新的配置 */
-        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, cluster, firewall, false);
+        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, false);
         /* 3、清理缓存 */
         MycatServer.getInstance().getCacheService().clearCache();
         MycatServer.getInstance().reloadMetaData();

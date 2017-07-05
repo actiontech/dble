@@ -20,11 +20,10 @@ public class ResultMergeMemoryManager extends MemoryManager {
 
     @Override
     protected  synchronized long acquireExecutionMemory(long numBytes,long taskAttemptId,MemoryMode memoryMode) throws InterruptedException {
-        switch (memoryMode) {
-            case ON_HEAP:
-                return  onHeapExecutionMemoryPool.acquireMemory(numBytes,taskAttemptId);
-            case OFF_HEAP:
-                return  offHeapExecutionMemoryPool.acquireMemory(numBytes,taskAttemptId);
+        if (memoryMode == MemoryMode.ON_HEAP) {
+            return onHeapExecutionMemoryPool.acquireMemory(numBytes, taskAttemptId);
+        } else if (memoryMode == MemoryMode.OFF_HEAP) {
+            return offHeapExecutionMemoryPool.acquireMemory(numBytes, taskAttemptId);
         }
         return 0L;
     }

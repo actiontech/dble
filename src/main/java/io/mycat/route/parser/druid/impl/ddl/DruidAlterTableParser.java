@@ -26,11 +26,10 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeCo
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
 
 import io.mycat.MycatServer;
-import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.impl.DefaultDruidParser;
@@ -119,7 +118,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		}
 		alterStatement.getItems().clear();
 		if(newAlterItems.size()==0){
-			String msg = "you can't drop the column "+GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN+", sql:" + alterStatement;
+			String msg = "you can't drop the column "+GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN +", sql:" + alterStatement;
 			throw new SQLNonTransientException(msg);
 		}
 		for (SQLAlterTableItem newAlterItem : newAlterItems) {
@@ -131,7 +130,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 	private void dropColumn(List<String> cols, SQLAlterTableDropColumnItem dropColumn, List<SQLAlterTableItem> newAlterItems) {
 		for (SQLName dropName : dropColumn.getColumns()) {
 			String dropColName = StringUtil.removeBackQuote(dropName.getSimpleName());
-			if (dropColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+			if (dropColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 				continue;
 			}
 			removeOldCol(cols, dropColName);
@@ -142,9 +141,9 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 	private void modifyColumn(List<String> cols, MySqlAlterTableModifyColumn modifyColumn, List<SQLAlterTableItem> newAlterItems) {
 		String modifyColName = StringUtil.removeBackQuote(modifyColumn.getNewColumnDefinition().getName().getSimpleName());
 		MySqlAlterTableModifyColumn newModifyColumn = modifyColumn;
-		if (modifyColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+		if (modifyColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 			removeOldCol(cols, modifyColName);
-			newModifyColumn.setNewColumnDefinition(GlobalTableUtil.createMycatColumn());
+			newModifyColumn.setNewColumnDefinition(GlobalTableUtil.createCheckColumn());
 			newModifyColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(cols.size() - 1)));
 			cols.add(modifyColName);
 		} else {
@@ -153,9 +152,9 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 				removeOldCol(cols, modifyColName);
 				int lastIndex = cols.size() - 1;
 				String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
-				//last column is GLOBAL_TABLE_MYCAT_COLUMN,so new add will move to the pos before it
-				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)
-						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+				//last column is GLOBAL_TABLE_CHECK_COLUMN,so new add will move to the pos before it
+				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
+						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					newModifyColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex - 1)));
 					cols.add(lastIndex, modifyColName);
 				} else {
@@ -190,20 +189,20 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		String oldColName = StringUtil.removeBackQuote(changeColumn.getColumnName().getSimpleName());
 		String newColName = StringUtil.removeBackQuote(changeColumn.getNewColumnDefinition().getName().getSimpleName());
 		MySqlAlterTableChangeColumn newChangeColumn = changeColumn;
-		if (oldColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+		if (oldColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 			removeOldCol(cols, oldColName);
-			newChangeColumn.setNewColumnDefinition(GlobalTableUtil.createMycatColumn());
+			newChangeColumn.setNewColumnDefinition(GlobalTableUtil.createCheckColumn());
 			newChangeColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(cols.size() - 1)));
 			cols.add(newColName);
 		} else {
 			SQLExpr afterColumn = changeColumn.getAfterColumn();
 			if (afterColumn != null) {
-				//last column is GLOBAL_TABLE_MYCAT_COLUMN,so new add will move to the pos before it
+				//last column is GLOBAL_TABLE_CHECK_COLUMN,so new add will move to the pos before it
 				removeOldCol(cols, oldColName);
 				int lastIndex = cols.size() - 1;
 				String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
-				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)
-						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
+						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					newChangeColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex-1)));
 					cols.add(lastIndex, newColName);
 				} else {
@@ -222,16 +221,16 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		if (afterColumn != null || addColumn.isFirst()) {
 			SQLAlterTableAddColumn newAddColumn = addColumn;
 			String addName = StringUtil.removeBackQuote(addColumn.getColumns().get(0).getName().getSimpleName());
-			if (addName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+			if (addName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 				newAddColumn.setFirst(false);
 				newAddColumn.setAfterColumn(null);
 				cols.add(cols.size(), addName);
 			} else if (afterColumn != null) {
 				String afterColName = StringUtil.removeBackQuote(afterColumn.getSimpleName());
-				//last column is GLOBAL_TABLE_MYCAT_COLUMN,so new add will move to the pos before it
+				//last column is GLOBAL_TABLE_CHECK_COLUMN,so new add will move to the pos before it
 				int lastIndex = cols.size() - 1;
-				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN) 
-						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) { 
+				if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
+						&& cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					newAddColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex-1)));
 					cols.add(lastIndex, addName);
 				}
@@ -245,7 +244,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 				newAddColumn.addColumn(columnDef);
 				String addName = StringUtil.removeBackQuote(columnDef.getName().getSimpleName());
 				int lastIndex = cols.size()-1;
-				if (cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+				if (cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 					newAddColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex-1)));
 					cols.add(lastIndex, addName);
 				}else{

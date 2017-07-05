@@ -28,23 +28,15 @@ public class ItemSumSum extends ItemSumNum {
 	public void fixLengthAndDec() {
 		maybeNull = nullValue = true;
 		decimals = args.get(0).decimals;
-		switch (args.get(0).numericContextResultType()) {
-		case REAL_RESULT:
+		ItemResult i = args.get(0).numericContextResultType();
+		if (i == ItemResult.REAL_RESULT) {
 			hybrid_type = ItemResult.REAL_RESULT;
 			sum = BigDecimal.ZERO;
-			break;
-		case INT_RESULT:
-		case DECIMAL_RESULT: {
-			/* SUM result can't be longer than length(arg) + length(MAX_ROWS) */
+
+		} else if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT) {
 			int precision = args.get(0).decimalPrecision() + MySQLcom.DECIMAL_LONGLONG_DIGITS;
-			maxLength = precision + 2;// 一个小数点一个负号
-			hybrid_type = ItemResult.DECIMAL_RESULT;
-			sum = BigDecimal.ZERO;
-			break;
-		}
-		case STRING_RESULT:
-		case ROW_RESULT:
-		default:
+			maxLength = precision + 2;// 一个小数点一个负号hybrid_type = ItemResult.DECIMAL_RESULT;sum = BigDecimal.ZERO;
+		} else {
 			assert (false);
 		}
 	}

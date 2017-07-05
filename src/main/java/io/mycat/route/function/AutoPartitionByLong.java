@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 
 import io.mycat.config.model.rule.RuleAlgorithm;
+import io.mycat.util.ResourceUtil;
 
 /**
  * auto partition by Long ,can be used in auto increment primary key partition
@@ -137,8 +138,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 		BufferedReader in = null;
 		try {
 			// FileInputStream fin = new FileInputStream(new File(fileMapPath));
-			InputStream fin = this.getClass().getClassLoader()
-					.getResourceAsStream(mapFile);
+			InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
 			if (fin == null) {
 				throw new RuntimeException("can't find class resource file "
 						+ mapFile);

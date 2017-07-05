@@ -1,7 +1,8 @@
+syntax = "proto2";
 package io.mycat.meta.protocol;
 
 option java_package = "io.mycat.meta.protocol";
-option java_outer_classname = "MyCatMeta";
+option java_outer_classname = "StructureMeta";
 option optimize_for = SPEED;
  
 

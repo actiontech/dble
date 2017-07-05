@@ -193,7 +193,7 @@ public class ServerConnection extends FrontendConnection {
 		if (db != null){
 			schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(db);
 			if (schemaConfig == null) {
-				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown MyCAT Database '" + db + "'");
+				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
 				return;
 			}
 		}
@@ -205,12 +205,12 @@ public class ServerConnection extends FrontendConnection {
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"No MyCAT Database selected");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"No Database selected");
 			return null;
 		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 		if (schema == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"Unknown MyCAT Database '" + db + "'");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,"Unknown Database '" + db + "'");
 			return null;
 		}
 

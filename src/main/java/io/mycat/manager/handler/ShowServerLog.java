@@ -55,7 +55,7 @@ public final class ShowServerLog {
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
-	private static final String DEFAULT_LOGFILE = "mycat.log";
+	public static final String DEFAULT_LOGFILE = "mycat.log";
     private static final Logger                LOGGER          = LoggerFactory
                                                                    .getLogger(ShowServerLog.class);
 	static {

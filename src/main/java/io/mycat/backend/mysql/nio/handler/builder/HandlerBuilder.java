@@ -89,21 +89,18 @@ public class HandlerBuilder {
 	}
 
 	private BaseHandlerBuilder createBuilder(final NonBlockingSession session, PlanNode node, HandlerBuilder context) {
-		switch (node.type()) {
-		case TABLE: {
+		PlanNode.PlanNodeType i = node.type();
+		if (i == PlanNode.PlanNodeType.TABLE) {
 			return new TableNodeHandlerBuilder(session, (TableNode) node, this);
-		}
-		case JOIN: {
+		} else if (i == PlanNode.PlanNodeType.JOIN) {
 			return new JoinNodeHandlerBuilder(session, (JoinNode) node, this);
-		}
-		case MERGE: {
+		} else if (i == PlanNode.PlanNodeType.MERGE) {
 			return new MergeNodeHandlerBuilder(session, (MergeNode) node, this);
-		}
-		case QUERY:
+		} else if (i == PlanNode.PlanNodeType.QUERY) {
 			return new QueryNodeHandlerBuilder(session, (QueryNode) node, this);
-		case NONAME:
+		} else if (i == PlanNode.PlanNodeType.NONAME) {
 			return new NoNameNodeHandlerBuilder(session, (NoNameNode) node, this);
-		default:
+		} else {
 		}
 		throw new RuntimeException("not supported tree node type:" + node.type());
 	}

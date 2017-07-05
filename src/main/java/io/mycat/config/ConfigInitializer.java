@@ -59,7 +59,6 @@ public class ConfigInitializer {
 	private static final Logger LOGGER = Logger.getLogger( ConfigInitializer.class );
 	
 	private volatile SystemConfig system;
-	private volatile MycatCluster cluster;
 	private volatile FirewallConfig firewall;
 	private volatile Map<String, UserConfig> users;
 	private volatile Map<String, SchemaConfig> schemas;
@@ -85,7 +84,6 @@ public class ConfigInitializer {
 		
 		//权限管理
 		this.firewall = configLoader.getFirewallConfig();
-		this.cluster = initCobarCluster(configLoader);
 		
 		//不同类型的全局序列处理器的配置加载
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_MYSQLDB) {
@@ -206,9 +204,6 @@ public class ConfigInitializer {
 		return system;
 	}
 
-	public MycatCluster getCluster() {
-		return cluster;
-	}
 
 	public FirewallConfig getFirewall() {
 		return firewall;
@@ -233,10 +228,6 @@ public class ConfigInitializer {
 	public Map<ERTable, Set<ERTable>> getErRelations() {
 		return erRelations;
 	}
-	private MycatCluster initCobarCluster(XMLConfigLoader configLoader) {
-		return new MycatCluster(configLoader.getClusterConfig());
-	}
-
 	private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
 		Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
 		//根据DataHost建立PhysicalDBPool，其实就是实际数据库连接池，每个DataHost对应一个PhysicalDBPool

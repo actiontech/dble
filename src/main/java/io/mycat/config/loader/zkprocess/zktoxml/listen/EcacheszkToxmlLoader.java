@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,8 +135,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
         Ehcache ehcache = parseJsonEhcacheService.parseJsonToBean(ehcacheZkDirectory.getDataValue());
 
-        String outputPath = EcacheszkToxmlLoader.class.getClassLoader()
-                .getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey()).getPath();
+        String outputPath = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         outputPath=new File(outputPath).getPath()+File.separator;
         outputPath += EHCACHE_NAME;
 
@@ -172,8 +172,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
     private void writeCacheservice(String name, String value) {
 
         // 加载数据
-        String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
 
         checkNotNull(path, "write ecache file curr Path :" + path + " is null! must is not null");
         path=new File(path).getPath()+File.separator;

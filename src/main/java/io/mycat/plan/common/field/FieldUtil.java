@@ -93,14 +93,9 @@ public class FieldUtil {
 	}
 
 	public static boolean is_temporal_type(FieldTypes valuetype) {
-		switch (valuetype) {
-		case MYSQL_TYPE_DATE:
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
-		case MYSQL_TYPE_TIME:
-		case MYSQL_TYPE_NEWDATE:
+		if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP || valuetype == FieldTypes.MYSQL_TYPE_TIME || valuetype == FieldTypes.MYSQL_TYPE_NEWDATE) {
 			return true;
-		default:
+		} else {
 			return false;
 		}
 	}
@@ -115,34 +110,25 @@ public class FieldUtil {
 	 * @retval false If field real type is not temporal
 	 */
 	public static boolean is_temporal_real_type(FieldTypes type) {
-		switch (type) {
-		case MYSQL_TYPE_TIME2:
-		case MYSQL_TYPE_TIMESTAMP2:
-		case MYSQL_TYPE_DATETIME2:
+		if (type == FieldTypes.MYSQL_TYPE_TIME2 || type == FieldTypes.MYSQL_TYPE_TIMESTAMP2 || type == FieldTypes.MYSQL_TYPE_DATETIME2) {
 			return true;
-		default:
+		} else {
 			return FieldUtil.is_temporal_type(type);
 		}
 	}
 
 	public static boolean is_temporal_type_with_time(FieldTypes type) {
-		switch (type) {
-		case MYSQL_TYPE_TIME:
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		if (type == FieldTypes.MYSQL_TYPE_TIME || type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return true;
-		default:
+		} else {
 			return false;
 		}
 	}
 
 	public static boolean is_temporal_type_with_date(FieldTypes valuetype) {
-		switch (valuetype) {
-		case MYSQL_TYPE_DATE:
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return true;
-		default:
+		} else {
 			return false;
 		}
 	}
@@ -158,11 +144,9 @@ public class FieldUtil {
 	 *         parts.
 	 */
 	public static boolean is_temporal_type_with_date_and_time(FieldTypes type) {
-		switch (type) {
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
+		if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
 			return true;
-		default:
+		} else {
 			return false;
 		}
 	}
@@ -184,17 +168,16 @@ public class FieldUtil {
 	 * @retval Field type.
 	 */
 	public static FieldTypes real_type_to_type(FieldTypes real_type) {
-		switch (real_type) {
-		case MYSQL_TYPE_TIME2:
+		if (real_type == FieldTypes.MYSQL_TYPE_TIME2) {
 			return FieldTypes.MYSQL_TYPE_TIME;
-		case MYSQL_TYPE_DATETIME2:
+		} else if (real_type == FieldTypes.MYSQL_TYPE_DATETIME2) {
 			return FieldTypes.MYSQL_TYPE_DATETIME;
-		case MYSQL_TYPE_TIMESTAMP2:
+		} else if (real_type == FieldTypes.MYSQL_TYPE_TIMESTAMP2) {
 			return FieldTypes.MYSQL_TYPE_TIMESTAMP;
-		case MYSQL_TYPE_NEWDATE:
+		} else if (real_type == FieldTypes.MYSQL_TYPE_NEWDATE) {
 			return FieldTypes.MYSQL_TYPE_DATE;
 		/* Note: NEWDECIMAL is a type, not only a real_type */
-		default:
+		} else {
 			return real_type;
 		}
 	}

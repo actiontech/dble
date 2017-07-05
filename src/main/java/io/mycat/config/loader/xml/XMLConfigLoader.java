@@ -25,7 +25,6 @@ package io.mycat.config.loader.xml;
 
 import java.util.Map;
 
-import io.mycat.config.model.ClusterConfig;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.UserConfig;
@@ -39,26 +38,16 @@ public class XMLConfigLoader{
     /** unmodifiable */
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
-    private final ClusterConfig cluster;
 
     public XMLConfigLoader() {
         XMLServerLoader serverLoader = new XMLServerLoader();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
         this.firewall = serverLoader.getFirewall();
-        this.cluster = serverLoader.getCluster();
-    }
-
-    public ClusterConfig getClusterConfig() {
-        return cluster;
     }
 
     public FirewallConfig getFirewallConfig() {
         return firewall;
-    }
-
-    public UserConfig getUserConfig(String user) {
-        return users.get(user);
     }
 
     public Map<String, UserConfig> getUserConfigs() {

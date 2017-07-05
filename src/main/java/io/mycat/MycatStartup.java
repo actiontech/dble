@@ -28,6 +28,7 @@ package io.mycat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import io.mycat.manager.handler.ShowServerLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,7 @@ public final class MycatStartup {
 
             // startup
             server.startup();
-            System.out.println("MyCAT Server startup successfully. see logs in logs/mycat.log");
+            System.out.println("Server startup successfully. see logs in logs/"+ ShowServerLog.DEFAULT_LOGFILE);
 
         } catch (Exception e) {
             SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);

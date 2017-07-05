@@ -23,20 +23,18 @@ public class ItemFuncCeiling extends ItemFuncIntVal {
 	@Override
 	public BigInteger intOp() {
 		BigInteger result;
-		switch (args.get(0).resultType()) {
-		case INT_RESULT:
+		ItemResult i = args.get(0).resultType();
+		if (i == ItemResult.INT_RESULT) {
 			result = args.get(0).valInt();
 			nullValue = args.get(0).nullValue;
-			break;
-		case DECIMAL_RESULT: {
+
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			BigDecimal dec = decimalOp();
 			if (dec == null)
 				result = BigInteger.ZERO;
 			else
 				result = dec.toBigInteger();
-			break;
-		}
-		default:
+		} else {
 			result = realOp().toBigInteger();
 		}
 		;

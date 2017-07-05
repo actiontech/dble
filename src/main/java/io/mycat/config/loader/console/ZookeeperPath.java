@@ -1,5 +1,7 @@
 package io.mycat.config.loader.console;
 
+import io.mycat.config.Versions;
+
 /**
  * 专门用来操作zookeeper路径的文件信息
 * 源文件名：ZkPath.java
@@ -23,7 +25,7 @@ public enum ZookeeperPath {
      * 最基础的mycat节点
      * @字段说明 FLOW_ZK_PATH_ONLINE
      */
-    FLOW_ZK_PATH_BASE("mycat"),
+    FLOW_ZK_PATH_BASE(Versions.ROOT_PREFIX),
 
     /**
      * 在当前在线的节点

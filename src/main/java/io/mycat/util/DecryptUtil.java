@@ -57,7 +57,7 @@ public class DecryptUtil {
 		System.out.println(encrypt(password));
 	}
 	
-	public static String mycatDecrypt(String usingDecrypt,String user ,String passwrod){
+	public static String decrypt(String usingDecrypt, String user , String passwrod){
 		if("1".equals(usingDecrypt)){
         	//type:user:password
         	//0:test:test

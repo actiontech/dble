@@ -11,8 +11,8 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.config.model.TableConfig.TableTypeEnum;
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.plan.NamedField;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
@@ -39,12 +39,12 @@ public class TableNode extends PlanNode {
 			throw new RuntimeException("Table db or name is null error!");
 		this.schema = catalog;
 		this.tableName = tableName;
-		MycatConfig mycatConfig = MycatServer.getInstance().getConfig(); 
-		if(mycatConfig.getSystem().isLowerCaseTableNames()){
+		MycatConfig config = MycatServer.getInstance().getConfig();
+		if(config.getSystem().isLowerCaseTableNames()){
 			this.schema = this.schema.toLowerCase();
 			this.tableName = this.tableName.toLowerCase();
 		}
-		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(this.schema);
+		SchemaConfig schemaConfig = config.getSchemas().get(this.schema);
 		if(schemaConfig == null){
 			throw new RuntimeException("schema "+this.schema+" is not exists!");
 		}

@@ -85,28 +85,27 @@ public class HandlerTool {
 			Item ret = null;
 			if (sel.basicConstItem())
 				return sel;
-			switch (sel.type()) {
-			case FUNC_ITEM:
-			case COND_ITEM:
+			Item.ItemType i = sel.type();
+			if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
 				ItemFunc func = (ItemFunc) sel;
-				if (func.getPushDownName()==null ||func.getPushDownName().length()==0) {
+				if (func.getPushDownName() == null || func.getPushDownName().length() == 0) {
 					// 自己计算
 					ret = createFunctionItem(func, fields, startIndex, allPushDown, type, charset);
 				} else {
 					ret = createFieldItem(func, fields, startIndex);
 				}
-				break;
-			case SUM_FUNC_ITEM:
+
+			} else if (i == Item.ItemType.SUM_FUNC_ITEM) {
 				ItemSum sumFunc = (ItemSum) sel;
 				if (type != HandlerType.GROUPBY) {
 					ret = createFieldItem(sumFunc, fields, startIndex);
-				} else if (sumFunc.getPushDownName()==null ||sumFunc.getPushDownName().length()==0) {
+				} else if (sumFunc.getPushDownName() == null || sumFunc.getPushDownName().length() == 0) {
 					ret = createSumItem(sumFunc, fields, startIndex, allPushDown, type, charset);
 				} else {
 					ret = createPushDownGroupBy(sumFunc, fields, startIndex);
 				}
-				break;
-			default:
+
+			} else {
 				ret = createFieldItem(sel, fields, startIndex);
 			}
 			if (ret == null)

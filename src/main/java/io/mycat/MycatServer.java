@@ -40,7 +40,6 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.classloader.DynaClassLoader;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
-import io.mycat.config.loader.zkprocess.entity.server.System;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
@@ -82,14 +81,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MycatServer {
 	
-	public static final String NAME = "MyCat";
+	public static final String NAME = "MyCat_";
 	private static final long LOG_WATCH_DELAY = 60000L;
 	private static final long TIME_UPDATE_PERIOD = 20L;
 	private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
 	private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
 	
 	private static final MycatServer INSTANCE = new MycatServer();
-	private static final Logger LOGGER = LoggerFactory.getLogger("MycatServer");
+	private static final Logger LOGGER = LoggerFactory.getLogger("Server");
 	private static final Repository fileRepository = new FileSystemRepository();
 	private AtomicBoolean backupLocked;
 
@@ -119,7 +118,7 @@ public class MycatServer {
 	/**
 	 * Mycat 内存管理类
 	 */
-	private MyCatMemory myCatMemory = null;
+	private MyCatMemory serverMemory = null;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -218,7 +217,7 @@ public class MycatServer {
 				seq = xaIDInc.incrementAndGet();
 			}
 		}
-		return "'Mycat." + this.getConfig().getSystem().getMycatNodeId() + "." + seq + "'";
+		return "'"+NAME+"Server." + this.getConfig().getSystem().getServerNodeId() + "." + seq + "'";
 	}
 
 	private void genXidSeq(String xaID) {
@@ -243,8 +242,8 @@ public class MycatServer {
 				throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
 		}
 	}
-	public MyCatMemory getMyCatMemory() {
-		return myCatMemory;
+	public MyCatMemory getServerMemory() {
+		return serverMemory;
 	}
 
 	public XASessionCheck getXaSessionCheck() {
@@ -288,7 +287,7 @@ public class MycatServer {
 
 		// server startup
 		LOGGER.info("===============================================");
-		LOGGER.info(NAME + " is ready to startup ...");
+		LOGGER.info(NAME + "Server is ready to startup ...");
 		String inf = "Startup processors ...,total processors:"
 				+ system.getProcessors() + ",aio thread pool size:"
 				+ system.getProcessorExecutor()
@@ -330,7 +329,7 @@ public class MycatServer {
 		 */
 		if(system.getUseOffHeapForMerge() == 1){
 			try {
-				myCatMemory = new MyCatMemory(system,totalNetWorkBufferSize);
+				serverMemory = new MyCatMemory(system,totalNetWorkBufferSize);
 			} catch (NoSuchFieldException e) {
 				LOGGER .error("NoSuchFieldException",e);
 			} catch (IllegalAccessException e) {

@@ -27,13 +27,12 @@ import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
-import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
@@ -123,7 +122,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			SQLUpdateSetItem item = items.get(i);
 			String col = item.getColumn().toString();
 
-			if (StringUtil.removeBackQuote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN)) {
+			if (StringUtil.removeBackQuote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
 				flag = true;
 				SQLUpdateSetItem newItem = new SQLUpdateSetItem();
 				newItem.setColumn(item.getColumn());
@@ -134,7 +133,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 		}
 		if(!flag){
 			SQLUpdateSetItem newItem = new SQLUpdateSetItem();
-			newItem.setColumn(new SQLIdentifierExpr(GlobalTableUtil.GLOBAL_TABLE_MYCAT_COLUMN));
+			newItem.setColumn(new SQLIdentifierExpr(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN));
 			newItem.setValue(new SQLIntegerExpr(opTimestamp));
 			items.add(newItem);
 		}

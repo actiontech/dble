@@ -2,7 +2,7 @@ package io.mycat.meta.table;
 
 import io.mycat.MycatServer;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 
 import java.util.Set;
 

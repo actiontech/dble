@@ -21,9 +21,9 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
-import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
+import io.mycat.meta.protocol.StructureMeta.IndexMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.util.StringUtil;
 
 public class MetaHelper {

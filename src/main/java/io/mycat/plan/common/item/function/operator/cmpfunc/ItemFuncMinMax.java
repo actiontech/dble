@@ -183,26 +183,22 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 			}
 		}
 
-		switch (cmp_type) {
-		case INT_RESULT: {
+		if (cmp_type == ItemResult.INT_RESULT) {
 			BigInteger nr = valInt();
 			if (nullValue)
 				return null;
 			return nr.toString();
-		}
-		case DECIMAL_RESULT: {
+		} else if (cmp_type == ItemResult.DECIMAL_RESULT) {
 			BigDecimal bd = valDecimal();
 			if (nullValue)
 				return null;
 			return bd.toString();
-		}
-		case REAL_RESULT: {
+		} else if (cmp_type == ItemResult.REAL_RESULT) {
 			BigDecimal nr = valReal();
 			if (nullValue)
 				return null; /* purecov: inspected */
 			return nr.toString();
-		}
-		case STRING_RESULT: {
+		} else if (cmp_type == ItemResult.STRING_RESULT) {
 			String res = null;
 			for (int i = 0; i < args.size(); i++) {
 				if (i == 0)
@@ -219,10 +215,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 					return null;
 			}
 			return res;
-		}
-		case ROW_RESULT:
-		default:
-			// This case should never be chosen
+		} else {// This case should never be chosen
 			return null;
 		}
 	}
@@ -266,15 +259,15 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 			return MyTime.check_date(ltime, ltime.isNonZeroDate(), fuzzydate, warnings);
 		}
 
-		switch (fieldType()) {
-		case MYSQL_TYPE_TIME:
+		FieldTypes i = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_TIME) {
 			return getDateFromTime(ltime);
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_TIMESTAMP:
-		case MYSQL_TYPE_DATE:
+		} else if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP || i == FieldTypes.MYSQL_TYPE_DATE) {
 			assert (false); // Should have been processed in "compare_as_dates"
-							// block.
-		default:
+			// block.
+
+			return getDateFromNonTemporal(ltime, fuzzydate);
+		} else {
 			return getDateFromNonTemporal(ltime, fuzzydate);
 		}
 	}
@@ -292,21 +285,20 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 			return false;
 		}
 
-		switch (fieldType()) {
-		case MYSQL_TYPE_TIME: {
+		FieldTypes i = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_TIME) {
 			LongPtr result = new LongPtr(0);
 			cmp_times(result);
 			if (nullValue)
 				return true;
 			MyTime.TIME_from_longlong_time_packed(ltime, result.get());
 			return false;
-		}
-		case MYSQL_TYPE_DATE:
-		case MYSQL_TYPE_TIMESTAMP:
-		case MYSQL_TYPE_DATETIME:
+		} else if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_TIMESTAMP || i == FieldTypes.MYSQL_TYPE_DATETIME) {
 			assert (false); // Should have been processed in "compare_as_dates"
-							// block.
-		default:
+			// block.
+
+			return getTimeFromNonTemporal(ltime);
+		} else {
 			return getTimeFromNonTemporal(ltime);
 		}
 	}

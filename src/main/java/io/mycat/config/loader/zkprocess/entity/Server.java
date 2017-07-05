@@ -7,11 +7,12 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import io.mycat.config.Versions;
 import io.mycat.config.loader.zkprocess.entity.server.System;
 import io.mycat.config.loader.zkprocess.entity.server.user.User;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io.mycat/", name = "server")
+@XmlRootElement(namespace = "http://io."+ Versions.ROOT_PREFIX+"/", name = "server")
 public class Server {
 
     @XmlElement(required = true)

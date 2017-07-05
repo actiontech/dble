@@ -23,25 +23,8 @@
  */
 package io.mycat.config.loader.xml;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import com.alibaba.druid.wall.WallConfig;
-
 import io.mycat.config.Versions;
-import io.mycat.config.model.ClusterConfig;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.UserConfig;
@@ -50,7 +33,16 @@ import io.mycat.config.util.ConfigException;
 import io.mycat.config.util.ConfigUtil;
 import io.mycat.config.util.ParameterMapping;
 import io.mycat.util.DecryptUtil;
+import io.mycat.util.ResourceUtil;
 import io.mycat.util.SplitUtil;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * @author mycat
@@ -60,7 +52,6 @@ public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
-    private ClusterConfig cluster;
 
     public XMLServerLoader() {
         this.system = new SystemConfig();
@@ -81,17 +72,14 @@ public class XMLServerLoader {
         return firewall;
     }
 
-    public ClusterConfig getCluster() {
-        return cluster;
-    }
 
     private void load() {
         //读取server.xml配置
         InputStream dtd = null;
         InputStream xml = null;
         try {
-            dtd = XMLServerLoader.class.getResourceAsStream("/server.dtd");
-            xml = XMLServerLoader.class.getResourceAsStream("/server.xml");
+            dtd = ResourceUtil.getResourceAsStream("/server.dtd");
+            xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
             
             //加载System标签
@@ -99,9 +87,6 @@ public class XMLServerLoader {
             
             //加载User标签
             loadUsers(root);
-            
-            //加载集群配置
-            this.cluster = new ClusterConfig(root, system.getServerPort());
             
             //加载全局SQL防火墙
             loadFirewall(root);
@@ -187,7 +172,7 @@ public class XMLServerLoader {
 				Map<String, Object> props = ConfigUtil.loadElements(e);
 				String password = (String) props.get("password");
 				String usingDecrypt = (String) props.get("usingDecrypt");
-				String passwordDecrypt = DecryptUtil.mycatDecrypt(usingDecrypt, name, password);
+				String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
 				user.setName(name);
 				user.setPassword(passwordDecrypt);
 				user.setEncryptPassword(password);

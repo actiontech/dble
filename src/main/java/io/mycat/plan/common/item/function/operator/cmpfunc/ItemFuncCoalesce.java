@@ -37,20 +37,17 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 	public void fixLengthAndDec() {
 		cached_field_type = MySQLcom.agg_field_type(args, 0, args.size());
 		hybrid_type = MySQLcom.agg_result_type(args, 0, args.size());
-		switch (hybrid_type) {
-		case STRING_RESULT:
-			break;
-		case DECIMAL_RESULT:
+		if (hybrid_type == ItemResult.STRING_RESULT) {
+		} else if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			countDecimalLength();
-			break;
-		case REAL_RESULT:
+
+		} else if (hybrid_type == ItemResult.REAL_RESULT) {
 			countRealLength();
-			break;
-		case INT_RESULT:
+
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			decimals = 0;
-			break;
-		case ROW_RESULT:
-		default:
+
+		} else {
 			assert (false);
 		}
 	}

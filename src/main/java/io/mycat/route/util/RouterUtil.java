@@ -654,12 +654,7 @@ public class RouterUtil {
 		//为单库表找路由,全局表不改变结果集，全局表*任意表 无交集的已经退化为普通表join了
 		for (String tableName : tables) {
 			TableConfig tableConfig = schema.getTables().get(tableName);
-			if (tableConfig == null) {
-				String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
-				throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-			}
-
-			if (!tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
+			if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
 				tablesRouteMap.put(tableName, new HashSet<String>());
 				tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
 			}

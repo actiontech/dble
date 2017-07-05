@@ -102,7 +102,7 @@ public final class AIOAcceptor implements SocketAcceptor,
 			serverChannel.accept(ID_GENERATOR.getId(), this);
 		} else {
 			throw new IllegalStateException(
-					"MyCAT Server Channel has been closed");
+					"Server Channel has been closed");
 		}
 
 	}

@@ -120,9 +120,9 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
     this.prefixComparator = prefixComparator;
 
 
-    if(MycatServer.getInstance().getMyCatMemory() != null){
+    if(MycatServer.getInstance().getServerMemory() != null){
          this.fileBufferSizeBytes = (int) MycatServer.getInstance().
-              getMyCatMemory().getConf().getSizeAsBytes("mycat.merge.file.buffer", "32k");
+				 getServerMemory().getConf().getSizeAsBytes("server.merge.file.buffer", "32k");
     }else{
       this.fileBufferSizeBytes = 32*1024;
     }

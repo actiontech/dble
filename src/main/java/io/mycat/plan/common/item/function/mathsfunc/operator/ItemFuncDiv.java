@@ -33,9 +33,7 @@ public class ItemFuncDiv extends ItemNumOp {
 	@Override
 	public void fixLengthAndDec() {
 		super.fixLengthAndDec();
-		switch (hybrid_type) {
-		case REAL_RESULT: {
-			// see sql/item_func.cc Item_func_div::fix_length_and_dec()
+		if (hybrid_type == ItemResult.REAL_RESULT) {
 			decimals = Math.max(args.get(0).decimals, args.get(1).decimals) + prec_increment;
 			decimals = Math.min(decimals, NOT_FIXED_DEC);
 			int tmp = floatLength(decimals);
@@ -45,16 +43,14 @@ public class ItemFuncDiv extends ItemNumOp {
 				maxLength = args.get(0).maxLength - args.get(1).decimals + decimals;
 				maxLength = Math.min(maxLength, tmp);
 			}
-			break;
-		}
-		case INT_RESULT:
+		} else if (hybrid_type == ItemResult.INT_RESULT) {
 			hybrid_type = ItemResult.DECIMAL_RESULT;
 			result_precision();
-			break;
-		case DECIMAL_RESULT:
+
+		} else if (hybrid_type == ItemResult.DECIMAL_RESULT) {
 			result_precision();
-		default:
-			break;
+
+
 		}
 	}
 

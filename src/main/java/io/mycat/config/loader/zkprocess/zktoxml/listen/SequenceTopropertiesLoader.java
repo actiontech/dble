@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import io.mycat.MycatServer;
 import io.mycat.manager.response.ReloadConfig;
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -268,8 +269,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
     private void writeMapFile(String name, String value) {
 
         // 加载数据
-        String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
 
         checkNotNull(path, "write Map file curr Path :" + path + " is null! must is not null");
 

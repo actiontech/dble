@@ -114,17 +114,16 @@ public abstract class Item {
 	}
 
 	public FieldTypes fieldType() {
-		switch (resultType()) {
-		case STRING_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.STRING_RESULT) {
 			return FieldTypes.MYSQL_TYPE_STRING;
-		case INT_RESULT:
+		} else if (i == ItemResult.INT_RESULT) {
 			return FieldTypes.MYSQL_TYPE_LONG;
-		case DECIMAL_RESULT:
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			return FieldTypes.MYSQL_TYPE_DECIMAL;
-		case REAL_RESULT:
+		} else if (i == ItemResult.REAL_RESULT) {
 			return FieldTypes.MYSQL_TYPE_DOUBLE;
-		case ROW_RESULT:
-		default:
+		} else {
 			return FieldTypes.MYSQL_TYPE_STRING;
 		}
 	}
@@ -194,22 +193,31 @@ public abstract class Item {
 		byte[] result = null;
 		FieldTypes f_type;
 
-		switch (f_type = fieldType()) {
-		default:
-		case MYSQL_TYPE_NULL:
-		case MYSQL_TYPE_DECIMAL:
-		case MYSQL_TYPE_ENUM:
-		case MYSQL_TYPE_SET:
-		case MYSQL_TYPE_TINY_BLOB:
-		case MYSQL_TYPE_MEDIUM_BLOB:
-		case MYSQL_TYPE_LONG_BLOB:
-		case MYSQL_TYPE_BLOB:
-		case MYSQL_TYPE_GEOMETRY:
-		case MYSQL_TYPE_STRING:
-		case MYSQL_TYPE_VAR_STRING:
-		case MYSQL_TYPE_VARCHAR:
-		case MYSQL_TYPE_BIT:
-		case MYSQL_TYPE_NEWDECIMAL: {
+		FieldTypes i = f_type = fieldType();
+		if (i == FieldTypes.MYSQL_TYPE_TINY || i == FieldTypes.MYSQL_TYPE_SHORT || i == FieldTypes.MYSQL_TYPE_YEAR || i == FieldTypes.MYSQL_TYPE_INT24 || i == FieldTypes.MYSQL_TYPE_LONG || i == FieldTypes.MYSQL_TYPE_LONGLONG) {
+			BigInteger bi = valInt();
+			if (!nullValue)
+				result = bi.toString().getBytes();
+		} else if (i == FieldTypes.MYSQL_TYPE_FLOAT || i == FieldTypes.MYSQL_TYPE_DOUBLE) {
+			BigDecimal bd = valReal();
+			if (!nullValue)
+				result = bd.toString().getBytes();
+		} else if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
+			MySQLTime tm = new MySQLTime();
+			getDate(tm, MyTime.TIME_FUZZY_DATE);
+			if (!nullValue) {
+				if (f_type == FieldTypes.MYSQL_TYPE_DATE) {
+					result = MyTime.my_date_to_str(tm).getBytes();
+				} else {
+					result = MyTime.my_datetime_to_str(tm, decimals).getBytes();
+				}
+			}
+		} else if (i == FieldTypes.MYSQL_TYPE_TIME) {
+			MySQLTime tm = new MySQLTime();
+			getTime(tm);
+			if (!nullValue)
+				result = MyTime.my_time_to_str(tm, decimals).getBytes();
+		} else {
 			String res = null;
 			if ((res = valStr()) != null)
 				try {
@@ -220,47 +228,11 @@ public abstract class Item {
 			else {
 				assert (nullValue);
 			}
-			break;
-		}
-		case MYSQL_TYPE_TINY:
-		case MYSQL_TYPE_SHORT:
-		case MYSQL_TYPE_YEAR:
-		case MYSQL_TYPE_INT24:
-		case MYSQL_TYPE_LONG:
-		case MYSQL_TYPE_LONGLONG: {
+
+
 			BigInteger bi = valInt();
 			if (!nullValue)
 				result = bi.toString().getBytes();
-			break;
-		}
-		case MYSQL_TYPE_FLOAT:
-		case MYSQL_TYPE_DOUBLE: {
-			BigDecimal bd = valReal();
-			if (!nullValue)
-				result = bd.toString().getBytes();
-			break;
-		}
-		case MYSQL_TYPE_DATETIME:
-		case MYSQL_TYPE_DATE:
-		case MYSQL_TYPE_TIMESTAMP: {
-			MySQLTime tm = new MySQLTime();
-			getDate(tm, MyTime.TIME_FUZZY_DATE);
-			if (!nullValue) {
-				if (f_type == FieldTypes.MYSQL_TYPE_DATE) {
-					result = MyTime.my_date_to_str(tm).getBytes();
-				} else {
-					result = MyTime.my_datetime_to_str(tm, decimals).getBytes();
-				}
-			}
-			break;
-		}
-		case MYSQL_TYPE_TIME: {
-			MySQLTime tm = new MySQLTime();
-			getTime(tm);
-			if (!nullValue)
-				result = MyTime.my_time_to_str(tm, decimals).getBytes();
-			break;
-		}
 		}
 		if (nullValue)
 			result = null;
@@ -268,20 +240,17 @@ public abstract class Item {
 	}
 
 	public boolean valBool() {
-		switch (resultType()) {
-		case INT_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.INT_RESULT) {
 			return valInt().longValue() != 0;
-		case DECIMAL_RESULT: {
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			BigDecimal val = valDecimal();
 			if (val != null)
 				return val.compareTo(BigDecimal.ZERO) != 0;
 			return false;
-		}
-		case REAL_RESULT:
-		case STRING_RESULT:
+		} else if (i == ItemResult.REAL_RESULT || i == ItemResult.STRING_RESULT) {
 			return !(valReal().compareTo(BigDecimal.ZERO) == 0);
-		case ROW_RESULT:
-		default:
+		} else {
 			return false; // Wrong (but safe)
 		}
 	}
@@ -316,17 +285,15 @@ public abstract class Item {
 	}
 
 	public Comparable getValueWithType(ItemResult type) {
-		switch (type) {
-		case REAL_RESULT:
+		if (type == ItemResult.REAL_RESULT) {
 			return valReal();
-		case DECIMAL_RESULT:
+		} else if (type == ItemResult.DECIMAL_RESULT) {
 			return valDecimal();
-		case INT_RESULT:
+		} else if (type == ItemResult.INT_RESULT) {
 			return valInt();
-		case STRING_RESULT:
+		} else if (type == ItemResult.STRING_RESULT) {
 			return valStr();
-		default:
-			break;
+		} else {
 		}
 		return null;
 	}
@@ -593,15 +560,14 @@ public abstract class Item {
 	 * Convert a numeric type to date
 	 */
 	protected boolean getDateFromNumeric(MySQLTime ltime, long flags) {
-		switch (resultType()) {
-		case REAL_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.REAL_RESULT) {
 			return getDateFromReal(ltime, flags);
-		case DECIMAL_RESULT:
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			return getDateFromDecimal(ltime, flags);
-		case INT_RESULT:
+		} else if (i == ItemResult.INT_RESULT) {
 			return getDateFromInt(ltime, flags);
-		case STRING_RESULT:
-		case ROW_RESULT:
+		} else if (i == ItemResult.STRING_RESULT || i == ItemResult.ROW_RESULT) {
 			assert (false);
 		}
 		return (nullValue = true); // Impossible result_type
@@ -612,16 +578,16 @@ public abstract class Item {
 	 */
 	protected boolean getDateFromNonTemporal(MySQLTime ltime, long fuzzydate) {
 		assert (!isTemporal());
-		switch (resultType()) {
-		case STRING_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.STRING_RESULT) {
 			return getDateFromString(ltime, fuzzydate);
-		case REAL_RESULT:
+		} else if (i == ItemResult.REAL_RESULT) {
 			return getDateFromReal(ltime, fuzzydate);
-		case DECIMAL_RESULT:
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			return getDateFromDecimal(ltime, fuzzydate);
-		case INT_RESULT:
+		} else if (i == ItemResult.INT_RESULT) {
 			return getDateFromInt(ltime, fuzzydate);
-		case ROW_RESULT:
+		} else if (i == ItemResult.ROW_RESULT) {
 			assert (false);
 		}
 		return (nullValue = true); // Impossible result_type
@@ -701,15 +667,14 @@ public abstract class Item {
 	 */
 	protected boolean getTimeFromNumeric(MySQLTime ltime) {
 		assert (!isTemporal());
-		switch (resultType()) {
-		case REAL_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.REAL_RESULT) {
 			return getTimeFromReal(ltime);
-		case DECIMAL_RESULT:
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			return getTimeFromDecimal(ltime);
-		case INT_RESULT:
+		} else if (i == ItemResult.INT_RESULT) {
 			return getTimeFromInt(ltime);
-		case STRING_RESULT:
-		case ROW_RESULT:
+		} else if (i == ItemResult.STRING_RESULT || i == ItemResult.ROW_RESULT) {
 			assert (false);
 		}
 		return (nullValue = true); // Impossible result type
@@ -720,16 +685,16 @@ public abstract class Item {
 	 */
 	protected boolean getTimeFromNonTemporal(MySQLTime ltime) {
 		assert (!isTemporal());
-		switch (resultType()) {
-		case STRING_RESULT:
+		ItemResult i = resultType();
+		if (i == ItemResult.STRING_RESULT) {
 			return getTimeFromString(ltime);
-		case REAL_RESULT:
+		} else if (i == ItemResult.REAL_RESULT) {
 			return getTimeFromReal(ltime);
-		case DECIMAL_RESULT:
+		} else if (i == ItemResult.DECIMAL_RESULT) {
 			return getTimeFromDecimal(ltime);
-		case INT_RESULT:
+		} else if (i == ItemResult.INT_RESULT) {
 			return getTimeFromInt(ltime);
-		case ROW_RESULT:
+		} else if (i == ItemResult.ROW_RESULT) {
 			assert (false);
 		}
 		return (nullValue = true); // Impossible result type

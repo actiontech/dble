@@ -13,6 +13,7 @@ import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.manager.ManagerConnection;
+import io.mycat.manager.handler.ShowServerLog;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
@@ -64,7 +65,7 @@ public class ShowSysLog {
         // write rows
         byte packetId = eof.packetId;
         
-		String filename = SystemConfig.getHomePath()  + File.separator  + "logs" + File.separator + "mycat.log";
+		String filename = SystemConfig.getHomePath()  + File.separator  + "logs" + File.separator + ShowServerLog.DEFAULT_LOGFILE;
 		
 		String[] lines = getLinesByLogFile(filename, numLines);    
 		

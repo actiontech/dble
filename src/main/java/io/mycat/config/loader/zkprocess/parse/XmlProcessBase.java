@@ -22,6 +22,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
 
+import io.mycat.config.Versions;
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +116,7 @@ public class XmlProcessBase {
 
             if (null != name) {
                 marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE mycat:%1$s SYSTEM \"%1$s.dtd\">", name));
+                        String.format("<!DOCTYPE "+ Versions.ROOT_PREFIX+":%1$s SYSTEM \"%1$s.dtd\">", name));
             }
 
             Path path = Paths.get(inputPath);
@@ -149,7 +151,7 @@ public class XmlProcessBase {
 
             if (null != name) {
                 marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE mycat:%1$s SYSTEM \"%1$s.dtd\">", name));
+                        String.format("<!DOCTYPE "+Versions.ROOT_PREFIX+":%1$s SYSTEM \"%1$s.dtd\">", name));
             }
 
             if (null != map && !map.isEmpty()) {
@@ -184,7 +186,7 @@ public class XmlProcessBase {
     */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         // 搜索当前转化的文件
-        InputStream inputStream = XmlProcessBase.class.getResourceAsStream(fileName);
+        InputStream inputStream = ResourceUtil.getResourceAsStream(fileName);
 
         // 如果能够搜索到文件
         if (inputStream != null) {

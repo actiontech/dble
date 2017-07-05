@@ -39,6 +39,7 @@ import java.util.Date;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
@@ -134,20 +135,20 @@ public final class ConfFileHandler {
 		InputStream dtdStream = new ByteArrayInputStream(new byte[0]);
 		File confDir = new File(SystemConfig.getHomePath(), "conf");
 		if (xmlFileName.equals("schema.xml")) {
-			dtdStream = MycatServer.class.getResourceAsStream("/schema.dtd");
+			dtdStream = ResourceUtil.getResourceAsStream("/schema.dtd");
 			if (dtdStream == null) {
 				dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
 						confDir, "schema.dtd")));
 			}
 
 		} else if (xmlFileName.equals("server.xml")) {
-			dtdStream = MycatServer.class.getResourceAsStream("/server.dtd");
+			dtdStream = ResourceUtil.getResourceAsStream("/server.dtd");
 			if (dtdStream == null) {
 				dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
 						confDir, "server.dtd")));
 			}
 		} else if (xmlFileName.equals("rule.xml")) {
-			dtdStream = MycatServer.class.getResourceAsStream("/rule.dtd");
+			dtdStream = ResourceUtil.getResourceAsStream("/rule.dtd");
 			if (dtdStream == null) {
 				dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
 						confDir, "rule.dtd")));

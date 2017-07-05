@@ -29,7 +29,7 @@ public abstract class MemoryManager {
   public MemoryManager(MycatPropertyConf conf, int numCores, long onHeapExecutionMemory){
     this.conf = conf;
     this.numCores =numCores;
-    maxOffHeapMemory = conf.getSizeAsBytes("mycat.memory.offHeap.size","128m");
+    maxOffHeapMemory = conf.getSizeAsBytes("server.memory.offHeap.size","128m");
     offHeapExecutionMemory = maxOffHeapMemory;
     onHeapExecutionMemoryPool.incrementPoolSize(onHeapExecutionMemory);
 
@@ -43,13 +43,12 @@ public abstract class MemoryManager {
    */
 public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode memoryMode) {
   synchronized (this) {
-      switch (memoryMode) {
-          case ON_HEAP:
-              onHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
-              break;
-          case OFF_HEAP:
-              offHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
-              break;
+      if (memoryMode == MemoryMode.ON_HEAP) {
+          onHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
+
+      } else if (memoryMode == MemoryMode.OFF_HEAP) {
+          offHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId);
+
       }
    }
 
@@ -91,8 +90,8 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
    * sun.misc.Unsafe.
    */
   public final MemoryMode tungstenMemoryMode(){
-    if (conf.getBoolean("mycat.memory.offHeap.enabled", false)) {
-      assert (conf.getSizeAsBytes("mycat.memory.offHeap.size",0) > 0);
+    if (conf.getBoolean("server.memory.offHeap.enabled", false)) {
+      assert (conf.getSizeAsBytes("server.memory.offHeap.size",0) > 0);
       assert (Platform.unaligned());
       return MemoryMode.OFF_HEAP;
     } else {
@@ -103,7 +102,7 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
   /**
    * The default page size, in bytes.
    *
-   * If user didn't explicitly set "mycat.buffer.pageSize", we figure out the default value
+   * If user didn't explicitly set "server.buffer.pageSize", we figure out the default value
    * by looking at the number of cores available to the process, and the total amount of memory,
    * and then divide it by a factor of safety.
    */
@@ -124,22 +123,22 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
     int safetyFactor = 16;
     long maxTungstenMemory = 0L;
 
-    switch (tungstenMemoryMode()){
-      case ON_HEAP:
-			synchronized (this) {
-				maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
-			}
-        break;
-      case OFF_HEAP:
-			synchronized (this) {
-				maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
-			}
-        break;
+    MemoryMode i = tungstenMemoryMode();
+    if (i == MemoryMode.ON_HEAP) {
+      synchronized (this) {
+        maxTungstenMemory = onHeapExecutionMemoryPool.poolSize();
+      }
+
+    } else if (i == MemoryMode.OFF_HEAP) {
+      synchronized (this) {
+        maxTungstenMemory = offHeapExecutionMemoryPool.poolSize();
+      }
+
     }
 
     long size = ByteArrayMethods.nextPowerOf2(maxTungstenMemory / cores / safetyFactor);
     long defaultSize =  Math.min(maxPageSize, Math.max(minPageSize, size));
-    defaultSize = conf.getSizeAsBytes("mycat.buffer.pageSize", defaultSize);
+    defaultSize = conf.getSizeAsBytes("server.buffer.pageSize", defaultSize);
 
     return defaultSize;
   }
@@ -148,11 +147,11 @@ public void releaseExecutionMemory(long numBytes, long taskAttemptId, MemoryMode
    * Allocates memory for use by Unsafe/Tungsten code.
    */
   public final MemoryAllocator tungstenMemoryAllocator() {
-    switch (tungstenMemoryMode()){
-      case ON_HEAP:
-        return MemoryAllocator.HEAP;
-      case OFF_HEAP:
-        return MemoryAllocator.UNSAFE;
+    MemoryMode i = tungstenMemoryMode();
+    if (i == MemoryMode.ON_HEAP) {
+      return MemoryAllocator.HEAP;
+    } else if (i == MemoryMode.OFF_HEAP) {
+      return MemoryAllocator.UNSAFE;
     }
     return null;
   }

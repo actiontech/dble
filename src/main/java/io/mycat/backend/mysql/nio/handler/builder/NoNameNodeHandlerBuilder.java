@@ -39,7 +39,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
 		this.canPushDown = true;
 		String sql = vistor.getSql().toString();
 		String schema = session.getSource().getSchema();
-		SchemaConfig schemacfg = mycatConfig.getSchemas().get(schema);
+		SchemaConfig schemacfg = config.getSchemas().get(schema);
 		RouteResultsetNode[] rrss = getTableSources(schemacfg.getAllDataNodes(),sql);
 		hBuilder.checkRRSS(rrss);
 		MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit()&&!session.getSource().isTxstart(),

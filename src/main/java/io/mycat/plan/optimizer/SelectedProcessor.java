@@ -82,12 +82,12 @@ public class SelectedProcessor {
 				}
 				qtn.setUpRefers(isPushDownNode);
 			}
-			switch (qtn.type()) {
-			case NONAME:
+			PlanNodeType i = qtn.type();
+			if (i == PlanNodeType.NONAME) {
 				return qtn;
-			case TABLE:
+			} else if (i == PlanNodeType.TABLE) {
 				return qtn;
-			default:
+			} else {
 				for (PlanNode child : qtn.getChildren()) {
 					List<Item> referList = qtn.getColumnsReferedByChild(child);
 					if (referList.isEmpty()) {

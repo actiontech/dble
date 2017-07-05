@@ -157,6 +157,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	}
 	@Override
 	public void connectionError(Throwable e, BackendConnection conn) {
+		session.handleSpecial(rrs,session.getSource().getSchema(), true);
 		recycleResources();
 		session.getSource().close(e.getMessage());
 	}

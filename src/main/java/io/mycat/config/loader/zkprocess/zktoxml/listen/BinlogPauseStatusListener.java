@@ -59,34 +59,33 @@ public class BinlogPauseStatusListener  extends ZkMultLoader implements NotifySe
         }
         String binlogPause = basePath + ShowBinlogStatus.BINLOG_PAUSE_INSTANCES;
         String instancePath = ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-        switch (pauseInfo.getStatus()) {
-            case ON:
-                MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
-                if (ShowBinlogStatus.waitAllSession()) {
-                    try {
-                        ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-                    } catch (Exception e) {
-                        LOGGER.warn("create binlogPause instance failed", e);
-                    }
-                }
-                break;
-            case TIMEOUT:
-                ShowBinlogStatus.setWaiting(false);
-                break;
-            case OFF:
-                while(ShowBinlogStatus.isWaiting()){
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                }
+        if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
+            MycatServer.getInstance().getBackupLocked().compareAndSet(false, true);
+            if (ShowBinlogStatus.waitAllSession()) {
                 try {
-                    if (this.getCurator().checkExists().forPath(instancePath) != null) {
-                        this.getCurator().delete().forPath(instancePath);
-                    }
+                    ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
                 } catch (Exception e) {
-                    LOGGER.warn("delete binlogPause instance failed", e);
-                } finally {
-                    MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
+                    LOGGER.warn("create binlogPause instance failed", e);
                 }
-                break;
+            }
+
+        } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.TIMEOUT) {
+            ShowBinlogStatus.setWaiting(false);
+
+        } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
+            while (ShowBinlogStatus.isWaiting()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+            }
+            try {
+                if (this.getCurator().checkExists().forPath(instancePath) != null) {
+                    this.getCurator().delete().forPath(instancePath);
+                }
+            } catch (Exception e) {
+                LOGGER.warn("delete binlogPause instance failed", e);
+            } finally {
+                MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
+            }
+
         }
 
 

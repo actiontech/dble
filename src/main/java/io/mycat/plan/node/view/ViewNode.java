@@ -3,7 +3,7 @@ package io.mycat.plan.node.view;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
+import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.node.QueryNode;

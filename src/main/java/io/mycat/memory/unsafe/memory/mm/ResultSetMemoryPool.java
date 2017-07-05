@@ -27,11 +27,10 @@ public class ResultSetMemoryPool extends MemoryPool {
 
     private String poolName(){
 
-        switch (memoryMode){
-            case ON_HEAP:
-                return  "on-heap memory";
-            case OFF_HEAP:
-                return "off-heap memory";
+        if (memoryMode == MemoryMode.ON_HEAP) {
+            return "on-heap memory";
+        } else if (memoryMode == MemoryMode.OFF_HEAP) {
+            return "off-heap memory";
         }
 
         return "off-heap memory";

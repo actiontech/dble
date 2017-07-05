@@ -24,9 +24,9 @@ import io.mycat.config.model.DBHostConfig;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
-import io.mycat.meta.protocol.MyCatMeta.ColumnMeta;
-import io.mycat.meta.protocol.MyCatMeta.IndexMeta;
-import io.mycat.meta.protocol.MyCatMeta.TableMeta;
+import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
+import io.mycat.meta.protocol.StructureMeta.IndexMeta;
+import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.meta.table.AbstractTableMetaHandler;
 import io.mycat.meta.table.MetaHelper;
 import io.mycat.meta.table.MetaHelper.INDEX_TYPE;
@@ -523,7 +523,7 @@ public class ProxyMetaManager {
 		} catch (Exception e) {
 			LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 		} finally {
-			removeMetaLock(schema, schemaInfo.table);
+			removeMetaLock(schemaInfo.schema, schemaInfo.table);
 			if (MycatServer.getInstance().isUseZK()) {
 				try {
 					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
@@ -548,7 +548,7 @@ public class ProxyMetaManager {
 			} catch (Exception e) {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 			} finally {
-				removeMetaLock(schema, schemaInfo.table);
+				removeMetaLock(schemaInfo.schema, schemaInfo.table);
 
 				if (MycatServer.getInstance().isUseZK()) {
 					try {
@@ -665,7 +665,7 @@ public class ProxyMetaManager {
 		} catch (Exception e) {
 			LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
 		} finally {
-			removeMetaLock(schema, schemaInfo.table);
+			removeMetaLock(schemaInfo.schema, schemaInfo.table);
 			if (MycatServer.getInstance().isUseZK()) {
 				try {
 					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
@@ -697,7 +697,7 @@ public class ProxyMetaManager {
 			} catch (Exception e) {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 			} finally {
-				removeMetaLock(schema, schemaInfo.table);
+				removeMetaLock(schemaInfo.schema, schemaInfo.table);
 				if (MycatServer.getInstance().isUseZK()) {
 					try {
 						notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
@@ -750,7 +750,7 @@ public class ProxyMetaManager {
 		} catch (Exception e) {
 			LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
 		} finally {
-			removeMetaLock(schema, schemaInfo.table);
+			removeMetaLock(schemaInfo.schema, schemaInfo.table);
 			if (MycatServer.getInstance().isUseZK()) {
 				try {
 					notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);

@@ -32,9 +32,10 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     /**服务器版本**/
-    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.04.0-20170508103825".getBytes();
-	public static byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.06.0-20170703165824".getBytes();
+	public static byte[] VERSION_COMMENT = "Mycat Server".getBytes();
 	public static String ANNOTATION_NAME = "mycat:";
+    public static final String ROOT_PREFIX = "mycat";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();
@@ -45,10 +46,10 @@ public abstract class Versions {
         }
 
         // 重新拼接mycat version字节数组
-        byte[] newMycatVersion = new byte[mysqlVersionPart.length + SERVER_VERSION.length - startIndex];
-        System.arraycopy(mysqlVersionPart, 0, newMycatVersion, 0, mysqlVersionPart.length);
-        System.arraycopy(SERVER_VERSION, startIndex, newMycatVersion, mysqlVersionPart.length,
+        byte[] newVersion = new byte[mysqlVersionPart.length + SERVER_VERSION.length - startIndex];
+        System.arraycopy(mysqlVersionPart, 0, newVersion, 0, mysqlVersionPart.length);
+        System.arraycopy(SERVER_VERSION, startIndex, newVersion, mysqlVersionPart.length,
                 SERVER_VERSION.length - startIndex);
-        SERVER_VERSION = newMycatVersion;
+        SERVER_VERSION = newVersion;
     }
 }

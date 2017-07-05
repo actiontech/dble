@@ -30,7 +30,7 @@ package io.mycat.config;
  */
 public interface Alarms {
     /** 默认报警关键词 **/
-    public static final String DEFAULT           = "#!MyCat#";
+    public static final String DEFAULT           = "#!Server#";
     
     /** 集群无有效的节点可提供服务 **/
     public static final String CLUSTER_EMPTY     = "#!CLUSTER_EMPTY#";

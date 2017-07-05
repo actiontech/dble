@@ -80,8 +80,6 @@ public class ShowTables {
 			byte packetId = writeTablesHeader(buffer, c, tableMap, cSchema);
 			writeRowEof(buffer, c, packetId);
 		}
-
-		c.recycle(buffer);
 	}
 
 	public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {

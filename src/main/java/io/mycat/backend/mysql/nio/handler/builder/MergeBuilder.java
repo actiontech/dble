@@ -29,7 +29,7 @@ public class MergeBuilder {
 	private NonBlockingSession session;
 	private MySQLNodeType nodeType;
 	private String schema;
-	private MycatConfig mycatConfig;
+	private MycatConfig config;
 	private PushDownVisitor pdVisitor;
 
 	public MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, boolean needSendMaker,
@@ -41,7 +41,7 @@ public class MergeBuilder {
 		this.schema = session.getSource().getSchema();
 		this.nodeType = session.getSource().isTxstart() || !session.getSource().isAutocommit() ? MySQLNodeType.MASTER
 				: MySQLNodeType.SLAVE;
-		this.mycatConfig = MycatServer.getInstance().getConfig();
+		this.config = MycatServer.getInstance().getConfig();
 		this.pdVisitor = pdVisitor;
 	}
 
@@ -62,7 +62,7 @@ public class MergeBuilder {
 
 		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
 		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
-		SchemaConfig schemaConfig = mycatConfig.getSchemas().get(node.getReferedTableNodes().get(0).getSchema());
+		SchemaConfig schemaConfig = config.getSchemas().get(node.getReferedTableNodes().get(0).getSchema());
 		return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource());
 
 	}

@@ -130,8 +130,8 @@ public class MycatPrivileges implements FrontendPrivileges {
 	@Override
 	public boolean checkFirewallWhiteHostPolicy(String user, String host) {
 		
-	    MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
-	    FirewallConfig firewallConfig = mycatConfig.getFirewall();
+	    MycatConfig config = MycatServer.getInstance().getConfig();
+	    FirewallConfig firewallConfig = config.getFirewall();
 
 	    if (!checkManagerPrivilege(user)) {
 			// return and don't trigger firewall alarm
@@ -144,7 +144,7 @@ public class MycatPrivileges implements FrontendPrivileges {
         
         Map<String, List<UserConfig>> whitehost = firewallConfig.getWhitehost();
         if (whitehost == null || whitehost.size() == 0) {        	
-        	Map<String, UserConfig> users = mycatConfig.getUsers();
+        	Map<String, UserConfig> users = config.getUsers();
         	isPassed = users.containsKey(user);
         	
         } else {        	
@@ -217,19 +217,18 @@ public class MycatPrivileges implements FrontendPrivileges {
 			return true;
 		}
 		int index = -1;
-		switch (chekctype) {
-		case INSERT:
+		if (chekctype == Checktype.INSERT) {
 			index = 0;
-			break;
-		case UPDATE:
+
+		} else if (chekctype == Checktype.UPDATE) {
 			index = 1;
-			break;
-		case SELECT:
+
+		} else if (chekctype == Checktype.SELECT) {
 			index = 2;
-			break;
-		case DELETE:
+
+		} else if (chekctype == Checktype.DELETE) {
 			index = 3;
-			break;
+
 		}
 		if (tablePrivilege.getDml()[index] > 0) {
 			return true;

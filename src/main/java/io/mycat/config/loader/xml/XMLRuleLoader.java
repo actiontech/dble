@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mycat.route.function.*;
+import io.mycat.util.ResourceUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -40,7 +42,6 @@ import io.mycat.config.model.rule.TableRuleConfig;
 import io.mycat.config.util.ConfigException;
 import io.mycat.config.util.ConfigUtil;
 import io.mycat.config.util.ParameterMapping;
-import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.util.SplitUtil;
 
 /**
@@ -80,8 +81,8 @@ public class XMLRuleLoader {
 		InputStream dtd = null;
 		InputStream xml = null;
 		try {
-			dtd = XMLRuleLoader.class.getResourceAsStream(dtdFile);
-			xml = XMLRuleLoader.class.getResourceAsStream(xmlFile);
+			dtd = ResourceUtil.getResourceAsStream(dtdFile);
+			xml = ResourceUtil.getResourceAsStream(xmlFile);
 			//读取出语意树
 			Element root = ConfigUtil.getDocument(dtd, xml)
 					.getDocumentElement();
@@ -217,13 +218,31 @@ public class XMLRuleLoader {
 	private AbstractPartitionAlgorithm createFunction(String name, String clazz)
 			throws ClassNotFoundException, InstantiationException,
 			IllegalAccessException, InvocationTargetException {
-		Class<?> clz = Class.forName(clazz);
-		//判断是否继承AbstractPartitionAlgorithm
-		if (!AbstractPartitionAlgorithm.class.isAssignableFrom(clz)) {
-			throw new IllegalArgumentException("rule function must implements "
-					+ AbstractPartitionAlgorithm.class.getName() + ", name=" + name);
+
+		String lowerClass = clazz.toLowerCase();
+		switch(lowerClass){
+			case "hash":
+				return new PartitionByLong();
+			case "stringhash":
+				return new PartitionByString();
+			case "enum":
+				return new PartitionByFileMap();
+			case "numberrange":
+				return new AutoPartitionByLong();
+			case "patternrange":
+				return new PartitionByPattern();
+			case "date":
+				return new PartitionByDate();
+			default:
+				Class<?> clz = Class.forName(clazz);
+				//判断是否继承AbstractPartitionAlgorithm
+				if (!AbstractPartitionAlgorithm.class.isAssignableFrom(clz)) {
+					throw new IllegalArgumentException("rule function must implements "
+							+ AbstractPartitionAlgorithm.class.getName() + ", name=" + name);
+				}
+				return (AbstractPartitionAlgorithm) clz.newInstance();
 		}
-		return (AbstractPartitionAlgorithm) clz.newInstance();
+
 	}
 
 }

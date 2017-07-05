@@ -62,8 +62,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 		List<DMLResponseHandler> pres = new ArrayList<DMLResponseHandler>();
 		PlanNode left = node.getLeftNode();
 		PlanNode right = node.getRightNode();
-		switch (node.getStrategy()) {
-		case NESTLOOP:
+		if (node.getStrategy() == JoinNode.Strategy.NESTLOOP) {
 			final boolean isLeftSmall = left.getNestLoopFilters() == null;
 			final PlanNode tnSmall = isLeftSmall ? left : right;
 			final PlanNode tnBig = isLeftSmall ? right : left;
@@ -100,15 +99,15 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 				}
 			};
 			tempHandler.setTempDoneCallBack(tempDone);
-			break;
-		case SORTMERGE:
+
+		} else if (node.getStrategy() == JoinNode.Strategy.SORTMERGE) {
 			DMLResponseHandler lh = buildJoinChild(left, true);
 			pres.add(lh);
 			DMLResponseHandler rh = buildJoinChild(right, false);
 			pres.add(rh);
-			break;
-		default:
-			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "","strategy ["+node.getStrategy()+"] not implement yet!" );
+
+		} else {
+			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "strategy [" + node.getStrategy() + "] not implement yet!");
 		}
 		return pres;
 	}

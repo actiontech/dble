@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.mycat.config.model.rule.RuleAlgorithm;
+import io.mycat.util.ResourceUtil;
 
 /**
  * 
@@ -114,8 +115,8 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 		BufferedReader in = null;
 		try {
 			// FileInputStream fin = new FileInputStream(new File(fileMapPath));
-			InputStream fin = this.getClass().getClassLoader()
-					.getResourceAsStream(mapFile);
+
+			InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
 			if (fin == null) {
 				throw new RuntimeException("can't find class resource file "
 						+ mapFile);

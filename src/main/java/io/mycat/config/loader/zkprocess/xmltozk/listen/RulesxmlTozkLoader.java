@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +176,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
         String path = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + name;
         // 加载数据
-        InputStream input = RulesxmlTozkLoader.class.getResourceAsStream(path);
+        InputStream input = ResourceUtil.getResourceAsStream(path);
 
         checkNotNull(input, "read Map file curr Path :" + path + " is null! must is not null");
 

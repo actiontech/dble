@@ -44,7 +44,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 			statement = list.get(0);
             visitor = new MycatSchemaStatVisitor();
 		} catch (Exception t) {
-	        LOGGER.error("DruidMycatRouteStrategyError", t);
+	        LOGGER.error("routeNormalSqlWithAST", t);
 			throw new SQLSyntaxErrorException(t);
 		}
 

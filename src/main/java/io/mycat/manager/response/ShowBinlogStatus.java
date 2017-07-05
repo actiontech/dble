@@ -205,14 +205,14 @@ public class ShowBinlogStatus {
 			if ((TimeUtil.currentTimeMillis() > beginTime + timeout)){
 				try {
 					if (ZKUtils.getConnection().getChildren().forPath(KVPathUtil.getOnlinePath()).contains(from)) {
-						logger.warn("timeout and the from mycat node " + from + " is offline");
+						logger.warn("timeout and the from server node " + from + " is offline");
 						waiting = false;
 						MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
 						logger.warn("stop waiting all sessions of distributed transaction");
 						return false;
 					}
 				} catch (Exception e) {
-					logger.warn("timeout and try to check mycat node " + from + " failed", e);
+					logger.warn("timeout and try to check server node " + from + " failed", e);
 					waiting = false;
 					MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
 					logger.warn("stop waiting all sessions of distributed transaction");

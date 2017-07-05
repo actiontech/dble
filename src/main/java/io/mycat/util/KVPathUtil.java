@@ -1,5 +1,6 @@
 package io.mycat.util;
 
+import io.mycat.config.Versions;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 
@@ -8,7 +9,7 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
  */
 public class KVPathUtil {
 	public static final String SEPARATOR ="/";
-	private static final String ROOT_PATH ="mycat";
+	private static final String ROOT_PATH = Versions.ROOT_PREFIX;
 	//depth:1, base_path" /root_name/cluster_name/
 	public static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID) + SEPARATOR;
 

@@ -23,6 +23,7 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
 
 import io.mycat.config.Versions;
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,7 +186,7 @@ public class XmlProcessBase {
     */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         // 搜索当前转化的文件
-        InputStream inputStream = XmlProcessBase.class.getResourceAsStream(fileName);
+        InputStream inputStream = ResourceUtil.getResourceAsStream(fileName);
 
         // 如果能够搜索到文件
         if (inputStream != null) {

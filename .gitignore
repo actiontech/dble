@@ -120,3 +120,5 @@ src/main/resources/zkconf/schema.xml
 src/main/resources/zkconf/rule.xml
 conf/dnindex.properties
 version.txt
+copyResources.bat
+dependency-reduced-pom.xml

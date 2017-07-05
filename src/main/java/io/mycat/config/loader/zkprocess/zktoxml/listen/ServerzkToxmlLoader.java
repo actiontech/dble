@@ -11,6 +11,7 @@ import java.util.List;
 import io.mycat.MycatServer;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.manager.response.ReloadConfig;
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,8 +139,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object  zk server Object  :" + server);
 
         // 数配制信息写入文件
-        String path = ServerzkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         path=new File(path).getPath()+File.separator;
         path += WRITEPATH;
 
@@ -248,8 +248,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
     private void writeProperties(String name, String value) {
 
         // 加载数据
-        String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
 
         checkNotNull(path, "write properties curr Path :" + path + " is null! must is not null");
 

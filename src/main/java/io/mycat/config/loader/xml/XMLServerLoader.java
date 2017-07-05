@@ -33,6 +33,7 @@ import io.mycat.config.util.ConfigException;
 import io.mycat.config.util.ConfigUtil;
 import io.mycat.config.util.ParameterMapping;
 import io.mycat.util.DecryptUtil;
+import io.mycat.util.ResourceUtil;
 import io.mycat.util.SplitUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -77,8 +78,8 @@ public class XMLServerLoader {
         InputStream dtd = null;
         InputStream xml = null;
         try {
-            dtd = XMLServerLoader.class.getResourceAsStream("/server.dtd");
-            xml = XMLServerLoader.class.getResourceAsStream("/server.xml");
+            dtd = ResourceUtil.getResourceAsStream("/server.dtd");
+            xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
             
             //加载System标签

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -129,8 +130,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 		InputStream dtd = null;
 		InputStream xml = null;
 		try {
-			dtd = XMLSchemaLoader.class.getResourceAsStream(dtdFile);
-			xml = XMLSchemaLoader.class.getResourceAsStream(xmlFile);
+			dtd = ResourceUtil.getResourceAsStream(dtdFile);
+			xml = ResourceUtil.getResourceAsStream(xmlFile);
 			Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
 			//先加载所有的DataHost
 			loadDataHosts(root);

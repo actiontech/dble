@@ -11,6 +11,7 @@ import java.util.List;
 
 import io.mycat.MycatServer;
 import io.mycat.manager.response.ReloadConfig;
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,8 +130,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
         LOGGER.info("RuleszkToxmlLoader notifyProcess write mapFile is success ");
 
         // 数配制信息写入文件
-        String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         path=new File(path).getPath()+File.separator;
         path  =path+WRITEPATH;
 
@@ -244,8 +244,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     private void writeMapFile(String name, String value) {
 
         // 加载数据
-        String path = RuleszkToxmlLoader.class.getClassLoader().getResource(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey())
-                .getPath();
+        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
 
         checkNotNull(path, "write Map file curr Path :" + path + " is null! must is not null");
         path=new File(path).getPath()+File.separator;

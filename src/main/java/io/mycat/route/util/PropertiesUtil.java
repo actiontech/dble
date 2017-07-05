@@ -1,5 +1,7 @@
 package io.mycat.route.util;
 
+import io.mycat.util.ResourceUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -15,7 +17,7 @@ import java.util.Properties;
 public class PropertiesUtil {
     public static Properties loadProps(String propsFile){
         Properties props = new Properties();
-        InputStream inp = Thread.currentThread().getContextClassLoader().getResourceAsStream(propsFile);
+        InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile);
 
         if (inp == null) {
             throw new java.lang.RuntimeException("time sequnce properties not found " + propsFile);

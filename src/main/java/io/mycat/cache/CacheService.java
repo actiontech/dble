@@ -26,6 +26,7 @@ package io.mycat.cache;
 import io.mycat.cache.impl.EnchachePooFactory;
 import io.mycat.cache.impl.LevelDBCachePooFactory;
 import io.mycat.cache.impl.MapDBCachePooFactory;
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +68,7 @@ public class CacheService {
 
 	private void init(boolean isLowerCaseTableNames) throws Exception {
 		Properties props = new Properties();
-		props.load(CacheService.class
-				.getResourceAsStream("/cacheservice.properties"));
+		props.load(ResourceUtil.getResourceAsStream("/cacheservice.properties"));
 		final String poolFactoryPref = "factory.";
 		final String poolKeyPref = "pool.";
 		final String layedPoolKeyPref = "layedpool.";

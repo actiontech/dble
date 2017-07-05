@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +105,7 @@ public class ConfigComparer {
 			dnIndexProps = loadDnIndexProps();
 		}
 		try{
-			pro.load(ConfigComparer.class.getResourceAsStream(TABLES_FILE));
+			pro.load(ResourceUtil.getResourceAsStream(TABLES_FILE));
 		}catch(Exception e){
 			throw new ConfigException("tablesFile.properties read fail!");
 		}
@@ -242,7 +243,7 @@ public class ConfigComparer {
 		Properties prop = new Properties();
 		InputStream is = null;
 		try {
-			is = ConfigComparer.class.getResourceAsStream(DN_INDEX_FILE);
+			is = ResourceUtil.getResourceAsStream(DN_INDEX_FILE);
 			prop.load(is);
 		} catch (Exception e) {
 			throw new ConfigException("please check file \"dnindex.properties\" "+e.getMessage());

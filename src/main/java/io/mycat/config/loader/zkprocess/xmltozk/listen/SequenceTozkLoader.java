@@ -3,6 +3,7 @@ package io.mycat.config.loader.zkprocess.xmltozk.listen;
 import java.io.IOException;
 import java.io.InputStream;
 
+import io.mycat.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,7 +169,7 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
         String path = ZookeeperPath.ZK_LOCAL_CFG_PATH.getKey() + name;
         // 加载数据
-        InputStream input = SequenceTozkLoader.class.getResourceAsStream(path);
+        InputStream input = ResourceUtil.getResourceAsStream(path);
 
         if (null != input) {
 

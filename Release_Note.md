@@ -33,16 +33,18 @@ ID= 63位二进制 (9(线程ID) +5(实例ID)+4(机房ID)+6(重复累加) +39(毫
 #### 3.4 server.xml  
 3.4.1 mycatNodeId 改为serverNodeId  
 
-## 4.ushard分支 #117 
+## 4.ushard分支 #117  
+如果不需要混淆成字母类(eg:A.class),maven编译增加参数：  
+-Dneed.obfuscate=false ,默认为true  
 #### 4.1 客户端登录信息 
-显示ushard  
+显示ushard相关字样  
 #### 4.2 注解
-原本用mycat的请用ushard  
-#### 4.3 自增函数 
-dbseq.sql 已经重新生成，mycat已经用ushard替换  
+注解内部原本用mycat的改为ushard  
+#### 4.3 全局序列 
+数据库方式全局序列需要的dbseq.sql 已经重新生成，mycat已经用ushard替换，表结构相关名称改变   
 #### 4.4 配置
 ##### 4.4.1 xml的使用规约  
-例如：server的根节点写法是：  
+mycat改为ushard ,例如：server的根节点写法是：  
 
 ```
 <!DOCTYPE ushard:server SYSTEM "server.dtd">
@@ -79,9 +81,11 @@ io.mycat.route.function.PartitionByFileMap(枚举方式)
 io.mycat.route.function.AutoPartitionByLong(数字范围)  
 io.mycat.route.function.PartitionByDate(日期分区)  
 io.mycat.route.function.PartitionByPattern(取模范围约束)  
-
-#### 4.5 日志
-日志路径logs/ushard.log 里面涉及到的包名从io.mycat 改为com.actionsky.com
+#### 4.5 全局表检查  
+启用全局表检查时候，列名由_mycat_op_time改为_ushard_op_time  
+#### 4.6 日志
+日志路径logs/ushard.log。
+里面涉及到的包名从io.mycat 改为com.actionsky.com
    
 ------   
   

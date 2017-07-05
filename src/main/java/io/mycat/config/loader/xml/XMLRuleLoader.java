@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.mycat.route.function.*;
+import io.mycat.util.ResourceUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -80,8 +81,8 @@ public class XMLRuleLoader {
 		InputStream dtd = null;
 		InputStream xml = null;
 		try {
-			dtd = XMLRuleLoader.class.getResourceAsStream(dtdFile);
-			xml = XMLRuleLoader.class.getResourceAsStream(xmlFile);
+			dtd = ResourceUtil.getResourceAsStream(dtdFile);
+			xml = ResourceUtil.getResourceAsStream(xmlFile);
 			//读取出语意树
 			Element root = ConfigUtil.getDocument(dtd, xml)
 					.getDocumentElement();

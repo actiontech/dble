@@ -18,6 +18,7 @@
 		<project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
+		<need.obfuscate>true</need.obfuscate>
 	</properties>
 	<repositories>
 		<repository>
@@ -785,6 +786,42 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.github.wvengen</groupId>
+				<artifactId>proguard-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>proguard</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<obfuscate>${need.obfuscate}</obfuscate>
+					<options>
+						<option>-ignorewarnings</option> <!--忽略所有告警-->
+						<option>-dontshrink</option>   <!--不做 shrink -->
+						<option>-dontoptimize</option> <!--不做 optimize -->
+						<option>-dontskipnonpubliclibraryclasses</option>
+						<option>-dontskipnonpubliclibraryclassmembers</option>
+						<option>-keep class **.package-info</option><!--保持包注解类-->
+						<option>-keepattributes Signature</option><!--JAXB NEED-->
+						<option>-keepattributes SourceFile,LineNumberTable,*Annotation*</option><!--保持源码名与行号-->
+						<option>-keepclassmembers enum com.actionsky.ushard.**{ *;}</option><!--保持枚举中的名子，确保枚举 valueOf 可以使用-->
+						<option>-keep class com.actionsky.ushard.UshardStartup{*;}</option><!--启动类-->
+						<option>-keep class com.actionsky.ushard.util.ResourceUtil{*;}</option><!--外部资源加载类-->
+						<option>-keep class com.actionsky.ushard.route.function.**{*;}</option><!--算法加载-->
+						<option>-keep class com.actionsky.ushard.config.model.SystemConfig{*;}</option><!--配置类-->
+					</options>
+					<injar>${project.build.finalName}.jar</injar>
+					<outjar>${project.build.finalName}.jar</outjar>
+					<libs>
+						<lib>${java.home}/lib/rt.jar</lib>
+					</libs>
+				</configuration>
 			</plugin>
 			<!-- -->
 			<plugin>

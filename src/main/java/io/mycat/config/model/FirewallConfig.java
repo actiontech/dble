@@ -35,6 +35,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -200,7 +201,7 @@ public final class FirewallConfig {
 		public InputSource resolveEntity(java.lang.String publicId, java.lang.String systemId) throws SAXException, java.io.IOException{
 			if (systemId.contains("server.dtd")){ 
 				//InputSource is = new InputSource(new ByteArrayInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".getBytes()));
-				InputStream dtd = XMLServerLoader.class.getResourceAsStream("/server.dtd");
+				InputStream dtd = ResourceUtil.getResourceAsStream("/server.dtd");
 				InputSource is = new InputSource(dtd);
 				return is; 
 		    } else {

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import io.mycat.config.ErrorCode;
+import io.mycat.util.ResourceUtil;
 import io.mycat.util.exception.TmpFileException;
 
 /**
@@ -277,9 +278,9 @@ public class FilePathDisk extends FilePath {
 				if (!fileName.startsWith("/")) {
 					fileName = "/" + fileName;
 				}
-				InputStream in = getClass().getResourceAsStream(fileName);
+				InputStream in = ResourceUtil.getResourceAsStream(fileName);
 				if (in == null) {
-					in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+					in = ResourceUtil.getResourceAsStreamForCurrentThread(fileName);
 				}
 				if (in == null) {
 					throw new FileNotFoundException("resource " + fileName);

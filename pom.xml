@@ -426,10 +426,10 @@
 								<replacement>
 									<token>@annotation-name@</token>
 									<value>mycat:</value>
+								</replacement>
 								<replacement>
 										<token>@root_prefix@</token>
-										<value>ushard</value>
-								</replacement>
+										<value>mycat</value>
 								</replacement>
 							</replacements>
 						</configuration>

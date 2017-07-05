@@ -3,7 +3,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.actionsky</groupId>
-	<artifactId>ushard</artifactId>
+	<artifactId>UShard</artifactId>
 	<version>2.17.06.0</version>
 	<packaging>jar</packaging>
 	<name>UShard-server</name>

@@ -592,6 +592,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.0.0</version>
 				<configuration>
 					<descriptors>
 						<descriptor>src/main/assembly/assembly-win.xml</descriptor>

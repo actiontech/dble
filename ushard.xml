@@ -599,28 +599,6 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>log4j2.xml</id>
-						<phase>process-sources</phase>
-						<goals>
-							<goal>replace</goal>
-						</goals>
-						<configuration>
-							<file>${project.basedir}/src/main/assembly/conf/log4j2.xml</file>
-							<outputFile>${project.basedir}/src/main/assembly/conf/log4j2.xml</outputFile>
-							<replacements>
-								<replacement>
-									<token>mycat</token>
-									<value>ushard</value>
-								</replacement>
-								<replacement>
-									<token>MYCAT_HOME</token>
-									<value>USHARD_HOME</value>
-								</replacement>
-
-							</replacements>
-						</configuration>
-					</execution>
-					<execution>
 						<id>server.dtd</id>
 						<phase>process-sources</phase>
 						<goals>

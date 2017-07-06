@@ -63,12 +63,14 @@ public class DruidSelectParser extends DefaultDruidParser {
 			}
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
 			if (mysqlFrom == null) {
-				String db = SchemaUtil.getRandomDb();
-				if (db == null) {
-					String msg = "No schema is configured, make sure your config is right, sql:" + stmt;
-					throw new SQLNonTransientException(msg);
+				if(schema == null) {
+					String db = SchemaUtil.getRandomDb();
+					if (db == null) {
+						String msg = "No schema is configured, make sure your config is right, sql:" + stmt;
+						throw new SQLNonTransientException(msg);
+					}
+					schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 				}
-				schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
 				rrs.setFinishedRoute(true);
 				return schema;

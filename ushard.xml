@@ -798,7 +798,7 @@
 						<option>-keep class com.actionsky.ushard.util.ResourceUtil{*;}</option><!--外部资源加载类-->
 						<option>-keep class com.actionsky.ushard.route.function.**{*;}</option><!--算法加载-->
 						<option>-keep class com.actionsky.ushard.config.model.SystemConfig{*;}</option><!--配置类-->
-						<option>-keep class com.actionsky.ushard.meta.protocol.StructureMeta{*;}</option><!--StructureMeta类-->
+						<option>-keep class com.actionsky.ushard.meta.protocol.**{*;}</option><!--StructureMeta类-->
 					</options>
 					<injar>${project.build.finalName}.jar</injar>
 					<outjar>${project.build.finalName}.jar</outjar>

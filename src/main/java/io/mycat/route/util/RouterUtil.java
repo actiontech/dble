@@ -176,7 +176,11 @@ public class RouterUtil {
 		}
 		return false;
 	}
-
+	public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
+		rrs.setSchema(schemaInfo.schema);
+		rrs.setTable(schemaInfo.table);
+		RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+	}
 	/**
 	 * 获取第一个节点作为路由
 	 *
@@ -185,8 +189,7 @@ public class RouterUtil {
 	 * @return 数据路由集合
 	 * @author mycat
 	 */
-	public static RouteResultset routeToSingleNode(RouteResultset rrs,
-												   String dataNode) {
+	public static RouteResultset routeToSingleNode(RouteResultset rrs, String dataNode) {
 		if (dataNode == null) {
 			return rrs;
 		}

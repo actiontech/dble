@@ -46,11 +46,14 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
 
-		//如果这个不是no_sharing表格那么就需要这么进行检查
-		if(!RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
-			sharingTableCheck(createStmt);
+		String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+		rrs.setStatement(statement);
+		if(RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
+			RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+			return schemaInfo.schemaConfig;
 		}
-
+		//如果这个不是no_sharing表格那么就需要这么进行检查
+		sharingTableCheck(createStmt);
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
 			String sql= addColumnIfCreate(createStmt);

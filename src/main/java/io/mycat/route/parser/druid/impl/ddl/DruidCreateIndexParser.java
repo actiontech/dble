@@ -27,6 +27,12 @@ public class DruidCreateIndexParser extends DefaultDruidParser {
 		if (tableSource instanceof SQLExprTableSource) {
 			String schemaName = schema == null ? null : schema.getName();
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
+			String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+			rrs.setStatement(statement);
+			if(RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
+				RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+				return schemaInfo.schemaConfig;
+			}
 			RouterUtil.routeToDDLNode(schemaInfo, rrs);
 			return schemaInfo.schemaConfig;
 		} else {

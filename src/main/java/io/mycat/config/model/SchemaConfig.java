@@ -178,10 +178,10 @@ public class SchemaConfig {
 		Set<String> set = new HashSet<String>();
 		if (!isEmpty(dataNode)) {
 			set.add(dataNode);
-		}
-		if (!noSharding) {
+		}else if (!noSharding) {
 			for (TableConfig tc : tables.values()) {
 				set.add(tc.getDataNodes().get(0));
+				break;
 			}
 		}
 

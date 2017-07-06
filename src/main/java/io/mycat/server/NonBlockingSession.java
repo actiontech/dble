@@ -735,7 +735,7 @@ public class NonBlockingSession implements Session {
 	}
 	public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess){
 		if (rrs.getSqlType() == ServerParse.DDL) {
-			String sql = rrs.getStatement();
+			String sql = rrs.getSrcStatement();
 			if (source.isTxstart()) {
 				source.setTxstart(false);
 				source.getAndIncrementXid();

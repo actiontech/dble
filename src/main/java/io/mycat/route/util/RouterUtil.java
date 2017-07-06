@@ -176,7 +176,11 @@ public class RouterUtil {
 		}
 		return false;
 	}
-
+	public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
+		rrs.setSchema(schemaInfo.schema);
+		rrs.setTable(schemaInfo.table);
+		RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+	}
 	/**
 	 * 获取第一个节点作为路由
 	 *
@@ -185,8 +189,7 @@ public class RouterUtil {
 	 * @return 数据路由集合
 	 * @author mycat
 	 */
-	public static RouteResultset routeToSingleNode(RouteResultset rrs,
-												   String dataNode) {
+	public static RouteResultset routeToSingleNode(RouteResultset rrs, String dataNode) {
 		if (dataNode == null) {
 			return rrs;
 		}
@@ -645,7 +648,7 @@ public class RouterUtil {
 		Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
 		if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
 			//为分库表找路由
-			RouterUtil.findRouteWithcConditionsForTables(schema, rrs, tablesAndConditions, tablesRouteMap, cachePool, isSelect);
+			RouterUtil.findRouteWithcConditionsForTables(schema, rrs, tablesAndConditions, tablesRouteMap, cachePool, isSelect, false);
 			if (rrs.isFinishedRoute()) {
 				return rrs;
 			}
@@ -721,7 +724,7 @@ public class RouterUtil {
 				//每个表对应的路由映射
 				Map<String, Set<String>> tablesRouteMap = new HashMap<String, Set<String>>();
 				if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
-					RouterUtil.findRouteWithcConditionsForTables(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, cachePool, isSelect);
+					RouterUtil.findRouteWithcConditionsForTables(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, cachePool, isSelect, true);
 					if (rrs.isFinishedRoute()) {
 						return rrs;
 					}
@@ -741,7 +744,8 @@ public class RouterUtil {
 	 */
 	public static void findRouteWithcConditionsForTables(SchemaConfig schema, RouteResultset rrs,
 														 Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
-														 Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool, boolean isSelect)
+														 Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool,
+														 boolean isSelect, boolean isSingleTable)
 			throws SQLNonTransientException {
 
 		//为分库表找路由
@@ -755,11 +759,15 @@ public class RouterUtil {
 			}
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if (tableConfig == null) {
-				String msg = "can't find table ["
-						+ tableName + "[ define in schema "
-						+ ":" + schema.getName();
-				LOGGER.warn(msg);
-				throw new SQLNonTransientException(msg);
+				if(isSingleTable) {
+					String msg = "can't find table ["
+							+ tableName + "[ define in schema "
+							+ ":" + schema.getName();
+					LOGGER.warn(msg);
+					throw new SQLNonTransientException(msg);
+				}else{
+					continue;
+				}
 			}
 			//全局表或者不分库的表略过（全局表后面再计算）
 			if (tableConfig.isGlobalTable() || schema.getTables().get(tableName).getDataNodes().size() == 1) {

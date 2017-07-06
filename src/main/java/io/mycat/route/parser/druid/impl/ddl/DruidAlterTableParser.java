@@ -84,6 +84,12 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			String msg = "THE DDL is not supported, sql:" + stmt;
 			throw new SQLNonTransientException(msg);
 		}
+		String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+		rrs.setStatement(statement);
+		if(RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
+			RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+			return schemaInfo.schemaConfig;
+		}
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
 			String sql = modifyColumnIfAlter(schemaInfo, rrs.getStatement(), alterTable);

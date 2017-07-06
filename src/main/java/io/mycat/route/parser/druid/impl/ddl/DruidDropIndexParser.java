@@ -26,6 +26,12 @@ public class DruidDropIndexParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;
 		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropStmt.getTableName());
+		String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+		rrs.setStatement(statement);
+		if(RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
+			RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+			return schemaInfo.schemaConfig;
+		}
 		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;
 	}

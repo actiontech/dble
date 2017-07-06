@@ -141,7 +141,7 @@ public class DefaultDruidParser implements DruidParser {
 			for(Condition condition : conditionList.get(i)) {
 				List<Object> values = condition.getValues();
 				if(values.size() == 0) {
-					break;
+					continue;
 				}
 				if(checkConditionValues(values)) {
 					String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());

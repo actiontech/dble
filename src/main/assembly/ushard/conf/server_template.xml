@@ -7,12 +7,20 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
-<!DOCTYPE mycat:server SYSTEM "server.dtd">
-<mycat:server xmlns:mycat="http://io.mycat/">
+<!DOCTYPE ushard:server SYSTEM "server.dtd">
+<ushard:server xmlns:ushard="http://io.ushard/">
 	<system>
-	<property name="useSqlStat">1</property>  <!-- 1为开启实时统计、0为关闭 -->
+	<property name="serverBacklog">2048</property>  <!-- serverBacklog size,default 2048-->
+	<property name="useJoinStrategy">true</property>  <!-- true 为使用JoinStrategy，其余为不使用，默认不使用-->
+	<property name="lowerCaseTableNames">true</property>  <!-- true 为 大小写不敏感,false 为大小写敏感-->
+	<property name="xaSessionCheckPeriod">1000</property> <!-- 使用XA时，如果发生server导致的数据不一致，定期进行重试commit或者rollback，默认1000毫秒-->
+	<property name="xaLogCleanPeriod">1000</property> <!-- 使用XA时，已经完结的XA LOG 会定时移除，默认1000毫秒 --> 
+	<property name="checkTableConsistency">0</property> <!-- 是否进行meta数据定时巡检，默认不启用 -->
+	<property name="checkTableConsistencyPeriod"> 60000</property> <!-- meta数据定时巡检周期，默认60000毫秒 -->
+	<property name="useHandshakeV10">1</property>
+	<property name="useSqlStat">0</property>  <!-- 1为开启实时统计、0为关闭 -->
 	<property name="useGlobleTableCheck">0</property>  <!-- 1为开启全加班一致性检测、0为关闭 -->
-	<property name="defaultSqlParser">druidparser</property>
+	<property name="recordTxn">0</property>  <!-- 1为开启事务日志记录、0为关闭-->
 		<property name="sequnceHandlerType">2</property>
       <!--  <property name="useCompression">1</property>--> <!--1为开启mysql压缩协议-->
         <!--  <property name="fakeMySQLVersion">5.6.20</property>--> <!--设置模拟的MySQL版本号-->
@@ -29,15 +37,11 @@
 		<!--<property name="backSocketNoDelay">1</property>-->
 		<!--<property name="frontSocketNoDelay">1</property>-->
 		<!--<property name="processorExecutor">16</property>-->
-		<!-- 
-			<property name="mutiNodeLimitType">1</property> 0：开启小数量级（默认） ；1：开启亿级数据排序
-	    	<property name="mutiNodePatchSize">100</property> 亿级数量排序批量
-			<property name="processors">32</property> <property name="processorExecutor">32</property> 
+		<!--
 			<property name="serverPort">8066</property> <property name="managerPort">9066</property> 
 			<property name="idleTimeout">300000</property> <property name="bindIp">0.0.0.0</property> 
 			<property name="frontWriteQueueSize">4096</property> <property name="processors">32</property> -->
-		<!--分布式事务开关，0为不过滤分布式事务，1为过滤分布式事务（如果分布式事务内只涉及全局表，则不过滤），2为不过滤分布式事务,但是记录分布式事务日志-->
-		<property name="handleDistributedTransactions">0</property>
+		
 		
 			<!--
 			off heap for merge/order/group/limit      1开启   0关闭
@@ -59,11 +63,53 @@
 		<!--
 			单位为m
 		-->
-		<property name="systemReserveMemorySize">389m</property>
+		<property name="systemReserveMemorySize">384m</property>
+
+
+		<!--是否采用zookeeper协调切换  -->
+		<property name="useZKSwitch">true</property>
+
+		<!-- XA Recovery Log日志路径 -->
+		<!--<property name="XARecoveryLogBaseDir">./</property>-->
+
+		<!-- XA Recovery Log日志名称 -->
+		<!--<property name="XARecoveryLogBaseName">tmlog</property>-->
+
 	</system>
+	
+	<!-- 全局SQL防火墙设置 -->
+	<!-- 
+	<firewall> 
+	   <whitehost>
+	      <host host="127.0.0.1" user="ushard"/>
+	      <host host="127.0.0.2" user="ushard"/>
+	   </whitehost>
+       <blacklist check="false">
+       </blacklist>
+	</firewall>
+	-->
+	<user name="man1">
+		<property name="password">654321</property>
+		<property name="manager">true</property> 
+	</user>
+	<user name="man2">
+		<property name="password">654321</property>
+		<property name="manager">true</property> 
+		<property name="schemas">USHARD_TEST</property>
+	</user>
 	<user name="root">
-		<property name="password">digdeep</property>
+		<property name="password">123456</property>
 		<property name="schemas">TESTDB</property>
+		
+		<!-- 表级 DML 权限设置 -->
+		<!-- 		
+		<privileges check="false">
+			<schema name="TESTDB" dml="0110" >
+				<table name="tb01" dml="0000"></table>
+				<table name="tb02" dml="1111"></table>
+			</schema>
+		</privileges>		
+		 -->
 	</user>
 
 	<user name="user">
@@ -71,14 +117,5 @@
 		<property name="schemas">TESTDB</property>
 		<property name="readOnly">true</property>
 	</user>
-	<!-- 
-	<quarantine> 
-	   <whitehost>
-	      <host host="127.0.0.1" user="mycat"/>
-	      <host host="127.0.0.2" user="mycat"/>
-	   </whitehost>
-       <blacklist check="false"></blacklist>
-	</quarantine>
-	-->
 
-</mycat:server>
+</ushard:server>

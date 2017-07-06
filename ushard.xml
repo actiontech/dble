@@ -537,8 +537,8 @@
 									<value>USHARD</value>
 								</replacement>
 								<replacement>
-									<token>io.mycat.MycatStartup</token>
-									<value>com.actionsky.ushard.UshardStartup</value>
+									<token>io.mycat</token>
+									<value>com.actionsky.ushard</value>
 								</replacement>
 							</replacements>
 						</configuration>
@@ -556,6 +556,10 @@
 								<replacement>
 									<token>MYCAT</token>
 									<value>USHARD</value>
+								</replacement>
+								<replacement>
+									<token>io.mycat.MycatStartup</token>
+									<value>com.actionsky.ushard.UshardStartup</value>
 								</replacement>
 							</replacements>
 						</configuration>
@@ -790,6 +794,7 @@
 						<option>-keepattributes SourceFile,LineNumberTable,*Annotation*</option><!--保持源码名与行号-->
 						<option>-keepclassmembers enum com.actionsky.ushard.**{ *;}</option><!--保持枚举中的名子，确保枚举 valueOf 可以使用-->
 						<option>-keep class com.actionsky.ushard.UshardStartup{*;}</option><!--启动类-->
+						<option>-keep class com.actionsky.ushard.config.loader.zkprocess.xmltozk.XmltoZkMain{*;}</option><!--加载资源到ZK入口-->
 						<option>-keep class com.actionsky.ushard.util.ResourceUtil{*;}</option><!--外部资源加载类-->
 						<option>-keep class com.actionsky.ushard.route.function.**{*;}</option><!--算法加载-->
 						<option>-keep class com.actionsky.ushard.config.model.SystemConfig{*;}</option><!--配置类-->

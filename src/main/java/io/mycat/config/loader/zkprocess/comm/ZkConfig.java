@@ -1,16 +1,14 @@
 package io.mycat.config.loader.zkprocess.comm;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
+import com.google.common.base.Strings;
+import io.mycat.config.loader.zkprocess.zktoxml.ZktoXmlMain;
 import io.mycat.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Strings;
-
-import io.mycat.config.loader.zkprocess.zktoxml.ZktoXmlMain;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 
 /**

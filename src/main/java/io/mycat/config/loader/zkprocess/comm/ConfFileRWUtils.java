@@ -17,7 +17,7 @@ public class ConfFileRWUtils {
 		StringBuilder mapFileStr = new StringBuilder();
 		String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;
 		// 加载数据
-		InputStream input = ResourceUtil.getResourceAsStream(path);
+		InputStream input = ResourceUtil.getResourceAsStreamFromRoot(path);
 		checkNotNull(input, "read file curr Path :" + path + " is null! It must be not null");
 		byte[] buffers = new byte[256];
 		try {

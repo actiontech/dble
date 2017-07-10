@@ -177,7 +177,6 @@ public class XmlProcessBase {
     /**
      * 默认转换将指定的xml转化为
     * 方法描述
-    * @param inputStream
     * @param fileName
     * @return
     * @throws JAXBException
@@ -186,7 +185,7 @@ public class XmlProcessBase {
     */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         // 搜索当前转化的文件
-        InputStream inputStream = ResourceUtil.getResourceAsStream(fileName);
+        InputStream inputStream = ResourceUtil.getResourceAsStreamFromRoot(fileName);
 
         // 如果能够搜索到文件
         if (inputStream != null) {

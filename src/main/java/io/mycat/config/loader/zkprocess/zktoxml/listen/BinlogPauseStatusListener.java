@@ -37,7 +37,6 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
     }
     @Override
     public boolean notifyProcess() throws Exception {
-        String basePath = KVPathUtil.BASE_PATH;
         // 通过组合模式进行zk目录树的加载
         DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取

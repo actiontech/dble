@@ -42,7 +42,6 @@
 				<exclude>schema_template.xml</exclude>
 				<exclude>server_template.xml</exclude>
 				<exclude>cacheservice.properties</exclude>
-				<exclude>zkconf/cacheservice.properties</exclude>
 			</excludes>
 		</fileSet>
         <fileSet>

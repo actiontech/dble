@@ -53,11 +53,11 @@ public class CharacterSet {
 	   When these statements are used, we justly give a caution.
 	   Maybe, we implement completely charsets in future. By then, regain here.
 	*/
-	if (true) {
-	    	c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Unsupported statement, please use 'SET NAMES xxx'");
-		return;
-	}
-	
+//        if (true) {
+//            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Unsupported statement, please use 'SET NAMES xxx'");
+//            return;
+//        }
+
         if (-1 == stmt.indexOf(',')) {
             /* 单个属性 */
             oneSetResponse(stmt, c, rs);

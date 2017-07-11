@@ -54,7 +54,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		checkUnSupportedStatement(statement);
 
 
-		DruidParser druidParser = DruidParserFactory.create(statement);
+		DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
 		return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, visitor, sc);
 		
 	}

@@ -24,10 +24,15 @@ public class MultiTableMetaHandler {
 
 	public void execute() {
 		MycatServer.getInstance().getTmManager().createDatabase(schema);
+		if (config.getTables().size() == 0) {
+			schemaMetaHandler.countDown();
+			return;
+		}
 		for (Entry<String, TableConfig> entry : config.getTables().entrySet()) {
 			AbstractTableMetaHandler table = new TableMetaInitHandler(this, schema, entry.getValue(), selfNode);
 			table.execute();
 		}
+
 	}
 
 	public void countDown() {

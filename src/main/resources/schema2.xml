@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!DOCTYPE mycat:schema SYSTEM "schema.dtd">
+<mycat:schema xmlns:mycat="http://io.mycat/">
+
+	<schema name="MYCAT_TEST" sqlMaxLimit="100">
+		<table name="sharding_two_node" primaryKey="id" dataNode="dn1,dn2" rule="two_node_hash" />
+		<table name="sharding_four_node" primaryKey="id" dataNode="dn1,dn2,dn3,dn4" rule="four_node_hash" />
+		<table name="sharding_four_node_autoinc" primaryKey="id" autoIncrement ="true" dataNode="dn1,dn2,dn3,dn4" rule="four_node_hash" />
+		<table name="global_four_node_autoinc" primaryKey="id" autoIncrement ="true" dataNode="dn1,dn2,dn3,dn4" type="global" />
+		<table name="global_four_node" primaryKey="id" dataNode="dn1,dn2,dn3,dn4" type="global" />
+		<table name="global_two_node" primaryKey="id" dataNode="dn1,dn2" type="global" />
+		<table name="sharding_two_node2" primaryKey="id" dataNode="dn1,dn2" rule="two_node_hash" />
+	</schema>
+	<schema name="MYCAT_TEST2" sqlMaxLimit="100" dataNode="dn4">
+		<table name="er_parent" primaryKey="ID" dataNode="dn1,dn2,dn3,dn4" rule="four_node_hash">
+			<childTable name="er_child1" primaryKey="child1_id" joinKey="child1_id" parentKey="id" >
+				<childTable name="er_grandson" primaryKey="grandson_id" joinKey="grandson_id" parentKey="child1_id" />
+			</childTable>
+			<childTable name="er_child2" primaryKey="child2_id" joinKey="child2_id" parentKey="id2" />
+			<childTable name="er_child3" primaryKey="child3_id" joinKey="child_char" parentKey="c_char" />
+		</table>
+	</schema>
+	<schema name="MYCAT_TEST3" sqlMaxLimit="100">
+		<table name="single" primaryKey="id" dataNode="dn1"/>
+	</schema>
+	<dataNode name="dn1" dataHost="dh1" database="ares_test" />
+	<dataNode name="dn2" dataHost="dh2" database="ares_test" />
+	<dataNode name="dn3" dataHost="dh1" database="mycat_test" />
+	<dataNode name="dn4" dataHost="dh2" database="mycat_test" />
+	<dataHost name="dh1" maxCon="1000" minCon="10" balance="0"
+			  switchType="1"  slaveThreshold="100">
+		<heartbeat>select user()</heartbeat>
+		<writeHost host="hostM1" url="10.186.24.63:3320" user="qrep"
+				   password="qrep">
+		</writeHost>
+	</dataHost>
+
+	<dataHost name="dh2" maxCon="1000" minCon="10" balance="0"
+			  switchType="1"  slaveThreshold="100">
+		<heartbeat>select user()</heartbeat>
+		<writeHost host="hostM2" url="10.186.24.64:3320" user="qrep"
+				   password="qrep">
+		</writeHost>
+	</dataHost>
+
+</mycat:schema>
+
+
+

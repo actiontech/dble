@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- - - Licensed under the Apache License, Version 2.0 (the "License"); 
+	- you may not use this file except in compliance with the License. - You 
+	may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
+	- - Unless required by applicable law or agreed to in writing, software - 
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
+	License for the specific language governing permissions and - limitations 
+	under the License. -->
+<!DOCTYPE mycat:server SYSTEM "server.dtd">
+<mycat:server xmlns:mycat="http://io.mycat/">
+	<system> 
+	<!-- <property name="dataNodeIdleCheckPeriod">6000000</property>
+	<property name="dataNodeHeartbeatPeriod">6000000</property> -->
+	<property name="dataNodeIdleCheckPeriod">6000000</property>
+	<property name="dataNodeHeartbeatPeriod">6000000</property>
+	<property name="useJoinStrategy">true</property>
+	<property name="lowerCaseTableNames">true</property>  <!-- true 为 大小写不敏感,false 为大小写敏感-->
+	<property name="xaSessionCheckPeriod">1000</property> <!-- 使用XA时，如果发生server导致的数据不一致，定期进行重试commit或者rollback，默认1000毫秒-->
+	<property name="xaLogCleanPeriod">1000</property> <!-- 使用XA时，已经完结的XA LOG 会定时移除，默认1000毫秒 --> 
+	<property name="checkTableConsistency">0</property> <!-- 是否进行meta数据定时巡检，默认不启用 -->
+	<property name="checkTableConsistencyPeriod"> 864000000</property> <!-- meta数据定时巡检周期，默认60000毫秒 -->
+	<property name="useHandshakeV10">1</property>
+	<property name="useSqlStat">0</property>  <!-- 1为开启实时统计、0为关闭 -->
+	<property name="useGlobleTableCheck">1</property>  <!-- 1为开启全加班一致性检测、0为关闭 -->
+	<property name="recordTxn">0</property>  <!-- 1为开启事务日志记录、0为关闭-->
+		<property name="sequnceHandlerType">2</property>
+      <!--  <property name="useCompression">1</property>--> <!--1为开启mysql压缩协议-->
+        <!--  <property name="fakeMySQLVersion">5.6.20</property>--> <!--设置模拟的MySQL版本号-->
+	<!-- <property name="processorBufferChunk">40960</property> -->
+	<!-- 
+	<property name="processors">1</property> 
+	<property name="processorExecutor">32</property> 
+	 -->
+		<!--默认为type 0: DirectByteBufferPool | type 1 ByteBufferArena-->
+		<property name="processorBufferPoolType">1</property>
+		<!--默认是65535 64K 用于sql解析时最大文本长度 -->
+		<property name="idleTimeout">600000</property>
+		<!--<property name="maxStringLiteralLength">65535</property>-->
+		<!--<property name="sequnceHandlerType">0</property>-->
+		<!--<property name="backSocketNoDelay">1</property>-->
+		<!--<property name="frontSocketNoDelay">1</property>-->
+		<!--<property name="processorExecutor">16</property>-->
+		<!--
+			<property name="serverPort">8066</property> <propehostname="managerPort">9066</property>
+			<property name="idleTimeout">60000</property> <propehostname="bindIp">0.0.0.0</property>
+			<property name="frontWriteQueueSize">4096</property> <propehostname="processors">32</property> -->
+		
+		
+			<!--
+			off heap for merge/order/group/limit      1开启   0关闭
+		-->
+		<property name="useOffHeapForMerge">1</property>
+
+		<!--
+			单位为m
+		-->
+		<property name="memoryPageSize">1m</property>
+
+		<!--
+			单位为k
+		-->
+		<property name="spillsFileBufferSize">1k</property>
+
+
+
+		<!--是否采用zookeeper协调切换  -->
+		<property name="useZKSwitch">true</property>
+
+		<!-- XA Recovery Log日志路径 -->
+		<!--<property name="XARecoveryLogBaseDir">./</property>-->
+
+		<!-- XA Recovery Log日志名称 -->
+		<!--<property name="XARecoveryLogBaseName">tmlog</property>-->
+
+	</system>
+	<!--
+	<firewall>
+	<whitehost>
+	      <host host="127.0.0.1" user="root"/>
+	      <host host="0:0:0:0:0:0:0:1" user="root"/>
+	   </whitehost>
+       <blacklist check="true">
+       <property name="selelctAllow">false</property>
+       </blacklist>
+	</firewall>-->
+	<!-- 全局SQL防火墙设置 -->
+	<!-- 
+	<firewall> 
+	   <whitehost>
+	      <host host="127.0.0.1" user="mycat"/>
+	      <host host="127.0.0.2" user="mycat"/>
+	   </whitehost>
+       <blacklist check="false">
+       </blacklist>
+	</firewall>
+	-->
+	<user name="man">
+		<property name="password">654321</property>
+		<property name="manager">true</property> 
+	</user>
+	<user name="man2">
+		<property name="password">654321</property>
+		<property name="manager">true</property> 
+		<property name="schemas">MYCAT_TEST3</property>
+	</user>
+	<user name="root">
+		<!-- <property name="password">123456</property> 
+		0:root:123456-->
+		<property name="password">GO0bnFVWrAuFgr1JMuMZkvfDNyTpoiGU7n/Wlsa151CirHQnANVk3NzE3FErx8v6pAcO0ctX3xFecmSr+976QA==</property>
+		<property name="schemas">MYCAT_TEST,MYCAT_TEST2,MYCAT_TEST3</property>
+		<property name="usingDecrypt">1</property>
+		<!-- 表级 DML 权限设置 -->
+		<!-- 		privileges check="false">
+			<schema name="TESTDB" dml="0110" >
+				<table name="tb01" dml="0000"></table>
+				<table name="tb02" dml="1111"></table>
+			</schema>
+privileges>
+		 -->
+
+		<privileges check="false">
+			<schema name="MYCAT_TEST" dml="0110" >
+				<table name="sharding_two_node" dml="0000"></table>
+			</schema>
+		</privileges>
+	</user>
+	
+<!--
+	<user name="user">
+		<property name="password">user</property>
+		<property name="schemas">TESTDB</property>
+		<property name="readOnly">true</property>
+	</user> -->
+
+</mycat:server>

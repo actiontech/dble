@@ -36,8 +36,6 @@ public class DruidParserFactory
 				parser = new DruidDropTableParser();
 			} else if (statement instanceof SQLAlterTableStatement) {
 				parser = new DruidAlterTableParser();
-			} else if (statement instanceof SQLTruncateStatement) {
-				parser = new DruidTruncateTableParser();
 			} else if (statement instanceof SQLCreateIndexStatement) {
 				parser = new DruidCreateIndexParser();
 			} else if (statement instanceof SQLDropIndexStatement) {
@@ -46,6 +44,8 @@ public class DruidParserFactory
 				String msg = "THE DDL is not supported :" + statement;
 				throw new SQLNonTransientException(msg);
 			}
+		} else if (statement instanceof SQLTruncateStatement) {
+			parser = new DruidTruncateTableParser();
 		} else if (statement instanceof SQLShowTablesStatement) {
 			parser = new DruidShowTablesParser();
 		} else {

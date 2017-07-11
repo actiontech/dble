@@ -21,7 +21,7 @@
  * https://code.google.com/p/opencloudb/.
  *
  */
-package io.mycat.server.handler;
+package io.mycat.manager.response;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

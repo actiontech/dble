@@ -65,9 +65,6 @@ public class ShowHeartbeatDetail {
 		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-
 		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 

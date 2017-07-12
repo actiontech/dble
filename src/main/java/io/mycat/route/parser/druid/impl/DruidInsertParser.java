@@ -1,15 +1,6 @@
 package io.mycat.route.parser.druid.impl;
 
-import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
@@ -20,7 +11,6 @@ import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import io.mycat.config.ErrorCode;
@@ -30,8 +20,6 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.StructureMeta.IndexMeta;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
-import io.mycat.plan.common.item.Item;
-import io.mycat.plan.visitor.MySQLItemVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
@@ -43,6 +31,10 @@ import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.mpp.ColumnRoutePair;
 import io.mycat.util.StringUtil;
+
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.util.*;
 
 public class DruidInsertParser extends DefaultDruidParser {
 	@Override
@@ -546,10 +538,8 @@ public class DruidInsertParser extends DefaultDruidParser {
 				long id = MycatServer.getInstance().getSequenceHandler().nextId(tableKey);
 				sb.append(id);
 			} else {
-				MySQLItemVisitor fv = new MySQLItemVisitor(sc.getSchema(), sc.getCharsetIndex());
-				valuse.get(iValue++).accept(fv);
-				Item item =fv.getItem();
-				sb.append(item.getItemName());
+				String value = SQLUtils.toMySqlString(valuse.get(iValue++));
+				sb.append(value);
 			}
 			if (i < colSize-1) {
 				sb.append(",");

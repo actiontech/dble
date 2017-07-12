@@ -1,8 +1,9 @@
 package io.mycat.plan.node;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+import io.mycat.MycatServer;
+import io.mycat.config.model.SchemaConfig;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.util.ToStringUtil;
 
@@ -22,13 +23,11 @@ public class NoNameNode extends PlanNode {
 		return PlanNodeType.NONAME;
 	}
 
-	/**
-	 * @param areaSchema
-	 * @param tableName
-	 */
 	public NoNameNode(String catalog, String sql) {
 		this.catalog = catalog;
 		this.sql = sql;
+		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(catalog);
+		this.setNoshardNode(new HashSet<>(Arrays.asList(schema.getMetaDataNode())));
 	}
 
 	/**

@@ -1,19 +1,12 @@
 package io.mycat.meta.table;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLNotNullConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLNullConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
@@ -35,10 +28,11 @@ public class MetaHelper {
 		TableMeta.Builder tmBuilder = TableMeta.newBuilder();
 		tmBuilder.setTableName(table);
 		tmBuilder.setVersion(timeStamp);
-		Set<String> indexNames = null;
+		Set<String> indexNames = new HashSet<>();
 		for (SQLTableElement tableElement : createStment.getTableElementList()) {
 			if (tableElement instanceof SQLColumnDefinition) {
-				ColumnMeta.Builder cmBuilder = makeColumnMeta((SQLColumnDefinition) tableElement);
+				SQLColumnDefinition column = (SQLColumnDefinition) tableElement;
+				ColumnMeta.Builder cmBuilder = makeColumnMeta(tmBuilder, column, indexNames);
 				if(cmBuilder.getAutoIncre()){
 					tmBuilder.setAiColPos(tmBuilder.getColumnsCount());
 				}
@@ -48,23 +42,14 @@ public class MetaHelper {
 				tmBuilder.setPrimary(makeIndexMeta(PRIMARY,  INDEX_TYPE.PRI, primaryKey.getColumns()));
 			} else if (tableElement instanceof MySqlUnique) {
 				MySqlUnique unique = (MySqlUnique) tableElement;
-				if(indexNames == null){
-					indexNames = new HashSet<String>();
-				}
 				String indexName = genIndexName(unique.getName(), unique.getColumns(), indexNames);
 				tmBuilder.addUniIndex(makeIndexMeta(indexName, INDEX_TYPE.UNI, unique.getColumns()));
 			} else if (tableElement instanceof MySqlTableIndex) {
 				MySqlTableIndex index = (MySqlTableIndex) tableElement;
-				if(indexNames == null){
-					indexNames = new HashSet<String>();
-				}
 				String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
 				tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
 			} else if (tableElement instanceof MySqlKey) {
 				MySqlKey index = (MySqlKey) tableElement;
-				if(indexNames == null){
-					indexNames = new HashSet<String>();
-				}
 				String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
 				tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
 			} else {
@@ -75,7 +60,7 @@ public class MetaHelper {
 	}
 
 	public static String genIndexName(SQLName srcIndexName, List<SQLExpr> columnExprs, Set<String> indexNames){
-		String indexName = null;
+		String indexName;
 		if (srcIndexName != null) {
 			indexName = StringUtil.removeBackQuote(srcIndexName.getSimpleName());
 		} else {
@@ -118,7 +103,7 @@ public class MetaHelper {
 		return indexBuilder.build();
 	}
 
-	public static ColumnMeta.Builder makeColumnMeta(SQLColumnDefinition column) {
+	public static ColumnMeta.Builder makeColumnMeta(TableMeta.Builder tmBuilder, SQLColumnDefinition column, Set<String> indexNames) {
 		ColumnMeta.Builder cmBuilder = ColumnMeta.newBuilder();
 		cmBuilder.setName(StringUtil.removeBackQuote(column.getName().getSimpleName()));
 		cmBuilder.setDataType(column.getDataType().getName());
@@ -127,8 +112,12 @@ public class MetaHelper {
 				cmBuilder.setCanNull(false);
 			} else if (constraint instanceof SQLNullConstraint) {
 				cmBuilder.setCanNull(true);
-			} else {
-				// SQLColumnPrimaryKey ,SQLColumnUniqueKey will not happen in "show create table ..", ignore
+			} else if (constraint instanceof SQLColumnPrimaryKey) {
+				tmBuilder.setPrimary(makeIndexMeta(PRIMARY,  INDEX_TYPE.PRI, new ArrayList<SQLExpr>(Arrays.asList(column.getName()))));
+			} else if (constraint instanceof SQLColumnUniqueKey) {
+				List<SQLExpr> columnExprs = new ArrayList<SQLExpr>(Arrays.asList(column.getName()));
+				String indexName = genIndexName(null, columnExprs, indexNames);
+				tmBuilder.addUniIndex(makeIndexMeta(indexName, INDEX_TYPE.UNI, columnExprs));
 			}
 		}
 		if (column.getDefaultExpr() != null) {

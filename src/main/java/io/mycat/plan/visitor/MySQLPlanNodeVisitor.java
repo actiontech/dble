@@ -3,6 +3,7 @@ package io.mycat.plan.visitor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
@@ -107,7 +108,7 @@ public class MySQLPlanNodeVisitor {
 		if (from != null) {
 			visit(from);
 		} else {
-			this.tableNode = new NoNameNode(currentDb, sqlSelectQuery.toString());
+			this.tableNode = new NoNameNode(currentDb,SQLUtils.toMySqlString(sqlSelectQuery));
 		}
 
 		if (tableNode != null && (sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT ||sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW))

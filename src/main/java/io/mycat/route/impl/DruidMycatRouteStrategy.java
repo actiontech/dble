@@ -79,24 +79,6 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	public RouteResultset analyseShowSQL(SchemaConfig schema,
 			RouteResultset rrs, String stmt) throws SQLException {
 		String upStmt = stmt.toUpperCase();
-		int tabInd = upStmt.indexOf(" TABLES");
-		if (tabInd > 0) {// show tables
-			int[] nextPost = RouterUtil.getSpecPos(upStmt, 0);
-			if (nextPost[0] > 0) {// remove db info
-				int end = RouterUtil.getSpecEndPos(upStmt, tabInd);
-				if (upStmt.indexOf(" FULL") > 0) {
-					stmt = "SHOW FULL TABLES" + stmt.substring(end);
-				} else {
-					stmt = "SHOW TABLES" + stmt.substring(end);
-				}
-			}
-			rrs.setStatement(stmt);
-			String defaultNode = schema.getDataNode();
-			if (!Strings.isNullOrEmpty(defaultNode)) {
-				return RouterUtil.routeToSingleNode(rrs, defaultNode);
-			}
-			return RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
-		}
 		
 		/**
 		 *  show index or column

@@ -83,9 +83,6 @@ public final class ShowDataNode {
 		fields[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-
 		fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 

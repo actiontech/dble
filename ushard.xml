@@ -797,6 +797,7 @@
 						<option>-keep class com.actionsky.ushard.config.loader.zkprocess.xmltozk.XmltoZkMain{*;}</option><!--加载资源到ZK入口-->
 						<option>-keep class com.actionsky.ushard.util.ResourceUtil{*;}</option><!--外部资源加载类-->
 						<option>-keep class com.actionsky.ushard.route.function.**{*;}</option><!--算法加载-->
+						<option>-keep class com.actionsky.ushard.util.DecryptUtil{*;}</option><!--加密类-->
 						<option>-keep class com.actionsky.ushard.config.model.SystemConfig{*;}</option><!--配置类-->
 						<option>-keep class com.actionsky.ushard.meta.protocol.**{*;}</option><!--StructureMeta类-->
 					</options>

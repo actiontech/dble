@@ -5,7 +5,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import io.mycat.route.parser.druid.impl.*;
 import io.mycat.route.parser.druid.impl.ddl.*;
-import io.mycat.route.parser.druid.impl.show.DruidShowTablesParser;
+import io.mycat.server.parser.ServerParse;
 
 import java.sql.SQLNonTransientException;
 
@@ -16,7 +16,7 @@ import java.sql.SQLNonTransientException;
  */
 public class DruidParserFactory
 {
-	public static DruidParser create(SQLStatement statement)
+	public static DruidParser create(SQLStatement statement, int sqlType)
 			throws SQLNonTransientException {
 		DruidParser parser = null;
 		if (statement instanceof SQLSelectStatement) {
@@ -36,8 +36,6 @@ public class DruidParserFactory
 				parser = new DruidDropTableParser();
 			} else if (statement instanceof SQLAlterTableStatement) {
 				parser = new DruidAlterTableParser();
-			} else if (statement instanceof SQLTruncateStatement) {
-				parser = new DruidTruncateTableParser();
 			} else if (statement instanceof SQLCreateIndexStatement) {
 				parser = new DruidCreateIndexParser();
 			} else if (statement instanceof SQLDropIndexStatement) {
@@ -46,8 +44,11 @@ public class DruidParserFactory
 				String msg = "THE DDL is not supported :" + statement;
 				throw new SQLNonTransientException(msg);
 			}
-		} else if (statement instanceof SQLShowTablesStatement) {
-			parser = new DruidShowTablesParser();
+		} else if (statement instanceof SQLTruncateStatement) {
+			parser = new DruidTruncateTableParser();
+		}else if (sqlType == ServerParse.DDL) {
+			String msg = "THE DDL is not supported :" + statement;
+			throw new SQLNonTransientException(msg);
 		} else {
 			parser = new DefaultDruidParser();
 		}

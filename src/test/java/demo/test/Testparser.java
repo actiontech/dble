@@ -42,13 +42,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.MysqlForeignKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeColumn;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
@@ -59,6 +53,22 @@ public class Testparser {
 //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("drop table char_columns_test;");
 //		obj.test("truncate table char_columns_test;");
+
+		String strULSql ="";
+		strULSql ="desc a;";
+		obj.test(strULSql);
+		strULSql ="describe a;";
+		obj.test(strULSql);
+		strULSql ="describe a.b;";
+		obj.test(strULSql);
+		strULSql ="desc a b;";
+		obj.test(strULSql);
+
+		strULSql ="explain a;";
+		obj.test(strULSql);
+
+		strULSql ="explain select * from a;";
+		obj.test(strULSql);
 		
 //		obj.test("create index idx_test on char_columns_test(id) ;");
 //		obj.test("drop index  idx_test on char_columns_test;");
@@ -268,7 +278,9 @@ public class Testparser {
 		System.out.println(sql);
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLStatement statement = parser.parseStatement();
-		if(statement instanceof MySqlCreateTableStatement){
+		if(statement instanceof MySqlExplainStatement){
+			System.out.println("MySqlExplainStatement");
+		} else if(statement instanceof MySqlCreateTableStatement){
 			MySqlCreateTableStatement createStment = (MySqlCreateTableStatement)statement;
 			SQLExpr expr = createStment.getTableSource().getExpr();
 			if (expr instanceof SQLPropertyExpr) {

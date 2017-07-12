@@ -30,6 +30,8 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.StructureMeta.IndexMeta;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
+import io.mycat.plan.common.item.Item;
+import io.mycat.plan.visitor.MySQLItemVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
@@ -75,7 +77,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (tc.isGlobalTable()) {
 			String sql = rrs.getStatement();
 			if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
-				sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck());
+				sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck(), sc);
 			}else{
 				sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			} 
@@ -86,7 +88,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 
 		if (tc.isAutoIncrement()) {
-			String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false);
+			String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false, sc);
 			rrs.setStatement(sql);
 			SQLStatementParser parser = new MySqlStatementParser(sql);
 			stmt = parser.parseStatement();
@@ -396,7 +398,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String joinKey) throws SQLNonTransientException {
 		return getShardingColIndex(schemaInfo, insertStmt, joinKey);
 	}
-	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc , boolean isGlobalCheck) throws SQLNonTransientException {
+	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc , boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
@@ -478,13 +480,13 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (vcl != null && vcl.size() > 1) { // 批量insert
 			for (int j = 0; j < vcl.size(); j++) {
 				if (j != vcl.size() - 1)
-					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, sc).append(",");
 				else
-					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, sc);
 			}
 		} else { // 非批量 insert
 			List<SQLExpr> valuse = insert.getValues().getValues();
-			appendValues(tableKey,valuse, sb ,autoIncrement, idxGlobal, colSize);
+			appendValues(tableKey,valuse, sb ,autoIncrement, idxGlobal, colSize, sc);
 		}
 
 		List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
@@ -524,7 +526,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		sb.append(")");
 	}
 
-	private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
+	private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize, ServerConnection sc) throws SQLNonTransientException {
 		int size = valuse.size();
 		int checkSize = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
 		if (checkSize != size){
@@ -544,7 +546,10 @@ public class DruidInsertParser extends DefaultDruidParser {
 				long id = MycatServer.getInstance().getSequenceHandler().nextId(tableKey);
 				sb.append(id);
 			} else {
-				sb.append(valuse.get(iValue++).toString());
+				MySQLItemVisitor fv = new MySQLItemVisitor(sc.getSchema(), sc.getCharsetIndex());
+				valuse.get(iValue++).accept(fv);
+				Item item =fv.getItem();
+				sb.append(item.getItemName());
 			}
 			if (i < colSize-1) {
 				sb.append(",");

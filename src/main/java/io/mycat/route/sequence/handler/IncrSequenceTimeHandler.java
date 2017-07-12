@@ -1,11 +1,10 @@
 package io.mycat.route.sequence.handler;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
 import io.mycat.route.util.PropertiesUtil;
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 public class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
@@ -49,10 +48,9 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 	 */
 	static class IdWorker {
 		private final static long twepoch = 1288834974657L;
-	    	private final static long timestampLowBits = 12L;
-	    	private final static long timestampHighMask = 0x3FFFFFFF000L;
-	    	private final static long timestampLowMask = 0xFFF;
-	    
+		private final static long timestampLowBits = 12L;
+		private final static long timestampLowMask = 0xFFF;
+
 		// 机器标识位数
 		private final static long workerIdBits = 5L;
 		// 数据中心标识位数
@@ -64,7 +62,7 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		// 毫秒内自增位
 		private final static long sequenceBits = 12L;
 
-	    	private final static long sequenceShift = timestampLowBits;
+	    private final static long sequenceShift = timestampLowBits;
 		private final static long workerIdShift = sequenceBits + timestampLowBits;
 		private final static long datacenterIdShift = workerIdBits + sequenceBits + timestampLowBits;
 		private final static long timestampHighShift = datacenterIdBits + workerIdBits + sequenceBits + timestampLowBits;
@@ -112,8 +110,10 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 			lastTimestamp = timestamp;
 			
 			// ID偏移组合生成最终的ID，并返回ID
-			long nextId = (((timestamp - twepoch) & timestampHighMask) << timestampHighShift)
-			    | (datacenterId << datacenterIdShift)
+
+			//42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit
+			long nextId = (((timestamp - twepoch) >> timestampLowBits) << timestampHighShift)
+					| (datacenterId << datacenterIdShift)
 			    | (workerId << workerIdShift)
 			    | (sequence << sequenceShift)
 			    | ((timestamp - twepoch) & timestampLowMask);
@@ -134,11 +134,10 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		}
 	}
 
-    	public static void main(String[] args) {
-	    	int i;
-		
+	public static void main(String[] args) {
+		int i;
 		for (i = 0; i < 10; i++) {
-		    	System.out.println(workey.nextId());
+			System.out.println(workey.nextId());
 		}
 	}
 }

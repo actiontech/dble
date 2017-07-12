@@ -66,7 +66,7 @@ import io.mycat.manager.response.ShowVersion;
 import io.mycat.manager.response.ShowWhiteHost;
 import io.mycat.route.parser.ManagerParseShow;
 import io.mycat.route.parser.util.ParseUtil;
-import io.mycat.server.handler.ShowCache;
+import io.mycat.manager.response.ShowCache;
 import io.mycat.util.StringUtil;
 
 /**

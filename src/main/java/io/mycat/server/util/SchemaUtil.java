@@ -42,9 +42,8 @@ public class SchemaUtil
 		return null;
 	}
 
-	public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
+	public static SchemaInfo getSchemaInfo(String user, String schema, SQLExpr expr) throws SQLException {
 		SchemaInfo schemaInfo = new SchemaInfo();
-		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
 			schemaInfo.schema = StringUtil.removeBackQuote(propertyExpr.getOwner().toString());
@@ -81,6 +80,10 @@ public class SchemaUtil
 			schemaInfo.schemaConfig = schemaConfig;
 			return schemaInfo;
 		}
+	}
+
+	public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
+		return getSchemaInfo(user, schema, tableSource.getExpr());
 	}
 	
 	public static SchemaInfo isNoSharding(ServerConnection source,String schema, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt)

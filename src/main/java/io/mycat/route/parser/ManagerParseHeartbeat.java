@@ -24,6 +24,7 @@
 package io.mycat.route.parser;
 
 import io.mycat.route.parser.util.Pair;
+import io.mycat.util.StringUtil;
 
 /**
  * @author songwie
@@ -81,6 +82,9 @@ public final class ManagerParseHeartbeat {
     public static Pair<String, String> getPair(String stmt) {
         int offset = stmt.indexOf("@@");
         String s = stmt.substring(++offset + " heartbeat.detail".length());
+        if(StringUtil.isEmpty(s)){
+			return new Pair<String, String>("name", "");
+		}
         char c = s.charAt(0);
         offset = 0;
         if(c == ' '){

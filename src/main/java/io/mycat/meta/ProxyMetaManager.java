@@ -460,7 +460,7 @@ public class ProxyMetaManager {
 		} else if (statement instanceof SQLAlterTableStatement) {
 			alterTable(schema, sql, (SQLAlterTableStatement) statement, isSuccess);
 		} else if (statement instanceof SQLTruncateStatement) {
-			// TODO:Sequence?
+			truncateTable(schema, sql, (SQLTruncateStatement) statement, isSuccess);
 		} else if (statement instanceof SQLCreateIndexStatement) {
 			createIndex(schema, sql, (SQLCreateIndexStatement) statement, isSuccess);
 		} else if (statement instanceof SQLDropIndexStatement) {
@@ -502,7 +502,6 @@ public class ProxyMetaManager {
 			}
 		}
 	}
-
 	//no need to check user
 	private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource){
 		try {
@@ -512,6 +511,9 @@ public class ProxyMetaManager {
 			return null;
 		}
 	}
+
+
+
 	private void createTable(String schema, String sql, MySqlCreateTableStatement statement, boolean isSuccess) {
 		SchemaInfo schemaInfo = getSchemaInfo(schema, statement.getTableSource());
 		try {
@@ -549,7 +551,6 @@ public class ProxyMetaManager {
 				LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
 			} finally {
 				removeMetaLock(schemaInfo.schema, schemaInfo.table);
-
 				if (MycatServer.getInstance().isUseZK()) {
 					try {
 						notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
@@ -672,6 +673,19 @@ public class ProxyMetaManager {
 				} catch (Exception e) {
 					LOGGER.warn("notifyClusterDDL error", e);
 				}
+			}
+		}
+	}
+	private void truncateTable(String schema, String sql, SQLTruncateStatement statement, boolean isSuccess){
+		//TODO:reset Sequence?
+		SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
+		SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
+		removeMetaLock(schemaInfo.schema, schemaInfo.table);
+		if (MycatServer.getInstance().isUseZK()) {
+			try {
+				notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED);
+			} catch (Exception e) {
+				LOGGER.warn("notifyClusterDDL error", e);
 			}
 		}
 	}

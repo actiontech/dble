@@ -24,15 +24,10 @@ import java.util.List;
 public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 	
 	public static final Logger LOGGER = LoggerFactory.getLogger(DruidMycatRouteStrategy.class);
-	
 	@Override
-	public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
-												String originSql, RouteResultset rrs, String charset,
-												LayerCachePool cachePool, ServerConnection sc) throws SQLException {
+	public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {
 		SQLStatementParser parser = new MySqlStatementParser(originSql);
-		MycatSchemaStatVisitor visitor = null;
-		SQLStatement statement;
-		
+
 		/**
 		 * 解析出现问题统一抛SQL语法错误
 		 */
@@ -41,21 +36,24 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 			if(list.size()>1){
 				throw new SQLSyntaxErrorException("MultiQueries is not supported,use single query instead ");
 			}
-			statement = list.get(0);
-            visitor = new MycatSchemaStatVisitor();
+			return list.get(0);
 		} catch (Exception t) {
-	        LOGGER.error("routeNormalSqlWithAST", t);
+			LOGGER.error("routeNormalSqlWithAST", t);
 			throw new SQLSyntaxErrorException(t);
 		}
-
+	}
+	@Override
+	public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
+												String originSql, RouteResultset rrs, String charset,
+												LayerCachePool cachePool, ServerConnection sc) throws SQLException {
+		SQLStatement statement = parserSQL(originSql);
 		/**
 		 * 检验unsupported statement
 		 */
 		checkUnSupportedStatement(statement);
 
-
 		DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
-		return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, visitor, sc);
+		return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new MycatSchemaStatVisitor(), sc);
 		
 	}
 
@@ -145,85 +143,6 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 		rrs.setStatement(stmt);
 		return RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
 	}
-	
-	
-//	/**
-//	 * 为一个表进行条件路由
-//	 * @param schema
-//	 * @param tablesAndConditions
-//	 * @param tablesRouteMap
-//	 * @throws SQLNonTransientException
-//	 */
-//	private static RouteResultset findRouteWithcConditionsForOneTable(SchemaConfig schema, RouteResultset rrs,
-//		Map<String, Set<ColumnRoutePair>> conditions, String tableName, String sql) throws SQLNonTransientException {
-//		boolean cache = rrs.isCacheAble();
-//	    //为分库表找路由
-//		tableName = tableName.toUpperCase();
-//		TableConfig tableConfig = schema.getTables().get(tableName);
-//		//全局表或者不分库的表略过（全局表后面再计算）
-//		if(tableConfig.isGlobalTable()) {
-//			return null;
-//		} else {//非全局表
-//			Set<String> routeSet = new HashSet<String>();
-//			String joinKey = tableConfig.getJoinKey();
-//			for(Map.Entry<String, Set<ColumnRoutePair>> condition : conditions.entrySet()) {
-//				String colName = condition.getKey();
-//				//条件字段是拆分字段
-//				if(colName.equals(tableConfig.getPartitionColumn())) {
-//					Set<ColumnRoutePair> columnPairs = condition.getValue();
-//					
-//					for(ColumnRoutePair pair : columnPairs) {
-//						if(pair.colValue != null) {
-//							Integer nodeIndex = tableConfig.getRule().getRuleAlgorithm().calculate(pair.colValue);
-//							if(nodeIndex == null) {
-//								String msg = "can't find any valid datanode :" + tableConfig.getName() 
-//										+ " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
-//								LOGGER.warn(msg);
-//								throw new SQLNonTransientException(msg);
-//							}
-//							String node = tableConfig.getDataNodes().get(nodeIndex);
-//							if(node != null) {//找到一个路由节点
-//								routeSet.add(node);
-//							}
-//						}
-//						if(pair.rangeValue != null) {
-//							Integer[] nodeIndexs = tableConfig.getRule().getRuleAlgorithm()
-//									.calculateRange(pair.rangeValue.beginValue.toString(), pair.rangeValue.endValue.toString());
-//							for(Integer idx : nodeIndexs) {
-//								String node = tableConfig.getDataNodes().get(idx);
-//								if(node != null) {//找到一个路由节点
-//									routeSet.add(node);
-//								}
-//							}
-//						}
-//					}
-//				} else if(joinKey != null && joinKey.equals(colName)) {
-//					Set<String> dataNodeSet = RouterUtil.ruleCalculate(
-//							tableConfig.getParentTC(), condition.getValue());
-//					if (dataNodeSet.isEmpty()) {
-//						throw new SQLNonTransientException(
-//								"parent key can't find any valid datanode ");
-//					}
-//					if (LOGGER.isDebugEnabled()) {
-//						LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  "
-//								+ Arrays.toString(dataNodeSet.toArray()) + " sql :" + sql);
-//					}
-//					if (dataNodeSet.size() > 1) {
-//						return RouterUtil.routeToMultiNode(rrs.isCacheAble(), rrs, schema.getAllDataNodes(), sql);
-//					} else {
-//						rrs.setCacheAble(true);
-//						return RouterUtil.routeToSingleNode(rrs, dataNodeSet.iterator().next(), sql);
-//					}
-//				} else {//条件字段不是拆分字段也不是join字段,略过
-//					continue;
-//					
-//				}
-//			}
-//			return RouterUtil.routeToMultiNode(cache, rrs, routeSet, sql);
-//			
-//		}
-//
-//	}
 
 	public RouteResultset routeSystemInfo(SchemaConfig schema, int sqlType,
 			String stmt, RouteResultset rrs) throws SQLException {

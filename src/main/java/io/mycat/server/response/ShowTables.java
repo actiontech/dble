@@ -1,8 +1,11 @@
 package io.mycat.server.response;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
 import com.google.common.base.Strings;
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
+import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.MycatConfig;
@@ -14,6 +17,9 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.factory.RouteStrategyFactory;
+import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
@@ -39,6 +45,7 @@ public class ShowTables {
 			"((\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*)|(\\s+(where){1}\\s+((. *){0,})\\s*)){0,1}" +
 			"\\s*$";
 	public static Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
+
 	public static void response(ServerConnection c, String stmt, boolean isFull) {
 		String showSchema = getShowTableFrom(stmt);
 		if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
@@ -64,10 +71,48 @@ public class ShowTables {
 		//不分库的schema，show tables从后端 mysql中查
 		String node = schema.getDataNode();
 		if (!Strings.isNullOrEmpty(node)) {
-			c.execute(stmt, ServerParse.SHOW);
-			return;
+			try {
+				parserAndExecuteShowTables(c,stmt);
+			} catch (Exception e) {
+				c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+			}
+		}else {
+			responseDirect(c, stmt, cSchema, isFull);
 		}
-		responseDirect(c, stmt, cSchema, isFull);
+	}
+
+	private static void parserAndExecuteShowTables(ServerConnection c, String originSql) throws Exception {
+		SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(originSql);
+		SQLShowTablesStatement showTablesStatement = (SQLShowTablesStatement) statement;
+		String fromSchema;
+		RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
+		if (showTablesStatement.getDatabase() == null) {
+			fromSchema = c.getSchema();
+		} else {
+			//MUST BE NOT NULL
+			fromSchema = showTablesStatement.getDatabase().getSimpleName();
+			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+				fromSchema = fromSchema.toLowerCase();
+			}
+			Pattern pattern = ShowTables.pattern;
+			Matcher ma = pattern.matcher(originSql);
+			StringBuilder sql = new StringBuilder();
+			//MUST RETURN TRUE
+			ma.matches();
+			sql.append(ma.group(1));
+			if (ma.group(2) != null) {
+				sql.append(ma.group(2));
+			}
+			sql.append(ma.group(3));
+			if (ma.group(7) != null) {
+				sql.append(ma.group(7));
+			}
+			rrs.setStatement(sql.toString());
+		}
+		SchemaConfig schemaToShow = MycatServer.getInstance().getConfig().getSchemas().get(fromSchema);
+		RouterUtil.routeToSingleNode(rrs, schemaToShow.getDataNode());
+		SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
+		singleNodeHandler.execute();
 	}
 
 	private static void responseDirect(ServerConnection c, String stmt, String cSchema, boolean isFull) {
@@ -139,6 +184,7 @@ public class ShowTables {
 		}
 		return packetId;
 	}
+
 	private static void writeRowEof(ByteBuffer buffer, ServerConnection c, byte packetId) {
 
 		// write last eof
@@ -159,7 +205,7 @@ public class ShowTables {
 		Map meta = schemata.getTableMetas();
 		TreeMap<String, String> tableMap = new TreeMap<>();
 		Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
-		String like =getShowTableLike(stmt);
+		String like = getShowTableLike(stmt);
 		if (null == like) {
 			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
 				String tbName = tbConfig.getName();
@@ -192,6 +238,7 @@ public class ShowTables {
 		}
 		return null;
 	}
+
 	private static String getShowTableLike(String sql) {
 		Matcher ma = pattern.matcher(sql);
 		if (ma.matches()) {

@@ -5,11 +5,9 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import io.mycat.route.parser.druid.impl.*;
 import io.mycat.route.parser.druid.impl.ddl.*;
-import io.mycat.route.parser.druid.impl.show.DruidShowTablesParser;
 import io.mycat.server.parser.ServerParse;
 
 import java.sql.SQLNonTransientException;
-import java.sql.SQLType;
 
 /**
  * DruidParser的工厂类
@@ -48,9 +46,7 @@ public class DruidParserFactory
 			}
 		} else if (statement instanceof SQLTruncateStatement) {
 			parser = new DruidTruncateTableParser();
-		} else if (statement instanceof SQLShowTablesStatement) {
-			parser = new DruidShowTablesParser();
-		} else if (sqlType == ServerParse.DDL) {
+		}else if (sqlType == ServerParse.DDL) {
 			String msg = "THE DDL is not supported :" + statement;
 			throw new SQLNonTransientException(msg);
 		} else {

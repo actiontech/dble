@@ -15,7 +15,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import io.mycat.MycatServer;
-import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
@@ -48,7 +47,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 					}
 					schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 				}
-				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
+				rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}

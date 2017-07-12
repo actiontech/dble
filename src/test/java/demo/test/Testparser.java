@@ -279,7 +279,7 @@ public class Testparser {
 		SQLStatementParser parser = new MySqlStatementParser(sql);
 		SQLStatement statement = parser.parseStatement();
 		if(statement instanceof MySqlExplainStatement){
-			System.out.println("MySqlExplainStatement");
+			System.out.println("MySqlExplainStatement"+statement.toString());
 		} else if(statement instanceof MySqlCreateTableStatement){
 			MySqlCreateTableStatement createStment = (MySqlCreateTableStatement)statement;
 			SQLExpr expr = createStment.getTableSource().getExpr();

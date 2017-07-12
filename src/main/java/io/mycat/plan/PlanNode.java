@@ -281,6 +281,7 @@ public abstract class PlanNode {
 		to.setSql(this.getSql());
 		to.setSubQuery(subQuery);
 		to.setUnGlobalTableCount(unGlobalTableCount);
+		to.setNoshardNode(noshardNode);
 	}
 
 	protected void setUpInnerFields() {

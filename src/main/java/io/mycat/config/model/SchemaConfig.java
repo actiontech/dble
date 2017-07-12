@@ -38,7 +38,7 @@ public class SchemaConfig {
 	private final Map<String, TableConfig> tables;
 	private final boolean noSharding;
 	private final String dataNode;
-	private final Set<String> metaDataNodes;
+	private final String metaDataNode;
 	private final Set<String> allDataNodes;
 	/**
 	 * when a select sql has no limit condition ,and default max limit to
@@ -59,7 +59,7 @@ public class SchemaConfig {
 		if (noSharding && dataNode == null) {
 			throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
 		}
-		this.metaDataNodes = buildMetaDataNodes();
+		this.metaDataNode = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();
 		if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
 			String[] dnArr = new String[this.allDataNodes.size()];
@@ -152,8 +152,8 @@ public class SchemaConfig {
 		return noSharding;
 	}
 
-	public Set<String> getMetaDataNodes() {
-		return metaDataNodes;
+	public String getMetaDataNode() {
+		return metaDataNode;
 	}
 
 	public Set<String> getAllDataNodes() {
@@ -174,18 +174,15 @@ public class SchemaConfig {
 	/**
 	 * 取得含有不同Meta信息的数据节点,比如表和表结构。
 	 */
-	private Set<String> buildMetaDataNodes() {
-		Set<String> set = new HashSet<String>();
+	private String buildMetaDataNodes() {
 		if (!isEmpty(dataNode)) {
-			set.add(dataNode);
-		}else if (!noSharding) {
+			return dataNode;
+		}else{
 			for (TableConfig tc : tables.values()) {
-				set.add(tc.getDataNodes().get(0));
-				break;
+				return tc.getDataNodes().get(0);
 			}
+			throw new RuntimeException(name + " in Sharding mode schema must have at least one table ");
 		}
-
-		return set;
 	}
 
 	/**

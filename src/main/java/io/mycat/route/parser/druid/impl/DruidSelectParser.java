@@ -71,7 +71,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 					}
 					schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
 				}
-				rrs = RouterUtil.routeToMultiNode(false, rrs, schema.getMetaDataNodes());
+				rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}

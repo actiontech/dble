@@ -31,7 +31,7 @@ public class TableNode extends PlanNode {
 	private List<SQLHint> hintList;
 
 	/**
-	 * @param areaSchema
+	 * @param catalog
 	 * @param tableName
 	 */
 	public TableNode(String catalog, String tableName) {

@@ -72,7 +72,7 @@ public class ShowTables {
 		String node = schema.getDataNode();
 		if (!Strings.isNullOrEmpty(node)) {
 			try {
-				parserAndExecuteShowTables(c,stmt);
+				parserAndExecuteShowTables(c, stmt, node);
 			} catch (Exception e) {
 				c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
 			}
@@ -81,19 +81,11 @@ public class ShowTables {
 		}
 	}
 
-	private static void parserAndExecuteShowTables(ServerConnection c, String originSql) throws Exception {
+	private static void parserAndExecuteShowTables(ServerConnection c, String originSql,  String node) throws Exception {
 		SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(originSql);
 		SQLShowTablesStatement showTablesStatement = (SQLShowTablesStatement) statement;
-		String fromSchema;
 		RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
-		if (showTablesStatement.getDatabase() == null) {
-			fromSchema = c.getSchema();
-		} else {
-			//MUST BE NOT NULL
-			fromSchema = showTablesStatement.getDatabase().getSimpleName();
-			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-				fromSchema = fromSchema.toLowerCase();
-			}
+		if (showTablesStatement.getDatabase() != null) {
 			Pattern pattern = ShowTables.pattern;
 			Matcher ma = pattern.matcher(originSql);
 			StringBuilder sql = new StringBuilder();
@@ -109,8 +101,7 @@ public class ShowTables {
 			}
 			rrs.setStatement(sql.toString());
 		}
-		SchemaConfig schemaToShow = MycatServer.getInstance().getConfig().getSchemas().get(fromSchema);
-		RouterUtil.routeToSingleNode(rrs, schemaToShow.getDataNode());
+		RouterUtil.routeToSingleNode(rrs, node);
 		SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
 		singleNodeHandler.execute();
 	}

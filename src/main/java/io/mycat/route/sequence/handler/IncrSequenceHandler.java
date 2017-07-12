@@ -43,7 +43,6 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
 
 	public static final String FILE_NAME = "sequence_conf.properties";
 
-	public static final String KEY_HIS_NAME = ".HISIDS";// 1-10000,50001-60000
 	public static final String KEY_MIN_NAME = ".MINID";// 1
 	public static final String KEY_MAX_NAME = ".MAXID";// 10000
 	public static final String KEY_CUR_NAME = ".CURID";// 888

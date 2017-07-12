@@ -7,6 +7,10 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Properties;
 
+import static io.mycat.route.sequence.handler.IncrSequenceHandler.KEY_CUR_NAME;
+import static io.mycat.route.sequence.handler.IncrSequenceHandler.KEY_MAX_NAME;
+import static io.mycat.route.sequence.handler.IncrSequenceHandler.KEY_MIN_NAME;
+
 /**
  * Property文件加载器
  *
@@ -36,7 +40,12 @@ public class PropertiesUtil {
             Enumeration<?> enu = props.propertyNames();
             while (enu.hasMoreElements()) {
                 String key = (String) enu.nextElement();
-                newProps.setProperty(key.toLowerCase(),props.getProperty(key));
+                if (key.endsWith(KEY_MIN_NAME) || key.endsWith(KEY_MAX_NAME) || key.endsWith(KEY_CUR_NAME)) {
+                    int index = key.lastIndexOf('.');
+                    newProps.setProperty(key.substring(0,index).toLowerCase()+key.substring(index), props.getProperty(key));
+                }else {
+                    newProps.setProperty(key.toLowerCase(), props.getProperty(key));
+                }
             }
             props.clear();
             return newProps;

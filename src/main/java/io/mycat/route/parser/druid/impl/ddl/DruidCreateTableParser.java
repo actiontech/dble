@@ -57,6 +57,8 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
 			String sql= addColumnIfCreate(createStmt);
+			rrs.setSrcStatement(sql);
+			sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(createStmt);
 		}

@@ -38,7 +38,8 @@ import io.mycat.util.FormatUtil;
  */
 public final class RouteResultset implements Serializable {
 	private static final long serialVersionUID = 3906972758236875720L;
-	private final String srcStatement;// 原始语句
+
+	private String srcStatement;// 原始语句
 	private String statement;
 	private String schema;
 	private String table;
@@ -267,6 +268,10 @@ public final class RouteResultset implements Serializable {
 
     }
 
+
+	public void setSrcStatement(String srcStatement) {
+		this.srcStatement = srcStatement;
+	}
 	public String getSrcStatement() {
 		return srcStatement;
 	}

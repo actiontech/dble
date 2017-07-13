@@ -93,6 +93,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 		if (GlobalTableUtil.useGlobleTableCheck()
 				&& GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
 			String sql = modifyColumnIfAlter(schemaInfo, rrs.getStatement(), alterTable);
+			rrs.setSrcStatement(sql);
+			sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(alterTable);
 		}

@@ -666,7 +666,7 @@ public class ProxyMetaManager {
 			}
 			tmBuilder.setVersion(System.currentTimeMillis());
 			TableMeta newTblMeta = tmBuilder.build();
-			addTable(schema, newTblMeta);
+			addTable(schemaInfo.schema, newTblMeta);
 		} catch (Exception e) {
 			LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
 		} finally {

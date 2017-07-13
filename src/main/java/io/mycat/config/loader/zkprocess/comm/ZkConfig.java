@@ -61,7 +61,7 @@ public class ZkConfig {
     public void initZk()
     {
         try {
-            if (Boolean.parseBoolean(ZKPROPERTIES.getProperty(ZkParamCfg.ZK_CFG_FLAG.getKey()))) {
+            if (ZKPROPERTIES != null && Boolean.parseBoolean(ZKPROPERTIES.getProperty(ZkParamCfg.ZK_CFG_FLAG.getKey()))) {
                 ZktoXmlMain.loadZktoFile();
             }
         } catch (Exception e) {
@@ -88,7 +88,7 @@ public class ZkConfig {
     * @创建日期 2016年9月15日
     */
     public String getValue(ZkParamCfg param) {
-        if (null != param) {
+        if (ZKPROPERTIES != null && null != param) {
             return ZKPROPERTIES.getProperty(param.getKey());
         }
 

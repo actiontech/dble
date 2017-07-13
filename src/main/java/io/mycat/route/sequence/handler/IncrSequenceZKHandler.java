@@ -83,6 +83,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     public void load(boolean isLowerCaseTableNames) {
         props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ZkConfig.getInstance().getZkURL();
+        if(zkAddress==null){
+            throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
+        }
         try {
             initializeZK(props, zkAddress);
         } catch (Exception e) {

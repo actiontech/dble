@@ -66,14 +66,14 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 	}
 
     	private Integer findNode(long hash) {
-		Integer rst = null;
+	    //Integer rst = null;
 		for (LongRange longRang : this.longRongs) {
 			if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
 				return longRang.nodeIndx;
 			}
 		}
 		
-		return rst;
+		return defaultNode;
 	}
 
 	@Override

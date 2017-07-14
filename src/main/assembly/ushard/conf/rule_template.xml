@@ -115,12 +115,12 @@
 	</function>
 
 	<!-- 模式方式分区 -->
+	<!--需要人工保证覆盖到0~patternValue-1所有值,key 和value都是连续递增的-->
 	<function name="pattern"
 		class="PatternRange">
 	  	<property name="mapFile">partition-pattern.txt</property>
 		<property name="patternValue">1024</property>
-		<property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
-	</function> 
-	
+		<property name="defaultNode">0</property><!--包含非数值字符，默认于存储节点-->
+	</function>
 	 
 </ushard:rule>

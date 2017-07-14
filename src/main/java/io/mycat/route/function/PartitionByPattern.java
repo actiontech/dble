@@ -43,10 +43,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 	private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值
 	private String mapFile;
 	private LongRange[] longRongs;
-    	private Integer[] allNode;
-    	private boolean outOfOrder = false;
-	private int defaultNode = 0;// 包含非数值字符，默认存储节点
-    	private static final  Pattern pattern = Pattern.compile("[0-9]*");;
+	private Integer[] allNode;
+	private int defaultNode = -1;// 包含非数值字符，默认存储节点
+    private static final  Pattern pattern = Pattern.compile("[0-9]*");;
 
 	@Override
 	public void init() {
@@ -65,21 +64,19 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		this.defaultNode = defaultNode;
 	}
 
-    	private Integer findNode(long hash) {
-	    //Integer rst = null;
+	private Integer findNode(long hash) {
 		for (LongRange longRang : this.longRongs) {
 			if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
 				return longRang.nodeIndx;
 			}
 		}
-		
-		return defaultNode;
+		return null;
 	}
 
 	@Override
 	public Integer calculate(String columnValue) {
 		if (!isNumeric(columnValue)) {
-			return defaultNode;
+			return defaultNode < 0 ? null : defaultNode;
 		}
 		
 		long value = Long.parseLong(columnValue);
@@ -93,19 +90,19 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 	 * x2 - x1 >= m
 	 *     L 				type3
 	 */
-    	private void calc_aux(HashSet<Integer> ids, long begin, long end) {
-	    	for (LongRange longRang : this.longRongs) {
-		    	if (longRang.valueEnd < begin) {
-			    	continue;
+		private void calc_aux(HashSet<Integer> ids, long begin, long end) {
+			for (LongRange longRang : this.longRongs) {
+				if (longRang.valueEnd < begin) {
+					continue;
+				}
+				if (longRang.valueStart > end) {
+					break;
+				}
+				ids.add(longRang.nodeIndx);
 			}
-			if (longRang.valueStart > end) {
-			    	break;
-			}
-			ids.add(longRang.nodeIndx);
 		}
-	}
-    
-    	private Integer[] calc_type1(long begin, long end) {
+
+	private Integer[] calc_type1(long begin, long end) {
 	    	HashSet<Integer> ids = new HashSet<Integer>();
 		
 		calc_aux(ids, begin, end);
@@ -113,8 +110,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		return ids.toArray(new Integer[ids.size()]);
 	}
 
-    	private Integer[] calc_type2(long begin, long end) {
-	    	HashSet<Integer> ids = new HashSet<Integer>();
+	private Integer[] calc_type2(long begin, long end) {
+		HashSet<Integer> ids = new HashSet<Integer>();
 
 		calc_aux(ids, begin, patternValue);
 		calc_aux(ids, 0, end);
@@ -122,17 +119,17 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		return ids.toArray(new Integer[ids.size()]);
 	}
 
-    	private Integer[] calc_type3() {
-	    	return allNode;
+	private Integer[] calc_type3() {
+		return allNode;
 	}
 
     	/* NODE:
 	 * if the order of range and the order of nodeid don't match, we give all nodeid.
 	 * so when writing configure, be cautious
 	 */
-    	public Integer[] calculateRange(String beginValue, String endValue)  {
+	public Integer[] calculateRange(String beginValue, String endValue) {
 		if (!isNumeric(beginValue) || !isNumeric(endValue)) {
-		    	return calc_type3();
+			return calc_type3();
 		}
 		long bv = Long.parseLong(beginValue);
 		long ev = Long.parseLong(endValue);
@@ -140,21 +137,21 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		long hev = ev % patternValue;
 
 		if (findNode(hbv) == null || findNode(hbv) == null) {
-		    	return calc_type3();
+			return calc_type3();
 		}
 
 		if (ev >= bv) {
 			if (ev - bv >= patternValue) {
-			    	return calc_type3();
+				return calc_type3();
 			}
 
 			if (hbv < hev) {
-			    	return calc_type1(hbv, hev);
+				return calc_type1(hbv, hev);
 			} else {
-			    	return calc_type2(hbv, hev);
+				return calc_type2(hbv, hev);
 			}
 		} else {
-		    	return new Integer[0];
+			return new Integer[0];
 		}
 	}
 		
@@ -168,26 +165,25 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		return pattern.matcher(str).matches();
 	}
 
-    	private void initialize_aux(LinkedList<LongRange> ll, LongRange lr) {
-	    	if (ll.size() == 0) {
-		    	ll.add(lr);
+	private void initialize_aux(LinkedList<LongRange> ll, LongRange lr) {
+		if (ll.size() == 0) {
+			ll.add(lr);
 		} else {
-		    	LongRange tmp;
+			LongRange tmp;
 			for (int i = ll.size() - 1; i > -1; i--) {
 				tmp = ll.get(i);
 				if (tmp.valueStart < lr.valueStart) {
-				    	ll.add(i + 1, lr);
+					ll.add(i + 1, lr);
 					return;
 				}
 			}
 			ll.add(0, lr);
-		}    
+		}
 	}
 
 	private void initialize() {
 		BufferedReader in = null;
 		try {
-			// FileInputStream fin = new FileInputStream(new File(fileMapPath));
 			InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
 			if (fin == null) {
 				throw new RuntimeException("can't find class resource file " + mapFile);

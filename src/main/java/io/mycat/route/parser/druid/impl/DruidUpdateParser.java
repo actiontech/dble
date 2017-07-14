@@ -19,11 +19,7 @@ import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import io.mycat.MycatServer;
@@ -33,6 +29,7 @@ import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
+import io.mycat.plan.common.ptr.StringPtr;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
@@ -53,13 +50,19 @@ public class DruidUpdateParser extends DefaultDruidParser {
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
-        	SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, (SQLJoinTableSource) tableSource, stmt);
-			if (schemaInfo == null) {
-				String msg = "updating multiple tables is not supported, sql:" + stmt;
+			StringPtr sqlSchema = new StringPtr(null);
+			if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, schemaName, sqlSchema)) {
+				String msg = "UPDATE query with multiple tables is not supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);
 			} else {
-				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+				if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, sqlSchema)) {
+					String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
+					throw new SQLNonTransientException(msg);
+				}
+				String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
+				SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(realSchema);
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
+				RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 			}
@@ -74,13 +77,21 @@ public class DruidUpdateParser extends DefaultDruidParser {
 			String tableName = schemaInfo.table;
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
+				if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, new StringPtr(schemaInfo.schema))) {
+					String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
+					throw new SQLNonTransientException(msg);
+				}
 				RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 				rrs.setFinishedRoute(true);
 				return schema;
 	        }
-			TableConfig tc = schema.getTables().get(tableName);
 			super.visitorParse(schema, rrs, stmt, visitor, sc);
-			if (tc!=null && tc.isGlobalTable()) {
+			if(visitor.isHasSubQuery()){
+				String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
+				throw new SQLNonTransientException(msg);
+			}
+			TableConfig tc = schema.getTables().get(tableName);
+			if (tc != null && tc.isGlobalTable()) {
 				if (GlobalTableUtil.useGlobleTableCheck()) {
 					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
 					rrs.setStatement(sql);

@@ -18,6 +18,7 @@ import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.plan.common.ptr.StringPtr;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
@@ -52,11 +53,13 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 				return schema;
 			}
 			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
-				SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
-				if (schemaInfo != null) {
-					rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-					RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
-					return schemaInfo.schemaConfig;
+				StringPtr sqlSchema = new StringPtr(null);
+				if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt,schemaName, sqlSchema)) {
+					String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
+					SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(realSchema);
+					rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
+					RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
+					return schemaConfig;
 				} else{
 					super.visitorParse(schema, rrs, stmt, visitor, sc);
 					return schema;
@@ -107,11 +110,13 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 				rrs.setCanRunInReadDB(false);
 			}
 		} else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-			SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
-			if (schemaInfo != null) {
-				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
-				return schemaInfo.schemaConfig;
+			StringPtr sqlSchema = new StringPtr(null);
+			if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt,schemaName, sqlSchema)) {
+				String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
+				SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(realSchema);
+				rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
+				RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
+				return schemaConfig;
 			} else{
 				super.visitorParse(schema, rrs, stmt, visitor, sc);
 			}

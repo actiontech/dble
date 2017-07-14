@@ -954,13 +954,15 @@ public class RouterUtil {
 	 * @return
 	 */
 	public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) {
+		if (schemaConfig == null) {
+			return false;
+		}
 		if (schemaConfig.isNoSharding()) {
 			return true;
 		}
 		if (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName)) {
 			return true;
 		}
-
 		return false;
 	}
 

@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -20,6 +21,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.StructureMeta.IndexMeta;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
+import io.mycat.plan.common.ptr.StringPtr;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
@@ -51,20 +53,20 @@ public class DruidInsertParser extends DefaultDruidParser {
 		schema = schemaInfo.schemaConfig;
 		String tableName = schemaInfo.table;
 
-		if (parserNoSharding(schemaName, schemaInfo, rrs, insert)) {
+		if (parserNoSharding(sc, schemaName, schemaInfo, rrs, insert)) {
 			return schema;
+		}
+		if (insert.getQuery() != null) {
+			// insert into .... select ....
+			String msg = "`INSERT ... SELECT Syntax` is not supported!";
+			LOGGER.warn(msg);
+			throw new SQLNonTransientException(msg);
 		}
 		// 整个schema都不分库或者该表不拆分
 		TableConfig tc = schema.getTables().get(tableName);
 		if (tc == null) {
 			String msg = "Table '"+schema.getName()+"."+tableName+"' doesn't exist";
 			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-		}
-		if (insert.getQuery() != null) {
-			// insert into .... select ....
-			String msg = "insert into .... select .... not supported!";
-			LOGGER.warn(msg);
-			throw new SQLNonTransientException(msg);
 		}
 		if (tc.isGlobalTable()) {
 			String sql = rrs.getStatement();
@@ -106,12 +108,16 @@ public class DruidInsertParser extends DefaultDruidParser {
 		return schema;
 	}
 
-	private boolean parserNoSharding(String schemaName, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) {
+	private boolean parserNoSharding(ServerConnection sc,String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) throws SQLException {
 		if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
 			if (insert.getQuery() != null) {
-				//TODO:TABLES insert.getQuery() are all NoSharding
-				return false;
+				SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
+				StringPtr sqlSchema = new StringPtr(schemaInfo.schema);
+				if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), selectStmt, contextSchema, sqlSchema)) {
+					return false;
+				}
 			}
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 			return true;
 		}

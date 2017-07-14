@@ -108,11 +108,12 @@ public class MySQLPlanNodeVisitor {
 		if (from != null) {
 			visit(from);
 		} else {
-			this.tableNode = new NoNameNode(currentDb,SQLUtils.toMySqlString(sqlSelectQuery));
+			this.tableNode = new NoNameNode(currentDb, SQLUtils.toMySqlString(sqlSelectQuery));
 		}
 
-		if (tableNode != null && (sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT ||sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW))
+		if (tableNode != null && (sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT || sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW)) {
 			this.tableNode.setDistinct(true);
+		}
 
 		List<SQLSelectItem> items = sqlSelectQuery.getSelectList();
 		if (items != null) {

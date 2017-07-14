@@ -58,7 +58,7 @@ public class TableNode extends PlanNode {
 		if (!isGlobaled) {
 			this.unGlobalTableCount = 1;
 		}
-		this.setNoshardNode(new HashSet<String>(tableConfig.getDataNodes()));
+		this.setNoshardNode(new HashSet<>(tableConfig.getDataNodes()));
 	}
 
 	/**

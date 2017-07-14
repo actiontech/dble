@@ -1,16 +1,11 @@
 package io.mycat.route.parser.druid.impl;
 
-import java.sql.SQLNonTransientException;
-import java.sql.SQLException;
-import java.util.*;
-
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
-
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 import io.mycat.MycatServer;
 import io.mycat.cache.LayerCachePool;
@@ -22,6 +17,7 @@ import io.mycat.config.model.TableConfig;
 import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.ptr.StringPtr;
 import io.mycat.plan.visitor.MySQLItemVisitor;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
@@ -38,8 +34,12 @@ import io.mycat.sqlengine.mpp.ColumnRoutePair;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.util.StringUtil;
 
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.util.*;
+
 public class DruidSelectParser extends DefaultDruidParser {
-	private static HashSet<String> aggregateSet = new HashSet<String>(16, 1);
+	private static HashSet<String> aggregateSet = new HashSet<>(16, 1);
 	static {
 		//https://dev.mysql.com/doc/refman/5.7/en/group-by-functions.html
 		//SQLAggregateExpr
@@ -55,7 +55,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 		SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
 		String schemaName = schema == null ? null : schema.getName();
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
+			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) sqlSelectQuery;
 			for(SQLSelectItem item:mysqlSelectQuery.getSelectList()){
 				if(item.getExpr() instanceof SQLQueryExpr){
 					throw new SQLNonTransientException("query statement as column is not supported!");
@@ -446,15 +446,17 @@ public class DruidSelectParser extends DefaultDruidParser {
 //	}
 	private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
 			throws SQLException {
-		SchemaInfo schemaInfo = SchemaUtil.isNoSharding(sc, schemaName, selectStmt.getSelect().getQuery(), selectStmt);
-		if (schemaInfo == null) {
+		StringPtr sqlSchema = new StringPtr(null);
+		if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt,schemaName, sqlSchema)) {
 			rrs.setSqlStatement(selectStmt);
 			rrs.setNeedOptimizer(true);
 			return schema;
 		} else {
-			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-			RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
-			return schemaInfo.schemaConfig;
+			String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
+			SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(realSchema);
+			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
+			RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
+			return schemaConfig;
 		}
 	}
 	/**

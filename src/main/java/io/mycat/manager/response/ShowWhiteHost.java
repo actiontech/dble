@@ -111,26 +111,25 @@ public final class ShowWhiteHost {
         String host="";
         List<UserConfig> userConfigs = new ArrayList<UserConfig>();
         int i=0;
-        for(String user : users){
-          if (i==0){
-        	  host=user;
-        	  i++;
-          }
-          else {
-        	i++;  
-        	UserConfig uc = MycatServer.getInstance().getConfig().getUsers().get(user);
-            if (null == uc) {
-            	c.writeErrMessage(ErrorCode.ER_YES, "user doesn't exist in host.");
-                return; 
-            }
-            if (uc.getSchemas() == null || uc.getSchemas().size() == 0) {
-            	c.writeErrMessage(ErrorCode.ER_YES, "host contains one root privileges user.");
-                return;                 
-            }
-            userConfigs.add(uc);
-          }   
-        }  
-       if (MycatServer.getInstance().getConfig().getFirewall().addWhitehost(host, userConfigs)) {
+		for (String user : users) {
+			if (i == 0) {
+				host = user;
+				i++;
+			} else {
+				i++;
+				UserConfig uc = MycatServer.getInstance().getConfig().getUsers().get(user);
+				if (null == uc) {
+					c.writeErrMessage(ErrorCode.ER_YES, "user doesn't exist in host.");
+					return;
+				}
+				if (!uc.isManager() && uc.getSchemas() == null || uc.getSchemas().size() == 0) {
+					c.writeErrMessage(ErrorCode.ER_YES, "host contains one root privileges user.");
+					return;
+				}
+				userConfigs.add(uc);
+			}
+		}
+		if (MycatServer.getInstance().getConfig().getFirewall().addWhitehost(host, userConfigs)) {
            ok.packetId = 1;
            ok.affectedRows = 1;
            ok.serverStatus = 2;        

@@ -47,7 +47,7 @@ import java.util.*;
 /**
  * @author mycat
  */
-@SuppressWarnings("unchecked")
+
 public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
@@ -55,7 +55,7 @@ public class XMLServerLoader {
 
     public XMLServerLoader() {
         this.system = new SystemConfig();
-        this.users = new HashMap<String, UserConfig>();
+        this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
         this.load();
     }
@@ -63,7 +63,7 @@ public class XMLServerLoader {
     public SystemConfig getSystem() {
         return system;
     }
-
+	@SuppressWarnings("unchecked")
     public Map<String, UserConfig> getUsers() {
         return (Map<String, UserConfig>) (users.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(users));
     }
@@ -112,7 +112,7 @@ public class XMLServerLoader {
 
     private void loadFirewall(Element root) throws IllegalAccessException, InvocationTargetException {
         NodeList list = root.getElementsByTagName("host");
-        Map<String, List<UserConfig>> whitehost = new HashMap<String, List<UserConfig>>();
+        Map<String, List<UserConfig>> whitehost = new HashMap<>();
 
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
@@ -124,13 +124,13 @@ public class XMLServerLoader {
                     throw new ConfigException("host duplicated : " + host);
                 }
                 String []users = userStr.split(",");
-                List<UserConfig> userConfigs = new ArrayList<UserConfig>();
+                List<UserConfig> userConfigs = new ArrayList<>();
                 for(String user : users){
                 	UserConfig uc = this.users.get(user);
                     if (null == uc) {
                         throw new ConfigException("[user: " + user + "] doesn't exist in [host: " + host + "]");
                     }
-                    if (uc.getSchemas() == null || uc.getSchemas().size() == 0) {
+                    if (!uc.isManager()&&(uc.getSchemas() == null || uc.getSchemas().size() == 0)) {
                         throw new ConfigException("[host: " + host + "] contains one root privileges user: " + user);
                     }
                     userConfigs.add(uc);
@@ -191,19 +191,20 @@ public class XMLServerLoader {
 				if (null != manager) {
 					user.setManager(Boolean.parseBoolean(manager));
 				}
-
 				String schemas = (String) props.get("schemas");
-				if (schemas != null) {
-					if (system.isLowerCaseTableNames()) {
-						schemas = schemas.toLowerCase();
+				if (user.isManager() && schemas != null) {
+					throw new ConfigException("manager user can't set any schema!");
+				}else if (!user.isManager()) {
+					if (schemas != null) {
+						if (system.isLowerCaseTableNames()) {
+							schemas = schemas.toLowerCase();
+						}
+						String[] strArray = SplitUtil.split(schemas, ',', true);
+						user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
 					}
-					String[] strArray = SplitUtil.split(schemas, ',', true);
-					user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));
+					// 加载用户 DML 权限
+					loadPrivileges(user, e);
 				}
-
-				// 加载用户 DML 权限
-				loadPrivileges(user, e);
-
 				if (users.containsKey(name)) {
 					throw new ConfigException("user " + name + " duplicated!");
 				}

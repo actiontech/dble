@@ -26,11 +26,9 @@ package io.mycat.route.function;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.sun.tools.javac.code.Attribute;
 import io.mycat.config.model.rule.RuleAlgorithm;
 import io.mycat.util.ResourceUtil;
 
@@ -102,7 +100,8 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
 	@Override
 	public Integer[] calculateRange(String beginValue, String endValue) {
-		throw new IllegalArgumentException(new StringBuilder().append("you can't calculate range in algorithmic [PartitionByFileMap].").toString());
+		//all node
+		return new Integer[0];
 	}
 	@Override
 	public int getPartitionNum() {

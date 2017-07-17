@@ -117,7 +117,8 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
 	}
 	@Override
 	public Integer[] calculateRange(String beginValue, String endValue)  {
-		throw new IllegalArgumentException(new StringBuilder().append("you can't calculate range in algorithmic [PartitionByString].").toString());
+		//all node
+		return new Integer[0];
 	}
 	@Override
 	public int getPartitionNum() {

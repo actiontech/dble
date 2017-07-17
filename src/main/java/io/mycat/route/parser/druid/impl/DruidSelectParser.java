@@ -63,16 +63,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 			}
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
 			if (mysqlFrom == null) {
-				if(schema == null) {
-					String db = SchemaUtil.getRandomDb();
-					if (db == null) {
-						String msg = "No schema is configured, make sure your config is right, sql:" + stmt;
-						throw new SQLNonTransientException(msg);
-					}
-					schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-				}
-				rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaDataNode());
-				rrs.setFinishedRoute(true);
+				RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
 				return schema;
 			}
 			SchemaInfo schemaInfo;
@@ -118,12 +109,17 @@ public class DruidSelectParser extends DefaultDruidParser {
 				if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
 					RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 					return schema;
-		        }
+				} else if (schemaInfo.dualFlag) {
+					RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
+					return schema;
+				}
+				
 				TableConfig tc= schema.getTables().get(schemaInfo.table);
 				if (tc == null) {
 					String msg = "Table '"+schema.getName()+"."+schemaInfo.table+"' doesn't exist";
 					throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
 				}
+				
 				super.visitorParse(schema, rrs, stmt, visitor, sc);
 				if(visitor.isHasSubQuery()){
 					rrs.setSqlStatement(selectStmt);
@@ -136,7 +132,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 						&& !sc.isAutocommit()) {
 					rrs.setCanRunInReadDB(false);
 				}
-			} else if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
+			} else if (mysqlFrom instanceof SQLSubqueryTableSource
+				   || mysqlFrom instanceof SQLJoinTableSource
+				   || mysqlFrom instanceof SQLUnionQueryTableSource) {
 				schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
 				if (rrs.isFinishedRoute()) {
 					return schema;

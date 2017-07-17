@@ -93,7 +93,7 @@ public class MergeNode extends PlanNode {
 		columnsSelected.clear();
 		PlanNode firstNode = getChild();
 		outerFields.clear();
-		Set<NamedField> checkDup = new HashSet<NamedField>(firstNode.getOuterFields().size() , 1);
+		Set<NamedField> checkDup = new HashSet<>(firstNode.getOuterFields().size() , 1);
 		for (NamedField coutField : firstNode.getOuterFields().keySet()) {
 			ItemField column = new ItemField(null, coutField.getTable(), coutField.getName());
 			NamedField tmpField = new NamedField(coutField.getTable(), coutField.getName(), this);

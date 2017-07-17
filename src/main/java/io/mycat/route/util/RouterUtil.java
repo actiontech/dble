@@ -181,6 +181,19 @@ public class RouterUtil {
 		rrs.setTable(schemaInfo.table);
 		RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
 	}
+
+	public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
+		if(schema == null) {
+			String db = SchemaUtil.getRandomDb();
+			if (db == null) {
+				String msg = "No schema is configured, make sure your config is right, sql:" + rrs.getStatement();
+				throw new SQLNonTransientException(msg);
+			}
+			schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
+		}
+		rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaDataNode());
+		rrs.setFinishedRoute(true);
+	}
 	/**
 	 * 获取第一个节点作为路由
 	 *

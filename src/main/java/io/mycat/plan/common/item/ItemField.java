@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.node.JoinNode;
+import io.mycat.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -310,7 +311,7 @@ public class ItemField extends ItemIdent {
 
 	@Override
 	public SQLExpr toExpression() {
-		SQLIdentifierExpr parent = tableName == null ? null : new SQLIdentifierExpr(tableName);
+		SQLIdentifierExpr parent = StringUtil.isEmpty(tableName) ? null : new SQLIdentifierExpr(tableName);
 		if(parent !=null){
 			return new SQLPropertyExpr(parent, itemName);
 		}

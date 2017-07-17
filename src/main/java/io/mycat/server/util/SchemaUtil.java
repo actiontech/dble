@@ -54,6 +54,9 @@ public class SchemaUtil
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
 			schemaInfo.schema = schema;
 			schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
+			if (identifierExpr.getName().equalsIgnoreCase("dual")) {
+				schemaInfo.dualFlag = true;
+			}
 		}
 		if (schemaInfo.schema == null) {
 			String msg = "No database selected";
@@ -182,6 +185,7 @@ public class SchemaUtil
         public    String table;
         public    String schema;
         public    SchemaConfig schemaConfig;
+        public    boolean dualFlag = false;
 
         @Override
         public String toString()

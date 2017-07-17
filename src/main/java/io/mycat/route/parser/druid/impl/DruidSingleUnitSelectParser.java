@@ -40,16 +40,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
 			SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
 			if (mysqlFrom == null) {
-				if(schema == null) {
-					String db = SchemaUtil.getRandomDb();
-					if (db == null) {
-						String msg = "No schema is configured, make sure your config is right, sql:" + stmt;
-						throw new SQLNonTransientException(msg);
-					}
-					schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
-				}
-				rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaDataNode());
-				rrs.setFinishedRoute(true);
+				RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
 				return schema;
 			}
 			if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
@@ -104,6 +95,9 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
 			schema = schemaInfo.schemaConfig;
 			super.visitorParse(schema, rrs, stmt, visitor, sc);
+			if(visitor.isHasSubQuery()){
+				this.getCtx().getRouteCalculateUnits().clear();
+			}
 			// 更改canRunInReadDB属性
 			if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
 					&& !sc.isAutocommit()) {

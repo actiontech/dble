@@ -107,6 +107,9 @@ public class MySQLPlanNodeVisitor {
 		SQLTableSource from = sqlSelectQuery.getFrom();
 		if (from != null) {
 			visit(from);
+			if(this.tableNode instanceof NoNameNode){
+				this.tableNode.setSql(SQLUtils.toMySqlString(sqlSelectQuery));
+			}
 		} else {
 			this.tableNode = new NoNameNode(currentDb, SQLUtils.toMySqlString(sqlSelectQuery));
 		}
@@ -146,19 +149,23 @@ public class MySQLPlanNodeVisitor {
 	}
 
 	public boolean visit(SQLExprTableSource tableSource) {
-		TableNode table = null;
+		PlanNode table = null;
 		SQLExpr expr = tableSource.getExpr();
 		if (expr instanceof SQLPropertyExpr) {
 			SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
 			table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
 		} else if (expr instanceof SQLIdentifierExpr) {
 			SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
+			if(identifierExpr.getName().equalsIgnoreCase("dual")){
+				this.tableNode = new NoNameNode(currentDb, null);
+				return true;
+			}
 			table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
 		}
 		if (tableSource.getAlias() != null) {
 			table.setSubAlias(tableSource.getAlias());
 		}
-		table.setHintList(tableSource.getHints());
+		((TableNode)table).setHintList(tableSource.getHints());
 		this.tableNode = table;
 		return true;
 	}

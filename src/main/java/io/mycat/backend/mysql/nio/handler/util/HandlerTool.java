@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import io.mycat.util.StringUtil;
 import org.apache.log4j.Logger;
 
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
@@ -292,7 +293,7 @@ public class HandlerTool {
 				// ''下发之后field.name==null
 				String colName2 = field.name == null ? null : field.name.trim();
 				String tableName2 = field.table;
-				if (sel instanceof ItemField && !((tableName==null && tableName2==null)||tableName.equals(tableName2)))
+				if (sel instanceof ItemField && !((StringUtil.isEmpty(tableName) && StringUtil.isEmpty(tableName2))||tableName.equals(tableName2)))
 					continue;
 				if (selName.equalsIgnoreCase(colName2))
 					return index;

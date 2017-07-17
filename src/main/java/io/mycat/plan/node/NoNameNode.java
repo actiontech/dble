@@ -16,7 +16,6 @@ import io.mycat.plan.util.ToStringUtil;
 
 public class NoNameNode extends PlanNode {
 
-	private final static String NONAME = "";
 	private final String catalog;
 
 	public PlanNodeType type() {
@@ -30,13 +29,6 @@ public class NoNameNode extends PlanNode {
 		this.setNoshardNode(new HashSet<>(Arrays.asList(schema.getMetaDataNode())));
 	}
 
-	/**
-	 * @return the tableName
-	 */
-	public String getTableName() {
-		return NONAME;
-	}
-
 	@Override
 	public NoNameNode copy() {
 		NoNameNode noNameNode = new NoNameNode(catalog, sql);
@@ -46,7 +38,7 @@ public class NoNameNode extends PlanNode {
 
 	@Override
 	public String getPureName() {
-		return this.getTableName();
+		return "";
 	}
 
 	@Override

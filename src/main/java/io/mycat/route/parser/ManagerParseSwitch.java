@@ -41,10 +41,6 @@ public final class ManagerParseSwitch {
             switch (stmt.charAt(i)) {
             case ' ':
                 continue;
-            case '/':
-            case '#':
-                i = ParseUtil.comment(stmt, i);
-                continue;
             case '@':
                 return switch2Check(stmt, i);
             default:

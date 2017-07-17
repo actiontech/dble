@@ -30,7 +30,6 @@ public class ReloadSqlSlowTime {
         ok.serverStatus = 2;
         ok.message = "Reset show  @@sql.slow time success".getBytes();
         ok.write(c);
-        System.out.println(s.toString());
     }
 
 }

@@ -23,8 +23,6 @@
  */
 package io.mycat.route.parser;
 
-import io.mycat.route.parser.util.ParseUtil;
-
 /**
  * @author mycat
  */
@@ -32,18 +30,12 @@ public final class ManagerParseRollback {
 
     public static final int OTHER = -1;
     public static final int CONFIG = 1;
-    public static final int ROUTE = 2;
-    public static final int USER = 3;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
             switch (stmt.charAt(i)) {
             case ' ':
-                continue;
-            case '/':
-            case '#':
-                i = ParseUtil.comment(stmt, i);
                 continue;
             case '@':
                 return rollback2Check(stmt, i);
@@ -54,19 +46,13 @@ public final class ManagerParseRollback {
         return OTHER;
     }
 
-    static int rollback2Check(String stmt, int offset) {
+    private static int rollback2Check(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
                 && stmt.length() > ++offset) {
                 switch (stmt.charAt(offset)) {
                 case 'C':
                 case 'c':
                     return rollback2CCheck(stmt, offset);
-                case 'R':
-                case 'r':
-                    return rollback2RCheck(stmt, offset);
-                case 'U':
-                case 'u':
-                    return rollback2UCheck(stmt, offset);
                 default:
                     return OTHER;
                 }
@@ -75,7 +61,7 @@ public final class ManagerParseRollback {
     }
 
     // ROLLBACK @@CONFIG
-    static int rollback2CCheck(String stmt, int offset) {
+    private static int rollback2CCheck(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -93,38 +79,6 @@ public final class ManagerParseRollback {
         return OTHER;
     }
 
-    // ROLLBACK @@ROUTE
-    static int rollback2RCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'E' || c4 == 'e')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return ROUTE;
-            }
-        }
-        return OTHER;
-    }
 
-    // ROLLBACK @@USER
-    static int rollback2UCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 3) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return USER;
-            }
-        }
-        return OTHER;
-    }
 
 }

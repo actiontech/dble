@@ -37,13 +37,9 @@ public final class ManagerParseShow {
     public static final int DATANODE = 4;
     public static final int DATASOURCE = 5;
     public static final int HELP = 6;
-    public static final int PARSER = 7;
     public static final int PROCESSOR = 8;
-    public static final int ROUTER = 9;
     public static final int SERVER = 10;
     public static final int SQL = 11;
-    public static final int SQL_DETAIL = 12;
-    public static final int SQL_EXECUTE = 13;
     public static final int SQL_SLOW = 14;
     public static final int SQL_SUM_USER = 15;
     public static final int SQL_SUM_TABLE = 16;
@@ -56,14 +52,10 @@ public final class ManagerParseShow {
     public static final int TIME_CURRENT = 22;
     public static final int TIME_STARTUP = 23;
     public static final int VERSION = 24;
-    public static final int VARIABLES = 25;
-    public static final int COLLATION = 26;
     public static final int CONNECTION_SQL = 27;
     public static final int DATANODE_WHERE = 28;
     public static final int DATASOURCE_WHERE = 29;
     public static final int HEARTBEAT = 30;
-    public static final int SLOW_DATANODE = 31;
-    public static final int SLOW_SCHEMA = 32;
     public static final int BACKEND = 33;
     public static final int BACKEND_OLD = 34;
     
@@ -94,15 +86,9 @@ public final class ManagerParseShow {
                 continue;
             case '@':
                 return show2Check(stmt, i);
-            case 'C':
-            case 'c':
-                return showCCheck(stmt, i);
 			case 'd':
 			case 'D':
 				return show2DCheck(stmt, i);
-			case 'V':
-            case 'v':
-                return showVCheck(stmt, i);
             default:
                 return OTHER;
             }
@@ -111,7 +97,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @
-    static int show2Check(String stmt, int offset) {
+    private static int show2Check(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
                 && stmt.length() > ++offset) {
                 switch (stmt.charAt(offset)) {
@@ -130,9 +116,6 @@ public final class ManagerParseShow {
                 case 'P':
                 case 'p':
                     return show2PCheck(stmt, offset);
-                case 'R':
-                case 'r':
-                    return show2RCheck(stmt, offset);
                 case 'S':
                 case 's':
                     return show2SCheck(stmt, offset);
@@ -152,54 +135,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW COLLATION
-    static int showCCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OLLATION".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            char c8 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'L' || c2 == 'l') && (c3 == 'L' || c3 == 'l')
-                    && (c4 == 'A' || c4 == 'a') && (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i')
-                    && (c7 == 'O' || c7 == 'o') && (c8 == 'N' || c8 == 'n')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return COLLATION;
-            }
-        }
-        return OTHER;
-    }
-
-    // SHOW VARIABLES
-    static int showVCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ARIABLES".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            char c8 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') && (c3 == 'I' || c3 == 'i')
-                    && (c4 == 'A' || c4 == 'a') && (c5 == 'B' || c5 == 'b') && (c6 == 'L' || c6 == 'l')
-                    && (c7 == 'E' || c7 == 'e') && (c8 == 'S' || c8 == 's')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return VARIABLES;
-            }
-        }
-        return OTHER;
-    }
-
 	// SHOW @@B
-	static int show2BCheck(String stmt, int offset) {
+	private static  int show2BCheck(String stmt, int offset) {
 		if (stmt.length() > offset + 1) {
 			char c1 = stmt.charAt(++offset);
 			switch (c1) {
@@ -216,7 +153,7 @@ public final class ManagerParseShow {
 		return OTHER;
 	}
     // SHOW @@BINLOG.STATUS
-    static int show2BinCheck(String stmt, int offset) {
+    private static  int show2BinCheck(String stmt, int offset) {
         if (stmt.length() > offset + "NLOG.STATUS".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -244,7 +181,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@BACKEND
-    static int show2BackCheck(String stmt, int offset) {
+    private static  int show2BackCheck(String stmt, int offset) {
         if (stmt.length() > offset + "CKEND".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -272,7 +209,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     
-    static int show2BackendOld(String stmt, int offset) {
+    private static  int show2BackendOld(String stmt, int offset) {
     	  if (stmt.length() > offset + "OLD".length()) {
               char c1 = stmt.charAt(++offset);
               char c2 = stmt.charAt(++offset);
@@ -288,7 +225,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@C
-    static int show2CCheck(String stmt, int offset) {
+    private static  int show2CCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'O':
@@ -314,7 +251,7 @@ public final class ManagerParseShow {
 	}
 
 	// SHOW @@DATA
-    static int show2DCheck(String stmt, int offset) {
+    private static  int show2DCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ATA".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -350,7 +287,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
  // SHOW @@DIRECT_MEMORY=1 or 0
-    static int show2DirectMemoryCheck(String stmt, int offset) {
+    private static  int show2DirectMemoryCheck(String stmt, int offset) {
         if (stmt.length() > offset + "TMEMORY".length()) {
 
             char c1 = stmt.charAt(++offset);
@@ -369,7 +306,7 @@ public final class ManagerParseShow {
                     && (c5 == 'O' || c5 == 'o')
                     && (c6 == 'R' || c6 == 'r')
                     && (c7 == 'Y' || c7 == 'y')
-                    && (c8 == '=' || c8 == '=')
+                    && (c8 == '=' )
                     && stmt.length() > ++offset) {
 
                 switch (stmt.charAt(offset)) {
@@ -387,7 +324,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     // SHOW @@DataSyn
-    static int show2DataSynCheck(String stmt, int offset) {
+    private static  int show2DataSynCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'S':
@@ -435,7 +372,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     //show @@datasource.syndetail
-    static int show2SynDetailCheck(String stmt, int offset) {
+    private static  int show2SynDetailCheck(String stmt, int offset) {
         if (stmt.length() > offset + "etail".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -454,7 +391,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     //show @@datasource.synstatus  
-    static int show2SynStatuslCheck(String stmt, int offset) {
+    private static  int show2SynStatuslCheck(String stmt, int offset) {
         if (stmt.length() > offset + "tatus".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -474,7 +411,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@HELP
-    static int show2HCheck(String stmt, int offset) {
+    private static  int show2HCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'E':
@@ -488,7 +425,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@HE
-    static int show2HeCheck(String stmt, int offset) {
+    private static  int show2HeCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'L':
@@ -505,7 +442,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@HELP
-    static int show2HelCheck(String stmt, int offset) {
+    private static  int show2HelCheck(String stmt, int offset) {
         if (stmt.length() > offset + "P".length()) {
             char c1 = stmt.charAt(++offset);
             if ((c1 == 'P' || c1 == 'p')) {
@@ -521,12 +458,9 @@ public final class ManagerParseShow {
     
 
     // SHOW @@P
-    static int show2PCheck(String stmt, int offset) {
+    private static  int show2PCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
-            case 'A':
-            case 'a':
-                return show2PaCheck(stmt, offset);
             case 'R':
             case 'r':
                 return show2PrCheck(stmt, offset);
@@ -537,27 +471,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@ROUTER
-    static int show2RCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OUTER".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return ROUTER;
-            }
-        }
-        return OTHER;
-    }
-
     // SHOW @@S
-    static int show2SCheck(String stmt, int offset) {
+    private static  int show2SCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'E':
@@ -566,9 +481,6 @@ public final class ManagerParseShow {
             case 'Q':
             case 'q':
                 return show2SqCheck(stmt, offset);
-            case 'L':
-            case 'l':
-                return show2SlCheck(stmt, offset);
             case 'Y':
             case 'y':
             	return show2SyCheck(stmt, offset);
@@ -578,32 +490,9 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
-    
-	// SHOW @@SLOW
-    static int show2SlCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OW ".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') && c3 == ' ') {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                    case ' ':
-                        continue;
-                    case 'W':
-                    case 'w':
-                        return show2SlowWhereCheck(stmt, offset);
-                    default:
-                        return OTHER;
-                    }
-                }
-            }
-        }
-        return OTHER;
-    }
-    
+
     // SHOW @@SYSPARAM
-    static int show2sysparam(String stmt, int offset) {
+    private static  int show2sysparam(String stmt, int offset) {
         if (stmt.length() > offset + "ARAM".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -621,7 +510,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     
-    static int show2syslog(String stmt, int offset) {
+    private static  int show2syslog(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "SLOG".length()) {    		
     		 
@@ -669,7 +558,7 @@ public final class ManagerParseShow {
     
     // SHOW @@SYSPARAM
     // SHOW @@SYSLOG LIMIT=1000
-    static int show2SyCheck(String stmt, int offset) {
+    private static  int show2SyCheck(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "YS".length()) {    		
     		char c1 = stmt.charAt(++offset);
@@ -689,108 +578,9 @@ public final class ManagerParseShow {
     	}
         return OTHER;    	
     }
-   
-    
-
-    // SHOW @@SLOW WHERE
-    static int show2SlowWhereCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "HERE".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                    case ' ':
-                        continue;
-                    case 'D':
-                    case 'd':
-                        return show2SlowWhereDCheck(stmt, offset);
-                    case 'S':
-                    case 's':
-                        return show2SlowWhereSCheck(stmt, offset);
-                    default:
-                        return OTHER;
-                    }
-                }
-            }
-        }
-        return OTHER;
-    }
-
-    // SHOW @@SLOW WHERE DATANODE= XXXXXX
-    static int show2SlowWhereDCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ATANODE".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd')
-                    && (c7 == 'E' || c7 == 'e')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                    case ' ':
-                        continue;
-                    case '=':
-                        while (stmt.length() > ++offset) {
-                            switch (stmt.charAt(offset)) {
-                            case ' ':
-                                continue;
-                            default:
-                                return (offset << 8) | SLOW_DATANODE;
-                            }
-                        }
-                        return OTHER;
-                    default:
-                        return OTHER;
-                    }
-                }
-            }
-        }
-        return OTHER;
-    }
-
-    // SHOW @@SLOW WHERE SCHEMA= XXXXXX
-    static int show2SlowWhereSCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "CHEMA".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'M' || c4 == 'm') && (c5 == 'A' || c5 == 'a')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                    case ' ':
-                        continue;
-                    case '=':
-                        while (stmt.length() > ++offset) {
-                            switch (stmt.charAt(offset)) {
-                            case ' ':
-                                continue;
-                            default:
-                                return (offset << 8) | SLOW_SCHEMA;
-                            }
-                        }
-                        return OTHER;
-                    default:
-                        return OTHER;
-                    }
-                }
-            }
-        }
-        return OTHER;
-    }
 
     // SHOW @@T
-    static int show2TCheck(String stmt, int offset) {
+    private static  int show2TCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'H':
@@ -807,7 +597,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@VERSION
-    static int show2VCheck(String stmt, int offset) {
+    private static  int show2VCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ERSION".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -826,7 +616,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     // SHOW @@White  ip白名单
-    static int show2WCheck(String stmt, int offset) {
+    private static  int show2WCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HITE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -842,7 +632,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
-    static int show2WhiteCheck(String stmt, int offset) {
+    private static  int show2WhiteCheck(String stmt, int offset) {
         if (stmt.length() > offset + "set".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -858,7 +648,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
     // SHOW @@CO
-    static int show2CoCheck(String stmt, int offset) {
+    private static  int show2CoCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'M':
@@ -875,7 +665,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATABASE
-    static int show2DataBCheck(String stmt, int offset) {
+    private static  int show2DataBCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ASE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -891,7 +681,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATANODE
-    static int show2DataNCheck(String stmt, int offset) {
+    private static  int show2DataNCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ODE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -915,7 +705,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATANODE WHERE
-    static int show2DataNWhereCheck(String stmt, int offset) {
+    private static  int show2DataNWhereCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HERE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -940,7 +730,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATANODE WHERE SCHEMA = XXXXXX
-    static int show2DataNWhereSchemaCheck(String stmt, int offset) {
+    private static  int show2DataNWhereSchemaCheck(String stmt, int offset) {
         if (stmt.length() > offset + "CHEMA".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -973,7 +763,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATASOURCE
-    static int show2DataSCheck(String stmt, int offset) {
+    private static  int show2DataSCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OURCE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1003,7 +793,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATASOURCE WHERE
-    static int show2DataSWhereCheck(String stmt, int offset) {
+    private static  int show2DataSWhereCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HERE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1028,7 +818,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATASOURCE WHERE DATANODE = XXXXXX
-    static int show2DataSWhereDatanodeCheck(String stmt, int offset) {
+    private static  int show2DataSWhereDatanodeCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ATANODE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1063,26 +853,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@PARSER
-    static int show2PaCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "RSER".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'S' || c2 == 's') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'R' || c4 == 'r')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return PARSER;
-            }
-        }
-        return OTHER;
-    }
-
     // SHOW @@PROCESSOR
-    static int show2PrCheck(String stmt, int offset) {
+    private static  int show2PrCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OCESSOR".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1105,7 +877,7 @@ public final class ManagerParseShow {
 
     // SHOW @@SERVER
     // SHOW @@SESSION
-    static int show2SeCheck(String stmt, int offset) {
+    private static  int show2SeCheck(String stmt, int offset) {
         if (stmt.length() > offset + "SSION".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1137,7 +909,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@THREADPOOL
-    static int show2ThCheck(String stmt, int offset) {
+    private static  int show2ThCheck(String stmt, int offset) {
         if (stmt.length() > offset + "READPOOL".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1160,7 +932,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@TIME.
-    static int show2TiCheck(String stmt, int offset) {
+    private static  int show2TiCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ME.".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1183,7 +955,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@COMMAND
-    static int show2ComCheck(String stmt, int offset) {
+    private static  int show2ComCheck(String stmt, int offset) {
         if (stmt.length() > offset + "MAND".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1201,7 +973,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@CONNECTION
-    static int show2ConCheck(String stmt, int offset) {
+    private static  int show2ConCheck(String stmt, int offset) {
         if (stmt.length() > offset + "NECTION".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1230,7 +1002,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@CONNECTION.SQL
-    static int show2ConnectonSQL(String stmt, int offset) {
+    private static  int show2ConnectonSQL(String stmt, int offset) {
         if (stmt.length() > offset + "SQL".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1246,7 +1018,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@TIME.CURRENT
-    static int show2TimeCCheck(String stmt, int offset) {
+    private static  int show2TimeCCheck(String stmt, int offset) {
         if (stmt.length() > offset + "URRENT".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1266,7 +1038,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@TIME.STARTUP
-    static int show2TimeSCheck(String stmt, int offset) {
+    private static  int show2TimeSCheck(String stmt, int offset) {
         if (stmt.length() > offset + "TARTUP".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1286,7 +1058,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@SQ
-    static int show2SqCheck(String stmt, int offset) {
+    private static  int show2SqCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case 'L':
@@ -1300,7 +1072,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@SQL
-    static int show2SqlCheck(String stmt, int offset) {
+    private static  int show2SqlCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
             case '.':
@@ -1316,15 +1088,9 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@SQL.
-    static int show2SqlDotCheck(String stmt, int offset) {
+    private static  int show2SqlDotCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
-            case 'D':
-            case 'd':
-                return show2SqlDCheck(stmt, offset);
-            case 'E':
-            case 'e':
-                return show2SqlECheck(stmt, offset);
             case 'S':
             case 's':
             	char c1 = stmt.charAt(++offset);
@@ -1356,7 +1122,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@SQL WHERE ID = XXXXXX
-    static int show2SqlBlankCheck(String stmt, int offset) {
+    private static  int show2SqlBlankCheck(String stmt, int offset) {
         for (++offset; stmt.length() > offset;) {
             switch (stmt.charAt(offset)) {
             case ' ':
@@ -1376,58 +1142,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@SQL.DETAIL WHERE ID = XXXXXX
-    static int show2SqlDCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ETAIL".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'I' || c4 == 'i') && (c5 == 'L' || c5 == 'l')) {
-                for (++offset; stmt.length() > offset; ++offset) {
-                    switch (stmt.charAt(offset)) {
-                    case ' ':
-                        continue;
-                    case 'W':
-                    case 'w':
-                        if (isWhere(stmt, offset)) {
-                            return SQL_DETAIL;
-                        } else {
-                            return OTHER;
-                        }
-                    default:
-                        return OTHER;
-                    }
-                }
-            }
-        }
-        return OTHER;
-    }
-
-    // SHOW @@SQL.EXECUTE
-    static int show2SqlECheck(String stmt, int offset) {
-        if (stmt.length() > offset + "XECUTE".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'X' || c1 == 'x') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c')
-                    && (c4 == 'U' || c4 == 'u') && (c5 == 'T' || c5 == 't') && (c6 == 'E' || c6 == 'e')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return SQL_EXECUTE;
-            }
-        }
-        return OTHER;
-    }
-
     // SHOW @@SQL.SLOW
-    static int show2SqlSLCheck(String stmt, int offset) {
+    private static  int show2SqlSLCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OW".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1449,7 +1165,7 @@ public final class ManagerParseShow {
     }
     
     // SHOW @@SQL.HIGH
-    static int show2SqlHCheck(String stmt, int offset) {
+    private static  int show2SqlHCheck(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "IGH".length()) {
     		char c1 = stmt.charAt(++offset);
@@ -1473,7 +1189,7 @@ public final class ManagerParseShow {
     }
     
     // SHOW @@SQL.RESULTSET
-    static int show2SqlRCheck(String stmt, int offset) {
+    private static  int show2SqlRCheck(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "ESULTSET".length()) {
     		char c1 = stmt.charAt(++offset);
@@ -1504,7 +1220,7 @@ public final class ManagerParseShow {
     }
     
     // SHOW @@SQL.LARGE
-    static int show2SqlLCheck(String stmt, int offset) {
+    private static  int show2SqlLCheck(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "ARGE".length()) {
     		char c1 = stmt.charAt(++offset);
@@ -1529,7 +1245,7 @@ public final class ManagerParseShow {
     }
     
     // SHOW @@sql.condition
-    static int show2SqlCCheck(String stmt, int offset) {
+    private static  int show2SqlCCheck(String stmt, int offset) {
     	
     	if (stmt.length() > offset + "ONDITION".length()) {
     		char c1 = stmt.charAt(++offset);
@@ -1553,15 +1269,13 @@ public final class ManagerParseShow {
     }
     
     // SHOW @@SQL.SUM
-    static int show2SqlSUCheck(String stmt, int offset) {
+    private static  int show2SqlSUCheck(String stmt, int offset) {
     	if (stmt.length() > offset + "M".length()) {
             char c1 = stmt.charAt(++offset);
             if ( c1 == 'M' || c1 == 'm') {
                 if (stmt.length() > ++offset && stmt.charAt(offset) == '.') {
                 	
-                	/**
-                	 *  TODO: modify by zhuam
-                	 *   
+                	/*
                 	 *  兼容之前指令
                 	 *  在保留 SHOW @@SQL.SUM 指令的同时， 扩展支持  SHOW @@SQL.SUM.TABLE 、 SHOW @@SQL.SUM.USER   
                 	 */       	
@@ -1615,7 +1329,7 @@ public final class ManagerParseShow {
     }
     
 
-    static boolean isWhere(String stmt, int offset) {
+    private static  boolean isWhere(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1657,7 +1371,7 @@ public final class ManagerParseShow {
         return false;
     }
 
-    static boolean isSqlId(String stmt, int offset) {
+    private static  boolean isSqlId(String stmt, int offset) {
         String id = stmt.substring(offset).trim();
         try {
             Long.parseLong(id);

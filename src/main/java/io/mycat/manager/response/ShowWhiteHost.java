@@ -131,13 +131,6 @@ public final class ShowWhiteHost {
           }   
         }  
        if (MycatServer.getInstance().getConfig().getFirewall().addWhitehost(host, userConfigs)) {
-    	   try{
-               FirewallConfig.updateToFile(host, userConfigs);
-           }catch(Exception e){
-        	   LOGGER.warn("set while host error : " + e.getMessage());
-        	   c.writeErrMessage(ErrorCode.ER_YES, "white host set success ,but write to file failed :" + e.getMessage());
-           }
-    	   
            ok.packetId = 1;
            ok.affectedRows = 1;
            ok.serverStatus = 2;        

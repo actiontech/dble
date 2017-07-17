@@ -38,19 +38,6 @@ import io.mycat.route.parser.ManagerParseStop;
  */
 public class ManagerParserTest {
 
-    @Test
-    public void testIsSelect() {
-        Assert.assertEquals(ManagerParse.SELECT, 0xff & ManagerParse.parse("select * from offer limit 1"));
-        Assert.assertEquals(ManagerParse.SELECT, 0xff & ManagerParse.parse("SELECT * FROM OFFER LIMIT 1"));
-        Assert.assertEquals(ManagerParse.SELECT, 0xff & ManagerParse.parse("SELECT * FROM OFFER limit 1"));
-    }
-
-    @Test
-    public void testIsSet() {
-        Assert.assertEquals(ManagerParse.SET, ManagerParse.parse("set names utf8"));
-        Assert.assertEquals(ManagerParse.SET, ManagerParse.parse("SET NAMES UTF8"));
-        Assert.assertEquals(ManagerParse.SET, ManagerParse.parse("set NAMES utf8"));
-    }
 
     @Test
     public void testIsShow() {
@@ -132,24 +119,10 @@ public class ManagerParserTest {
     }
 
     @Test
-    public void testShowParser() {
-        Assert.assertEquals(ManagerParseShow.PARSER, ManagerParseShow.parse("show @@parser", 5));
-        Assert.assertEquals(ManagerParseShow.PARSER, ManagerParseShow.parse("SHOW @@PARSER", 5));
-        Assert.assertEquals(ManagerParseShow.PARSER, ManagerParseShow.parse("show @@PARSER", 5));
-    }
-
-    @Test
     public void testShowProcessor() {
         Assert.assertEquals(ManagerParseShow.PROCESSOR, ManagerParseShow.parse("show @@processor", 5));
         Assert.assertEquals(ManagerParseShow.PROCESSOR, ManagerParseShow.parse("SHOW @@PROCESSOR", 5));
         Assert.assertEquals(ManagerParseShow.PROCESSOR, ManagerParseShow.parse("show @@PROCESSOR", 5));
-    }
-
-    @Test
-    public void testShowRouter() {
-        Assert.assertEquals(ManagerParseShow.ROUTER, ManagerParseShow.parse("show @@router", 5));
-        Assert.assertEquals(ManagerParseShow.ROUTER, ManagerParseShow.parse("SHOW @@ROUTER", 5));
-        Assert.assertEquals(ManagerParseShow.ROUTER, ManagerParseShow.parse("show @@ROUTER", 5));
     }
 
     @Test
@@ -204,45 +177,10 @@ public class ManagerParserTest {
     }
 
     @Test
-    public void testShowSQLDetail() {
-        Assert.assertEquals(ManagerParseShow.SQL_DETAIL,
-                ManagerParseShow.parse("show @@sql.detail where id = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_DETAIL,
-                ManagerParseShow.parse("SHOW @@SQL.DETAIL WHERE ID = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_DETAIL,
-                ManagerParseShow.parse("show @@SQL.DETAIL WHERE ID = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_DETAIL,
-                ManagerParseShow.parse("show @@sql.detail where id=1079800749 ", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_DETAIL,
-                ManagerParseShow.parse("show @@sql.detail where id= -1079800749", 5));
-    }
-
-    @Test
-    public void testShowSQLExecute() {
-        Assert.assertEquals(ManagerParseShow.SQL_EXECUTE, ManagerParseShow.parse("show @@sql.execute", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_EXECUTE, ManagerParseShow.parse("SHOW @@SQL.EXECUTE", 5));
-        Assert.assertEquals(ManagerParseShow.SQL_EXECUTE, ManagerParseShow.parse("show @@SQL.EXECUTE", 5));
-    }
-
-    @Test
     public void testShowSQLSlow() {
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("show @@sql.slow", 5));
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@SQL.SLOW", 5));
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@sql.slow", 5));
-    }
-
-    @Test
-    public void testShowVariables() {
-        Assert.assertEquals(ManagerParseShow.VARIABLES, ManagerParseShow.parse("show variables", 5));
-        Assert.assertEquals(ManagerParseShow.VARIABLES, ManagerParseShow.parse("SHOW VARIABLES", 5));
-        Assert.assertEquals(ManagerParseShow.VARIABLES, ManagerParseShow.parse("show VARIABLES", 5));
-    }
-
-    @Test
-    public void testShowCollation() {
-        Assert.assertEquals(ManagerParseShow.COLLATION, ManagerParseShow.parse("show collation", 5));
-        Assert.assertEquals(ManagerParseShow.COLLATION, ManagerParseShow.parse("SHOW COLLATION", 5));
-        Assert.assertEquals(ManagerParseShow.COLLATION, ManagerParseShow.parse("show COLLATION", 5));
     }
 
     @Test
@@ -256,17 +194,6 @@ public class ManagerParserTest {
     public void testComment() {
         Assert.assertEquals(ManagerParse.SWITCH, 0xff & ManagerParse.parse("/* abc */switch @@pool offer2$0-2"));
         Assert.assertEquals(ManagerParse.SHOW, 0xff & ManagerParse.parse(" /** 111**/Show @@help"));
-        Assert.assertEquals(ManagerParse.SELECT, 0xff & ManagerParse.parse(" /***/ select * from t "));
-    }
-
-    @Test
-    public void testShowWhitComment() {
-        Assert.assertEquals(ManagerParseShow.VARIABLES,
-                ManagerParseShow.parse(" /** 111**/show variables", " /** 111**/show".length()));
-        Assert.assertEquals(ManagerParseShow.VARIABLES,
-                ManagerParseShow.parse(" /**111**/ SHOW VARIABLES", " /** 111**/show".length()));
-        Assert.assertEquals(ManagerParseShow.VARIABLES,
-                ManagerParseShow.parse(" /**111**/ SHOW variables", " /** 111**/show".length()));
     }
 
     @Test
@@ -295,19 +222,6 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseReload.CONFIG, ManagerParseReload.parse(" RELOAD  @@config ", 7));
     }
 
-    @Test
-    public void testReloadRoute() {
-        Assert.assertEquals(ManagerParseReload.ROUTE, ManagerParseReload.parse("reload @@route", 7));
-        Assert.assertEquals(ManagerParseReload.ROUTE, ManagerParseReload.parse(" RELOAD  @@ROUTE ", 7));
-        Assert.assertEquals(ManagerParseReload.ROUTE, ManagerParseReload.parse(" RELOAD  @@route ", 7));
-    }
-
-    @Test
-    public void testReloadUser() {
-        Assert.assertEquals(ManagerParseReload.USER, ManagerParseReload.parse("reload @@user", 7));
-        Assert.assertEquals(ManagerParseReload.USER, ManagerParseReload.parse(" RELOAD  @@USER ", 7));
-        Assert.assertEquals(ManagerParseReload.USER, ManagerParseReload.parse(" RELOAD  @@user ", 7));
-    }
 
     @Test
     public void testRollback() {
@@ -334,45 +248,12 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseRollback.CONFIG, ManagerParseRollback.parse(" ROLLBACK  @@config ", 9));
     }
 
-    @Test
-    public void testRollbackUser() {
-        Assert.assertEquals(ManagerParseRollback.USER, ManagerParseRollback.parse("rollback @@user", 9));
-        Assert.assertEquals(ManagerParseRollback.USER, ManagerParseRollback.parse(" ROLLBACK  @@USER ", 9));
-        Assert.assertEquals(ManagerParseRollback.USER, ManagerParseRollback.parse(" ROLLBACK  @@user ", 9));
-    }
-
-    @Test
-    public void testRollbackRoute() {
-        Assert.assertEquals(ManagerParseRollback.ROUTE, ManagerParseRollback.parse("rollback @@route", 9));
-        Assert.assertEquals(ManagerParseRollback.ROUTE, ManagerParseRollback.parse(" ROLLBACK  @@ROUTE ", 9));
-        Assert.assertEquals(ManagerParseRollback.ROUTE, ManagerParseRollback.parse(" ROLLBACK  @@route ", 9));
-    }
 
     @Test
     public void testGetWhere() {
         Assert.assertEquals("123", ManagerParseShow.getWhereParameter("where id = 123"));
         Assert.assertEquals("datanode", ManagerParseShow.getWhereParameter("where datanode =    datanode"));
         Assert.assertEquals("schema", ManagerParseShow.getWhereParameter("where schema =schema   "));
-    }
-
-    @Test
-    public void testShowSlowSchema() {
-        Assert.assertEquals(ManagerParseShow.SLOW_SCHEMA,
-                0xff & ManagerParseShow.parse("show @@slow where schema=a", 5));
-        Assert.assertEquals(ManagerParseShow.SLOW_SCHEMA,
-                0xff & ManagerParseShow.parse("  SHOW @@SLOW   WHERE SCHEMA=B", 6));
-        Assert.assertEquals(ManagerParseShow.SLOW_SCHEMA,
-                0xff & ManagerParseShow.parse(" show @@slow  WHERE  SCHEMA  = a ", 5));
-    }
-
-    @Test
-    public void testShowSlowDataNode() {
-        Assert.assertEquals(ManagerParseShow.SLOW_DATANODE,
-                0xff & ManagerParseShow.parse("show @@slow where datanode= a", 5));
-        Assert.assertEquals(ManagerParseShow.SLOW_DATANODE,
-                0xff & ManagerParseShow.parse("SHOW @@SLOW WHERE DATANODE= A", 5));
-        Assert.assertEquals(ManagerParseShow.SLOW_DATANODE,
-                0xff & ManagerParseShow.parse(" show @@SLOW where DATANODE= b ", 5));
     }
 
     @Test

@@ -26,7 +26,6 @@ package io.mycat.manager.handler;
 import io.mycat.config.ErrorCode;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.manager.response.RollbackConfig;
-import io.mycat.manager.response.RollbackUser;
 import io.mycat.route.parser.ManagerParseRollback;
 
 /**
@@ -38,12 +37,6 @@ public final class RollbackHandler {
         switch (ManagerParseRollback.parse(stmt, offset)) {
         case ManagerParseRollback.CONFIG:
             RollbackConfig.execute(c);
-            break;
-        case ManagerParseRollback.ROUTE:
-            c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-            break;
-        case ManagerParseRollback.USER:
-            RollbackUser.execute(c);
             break;
         default:
             c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

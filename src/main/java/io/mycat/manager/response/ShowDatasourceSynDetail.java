@@ -80,7 +80,7 @@ public class ShowDatasourceSynDetail {
 		fields[i] = PacketUtil.getField("Master_Port", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_Use", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("Master_User", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
@@ -144,7 +144,7 @@ public class ShowDatasourceSynDetail {
 						row.add(LongUtil.toBytes(ds.getConfig().getPort()));
 						row.add(StringUtil.encode(states.get("Master_Host"),charset));
 						row.add(LongUtil.toBytes(Long.valueOf(states.get("Master_Port"))));
-						row.add(StringUtil.encode(states.get("Master_Use"),charset));
+						row.add(StringUtil.encode(states.get("Master_User"),charset));
 						//DateFormat非线程安全
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 						String time = sdf.format(new Date(r.getTime()));

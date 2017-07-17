@@ -29,7 +29,6 @@ import io.mycat.manager.response.KillConnection;
 import io.mycat.manager.response.Offline;
 import io.mycat.manager.response.Online;
 import io.mycat.net.handler.FrontendQueryHandler;
-import io.mycat.net.mysql.OkPacket;
 import io.mycat.route.parser.ManagerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,12 +58,6 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
         }
         int rs = ManagerParse.parse(sql);
         switch (rs & 0xff) {
-            case ManagerParse.SELECT:
-                SelectHandler.handle(sql, c, rs >>> SHIFT);
-                break;
-            case ManagerParse.SET:
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-                break;
             case ManagerParse.SHOW:
                 ShowHandler.handle(sql, c, rs >>> SHIFT);
                 break;
@@ -89,17 +82,11 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.ROLLBACK:
                 RollbackHandler.handle(sql, c, rs >>> SHIFT);
                 break;
-            case ManagerParse.CLEAR:
-                ClearHandler.handle(sql, c, rs >>> SHIFT);
-                break;
             case ManagerParse.CONFIGFILE:
                 ConfFileHandler.handle(sql, c);
                 break;
             case ManagerParse.LOGFILE:
                 ShowServerLog.handle(sql, c);
-                break;
-            case ManagerParse.ZK:
-                ZKHandler.handle(sql, c, rs >>> SHIFT);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

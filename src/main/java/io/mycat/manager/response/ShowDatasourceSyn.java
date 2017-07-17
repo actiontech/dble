@@ -78,7 +78,7 @@ public class ShowDatasourceSyn {
 		fields[i] = PacketUtil.getField("Master_Port", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_Use", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("Master_User", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
 		fields[i] = PacketUtil.getField("Seconds_Behind_Master", Fields.FIELD_TYPE_LONG);
@@ -150,7 +150,7 @@ public class ShowDatasourceSyn {
 					row.add(LongUtil.toBytes(ds.getConfig().getPort()));
 					row.add(StringUtil.encode(states.get("Master_Host"),charset));
 					row.add(LongUtil.toBytes(Long.valueOf(states.get("Master_Port"))));
-					row.add(StringUtil.encode(states.get("Master_Use"),charset));
+					row.add(StringUtil.encode(states.get("Master_User"),charset));
 					String secords = states.get("Seconds_Behind_Master");
 					row.add(secords==null?null:LongUtil.toBytes(Long.valueOf(secords)));
 					row.add(StringUtil.encode(states.get("Slave_IO_Running"),charset));

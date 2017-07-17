@@ -32,8 +32,6 @@ import io.mycat.route.parser.util.ParseUtil;
 public final class ManagerParse {
 
 	public static final int OTHER = -1;
-	public static final int SELECT = 1;
-	public static final int SET = 2;
 	public static final int SHOW = 3;
 	public static final int SWITCH = 4;
 	public static final int KILL_CONN = 5;
@@ -42,11 +40,8 @@ public final class ManagerParse {
 	public static final int ROLLBACK = 8;
 	public static final int OFFLINE = 9;
 	public static final int ONLINE = 10;
-	public static final int CLEAR = 11;
 	public static final int CONFIGFILE = 12;
 	public static final int LOGFILE = 13;
-
-	public static final int ZK = 14;
 
 	public static int parse(String stmt) {
 		for (int i = 0; i < stmt.length(); i++) {
@@ -57,9 +52,6 @@ public final class ManagerParse {
 			case '#':
 				i = ParseUtil.comment(stmt, i);
 				continue;
-			case 'C':
-			case 'c':
-				return cCheck(stmt, i);
 			case 'F':
 			case 'f':
 				return fCheck(stmt, i);
@@ -78,23 +70,11 @@ public final class ManagerParse {
 			case 'R':
 			case 'r':
 				return rCheck(stmt, i);
-			case 'Z':
-			case 'z':
-				return zCheck(stmt,i);
 			default:
 				return OTHER;
 			}
 		}
 		return OTHER;
-	}
-
-	private static int zCheck(String stmt, int offset) {
-		String thePart = stmt.substring(offset).toUpperCase();
-		if(thePart.startsWith("ZK")){
-			return ZK;
-		}else {
-			return OTHER;
-		}
 	}
 
 	// show LOG check
@@ -112,23 +92,6 @@ public final class ManagerParse {
 		String thePart = stmt.substring(offset).toUpperCase();
 		if (thePart.startsWith("FILE @@")) {
 			return CONFIGFILE;
-		}
-		return OTHER;
-	}
-
-	// CLEAR or config file
-	private static int cCheck(String stmt, int offset) {
-		if (stmt.length() > offset + "LEAR ".length()) {
-			char c1 = stmt.charAt(++offset);
-			char c2 = stmt.charAt(++offset);
-			char c3 = stmt.charAt(++offset);
-			char c4 = stmt.charAt(++offset);
-			char c5 = stmt.charAt(++offset);
-			if ((c1 == 'L' || c1 == 'l') && (c2 == 'E' || c2 == 'e')
-					&& (c3 == 'A' || c3 == 'a') && (c4 == 'R' || c4 == 'r')
-					&& (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
-				return (offset << 8) | CLEAR;
-			}
 		}
 		return OTHER;
 	}
@@ -190,9 +153,6 @@ public final class ManagerParse {
 	private static int sCheck(String stmt, int offset) {
 		if (stmt.length() > ++offset) {
 			switch (stmt.charAt(offset)) {
-			case 'E':
-			case 'e':
-				return seCheck(stmt, offset);
 			case 'H':
 			case 'h':
 				return show(stmt, offset);
@@ -202,29 +162,6 @@ public final class ManagerParse {
 			case 'T':
 			case 't':
 				return stop(stmt, offset);
-			default:
-				return OTHER;
-			}
-		}
-		return OTHER;
-	}
-
-	private static int seCheck(String stmt, int offset) {
-		if (stmt.length() > ++offset) {
-			switch (stmt.charAt(offset)) {
-			case 'L':
-			case 'l':
-				return select(stmt, offset);
-			case 'T':
-			case 't':
-				if (stmt.length() > ++offset) {
-					char c = stmt.charAt(offset);
-					if (c == ' ' || c == '\r' || c == '\n' || c == '\t'
-							|| c == '/' || c == '#') {
-						return SET;
-					}
-				}
-				return OTHER;
 			default:
 				return OTHER;
 			}
@@ -280,22 +217,6 @@ public final class ManagerParse {
 					&& (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k')
 					&& (c7 == ' ' || c7 == '\t' || c7 == '\r' || c7 == '\n')) {
 				return (offset << 8) | ROLLBACK;
-			}
-		}
-		return OTHER;
-	}
-
-	// SELECT' '
-	private static int select(String stmt, int offset) {
-		if (stmt.length() > offset + 4) {
-			char c1 = stmt.charAt(++offset);
-			char c2 = stmt.charAt(++offset);
-			char c3 = stmt.charAt(++offset);
-			char c4 = stmt.charAt(++offset);
-			if ((c1 == 'E' || c1 == 'e') && (c2 == 'C' || c2 == 'c')
-					&& (c3 == 'T' || c3 == 't')
-					&& (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-				return (offset << 8) | SELECT;
 			}
 		}
 		return OTHER;

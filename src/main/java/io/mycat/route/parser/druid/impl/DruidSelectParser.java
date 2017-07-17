@@ -606,8 +606,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 			return false;
 		}
 		TableConfig tc = schema.getTables().get(ctx.getTables().get(0));
-		if(tc==null ||(ctx.getTables().size() == 1 && tc.isGlobalTable())
-				) {
+		if (tc == null || (ctx.getTables().size() == 1 && tc.isGlobalTable())) {
 			return false;
 		} else {
 			//单表主键查询

@@ -133,6 +133,7 @@ public final class ShowThreadPool {
 		list.add(server.getTimerExecutor());
 		// list.add(server.getAioExecutor());
 		list.add(server.getBusinessExecutor());
+		list.add(server.getComplexQueryExecutor());
 		// for (NIOProcessor pros : server.getProcessors()) {
 		// list.add(pros.getExecutor());
 		// }

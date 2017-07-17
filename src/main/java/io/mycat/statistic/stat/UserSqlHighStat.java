@@ -59,7 +59,7 @@ public class UserSqlHighStat {
 	}	
 	
 	
-	private void clearSqlFrequency() {		
+	public void clearSqlFrequency() {
 		sqlFrequencyMap.clear();
 	}
 

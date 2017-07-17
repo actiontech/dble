@@ -23,6 +23,19 @@
  */
 package io.mycat.manager.handler;
 
+import io.mycat.backend.mysql.PacketUtil;
+import io.mycat.config.Fields;
+import io.mycat.config.model.SystemConfig;
+import io.mycat.manager.ManagerConnection;
+import io.mycat.net.mysql.EOFPacket;
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.ResultSetHeaderPacket;
+import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.util.CircularArrayList;
+import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -34,30 +47,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.MycatServer;
-import io.mycat.backend.mysql.PacketUtil;
-import io.mycat.config.Fields;
-import io.mycat.config.model.SystemConfig;
-import io.mycat.manager.ManagerConnection;
-import io.mycat.net.mysql.EOFPacket;
-import io.mycat.net.mysql.FieldPacket;
-import io.mycat.net.mysql.ResultSetHeaderPacket;
-import io.mycat.net.mysql.RowDataPacket;
-import io.mycat.util.CircularArrayList;
-import io.mycat.util.StringUtil;
-
 public final class ShowServerLog {
 	private static final int FIELD_COUNT = 1;
-	private static final ResultSetHeaderPacket header = PacketUtil
-			.getHeader(FIELD_COUNT);
+	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
 	public static final String DEFAULT_LOGFILE = "mycat.log";
-    private static final Logger                LOGGER          = LoggerFactory
-                                                                   .getLogger(ShowServerLog.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowServerLog.class);
 	static {
 		int i = 0;
 		byte packetId = 0;

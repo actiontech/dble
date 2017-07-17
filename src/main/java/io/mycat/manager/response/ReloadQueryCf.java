@@ -30,8 +30,6 @@ public class ReloadQueryCf {
         ok.serverStatus = 2;
         ok.message = "Reset show  @@sql.condition success".getBytes();
         ok.write(c);
-        
-        System.out.println(s.toString());
     }
 
 }

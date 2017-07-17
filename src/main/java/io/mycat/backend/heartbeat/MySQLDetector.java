@@ -23,10 +23,6 @@
  */
 package io.mycat.backend.heartbeat;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
 import io.mycat.config.model.DataHostConfig;
@@ -35,6 +31,9 @@ import io.mycat.sqlengine.SQLJob;
 import io.mycat.sqlengine.SQLQueryResult;
 import io.mycat.sqlengine.SQLQueryResultListener;
 import io.mycat.util.TimeUtil;
+
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -170,11 +169,11 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 					heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this,  null);
 				}				
 				heartbeat.getAsynRecorder().set(resultResult, switchType);
-			} else {				
-			    	heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this,  null);
+			} else {
+				heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
+				//监测数据库同步状态，在 switchType=-1或者1的情况下，也需要收集主从同步状态
+				heartbeat.getAsynRecorder().set(resultResult, switchType);
 			}
-			//监测数据库同步状态，在 switchType=-1或者1的情况下，也需要收集主从同步状态
-			heartbeat.getAsynRecorder().set(resultResult, switchType);
 		} else {
 			heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this,  null);
 		}

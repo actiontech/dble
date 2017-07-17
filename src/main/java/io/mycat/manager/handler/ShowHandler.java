@@ -25,48 +25,9 @@ package io.mycat.manager.handler;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.manager.ManagerConnection;
-import io.mycat.manager.response.ShowBackend;
-import io.mycat.manager.response.ShowBackendOld;
-import io.mycat.manager.response.ShowBinlogStatus;
-import io.mycat.manager.response.ShowCollation;
-import io.mycat.manager.response.ShowCommand;
-import io.mycat.manager.response.ShowConnection;
-import io.mycat.manager.response.ShowConnectionSQL;
-import io.mycat.manager.response.ShowDataNode;
-import io.mycat.manager.response.ShowDataSource;
-import io.mycat.manager.response.ShowDatabase;
-import io.mycat.manager.response.ShowDatasourceCluster;
-import io.mycat.manager.response.ShowDatasourceSyn;
-import io.mycat.manager.response.ShowDatasourceSynDetail;
-import io.mycat.manager.response.ShowDirectMemory;
-import io.mycat.manager.response.ShowHeartbeat;
-import io.mycat.manager.response.ShowHeartbeatDetail;
-import io.mycat.manager.response.ShowHelp;
-import io.mycat.manager.response.ShowParser;
-import io.mycat.manager.response.ShowProcessor;
-import io.mycat.manager.response.ShowRouter;
-import io.mycat.manager.response.ShowSQL;
-import io.mycat.manager.response.ShowSQLCondition;
-import io.mycat.manager.response.ShowSQLDetail;
-import io.mycat.manager.response.ShowSQLExecute;
-import io.mycat.manager.response.ShowSQLHigh;
-import io.mycat.manager.response.ShowSQLLarge;
-import io.mycat.manager.response.ShowSQLSlow;
-import io.mycat.manager.response.ShowSQLSumTable;
-import io.mycat.manager.response.ShowSQLSumUser;
-import io.mycat.manager.response.ShowServer;
-import io.mycat.manager.response.ShowSession;
-import io.mycat.manager.response.ShowSqlResultSet;
-import io.mycat.manager.response.ShowSysLog;
-import io.mycat.manager.response.ShowSysParam;
-import io.mycat.manager.response.ShowThreadPool;
-import io.mycat.manager.response.ShowTime;
-import io.mycat.manager.response.ShowVariables;
-import io.mycat.manager.response.ShowVersion;
-import io.mycat.manager.response.ShowWhiteHost;
+import io.mycat.manager.response.*;
 import io.mycat.route.parser.ManagerParseShow;
 import io.mycat.route.parser.util.ParseUtil;
-import io.mycat.manager.response.ShowCache;
 import io.mycat.util.StringUtil;
 
 /**
@@ -86,9 +47,6 @@ public final class ShowHandler {
 			break;
 		case ManagerParseShow.COMMAND:
 			ShowCommand.execute(c);
-			break;
-		case ManagerParseShow.COLLATION:
-			ShowCollation.execute(c);
 			break;
 		case ManagerParseShow.CONNECTION:
 			ShowConnection.execute(c);
@@ -138,14 +96,8 @@ public final class ShowHandler {
 		case ManagerParseShow.HEARTBEAT:
 			ShowHeartbeat.response(c);
 			break;
-		case ManagerParseShow.PARSER:
-			ShowParser.execute(c);
-			break;
 		case ManagerParseShow.PROCESSOR:
 			ShowProcessor.execute(c);
-			break;
-		case ManagerParseShow.ROUTER:
-			ShowRouter.execute(c);
 			break;
 		case ManagerParseShow.SERVER:
 			ShowServer.execute(c);
@@ -159,12 +111,6 @@ public final class ShowHandler {
 		case ManagerParseShow.SQL:
 			boolean isClearSql = Boolean.valueOf( stmt.substring(rs >>> 8).trim() );
 			ShowSQL.execute(c, isClearSql);
-			break;
-		case ManagerParseShow.SQL_DETAIL:
-			ShowSQLDetail.execute(c, ParseUtil.getSQLId(stmt));
-			break;
-		case ManagerParseShow.SQL_EXECUTE:
-			ShowSQLExecute.execute(c);
 			break;
 		case ManagerParseShow.SQL_SLOW:
 			boolean isClearSlow = Boolean.valueOf( stmt.substring(rs >>> 8).trim() );
@@ -192,26 +138,6 @@ public final class ShowHandler {
 			boolean isClearTable = Boolean.valueOf( stmt.substring(rs >>> 8).trim() );
 			ShowSQLSumTable.execute(c, isClearTable);
 			break;
-		case ManagerParseShow.SLOW_DATANODE: {
-			String name = stmt.substring(rs >>> 8).trim();
-			if (StringUtil.isEmpty(name)) {
-				c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-			} else {
-				// ShowSlow.dataNode(c, name);
-				c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-			}
-			break;
-		}
-		case ManagerParseShow.SLOW_SCHEMA: {
-			String name = stmt.substring(rs >>> 8).trim();
-			if (StringUtil.isEmpty(name)) {
-				c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-			} else {
-				c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-				// ShowSlow.schema(c, name);
-			}
-			break;
-		}
 		case ManagerParseShow.THREADPOOL:
 			ShowThreadPool.execute(c);
 			break;
@@ -226,9 +152,6 @@ public final class ShowHandler {
 			break;
 		case ManagerParseShow.TIME_STARTUP:
 			ShowTime.execute(c, ManagerParseShow.TIME_STARTUP);
-			break;
-		case ManagerParseShow.VARIABLES:
-			ShowVariables.execute(c);
 			break;
 		case ManagerParseShow.VERSION:
 			ShowVersion.execute(c);

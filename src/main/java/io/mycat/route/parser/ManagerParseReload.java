@@ -32,8 +32,6 @@ public final class ManagerParseReload {
 
     public static final int OTHER = -1;
     public static final int CONFIG = 1;
-    public static final int ROUTE = 2;
-    public static final int USER = 3;
     public static final int USER_STAT = 4;
     public static final int CONFIG_ALL = 5;
     public static final int SQL_SLOW = 6;
@@ -65,9 +63,6 @@ public final class ManagerParseReload {
                 case 'C':
                 case 'c':
                     return reload2CCheck(stmt, offset);
-                case 'R':
-                case 'r':
-                    return reload2RCheck(stmt, offset);
                 case 'U':
                 case 'u':
                     return reload2UCheck(stmt, offset);
@@ -115,24 +110,6 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-    // RELOAD @@ROUTE
-    static int reload2RCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'E' || c4 == 'e')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return ROUTE;
-            }
-        }
-        return OTHER;
-    }
-
     // RELOAD @@USER
     static int reload2UCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
@@ -155,11 +132,8 @@ public final class ManagerParseReload {
                           return USER_STAT;
                     }
                 }
-            	
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-                return USER;
+
+                return OTHER;
             }
         }
         return OTHER;

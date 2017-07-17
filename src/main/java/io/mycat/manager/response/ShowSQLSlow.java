@@ -106,7 +106,7 @@ public final class ShowSQLSlow {
             }
             
             if ( isClear ) {
-            	userStat.getSqlRecorder().clear();//读取慢SQL后，清理
+            	userStat.clearSqlslow();//读取慢SQL后，清理
             }
         }
 

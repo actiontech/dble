@@ -28,7 +28,6 @@ import io.mycat.manager.ManagerConnection;
 import io.mycat.manager.response.ReloadConfig;
 import io.mycat.manager.response.ReloadQueryCf;
 import io.mycat.manager.response.ReloadSqlSlowTime;
-import io.mycat.manager.response.ReloadUser;
 import io.mycat.manager.response.ReloadUserStat;
 import io.mycat.route.parser.ManagerParseReload;
 import io.mycat.route.parser.util.ParseUtil;
@@ -49,12 +48,6 @@ public final class ReloadHandler
                 break;
             case ManagerParseReload.CONFIG_ALL:
                 ReloadConfig.execute(c,true);
-                break;
-            case ManagerParseReload.ROUTE:
-                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-                break;
-            case ManagerParseReload.USER:
-                ReloadUser.execute(c);
                 break;
             case ManagerParseReload.USER_STAT:
                 ReloadUserStat.execute(c);

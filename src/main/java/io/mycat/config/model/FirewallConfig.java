@@ -23,34 +23,16 @@
  */
 package io.mycat.config.model;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import io.mycat.util.ResourceUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 import com.alibaba.druid.wall.WallConfig;
 import com.alibaba.druid.wall.WallProvider;
 import com.alibaba.druid.wall.spi.MySqlWallProvider;
-
 import io.mycat.MycatServer;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.loader.xml.XMLServerLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 防火墙配置定义
@@ -153,60 +135,5 @@ public final class FirewallConfig {
 	public WallConfig getWallConfig() {
 		return this.wallConfig;
 	}
-	
-	public synchronized static void updateToFile(String host, List<UserConfig> userConfigs) throws Exception{
-		LOGGER.debug("set white host:" + host + "user:" + userConfigs);
-		String filename = SystemConfig.getHomePath()+ File.separator +"conf"+ File.separator +"server.xml";
-		//String filename = "E:\\MyProject\\Mycat-Server\\src\\main\\resources\\server.xml";
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(false);
-        factory.setValidating(false);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        builder.setEntityResolver(new IgnoreDTDEntityResolver());
-        Document xmldoc = builder.parse(filename);
-        Element whitehost = (Element) xmldoc.getElementsByTagName("whitehost").item(0);
-        Element firewall = (Element) xmldoc.getElementsByTagName("firewall").item(0);
-        
-		if (firewall == null) {
-			firewall = xmldoc.createElement("firewall");
-            Element root = xmldoc.getDocumentElement();
-            root.appendChild(firewall);
-            if(whitehost==null){
-            	whitehost = xmldoc.createElement("whitehost");
-            	firewall.appendChild(whitehost);
-            }
-        }
-
-        for(UserConfig userConfig : userConfigs){
-        	String user = userConfig.getName();
-        	Element hostEle = xmldoc.createElement("host");
-        	hostEle.setAttribute("host", host);
-        	hostEle.setAttribute("user", user);
-
-        	whitehost.appendChild(hostEle);
-        }
-        
-             
-        TransformerFactory factory2 = TransformerFactory.newInstance();
-        Transformer former = factory2.newTransformer();
-        String systemId = xmldoc.getDoctype().getSystemId();
-        if(systemId!=null){
-            former.setOutputProperty(javax.xml.transform.OutputKeys.DOCTYPE_SYSTEM, systemId);    
-        }
-        former.transform(new DOMSource(xmldoc), new StreamResult(new File(filename)));
-
-	}
-	static class IgnoreDTDEntityResolver implements EntityResolver{
-		public InputSource resolveEntity(java.lang.String publicId, java.lang.String systemId) throws SAXException, java.io.IOException{
-			if (systemId.contains("server.dtd")){ 
-				//InputSource is = new InputSource(new ByteArrayInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".getBytes()));
-				InputStream dtd = ResourceUtil.getResourceAsStream("/server.dtd");
-				InputSource is = new InputSource(dtd);
-				return is; 
-		    } else {
-				return null;
-			}
-			} 
-	}
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -28,6 +29,7 @@ import io.mycat.server.ServerConnection;
 import io.mycat.config.MycatConfig;
 
 
+@Ignore
 public class DruidMysqlCreateTableTest
 {
 	protected Map<String, SchemaConfig> schemaMap;

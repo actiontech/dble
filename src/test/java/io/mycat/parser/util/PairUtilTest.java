@@ -47,7 +47,7 @@ public class PairUtilTest extends TestCase {
     }
 
     @Test
-    public void splitIndexTest() {
+    public void testsplitIndexTest() {
         String src1 = "offer_group[10]";
         Pair<String, Integer> pair1 = PairUtil.splitIndex(src1, '[', ']');
         Assert.assertEquals("offer_group", pair1.getKey());

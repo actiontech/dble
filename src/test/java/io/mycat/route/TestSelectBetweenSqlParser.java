@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
@@ -19,6 +20,7 @@ import junit.framework.Assert;
  * @author lxy
  *
  */
+@Ignore
 public class TestSelectBetweenSqlParser {
 	protected Map<String, SchemaConfig> schemaMap;
 	protected LayerCachePool cachePool = new SimpleCachePool();

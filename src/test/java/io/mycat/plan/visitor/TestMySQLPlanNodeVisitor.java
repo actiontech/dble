@@ -2,6 +2,7 @@ package io.mycat.plan.visitor;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -14,6 +15,7 @@ import io.mycat.plan.PlanNode;
  * Curent, we skip it.
  */
 public class TestMySQLPlanNodeVisitor {
+    	@Ignore
 	@Test
 	public void testNoraml() {
 		 PlanNode tableNode = getPlanNode("select * from tvistor");

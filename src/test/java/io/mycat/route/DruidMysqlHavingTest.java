@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
@@ -13,6 +14,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import junit.framework.Assert;
 
+@Ignore
 public class DruidMysqlHavingTest
 {
 	protected Map<String, SchemaConfig> schemaMap;

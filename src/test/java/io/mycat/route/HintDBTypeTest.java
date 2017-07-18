@@ -3,6 +3,7 @@ package io.mycat.route;
 import java.util.Map;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.CacheService;
@@ -15,6 +16,7 @@ import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
 
+@Ignore
 public class HintDBTypeTest {
 	protected Map<String, SchemaConfig> schemaMap;
 	protected LayerCachePool cachePool = new SimpleCachePool();

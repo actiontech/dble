@@ -23,13 +23,6 @@
  */
 package io.mycat.config;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
-
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
@@ -37,19 +30,16 @@ import io.mycat.backend.mysql.nio.MySQLDataSource;
 import io.mycat.config.loader.SchemaLoader;
 import io.mycat.config.loader.xml.XMLConfigLoader;
 import io.mycat.config.loader.xml.XMLSchemaLoader;
-import io.mycat.config.model.DBHostConfig;
-import io.mycat.config.model.DataHostConfig;
-import io.mycat.config.model.DataNodeConfig;
-import io.mycat.config.model.ERTable;
-import io.mycat.config.model.FirewallConfig;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
-import io.mycat.config.model.UserConfig;
+import io.mycat.config.model.*;
 import io.mycat.config.util.ConfigException;
-import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
 import io.mycat.route.sequence.handler.DistributedSequenceHandler;
+import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
 import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
 import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author mycat
@@ -131,8 +121,8 @@ public class ConfigInitializer {
 					}
 				}
 			}
-		}	
-		
+		}
+		Set<String> allUseDataNode = new HashSet<>();
 		// schema 配置检测		
 		for (SchemaConfig sc : schemas.values()) {
 			if (null == sc) {
@@ -147,9 +137,37 @@ public class ConfigInitializer {
 							throw new ConfigException("SelfCheck### schema dbnode is empty!");
 						}
 					}
+					allUseDataNode.addAll(dataNodeNames);
 				}
 			}
-		}	
+		}
+
+		Set<String> allUseHost = new HashSet<>();
+		//删除冗余dataNode
+		Iterator<String> dataNode = this.dataNodes.keySet().iterator();
+		while (dataNode.hasNext()) {
+			String dataNodeName = dataNode.next();
+			if (allUseDataNode.contains(dataNodeName)) {
+				allUseHost.add(this.dataNodes.get(dataNodeName).getDbPool().getHostName());
+			} else {
+				LOGGER.warn("dataNode " + dataNodeName + " is useless,server will ignore it");
+				dataNode.remove();
+			}
+		}
+		allUseDataNode.clear();
+		//删除冗余dataHost
+		if (allUseHost.size() < this.dataHosts.size()) {
+			Iterator<String> dataHost = this.dataHosts.keySet().iterator();
+			while (dataHost.hasNext()) {
+				String dataHostName = dataHost.next();
+				if (!allUseHost.contains(dataHostName)) {
+					LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
+					dataHost.remove();
+				}
+			}
+		}
+		allUseHost.clear();
+
 	}
 	
 	public void testConnection() {

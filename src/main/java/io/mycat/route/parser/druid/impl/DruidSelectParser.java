@@ -56,6 +56,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 		String schemaName = schema == null ? null : schema.getName();
 		if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
 			MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) sqlSelectQuery;
+			if(mysqlSelectQuery.getInto()!=null){
+				throw new SQLNonTransientException("select ... into is not supported!");
+			}
 			for(SQLSelectItem item:mysqlSelectQuery.getSelectList()){
 				if(item.getExpr() instanceof SQLQueryExpr){
 					throw new SQLNonTransientException("query statement as column is not supported!");

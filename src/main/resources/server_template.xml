@@ -90,13 +90,10 @@
 	-->
 	<user name="man1">
 		<property name="password">654321</property>
-		<property name="manager">true</property> 
+		<property name="manager">true</property>
+		<!-- manager user can't set schema-->
 	</user>
-	<user name="man2">
-		<property name="password">654321</property>
-		<property name="manager">true</property> 
-		<property name="schemas">MYCAT_TEST</property>
-	</user>
+
 	<user name="root">
 		<property name="password">123456</property>
 		<property name="schemas">TESTDB</property>

@@ -91,11 +91,7 @@
 	<user name="man1">
 		<property name="password">654321</property>
 		<property name="manager">true</property> 
-	</user>
-	<user name="man2">
-		<property name="password">654321</property>
-		<property name="manager">true</property> 
-		<property name="schemas">USHARD_TEST</property>
+		<!-- manager user can't set schema-->
 	</user>
 	<user name="root">
 		<property name="password">123456</property>

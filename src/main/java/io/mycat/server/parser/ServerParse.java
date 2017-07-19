@@ -822,5 +822,4 @@ public final class ServerParse {
 		}
 		return OTHER;
 	}
-
 }

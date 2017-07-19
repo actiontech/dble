@@ -37,12 +37,11 @@ import java.util.regex.Pattern;
  * @author yanglixue
  */
 public class ShowTables {
-	private static final String LIKE_KEY = "like";
-	private static String TABLE_PAT = "^\\s*(show){1}" +
-			"(\\s+full){0,1}" +
-			"(\\s+tables){1}" +
-			"(\\s+(from|in){1}\\s+([a-zA-Z_0-9]{1,})){0,1}" +
-			"((\\s+(like){1}\\s+\\'((. *){0,})\\'\\s*)|(\\s+(where){1}\\s+((. *){0,})\\s*)){0,1}" +
+	private static String TABLE_PAT = "^\\s*(show)" +
+			"(\\s+full)?" +
+			"(\\s+tables)" +
+			"(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
+			"((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
 			"\\s*$";
 	public static Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 

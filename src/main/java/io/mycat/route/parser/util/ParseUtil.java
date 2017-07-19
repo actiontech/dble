@@ -31,7 +31,9 @@ public final class ParseUtil {
     public static boolean isEOF(char c) {
         return (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ';');
     }
-
+    public static boolean isSpace(char space) {
+        return space == ' ' || space == '\r' || space == '\n' || space == '\t';
+    }
     public static String parseString(String stmt) {
     	 int offset = stmt.indexOf('=');
          if (offset != -1 && stmt.length() > ++offset) {

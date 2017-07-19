@@ -4,7 +4,9 @@ import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteStrategy;
+import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
+import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +33,10 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		if (schema == null) {
 			rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
 		} else {
-			RouteResultset returnedSet = routeSystemInfo(schema, sqlType, origSQL, rrs);
-			if (returnedSet == null) {
+			if(sqlType==ServerParse.SHOW){
+				rrs.setStatement(origSQL);
+				rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+			}else {
 				rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
 			}
 		}
@@ -47,16 +51,5 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
 														 String charset, LayerCachePool cachePool, ServerConnection sc) throws SQLException;
 
-	/**
-	 * 路由信息指令, 如 SHOW、SELECT@@、DESCRIBE
-	 */
-	public abstract RouteResultset routeSystemInfo(SchemaConfig schema, int sqlType, String stmt, RouteResultset rrs)
-			throws SQLException;
-
-	/**
-	 * 解析 Show 之类的语句
-	 */
-	public abstract RouteResultset analyseShowSQL(SchemaConfig schema, RouteResultset rrs, String stmt)
-			throws SQLException;
 
 }

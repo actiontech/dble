@@ -182,7 +182,16 @@ public class SchemaUtil
 
     public static class SchemaInfo
     {
-        public    String table;
+		public SchemaInfo(){
+
+		}
+		public SchemaInfo(String schema, String table) {
+			this.schema = schema;
+			this.table = table;
+			this.schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schema);
+		}
+
+		public    String table;
         public    String schema;
         public    SchemaConfig schemaConfig;
         public    boolean dualFlag = false;

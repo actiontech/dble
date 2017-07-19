@@ -24,6 +24,8 @@
 package io.mycat.server.parser;
 
 import io.mycat.route.parser.util.ParseUtil;
+import io.mycat.server.response.ShowColumns;
+import io.mycat.server.response.ShowIndex;
 import io.mycat.server.response.ShowTables;
 
 import java.util.regex.Matcher;
@@ -40,6 +42,9 @@ public final class ServerParseShow {
 	public static final int TABLES = 5;
     public static final int FULLTABLES =6;
     public static final int CHARSET = 7;
+	public static final int COLUMNS =8;
+	public static final int INDEX =9;
+	public static final int CREATE_TABLE =10;
 
 	public static int parse(String stmt, int offset) {
 		int i = offset;
@@ -52,7 +57,7 @@ public final class ServerParseShow {
 					continue;
 				case 'F':
 				case 'f':
-					return showTableType(stmt);
+					return showFCheck(stmt, i);
 				case '/':
 				case '#':
 					i = ParseUtil.comment(stmt, i);
@@ -68,18 +73,73 @@ public final class ServerParseShow {
 					return schemasCheck(stmt, i);
 				case 'C':
 				case 'c':
-					return charsetCheck(stmt, i);
+					return showCCheck(stmt, i);
+				case 'I':
+				case 'i':
+					return showIndex(stmt);
+				case 'K':
+				case 'k':
+					return showIndex(stmt);
 				default:
 					return OTHER;
 			}
 		}
 		return OTHER;
 	}
-
-
+	private static int showCCheck(String stmt, int offset) {
+		if (stmt.length() > offset ++) {
+			if(stmt.charAt(offset)=='h'||stmt.charAt(offset)=='H') {
+				return charsetCheck(stmt, offset);
+			}else if(stmt.charAt(offset)=='o'||stmt.charAt(offset)=='O'){
+				return showColumns(stmt);
+			}else if(stmt.charAt(offset)=='r'||stmt.charAt(offset)=='R'){
+				return showCreateTable(stmt, offset);
+			}else{
+				return OTHER;
+			}
+		}
+		return OTHER;
+	}
+	private static int showFCheck(String stmt, int offset) {
+		if (stmt.length() > offset ++) {
+			if(stmt.charAt(offset)=='u'||stmt.charAt(offset)=='U') {
+				return showFullCheck(stmt, offset);
+			}else if(stmt.charAt(offset)=='i'||stmt.charAt(offset)=='I'){//show fields
+				return showColumns(stmt);
+			}else{
+				return OTHER;
+			}
+		}
+		return OTHER;
+	}
+	private static int showFullCheck(String stmt, int offset) {
+		if (stmt.length() > offset + "ll ?".length()) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			if ((c1 == 'L' || c1 == 'l')
+					&& (c2 == 'L' || c2 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+				while (stmt.length() > ++offset) {
+					if(ParseUtil.isSpace(stmt.charAt(offset))){
+						continue;
+					}
+					switch (stmt.charAt(offset)) {
+						case 'T':
+						case 't':
+							return showTableType(stmt);
+						case 'C':
+						case 'c':
+							return showColumns(stmt);
+						default:
+							return OTHER;
+					}
+				}
+			}
+		}
+		return OTHER;
+	}
 
 	// SHOW DATA
-	static int dataCheck(String stmt, int offset) {
+	private static int dataCheck(String stmt, int offset) {
 		if (stmt.length() > offset + "ata?".length()) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -101,18 +161,46 @@ public final class ServerParseShow {
 		return OTHER;
 	}
 
-
-
-	private static boolean isShowTableMatched(String stmt, String pat1) {
-		Pattern pattern = Pattern.compile(pat1, Pattern.CASE_INSENSITIVE);
-		Matcher ma = pattern.matcher(stmt);
-
-		boolean flag = ma.matches();
-		return flag;
+	//show create table
+	private static int showCreateTable(String stmt, int offset) {
+		if (stmt.length() > offset + "eate".length()) {
+			char c1 = stmt.charAt(++offset);
+			char c2 = stmt.charAt(++offset);
+			char c3 = stmt.charAt(++offset);
+			char c4 = stmt.charAt(++offset);
+			if ((c1 == 'E' || c1 == 'e')
+					&& (c2 == 'A' || c2 == 'a')
+					&& (c3 == 'T' || c3 == 't')
+					&& (c4 == 'E' || c4 == 'e')) {
+				while (stmt.length() > ++offset) {
+					if (ParseUtil.isSpace(stmt.charAt(offset))) {
+						continue;
+					}
+					switch (stmt.charAt(offset)) {
+						case 'T':
+						case 't':
+							char c5 = stmt.charAt(++offset);
+							char c6 = stmt.charAt(++offset);
+							char c7 = stmt.charAt(++offset);
+							char c8 = stmt.charAt(++offset);
+							if ((c5 == 'A' || c5 == 'a')
+									&& (c6 == 'B' || c6 == 'b')
+									&& (c7 == 'L' || c7 == 'l')
+									&& (c8 == 'E' || c8 == 'e')
+									&& (ParseUtil.isSpace(stmt.charAt(++offset)))) {
+								return CREATE_TABLE;
+							}
+						default:
+							return OTHER;
+					}
+				}
+			}
+		}
+		return OTHER;
 	}
 
 	// SHOW DATABASES
-	static int showDatabases(String stmt, int offset) {
+	private static int showDatabases(String stmt, int offset) {
 		if (stmt.length() > offset + "ases".length()) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -131,7 +219,7 @@ public final class ServerParseShow {
 	}
 
 	//show schemas
-	static int schemasCheck(String stmt, int offset) {
+	private static int schemasCheck(String stmt, int offset) {
 		if (stmt.length() > offset + "chemas".length()) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -154,16 +242,14 @@ public final class ServerParseShow {
 	}
 
 	//show charset
-	static int charsetCheck(String stmt, int offset) {
-		if (stmt.length() > offset + "harset".length()) {
-			char c1 = stmt.charAt(++offset);
+	private static int charsetCheck(String stmt, int offset) {
+		if (stmt.length() > offset + "arset".length()) {
 			char c2 = stmt.charAt(++offset);
 			char c3 = stmt.charAt(++offset);
 			char c4 = stmt.charAt(++offset);
 			char c5 = stmt.charAt(++offset);
 			char c6 = stmt.charAt(++offset);
-			if ((c1 == 'H' || c1 == 'h')
-					&& (c2 == 'A' || c2 == 'a')
+			if ((c2 == 'A' || c2 == 'a')
 					&& (c3 == 'R' || c3 == 'r')
 					&& (c4 == 'S' || c4 == 's')
 					&& (c5 == 'E' || c5 == 'e')
@@ -177,7 +263,7 @@ public final class ServerParseShow {
 	}
 
 	// SHOW DATASOURCES
-	static int showDataSources(String stmt, int offset) {
+	private static int showDataSources(String stmt, int offset) {
 		if (stmt.length() > offset + "ources".length()) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);
@@ -213,6 +299,22 @@ public final class ServerParseShow {
 		}
 	}
 
-
-
+	private static int showColumns(String sql) {
+		Pattern pattern = ShowColumns.pattern;
+		Matcher ma = pattern.matcher(sql);
+		if (ma.matches()) {
+			return COLUMNS;
+		} else {
+			return OTHER;
+		}
+	}
+	private static int showIndex(String sql) {
+		Pattern pattern = ShowIndex.pattern;
+		Matcher ma = pattern.matcher(sql);
+		if (ma.matches()) {
+			return INDEX;
+		} else {
+			return OTHER;
+		}
+	}
 }

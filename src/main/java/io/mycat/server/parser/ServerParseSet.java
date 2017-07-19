@@ -48,7 +48,7 @@ public final class ServerParseSet {
 	private static final int VALUE_ON = 1;
 	private static final int VALUE_OFF = 0;
 	public static int parse(String stmt, int offset) {
-		if (!isSpace(stmt.charAt(offset))) {
+		if (!ParseUtil.isSpace(stmt.charAt(offset))) {
 			return OTHER;
 		}
 		while (stmt.length() > ++offset) {
@@ -242,7 +242,7 @@ public final class ServerParseSet {
 			char c4 = stmt.charAt(++offset);
 			if ((c1 == 'A' || c1 == 'a') && (c2 == 'M' || c2 == 'm')
 					&& (c3 == 'E' || c3 == 'e') && (c4 == 'S' || c4 == 's')
-					&& isSpace(stmt.charAt(++offset))) {
+					&& ParseUtil.isSpace(stmt.charAt(++offset))) {
 				return (offset << 8) | NAMES;
 			}
 		}
@@ -293,7 +293,7 @@ public final class ServerParseSet {
 				if (stmt.length() > offset + 4) {
 					char c2 = stmt.charAt(++offset);
 					char c3 = stmt.charAt(++offset);
-					if ((c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') && isSpace(stmt.charAt(++offset))) {
+					if ((c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') && ParseUtil.isSpace(stmt.charAt(++offset))) {
 						return (offset << 8) | CHARACTER_SET_NAME;
 					}
 				}
@@ -473,7 +473,7 @@ public final class ServerParseSet {
 		if (stmt.length() > offset + 7) {
 			if (isSession(stmt, offset)) {
 				offset = offset + 6;
-				if (!isSpace(stmt.charAt(++offset))) {
+				if (!ParseUtil.isSpace(stmt.charAt(++offset))) {
 					return OTHER;
 				}
 				while (stmt.length() > ++offset) {
@@ -594,7 +594,7 @@ public final class ServerParseSet {
 			if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
 					&& (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
 					&& (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o')
-					&& (c10 == 'N' || c10 == 'n') && isSpace(stmt.charAt(++offset))) {
+					&& (c10 == 'N' || c10 == 'n') && ParseUtil.isSpace(stmt.charAt(++offset))) {
 				while (stmt.length() > ++offset) {
 					switch (stmt.charAt(offset)) {
 					case ' ':
@@ -619,7 +619,7 @@ public final class ServerParseSet {
 		if (stmt.length() > offset + 9) {
 			if (isIsolation(stmt, offset)) {
 				offset = offset + 8;
-				if (!isSpace(stmt.charAt(++offset))) {
+				if (!ParseUtil.isSpace(stmt.charAt(++offset))) {
 					return OTHER;
 				}
 				while (stmt.length() > ++offset) {
@@ -649,7 +649,7 @@ public final class ServerParseSet {
 			char c3 = stmt.charAt(++offset);
 			char c4 = stmt.charAt(++offset);
 			if ((c1 == 'E' || c1 == 'e') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e')
-					&& (c4 == 'L' || c4 == 'l') && isSpace(stmt.charAt(++offset))) {
+					&& (c4 == 'L' || c4 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
 				while (stmt.length() > ++offset) {
 					switch (stmt.charAt(offset)) {
 					case ' ':
@@ -746,7 +746,7 @@ public final class ServerParseSet {
 					return OTHER;
 				}
 				offset++;
-			} else if (!isSpace(stmt.charAt(++offset))) {
+			} else if (!ParseUtil.isSpace(stmt.charAt(++offset))) {
 				return OTHER;
 			} else {
 				boolean find = false;
@@ -844,7 +844,7 @@ public final class ServerParseSet {
 						return OTHER;
 					}
 					offset++;
-				} else if (!isSpace(stmt.charAt(++offset))) {
+				} else if (!ParseUtil.isSpace(stmt.charAt(++offset))) {
 					return OTHER;
 				} else {
 					boolean find = false;
@@ -923,10 +923,5 @@ public final class ServerParseSet {
 		}
 		return false;
 	}
-	private static boolean isSpace(char space) {
-		if (space == ' ' || space == '\r' || space == '\n' || space == '\t') {
-			return true;
-		}
-		return false;
-	}
+
 }

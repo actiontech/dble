@@ -28,21 +28,7 @@ public class DescribeHandler {
 			SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
 			MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), describeStatement.getTableName());
-			RouteResultset rrs = new RouteResultset(stmt, ServerParse.DESCRIBE);
-			rrs.setStatement(RouterUtil.removeSchema(stmt, schemaInfo.schema));
-			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
-				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
-			} else {
-				TableConfig tc = schemaInfo.schemaConfig.getTables().get(schemaInfo.table);
-				if (tc == null) {
-					String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";
-					c.writeErrMessage(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-					return;
-				}
-				RouterUtil.routeToRandomNode(rrs, schemaInfo.schemaConfig, schemaInfo.table);
-			}
-			SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
-			singleNodeHandler.execute();
+			c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.DESCRIBE);
 		} catch (Exception e) {
 			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
 			return;

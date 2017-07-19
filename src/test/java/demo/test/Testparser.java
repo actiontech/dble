@@ -1,5 +1,6 @@
 package demo.test;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -53,22 +54,41 @@ public class Testparser {
 //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("drop table char_columns_test;");
 //		obj.test("truncate table char_columns_test;");
-
-		String strULSql ="";
-		strULSql ="desc a;";
-		obj.test(strULSql);
-		strULSql ="describe a;";
-		obj.test(strULSql);
-		strULSql ="describe a.b;";
-		obj.test(strULSql);
-		strULSql ="desc a b;";
-		obj.test(strULSql);
-
-		strULSql ="explain a;";
-		obj.test(strULSql);
-
-		strULSql ="explain select * from a;";
-		obj.test(strULSql);
+		String strShowSql ="";
+		strShowSql ="show create table a;";
+		obj.test(strShowSql);
+//		strShowSql ="show full columns from char_columns2 from ares_test like 'i%';";
+//		obj.test(strShowSql);
+//		strShowSql ="show full columns from char_columns2 from ares_test where Field='id';";
+//		obj.test(strShowSql);
+//		strShowSql ="show full fields from char_columns2 from ares_test like 'i%';";
+//		obj.test(strShowSql);
+//		strShowSql ="show full columns from ares_test.char_columns2;";
+//		obj.test(strShowSql);
+//
+//		strShowSql ="show  index from char_columns2 from ares_test where Key_name = 'PRIMARY';";
+//		obj.test(strShowSql);
+//		strShowSql ="show  indexes from char_columns2 from ares_test where Key_name = 'PRIMARY';";
+//		obj.test(strShowSql);
+//		strShowSql ="show  keys from char_columns2 from ares_test where Key_name = 'PRIMARY';";
+//		obj.test(strShowSql);
+//		strShowSql ="show  keys from ares_test.char_columns2 where Key_name = 'PRIMARY';";
+//		obj.test(strShowSql);
+//		String strULSql ="";
+//		strULSql ="desc a;";
+//		obj.test(strULSql);
+//		strULSql ="describe a;";
+//		obj.test(strULSql);
+//		strULSql ="describe a.b;";
+//		obj.test(strULSql);
+//		strULSql ="desc a b;";
+//		obj.test(strULSql);
+//
+//		strULSql ="explain a;";
+//		obj.test(strULSql);
+//
+//		strULSql ="explain select * from a;";
+//		obj.test(strULSql);
 		
 //		obj.test("create index idx_test on char_columns_test(id) ;");
 //		obj.test("drop index  idx_test on char_columns_test;");
@@ -265,11 +285,11 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "select distinctrow pad from sbtest1;";
 //		obj.test(selectSQl);
-		selectSQl = "select distinct sql_big_result pad from sbtest1;";
-		obj.test(selectSQl);
-		//not support
-		selectSQl = "select sql_big_result distinct pad from sbtest1;";
-		obj.test(selectSQl);
+//		selectSQl = "select distinct sql_big_result pad from sbtest1;";
+//		obj.test(selectSQl);
+//		//not support
+//		selectSQl = "select sql_big_result distinct pad from sbtest1;";
+//		obj.test(selectSQl);
 		
 	}
 	public void test(String sql){
@@ -526,8 +546,26 @@ public class Testparser {
 			} else if (sqlSelectQuery instanceof MySqlUnionQuery) { 
 			}
 			
-		}else{ 
-			// to do further
+		}else if(statement instanceof MySqlShowColumnsStatement){
+			MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
+			showColumnsStatement.setDatabase(null);
+			showColumnsStatement.toString();
+			System.out.println("change to->"+showColumnsStatement.toString());
+		}else if(statement instanceof MySqlShowIndexesStatement){
+			MySqlShowIndexesStatement mySqlShowIndexesStatement = (MySqlShowIndexesStatement) statement;
+			mySqlShowIndexesStatement.setDatabase(null);
+			mySqlShowIndexesStatement.toString();
+			System.out.println("change to 1->"+mySqlShowIndexesStatement.toString());
+			System.out.println("change to 2->"+SQLUtils.toMySqlString(mySqlShowIndexesStatement));
+		}else if(statement instanceof MySqlShowKeysStatement){
+			MySqlShowKeysStatement mySqlShowKeysStatement = (MySqlShowKeysStatement) statement;
+			mySqlShowKeysStatement.setDatabase(null);
+			mySqlShowKeysStatement.toString();
+			System.out.println("change to 1->"+mySqlShowKeysStatement.toString());
+			System.out.println("change to 2->"+SQLUtils.toMySqlString(mySqlShowKeysStatement));
+		}
+		else{
+			System.out.println("statement:"+statement+","+statement.getClass().toString());
 		}
 	}
 }

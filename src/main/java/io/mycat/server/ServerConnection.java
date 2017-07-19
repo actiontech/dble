@@ -23,6 +23,31 @@
  */
 package io.mycat.server;
 
+import io.mycat.MycatServer;
+import io.mycat.backend.mysql.xa.TxState;
+import io.mycat.config.ErrorCode;
+import io.mycat.config.MycatConfig;
+import io.mycat.config.loader.console.ZookeeperPath;
+import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
+import io.mycat.config.model.UserConfig;
+import io.mycat.log.transaction.TxnLogHelper;
+import io.mycat.net.FrontendConnection;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.util.RouterUtil;
+import io.mycat.server.parser.ServerParse;
+import io.mycat.server.response.Heartbeat;
+import io.mycat.server.response.Ping;
+import io.mycat.server.util.SchemaUtil;
+import io.mycat.util.SplitUtil;
+import io.mycat.util.StringUtil;
+import io.mycat.util.TimeUtil;
+import io.mycat.util.ZKUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
@@ -30,27 +55,6 @@ import java.sql.SQLNonTransientException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-
-import io.mycat.config.loader.console.ZookeeperPath;
-import io.mycat.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import io.mycat.util.StringUtil;
-import io.mycat.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.MycatServer;
-import io.mycat.backend.mysql.xa.TxState;
-import io.mycat.config.ErrorCode;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.log.transaction.TxnLogHelper;
-import io.mycat.net.FrontendConnection;
-import io.mycat.route.RouteResultset;
-import io.mycat.server.parser.ServerParse;
-import io.mycat.server.response.Heartbeat;
-import io.mycat.server.response.Ping;
-import io.mycat.util.SplitUtil;
-import io.mycat.util.TimeUtil;
 
 /**
  * @author mycat
@@ -229,7 +233,31 @@ public class ServerConnection extends FrontendConnection {
 	}
 
 
-
+	public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
+		MycatConfig conf = MycatServer.getInstance().getConfig();
+		UserConfig user = conf.getUsers().get(this.getUser());
+		if (user == null || !user.getSchemas().contains(schemaInfo.schema)) {
+			writeErrMessage("42000", "Access denied for user '" + this.getUser() + "' to database '" + schemaInfo.schema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+			return;
+		}
+		RouteResultset rrs = new RouteResultset(stmt, sqlType);
+		try {
+			if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+				RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+			} else {
+				TableConfig tc = schemaInfo.schemaConfig.getTables().get(schemaInfo.table);
+				if (tc == null) {
+					String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";
+					writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+					return;
+				}
+				RouterUtil.routeToRandomNode(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+			}
+			session.execute(rrs, sqlType);
+		} catch (Exception e) {
+			executeException(e, stmt);
+		}
+	}
 
 	public void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
 		// 路由计算

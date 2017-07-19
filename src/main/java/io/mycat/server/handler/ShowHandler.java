@@ -23,11 +23,15 @@
  */
 package io.mycat.server.handler;
 
+import io.mycat.MycatServer;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.parser.ServerParseShow;
-import io.mycat.server.response.ShowDatabases;
-import io.mycat.server.response.ShowTables;
+import io.mycat.server.response.*;
 import io.mycat.util.StringUtil;
 
 /**
@@ -51,11 +55,19 @@ public final class ShowHandler {
 			case ServerParseShow.FULLTABLES:
 				ShowTables.response(c, stmt, true);
 				break;
+			case ServerParseShow.COLUMNS:
+				ShowColumns.response(c, stmt);
+				break;
+			case ServerParseShow.INDEX:
+				ShowIndex.response(c, stmt);
+				break;
+			case ServerParseShow.CREATE_TABLE:
+				ShowCreateTable.response(c, stmt);
+				break;
 			case ServerParseShow.CHARSET:
 				stmt = stmt.toLowerCase().replaceFirst("charset","character set");
 			default:
 				c.execute(stmt, ServerParse.SHOW);
 		}
 	}
-
 }

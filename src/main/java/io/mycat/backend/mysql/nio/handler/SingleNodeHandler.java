@@ -36,9 +36,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.ServerConnection;
-import io.mycat.server.parser.ServerParse;
-import io.mycat.server.parser.ServerParseShow;
-import io.mycat.server.response.ShowTables;
 import io.mycat.statistic.stat.QueryResult;
 import io.mycat.statistic.stat.QueryResultDispatcher;
 import io.mycat.util.StringUtil;
@@ -48,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author mycat
@@ -59,15 +55,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	
 	private final RouteResultsetNode node;
 	private final RouteResultset rrs;
-	private final NonBlockingSession session;
+	protected final NonBlockingSession session;
 	
 	// only one thread access at one time no need lock
-	private volatile byte packetId;
-	private volatile ByteBuffer buffer;
+	protected volatile byte packetId;
+	protected volatile ByteBuffer buffer;
 	private long startTime;
 	private long netInBytes;
-	private long netOutBytes;
-	private long selectRows;
+	protected long netOutBytes;
+	protected long selectRows;
 
 	private String priamaryKeyTable = null;
 	private int primaryKeyIndex = -1;
@@ -76,10 +72,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	private int fieldCount;
 	private List<FieldPacket> fieldPackets = new ArrayList<>();
 
-	private volatile boolean isDefaultNodeShowTable;
-	private volatile boolean isDefaultNodeShowFullTable;
-	private String showTableSchema;
-	private Map<String,String> shardingTablesMap;
+
 	private volatile boolean waitingResponse;
 	
 	public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -92,20 +85,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			throw new IllegalArgumentException("session is null!");
 		}
 		this.session = session;
-		ServerConnection source = session.getSource();
-		if (ServerParse.SHOW == rrs.getSqlType()) {
-			int type = ServerParseShow.showTableType(rrs.getSrcStatement());
-			if (ServerParseShow.TABLES == type || ServerParseShow.FULLTABLES == type) {
-				String showSchema = ShowTables.getShowTableFrom(rrs.getSrcStatement());
-				if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-					showSchema = showSchema.toLowerCase();
-				}
-				showTableSchema = showSchema == null ? source.getSchema() : showSchema;
-				shardingTablesMap = ShowTables.getTableSet(rrs.getSrcStatement(),showTableSchema);
-				isDefaultNodeShowTable = ServerParseShow.TABLES == type;
-				isDefaultNodeShowFullTable = ServerParseShow.FULLTABLES == type;
-			}
-		}
 	}
 
 
@@ -293,7 +272,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	 * 
 	 * @return
 	 */
-	private ByteBuffer allocBuffer() {
+	protected ByteBuffer allocBuffer() {
 		if (buffer == null) {
 			buffer = session.getSource().allocate();
 		}
@@ -309,16 +288,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
 			boolean isLeft, BackendConnection conn) {
 		ServerConnection source = session.getSource();
-		if (isDefaultNodeShowTable || isDefaultNodeShowFullTable) {
-			buffer = allocBuffer();
-			if (isDefaultNodeShowTable) {
-				packetId = ShowTables.writeTablesHeader(buffer, source,shardingTablesMap, showTableSchema);
-
-			} else if (isDefaultNodeShowFullTable) {
-				packetId = ShowTables.writeFullTablesHeader(buffer, source,shardingTablesMap, showTableSchema);
-			}
-			return;
-		}
 		this.netOutBytes += header.length;
 		for (int i = 0, len = fields.size(); i < len; ++i) {
 			byte[] field = fields.get(i);
@@ -370,15 +339,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		
 		this.netOutBytes += row.length;
 		this.selectRows++;
-
-		if (isDefaultNodeShowTable || isDefaultNodeShowFullTable) {
-			RowDataPacket rowDataPacket = new RowDataPacket(1);
-			rowDataPacket.read(row);
-			String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getSource().getCharset());
-			if (shardingTablesMap.containsKey(table)) {
-				return false;
-			}
-		}
 		row[3] = ++packetId;
 
 		RowDataPacket rowDataPk = null;

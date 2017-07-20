@@ -399,7 +399,7 @@ public class Testparser {
 			
 			System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
 			if(deleteStatement.getFrom()!= null){
-				System.out.println(sql + ":getFrom:" + deleteStatement.getFrom().getClass().toString() + "\n");
+				System.out.println(sql + ":getSchema:" + deleteStatement.getFrom().getClass().toString() + "\n");
 			}
 			System.out.println("\n");
 		} else if(statement instanceof MySqlUpdateStatement){

@@ -1,11 +1,11 @@
 package io.mycat.server.response;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
 import com.google.common.base.Strings;
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
-import io.mycat.backend.mysql.nio.handler.SingleNodeHandler;
+import io.mycat.backend.mysql.nio.handler.ShowTablesHandler;
+import io.mycat.backend.mysql.nio.handler.query.DMLResponseHandler;
+import io.mycat.backend.mysql.nio.handler.util.HandlerTool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.MycatConfig;
@@ -17,17 +17,18 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.plan.common.field.Field;
+import io.mycat.plan.common.item.Item;
+import io.mycat.plan.visitor.MySQLItemVisitor;
 import io.mycat.route.RouteResultset;
-import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
+import io.mycat.server.util.ShowCreateStmtInfo;
 import io.mycat.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,16 +38,15 @@ import java.util.regex.Pattern;
  * @author yanglixue
  */
 public class ShowTables {
-	private static String TABLE_PAT = "^\\s*(show)" +
-			"(\\s+full)?" +
-			"(\\s+tables)" +
-			"(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
-			"((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
-			"\\s*$";
-	public static Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
-
-	public static void response(ServerConnection c, String stmt, boolean isFull) {
-		String showSchema = getShowTableFrom(stmt);
+	public static void response(ServerConnection c, String stmt) {
+		ShowCreateStmtInfo info;
+		try {
+			info = new ShowCreateStmtInfo(stmt);
+		} catch (Exception e) {
+			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+			return;
+		}
+		String showSchema = info.getSchema();
 		if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
 			showSchema = showSchema.toLowerCase();
 		}
@@ -71,53 +71,58 @@ public class ShowTables {
 		String node = schema.getDataNode();
 		if (!Strings.isNullOrEmpty(node)) {
 			try {
-				parserAndExecuteShowTables(c, stmt, node);
+				parserAndExecuteShowTables(c, stmt, node, info);
 			} catch (Exception e) {
 				c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
 			}
 		}else {
-			responseDirect(c, stmt, cSchema, isFull);
+			responseDirect(c, cSchema, info);
 		}
 	}
 
-	private static void parserAndExecuteShowTables(ServerConnection c, String originSql,  String node) throws Exception {
-		SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(originSql);
-		SQLShowTablesStatement showTablesStatement = (SQLShowTablesStatement) statement;
+	private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowCreateStmtInfo info) throws Exception {
 		RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
-		if (showTablesStatement.getDatabase() != null) {
-			Pattern pattern = ShowTables.pattern;
-			Matcher ma = pattern.matcher(originSql);
+		if (info.getSchema() != null) {
 			StringBuilder sql = new StringBuilder();
-			//MUST RETURN TRUE
-			ma.matches();
-			sql.append(ma.group(1));
-			if (ma.group(2) != null) {
-				sql.append(ma.group(2));
+			sql.append("SHOW ");
+			if (info.isFull()) {
+				sql.append("FULL ");
 			}
-			sql.append(ma.group(3));
-			if (ma.group(7) != null) {
-				sql.append(ma.group(7));
+			sql.append("TABLES ");
+			if (info.getCond() != null) {
+				sql.append(info.getCond());
 			}
 			rrs.setStatement(sql.toString());
 		}
 		RouterUtil.routeToSingleNode(rrs, node);
-		SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
-		singleNodeHandler.execute();
+		ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, c.getSession2(), info);
+		showTablesHandler.execute();
 	}
 
-	private static void responseDirect(ServerConnection c, String stmt, String cSchema, boolean isFull) {
+	private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
 		ByteBuffer buffer = c.allocate();
-		Map<String, String> tableMap = getTableSet(stmt, cSchema);
-		if (isFull) {
-			byte packetId = writeFullTablesHeader(buffer, c, tableMap, cSchema);
+		Map<String, String> tableMap = getTableSet(cSchema, info);
+		if (info.isFull()) {
+			List<FieldPacket> fieldPackets = new ArrayList<>(2);
+			byte packetId = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
+			if (info.getWhere() != null) {
+				MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharsetIndex());
+				info.getWhereExpr().accept(mev);
+				List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
+				Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE,
+						c.getCharset());
+				packetId = writeFullTablesRow(buffer, c, tableMap, packetId, whereItem, sourceFields);
+			} else {
+				packetId = writeFullTablesRow(buffer, c, tableMap, packetId, null, null);
+			}
 			writeRowEof(buffer, c, packetId);
 		} else {
-			byte packetId = writeTablesHeader(buffer, c, tableMap, cSchema);
+			byte packetId = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
 			writeRowEof(buffer, c, packetId);
 		}
 	}
 
-	public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
+	public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
 		int FIELD_COUNT = 2;
 		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -127,8 +132,10 @@ public class ShowTables {
 		header.packetId = ++packetId;
 		fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
 		fields[i].packetId = ++packetId;
+		fieldPackets.add(fields[i]);
 		fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i + 1].packetId = ++packetId;
+		fieldPackets.add(fields[i + 1]);
 		eof.packetId = ++packetId;
 		// write header
 		buffer = header.write(buffer, c, true);
@@ -136,18 +143,31 @@ public class ShowTables {
 		for (FieldPacket field : fields) {
 			buffer = field.write(buffer, c, true);
 		}
-		buffer = eof.write(buffer, c, true);
+		eof.write(buffer, c, true);
+		return packetId;
+	}
+
+	public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
 		for (String name : tableMap.keySet()) {
-			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+			RowDataPacket row = new RowDataPacket(2);
 			row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
 			row.add(StringUtil.encode(tableMap.get(name), c.getCharset()));
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c, true);
+			if (whereItem != null) {
+				HandlerTool.initFields(sourceFields, row.fieldValues);
+				/* 根据where条件进行过滤 */
+				if (whereItem.valBool()) {
+					row.packetId = ++packetId;
+					buffer = row.write(buffer, c, true);
+				}
+			}else{
+				row.packetId = ++packetId;
+				buffer = row.write(buffer, c, true);
+			}
 		}
 		return packetId;
 	}
 
-	public static byte writeTablesHeader(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
+	public static byte writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
 		int FIELD_COUNT = 1;
 		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -186,7 +206,7 @@ public class ShowTables {
 		c.write(buffer);
 	}
 
-	public static Map<String, String> getTableSet(String stmt, String cSchema) {
+	public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
 		//在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
 		SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
 		if (schemata == null) {
@@ -195,24 +215,23 @@ public class ShowTables {
 		Map meta = schemata.getTableMetas();
 		TreeMap<String, String> tableMap = new TreeMap<>();
 		Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
-		String like = getShowTableLike(stmt);
-		if (null == like) {
+		if (null != info.getLike()) {
+			String p = "^" + info.getLike().replaceAll("%", ".*");
+			Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
+			Matcher maLike;
+
 			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
 				String tbName = tbConfig.getName();
-				if (meta.get(tbName) != null) {
+				maLike = pattern.matcher(tbName);
+				if (maLike.matches() && meta.get(tbName) != null) {
 					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
 					tableMap.put(tbName, tbType);
 				}
 			}
-		} else {
-			String p = "^" + like.replaceAll("%", ".*");
-			Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
-			Matcher ma;
-
+		}else {
 			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
 				String tbName = tbConfig.getName();
-				ma = pattern.matcher(tbName);
-				if (ma.matches() && meta.get(tbName) != null) {
+				if (meta.get(tbName) != null) {
 					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
 					tableMap.put(tbName, tbType);
 				}
@@ -221,19 +240,4 @@ public class ShowTables {
 		return tableMap;
 	}
 
-	public static String getShowTableFrom(String sql) {
-		Matcher ma = pattern.matcher(sql);
-		if (ma.matches()) {
-			return ma.group(6);
-		}
-		return null;
-	}
-
-	private static String getShowTableLike(String sql) {
-		Matcher ma = pattern.matcher(sql);
-		if (ma.matches()) {
-			return ma.group(10);
-		}
-		return null;
-	}
 }

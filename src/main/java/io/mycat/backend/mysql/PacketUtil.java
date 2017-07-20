@@ -59,7 +59,7 @@ public class PacketUtil {
         packet.charsetIndex = CharsetUtil.getIndex(UTF8);
         packet.name = encode(name, UTF8);
         packet.orgName = encode(orgName, UTF8);
-        packet.type = (byte) type;
+        packet.type = type;
         return packet;
     }
 
@@ -67,7 +67,7 @@ public class PacketUtil {
         FieldPacket packet = new FieldPacket();
         packet.charsetIndex = CharsetUtil.getIndex(UTF8);
         packet.name = encode(name, UTF8);
-        packet.type = (byte) type;
+        packet.type = type;
         return packet;
     }
 

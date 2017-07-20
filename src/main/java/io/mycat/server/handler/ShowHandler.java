@@ -50,10 +50,7 @@ public final class ShowHandler {
 				ShowDatabases.response(c);
 				break;
 			case ServerParseShow.TABLES:
-				ShowTables.response(c, stmt, false);
-				break;
-			case ServerParseShow.FULLTABLES:
-				ShowTables.response(c, stmt, true);
+				ShowTables.response(c, stmt);
 				break;
 			case ServerParseShow.COLUMNS:
 				ShowColumns.response(c, stmt);

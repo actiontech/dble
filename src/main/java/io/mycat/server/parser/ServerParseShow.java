@@ -26,7 +26,7 @@ package io.mycat.server.parser;
 import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.server.response.ShowColumns;
 import io.mycat.server.response.ShowIndex;
-import io.mycat.server.response.ShowTables;
+import io.mycat.server.util.ShowCreateStmtInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +40,6 @@ public final class ServerParseShow {
 	public static final int DATABASES = 1;
 	public static final int DATASOURCES = 2;
 	public static final int TABLES = 5;
-    public static final int FULLTABLES =6;
     public static final int CHARSET = 7;
 	public static final int COLUMNS =8;
 	public static final int INDEX =9;
@@ -286,14 +285,10 @@ public final class ServerParseShow {
 	}
 
 	public static int showTableType(String sql) {
-		Pattern pattern = ShowTables.pattern;
+		Pattern pattern = ShowCreateStmtInfo.pattern;
 		Matcher ma = pattern.matcher(sql);
 		if (ma.matches()) {
-			if (ma.group(2) != null) {
-				return FULLTABLES;
-			} else {
-				return TABLES;
-			}
+			return TABLES;
 		} else {
 			return OTHER;
 		}

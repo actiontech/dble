@@ -93,8 +93,7 @@ public class EnchachePool implements CachePool {
 
 	@Override
 	public CacheStatic getCacheStatic() {
-		
-		cacheStati.setItemSize(enCache.getSize());
+		cacheStati.setItemSize(enCache.getKeysWithExpiryCheck().size());
 		return cacheStati;
 	}
 

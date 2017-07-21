@@ -193,8 +193,9 @@ public class ItemFuncGroupConcat extends ItemSum {
 			}
 			aggregate.putAttribute(ItemFuncKeyWord.ORDER_BY, orderBy);
 		}
-		Item arg0 = getArg(0);
-		aggregate.addArgument(arg0.toExpression());
+		for (Item arg : args) {
+			aggregate.addArgument(arg.toExpression());
+		}
 		if (seperator != null) {
 			SQLCharExpr sep = new SQLCharExpr(seperator);
 			aggregate.putAttribute(ItemFuncKeyWord.SEPARATOR, sep);

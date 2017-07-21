@@ -43,7 +43,12 @@ public class ItemCondOr extends ItemCond {
 	public SQLExpr toExpression() {
 		SQLExpr left = args.get(0).toExpression();
 		SQLExpr right = args.get(1).toExpression();
-		return new SQLBinaryOpExpr(left, SQLBinaryOperator.BooleanOr, right);
+		SQLExpr result = new SQLBinaryOpExpr(left, SQLBinaryOperator.BooleanOr, right);
+		for (int i = 2; i < args.size(); i++) {
+			SQLExpr rightAnother = args.get(i).toExpression();
+			result = new SQLBinaryOpExpr(result, SQLBinaryOperator.BooleanOr, rightAnother);
+		}
+		return result;
 	}
 
 	@Override

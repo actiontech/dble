@@ -31,6 +31,7 @@ import java.util.Map;
 
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
+import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -46,13 +47,13 @@ import io.mycat.util.StringUtil;
 
 /**
  * 查看数据源信息
- * 
+ *
  * @author mycat
  * @author mycat
  */
 public final class ShowDataSource {
 
-	private static final int FIELD_COUNT = 11;
+	private static final int FIELD_COUNT = 10;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -62,9 +63,9 @@ public final class ShowDataSource {
 		byte packetId = 0;
 		header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("DATANODE",
+		/*fields[i] = PacketUtil.getField("DATANODE",
 				Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+		fields[i++].packetId = ++packetId;*/
 
 		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
@@ -89,10 +90,10 @@ public final class ShowDataSource {
 
 		fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
-		
+
 		fields[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		
+
 		fields[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
@@ -116,36 +117,39 @@ public final class ShowDataSource {
 		// write rows
 		byte packetId = eof.packetId;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
+
+
+
 		Map<String, List<PhysicalDatasource>> dataSources = new HashMap<String, List<PhysicalDatasource>>();
 		if (null != name) {
 			PhysicalDBNode dn = conf.getDataNodes().get(name);
-			if (dn != null) {
-				List<PhysicalDatasource> dslst = new LinkedList<PhysicalDatasource>();
-				dslst.addAll(dn.getDbPool().getAllDataSources());
-				dataSources.put(dn.getName(), dslst);
+			for(PhysicalDatasource w:dn.getDbPool().getAllDataSources()){
+				RowDataPacket row = getRow(w, c.getCharset());
+				row.packetId = ++packetId;
+				buffer = row.write(buffer, c,true);
 			}
 
 		} else {
 			// add all
+			for (Map.Entry<String,PhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
 
-			for (PhysicalDBNode dn : conf.getDataNodes().values()) {
-				List<PhysicalDatasource> dslst = new LinkedList<PhysicalDatasource>();
-				dslst.addAll(dn.getDbPool().getAllDataSources());
-				dataSources.put(dn.getName(), dslst);
+				PhysicalDBPool datahost =  entry.getValue();
+
+				for( int i = 0;i < datahost.getSources().length;i++){
+					RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
+					row.packetId = ++packetId;
+					buffer = row.write(buffer, c,true);
+					if(datahost.getrReadSources().get(new Integer(i)) != null){
+						for (PhysicalDatasource w : datahost.getrReadSources().get(new Integer(i))) {
+							RowDataPacket rsow = getRow(w, c.getCharset());
+							rsow.packetId = ++packetId;
+							buffer = rsow.write(buffer, c, true);
+						}
+					}
+				}
 			}
 
 		}
-
-		for (Map.Entry<String, List<PhysicalDatasource>> dsEntry : dataSources
-				.entrySet()) {
-			String dnName = dsEntry.getKey();
-			for (PhysicalDatasource ds : dsEntry.getValue()) {
-				RowDataPacket row = getRow(dnName, ds, c.getCharset());
-				row.packetId = ++packetId;
-				buffer = row.write(buffer, c,true);
-			}
-		}
-
 		// write last eof
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
@@ -155,10 +159,10 @@ public final class ShowDataSource {
 		c.write(buffer);
 	}
 
-	private static RowDataPacket getRow(String dataNode, PhysicalDatasource ds,
+	private static RowDataPacket getRow( PhysicalDatasource ds,
 			String charset) {
 		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-		row.add(StringUtil.encode(dataNode, charset));
+		//row.add(StringUtil.encode(dataNode, charset));
 		row.add(StringUtil.encode(ds.getName(), charset));
 		row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
 		row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));

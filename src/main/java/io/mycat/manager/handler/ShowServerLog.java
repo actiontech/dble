@@ -24,6 +24,7 @@
 package io.mycat.manager.handler;
 
 import io.mycat.backend.mysql.PacketUtil;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.manager.ManagerConnection;
@@ -31,6 +32,7 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.route.parser.ManagerParseShow;
 import io.mycat.util.CircularArrayList;
 import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
@@ -74,6 +76,12 @@ public final class ShowServerLog {
 
 	public static void handle(String stmt,ManagerConnection c) {
 
+		Map<String, String> condPairMap = getCondPair(stmt);
+		if(condPairMap ==null){
+			c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+			return;
+		}
+
 		ByteBuffer buffer = c.allocate();
 
 		// write header
@@ -91,8 +99,7 @@ public final class ShowServerLog {
 
 		byte packetId = eof.packetId;
 		PackageBufINf bufInf = null;
-		// show log key=warn limit=0,30
-		Map<String, String> condPairMap = getCondPair(stmt);
+
 		if (condPairMap.isEmpty()) {
 			bufInf = showLogSum(c, buffer, packetId);
 		} else {
@@ -252,33 +259,181 @@ public final class ShowServerLog {
 		return bufINf;
 	}
 
+
+	/**
+	 * 这个方法不光是获取到对应的条件信息同样的在这里
+	 * 我们还会校验整个SQL是不是符合我们的定义
+	 * @param sql
+	 * @return
+	 */
 	public static Map<String, String> getCondPair(String sql) {
-		HashMap<String, String> map = new HashMap<String, String>();
-		Pattern p = Pattern.compile("(\\S+\\s*=\\s*\\S+)");
-		Matcher m = p.matcher(sql);
-		while (m.find()) {
-			String item = m.group();
-			Pattern p2 = Pattern.compile("(\\S+)\\s*=\\s*(\\S+)");
-			Matcher m2 = p2.matcher(item);
-			if (m2.find()) {
-				map.put(m2.group(1), m2.group(2));
+		try {
+			HashMap<String, String> map = new HashMap<String, String>();
+			int offset = ManagerParseShow.trim(0, sql);
+			//sql拿到之后起头先过滤空格
+			char c1 = sql.charAt(offset);
+			char c2 = sql.charAt(++offset);
+			char c3 = sql.charAt(++offset);
+			if((c1=='L'||c1=='l')&&
+					(c2=='o'||c2=='O')&&
+					(c3=='g'||c3=='G')){
+				//log之后去空格
+				 offset = ManagerParseShow.trim(++offset, sql);
+				char c4 = sql.charAt(offset);
+				char c5 = sql.charAt(++offset);
+				offset++;
+				if(c4==c5 &&c5=='@') {
+					offset = ManagerParseShow.trim(offset, sql);
+					while (offset < sql.length()) {
+						switch (sql.charAt(offset)) {
+							case 'f':
+							case 'F':
+								offset = checkFcond(offset, sql, map);
+								break;
+							case 'l':
+							case 'L':
+								offset = checkLcond(offset, sql, map);
+								break;
+							case 'k':
+							case 'K':
+								offset = checkKcond(offset, sql, map);
+								break;
+							case 'R':
+							case 'r':
+								offset = checkRcond(offset, sql, map);
+								break;
+							default: return null;
+						}
+						offset = ManagerParseShow.trim(offset, sql);
+					}
+				}
+			}
+			return map;
+		}catch(Exception e){
+
+		}
+		return null;
+	}
+
+
+
+
+	public static int checkFcond(int offset, String sql,Map<String, String> map) throws  Exception{
+		if(map.get("file") != null){
+			throw  new Exception();
+		}
+		char c1 = sql.charAt(++offset);
+		char c2 = sql.charAt(++offset);
+		char c3 = sql.charAt(++offset);
+		if((c1=='I'|c1=='i')&&(c2=='l'||c2=='L')&&(c3=='e'||c3=='E')){
+			offset = ManagerParseShow.trim(++offset, sql);
+			if(sql.charAt(offset) == '='){
+				offset = ManagerParseShow.trim(++offset, sql);
+				int start  = offset;
+				for(;offset <sql.length();offset++){
+					if(sql.charAt(offset) == ' '){
+						break;
+					}
+				}
+				map.put("file",sql.substring(start,offset));
+				return  offset;
 			}
 		}
-		return map;
+		throw  new Exception();
 	}
 
-	public static void main(String[] args) {
-		String sql = "show log limit =1,2 key=warn file= \"2\"  ";
-		Map<String, String> condPairMap = getCondPair(sql);
-		for (Map.Entry<String, String> entry : condPairMap.entrySet()) {
-			System.out.println("key:" + entry.getKey() + ",value:"
-					+ entry.getValue());
-
+	public static int checkLcond(int offset, String sql,Map<String, String> map)throws  Exception{
+		if(map.get("limit") != null){
+			throw  new Exception();
 		}
-		String limt = "1,2";
-		System.out.println(Arrays.toString(limt.split("\\s|,")));
-
+		char c1 = sql.charAt(++offset);
+		char c2 = sql.charAt(++offset);
+		char c3 = sql.charAt(++offset);
+		char c4 = sql.charAt(++offset);
+		if((c1=='I'|c1=='i')&&(c2=='m'||c2=='M')&&(c3=='i'||c3=='I')&&(c4=='T'||c4=='t')){
+			offset = ManagerParseShow.trim(++offset, sql);
+			if(sql.charAt(offset) == '='){
+				offset = ManagerParseShow.trim(++offset, sql);
+				int start  = offset;
+				for(;offset <sql.length();offset++){
+					if(sql.charAt(offset) == ' '){
+						break;
+					}
+				}
+				map.put("limit",sql.substring(start,offset));
+				return  offset;
+			}
+		}
+		throw  new Exception();
 	}
+
+	public static int checkKcond(int offset, String sql,Map<String, String> map)throws  Exception{
+		boolean quotationMarks = false;
+		int start = 0;
+		if(map.get("key") != null){
+			throw  new Exception();
+		}
+		char c1 = sql.charAt(++offset);
+		char c2 = sql.charAt(++offset);
+		if((c1=='E'|c1=='e')&&(c2=='Y'||c2=='y')){
+			offset = ManagerParseShow.trim(++offset, sql);
+			if(sql.charAt(offset) == '='){
+				offset = ManagerParseShow.trim(++offset, sql);
+				if(sql.charAt(offset++)== '\''){
+					quotationMarks = true;
+				}
+				if(quotationMarks) {
+					start = offset;
+					for (; offset < sql.length(); offset++) {
+						if (sql.charAt(offset) == '\'') {
+							break;
+						}
+					}
+				}else{
+					start = offset-1;
+					for (; offset < sql.length(); offset++) {
+						if (sql.charAt(offset) == ' ') {
+							break;
+						}
+					}
+				}
+				map.put("key",sql.substring(start,offset));
+				return  ++offset;
+			}
+		}
+		throw  new Exception();
+	}
+
+	public static int checkRcond(int offset, String sql,Map<String, String> map)throws  Exception{
+		if(map.get("regex") != null){
+			throw  new Exception();
+		}
+		char c1 = sql.charAt(++offset);
+		char c2 = sql.charAt(++offset);
+		char c3 = sql.charAt(++offset);
+		char c4 = sql.charAt(++offset);
+		if((c1=='E'|c1=='e')&&(c2=='g'||c2=='G')&&(c3=='e'||c3=='E')&&(c4=='X'||c4=='x')){
+			offset = ManagerParseShow.trim(++offset, sql);
+			if(sql.charAt(offset) == '='){
+				offset = ManagerParseShow.trim(++offset, sql);
+				int start  = offset;
+				for(;offset <sql.length();offset++){
+					if(sql.charAt(offset) == ' '){
+						break;
+					}
+				}
+				map.put("regex",sql.substring(start,offset));
+				return  offset;
+			}
+		}
+		throw  new Exception();
+	}
+
+	public static void main(String[] args){
+		Map x = getCondPair("log @@file = mysql.log limit = rowLimit key = 'keyWord' regex = regexStr");
+		return ;
+	}
+
 }
 
 class PackageBufINf {

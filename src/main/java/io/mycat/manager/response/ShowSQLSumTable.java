@@ -9,6 +9,7 @@ import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.statistic.stat.TableStat;
 import io.mycat.statistic.stat.TableStatAnalyzer;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
@@ -139,7 +140,7 @@ public class ShowSQLSumTable {
         row.add( StringUtil.encode( String.valueOf( __R ), charset) );
         row.add( StringUtil.encode( relaTableNameBuffer.toString(), charset) );
         row.add( StringUtil.encode( relaTableCountBuffer.toString(), charset) );
-        row.add( LongUtil.toBytes( tableStat.getLastExecuteTime() ) );
+        row.add( StringUtil.encode(FormatUtil.formatDate(tableStat.getLastExecuteTime()), charset) );
         
         return row;
     }

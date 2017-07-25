@@ -61,40 +61,40 @@ public class ShowBackend {
 		fields[i] = PacketUtil.getField("processor",
 				Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("id", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("mysqlId", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("host", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("port", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("l_port", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("net_in", Fields.FIELD_TYPE_LONGLONG);
+		fields[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("net_out", Fields.FIELD_TYPE_LONGLONG);
+		fields[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("life", Fields.FIELD_TYPE_LONGLONG);
+		fields[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("closed", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("CLOSED", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		// fields[i] = PacketUtil.getField("run", Fields.FIELD_TYPE_VAR_STRING);
 		// fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("borrowed",
+		fields[i] = PacketUtil.getField("BORROWED",
 				Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		fields[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("schema", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		fields[i] = PacketUtil
-				.getField("charset", Fields.FIELD_TYPE_VAR_STRING);
+				.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		fields[i] = PacketUtil
-				.getField("txlevel", Fields.FIELD_TYPE_VAR_STRING);
+				.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
-		fields[i] = PacketUtil.getField("autocommit",
+		fields[i] = PacketUtil.getField("AUTOCOMMIT",
 				Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		eof.packetId = ++packetId;
@@ -160,7 +160,7 @@ public class ShowBackend {
 			MySQLConnection mysqlC = (MySQLConnection) c;
 			writeQueueSize = mysqlC.getWriteQueue().size();
 			schema = mysqlC.getSchema();
-			charsetInf = mysqlC.getCharset() + ":" + mysqlC.getCharsetIndex();
+			charsetInf = mysqlC.getCharset();
 			txLevel = mysqlC.getTxIsolation() + "";
 			txAutommit = mysqlC.isAutocommit() + "";
 		}

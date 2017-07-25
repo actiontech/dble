@@ -51,6 +51,8 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.COMMAND, ManagerParseShow.parse("show @@command", 5));
         Assert.assertEquals(ManagerParseShow.COMMAND, ManagerParseShow.parse("SHOW @@COMMAND", 5));
         Assert.assertEquals(ManagerParseShow.COMMAND, ManagerParseShow.parse("show @@COMMAND", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@COMMAND ASDSFASDFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@COMMANDASDSFASDFASDF", 5));
     }
 
     @Test
@@ -58,6 +60,8 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@connection", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("SHOW @@CONNECTION", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@CONNECTION", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTIONADFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
     }
 
     @Test
@@ -65,6 +69,8 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.CONNECTION_SQL, ManagerParseShow.parse("show @@connection.sql", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION_SQL, ManagerParseShow.parse("SHOW @@CONNECTION.SQL", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION_SQL, ManagerParseShow.parse("show @@CONNECTION.Sql", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTION.Sql ASDFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTION.SqlASDFASDF", 5));
     }
 
     @Test
@@ -72,6 +78,8 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.DATABASE, ManagerParseShow.parse("show @@database", 5));
         Assert.assertEquals(ManagerParseShow.DATABASE, ManagerParseShow.parse("SHOW @@DATABASE", 5));
         Assert.assertEquals(ManagerParseShow.DATABASE, ManagerParseShow.parse("show @@DATABASE", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@DATABASEADSFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@DATABASE ASDFASDDF", 5));
     }
 
     @Test
@@ -86,6 +94,11 @@ public class ManagerParserTest {
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE schema =1", 5));
         Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA= 1", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                 ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                ManagerParseShow.parse("show @@DATANODE WHERESCHEMA=1", 5));
+
     }
 
     @Test
@@ -102,6 +115,10 @@ public class ManagerParserTest {
                 0xff & ManagerParseShow.parse(" show  @@DATASOURCE WHERE datanode = 1", 5));
         Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
                 0xff & ManagerParseShow.parse(" show  @@DATASOURCE where DATAnode= 1 ", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                 ManagerParseShow.parse(" show  @@DATASOURCEwhere DATAnode= 1 ", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                ManagerParseShow.parse(" show  @@DATASOURCE whereDATAnode= 1 ", 5));
     }
 
     @Test
@@ -142,8 +159,10 @@ public class ManagerParserTest {
     @Test
     public void testShowBackend() {
         Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("show @@backend", 5));
-        Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("SHOW @@BACkend;", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("SHOW @@BACkend", 5));
         Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("show @@BACKEND ", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backendASDFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backend ASDFASDF", 5));
     }
 
     @Test
@@ -174,6 +193,8 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@Sql WHERE ID = -1079800749", 5));
         Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql where id=-1079800749", 5));
         Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql where id   =-1079800749 ", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@sql where id   :-1079800749 ", 5));
+        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@sql whereid   =-1079800749 ", 5));
     }
 
     @Test
@@ -288,7 +309,15 @@ public class ManagerParserTest {
     @Test
     public void testSynDetail() {
         Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
-                0xff & ManagerParseShow.parse("show @@datasource.syndetail where name=slave",5)); 
+                 ManagerParseShow.parse("show @@datasource.syndetail where name=slave",5));
+        Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
+                ManagerParseShow.parse("show @@datasource.syndetail       where    name =   slave",5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                ManagerParseShow.parse("show @@datasource.syndetailwhere    name =   slave",5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                ManagerParseShow.parse("show @@datasource.syndetail wherename=slave",5));
+        Assert.assertEquals(ManagerParseShow.OTHER,
+                ManagerParseShow.parse("show @@datasource.syndetail where name=slave ASDFASDF",5));
     }
 
 }

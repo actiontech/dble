@@ -14,6 +14,7 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.statistic.stat.UserSqlRWStat;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
@@ -102,10 +103,13 @@ public class ShowSQLSumUser {
            RowDataPacket row = getRow(userStat,i, c.getCharset());//getRow(sqlStat,sql, c.getCharset());
            row.packetId = ++packetId;
            buffer = row.write(buffer, c,true);
-           if ( isClear ) {
-        	   userStat.clearRwStat(); 
-           }
+
         }
+
+        if ( isClear ) {
+            UserStatAnalyzer.getInstance().reset();
+        }
+
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
@@ -139,7 +143,7 @@ public class ShowSQLSumUser {
         row.add( LongUtil.toBytes( rwStat.getNetOutBytes() ) );
         row.add( StringUtil.encode( rwStat.getExecuteHistogram().toString(), charset) );
         row.add( StringUtil.encode( rwStat.getTimeHistogram().toString(), charset) );
-        row.add( LongUtil.toBytes( rwStat.getLastExecuteTime() ) );
+        row.add( StringUtil.encode(FormatUtil.formatDate(rwStat.getLastExecuteTime()), charset) );
         
         return row;
     }

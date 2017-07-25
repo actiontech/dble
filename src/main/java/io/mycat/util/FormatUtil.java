@@ -23,6 +23,10 @@
  */
 package io.mycat.util;
 
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 /**
  * 格式化工具
  * 
@@ -151,4 +155,25 @@ public final class FormatUtil {
         return buf.toString();
     }
 
+    /**
+     * 格式化日期 yyyy/MM/dd HH:mm:ss
+     * @param tsmp
+     * @return
+     */
+    public static String formatDate(Timestamp tsmp){
+        DateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        return sdf.format(tsmp);
+    }
+
+    /**
+     * 格式化日期
+     * @param time
+     * @return
+     */
+    public static String formatDate(Long time){
+        if(time == 0){
+            return "";
+        }
+        return formatDate(new Timestamp(time));
+    }
 }

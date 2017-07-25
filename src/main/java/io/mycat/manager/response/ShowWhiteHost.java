@@ -93,55 +93,9 @@ public final class ShowWhiteHost {
         row.add( StringUtil.encode( user, charset) );
         return row;
     }
-    public static String parseString(String stmt) {
-   	 int offset = stmt.indexOf(',');
-        if (offset != -1 && stmt.length() > ++offset) {
-            String txt = stmt.substring(offset).trim();
-            return txt;
-        }
-        return null;
-   }    
-	public static synchronized void setHost(ManagerConnection c,String ips) {
-        OkPacket ok = new OkPacket();		
-		String []users = ips.split(",");		
-        if (users.length<2){
-          c.writeErrMessage(ErrorCode.ER_YES, "white host info error.");
-          return;
-        }        
-        String host="";
-        List<UserConfig> userConfigs = new ArrayList<UserConfig>();
-        int i=0;
-		for (String user : users) {
-			if (i == 0) {
-				host = user;
-				i++;
-			} else {
-				i++;
-				UserConfig uc = MycatServer.getInstance().getConfig().getUsers().get(user);
-				if (null == uc) {
-					c.writeErrMessage(ErrorCode.ER_YES, "user doesn't exist in host.");
-					return;
-				}
-				if (!uc.isManager() && uc.getSchemas() == null || uc.getSchemas().size() == 0) {
-					c.writeErrMessage(ErrorCode.ER_YES, "host contains one root privileges user.");
-					return;
-				}
-				userConfigs.add(uc);
-			}
-		}
-		if (MycatServer.getInstance().getConfig().getFirewall().addWhitehost(host, userConfigs)) {
-           ok.packetId = 1;
-           ok.affectedRows = 1;
-           ok.serverStatus = 2;        
-    	   ok.message = "white host set to succeed.".getBytes();	
-           ok.write(c);  	 
-           
-       }
-       else {
-           c.writeErrMessage(ErrorCode.ER_YES, "host duplicated.");
-       }
-	}	
-	
+
+
+
 	
 	
 }

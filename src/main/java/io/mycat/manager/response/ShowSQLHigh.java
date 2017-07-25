@@ -14,6 +14,7 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.statistic.stat.SqlFrequency;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
@@ -117,7 +118,7 @@ public final class ShowSQLHigh {
 		row.add(LongUtil.toBytes(maxTime));
 		row.add(LongUtil.toBytes(minTime));
 		row.add(LongUtil.toBytes(executTime));
-		row.add(LongUtil.toBytes(lastTime));
+        row.add(StringUtil.encode(FormatUtil.formatDate(lastTime),charset));
 		row.add(StringUtil.encode(sql, charset));
 		return row;
 	}

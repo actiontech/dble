@@ -217,10 +217,13 @@ public class PhysicalDBPool {
 	}
 
 	/* all write datanodes */
-	private PhysicalDatasource[] getSources() {
+	public PhysicalDatasource[] getSources() {
 		return writeSources;
 	}
 
+	public Map<Integer, PhysicalDatasource[]> getrReadSources() {
+		return readSources;
+	}
 	public PhysicalDatasource getSource() {
 		return writeSources[activedIndex];
 	}

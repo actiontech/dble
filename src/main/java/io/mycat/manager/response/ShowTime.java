@@ -34,7 +34,9 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.parser.ManagerParseShow;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
+import io.mycat.util.StringUtil;
 
 /**
  * @author mycat
@@ -72,7 +74,7 @@ public final class ShowTime {
 
         // write rows
         byte packetId = eof.packetId;
-        RowDataPacket row = getRow(type);
+        RowDataPacket row = getRow(type,c.getCharset());
         row.packetId = ++packetId;
         buffer = row.write(buffer, c,true);
 
@@ -85,14 +87,14 @@ public final class ShowTime {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int type) {
+    private static RowDataPacket getRow(int type,String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         switch (type) {
         case ManagerParseShow.TIME_CURRENT:
-            row.add(LongUtil.toBytes(System.currentTimeMillis()));
+            row.add(StringUtil.encode(FormatUtil.formatDate(System.currentTimeMillis()), charset));
             break;
         case ManagerParseShow.TIME_STARTUP:
-            row.add(LongUtil.toBytes(MycatServer.getInstance().getStartupTime()));
+            row.add(StringUtil.encode(FormatUtil.formatDate(MycatServer.getInstance().getStartupTime()), charset));
             break;
         default:
             row.add(LongUtil.toBytes(0L));

@@ -73,6 +73,10 @@ public class DruidSelectParser extends DefaultDruidParser {
 			if (mysqlFrom instanceof SQLExprTableSource){
 				SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 				schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
+				if (schemaInfo.dualFlag) {
+					RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
+					return schema;
+				}
 				// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 				//TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
 				if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
@@ -111,9 +115,6 @@ public class DruidSelectParser extends DefaultDruidParser {
 				schema = schemaInfo.schemaConfig;
 				if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
 					RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
-					return schema;
-				} else if (schemaInfo.dualFlag) {
-					RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
 					return schema;
 				}
 				
@@ -291,9 +292,8 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 	private Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
 													  SQLSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
-		Map<String, String> aliaColumns = new HashMap<String, String>();
-		Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
-		List<String> havingColsName = new ArrayList<String>();
+		Map<String, String> aliaColumns = new HashMap<>();
+		Map<String, Integer> aggrColumns = new HashMap<>();
 
 		parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
 		if (rrs.isNeedOptimizer()) {
@@ -323,7 +323,6 @@ public class DruidSelectParser extends DefaultDruidParser {
 			rrs.setGroupByCols(groupByCols);
 			rrs.setHavings(buildGroupByHaving(mysqlSelectQuery.getGroupBy().getHaving()));
 			rrs.setHasAggrColumn(true);
-			rrs.setHavingColsName(havingColsName.toArray());
 		}
 
 		if (isNeedChangeSql) {
@@ -363,7 +362,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	private String getAliaColumn(Map<String, String> aliaColumns, String column) {
 		String alia = aliaColumns.get(column);
 		if (alia == null) {
-			if (column.indexOf(".") < 0) {
+			if (!column.contains(".")) {
 				String col = "." + column;
 				String col2 = ".`" + column + "`";
 				// 展开aliaColumns，将<c.name,cname>之类的键值对展开成<c.name,cname>和<name,cname>
@@ -402,7 +401,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 					column = StringUtil.removeBackQuote(expr.toString());
 				}
 			} else if (sqlExpr instanceof SQLPropertyExpr) {
-				/**
+				/*
 				 * 针对子查询别名，例如select id from (select h.id from hotnews h union
 				 * select h.title from hotnews h ) as t1 group by t1.id;
 				 */
@@ -466,7 +465,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	@Override
 	public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
 			throws SQLException {
-		if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
+		if (rrs.isFinishedRoute() || rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
 			return;
 		}
 		tryRouteSingleTable(schema, rrs, cachePool);
@@ -535,18 +534,16 @@ public class DruidSelectParser extends DefaultDruidParser {
 		if (rrs.isFinishedRoute()) {
 			return;// 避免重复路由
 		}
-		SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
+		SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
 		String table = ctx.getTables().get(0);
 		if (RouterUtil.isNoSharding(schema, table)) {
-			rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+			RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
 			return;
 		}
 		for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
 			RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, ctx, unit, table, rrs, true, cachePool);
 			if (rrsTmp != null && rrsTmp.getNodes() != null) {
-				for (RouteResultsetNode node : rrsTmp.getNodes()) {
-					nodeSet.add(node);
-				}
+				Collections.addAll(nodeSet, rrsTmp.getNodes());
 			}
 		}
 		if (nodeSet.size() == 0) {
@@ -567,10 +564,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 	}
 	/**
 	 * 获取所有的条件：因为可能被or语句拆分成多个RouteCalculateUnit，条件分散了
-	 * @return
 	 */
 	private Map<String, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
-		Map<String, Map<String, Set<ColumnRoutePair>>> map = new HashMap<String, Map<String, Set<ColumnRoutePair>>>();
+		Map<String, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
 		for(RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
 			if(unit != null && unit.getTablesAndConditions() != null) {
 				map.putAll(unit.getTablesAndConditions());
@@ -594,11 +590,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 		if (rrs.getNodes() == null) {
 			return false;
 		} else {
-			if (rrs.getNodes().length > 1) {
-				return true;
-			}
-			return false;
-
+			return rrs.getNodes().length > 1;
 		}
 	}
 	

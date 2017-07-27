@@ -56,6 +56,7 @@ public class SchemaUtil
 			schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
 			if (identifierExpr.getName().equalsIgnoreCase("dual")) {
 				schemaInfo.dualFlag = true;
+				return schemaInfo;
 			}
 		}
 		if (schemaInfo.schema == null) {

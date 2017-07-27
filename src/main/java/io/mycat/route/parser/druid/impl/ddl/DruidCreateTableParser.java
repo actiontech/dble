@@ -13,6 +13,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 
+import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
@@ -62,7 +63,12 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			rrs.setStatement(sql);
 			rrs.setSqlStatement(createStmt);
 		}
-		RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		try {
+			RouterUtil.routeToDDLNode(schemaInfo, rrs);
+		}catch(SQLException e){
+			String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist in the config of schema";
+			throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+		}
 		return schemaInfo.schemaConfig;
 	}
 

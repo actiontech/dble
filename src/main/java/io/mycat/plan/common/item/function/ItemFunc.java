@@ -256,6 +256,9 @@ public abstract class ItemFunc extends Item {
 	@Override
 	public final void fixRefer(ReferContext context) {
 		PlanNode planNode = context.getPlanNode();
+		if (planNode.type() == PlanNodeType.NONAME) {
+			return;
+		}
 		if (withSumFunc) {
 			planNode.addSelToReferedMap(planNode, this);
 			for (Item arg : args) {

@@ -16,24 +16,23 @@
 <!DOCTYPE mycat:schema SYSTEM "schema.dtd">
 <mycat:schema xmlns:mycat="http://io.mycat/">
 
-  <!-- schema定义 -->
-  <schema name="dbtest">
-    <table name="tb2" dataNode="dnTest2,dnTest3" rule="rule1" />
-  </schema>
+  	<!-- schema定义 -->
+	<schema name="dbtest">
+	  		<table name="tb2" dataNode="dnTest2, dnTest3" rule="rule1" />
+	</schema>
 
-  <!-- 数据节点定义，数据节点由数据源和其他一些参数组织而成。 -->
-  <dataNode name="dnTest1" dataHost="localhost1" database="db1" /> 
-  <dataNode name="dnTest2" dataHost="localhost1" database="db2" />
-  <dataNode name="dnTest3" dataHost="localhost1" database="db3" />
-<dataHost name="localhost1" maxCon="500" minCon="10" balance="0"
+	<!-- 数据节点定义，数据节点由数据源和其他一些参数组织而成。 -->
+	<dataNode name="dnTest1" dataHost="localhost1" database="db1" /> 
+	<dataNode name="dnTest2" dataHost="localhost1" database="db2" />
+	<dataNode name="dnTest3" dataHost="localhost1" database="db3" />
+	
+	<dataHost name="localhost1" maxCon="500" minCon="10" balance="0"
 		dbType="mysql" dbDriver="native" >
 		<heartbeat>select user()</heartbeat>
 		<!-- can have multi write hosts -->
-		<writeHost host="hostM1" url="localhost:3306" user="root"
-			password="123456">
+		<writeHost host="hostM1" url="localhost:3306" user="root" password="123456">
 			<!-- can have multi read hosts -->
-			<!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456" 
-				/> -->
+			<!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456" /> -->
 		</writeHost>
 	</dataHost>
 

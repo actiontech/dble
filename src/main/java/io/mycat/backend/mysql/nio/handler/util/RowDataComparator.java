@@ -87,11 +87,17 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 			return 0;
 	}
 
+	private List<byte[]> getCmpBytes(RowDataPacket o){
+		if (o.getCmpValue() == null) {
+			HandlerTool.initFields(sourceFields, o.fieldValues);
+			List<byte[]> bo = HandlerTool.getItemListBytes(cmpItems);
+			o.setCmpValue(bo);
+		}
+		return o.getCmpValue();
+	}
 	private int cmp(RowDataPacket o1, RowDataPacket o2, int index) {
-		HandlerTool.initFields(sourceFields, o1.fieldValues);
-		List<byte[]> bo1 = HandlerTool.getItemListBytes(cmpItems);
-		HandlerTool.initFields(sourceFields, o2.fieldValues);
-		List<byte[]> bo2 = HandlerTool.getItemListBytes(cmpItems);
+		List<byte[]> bo1 = getCmpBytes(o1);
+		List<byte[]> bo2 = getCmpBytes(o2);
 		boolean isAsc = ascs.get(index);
 		Field field = cmpFields.get(index);
 		byte[] b1 = bo1.get(index);

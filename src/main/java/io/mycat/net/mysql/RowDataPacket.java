@@ -62,7 +62,7 @@ public class RowDataPacket extends MySQLPacket {
 	public byte[] value;
 	public int fieldCount;
 	public final List<byte[]> fieldValues;
-
+	private List<byte[]> cmpValue;
 	public RowDataPacket(int fieldCount) {
 		this.fieldCount = fieldCount;
 		this.fieldValues = new ArrayList<byte[]>(fieldCount);
@@ -177,4 +177,14 @@ public class RowDataPacket extends MySQLPacket {
 		MycatServer.getInstance().getBufferPool().recycle(buffer);
 		return data;
 	}
+
+
+	public List<byte[]> getCmpValue() {
+		return cmpValue;
+	}
+
+	public void setCmpValue(List<byte[]> cmpValue) {
+		this.cmpValue = cmpValue;
+	}
+
 }

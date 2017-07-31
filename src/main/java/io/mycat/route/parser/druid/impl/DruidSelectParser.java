@@ -158,6 +158,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 	private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
 										 MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
 		if (mysqlSelectQuery.getOrderBy() != null) {
+			tryAddLimit(schema, tc, mysqlSelectQuery);
 			rrs.setSqlStatement(stmt);
 			rrs.setNeedOptimizer(true);
 			return;
@@ -173,7 +174,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 //		}
 	}
 
-	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, SQLSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLException {
+	private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLException {
 		List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
 		for (SQLSelectItem item : selectList) {
 			SQLExpr itemExpr = item.getExpr();
@@ -291,12 +292,13 @@ public class DruidSelectParser extends DefaultDruidParser {
 		}
 	}
 	private Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-													  SQLSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
+													MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
 		Map<String, String> aliaColumns = new HashMap<>();
 		Map<String, Integer> aggrColumns = new HashMap<>();
 
 		parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
 		if (rrs.isNeedOptimizer()) {
+			tryAddLimit(schema, tc, mysqlSelectQuery);
 			rrs.setSqlStatement(stmt);
 			return aliaColumns;
 		}
@@ -616,6 +618,19 @@ public class DruidSelectParser extends DefaultDruidParser {
 		}
 	}
 
+	private void tryAddLimit(SchemaConfig schema, TableConfig tableConfig,
+								   MySqlSelectQueryBlock mysqlSelectQuery) {
+		if (schema.getDefaultMaxLimit() == -1) {
+			return ;
+		} else if (mysqlSelectQuery.getLimit() != null) {// 语句中已有limit
+			return ;
+		} else if (!tableConfig.isNeedAddLimit()) {
+			return ;// 优先从配置文件取
+		}
+		SQLLimit limit = new SQLLimit();
+		limit.setRowCount(new SQLIntegerExpr(schema.getDefaultMaxLimit()));
+		mysqlSelectQuery.setLimit(limit);
+	}
 	/**
 	 * 单表且是全局表
 	 * 单表且rule为空且nodeNodes只有一个
@@ -661,5 +676,5 @@ public class DruidSelectParser extends DefaultDruidParser {
 		}
 		
 	}
-	
-	}
+
+}

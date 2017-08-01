@@ -90,6 +90,10 @@ public class ServerConnection extends FrontendConnection {
 		this.txID = new AtomicLong(1);
 	}
 
+    	public ServerConnection() {
+	    /* just for unit test */
+	}
+
 	@Override
 	public boolean isIdleTimeout() {
 		if (isAuthenticated) {

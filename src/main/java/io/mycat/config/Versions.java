@@ -32,7 +32,7 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     /**服务器版本**/
-    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.06.0-20170703165824".getBytes();
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.xx.xx.x-20170703165824".getBytes();
 	public static byte[] VERSION_COMMENT = "Mycat Server".getBytes();
 	public static String ANNOTATION_NAME = "mycat:";
     public static final String ROOT_PREFIX = "mycat";

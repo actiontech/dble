@@ -95,6 +95,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 		this.handler = new FrontendAuthenticator(this);
 	}
 
+    	public FrontendConnection() {
+	    /* just for unit test */
+	}
+
 	public long getId() {
 		return id;
 	}

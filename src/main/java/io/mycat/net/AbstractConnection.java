@@ -97,6 +97,13 @@ public abstract class AbstractConnection implements NIOConnection {
 		this.lastReadTime = startupTime;
 		this.lastWriteTime = startupTime;
 	}
+    
+    	public AbstractConnection() {
+	    /* just for unit test */
+	    this.channel = null;
+	    this.isClosed = new AtomicBoolean(false);
+	    this.socketWR = null;
+	}
 
 	public String getCharset() {
 		return charset;

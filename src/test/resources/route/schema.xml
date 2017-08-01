@@ -12,27 +12,28 @@
 
 	<schema name="cndb" checkSQLschema="true" >
 		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule" />
-		<table name="offer_detail" dataNode="detail_dn0,detail_dn$1-127"
-			rule="offerDetailRule" ruleRequired="false" />
-		<table name="offer_date" dataNode="detail_dn0,detail_dn$1-127"
-			rule="dateRule" ruleRequired="false" />
-
+		<table name="offer_detail" dataNode="detail_dn0,detail_dn$1-127" rule="offerDetailRule" ruleRequired="false" />
+		<table name="offer_date" dataNode="detail_dn0,detail_dn$1-127" rule="dateRule" ruleRequired="false" />
 		<table name="independent" dataNode="independent_dn$0-126,independent_dn127" />
 	</schema>
+	
 	<schema name="dubbo" dataNode="dubbo_dn" />
-    <schema name="dubbo2" dataNode="dn1" >
-        <table name="company" type="global" dataNode="dn1,dn2,dn3" />
-        <table name="goods" type="global" dataNode="dn1,dn2,dn3" />
-            </schema>
+	
+	<schema name="dubbo2" dataNode="dn1" >
+          	<table name="company" type="global" dataNode="dn1,dn2,dn3" />
+		<table name="goods" type="global" dataNode="dn1,dn2,dn3" />
+        </schema>
+	
 	<schema name="ignoreSchemaTest" dataNode="cndb_dn" checkSQLschema="true"/>
+	
 	<schema name="config">
-		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule"
-			ruleRequired="true" />
+		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule" ruleRequired="true" />
 	</schema>
+	
 	<schema name="none_node_test">
-		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule"
-			ruleRequired="true" />
+		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule" ruleRequired="true" />
 	</schema>
+	
 	<schema name="solo1" dataNode="solo1" />
 
 	<schema name="TESTDB"  sqlMaxLimit="100">
@@ -43,23 +44,20 @@
 		<table name="goods" type="global" dataNode="dn1,dn2,dn3" />
 		<table name="notpartionTable"  dataNode="dn1" />
 		<table name="area" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3" />
-		<table name="employee" primaryKey="id" dataNode="dn1,dn2"
-			rule="sharding-by-intfile" />
+		<table name="employee" primaryKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile" />
 		<table name="customer" dataNode="dn1,dn2" rule="auto-sharding-long2">
 			<childTable name="orders" joinKey="customer_id" parentKey="id">
-				<childTable name="order_items" joinKey="order_id"
-					parentKey="id" />
+			  	<childTable name="order_items" joinKey="order_id" parentKey="id" />
 			</childTable>
-			<childTable name="customer_addr" joinKey="customer_id"
-				parentKey="id" />
+			<childTable name="customer_addr" joinKey="customer_id" parentKey="id" />
 		</table>
 		<table name="globalsn" primaryKey="ID" type="global" dataNode="dn1" />
 	</schema>
 
-    <schema name="mysqldb"  sqlMaxLimit="100">
-        <table name="offer" dataNode="dn1,dn2" rule="auto-sharding-long2" />
-        <table name="offer1" dataNode="dn1" />
-    </schema>
+	<schema name="mysqldb"  sqlMaxLimit="100">
+        	<table name="offer" dataNode="dn1,dn2" rule="auto-sharding-long2" />
+		<table name="offer1" dataNode="dn1" />
+	</schema>
    
 
 	<dataNode name="dn1" dataHost="localhost1" database="db1" />
@@ -68,10 +66,9 @@
 	<dataNode name="cndb_dn" dataHost="localhost1" database="db4" />
 	<dataNode name="offer_dn$0-127" dataHost="localhost1" database="db1$0-127" />
 	<dataNode name="detail_dn$0-127" dataHost="localhost1" database="db2$0-127" />
-    <dataNode name="test_wild1$1-3" dataHost="localhost$1-3" database="db1" />
-    <dataNode name="test_wild$1-6" dataHost="localhost$1-3" database="db1$1-2" />
-	<dataNode name="independent_dn$0-127" dataHost="localhost1"
-		database="db7_$0-127" />
+	<dataNode name="test_wild1$1-3" dataHost="localhost$1-3" database="db1" />
+	<dataNode name="test_wild$1-6" dataHost="localhost$1-3" database="db1$1-2" />
+	<dataNode name="independent_dn$0-127" dataHost="localhost1" database="db7_$0-127" />
 	<dataNode name="dubbo_dn" dataHost="localhost1" database="db8" />
 	<dataNode name="solo1" dataHost="localhost1" database="db9" />
 
@@ -85,28 +82,24 @@
 				/> -->
 		</writeHost>
 	</dataHost>
-    <dataHost name="localhost2" maxCon="500" minCon="10" balance="0"
-             >
-        <heartbeat>select user()</heartbeat>
-        <!-- can have multi write hosts -->
-        <writeHost host="hostM2" url="localhost:3306" user="root"
-                   password="123456">
-            <!-- can have multi read hosts -->
-            <!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456"
-                /> -->
-        </writeHost>
-    </dataHost>
-    <dataHost name="localhost3" maxCon="500" minCon="10" balance="0"
-              >
-        <heartbeat>select user()</heartbeat>
-        <!-- can have multi write hosts -->
-        <writeHost host="hostM3" url="localhost:3306" user="root"
-                   password="123456">
-            <!-- can have multi read hosts -->
-            <!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456"
-                /> -->
-        </writeHost>
-    </dataHost>
+	
+	<dataHost name="localhost2" maxCon="500" minCon="10" balance="0" >
+          	<heartbeat>select user()</heartbeat>
+		<!-- can have multi write hosts -->
+		<writeHost host="hostM2" url="localhost:3306" user="root" password="123456">
+		  <!-- can have multi read hosts -->
+		  <!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456" /> -->
+		</writeHost>
+	</dataHost>
+	
+	<dataHost name="localhost3" maxCon="500" minCon="10" balance="0" >
+          	<heartbeat>select user()</heartbeat>
+		<!-- can have multi write hosts -->
+		<writeHost host="hostM3" url="localhost:3306" user="root" password="123456">
+		  <!-- can have multi read hosts -->
+		  <!-- <readHost host="hostS1" url="localhost:3307" user="root" password="123456" /> -->
+		</writeHost>
+	</dataHost>
 
 
 

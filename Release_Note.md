@@ -1,3 +1,27 @@
+DATE:2017/08/01  
+VERSION 2.17.07.0  
+CONTENT:  
+## 1.feature
+1.dual支持 #172   
+2.show full tables where table_type 语句支持 #181     
+3.非拆分表的show语句支持，insert...select #187   
+4.enum 算法的between...and 下发给所有节点 #194   
+5.禁用select into file#196  
+## 2.fix bugs  
+1.异常打印typo #182   
+2.全局序列时使用insert table_name values (...),可能报错#185   
+3.全局序列type=4 时，报NP异常 #186    
+4.GLOBAL表：插入数据时,_mycat_op_time列未生成数据 #190   
+5.禁止管理用户和普通用户混用  #195    
+6.复杂查询（eg.聚合函数）where条件大于2个会导致下发sql丢失条件 #214  
+7.当配置EnchachePooFactory缓存时，超时没有实现   
+8.移除/修改部分无用/错误管理端命令 #197,#198，#212    
+9.含有冗余datanode或datahost时，mycat启动/reload失败#201     
+   
+------   
+  
+ 
+
 DATE:2017/06/29  
 VERSION 2.17.06.0  
 CONTENT:  

@@ -132,7 +132,7 @@ public class HandlerTool {
 		}
 
 		public static List<byte[]> getItemListBytes(List<Item> items) {
-			List<byte[]> ret = new ArrayList<byte[]>();
+			List<byte[]> ret = new ArrayList<>(items.size());
 			for (Item item : items) {
 				byte[] b = item.getRowPacketByte();
 				ret.add(b);

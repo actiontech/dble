@@ -121,6 +121,7 @@ public class MycatServer {
 	private MyCatMemory serverMemory = null;
 
 	private final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
+	private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
 	public static final MycatServer getInstance() {
 		return INSTANCE;
 	}
@@ -497,9 +498,23 @@ public class MycatServer {
 	}
 
 	public void reloadMetaData(){
-		tmManager.terminate();
-		tmManager = new ProxyMetaManager();
-		tmManager.initMeta();
+		for (; ; ) {
+			if (tmManager.getDdlCount() > 0) {
+				continue;
+			}
+			metaLock.writeLock().lock();
+			try {
+				if (tmManager.getDdlCount() > 0) {
+					continue;
+				}
+				tmManager.terminate();
+				tmManager = new ProxyMetaManager();
+				tmManager.initMeta();
+				break;
+			} finally {
+				metaLock.writeLock().unlock();
+			}
+		}
 	}
 
 	public void reloadDnIndex()
@@ -723,7 +738,12 @@ public class MycatServer {
 	}
 
 	public ProxyMetaManager getTmManager() {
-		return tmManager;
+		metaLock.readLock().lock();
+		try {
+			return tmManager;
+		} finally {
+			metaLock.readLock().unlock();
+		}
 	}
 
 	// 系统时间定时更新任务

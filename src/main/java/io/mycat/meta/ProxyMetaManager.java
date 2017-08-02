@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -62,6 +63,7 @@ public class ProxyMetaManager {
 	private Condition condRelease = metalock.newCondition();
 	private ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> checkTaskHandler;
+	private AtomicInteger ddlCount = new AtomicInteger(0);
 
 	public ProxyMetaManager() {
 		this.catalogs = new ConcurrentHashMap<>();
@@ -71,9 +73,13 @@ public class ProxyMetaManager {
 	private String genLockKey(String schema, String tbName){
 		return schema+"."+tbName;
 	}
+	public int getDdlCount(){
+		return ddlCount.get();
+	}
 	public void addMetaLock(String schema, String tbName) throws InterruptedException {
 		metalock.lock();
 		try {
+			ddlCount.incrementAndGet();
 			String lockKey = genLockKey(schema, tbName);
 			while(lockTables.contains(lockKey)){
 				condRelease.await();
@@ -97,6 +103,7 @@ public class ProxyMetaManager {
 		metalock.lock();
 		try {
 			lockTables.remove(genLockKey(schema, tbName));
+			ddlCount.decrementAndGet();
 			condRelease.signalAll();
 		} finally {
 			metalock.unlock();
@@ -144,20 +151,6 @@ public class ProxyMetaManager {
 		return checkDbExists(schema) && strTable != null && this.catalogs.get(schema).getTableMetas().containsKey(strTable);
 	}
 
-	public List<String> getTableNames(String schema) {
-		List<String> tbNames;
-		SchemaMeta schemaMeta = catalogs.get(schema);
-		if (schemaMeta == null)
-			return new ArrayList<>();
-		tbNames = schemaMeta.getTables();
-		Collections.sort(tbNames);
-		return tbNames;
-	}
-
-	public void dropDatabase(String schema) {
-		catalogs.remove(schema);
-	}
-
 	public void addTable(String schema, TableMeta tm) {
 		String tbName = tm.getTableName();
 		SchemaMeta schemaMeta = catalogs.get(schema);
@@ -166,20 +159,6 @@ public class ProxyMetaManager {
 		}
 	}
 
-	public boolean flushTable(String schema, TableMeta tm) {
-		String tbName = tm.getTableName();
-		SchemaMeta schemaMeta = catalogs.get(schema);
-		if (schemaMeta != null) {
-			TableMeta oldTm = schemaMeta.addTableMetaIfAbsent(tbName, tm);
-			if (oldTm != null) {
-				TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
-				if (!oldTm.equals(tblMetaTmp)) {
-					return schemaMeta.flushTableMeta(tbName, oldTm, tm);
-				}
-			}
-		}
-		return true;
-	}
 
 	private void dropTable(String schema, String tbName) {
 		SchemaMeta schemaMeta = catalogs.get(schema);

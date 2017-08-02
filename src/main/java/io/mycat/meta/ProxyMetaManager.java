@@ -84,6 +84,15 @@ public class ProxyMetaManager {
 		}
 	}
 
+	public boolean isMetaLocked(String schema, String tbName){
+		metalock.lock();
+		try {
+			String lockKey = genLockKey(schema, tbName);
+			return lockTables.contains(lockKey);
+		}finally {
+			metalock.unlock();
+		}
+	}
 	public void removeMetaLock(String schema, String tbName) {
 		metalock.lock();
 		try {

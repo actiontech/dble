@@ -90,23 +90,21 @@ public class ShowCache {
 		// write rows
 		byte packetId = eof.packetId;
 		CacheService cacheService = MycatServer.getInstance().getCacheService();
-		for (Map.Entry<String, CachePool> entry : cacheService
-				.getAllCachePools().entrySet()) {
+		for (Map.Entry<String, CachePool> entry : cacheService.getAllCachePools().entrySet()) {
 			String cacheName=entry.getKey();
 			CachePool cachePool = entry.getValue();
-			if (cachePool instanceof LayerCachePool) {
-				for (Map.Entry<String, CacheStatic> staticsEntry : ((LayerCachePool) cachePool)
-						.getAllCacheStatic().entrySet()) {
-					RowDataPacket row = getRow(cacheName+'.'+staticsEntry.getKey(),
-							staticsEntry.getValue(), c.getCharset());
-					row.packetId = ++packetId;
-					buffer = row.write(buffer, c,true);
+			if (cachePool != null) {
+			    if (cachePool instanceof LayerCachePool) {
+				for (Map.Entry<String, CacheStatic> staticsEntry : ((LayerCachePool) cachePool).getAllCacheStatic().entrySet()) {
+				    RowDataPacket row = getRow(cacheName+'.'+staticsEntry.getKey(),	staticsEntry.getValue(), c.getCharset());
+				    row.packetId = ++packetId;
+				    buffer = row.write(buffer, c,true);
 				}
-			} else {
-				RowDataPacket row = getRow(cacheName,
-						cachePool.getCacheStatic(), c.getCharset());
+			    } else {
+				RowDataPacket row = getRow(cacheName, cachePool.getCacheStatic(), c.getCharset());
 				row.packetId = ++packetId;
 				buffer = row.write(buffer, c,true);
+			    }
 			}
 		}
 

@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
+import io.mycat.cache.CachePool;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
@@ -765,7 +766,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 					rowDataPkg.read(row);
 					String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
 					LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
-					pool.putIfAbsent(priamaryKeyTable, primaryKey, dataNode);
+					if (pool != null) {
+					    	pool.putIfAbsent(priamaryKeyTable, primaryKey, dataNode);
+					}
 				}
 				row[3] = ++packetId;
 				if (prepared) {

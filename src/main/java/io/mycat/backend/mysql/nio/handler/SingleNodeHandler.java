@@ -24,6 +24,7 @@
 package io.mycat.backend.mysql.nio.handler;
 
 import io.mycat.MycatServer;
+import io.mycat.cache.CachePool;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
@@ -349,7 +350,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			String primaryKey = new String(rowDataPk.fieldValues.get(primaryKeyIndex));
 			RouteResultsetNode rNode = (RouteResultsetNode)conn.getAttachment();
 			LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
-			pool.putIfAbsent(priamaryKeyTable, primaryKey, rNode.getName());
+			if (pool != null) {
+			    	pool.putIfAbsent(priamaryKeyTable, primaryKey, rNode.getName());
+			}
 		}
 		
 		if (prepared) {

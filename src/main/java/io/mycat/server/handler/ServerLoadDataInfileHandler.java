@@ -183,8 +183,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
             return;
         }
 
-        schema = MycatServer.getInstance().getConfig()
-                .getSchemas().get(serverConnection.getSchema());
+        schema = MycatServer.getInstance().getConfig().getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) MycatServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
         tableName = statement.getTableName().getSimpleName();
         if(MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()){

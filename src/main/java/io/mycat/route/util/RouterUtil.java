@@ -5,6 +5,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import io.mycat.MycatServer;
+import io.mycat.cache.CachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
@@ -756,10 +757,9 @@ public class RouterUtil {
 	 * 处理分库表路由
 	 */
 	public static void findRouteWithcConditionsForTables(SchemaConfig schema, RouteResultset rrs,
-														 Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
-														 Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool,
-														 boolean isSelect, boolean isSingleTable)
-			throws SQLNonTransientException {
+							     Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
+							     Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool,
+							     boolean isSelect, boolean isSingleTable) throws SQLNonTransientException {
 
 		//为分库表找路由
 		for (Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
@@ -792,8 +792,7 @@ public class RouterUtil {
 				String primaryKey = tableConfig.getPrimaryKey();
 				boolean isFoundPartitionValue = partionCol != null && columnsMap.get(partionCol) != null;
 				boolean isLoadData = false;
-				if (LOGGER.isDebugEnabled()
-						&& rrs.getStatement().startsWith(LoadData.loadDataHint) || rrs.isLoadData()) {
+				if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.loadDataHint) || rrs.isLoadData()) {
 					//由于load data一次会计算很多路由数据，如果输出此日志会极大降低load data的性能
 					isLoadData = true;
 				}
@@ -807,19 +806,22 @@ public class RouterUtil {
 
 						String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
 						boolean allFound = true;
-						for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id
-							// in(1,2,3)多主键
+						for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id in(1,2,3)多主键
 							String cacheKey = pair.colValue;
-							String dataNode = (String) cachePool.get(tableKey, cacheKey);
-							if (dataNode == null) {
-								allFound = false;
-								continue;
-							} else {
-								if (tablesRouteMap.get(tableName) == null) {
-									tablesRouteMap.put(tableName, new HashSet<String>());
+							if (cachePool != null) {
+								String dataNode = (String) cachePool.get(tableKey, cacheKey);
+								if (dataNode == null) {
+								    	allFound = false;
+									continue;
+								} else {
+								    	if (tablesRouteMap.get(tableName) == null) {
+									    	tablesRouteMap.put(tableName, new HashSet<String>());
+									}
+									tablesRouteMap.get(tableName).add(dataNode);
+									continue;
 								}
-								tablesRouteMap.get(tableName).add(dataNode);
-								continue;
+							} else {
+							    	allFound = false;
 							}
 						}
 						if (!allFound) {

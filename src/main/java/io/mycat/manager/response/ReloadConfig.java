@@ -51,6 +51,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -63,7 +64,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class ReloadConfig {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
-	private static String errorMsg;
 	public static void execute(ManagerConnection c, final boolean loadAll) {
 		// reload @@config_all 校验前一次的事务完成情况
 		if ( loadAll && !NIOProcessor.backends_old.isEmpty() ) {
@@ -81,11 +81,10 @@ public final class ReloadConfig {
 						final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
 						lock.lock();
 						try {
-							errorMsg = null;
-							boolean isSuccess = loadAll ? reload_all() : reload();
-							if (!isSuccess) {
-								writeErrorResult(c);
-								return;
+							if (loadAll) {
+								reload_all();
+							} else {
+								reload();
 							}
 							XmltoZkMain.writeConfFileToZK(loadAll);
 							//tell zk this instance has prepared
@@ -99,14 +98,25 @@ public final class ReloadConfig {
 								onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
 								preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
 							}
+							StringBuilder sbErrorInfo = new StringBuilder();
 							for (String child : preparedList) {
+								String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(),child);
+								byte[] errorInfo = zkConn.getData().forPath(childPath);
+								if (errorInfo != null) {
+									sbErrorInfo.append(child + ":");
+									sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
+									sbErrorInfo.append(";");
+								}
 								zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(),child));
 							}
-							writeOKResult(c);
+							if (sbErrorInfo.length() == 0) {
+								writeOKResult(c);
+							} else {
+								writeErrorResult(c, sbErrorInfo.toString());
+							}
 						} catch (Exception e) {
 							LOGGER.warn("reload config failure",e);
-							errorMsg = e.toString();
-							writeErrorResult(c);
+							writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
 						} finally {
 							lock.unlock();
 						}
@@ -116,19 +126,21 @@ public final class ReloadConfig {
 				}
 			} catch (Exception e) {
 				LOGGER.warn("reload config failure",e);
-				errorMsg = e.toString();
-				writeErrorResult(c);
+				writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
 			}
 		} else {
 			final ReentrantLock lock = MycatServer.getInstance().getConfig().getLock();
 			lock.lock();
 			try {
-				errorMsg = null;
-				boolean isSuccess = loadAll ? reload_all() : reload();
-				if (isSuccess) {
+				try {
+					if (loadAll) {
+						reload_all();
+					} else {
+						reload();
+					}
 					writeOKResult(c);
-				} else {
-					writeErrorResult(c);
+				}catch(Exception e){
+					writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
 				}
 			}
 			finally {
@@ -146,18 +158,23 @@ public final class ReloadConfig {
 		ok.message = "Reload config success".getBytes();
 		ok.write(c);
 	}
-	private static void writeErrorResult(ManagerConnection c) {
+	private static void writeErrorResult(ManagerConnection c, String errorMsg) {
 		String sb = "Reload config failure.The reason is " + errorMsg;
 		LOGGER.warn(sb+"." + String.valueOf(c));
 		c.writeErrMessage(ErrorCode.ER_YES, sb);
 	}
-	public static boolean reload_all() {
+	public static void reload_all() throws Exception {
 		/*
 		 *  1、载入新的配置
 		 *  1.1、ConfigInitializer 初始化l, 基本自检
 		 *  1.2、DataNode/DataHost 实际链路检测
 		 */
-		ConfigInitializer loader = new ConfigInitializer(true);
+		ConfigInitializer loader;
+		try {
+			loader = new ConfigInitializer(true);
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
 		Map<String, UserConfig> newUsers = loader.getUsers();
 		Map<String, SchemaConfig> newSchemas = loader.getSchemas();
 		Map<String, PhysicalDBNode> newDataNodes = loader.getDataNodes();
@@ -166,7 +183,11 @@ public final class ReloadConfig {
 		FirewallConfig newFirewall = loader.getFirewall();
 		
 		/* 1.2、实际链路检测 */
-		loader.testConnection();
+		try {
+			loader.testConnection();
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
 
 		/*
 		 *  2、承接
@@ -248,7 +269,6 @@ public final class ReloadConfig {
 			//清理缓存
 			MycatServer.getInstance().getCacheService().clearCache();
 			MycatServer.getInstance().reloadMetaData();
-			return true;
 		} else {
 			// 如果重载不成功，则清理已初始化的资源。
 			LOGGER.info("reload failed, clear previously created datasources ");
@@ -256,14 +276,18 @@ public final class ReloadConfig {
 				dbPool.clearDataSources("reload config");
 				dbPool.stopHeartbeat();
 			}
-			errorMsg = "Init DbPool failed";
-			return false;
+			throw new Exception("Init DbPool failed");
 		}
 	}
 
-    public static boolean reload() {
+    public static void reload() throws Exception {
 	/* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
-    	ConfigInitializer loader = new ConfigInitializer(false);
+		ConfigInitializer loader;
+		try {
+			loader = new ConfigInitializer(false);
+		}catch(Exception e){
+			throw new Exception(e);
+		}
         Map<String, UserConfig> users = loader.getUsers();
         Map<String, SchemaConfig> schemas = loader.getSchemas();
         Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
@@ -276,7 +300,6 @@ public final class ReloadConfig {
         /* 3、清理缓存 */
         MycatServer.getInstance().getCacheService().clearCache();
         MycatServer.getInstance().reloadMetaData();
-        return true;
     }
 
 }

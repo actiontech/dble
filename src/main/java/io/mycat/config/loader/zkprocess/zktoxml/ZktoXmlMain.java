@@ -16,7 +16,6 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -63,7 +62,7 @@ public class ZktoXmlMain {
 
     }
 
-    private static void initLocalConfFromZK(ZookeeperProcessListen zkListen, CuratorFramework zkConn) throws JAXBException {
+    private static void initLocalConfFromZK(ZookeeperProcessListen zkListen, CuratorFramework zkConn) throws Exception {
 
         ConfigStatusListener confListener = new ConfigStatusListener(zkListen,zkConn);
         // 获得公共的xml转换器对象

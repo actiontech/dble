@@ -18,6 +18,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,8 +53,14 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
 			}
 			LOGGER.info("ConfigStatusListener notifyProcess zk to object  :" + status);
 			if (status.getStatus() == ConfStatus.Status.ROLLBACK){
-				RollbackConfig.rollback();
-				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+				try {
+					RollbackConfig.rollback();
+					ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+				}catch (Exception e){
+					String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
+					ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));
+				}
+
 				return true;
 			}
 			for (NotifyService service : childService) {
@@ -63,12 +70,17 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
 					LOGGER.error("ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
 				}
 			}
-			if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-				ReloadConfig.reload_all();
-			} else {
-				ReloadConfig.reload();
+			try {
+				if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
+					ReloadConfig.reload_all();
+				} else {
+					ReloadConfig.reload();
+				}
+				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+			} catch (Exception e) {
+				String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
+				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));
 			}
-			ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 		}
 		return true;
 	}

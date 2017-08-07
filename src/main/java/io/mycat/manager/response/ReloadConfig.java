@@ -256,13 +256,13 @@ public final class ReloadConfig {
 						for (BackendConnection con : processor.getBackends().values()) {
 							if (con instanceof MySQLConnection) {
 								MySQLConnection mysqlCon = (MySQLConnection) con;
-								if ( mysqlCon.getPool() == ds) {
+								if ( mysqlCon.getPool() == ds && con.isBorrowed()) {
 									NIOProcessor.backends_old.add(con);
 								}
 							}
 						}
 					}
-				}				
+				}
 			}			
 			LOGGER.info("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
 

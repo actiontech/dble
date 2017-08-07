@@ -567,9 +567,9 @@ public class MycatServer {
 						long currentTime = TimeUtil.currentTimeMillis();
 						Iterator<BackendConnection> iter = NIOProcessor.backends_old.iterator();
 						while( iter.hasNext() ) {
-							BackendConnection con = iter.next();							
+							BackendConnection con = iter.next();
 							long lastTime = con.getLastTime();						
-							if ( currentTime - lastTime > sqlTimeout ) {								
+							if ( !con.isBorrowed()||currentTime - lastTime > sqlTimeout ) {
 								con.close("clear old backend connection ...");
 								iter.remove();									
 							}

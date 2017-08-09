@@ -35,6 +35,7 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 import io.mycat.util.TimeUtil;
@@ -119,7 +120,7 @@ public final class ShowConnectionSQL {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(StringUtil.encode(c.getUser(), charset));
         row.add(StringUtil.encode(c.getSchema(), charset));
-        row.add(LongUtil.toBytes(c.getLastReadTime()));
+        row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime()), charset));
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
         row.add(LongUtil.toBytes((wt > rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));

@@ -102,10 +102,10 @@ public final class ShowConnection {
 		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil
-				.getField("txlevel", Fields.FIELD_TYPE_VAR_STRING);
+				.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("autocommit",
+		fields[i] = PacketUtil.getField("AUTOCOMMIT",
 				Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
@@ -158,7 +158,7 @@ public final class ShowConnection {
 		row.add(IntegerUtil.toBytes(c.getLocalPort()));
 		row.add(StringUtil.encode(c.getUser(), charset));
 		row.add(StringUtil.encode(c.getSchema(), charset));
-		row.add(StringUtil.encode(c.getCharset()+":"+c.getCharsetIndex(), charset));
+		row.add(StringUtil.encode(c.getCharset(), charset));
 		row.add(LongUtil.toBytes(c.getNetInBytes()));
 		row.add(LongUtil.toBytes(c.getNetOutBytes()));
 		row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));

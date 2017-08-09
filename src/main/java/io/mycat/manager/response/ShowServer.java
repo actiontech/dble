@@ -25,6 +25,7 @@ package io.mycat.manager.response;
 
 import java.nio.ByteBuffer;
 
+
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -132,7 +133,7 @@ public final class ShowServer {
 		row.add(LongUtil.toBytes(used));
 		row.add(LongUtil.toBytes(total));
 		row.add(LongUtil.toBytes(max));
-		row.add(LongUtil.toBytes(server.getConfig().getReloadTime()));
+		row.add(StringUtil.encode(FormatUtil.formatDate(server.getConfig().getReloadTime()), charset));
 		row.add(LongUtil.toBytes(server.getConfig().getRollbackTime()));
 		row.add(StringUtil.encode(charset, charset));
 		row.add(StringUtil.encode(MycatServer.getInstance().isOnline() ? "ON"

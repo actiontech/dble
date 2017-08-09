@@ -51,7 +51,7 @@ public final class ManagerParseHeartbeat {
                 		return show2HeaDetailCheck(stmt,offset);
                 	}
             	}
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+                if(ManagerParseShow.tailCheck(++offset,stmt)){
                     return OTHER;
                 }
                 return ManagerParseShow.HEARTBEAT;
@@ -87,24 +87,37 @@ public final class ManagerParseHeartbeat {
 		}
         char c = s.charAt(0);
         offset = 0;
-        if(c == ' '){
-        	char c1 = s.charAt(++offset);
+        if(c == ' ' && s.length() > " where name=".length()){
+            offset =  ManagerParseShow.trim(++offset,s);
+        	char c1 = s.charAt(offset);
     		char c2 = s.charAt(++offset);
     		char c3 = s.charAt(++offset);
     		char c4 = s.charAt(++offset);
     		char c5 = s.charAt(++offset);
-    		char c6 = s.charAt(++offset);
-    		char c7 = s.charAt(++offset);
-    		char c8 = s.charAt(++offset);
-    		char c9 = s.charAt(++offset);
-    		char c10 = s.charAt(++offset);
-    		char c11 = s.charAt(++offset);
+            char c6 = s.charAt(++offset);
+    		//char c11 = s.charAt(++offset);
     		if ((c1 == 'W' || c1 == 'w') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'R' || c4 == 'r') && (c5 == 'E' || c5 == 'e')
-                    && c6 == ' ' && (c7 == 'N' || c7 == 'n') && (c8 == 'A' || c8 == 'a') && (c9 == 'M' || c9 == 'm')
-                    && (c10 == 'E' || c10 == 'e') && (c11 == '=')) {
-    	        String name = s.substring(++offset).trim();
-                return new Pair<String, String>("name", name);
+                    && (c4 == 'R' || c4 == 'r') && (c5 == 'E' || c5 == 'e') && (c6 == ' ')
+                    ) {
+                offset =   ManagerParseShow.trim(++offset,s);
+                char c7 = s.charAt(offset);
+                char c8 = s.charAt(++offset);
+                char c9 = s.charAt(++offset);
+                char c10 = s.charAt(++offset);
+                if( (c7 == 'N' || c7 == 'n') && (c8 == 'A' || c8 == 'a') && (c9 == 'M' || c9 == 'm')
+                        && (c10 == 'E' || c10 == 'e')){
+                    offset =   ManagerParseShow.trim(++offset,s);
+                    char x = s.charAt(offset);
+                    if(s.charAt(offset) == '='){
+                        offset =   ManagerParseShow.trim(++offset,s);
+                        String name = s.substring(offset).trim();
+                        if(name.indexOf(" ") == -1 && name.indexOf("\r") == -1 && name.indexOf("\n") == -1
+                                && name.indexOf("\t") == -1) {
+                            return new Pair<String, String>("name", name);
+                        }
+                    }
+                }
+
     		}
         }
         return new Pair<String, String>("name", "");

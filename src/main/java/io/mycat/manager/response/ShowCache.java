@@ -38,6 +38,7 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
@@ -127,8 +128,8 @@ public class ShowCache {
 		row.add(LongUtil.toBytes(cacheStatic.getAccessTimes()));
 		row.add(LongUtil.toBytes(cacheStatic.getHitTimes()));
 		row.add(LongUtil.toBytes(cacheStatic.getPutTimes()));
-		row.add(LongUtil.toBytes(cacheStatic.getLastAccesTime()));
-		row.add(LongUtil.toBytes(cacheStatic.getLastPutTime()));
+		row.add(StringUtil.encode(FormatUtil.formatDate(cacheStatic.getLastAccesTime()),charset));
+		row.add(StringUtil.encode(FormatUtil.formatDate(cacheStatic.getLastPutTime()),charset));
 		return row;
 	}
 

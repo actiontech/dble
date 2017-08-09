@@ -63,40 +63,40 @@ public class ShowDatasourceSyn {
 		byte packetId = 0;
 		header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("name", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("host", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("port", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_Host", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Master_Port", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_User", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Seconds_Behind_Master", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Slave_IO_Running", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("SLAVE_IO_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Slave_SQL_Running", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("SLAVE_SQL_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Slave_IO_State", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("SLAVE_IO_STATE", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Connect_Retry", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("CONNECT_RETRY", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Last_IO_Error", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("LAST_IO_ERROR", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
 		eof.packetId = ++packetId;

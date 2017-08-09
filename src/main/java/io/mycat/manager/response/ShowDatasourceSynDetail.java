@@ -65,28 +65,28 @@ public class ShowDatasourceSynDetail {
 		byte packetId = 0;
 		header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("name", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("host", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("port", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_Host", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("Master_Port", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Master_User", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
 		fields[i++].packetId = ++packetId;
 		
-		fields[i] = PacketUtil.getField("Seconds_Behind_Master", Fields.FIELD_TYPE_LONG);
+		fields[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 		
 		eof.packetId = ++packetId;

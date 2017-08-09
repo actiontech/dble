@@ -74,6 +74,7 @@ public final class ShowHandler {
 			if (StringUtil.isEmpty(name)) {
 				c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
 			} else {
+				name = name.replaceAll("'","");
 				ShowDataNode.execute(c, name);
 			}
 			break;
@@ -105,9 +106,6 @@ public final class ShowHandler {
 		case ManagerParseShow.WHITE_HOST:
 			ShowWhiteHost.execute(c);
 			break;
-		case ManagerParseShow.WHITE_HOST_SET:
-			ShowWhiteHost.setHost(c,ParseUtil.parseString(stmt));
-			break;					
 		case ManagerParseShow.SQL:
 			boolean isClearSql = Boolean.valueOf( stmt.substring(rs >>> 8).trim() );
 			ShowSQL.execute(c, isClearSql);

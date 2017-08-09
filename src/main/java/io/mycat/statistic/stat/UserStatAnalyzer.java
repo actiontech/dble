@@ -56,4 +56,9 @@ public class UserStatAnalyzer implements QueryResultListener {
 		map.putAll(userStatMap);
         return map;
 	}
+
+	public void reset(){
+		userStatMap = new LinkedHashMap<String, UserStat>();
+	}
+
 }

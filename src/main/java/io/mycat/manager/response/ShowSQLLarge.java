@@ -14,6 +14,7 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.statistic.stat.UserSqlLargeStat;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
+import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
@@ -101,7 +102,7 @@ public class ShowSQLLarge {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add( StringUtil.encode(user, charset) );
         row.add( LongUtil.toBytes( sql.getSqlRows() ) );
-        row.add( LongUtil.toBytes(sql.getStartTime() ) );
+        row.add( StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset) );
         row.add( LongUtil.toBytes(sql.getExecuteTime() ) );
         row.add( StringUtil.encode(sql.getSql(), charset) );
         return row;

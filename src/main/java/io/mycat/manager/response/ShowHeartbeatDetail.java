@@ -28,6 +28,7 @@ import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
 import io.mycat.backend.heartbeat.DBHeartbeat;
 import io.mycat.backend.mysql.PacketUtil;
+import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.MycatConfig;
 import io.mycat.manager.ManagerConnection;
@@ -81,6 +82,15 @@ public class ShowHeartbeatDetail {
 	}
 
 	public static void response(ManagerConnection c,String stmt) {
+
+
+		Pair<String,String> pair = ManagerParseHeartbeat.getPair(stmt);
+		String name = pair.getValue();
+		if(name.length() == 0){
+			c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+			return;
+		}
+
 		ByteBuffer buffer = c.allocate();
 
 		// write header
@@ -96,8 +106,7 @@ public class ShowHeartbeatDetail {
 
 		// write rows
 		byte packetId = eof.packetId;
-		Pair<String,String> pair = ManagerParseHeartbeat.getPair(stmt);
-		String name = pair.getValue();
+
 		for (RowDataPacket row : getRows(name,c.getCharset())) {
 			row.packetId = ++packetId;
 			buffer = row.write(buffer, c,true);

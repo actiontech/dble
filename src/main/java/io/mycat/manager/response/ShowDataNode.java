@@ -95,15 +95,6 @@ public final class ShowDataNode {
 		fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TOTAL_TIME", Fields.FIELD_TYPE_DOUBLE);
-		fields[i++].packetId = ++packetId;
-
-		fields[i] = PacketUtil.getField("MAX_TIME", Fields.FIELD_TYPE_DOUBLE);
-		fields[i++].packetId = ++packetId;
-
-		fields[i] = PacketUtil.getField("MAX_SQL", Fields.FIELD_TYPE_LONGLONG);
-		fields[i++].packetId = ++packetId;
-
 		fields[i] = PacketUtil.getField("RECOVERY_TIME",
 				Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
@@ -176,9 +167,6 @@ public final class ShowDataNode {
 			row.add(null);
 		}
 		row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
-		row.add(StringUtil.encode(nf.format(0), charset));
-		row.add(StringUtil.encode(nf.format(0), charset));
-		row.add(LongUtil.toBytes(0));
 		long recoveryTime = pool.getSource().getHeartbeatRecoveryTime()
 				- TimeUtil.currentTimeMillis();
 		row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));

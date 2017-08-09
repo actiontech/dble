@@ -55,8 +55,7 @@ public class RouteService {
 
 	public RouteService(CacheService cachService) {
 		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
-		tableId2DataNodeCache = (LayerCachePool) cachService
-				.getCachePool("TableID2DataNodeCache");
+		tableId2DataNodeCache = (LayerCachePool)cachService.getCachePool("TableID2DataNodeCache");
 	}
 
 	public LayerCachePool getTableId2DataNodeCache() {
@@ -72,7 +71,7 @@ public class RouteService {
 		/**
 		 *  SELECT 类型的SQL, 检测,debug 模式下不缓存
 		 */
-		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled()) {
+		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
 			cacheKey = (schema == null ? "NULL" : schema.getName())+"_"+sc.getUser()+"_" + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
 			if (rrs != null) {
@@ -136,7 +135,7 @@ public class RouteService {
 					charset, sc, tableId2DataNodeCache);
 		}
 
-		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()&&!LOGGER.isDebugEnabled()) {
+		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()&&!LOGGER.isDebugEnabled() && sqlRouteCache != null) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
 		}
 		return rrs;

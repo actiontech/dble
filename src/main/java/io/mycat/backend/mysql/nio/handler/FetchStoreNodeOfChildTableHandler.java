@@ -68,12 +68,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 	public String execute(String schema, ArrayList<String> dataNodes) {
 		String key = schema + ":" + sql;
-		CachePool cache = MycatServer.getInstance().getCacheService()
-				.getCachePool("ER_SQL2PARENTID");
-		String cacheResult = (String) cache.get(key);
-		if (cacheResult != null) {
-			return cacheResult;
+		CachePool cache = MycatServer.getInstance().getCacheService().getCachePool("ER_SQL2PARENTID");
+		if (cache != null) {
+		    	String cacheResult = (String)cache.get(key);
+			if (cacheResult != null) {
+			    	return cacheResult;
+			}
 		}
+		
 		int totalCount = dataNodes.size();
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 
@@ -126,7 +128,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 		}
 		if (!LOGGER.isDebugEnabled()) {
 			//no cached when debug
-			if (dataNode != null) {
+			if (dataNode != null && cache != null) {
 				cache.putIfAbsent(key, dataNode);
 			}
 		}

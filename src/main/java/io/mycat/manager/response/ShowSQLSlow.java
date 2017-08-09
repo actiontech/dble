@@ -23,12 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import com.sun.deploy.util.ParameterUtil;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
@@ -42,6 +36,10 @@ import io.mycat.statistic.stat.UserStatAnalyzer;
 import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 查询每个用户的执行时间超过设定阈值的SQL, 默认TOP10

@@ -36,8 +36,6 @@ public class DefaultLayedCachePool implements LayerCachePool {
 	protected int defaultCacheSize;
 	protected int defaulExpiredSeconds;
 	protected static final String defaultCache = "default";
-	public static final String DEFAULT_CACHE_COUNT = "DEFAULT_CACHE_COUNT";
-	public static final String DEFAULT_CACHE_EXPIRE_SECONDS = "DEFAULT_CACHE_EXPIRE_SECONDS";
 	private final CachePoolFactory poolFactory;
 	private final String name;
     	private final boolean hasDefaultCache;

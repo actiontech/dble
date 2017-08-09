@@ -753,6 +753,44 @@ public class RouterUtil {
 	}
 
 
+	private static boolean tryRouteWithPrimaryCache(
+			RouteResultset rrs, Map<String, Set<String>> tablesRouteMap,
+			LayerCachePool cachePool, Map<String, Set<ColumnRoutePair>> columnsMap,
+			SchemaConfig schema, String tableName, String primaryKey, boolean isSelect) {
+		if (cachePool == null || primaryKey == null || columnsMap.get(primaryKey) == null) {
+			return false;
+		}
+		if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.loadDataHint) || rrs.isLoadData()) {
+			//由于load data一次会计算很多路由数据，如果输出此日志会极大降低load data的性能
+			return false;
+		}
+		//try by primary key if found in cache
+		Set<ColumnRoutePair> primaryKeyPairs = columnsMap.get(primaryKey);
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("try to find cache by primary key ");
+		}
+
+		String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
+		boolean allFound = true;
+		for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id in(1,2,3)多主键
+			String cacheKey = pair.colValue;
+			String dataNode = (String) cachePool.get(tableKey, cacheKey);
+			if (dataNode == null) {
+				allFound = false;
+				break;
+			} else {
+				if (tablesRouteMap.get(tableName) == null) {
+					tablesRouteMap.put(tableName, new HashSet<String>());
+				}
+				tablesRouteMap.get(tableName).add(dataNode);
+			}
+		}
+		if (!allFound && isSelect) {
+			// need cache primary key ->dataNode relation
+			rrs.setPrimaryKey(tableKey + '.' + primaryKey);
+		}
+		return allFound;
+	}
 	/**
 	 * 处理分库表路由
 	 */
@@ -773,68 +811,29 @@ public class RouterUtil {
 			TableConfig tableConfig = schema.getTables().get(tableName);
 			if (tableConfig == null) {
 				if(isSingleTable) {
-					String msg = "can't find table ["
-							+ tableName + "[ define in schema "
-							+ ":" + schema.getName();
+					String msg = "can't find table ["+ tableName + "[ define in schema "+ ":" + schema.getName();
 					LOGGER.warn(msg);
 					throw new SQLNonTransientException(msg);
 				}else{
+					//cross to other schema
 					continue;
 				}
 			}
-			//全局表或者不分库的表略过（全局表后面再计算）
 			if (tableConfig.isGlobalTable() || schema.getTables().get(tableName).getDataNodes().size() == 1) {
+				//global table or single node shard-ing table will router later
 				continue;
 			} else {//非全局表：分库表、childTable、其他
 				Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+				if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(),isSelect)) {
+					continue;
+				}
+
 				String joinKey = tableConfig.getJoinKey();
 				String partionCol = tableConfig.getPartitionColumn();
-				String primaryKey = tableConfig.getPrimaryKey();
 				boolean isFoundPartitionValue = partionCol != null && columnsMap.get(partionCol) != null;
-				boolean isLoadData = false;
-				if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.loadDataHint) || rrs.isLoadData()) {
-					//由于load data一次会计算很多路由数据，如果输出此日志会极大降低load data的性能
-					isLoadData = true;
-				}
-				if (columnsMap.get(primaryKey) != null && columnsMap.size() == 1 && !isLoadData) {
-					//TODO: IS NEEDED?? 主键查找 try by primary key if found in cache
-					Set<ColumnRoutePair> primaryKeyPairs = columnsMap.get(primaryKey);
-					if (primaryKeyPairs != null) {
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug("try to find cache by primary key ");
-						}
 
-						String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
-						boolean allFound = true;
-						for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id in(1,2,3)多主键
-							String cacheKey = pair.colValue;
-							if (cachePool != null) {
-								String dataNode = (String) cachePool.get(tableKey, cacheKey);
-								if (dataNode == null) {
-								    	allFound = false;
-									continue;
-								} else {
-								    	if (tablesRouteMap.get(tableName) == null) {
-									    	tablesRouteMap.put(tableName, new HashSet<String>());
-									}
-									tablesRouteMap.get(tableName).add(dataNode);
-									continue;
-								}
-							} else {
-							    	allFound = false;
-							}
-						}
-						if (!allFound) {
-							// need cache primary key ->datanode relation
-							if (isSelect && tableConfig.getPrimaryKey() != null) {
-								rrs.setPrimaryKey(tableKey + '.' + tableConfig.getPrimaryKey());
-							}
-						} else {// 主键缓存中找到了就执行循环的下一轮
-							continue;
-						}
-					}
-				}
-				if (isFoundPartitionValue) {//分库表
+				// where filter contains partition column
+				if (isFoundPartitionValue) {
 					Set<ColumnRoutePair> partitionValue = columnsMap.get(partionCol);
 					if (partitionValue.size() == 0) {
 						if (tablesRouteMap.get(tableName) == null) {
@@ -898,7 +897,8 @@ public class RouterUtil {
 							}
 						}
 					}
-				} else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {//childTable  (如果是select 语句的父子表join)之前要找到root table,将childTable移除,只留下root table
+				} else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {
+					//childTable  (如果是select 语句的父子表join)之前要找到root table,将childTable移除,只留下root table
 					Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
 
 					Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinKeyValue);

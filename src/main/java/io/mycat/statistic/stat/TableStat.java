@@ -113,6 +113,13 @@ public class TableStat implements Comparable<TableStat> {
 	}
 
 	@Override
+	public int hashCode() {
+		long hash = getCount();
+		hash = hash * 31 + getLastExecuteTime();
+		hash = hash * 31 + getTable().hashCode();
+		return (int) hash;
+	}
+	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof TableStat) {
 			return this.compareTo((TableStat)obj) == 0;

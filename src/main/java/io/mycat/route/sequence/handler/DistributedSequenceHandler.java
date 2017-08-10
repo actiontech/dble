@@ -155,7 +155,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 client.create().creatingParentContainersIfNeeded().forPath(INSTANCE_PATH);
             }
         } catch (Exception e) {
-            // do nothing
+            throw new RuntimeException("create instance path " + INSTANCE_PATH + "error", e);
         }
         this.leaderSelector = new LeaderSelector(client, KVPathUtil.getSequencesLeaderPath(), this);
         this.leaderSelector.autoRequeue();

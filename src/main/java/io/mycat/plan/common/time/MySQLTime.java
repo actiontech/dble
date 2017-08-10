@@ -48,7 +48,7 @@ public class MySQLTime  implements Serializable {
 		second_part = (cal.getTimeInMillis() % 1000) * 1000;
 	}
 
-	public int compareTo(MySQLTime other) {
+	public int getCompareResult(MySQLTime other) {
 		if (other == null)
 			return 1;
 		long lt1 = MyTime.TIME_to_longlong_datetime_packed(this);

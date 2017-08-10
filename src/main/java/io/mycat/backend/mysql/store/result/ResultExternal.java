@@ -76,5 +76,5 @@ public interface ResultExternal {
 	 * 
 	 * @return tape's count
 	 */
-	int TapeCount();
+	int tapeCount();
 }

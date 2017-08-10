@@ -33,7 +33,7 @@ public abstract class Aggregator {
 		SIMPLE_AGGREGATOR, DISTINCT_AGGREGATOR
 	};
 
-	public abstract AggregatorType Aggrtype();
+	public abstract AggregatorType aggrType();
 
 	/**
 	 * Called before adding the first row. Allocates and sets up the internal

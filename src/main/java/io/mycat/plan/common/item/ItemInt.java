@@ -20,12 +20,6 @@ public class ItemInt extends ItemNum {
 		maxLength = String.valueOf(value).length();
 	}
 
-	public ItemInt(Integer value) {
-		this.value = BigInteger.valueOf(value);
-		fixed = true;
-		maxLength = String.valueOf(value).length();
-	}
-
 	@Override
 	public ItemType type() {
 		return ItemType.INT_ITEM;
@@ -96,7 +90,7 @@ public class ItemInt extends ItemNum {
 			return true;
 		if (obj == null)
 			return false;
-		if (!(obj instanceof ItemFloat))
+		if (!(obj instanceof ItemInt))
 			return false;
 		ItemInt other = (ItemInt) obj;
 		if (value == null || other.value == null)

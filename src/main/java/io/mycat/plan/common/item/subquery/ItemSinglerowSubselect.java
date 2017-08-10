@@ -27,8 +27,8 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 	}
 
 	@Override
-	public subSelectType substype() {
-		return subSelectType.SINGLEROW_SUBS;
+	public SubSelectType substype() {
+		return SubSelectType.SINGLEROW_SUBS;
 	}
 
 	@Override

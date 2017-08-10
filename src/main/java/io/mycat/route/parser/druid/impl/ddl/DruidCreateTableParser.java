@@ -61,7 +61,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 			rrs.setSrcStatement(sql);
 			sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			rrs.setStatement(sql);
-			rrs.setSqlStatement(createStmt);
 		}
 		try {
 			RouterUtil.routeToDDLNode(schemaInfo, rrs);

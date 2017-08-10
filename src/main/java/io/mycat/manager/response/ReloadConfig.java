@@ -238,7 +238,7 @@ public final class ReloadConfig {
 			config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
 
 			/* 2.4、 处理旧的资源 */
-			LOGGER.info("1. clear old backend connection(size): " + NIOProcessor.backends_old.size());
+			LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.backends_old.size());
 			
 			// 清除前一次 reload 转移出去的 old Cons
 			Iterator<BackendConnection> iter = NIOProcessor.backends_old.iterator();
@@ -265,7 +265,7 @@ public final class ReloadConfig {
 					}
 				}
 			}			
-			LOGGER.info("2、to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
+			LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
 
 
 			//清理缓存

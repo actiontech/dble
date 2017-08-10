@@ -182,7 +182,7 @@ public class RowDataPacketSorter {
         case ColMeta.COL_TYPE_DATETIME:
         case ColMeta.COL_TYPE_NEWDATE:
         case ColMeta.COL_TYPE_BIT:
-//            return BytesTools.compareTo(left,right);
+//            return BytesTools.getCompareResult(left,right);
         	return ByteUtil.compareNumberByte(left, right);
         case ColMeta.COL_TYPE_VAR_STRING:
         case ColMeta.COL_TYPE_STRING:

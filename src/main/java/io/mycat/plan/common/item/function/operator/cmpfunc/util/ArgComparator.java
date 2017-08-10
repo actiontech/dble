@@ -433,7 +433,7 @@ public class ArgComparator {
 			res1 = ac.a.valStr();
 			res2 = ac.b.valStr();
 			if (res1 == null || res2 == null)
-				return (res1 == res2) ? 1 : 0;
+				return (res1 == null && res2 == null) ? 1 : 0;
 			return (res1.compareTo(res2) == 0) ? 1 : 0;
 		}
 	}
@@ -446,7 +446,7 @@ public class ArgComparator {
 			res1 = ac.a.valStr();
 			res2 = ac.b.valStr();
 			if (res1 == null || res2 == null)
-				return (res1 == res2) ? 1 : 0;
+				return (res1 == null && res2 == null) ? 1 : 0;
 			return MySQLcom.memcmp(res1.getBytes(), res2.getBytes(), Math.min(res1.length(), res2.length())) == 0 ? 1
 					: 0;
 		}

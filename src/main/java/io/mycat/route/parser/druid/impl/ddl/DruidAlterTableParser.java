@@ -96,7 +96,6 @@ public class DruidAlterTableParser extends DefaultDruidParser {
 			rrs.setSrcStatement(sql);
 			sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			rrs.setStatement(sql);
-			rrs.setSqlStatement(alterTable);
 		}
 		RouterUtil.routeToDDLNode(schemaInfo, rrs);
 		return schemaInfo.schemaConfig;

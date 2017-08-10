@@ -61,7 +61,7 @@ public class FieldTime extends FieldTemporal {
 			MySQLTime ltime2 = new MySQLTime();
 			MyTime.str_to_time_with_warn(sval1, ltime1);
 			MyTime.str_to_time_with_warn(sval2, ltime2);
-			return ltime1.compareTo(ltime2);
+			return ltime1.getCompareResult(ltime2);
 		} catch (Exception e) {
 			logger.info("String to biginteger exception!", e);
 			return -1;

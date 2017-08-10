@@ -509,7 +509,12 @@ public class ERJoinChooser {
 			tn = null;
 			cm = null;
 		}
-
+		@Override
+		public int hashCode() {
+			int hash = this.key.getTableName().hashCode();
+			hash = hash * 31 + this.key.getItemName().toLowerCase().hashCode();
+			return hash;
+		}
 		@Override
 		public boolean equals(Object o) {
 			if (o == null)

@@ -339,7 +339,7 @@ public class MycatServer {
 		totalNetWorkBufferSize = bufferPoolPageSize * bufferPoolPageNumber;
 		if(totalNetWorkBufferSize> Platform.getMaxDirectMemory()){
 			LOGGER .error("Direct BufferPool size lager than MaxDirectMemory");
-			java.lang.System.exit(-1);
+			throw new IOException("Direct BufferPool size lager than MaxDirectMemory");
 		}
 		bufferPool = new DirectByteBufferPool(bufferPoolPageSize,bufferPoolChunkSize, bufferPoolPageNumber);
 
@@ -644,7 +644,9 @@ public class MycatServer {
 
 			File parent = file.getParentFile();
 			if (parent != null && !parent.exists()) {
-				parent.mkdirs();
+				if(!parent.mkdirs()) {
+					throw new IOException("mkdir " + parent.getAbsolutePath() + " error");
+				}
 			}
 
 			fileOut = new FileOutputStream(file);

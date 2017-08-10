@@ -34,7 +34,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 	private long endDate;
 	private int nCount;
 	private int defaultNode = -1;
-	private ThreadLocal<SimpleDateFormat> formatter;
+	private transient ThreadLocal<SimpleDateFormat> formatter;
 	
 	private static final long oneDay = 86400000;
 

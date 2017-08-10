@@ -52,7 +52,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 			.getLogger(ServerQueryHandler.class);
 
 	private final ServerConnection source;
-	protected Boolean readOnly;
+	protected Boolean readOnly = true;
 
 	public void setReadOnly(Boolean readOnly) {
 		this.readOnly = readOnly;

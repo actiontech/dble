@@ -21,7 +21,7 @@ public class AggregatorDistinct extends Aggregator {
 	}
 
 	@Override
-	public AggregatorType Aggrtype() {
+	public AggregatorType aggrType() {
 		return AggregatorType.DISTINCT_AGGREGATOR;
 	}
 

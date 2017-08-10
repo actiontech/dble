@@ -1,0 +1,27 @@
+<FindBugsFilter>
+       
+	 <Match>
+       <Class name="io.mycat.meta.protocol.StructureMeta" />
+     </Match>
+	 <Match>
+       <Class name="io.mycat.meta.protocol.StructureMeta$ColumnMeta" />
+     </Match>
+	 <Match>
+       <Class name="io.mycat.meta.protocol.StructureMeta$IndexMeta" />
+     </Match>
+	 <Match>
+       <Class name="io.mycat.meta.protocol.StructureMeta$TableMeta" />
+     </Match>
+     <Match>
+       <Bug category="MALICIOUS_CODE,I18N,MT_CORRECTNESS,STYLE,PERFORMANCE,CORRECTNESS" />
+     </Match> 
+	  <Match>
+	    <Bug category="BAD_PRACTICE" />
+	   <Bug pattern="RR_NOT_CHECKED,RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" />
+     </Match>
+ <!--
+ MALICIOUS_CODE set ARRAT
+ I18N STRING DECODE  
+ -->
+
+</FindBugsFilter>

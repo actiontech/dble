@@ -32,8 +32,8 @@ public class ItemAllanySubselect extends ItemSubselect {
 	}
 
 	@Override
-	public subSelectType substype() {
-		return isAll ? subSelectType.ALL_SUBS : subSelectType.ANY_SUBS;
+	public SubSelectType substype() {
+		return isAll ? SubSelectType.ALL_SUBS : SubSelectType.ANY_SUBS;
 	}
 
 	@Override

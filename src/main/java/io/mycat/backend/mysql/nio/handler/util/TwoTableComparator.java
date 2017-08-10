@@ -78,7 +78,7 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
 		if (isAsc) {
 			rs = cmptor.compare();
 		} else {
-			rs = -cmptor.compare();
+			rs = -1* cmptor.compare();
 		}
 		if (rs != 0 || ascs.size() == (i + 1)) {
 			return rs;

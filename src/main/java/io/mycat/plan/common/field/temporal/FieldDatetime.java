@@ -38,27 +38,4 @@ public class FieldDatetime extends FieldTemporalWithDateAndTime {
 		return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.TIME_to_ulonglong_datetime(ltime));
 	}
 
-	@Override
-	public int compare(byte[] v1, byte[] v2) {
-		if (v1 == null && v2 == null)
-			return 0;
-		else if (v1 == null) {
-			return -1;
-		} else if (v2 == null) {
-			return 1;
-		} else
-			try {
-				String sval1 = MySQLcom.getFullString(charsetName, v1);
-				String sval2 = MySQLcom.getFullString(charsetName, v2);
-				MySQLTime ltime1 = new MySQLTime();
-				MySQLTime ltime2 = new MySQLTime();
-				MyTime.str_to_datetime_with_warn(sval1, ltime1, MyTime.TIME_FUZZY_DATE);
-				MyTime.str_to_datetime_with_warn(sval2, ltime2, MyTime.TIME_FUZZY_DATE);
-				return ltime1.compareTo(ltime2);
-			} catch (Exception e) {
-				logger.info("String to biginteger exception!", e);
-				return -1;
-			}
-	}
-
 }

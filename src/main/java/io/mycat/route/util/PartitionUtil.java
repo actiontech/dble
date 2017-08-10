@@ -25,12 +25,14 @@ package io.mycat.route.util;
 
 import io.mycat.util.StringUtil;
 
+import java.io.Serializable;
+
 /**
  * 数据分区工具
  * 
  * @author mycat
  */
-public final class PartitionUtil {
+public final class PartitionUtil implements Serializable {
 
     // 分区最大长度:数据段分布定义，如果取模的数是2^n， 使用x % 2^n == x & (2^n - 1)等式，来优化性能。
     private static final int MAX_PARTITION_LENGTH = 2880;

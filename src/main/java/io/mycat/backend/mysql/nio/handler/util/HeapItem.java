@@ -7,16 +7,16 @@ public class HeapItem {
 	private byte[] row;
 	private RowDataPacket rowPacket;
 	private MySQLConnection hashIndex;
-	private boolean isNullItem = false;
+	private boolean isNull = false;
 
 	public static HeapItem NULLITEM() {
 		HeapItem NULLITEM = new HeapItem(null, null, null);
-		NULLITEM.isNullItem = true;
+		NULLITEM.isNull = true;
 		return NULLITEM;
 	}
 
-	public boolean IsNullItem() {
-		if (row == null && isNullItem == true)
+	public boolean isNullItem() {
+		if (row == null && isNull == true)
 			return true;
 		return false;
 	}

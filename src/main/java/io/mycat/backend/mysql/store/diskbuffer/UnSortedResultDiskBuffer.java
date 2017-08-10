@@ -27,7 +27,7 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
 	}
 
 	@Override
-	public int TapeCount() {
+	public int tapeCount() {
 		return 1;
 	}
 

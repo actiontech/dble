@@ -48,7 +48,7 @@ public abstract class FieldTemporal extends Field {
 		this.internalJob();
 		other2.internalJob();
 		MySQLTime ltime2 = other2.ltime;
-		return ltime.compareTo(ltime2);
+		return ltime.getCompareResult(ltime2);
 	}
 
 }

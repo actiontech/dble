@@ -26,6 +26,7 @@ package io.mycat.route.function;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
@@ -229,7 +230,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		}
 	}
 
-	static class LongRange {
+	static class LongRange implements Serializable{
 		public final int nodeIndx;
 		public final long valueStart;
 		public final long valueEnd;

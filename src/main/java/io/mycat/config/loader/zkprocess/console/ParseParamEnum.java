@@ -27,16 +27,12 @@ public enum ParseParamEnum {
     */
     private String key;
 
-    private ParseParamEnum(String key) {
+    ParseParamEnum(String key) {
         this.key = key;
     }
 
     public String getKey() {
         return key;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
     }
 
 }

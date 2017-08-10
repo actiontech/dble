@@ -39,7 +39,7 @@ public enum ZkParamCfg {
 
     ;
 
-    private ZkParamCfg(String key) {
+    ZkParamCfg(String key) {
         this.key = key;
     }
 
@@ -49,8 +49,5 @@ public enum ZkParamCfg {
         return key;
     }
 
-    public void setKey(String key) {
-        this.key = key;
-    }
 
 }

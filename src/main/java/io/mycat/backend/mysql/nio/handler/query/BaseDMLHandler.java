@@ -1,16 +1,16 @@
 package io.mycat.backend.mysql.nio.handler.query;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.log4j.Logger;
-
 import io.mycat.backend.BackendConnection;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.server.NonBlockingSession;
-import io.mycat.util.ConcurrentHashSet;
+import org.apache.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class BaseDMLHandler implements DMLResponseHandler {
 	private static Logger logger = Logger.getLogger(BaseDMLHandler.class);
@@ -34,7 +34,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
 	public BaseDMLHandler(long id, NonBlockingSession session) {
 		this.id = id;
 		this.session = session;
-		this.merges = new ConcurrentHashSet<DMLResponseHandler>();
+		this.merges = Collections.newSetFromMap(new ConcurrentHashMap<DMLResponseHandler, Boolean>());
 	}
 
 	@Override

@@ -220,7 +220,7 @@ public abstract class ItemSum extends ItemResultField {
 		 * times during query optimization. In this case, the type may change,
 		 * so we delete the old aggregator, and create a new one.
 		 */
-		if (aggr != null && aggregator == aggr.Aggrtype()) {
+		if (aggr != null && aggregator == aggr.aggrType()) {
 			aggr.clear();
 			return FALSE;
 		}

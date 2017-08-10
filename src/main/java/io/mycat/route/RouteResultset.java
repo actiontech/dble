@@ -45,7 +45,7 @@ public final class RouteResultset implements Serializable {
 	private String table;
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
-    private SQLStatement sqlStatement; 
+    private transient SQLStatement sqlStatement;
     
     private boolean needOptimizer;
     private int limitStart;

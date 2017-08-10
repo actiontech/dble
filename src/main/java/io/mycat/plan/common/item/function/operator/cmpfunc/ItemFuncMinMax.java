@@ -207,7 +207,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 					String res2 = args.get(i).valStr();
 					if (res2 != null) {
 						int cmp = res.compareTo(res2);
-						if ((cmp_sign < 0 ? cmp : -cmp) < 0)
+						if ((cmp_sign < 0 ? cmp : -1 * cmp) < 0)
 							res = res2;
 					}
 				}

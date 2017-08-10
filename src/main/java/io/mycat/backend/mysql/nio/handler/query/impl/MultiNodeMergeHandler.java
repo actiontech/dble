@@ -232,7 +232,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 				if (terminate.get())
 					return;
 				HeapItem top = heap.peak();
-				if (top.IsNullItem()) {
+				if (top.isNullItem()) {
 					heap.poll();
 				} else {
 					BlockingQueue<HeapItem> topitemQueue = queues.get(top.getIndex());

@@ -19,12 +19,12 @@ public abstract class ItemSubselect extends ItemResultField {
 	protected SQLSelectQuery query;
 	private String currentDb;
 	private PlanNode planNode;
-	public enum subSelectType {
+	public enum SubSelectType {
 		UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
 	};
 
-	public subSelectType substype() {
-		return subSelectType.UNKNOWN_SUBS;
+	public SubSelectType substype() {
+		return SubSelectType.UNKNOWN_SUBS;
 	}
 
 	public ItemSubselect(String currentDb, SQLSelectQuery query) {

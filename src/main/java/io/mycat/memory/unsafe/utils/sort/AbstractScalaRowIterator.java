@@ -1,6 +1,7 @@
 package io.mycat.memory.unsafe.utils.sort;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Created by zagnix 2016/6/6.
@@ -13,7 +14,7 @@ public class AbstractScalaRowIterator<T> implements Iterator<T> {
 
     @Override
     public T next() {
-        return null;
+        throw new NoSuchElementException();
     }
 
     @Override

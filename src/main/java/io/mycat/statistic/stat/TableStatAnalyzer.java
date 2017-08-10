@@ -109,7 +109,7 @@ public class TableStatAnalyzer implements QueryResultListener {
         return list;
 	}	
 	
-	public void ClearTable() {
+	public void clearTable() {
 		tableStatMap.clear();
 	}
 

@@ -91,7 +91,10 @@ public class UserSqlLastStat {
 			long st1 = o == null ? 0 : o.getStartTime();
 			return (int) ( st1 - this.getStartTime());
 		}
-
+		@Override
+		public int hashCode() {
+			return (int) getStartTime();
+		}
 		@Override
 		public boolean equals(Object obj) {
 			if(obj instanceof SqlLast) {

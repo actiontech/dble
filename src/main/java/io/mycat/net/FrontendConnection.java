@@ -328,7 +328,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 
 		// 执行查询
 		if (queryHandler != null) {
-			queryHandler.setReadOnly(privileges.isReadOnly(user));
+			Boolean result = privileges.isReadOnly(user);
+			if (result != null) {
+				queryHandler.setReadOnly(result);
+			}
 			queryHandler.query(sql);
 		} else {
 			writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Query unsupported!");

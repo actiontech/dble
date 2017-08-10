@@ -13,7 +13,7 @@ public class AggregatorSimple extends Aggregator {
 	}
 
 	@Override
-	public AggregatorType Aggrtype() {
+	public AggregatorType aggrType() {
 		return AggregatorType.SIMPLE_AGGREGATOR;
 	}
 

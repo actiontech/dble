@@ -99,7 +99,7 @@ public class ItemString extends ItemBasicConstant {
 			return true;
 		if (obj == null)
 			return false;
-		if (!(obj instanceof ItemFloat))
+		if (!(obj instanceof ItemString))
 			return false;
 		ItemString other = (ItemString) obj;
 		if (value == null || other.value == null)

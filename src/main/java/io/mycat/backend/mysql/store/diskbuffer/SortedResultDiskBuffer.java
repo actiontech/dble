@@ -60,7 +60,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
 	}
 
 	@Override
-	public final int TapeCount() {
+	public final int tapeCount() {
 		return tapes.size();
 	}
 

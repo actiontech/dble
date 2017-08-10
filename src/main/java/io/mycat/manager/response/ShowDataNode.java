@@ -129,7 +129,18 @@ public final class ShowDataNode {
 				keys.addAll(sc.getAllDataNodes());
 			}
 		}
-		Collections.sort(keys, new Comparators<String>());
+		Collections.sort(keys, new Comparator<String>(){
+			@Override
+			public int compare(String o1, String o2) {
+				Pair<String, Integer> p1 = PairUtil.splitIndex(o1, '[', ']');
+				Pair<String, Integer> p2 = PairUtil.splitIndex(o2, '[', ']');
+				if (p1.getKey().compareTo(p2.getKey()) == 0) {
+					return p1.getValue() - p2.getValue();
+				} else {
+					return p1.getKey().compareTo(p2.getKey());
+				}
+			}
+		});
 		for (String key : keys) {
 			RowDataPacket row = getRow(dataNodes.get(key), c.getCharset());
 			row.packetId = ++packetId;
@@ -173,17 +184,5 @@ public final class ShowDataNode {
 		return row;
 	}
 
-	private static final class Comparators<T> implements Comparator<String> {
-		@Override
-		public int compare(String s1, String s2) {
-			Pair<String, Integer> p1 = PairUtil.splitIndex(s1, '[', ']');
-			Pair<String, Integer> p2 = PairUtil.splitIndex(s2, '[', ']');
-			if (p1.getKey().compareTo(p2.getKey()) == 0) {
-				return p1.getValue() - p2.getValue();
-			} else {
-				return p1.getKey().compareTo(p2.getKey());
-			}
-		}
-	}
 
 }

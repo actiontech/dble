@@ -67,9 +67,6 @@ public class DataNodeFileManager {
 
     subDirsPerLocalDir = conf.getInt("server.diskStore.subDirectories", 64);
     localDirs  = createLocalDirs(conf);
-    if (localDirs.isEmpty()) {
-      System.exit(-1);
-    }
     subDirs =  new ConcurrentHashMap<Integer,ArrayList<File>>(localDirs.size());
 
 
@@ -151,6 +148,9 @@ public class DataNodeFileManager {
       }
     }
 
+    if (dirs.isEmpty()) {
+      throw new RuntimeException("can't createLocalDirs in " + rootDirs);
+    }
     return  dirs;
   }
 

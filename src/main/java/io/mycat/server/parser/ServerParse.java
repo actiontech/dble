@@ -360,13 +360,15 @@ public final class ServerParse {
 			char c7 = stmt.charAt(++offset);
 			if ((c1 == 'X' || c1 == 'x') && (c2 == 'P' || c2 == 'p')
 					&& (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a')
-					&& (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n')
-					&& (c7 == ' ' || c7 == '\t' || c7 == '\r' || c7 == '\n')) {
-				return (offset << 8) | EXPLAIN;
+					&& (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n')) {
+				if (ParseUtil.isSpace(c7)) {
+					return (offset << 8) | EXPLAIN;
+				} else if (c7 == '2' && (stmt.length() > offset + 1) && ParseUtil.isSpace(stmt.charAt(++offset))) {
+					return (offset << 8) | EXPLAIN2;
+				} else {
+					return OTHER;
+				}
 			}
-		}
-		if(stmt != null && stmt.toLowerCase().startsWith("explain2")){
-			return (offset << 8) | EXPLAIN2;
 		}
 		return OTHER;
 	}

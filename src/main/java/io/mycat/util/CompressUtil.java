@@ -141,9 +141,10 @@ public class CompressUtil {
 		
 		//未压缩, 直接返回
 		if ( packetLength == data.length - 4 ) {
-			return Lists.newArrayList(data);
-			
-		//压缩不成功的, 直接返回	
+			List<byte[]> lst = new ArrayList(1);
+			lst.add(data);
+			return lst;
+			//压缩不成功的, 直接返回
 		} else if (oldLen == 0) {			
 			byte[] readBytes = msg.readBytes();
 			return splitPack(readBytes, decompressUnfinishedDataQueue);

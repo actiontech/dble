@@ -13,15 +13,57 @@
        <Class name="io.mycat.meta.protocol.StructureMeta$TableMeta" />
      </Match>
      <Match>
-       <Bug category="MALICIOUS_CODE,I18N,MT_CORRECTNESS,STYLE,PERFORMANCE,CORRECTNESS" />
+       <Bug category="MALICIOUS_CODE,I18N,PERFORMANCE,STYLE" />
      </Match> 
-	  <Match>
-	    <Bug category="BAD_PRACTICE" />
-	   <Bug pattern="RR_NOT_CHECKED,RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" />
-     </Match>
+	 
  <!--
  MALICIOUS_CODE set ARRAT
  I18N STRING DECODE  
  -->
+	 <!--MALICIOUS_CODE 90 -->
+	 <!-- I18N 147-->
+	 
+	 <!-- STYLE 146-->
+	 <!-- PERFORMANCE 74 -->
+	 
+	 <!-- CORRECTNESS start num:1,other 12 need to debug -->
+	  <Match>
+	  <Bug category="CORRECTNESS" />
+       <Class name="io.mycat.plan.node.JoinNode" />
+	   <Method name="setRightNode" />
+      <Bug pattern="NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS" />
+     </Match>
+	 <!-- CORRECTNESS end -->
+	 
+	 <!-- MT_CORRECTNESS start num:7 -->
+	 <Match>
+	 <Bug category="MT_CORRECTNESS" />
+       <Class name="io.mycat.MycatServer" />
+	   <Method name="genXATXID" />
+      <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER" />
+     </Match>
+	 <Match>
+	 <Bug category="MT_CORRECTNESS" />
+       <Class name="io.mycat.backend.mysql.xa.recovery.impl.FileSystemRepository" />
+	    <Bug pattern="IS2_INCONSISTENT_SYNC" />
+     </Match>
+	 <Match>
+	 <Bug category="MT_CORRECTNESS" />
+       <Class name="io.mycat.server.handler.ServerLoadDataInfileHandler" />
+	    <Bug pattern="IS2_INCONSISTENT_SYNC" />
+     </Match>
+	  <Match>
+	  <Bug category="MT_CORRECTNESS" />
+       <Class name="io.mycat.memory.unsafe.map.BytesToBytesMap$MapIterator" />
+	    <Bug pattern="IS2_INCONSISTENT_SYNC" />
+     </Match>
+	  <!-- MT_CORRECTNESS end -->
+	  
+	  <!-- BAD_PRACTICE start ,num:9-->
+	  <Match>
+	    <Bug category="BAD_PRACTICE" />
+	   <Bug pattern="RR_NOT_CHECKED,RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" />
+     </Match>
+	<!-- BAD_PRACTICE end-->
 
 </FindBugsFilter>

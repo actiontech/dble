@@ -69,7 +69,9 @@ public class UnionHandler extends BaseDMLHandler {
 				nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
 				conFieldSend.signalAll();
 			} else {
-				conFieldSend.await();
+				while (nodeCountField.get() != 0) {
+					conFieldSend.await();
+				}
 			}
 		} catch (Exception e) {
 			String msg = "Union field merge error, " + e.getLocalizedMessage();

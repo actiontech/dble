@@ -25,7 +25,7 @@ public class ItemFuncSubstr extends ItemStrFunc {
 		if (this.nullValue = (args.get(0).isNull() || args.get(1).isNull()
 				|| (args.size() == 3 && args.get(2).isNull())))
 			return EMPTY;
-		if (args.size() == 3 && length <= 0 && (length <= 0))
+		if (args.size() == 3 && length <= 0)
 			return EMPTY;
 		start = (start < 0) ? str.length() + start : start - 1;
 		tmp_length = str.length() - start;

@@ -159,7 +159,7 @@ class FileNioMapped extends FileBase {
 	}
 
 	@Override
-	public long position() {
+	public synchronized long position() {
 		return pos;
 	}
 
@@ -207,7 +207,7 @@ class FileNioMapped extends FileBase {
 	}
 
 	@Override
-	public FileChannel position(long pos) throws IOException {
+	public synchronized FileChannel position(long pos) throws IOException {
 		checkFileSizeLimit(pos);
 		this.pos = (int) pos;
 		return this;

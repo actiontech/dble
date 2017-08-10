@@ -137,7 +137,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 		long hbv = bv % patternValue;
 		long hev = ev % patternValue;
 
-		if (findNode(hbv) == null || findNode(hbv) == null) {
+		if (findNode(hbv) == null || findNode(hev) == null) {
 			return calc_type3();
 		}
 

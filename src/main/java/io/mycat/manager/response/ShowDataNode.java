@@ -143,8 +143,10 @@ public final class ShowDataNode {
 		});
 		for (String key : keys) {
 			RowDataPacket row = getRow(dataNodes.get(key), c.getCharset());
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c, true);
+			if (row != null) {
+				row.packetId = ++packetId;
+				buffer = row.write(buffer, c, true);
+			}
 		}
 
 		// write last eof
@@ -157,31 +159,28 @@ public final class ShowDataNode {
 	}
 
 	private static RowDataPacket getRow(PhysicalDBNode node, String charset) {
-		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-		row.add(StringUtil.encode(node.getName(), charset));
-		row.add(StringUtil.encode(
-				node.getDbPool().getHostName() + '/' + node.getDatabase(),
-				charset));
 		PhysicalDBPool pool = node.getDbPool();
 		PhysicalDatasource ds = pool.getSource();
 		if (ds != null) {
+			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+			row.add(StringUtil.encode(node.getName(), charset));
+			row.add(StringUtil.encode(
+					node.getDbPool().getHostName() + '/' + node.getDatabase(),
+					charset));
 			int active = ds.getActiveCountForSchema(node.getDatabase());
 			int idle = ds.getIdleCountForSchema(node.getDatabase());
 			row.add(IntegerUtil.toBytes(pool.getActiveIndex()));
 			row.add(IntegerUtil.toBytes(active));
 			row.add(IntegerUtil.toBytes(idle));
 			row.add(IntegerUtil.toBytes(ds.getSize()));
+			row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
+			long recoveryTime = pool.getSource().getHeartbeatRecoveryTime()
+					- TimeUtil.currentTimeMillis();
+			row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
+			return row;
 		} else {
-			row.add(null);
-			row.add(null);
-			row.add(null);
-			row.add(null);
+			return null;
 		}
-		row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
-		long recoveryTime = pool.getSource().getHeartbeatRecoveryTime()
-				- TimeUtil.currentTimeMillis();
-		row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
-		return row;
 	}
 
 

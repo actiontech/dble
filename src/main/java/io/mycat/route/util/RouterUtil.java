@@ -228,7 +228,7 @@ public class RouterUtil {
 		List<String> dataNodes;
 		Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
 		TableConfig tc = tables.get(schemaInfo.table);
-		if (tables != null && (tc != null)) {
+		if (tc != null) {
 			dataNodes = tc.getDataNodes();
 		} else {
 			String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";

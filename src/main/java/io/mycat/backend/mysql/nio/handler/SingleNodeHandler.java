@@ -237,7 +237,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		ServerConnection source = session.getSource();
 		conn.recordSql(source.getHost(), source.getSchema(), node.getStatement());
         // 判断是调用存储过程的话不能在这里释放链接
-		if (!rrs.isCallStatement()||(rrs.isCallStatement()&&rrs.getProcedure().isResultSimpleValue())) 
+		if (!rrs.isCallStatement()||rrs.getProcedure().isResultSimpleValue())
 		{
 			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
 		}
@@ -250,7 +250,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		waitingResponse = false;
 
 		if (MycatServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
-			if (rrs != null && rrs.getStatement() != null) {
+			if (rrs.getStatement() != null) {
 				netInBytes += rrs.getStatement().getBytes().length;
 			}
 			//查询结果派发

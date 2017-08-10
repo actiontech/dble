@@ -161,6 +161,8 @@ public class MySQLPlanNodeVisitor {
 				return true;
 			}
 			table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
+		} else {
+			throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is "+tableSource.toString());
 		}
 		if (tableSource.getAlias() != null) {
 			table.setSubAlias(tableSource.getAlias());

@@ -1,16 +1,19 @@
 package io.mycat.meta.table;
 
+import io.mycat.config.MycatConfig;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.meta.ProxyMetaManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import io.mycat.config.MycatConfig;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.meta.ProxyMetaManager;
-
 public class SchemaMetaHandler {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMetaHandler.class);
 	private Lock lock;
 	private Condition allSchemaDone;
 	private int schemaNumber;
@@ -48,11 +51,11 @@ public class SchemaMetaHandler {
 	public void waitAllNodeDone() {
 		lock.lock();
 		try {
-			if (schemaNumber == 0)
-				return;
-			allSchemaDone.await();
+			while(schemaNumber != 0) {
+				allSchemaDone.await();
+			}
 		} catch (InterruptedException e) {
-			// ignore
+			LOGGER.warn("waitAllNodeDone " + e);
 		} finally {
 			lock.unlock();
 		}

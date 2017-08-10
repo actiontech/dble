@@ -83,7 +83,7 @@ class FileNio extends FileBase {
 	}
 
 	@Override
-	public FileChannel position(long pos) throws IOException {
+	public synchronized FileChannel position(long pos) throws IOException {
 		channel.position(pos);
 		this.pos = (int) pos;
 		return this;

@@ -83,7 +83,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 		if (beginNode == null || endNode == null) {
 			return new Integer[0];
 		}
-		if (endNode > beginNode || (endNode == beginNode && partitionUtil.isSingleNode(begin, end))) {
+		if (endNode > beginNode || (endNode.equals(beginNode) && partitionUtil.isSingleNode(begin, end))) {
 			int len = endNode - beginNode + 1;
 			Integer[] re = new Integer[len];
 
@@ -94,7 +94,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 		} else {
 			int split = partitionUtil.getSegmentLength() - beginNode;
 			int len = split + endNode + 1;
-			if (endNode == beginNode) {
+			if (endNode.equals(beginNode)) {
 				//remove duplicate
 				len--;
 			}

@@ -49,8 +49,8 @@ public class GlobalTableProcessor {
 					if (tn.getNoshardNode() != null) {
 						tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
 					}
+					unGlobalCount += tnChild.getUnGlobalTableCount();
 				}
-				unGlobalCount += tnChild.getUnGlobalTableCount();
 			}
 			tn.setUnGlobalTableCount(unGlobalCount);
 			if (tn.getNoshardNode() != null && tn.getNoshardNode().size() == 0) {

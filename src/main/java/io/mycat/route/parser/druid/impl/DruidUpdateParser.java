@@ -91,7 +91,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
 				throw new SQLNonTransientException(msg);
 			}
 			TableConfig tc = schema.getTables().get(tableName);
-			if (tc != null && tc.isGlobalTable()) {
+			if (tc.isGlobalTable()) {
 				if (GlobalTableUtil.useGlobleTableCheck()) {
 					String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
 					rrs.setStatement(sql);

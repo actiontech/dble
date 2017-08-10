@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
-    private static DistributedSequenceHandler instance;
+    private static DistributedSequenceHandler instance = new DistributedSequenceHandler();;
 
     private final long threadIdBits = 9L;
     private final long instanceIdBits = 5L;
@@ -97,10 +97,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long SELF_CHECK_PERIOD = 10L;
 
     public static DistributedSequenceHandler getInstance() {
-        if (instance == null) {
-            instance = new DistributedSequenceHandler();
-        }
-        return instance;
+        return DistributedSequenceHandler.instance;
     }
 
     public long getClusterId() {

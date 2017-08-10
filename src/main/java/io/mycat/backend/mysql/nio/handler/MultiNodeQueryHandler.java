@@ -445,8 +445,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	 * @param
 	 */
 	public void outputMergeResult(final ServerConnection source, final byte[] eof, Iterator<UnsafeRow> iter) {
+		lock.lock();
 		try {
-			lock.lock();
 			ByteBuffer buffer = session.getSource().allocate();
 			final RouteResultset rrs = this.dataMergeSvr.getRrs();
 
@@ -505,15 +505,18 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		} catch (Exception e) {
 			handleDataProcessException(e);
 		} finally {
-			dataMergeSvr.clear();
-			lock.unlock();
+			try {
+				dataMergeSvr.clear();
+			}finally {
+				lock.unlock();
+			}
 		}
 	}
 
 	public void outputMergeResult(final ServerConnection source,
 								  final byte[] eof, List<RowDataPacket> results) {
+		lock.lock();
 		try {
-			lock.lock();
 			ByteBuffer buffer = session.getSource().allocate();
 			final RouteResultset rrs = this.dataMergeSvr.getRrs();
 
@@ -578,8 +581,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 		} catch (Exception e) {
 			handleDataProcessException(e);
 		} finally {
-			dataMergeSvr.clear();
-			lock.unlock();
+			try {
+				dataMergeSvr.clear();
+			}finally {
+				lock.unlock();
+			}
 		}
 	}
 

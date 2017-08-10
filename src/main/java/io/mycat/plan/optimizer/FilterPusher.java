@@ -170,7 +170,7 @@ public class FilterPusher {
 				jn.setLeftNode(pushFilter(jn.getLeftNode(), DNFNodetoPushToLeft));
 				jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), DNFNodetoPushToRight));
 			} else {
-				if (DNFNodeToPush != null && !DNFNodeToPush.isEmpty()) {
+				if (!DNFNodeToPush.isEmpty()) {
 					jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(DNFNodeToPush)));
 				}
 			}

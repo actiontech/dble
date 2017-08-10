@@ -81,7 +81,7 @@ public class HintSQLHandler implements HintHandler {
     private   Procedure parseProcedure(String sql,Map hintMap)
     {
         boolean fields = hintMap.containsKey("list_fields");
-        boolean isResultList= hintMap != null && ("list".equals(hintMap.get("result_type"))|| fields);
+        boolean isResultList= "list".equals(hintMap.get("result_type"))|| fields;
         Procedure procedure=new Procedure();
         procedure.setOriginSql(sql);
         procedure.setResultList(isResultList);

@@ -65,7 +65,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 		int end = format.length();
 		char[] cs = format.toCharArray();
 
-		for (; val != end && val != end; val++) {
+		for (; val != end ; val++) {
 			if (cs[val] == '%' && val + 1 != end) {
 				val++;
 				if (cs[val] == 'f')

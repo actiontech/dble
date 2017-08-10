@@ -61,11 +61,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(FrontendConnection.class);
 
-	protected long id;
-	protected String host;
-	protected int port;
-	protected int localPort;
-	protected long idleTimeout;
 	protected byte[] seed;
 	protected String user;
 	protected String schema;
@@ -83,10 +78,11 @@ public abstract class FrontendConnection extends AbstractConnection {
 		InetSocketAddress localAddr = (InetSocketAddress) channel.getLocalAddress();
 		InetSocketAddress remoteAddr = null;
 		if (channel instanceof SocketChannel) {
-			remoteAddr = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();	
-			
+			remoteAddr = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
 		} else if (channel instanceof AsynchronousSocketChannel) {
 			remoteAddr = (InetSocketAddress) ((AsynchronousSocketChannel) channel).getRemoteAddress();
+		}else{
+			throw new RuntimeException("FrontendConnection type is"+channel.getClass());
 		}
 		
 		this.host = remoteAddr.getHostString();

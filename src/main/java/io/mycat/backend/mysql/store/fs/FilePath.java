@@ -18,7 +18,7 @@ import java.util.*;
  */
 public abstract class FilePath {
 
-	private static FilePath defaultProvider;
+	private static volatile FilePath defaultProvider;
 
 	private static Map<String, FilePath> providers;
 
@@ -62,18 +62,22 @@ public abstract class FilePath {
 	}
 
 	private static void registerDefaultProviders() {
-		if (providers == null || defaultProvider == null) {
-			Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
-			FilePathDisk p = new FilePathDisk();
-			map.put(p.getScheme(), p);
-			if (defaultProvider == null) {
-				defaultProvider = p;
+		if (defaultProvider == null) {
+			synchronized (FilePath.class) {
+				if (defaultProvider == null) {
+					Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
+					FilePathDisk p = new FilePathDisk();
+					map.put(p.getScheme(), p);
+					if (defaultProvider == null) {
+						defaultProvider = p;
+					}
+					FilePathNio p2 = new FilePathNio();
+					map.put(p2.getScheme(), p2);
+					FilePathNioMapped p3 = new FilePathNioMapped();
+					map.put(p3.getScheme(), p3);
+					providers = map;
+				}
 			}
-			FilePathNio p2 = new FilePathNio();
-			map.put(p2.getScheme(), p2);
-			FilePathNioMapped p3 = new FilePathNioMapped();
-			map.put(p3.getScheme(), p3);
-			providers = map;
 		}
 	}
 

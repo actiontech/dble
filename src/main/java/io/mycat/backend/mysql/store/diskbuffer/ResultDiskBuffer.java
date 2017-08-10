@@ -115,7 +115,6 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 		long pos;
 		int readBufferOffset;
 		ByteBuffer readBuffer;
-		RowDataPacket currentRow;
 
 		public ResultDiskTape(BufferPool pool, FileStore file, int fieldCount) {
 			this.pool = pool;
@@ -125,7 +124,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 		}
 
 		public boolean isEnd() {
-			return isReadAll() && this.currentRow == null;
+			return isReadAll();
 		}
 
 		public RowDataPacket nextRow() {

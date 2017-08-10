@@ -43,10 +43,9 @@ public class NewConnectionRespHandler implements ResponseHandler{
 	public BackendConnection getBackConn() {
 		lock.lock();
 		try {
-			if (backConn != null) {
-				return backConn;
+			while(backConn == null){
+				inited.await();
 			}
-			inited.await();
 			return backConn;
 		} catch (InterruptedException e) {
 			LOGGER.warn("getBackConn " + e);

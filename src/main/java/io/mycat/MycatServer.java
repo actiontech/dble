@@ -73,6 +73,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -101,7 +102,7 @@ public class MycatServer {
 	
 	//AIO连接群组
 	private AsynchronousChannelGroup[] asyncChannelGroups;
-	private volatile int channelIndex = 0;
+	private AtomicInteger channelIndex = new AtomicInteger();
 
 	private volatile int nextProcessor;
 	
@@ -262,9 +263,9 @@ public class MycatServer {
 		if (asyncChannelGroups.length == 1) {
 			return asyncChannelGroups[0];
 		} else {
-			int index = (++channelIndex) % asyncChannelGroups.length;
+			int index = (channelIndex.incrementAndGet()) % asyncChannelGroups.length;
 			if (index == 0) {
-				++channelIndex;
+				channelIndex.incrementAndGet();
 				return asyncChannelGroups[1];
 			} else {
 				return asyncChannelGroups[index];

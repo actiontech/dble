@@ -229,7 +229,7 @@ public class PushDownVisitor extends MysqlVisitor {
 			} else {
 				// 不可以下发group by的情况，转化为下发order
 				pushDownOrderBy.addAll(query.getGroupBys());
-				if (pushDownOrderBy != null && pushDownOrderBy.size() > 0) {
+				if (pushDownOrderBy.size() > 0) {
 					sqlBuilder.append(" ORDER BY ");
 					for (Order order : pushDownOrderBy) {
 						Item orderSel = order.getItem();

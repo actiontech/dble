@@ -17,18 +17,13 @@
 
 package io.mycat.memory.unsafe.map;
 
-import io.mycat.MycatServer;
 import io.mycat.memory.unsafe.KVIterator;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
-import io.mycat.memory.unsafe.utils.sort.UnsafeKVExternalSorter;
 import org.apache.log4j.Logger;
-
-
-import java.io.IOException;
 
 /**
  * Modify by zagnix ,add put find func
@@ -259,30 +254,5 @@ public final class UnsafeFixedWidthAggregationMap {
     map.free();
   }
 
-  @SuppressWarnings("UseOfSystemOutOrSystemErr")
-  public void printPerfMetrics() {
-    if (!enablePerfMetrics) {
-      throw new IllegalStateException("Perf metrics not enabled");
-    }
-    System.out.println("Average probes per lookup: " + map.getAverageProbesPerLookup());
-    System.out.println("Number of hash collisions: " + map.getNumHashCollisions());
-    System.out.println("Time spent resizing (ns): " + map.getTimeSpentResizingNs());
-    System.out.println("Total memory consumption (bytes): " + map.getTotalMemoryConsumption());
-  }
 
-  /**
-   * Sorts the map's records in place, spill them to disk, and returns an [[UnsafeKVExternalSorter]]
-   *
-   * Note that the map will be reset for inserting new records, and the returned sorter can NOT be
-   * used to insert records.
-   */
-  public UnsafeKVExternalSorter destructAndCreateExternalSorter() throws IOException {
-    return new UnsafeKVExternalSorter(
-      groupingKeySchema,
-      aggregationBufferSchema,
-      MycatServer.getInstance().getServerMemory().getBlockManager(),
-      MycatServer.getInstance().getServerMemory().getSerializerManager(),
-      map.getPageSizeBytes(),
-      map);
-  }
 }

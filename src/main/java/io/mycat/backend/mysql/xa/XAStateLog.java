@@ -66,7 +66,7 @@ public class XAStateLog {
 	public static boolean writeCheckpoint(String xaTXID) {
 		lock.lock();
 		try {
-			if (isWriting) {
+			while (isWriting) {
 				waitSet.add(Thread.currentThread().getId());
 				waitWriting.await();
 			}

@@ -8,6 +8,7 @@ import java.util.Set;
 
 public class TableMetaInitHandler extends AbstractTableMetaHandler {
 	private MultiTableMetaHandler multiTableMetaHandler;
+
 	public TableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, TableConfig tbConfig, Set<String> selfNode) {
 		super(schema, tbConfig, selfNode);
 		this.multiTableMetaHandler = multiTableMetaHandler;
@@ -20,7 +21,7 @@ public class TableMetaInitHandler extends AbstractTableMetaHandler {
 
 	@Override
 	protected void handlerTable(TableMeta tableMeta) {
-		MycatServer.getInstance().getTmManager().addTable(schema, tableMeta);
+		multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
 	}
 
 }

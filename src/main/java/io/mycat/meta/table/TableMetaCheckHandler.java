@@ -8,9 +8,10 @@ import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import java.util.Set;
 
 public class TableMetaCheckHandler extends AbstractTableMetaHandler {
-
-	public TableMetaCheckHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
+	private final ProxyMetaManager tmManager;
+	public TableMetaCheckHandler(ProxyMetaManager tmManager,String schema, TableConfig tbConfig, Set<String> selfNode) {
 		super(schema, tbConfig, selfNode);
+		this.tmManager = tmManager;
 	}
 
 	@Override
@@ -26,8 +27,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 	}
 	private boolean isTableModify(String schema, TableMeta tm){
 		String tbName = tm.getTableName();
-		ProxyMetaManager manager = MycatServer.getInstance().getTmManager();
-		TableMeta oldTm = manager.getSyncTableMeta(schema, tbName);
+		TableMeta oldTm = tmManager.getSyncTableMeta(schema, tbName);
 		if(oldTm == null ){
 			//the DDL may drop table;
 			return false;
@@ -38,7 +38,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 		}
 		TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
 		//TODO: thread not safe
-		if (!oldTm.equals(tblMetaTmp) && oldTm.equals(manager.getSyncTableMeta(schema, tbName))) {
+		if (!oldTm.equals(tblMetaTmp) && oldTm.equals(tmManager.getSyncTableMeta(schema, tbName))) {
 			return true;
 		}
 		return false;

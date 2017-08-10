@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SchemaConfig;
+import io.mycat.meta.ProxyMetaManager;
 
 public class SchemaMetaHandler {
 	private Lock lock;
@@ -16,8 +17,9 @@ public class SchemaMetaHandler {
 
 	private MycatConfig config;
 	private Set<String> selfNode;
-
-	public SchemaMetaHandler(MycatConfig config, Set<String> selfNode) {
+	private final ProxyMetaManager tmManager;
+	public SchemaMetaHandler(ProxyMetaManager tmManager, MycatConfig config, Set<String> selfNode) {
+		this.tmManager = tmManager;
 		this.lock = new ReentrantLock();
 		this.allSchemaDone = lock.newCondition();
 		this.config = config;
@@ -54,5 +56,8 @@ public class SchemaMetaHandler {
 		} finally {
 			lock.unlock();
 		}
+	}
+	public ProxyMetaManager getTmManager() {
+		return tmManager;
 	}
 }

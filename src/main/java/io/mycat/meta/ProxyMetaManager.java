@@ -411,7 +411,7 @@ public class ProxyMetaManager {
 	public void initMeta(){
 		MycatConfig config = MycatServer.getInstance().getConfig();
 		Set<String> selfNode = getSelfNodes(config);
-		SchemaMetaHandler handler = new SchemaMetaHandler(config, selfNode);
+		SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
 		handler.execute();
 		SystemConfig system = config.getSystem();
 		if (system.getCheckTableConsistency() == 1) {
@@ -444,7 +444,7 @@ public class ProxyMetaManager {
 				if (!checkTableExists(schema.getName(), table.getName())) {
 					continue;
 				}
-				AbstractTableMetaHandler handler = new TableMetaCheckHandler(schema.getName(), table, selfNode);
+				AbstractTableMetaHandler handler = new TableMetaCheckHandler(this,schema.getName(), table, selfNode);
 				handler.execute();
 			}
 		}

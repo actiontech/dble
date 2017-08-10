@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
+import io.mycat.meta.ProxyMetaManager;
 
 public class MultiTableMetaHandler {
 	private AtomicInteger tableNumbers;
@@ -20,10 +21,11 @@ public class MultiTableMetaHandler {
 		this.schema = config.getName();
 		this.selfNode = selfNode;
 		tableNumbers = new AtomicInteger(config.getTables().size());
+
 	}
 
 	public void execute() {
-		MycatServer.getInstance().getTmManager().createDatabase(schema);
+		this.schemaMetaHandler.getTmManager().createDatabase(schema);
 		if (config.getTables().size() == 0) {
 			schemaMetaHandler.countDown();
 			return;
@@ -38,5 +40,8 @@ public class MultiTableMetaHandler {
 	public void countDown() {
 		if (tableNumbers.decrementAndGet() == 0)
 			schemaMetaHandler.countDown();
+	}
+	public ProxyMetaManager getTmManager() {
+		return this.schemaMetaHandler.getTmManager();
 	}
 }

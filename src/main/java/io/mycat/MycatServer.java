@@ -38,7 +38,6 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.DirectByteBufferPool;
 import io.mycat.cache.CacheService;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.classloader.DynaClassLoader;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.model.SchemaConfig;
@@ -104,7 +103,6 @@ public class MycatServer {
 	private AsynchronousChannelGroup[] asyncChannelGroups;
 	private volatile int channelIndex = 0;
 
-	private final DynaClassLoader catletClassLoader;
 	private volatile int nextProcessor;
 	
 	// System Buffer Pool Instance
@@ -164,9 +162,6 @@ public class MycatServer {
 		// load datanode active index from properties
 		dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
 
-		//catlet加载器
-		catletClassLoader = new DynaClassLoader(SystemConfig.getHomePath()
-				+ File.separator + "catlet", config.getSystem().getCatletClassCheckSeconds());
 		
 		//记录启动时间
 		this.startupTime = TimeUtil.currentTimeMillis();
@@ -193,9 +188,6 @@ public class MycatServer {
 		return timerExecutor;
 	}
 
-	public DynaClassLoader getCatletClassLoader() {
-		return catletClassLoader;
-	}
 
 	public NameableExecutor getComplexQueryExecutor() {
 		return complexQueryExecutor;
@@ -452,7 +444,6 @@ public class MycatServer {
 		//dataHost heartBeat  will be influence by dataHostWithoutWR
 		scheduler.scheduleAtFixedRate(dataNodeHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
-		scheduler.schedule(catletClassClear(), 30000,TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getxaSessionCheckPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getxaLogCleanPeriod(),TimeUnit.MILLISECONDS);
 		//定期清理结果集排行榜，控制拒绝策略
@@ -544,19 +535,6 @@ public class MycatServer {
 		}
 	}
 
-	private Runnable catletClassClear() {
-		return new Runnable() {
-			@Override
-			public void run() {
-				try {
-					catletClassLoader.clearUnUsedClass();
-				} catch (Exception e) {
-					LOGGER.warn("catletClassClear err " + e);
-				}
-			};
-		};
-	}
-	
 
 	/**
 	 * 清理 reload @@config_all 后，老的 connection 连接

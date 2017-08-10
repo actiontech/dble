@@ -100,7 +100,6 @@ public final class SystemConfig {
 	private int processorExecutor;
 	private int managerExecutor;
 	private long idleTimeout;
-	private int catletClassCheckSeconds = 60;
 	// sql execute timeout (second)
 	private long sqlExecuteTimeout = 300;
 	private long showBinlogStatusTimeout = 60* 1000;
@@ -365,14 +364,6 @@ public final class SystemConfig {
 
 	public int getMaxPacketSize() {
 		return maxPacketSize;
-	}
-
-	public int getCatletClassCheckSeconds() {
-		return catletClassCheckSeconds;
-	}
-
-	public void setCatletClassCheckSeconds(int catletClassCheckSeconds) {
-		this.catletClassCheckSeconds = catletClassCheckSeconds;
 	}
 
 	public void setMaxPacketSize(int maxPacketSize) {
@@ -737,9 +728,8 @@ public final class SystemConfig {
 				+ ", charset="+ charset
 				+ ", processors=" + processors
 				+ ", processorExecutor=" + processorExecutor
-				+ ", managerExecutor="
-				+ managerExecutor + ", idleTimeout=" + idleTimeout
-				+ ", catletClassCheckSeconds=" + catletClassCheckSeconds
+				+ ", managerExecutor=" + managerExecutor
+				+ ", idleTimeout=" + idleTimeout
 				+ ", sqlExecuteTimeout=" + sqlExecuteTimeout
 				+ ", showBinlogStatusTimeout=" + showBinlogStatusTimeout
 				+ ", processorCheckPeriod=" + processorCheckPeriod

@@ -57,6 +57,9 @@ public class ConfigInitializer {
 	private volatile Map<String, PhysicalDBPool> dataHosts;
 	private volatile Map<ERTable, Set<ERTable>> erRelations;
 
+
+	private volatile boolean dataHostWithoutWH  = false;
+
 	public ConfigInitializer(boolean loadDataHost) {
 		//读取server.xml
 		XMLConfigLoader configLoader = new XMLConfigLoader();
@@ -74,6 +77,8 @@ public class ConfigInitializer {
 		} else {
 			this.dataHosts = MycatServer.getInstance().getConfig().getDataHosts();
 			this.dataNodes = MycatServer.getInstance().getConfig().getDataNodes();
+			//add the flag into the reload
+			this.dataHostWithoutWH = MycatServer.getInstance().getConfig().isDataHostWithoutWR();
 		}
 		
 		//权限管理
@@ -168,6 +173,17 @@ public class ConfigInitializer {
 					LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
 					dataHost.remove();
 				}
+			}
+		}
+
+		Iterator<String> dataHost = this.dataHosts.keySet().iterator();
+		while (dataHost.hasNext()) {
+			String dataHostName = dataHost.next();
+			if (dataHosts.get(dataHostName).getSources() == null
+					|| dataHosts.get(dataHostName).getSources().length == 0) {
+				LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
+				this.dataHostWithoutWH = true;
+				dataHost.remove();
 			}
 		}
 		allUseHost.clear();
@@ -291,6 +307,11 @@ public class ConfigInitializer {
 			nodes.put(dataNode.getName(), dataNode);
 		}
 		return nodes;
+	}
+
+
+	public boolean isDataHostWithoutWH() {
+		return dataHostWithoutWH;
 	}
 
 }

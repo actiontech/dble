@@ -85,6 +85,13 @@ public class FrontendAuthenticator implements NIOHandler {
         	 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because service be degraded ");
              return;
         }
+
+        // check dataHost without writeHost flag
+        if(MycatServer.getInstance().getConfig().isDataHostWithoutWR() && !(this instanceof ManagerAuthenticator)){
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because there have dataHost without writeHost ");
+            return;
+        }
+
         
         // check schema
         switch (checkSchema(auth.database, auth.user)) {

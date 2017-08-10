@@ -124,15 +124,15 @@ public abstract class AbstractTableMetaHandler {
         private void consistentWarning(Map<String, List<String>> dataNodeTableStructureSQLMap){
         	LOGGER.warn("Table [" + tbConfig.getName() + "] structure are not consistent!");
             LOGGER.warn("Currently detected: ");
-            for(String sql : dataNodeTableStructureSQLMap.keySet()){
-                StringBuilder stringBuilder = new StringBuilder();
-                for(String dn : dataNodeTableStructureSQLMap.get(sql)){
-                    stringBuilder.append("DataNode:[").append(dn).append("]");
-                }
-                stringBuilder.append(":").append(sql);
-                LOGGER.warn(stringBuilder.toString());
-            }
-        }
+			for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
+				StringBuilder stringBuilder = new StringBuilder();
+				for (String dn : entry.getValue()) {
+					stringBuilder.append("DataNode:[").append(dn).append("]");
+				}
+				stringBuilder.append(":").append(entry);
+				LOGGER.warn(stringBuilder.toString());
+			}
+		}
 
 		private TableMeta initTableMeta(String table, String sql, long timeStamp) {
 			SQLStatementParser parser = new MySqlStatementParser(sql);

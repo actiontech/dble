@@ -396,7 +396,7 @@ public class MycatConfig {
 		}
 	}
 
-	private class DsDiff {
+	private static class DsDiff {
 		public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
 		public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
 

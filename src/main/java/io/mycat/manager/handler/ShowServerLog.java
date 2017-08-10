@@ -193,10 +193,11 @@ public final class ShowServerLog {
 		PackageBufINf bufINf = new PackageBufINf();
 		File[] logFiles = new File(SystemConfig.getHomePath(), "logs")
 				.listFiles();
-		String fileNames = "";
+		StringBuilder fileNames = new StringBuilder();
 		for (File f : logFiles) {
 			if (f.isFile()) {
-				fileNames += "  " + f.getName();
+				fileNames.append("  " );
+				fileNames.append(f.getName());
 			}
 		}
 

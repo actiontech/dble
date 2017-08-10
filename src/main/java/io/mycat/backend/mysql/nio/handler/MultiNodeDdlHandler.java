@@ -57,7 +57,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MultiNodeDdlHandler extends MultiNodeHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
-	private final String stmt = "select 1";
+	private static final String stmt = "select 1";
 	private final RouteResultset rrs;
 	private final RouteResultset orirrs;
 	private final NonBlockingSession session;
@@ -66,7 +66,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
 	private final ReentrantLock lock;
 
-	private boolean prepared;
 	protected volatile boolean terminated;
 
 	private ErrorPacket err;

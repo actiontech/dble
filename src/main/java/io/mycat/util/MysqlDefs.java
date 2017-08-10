@@ -594,67 +594,66 @@ public final class MysqlDefs {
 	private static Map<String, Integer> mysqlToJdbcTypesMap = new HashMap<String, Integer>();
 
 	static {
-		mysqlToJdbcTypesMap.put("BIT", new Integer(
+		mysqlToJdbcTypesMap.put("BIT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_BIT)));
 
-		mysqlToJdbcTypesMap.put("TINYINT", new Integer(
+		mysqlToJdbcTypesMap.put("TINYINT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_TINY)));
-		mysqlToJdbcTypesMap.put("SMALLINT", new Integer(
+		mysqlToJdbcTypesMap.put("SMALLINT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_SHORT)));
-		mysqlToJdbcTypesMap.put("MEDIUMINT", new Integer(
+		mysqlToJdbcTypesMap.put("MEDIUMINT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_INT24)));
-		mysqlToJdbcTypesMap.put("INT", new Integer(
+		mysqlToJdbcTypesMap.put("INT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_LONG)));
-		mysqlToJdbcTypesMap.put("INTEGER", new Integer(
+		mysqlToJdbcTypesMap.put("INTEGER", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_LONG)));
-		mysqlToJdbcTypesMap.put("BIGINT", new Integer(
+		mysqlToJdbcTypesMap.put("BIGINT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_LONGLONG)));
-		mysqlToJdbcTypesMap.put("INT24", new Integer(
+		mysqlToJdbcTypesMap.put("INT24", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_INT24)));
-		mysqlToJdbcTypesMap.put("REAL", new Integer(
+		mysqlToJdbcTypesMap.put("REAL", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DOUBLE)));
-		mysqlToJdbcTypesMap.put("FLOAT", new Integer(
+		mysqlToJdbcTypesMap.put("FLOAT", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_FLOAT)));
-		mysqlToJdbcTypesMap.put("DECIMAL", new Integer(
+		mysqlToJdbcTypesMap.put("DECIMAL", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DECIMAL)));
-		mysqlToJdbcTypesMap.put("NUMERIC", new Integer(
+		mysqlToJdbcTypesMap.put("NUMERIC", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DECIMAL)));
-		mysqlToJdbcTypesMap.put("DOUBLE", new Integer(
+		mysqlToJdbcTypesMap.put("DOUBLE", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DOUBLE)));
-		mysqlToJdbcTypesMap.put("CHAR", new Integer(
+		mysqlToJdbcTypesMap.put("CHAR", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_STRING)));
-		mysqlToJdbcTypesMap.put("VARCHAR", new Integer(
+		mysqlToJdbcTypesMap.put("VARCHAR", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_VAR_STRING)));
-		mysqlToJdbcTypesMap.put("DATE", new Integer(
+		mysqlToJdbcTypesMap.put("DATE", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DATE)));
-		mysqlToJdbcTypesMap.put("TIME", new Integer(
+		mysqlToJdbcTypesMap.put("TIME", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_TIME)));
-		mysqlToJdbcTypesMap.put("YEAR", new Integer(
+		mysqlToJdbcTypesMap.put("YEAR", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_YEAR)));
-		mysqlToJdbcTypesMap.put("TIMESTAMP", new Integer(
+		mysqlToJdbcTypesMap.put("TIMESTAMP", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_TIMESTAMP)));
-		mysqlToJdbcTypesMap.put("DATETIME", new Integer(
+		mysqlToJdbcTypesMap.put("DATETIME", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_DATETIME)));
-		mysqlToJdbcTypesMap.put("TINYBLOB", new Integer(java.sql.Types.BINARY));
-		mysqlToJdbcTypesMap.put("BLOB", new Integer(
+		mysqlToJdbcTypesMap.put("TINYBLOB", Integer.valueOf(java.sql.Types.BINARY));
+		mysqlToJdbcTypesMap.put("BLOB", Integer.valueOf(
 				java.sql.Types.LONGVARBINARY));
-		mysqlToJdbcTypesMap.put("MEDIUMBLOB", new Integer(
+		mysqlToJdbcTypesMap.put("MEDIUMBLOB", Integer.valueOf(
 				java.sql.Types.LONGVARBINARY));
-		mysqlToJdbcTypesMap.put("LONGBLOB", new Integer(
+		mysqlToJdbcTypesMap.put("LONGBLOB", Integer.valueOf(
 				java.sql.Types.LONGVARBINARY));
+		mysqlToJdbcTypesMap.put("TINYTEXT", Integer.valueOf(java.sql.Types.VARCHAR));
 		mysqlToJdbcTypesMap
-				.put("TINYTEXT", new Integer(java.sql.Types.VARCHAR));
-		mysqlToJdbcTypesMap
-				.put("TEXT", new Integer(java.sql.Types.LONGVARCHAR));
-		mysqlToJdbcTypesMap.put("MEDIUMTEXT", new Integer(
+				.put("TEXT", Integer.valueOf(java.sql.Types.LONGVARCHAR));
+		mysqlToJdbcTypesMap.put("MEDIUMTEXT", Integer.valueOf(
 				java.sql.Types.LONGVARCHAR));
-		mysqlToJdbcTypesMap.put("LONGTEXT", new Integer(
+		mysqlToJdbcTypesMap.put("LONGTEXT", Integer.valueOf(
 				java.sql.Types.LONGVARCHAR));
-		mysqlToJdbcTypesMap.put("ENUM", new Integer(
+		mysqlToJdbcTypesMap.put("ENUM", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_ENUM)));
-		mysqlToJdbcTypesMap.put("SET", new Integer(
+		mysqlToJdbcTypesMap.put("SET", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_SET)));
-		mysqlToJdbcTypesMap.put("GEOMETRY", new Integer(
+		mysqlToJdbcTypesMap.put("GEOMETRY", Integer.valueOf(
 				mysqlToJavaType(FIELD_TYPE_GEOMETRY)));
 	}
 
@@ -664,19 +663,19 @@ public final class MysqlDefs {
 		buf.append("CASE ");
 		Map<String, Integer> typesMap = new HashMap<String, Integer>();
 		typesMap.putAll(mysqlToJdbcTypesMap);
-		typesMap.put("BINARY", new Integer(Types.BINARY));
-		typesMap.put("VARBINARY", new Integer(Types.VARBINARY));
+		typesMap.put("BINARY", Integer.valueOf(Types.BINARY));
+		typesMap.put("VARBINARY", Integer.valueOf(Types.VARBINARY));
 
 		Iterator<String> mysqlTypes = typesMap.keySet().iterator();
 
-		while (mysqlTypes.hasNext()) {
-			String mysqlTypeName = (String) mysqlTypes.next();
+		for(Map.Entry<String, Integer> entry:typesMap.entrySet()) {
+			String mysqlTypeName = entry.getKey();
 			buf.append(" WHEN ");
 			buf.append(mysqlTypeColumnName);
 			buf.append("='");
 			buf.append(mysqlTypeName);
 			buf.append("' THEN ");
-			buf.append(typesMap.get(mysqlTypeName));
+			buf.append(entry.getValue());
 
 			if (mysqlTypeName.equalsIgnoreCase("DOUBLE")
 					|| mysqlTypeName.equalsIgnoreCase("FLOAT")
@@ -687,7 +686,7 @@ public final class MysqlDefs {
 				buf.append("='");
 				buf.append(mysqlTypeName);
 				buf.append(" unsigned' THEN ");
-				buf.append(typesMap.get(mysqlTypeName));
+				buf.append(entry.getValue());
 			}
 		}
 

@@ -153,14 +153,15 @@ public class ConfigInitializer {
 
 		Set<String> allUseHost = new HashSet<>();
 		//删除冗余dataNode
-		Iterator<String> dataNode = this.dataNodes.keySet().iterator();
-		while (dataNode.hasNext()) {
-			String dataNodeName = dataNode.next();
+		Iterator<Map.Entry<String,PhysicalDBNode>> iterator = this.dataNodes.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<String,PhysicalDBNode> entry = iterator.next();
+			String dataNodeName = entry.getKey();
 			if (allUseDataNode.contains(dataNodeName)) {
-				allUseHost.add(this.dataNodes.get(dataNodeName).getDbPool().getHostName());
+				allUseHost.add(entry.getValue().getDbPool().getHostName());
 			} else {
 				LOGGER.warn("dataNode " + dataNodeName + " is useless,server will ignore it");
-				dataNode.remove();
+				iterator.remove();
 			}
 		}
 		allUseDataNode.clear();

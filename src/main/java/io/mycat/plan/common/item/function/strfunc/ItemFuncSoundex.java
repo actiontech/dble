@@ -103,17 +103,18 @@ public class ItemFuncSoundex extends ItemStrFunc {
 		}
 	
 		// remove duplicates
-		String output = "" + firstLetter;
+		StringBuilder output = new StringBuilder();
+		output.append(firstLetter);
 		for (int i = 1; i < x.length; i++)
 			if (x[i] != x[i - 1] && x[i] != '0')
-				output += x[i];
+				output.append(x[i]);
 	
 		// pad with 0's or truncate
 		if (output.length() < 4) {
-			output += "0000";
+			output.append("0000");
 			return output.substring(0, 4);
 		}
-		return output;
+		return output.toString();
 	}
 	
 	@Override

@@ -133,8 +133,9 @@ public class OrderByPusher {
 			}
 			if (foundOnIndexs.size() == leftOnSels.size()) {
 				canMatch = true;
-				for (Integer foundOnIndex : foundOnIndexs.keySet()) {
-					SQLOrderingSpecification sortOrder = foundOnIndexs.get(foundOnIndex);
+				for (Map.Entry<Integer, SQLOrderingSpecification> entry: foundOnIndexs.entrySet()) {
+					int foundOnIndex = entry.getKey();
+					SQLOrderingSpecification sortOrder = entry.getValue();
 					Item leftOn = leftOnSels.get(foundOnIndex);
 					Item rightOn = rightOnSels.get(foundOnIndex);
 					// add lefton order

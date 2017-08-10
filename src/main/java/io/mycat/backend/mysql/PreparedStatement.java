@@ -84,8 +84,8 @@ public class PreparedStatement {
      * COM_STMT_RESET命令将调用该方法进行数据重置
      */
     public void resetLongData() {
-    	for(Long paramId : longDataMap.keySet()) {
-    		longDataMap.get(paramId).reset();
+    	for(Map.Entry<Long, ByteArrayOutputStream> longData : longDataMap.entrySet()) {
+			longData.getValue().reset();
     	}
     }
     

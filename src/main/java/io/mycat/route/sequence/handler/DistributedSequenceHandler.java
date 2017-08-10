@@ -137,7 +137,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             this.instanceId = Long.parseLong(props.getProperty("INSTANCEID"));
             this.ready = true;
         }
-        this.clusterId = Long.valueOf(props.getProperty("CLUSTERID"));
+        this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
 
     }
 

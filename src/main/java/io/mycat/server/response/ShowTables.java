@@ -148,10 +148,10 @@ public class ShowTables {
 	}
 
 	public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
-		for (String name : tableMap.keySet()) {
+		for (Map.Entry<String, String> entry: tableMap.entrySet()) {
 			RowDataPacket row = new RowDataPacket(2);
-			row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
-			row.add(StringUtil.encode(tableMap.get(name), c.getCharset()));
+			row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset()));
+			row.add(StringUtil.encode(entry.getValue(), c.getCharset()));
 			if (whereItem != null) {
 				HandlerTool.initFields(sourceFields, row.fieldValues);
 				/* 根据where条件进行过滤 */

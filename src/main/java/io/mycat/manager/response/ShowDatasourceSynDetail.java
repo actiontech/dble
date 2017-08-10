@@ -143,7 +143,7 @@ public class ShowDatasourceSynDetail {
 						row.add(StringUtil.encode(ds.getConfig().getIp(),charset));
 						row.add(LongUtil.toBytes(ds.getConfig().getPort()));
 						row.add(StringUtil.encode(states.get("Master_Host"),charset));
-						row.add(LongUtil.toBytes(Long.valueOf(states.get("Master_Port"))));
+						row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
 						row.add(StringUtil.encode(states.get("Master_User"),charset));
 						//DateFormat非线程安全
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

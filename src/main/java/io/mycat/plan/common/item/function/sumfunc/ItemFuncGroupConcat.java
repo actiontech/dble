@@ -83,13 +83,13 @@ public class ItemFuncGroupConcat extends ItemSum {
 	public boolean add(RowDataPacket row, Object tranObject) {
 		if (always_null)
 			return false;
-		String rowStr = new String();
+		StringBuilder rowStr = new StringBuilder();
 		for (int i = 0; i < getArgCount(); i++) {
 			Item item = args.get(i);
 			String s = item.valStr();
 			if (item.isNull())
 				return false;
-			rowStr += s;
+			rowStr.append(s);
 		}
 		nullValue = false;
 		if (resultSb.length() > 0)

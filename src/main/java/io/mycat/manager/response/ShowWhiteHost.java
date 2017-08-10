@@ -60,23 +60,21 @@ public final class ShowWhiteHost {
         buffer = eof.write(buffer, c,true);
 
         // write rows
-        byte packetId = eof.packetId;  
-        
-		Map<String, List<UserConfig>> map=MycatServer.getInstance().getConfig().getFirewall().getWhitehost();
-		for (String key : map.keySet()) {  
-			List<UserConfig> userConfigs=map.get(key);
-			String users="";
-			 for (int i = 0; i < userConfigs.size(); i++) {
-				 if(i>0) {
-                     users += "," + userConfigs.get(i).getName();
-                 }
-				 else {
-                     users += userConfigs.get(i).getName();
-                 }
-			 }
-            RowDataPacket row = getRow(key, users, c.getCharset());
-            row.packetId = ++packetId;
-            buffer = row.write(buffer, c,true);			
+        byte packetId = eof.packetId;
+
+		Map<String, List<UserConfig>> map = MycatServer.getInstance().getConfig().getFirewall().getWhitehost();
+		for (Map.Entry<String, List<UserConfig>> entry : map.entrySet()) {
+			List<UserConfig> userConfigs = entry.getValue();
+			StringBuilder users = new StringBuilder();
+			for (int i = 0; i < userConfigs.size(); i++) {
+				if (i > 0) {
+					users.append(",");
+				}
+				users.append(userConfigs.get(i).getName());
+			}
+			RowDataPacket row = getRow(entry.getKey(), users.toString(), c.getCharset());
+			row.packetId = ++packetId;
+			buffer = row.write(buffer, c, true);
 		}
 		
         // write last eof

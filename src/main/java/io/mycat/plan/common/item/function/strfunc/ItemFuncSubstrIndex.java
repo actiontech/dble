@@ -43,15 +43,17 @@ public class ItemFuncSubstrIndex extends ItemStrFunc {
 				str = str.substring(index + delimLen);
 			}
 		}
-		String ret = EMPTY;
+		StringBuilder ret = new StringBuilder();
 		if (count > 0) {
 			int trueCount = Math.min(subs.size(), count);
-			for (int i = 0; i < trueCount; i++)
-				ret += subs.get(i) + delim;
+			for (int i = 0; i < trueCount; i++) {
+				ret.append(subs.get(i) + delim);
+			}
 		} else {
 			int trueCount = Math.min(subs.size(), -count);
-			for (int i = subs.size() - trueCount; i < subs.size(); i++)
-				ret += subs.get(i) + delim;
+			for (int i = subs.size() - trueCount; i < subs.size(); i++){
+				ret.append(subs.get(i) + delim);
+			}
 		}
 		// 得删除最后一个delim
 		int lastDelim = ret.lastIndexOf(delim);

@@ -13,7 +13,7 @@
        <Class name="io.mycat.meta.protocol.StructureMeta$TableMeta" />
      </Match>
      <Match>
-       <Bug category="MALICIOUS_CODE,I18N,PERFORMANCE,STYLE" />
+       <Bug category="MALICIOUS_CODE,I18N,STYLE,CORRECTNESS" />
      </Match> 
 	 
  <!--
@@ -22,9 +22,12 @@
  -->
 	 <!--MALICIOUS_CODE 90 -->
 	 <!-- I18N 147-->
-	 
 	 <!-- STYLE 146-->
-	 <!-- PERFORMANCE 74 -->
+	 
+	 <!-- PERFORMANCE start: 24 -->
+	 <Bug category="PERFORMANCE" />
+	   <Bug pattern="UUF_UNUSED_FIELD,URF_UNREAD_FIELD,DM_GC" />
+	 <!-- PERFORMANCE end -->
 	 
 	 <!-- CORRECTNESS start num:1,other 12 need to debug -->
 	  <Match>

@@ -82,7 +82,7 @@ public class VersionedFile {
         String suffix = name.substring ( startpos, lastpos );
         try {
 
-            ret = Long.valueOf( suffix );
+            ret = Long.parseLong( suffix );
         } catch ( NumberFormatException e ) {
             IllegalArgumentException err = new IllegalArgumentException ( "Error extracting version from file: " + name+" in " + getBaseDir() );
             err.initCause ( e );

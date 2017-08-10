@@ -37,7 +37,6 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
 	public void execute() {
 		Map<RouteResultsetNode, BackendConnection> lockedConns = session.getTargetMap();
-		Set<RouteResultsetNode> dnSet = lockedConns.keySet();
 		this.reset(lockedConns.size());
 		// 客户端直接发送unlock tables命令，由于之前未发送lock tables语句，无法获取后端绑定的连接，此时直接返回OK包
 		if (lockedConns.size() == 0) {
@@ -49,7 +48,8 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 			ok.write(session.getSource());
 			return;
 		}
-		for (RouteResultsetNode dataNode : dnSet) {
+		for (Map.Entry<RouteResultsetNode, BackendConnection> entry : lockedConns.entrySet()) {
+			RouteResultsetNode dataNode = entry.getKey();
 			RouteResultsetNode node = new RouteResultsetNode(dataNode.getName(), ServerParse.UNLOCK, srcStatement);
 			BackendConnection conn = lockedConns.get(dataNode);
 			if (clearIfSessionClosed(session)) {

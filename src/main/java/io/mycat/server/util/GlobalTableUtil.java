@@ -80,38 +80,27 @@ public class GlobalTableUtil{
 	
 	private static void getGlobalTable() {
 		MycatConfig config = MycatServer.getInstance().getConfig();
-		Map<String, SchemaConfig> schemaMap = config.getSchemas();
-		SchemaConfig schemaMconfig = null;
-		for (String key : schemaMap.keySet()) {
-			if (schemaMap.get(key) != null) {
-				schemaMconfig = schemaMap.get(key);
-				Map<String, TableConfig> tableMap = schemaMconfig.getTables();
-				if (tableMap != null) {
-					for (String k : tableMap.keySet()) {
-						TableConfig table = tableMap.get(k);
-						if (table != null && table.isGlobalTable()) {
-							String tableName = table.getName();
-							if (config.getSystem().isLowerCaseTableNames()) {
-								tableName = tableName.toLowerCase();
-							}
-							globalTableMap.put(key +"."+ tableName, table);
-						}
+		for (Map.Entry<String, SchemaConfig> entry : config.getSchemas().entrySet()) {
+			for (TableConfig table : entry.getValue().getTables().values()) {
+				if (table.isGlobalTable()) {
+					String tableName = table.getName();
+					if (config.getSystem().isLowerCaseTableNames()) {
+						tableName = tableName.toLowerCase();
 					}
+					globalTableMap.put(entry.getKey() + "." + tableName, table);
 				}
 			}
 		}
 	}
 	public static void consistencyCheck() {
 		MycatConfig config = MycatServer.getInstance().getConfig();
-		for(String key : globalTableMap.keySet()){
-			TableConfig table = globalTableMap.get(key);
+		for(TableConfig table: globalTableMap.values()){
 			Map<String, ArrayList<PhysicalDBNode>> executedMap = new HashMap<>();
 			// <table name="travelrecord" dataNode="dn1,dn2,dn3"
 			for(String nodeName : table.getDataNodes()){
 				Map<String, PhysicalDBNode> map = config.getDataNodes();
-				for(String k2 : map.keySet()){
+				for(PhysicalDBNode dBnode : map.values()){
 					// <dataNode name="dn1" dataHost="localhost1" database="db1" />
-					PhysicalDBNode dBnode = map.get(k2);
 					if(nodeName.equals(dBnode.getName())){	// dn1,dn2,dn3
 						PhysicalDBPool pool = dBnode.getDbPool();
 						Collection<PhysicalDatasource> allDS = pool.getAllDataSources();
@@ -128,15 +117,15 @@ public class GlobalTableUtil{
 					}
 				}
 			}
-			for(String sourceName:executedMap.keySet()){
-				ArrayList<PhysicalDBNode> nodes = executedMap.get(sourceName);
+			for(Map.Entry<String, ArrayList<PhysicalDBNode>> entry:executedMap.entrySet()){
+				ArrayList<PhysicalDBNode> nodes = entry.getValue();
 				String[] schemas = new String[nodes.size()];
 				for(int index =0 ;index<nodes.size();index++){
 					schemas[index] = StringUtil.removeBackQuote(nodes.get(index).getDatabase());
 				}
 				Collection<PhysicalDatasource> allDS = nodes.get(0).getDbPool().getAllDataSources();
 				for(PhysicalDatasource pds : allDS){
-					if(pds instanceof MySQLDataSource && sourceName.equals(pds.getName())){
+					if(pds instanceof MySQLDataSource && entry.getKey().equals(pds.getName())){
 						MySQLDataSource mds = (MySQLDataSource)pds;
 						MySQLConsistencyChecker checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
 						isInnerColumnCheckFinished = 0;

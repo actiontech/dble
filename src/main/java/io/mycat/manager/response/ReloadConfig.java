@@ -221,7 +221,7 @@ public final class ReloadConfig {
 				LOGGER.info("init datahost: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
 			}			
 			
-			dbPool.init(Integer.valueOf(dnIndex));
+			dbPool.init(Integer.parseInt(dnIndex));
 			if (!dbPool.isInitSuccess()) {
 				isReloadStatusOK = false;
 				break;

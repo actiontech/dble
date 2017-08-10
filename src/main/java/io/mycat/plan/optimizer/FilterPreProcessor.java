@@ -1,10 +1,6 @@
 package io.mycat.plan.optimizer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
@@ -195,11 +191,10 @@ public class FilterPreProcessor {
 						newSubFilterList.add(subNew);
 					}
 				}
-				for (Item inKey : inMap.keySet()) {
-					Set<Item> inValues = inMap.get(inKey);
+				for (Map.Entry<Item,Set<Item>> entry:inMap.entrySet()) {
 					List<Item> args = new ArrayList<Item>();
-					args.add(inKey);
-					args.addAll(inValues);
+					args.add(entry.getKey());
+					args.addAll( entry.getValue());
 					ItemFuncIn inItem = new ItemFuncIn(args, false);
 					PlanUtil.refreshReferTables(inItem);
 					newSubFilterList.add(inItem);

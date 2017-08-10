@@ -117,8 +117,8 @@ public class CacheService {
 
 			String[] valueItems = value.split(",");
 			layedCacheType = valueItems[0];
-			size = Integer.valueOf(valueItems[1]);
-			timeOut = Integer.valueOf(valueItems[2]);
+			size = Integer.parseInt(valueItems[1]);
+			timeOut = Integer.parseInt(valueItems[2]);
 		}
 		createLayeredPool(rootlayedCacheName, layedCacheType, size, timeOut);
 	}
@@ -164,8 +164,8 @@ public class CacheService {
 							+ parent + " the child cache is:" + child);
 				}
 
-				int size = Integer.valueOf(valueItems[0]);
-				int timeOut = Integer.valueOf(valueItems[1]);
+				int size = Integer.parseInt(valueItems[0]);
+				int timeOut = Integer.parseInt(valueItems[1]);
 				((DefaultLayedCachePool) pool).createChildCache(child, size, timeOut);
 			}
 		}

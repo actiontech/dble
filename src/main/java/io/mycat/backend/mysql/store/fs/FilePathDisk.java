@@ -325,7 +325,7 @@ public class FilePathDisk extends FilePath {
 	/**
 	 * Uses java.io.RandomAccessFile to access a file.
 	 */
-	class FileDisk extends FileBase {
+	static class FileDisk extends FileBase {
 
 		private final RandomAccessFile file;
 		private final String name;

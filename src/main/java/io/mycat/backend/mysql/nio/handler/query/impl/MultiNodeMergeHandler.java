@@ -223,8 +223,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 				}
 			});
 			// init heap
-			for (MySQLConnection conn : queues.keySet()) {
-				HeapItem firstItem = queues.get(conn).take();
+			for (Map.Entry<MySQLConnection, BlockingQueue<HeapItem>> entry:queues.entrySet()) {
+				HeapItem firstItem = entry.getValue().take();
 				heap.add(firstItem);
 			}
 			boolean filterFinished = false;
@@ -335,8 +335,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 				rrssList.add(rrss);
 			}
 		}
-		for (String sql : sqlMap.keySet()) {
-			sb.append(sql).append(sqlMap.get(sql)).append(';');
+		for (Map.Entry<String, List<RouteResultsetNode>> entry : sqlMap.entrySet()) {
+			sb.append(entry.getKey()).append(entry.getValue()).append(';');
 		}
 		sb.append('}');
 		return sb.toString();

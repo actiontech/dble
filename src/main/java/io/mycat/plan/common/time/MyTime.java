@@ -1163,10 +1163,10 @@ public class MyTime {
 		LongPtr warnings = new LongPtr(0);
 		String sbd = decimal.toString();
 		String[] sbds = sbd.split("\\.");
-		long int_part = Long.valueOf(sbds[0]);
+		long int_part = Long.parseLong(sbds[0]);
 		long second_part = 0;
 		if (sbds.length == 2)
-			second_part = Long.valueOf(sbds[1]);
+			second_part = Long.parseLong(sbds[1]);
 		if (number_to_datetime(int_part, ltime, flags, warnings) == -1) {
 			ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
 			return true;
@@ -1334,10 +1334,10 @@ public class MyTime {
 		LongPtr warnings = new LongPtr(0);
 		String sbd = String.valueOf(db);
 		String[] sbds = sbd.split("\\.");
-		long int_part = Long.valueOf(sbds[0]);
+		long int_part = Long.parseLong(sbds[0]);
 		long second_part = 0;
 		if (sbds.length == 2)
-			second_part = Long.valueOf(sbds[1]);
+			second_part = Long.parseLong(sbds[1]);
 		if (number_to_datetime(int_part, ltime, flags, warnings) == -1) {
 			ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
 			return true;
@@ -1377,10 +1377,10 @@ public class MyTime {
 		LongPtr warnings = new LongPtr(0);
 		String sbd = decimal.toString();
 		String[] sbds = sbd.split("\\.");
-		long int_part = Long.valueOf(sbds[0]);
+		long int_part = Long.parseLong(sbds[0]);
 		long second_part = 0;
 		if (sbds.length == 2)
-			second_part = Long.valueOf(sbds[1]);
+			second_part = Long.parseLong(sbds[1]);
 		if (number_to_time(int_part, ltime, warnings)) {
 			ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
 			return true;
@@ -1393,10 +1393,10 @@ public class MyTime {
 		LongPtr warnings = new LongPtr(0);
 		String sbd = String.valueOf(db);
 		String[] sbds = sbd.split("\\.");
-		long int_part = Long.valueOf(sbds[0]);
+		long int_part = Long.parseLong(sbds[0]);
 		long second_part = 0;
 		if (sbds.length == 2)
-			second_part = Long.valueOf(sbds[1]);
+			second_part = Long.parseLong(sbds[1]);
 		if (number_to_time(int_part, ltime, warnings)) {
 			ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
 			return true;

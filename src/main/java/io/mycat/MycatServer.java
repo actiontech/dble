@@ -226,7 +226,7 @@ public class MycatServer {
 
 	private void genXidSeq(String xaID) {
 		String[] idSplit = xaID.replace("'", "").split("\\.");
-		long seq = Long.valueOf(idSplit[2]);
+		long seq = Long.parseLong(idSplit[2]);
 		if (xaIDInc.get() < seq) {
 			xaIDInc.set(seq);
 		}
@@ -902,12 +902,12 @@ public class MycatServer {
 			CoordinatorLogEntry coordinatorLogEntry = coordinatorLogEntries[i];
 			boolean needRollback = false;
 			boolean needCommit = false;
-			String xacmd = null;
+			StringBuilder xacmd = new StringBuilder();
 			if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE
 					// will committing, may send but failed receiving, should commit agagin
 					|| coordinatorLogEntry.getTxState() == TxState.TX_COMMITING_STATE) {
 				needCommit = true;
-				xacmd = "XA COMMIT ";
+				xacmd.append("XA COMMIT ");
 			}else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE
 					//don't konw prepare is successed or not ,should rollback
 					|| coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE
@@ -916,7 +916,7 @@ public class MycatServer {
 					// will preparing, may send but failed receiving,should rollback agagin
 					|| coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
 				needRollback = true;
-				xacmd = "XA ROLLBACK ";
+				xacmd.append("XA ROLLBACK ");
 			}
 			if (needCommit || needRollback) {
 
@@ -939,8 +939,11 @@ public class MycatServer {
 								PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
 								if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
 									OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit?true:false, participantLogEntry));
-									xacmd = xacmd + coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1) + "." + dn.getDatabase() + "'";
-									SQLJob sqlJob = new SQLJob(xacmd, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+									xacmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
+									xacmd.append(".");
+									xacmd.append(dn.getDatabase());
+									xacmd.append("'");
+									SQLJob sqlJob = new SQLJob(xacmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
 									sqlJob.run();
 									LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xacmd, dn.getName(), dn.getDatabase()));
 									break outloop;

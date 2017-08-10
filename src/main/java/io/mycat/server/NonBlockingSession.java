@@ -597,15 +597,15 @@ public class NonBlockingSession implements Session {
         boolean hooked = false;
         AtomicInteger count = null;
         Map<RouteResultsetNode, BackendConnection> killees = null;
-        for (RouteResultsetNode node : target.keySet()) {
-            BackendConnection c = target.get(node);
+        for (Map.Entry<RouteResultsetNode,BackendConnection> entry : target.entrySet()) {
+            BackendConnection c = entry.getValue();
             if (c != null) {
                 if (!hooked) {
                     hooked = true;
                     killees = new HashMap<RouteResultsetNode, BackendConnection>();
                     count = new AtomicInteger(0);
                 }
-                killees.put(node, c);
+                killees.put(entry.getKey(), c);
                 count.incrementAndGet();
             }
         }

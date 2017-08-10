@@ -139,8 +139,8 @@ public final class ShowDataSource {
 					RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
 					row.packetId = ++packetId;
 					buffer = row.write(buffer, c,true);
-					if(datahost.getrReadSources().get(new Integer(i)) != null){
-						for (PhysicalDatasource w : datahost.getrReadSources().get(new Integer(i))) {
+					if(datahost.getrReadSources().get(i) != null){
+						for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
 							RowDataPacket rsow = getRow(w, c.getCharset());
 							rsow.packetId = ++packetId;
 							buffer = rsow.write(buffer, c, true);

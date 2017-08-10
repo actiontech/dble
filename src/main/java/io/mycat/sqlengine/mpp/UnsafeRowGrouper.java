@@ -304,10 +304,9 @@ public class UnsafeRowGrouper {
 	 * 处理AVG列精度
 	 */
 	private void processAvgFieldPrecision() {
-		for(String key : columToIndx.keySet()) {
-			if(isAvgField(key)) { // AVG列的小数点精度默认取SUM小数点精度, 计算和返回的小数点精度应该扩展4
-				ColMeta colMeta = columToIndx.get(key);
-				colMeta.decimals += 4;
+		for(Map.Entry<String, ColMeta> entry: columToIndx.entrySet()) {
+			if(isAvgField(entry.getKey())) { // AVG列的小数点精度默认取SUM小数点精度, 计算和返回的小数点精度应该扩展4
+				entry.getValue().decimals += 4;
 			}
 		}
 	}

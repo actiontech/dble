@@ -114,15 +114,13 @@ public class ShowDirectMemory {
         try {
 
             if(useOffHeapForMerge == 1) {
-                ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
+                ConcurrentMap<Long, Long> map = MycatServer.getInstance().
                         getServerMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
-                for (Long key : concurrentHashMap.keySet()) {
-
-
+                for (Map.Entry<Long, Long> entry : map.entrySet()) {
                     RowDataPacket row = new RowDataPacket(DETAILl_FIELD_COUNT);
-                    Long value = concurrentHashMap.get(key);
-                    row.add(String.valueOf(key).getBytes(c.getCharset()));
+                    long value = entry.getValue();
+                    row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                     /**
                      * 该DIRECTMEMORY内存被结果集处理使用了
                      */
@@ -134,10 +132,10 @@ public class ShowDirectMemory {
                 }
             }
 
-            for (Long key:networkbufferpool.keySet()) {
+            for (Map.Entry<Long,Long> entry:networkbufferpool.entrySet()) {
                 RowDataPacket row = new RowDataPacket(DETAILl_FIELD_COUNT);
-                Long value = networkbufferpool.get(key);
-                row.add(String.valueOf(key).getBytes(c.getCharset()));
+                long value = entry.getValue();
+                row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                 /**
                  * 该DIRECTMEMORY内存属于Buffer Pool管理的！
                  */

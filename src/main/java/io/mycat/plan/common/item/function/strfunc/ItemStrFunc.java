@@ -12,7 +12,7 @@ import io.mycat.plan.common.time.MySQLTime;
 
 public abstract class ItemStrFunc extends ItemFunc {
 
-	protected static final String EMPTY = new String("");
+	protected static final String EMPTY = "";
 
 	public ItemStrFunc() {
 		this(new ArrayList<Item>());

@@ -535,16 +535,16 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
         int size = routeMap.size();
         RouteResultsetNode[] routeResultsetNodes = new RouteResultsetNode[size];
         int index = 0;
-        for (String dn : routeMap.keySet())
+        for (Map.Entry<String,LoadData> entry: routeMap.entrySet())
         {
-            RouteResultsetNode rrNode = new RouteResultsetNode(dn, ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
+            RouteResultsetNode rrNode = new RouteResultsetNode(entry.getKey(), ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
             rrNode.setSource(rrs);
             rrNode.setTotalNodeSize(size);
             rrNode.setStatement(srcStatement);
             LoadData newLoadData = new LoadData();
             ObjectUtil.copyProperties(loadData, newLoadData);
             newLoadData.setLocal(true);
-            LoadData loadData1 = routeMap.get(dn);
+            LoadData loadData1 = entry.getValue();
           //  if (isHasStoreToFile)
             if (loadData1.getFileName()!=null)//此处判断是否有保存分库load的临时文件dn1.txt/dn2.txt，不是判断是否有clientTemp.txt
             {

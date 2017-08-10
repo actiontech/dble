@@ -47,7 +47,7 @@ public class SqlResultSizeRecorder {
 		sqlResultSetMap.clear();
 	}
 	
-   class SqlParser {
+   static class SqlParser {
 		
 		public String fixSql(String sql) {
 			if ( sql != null)

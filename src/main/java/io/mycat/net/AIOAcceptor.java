@@ -53,7 +53,7 @@ public final class AIOAcceptor implements SocketAcceptor,
 	private long acceptCount;
 	private final String name;
 
-	public AIOAcceptor(String name, String ip, int port,
+	public AIOAcceptor(String name, String ip, int port, int backlog,
 			FrontendConnectionFactory factory, AsynchronousChannelGroup group)
 			throws IOException {
 		this.name = name;
@@ -64,7 +64,7 @@ public final class AIOAcceptor implements SocketAcceptor,
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
 		// backlog=100
-		serverChannel.bind(new InetSocketAddress(ip, port), 100);
+		serverChannel.bind(new InetSocketAddress(ip, port), backlog);
 	}
 
 	public String getName() {

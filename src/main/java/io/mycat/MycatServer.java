@@ -379,12 +379,12 @@ public class MycatServer {
 				);
 			}
 			manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
-					system.getManagerPort(), mf, this.asyncChannelGroups[0]);
+					system.getManagerPort(),100, mf, this.asyncChannelGroups[0]);
 
 			// startup server
 
 			server = new AIOAcceptor(NAME + "Server", system.getBindIp(),
-					system.getServerPort(), sf, this.asyncChannelGroups[0]);
+					system.getServerPort(),system.getServerBacklog(), sf, this.asyncChannelGroups[0]);
 
 		} else {
 			LOGGER.info("using nio network handler ");

@@ -122,26 +122,34 @@ public class KVPathUtil {
 	public static String getSequencesInstancePath() {
 		return getSequencesPath() + SEPARATOR + "instance" ;
 	}
+
+
 	//depth:2,lock_base_path: base_path/lock/
-	private static final String LOCK_BASE_PATH = BASE_PATH + "lock" + SEPARATOR;
+	private static final String LOCK_BASE_PATH = BASE_PATH + "lock";
+
+	public static String getLockBasePath() {
+		return LOCK_BASE_PATH;
+	}
+
 	//depth:3, lock path : lock_base_path/...(detail)
 	public static String getSyncMetaLockPath() {
-		return LOCK_BASE_PATH + "syncMeta.lock";
+		return LOCK_BASE_PATH + SEPARATOR + "syncMeta.lock";
 	}
 
 	public static String getDnIndexLockPath() {
-		return LOCK_BASE_PATH + "dnindex.lock";
+		return LOCK_BASE_PATH + SEPARATOR + "dnindex.lock";
 	}
 
 	public static String getConfInitLockPath() {
-		return LOCK_BASE_PATH + "confInit.lock";
+		return LOCK_BASE_PATH + SEPARATOR + "confInit.lock";
 	}
 
 	public static String getConfChangeLockPath() {
-		return LOCK_BASE_PATH + "confChange.lock";
+		return LOCK_BASE_PATH + SEPARATOR + "confChange.lock";
 	}
+
 	public static String getBinlogPauseLockPath() {
-		return LOCK_BASE_PATH + "binlogStatus.lock";
+		return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
 	}
 
 	//depth:2,child node of base_path

@@ -70,6 +70,12 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
         String confStatusPath = KVPathUtil.getConfStatusPath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), confStatusPath);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + confStatusPath + " success");
+
+        String lockBasePathPath = KVPathUtil.getLockBasePath();
+        if (this.getCurator().checkExists().forPath(lockBasePathPath) == null) {
+            ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), lockBasePathPath);
+            LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + lockBasePathPath + " success");
+        }
         return true;
     }
 

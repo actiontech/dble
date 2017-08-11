@@ -101,7 +101,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         this.props = props;
-        threadLocalLoad();
+        //      threadLocalLoad();
     }
 
     private void handle(String key) throws Exception {
@@ -130,7 +130,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 paraValMap.put(table + KEY_MAX_NAME, props.getProperty(table + KEY_MAX_NAME));
                 paraValMap.put(table + KEY_CUR_NAME, props.getProperty(table + KEY_CUR_NAME));
                 try {
-                    String val = props.getProperty(table + KEY_CUR_NAME);//KEY_MIN_NAME);
+                    String val = props.getProperty(table + KEY_MIN_NAME);
                     client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(PATH + table + SEQ, val.getBytes());
                 } catch (Exception e) {
                     LOGGER.debug("Node exists! Maybe other instance is initializing!");
@@ -186,9 +186,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
             client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
 
-            paraValMap.put(prefixName + KEY_MIN_NAME, (now + 1) + "");
+            paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
             paraValMap.put(prefixName + KEY_MAX_NAME, (now + period + 1) + "");
-            paraValMap.put(prefixName + KEY_CUR_NAME, (now) + "");
+            paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
 
         } catch (Exception e) {
             	LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
@@ -219,7 +219,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     public static void main(String[] args) throws UnsupportedEncodingException {
         IncrSequenceZKHandler incrSequenceZKHandler = new IncrSequenceZKHandler();
         incrSequenceZKHandler.load(false);
-        int i = 20;
+        int i = 30;
         while (i-- >= 0) {
             System.out.println(incrSequenceZKHandler.nextId("`testdb`.`ORDER`"));
         }

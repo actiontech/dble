@@ -87,7 +87,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         }
     }
 
-    public void threadLocalLoad() throws Exception {
+    private void threadLocalLoad() throws Exception {
         Enumeration<?> enu = props.propertyNames();
         while (enu.hasMoreElements()) {
             String key = (String) enu.nextElement();
@@ -101,13 +101,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         this.props = props;
-        Enumeration<?> enu = props.propertyNames();
-        while (enu.hasMoreElements()) {
-            String key = (String) enu.nextElement();
-            if (key.endsWith(KEY_MIN_NAME)) {
-                handle(key);
-            }
-        }
+        threadLocalLoad();
     }
 
     private void handle(String key) throws Exception {
@@ -136,9 +130,8 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 paraValMap.put(table + KEY_MAX_NAME, props.getProperty(table + KEY_MAX_NAME));
                 paraValMap.put(table + KEY_CUR_NAME, props.getProperty(table + KEY_CUR_NAME));
                 try {
-                    String val = props.getProperty(table + KEY_MIN_NAME);
-                    client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT)
-                            .forPath(PATH + table + SEQ, val.getBytes());
+                    String val = props.getProperty(table + KEY_CUR_NAME);//KEY_MIN_NAME);
+                    client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(PATH + table + SEQ, val.getBytes());
                 } catch (Exception e) {
                     LOGGER.debug("Node exists! Maybe other instance is initializing!");
                 }
@@ -178,6 +171,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             if (paraValMap == null) {
                 throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
             }
+            
             if (paraValMap.get(prefixName + KEY_MAX_NAME) == null) {
                 paraValMap.put(prefixName + KEY_MAX_NAME, props.getProperty(prefixName + KEY_MAX_NAME));
             }
@@ -187,17 +181,17 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             if (paraValMap.get(prefixName + KEY_CUR_NAME) == null) {
                 paraValMap.put(prefixName + KEY_CUR_NAME, props.getProperty(prefixName + KEY_CUR_NAME));
             }
-            long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME))
-                    - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
+            
+            long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME)) - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
             long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
             client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
 
-            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period + 1) + "");
             paraValMap.put(prefixName + KEY_MIN_NAME, (now + 1) + "");
+            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period + 1) + "");
             paraValMap.put(prefixName + KEY_CUR_NAME, (now) + "");
 
         } catch (Exception e) {
-            LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
+            	LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
         } finally {
             try {
                 interProcessSemaphoreMutex.release();
@@ -225,9 +219,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     public static void main(String[] args) throws UnsupportedEncodingException {
         IncrSequenceZKHandler incrSequenceZKHandler = new IncrSequenceZKHandler();
         incrSequenceZKHandler.load(false);
-        System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
-        System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
-        System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
-        System.out.println(incrSequenceZKHandler.nextId("TRAVELRECORD"));
+        int i = 20;
+        while (i-- >= 0) {
+            System.out.println(incrSequenceZKHandler.nextId("`testdb`.`ORDER`"));
+        }
     }
 }

@@ -77,6 +77,6 @@ public class ZKUtils {
         curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path, data);
     }
     public static void createTempNode(String path) throws Exception {
-        curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path);
+        curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
     }
 }

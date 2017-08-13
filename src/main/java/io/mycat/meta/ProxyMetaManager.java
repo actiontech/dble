@@ -480,12 +480,11 @@ public class ProxyMetaManager {
 			zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
 			//TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
 			boolean finished = false;
-			String instancePath = ZKPaths.makePath(nodePath, DDL_INSTANCE);
-			zkConn.create().forPath(instancePath);
 			//zkLock， if the other instance get the lock,this instance will wait
 			InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
 			distributeLock.acquire();
 			try {
+				String instancePath = ZKPaths.makePath(nodePath, DDL_INSTANCE);
 				ZKUtils.createTempNode(instancePath, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
 				List<String> preparedList = zkConn.getChildren().forPath(instancePath);
 				List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());

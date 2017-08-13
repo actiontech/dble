@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.strfunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 
 public class ItemFuncMakeSet extends ItemStrFunc {
@@ -18,6 +19,27 @@ public class ItemFuncMakeSet extends ItemStrFunc {
 
 	@Override
 	public String valStr() {
-		throw new RuntimeException("not supportted yet!");
+		int bits = args.get(0).valInt().intValue();
+		int nums = 1;
+		StringBuilder sb =new StringBuilder();
+		while (bits > 0 && nums < args.size()) {
+			if (bits % 2 != 0) {
+				String var = args.get(nums).valStr();
+				if(var!=null){
+					if(sb.length()>0){
+						sb.append(",");
+					}
+					sb.append(var);
+				}
+			}
+			bits = bits / 2;
+			nums++;
+		}
+		return sb.toString();
+	}
+
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncMakeSet(realArgs);
 	}
 }

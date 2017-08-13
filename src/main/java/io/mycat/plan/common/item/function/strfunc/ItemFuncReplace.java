@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.strfunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 
 public class ItemFuncReplace extends ItemStrFunc {
@@ -26,5 +27,9 @@ public class ItemFuncReplace extends ItemStrFunc {
 			return EMPTY;
 		}
 		return old.replace(from, to);
+	}
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncReplace(realArgs);
 	}
 }

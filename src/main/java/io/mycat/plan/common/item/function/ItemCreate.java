@@ -19,32 +19,7 @@ import io.mycat.plan.common.item.function.castfunc.ItemFuncSigned;
 import io.mycat.plan.common.item.function.castfunc.ItemFuncUnsigned;
 import io.mycat.plan.common.item.function.castfunc.ItemNCharTypecast;
 import io.mycat.plan.common.item.function.castfunc.ItemTimeTypecast;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncAbs;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncAcos;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncAsin;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncAtan;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncCeiling;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncConv;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncCos;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncCot;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncCrc32;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncDegree;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncExp;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncFloor;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncLn;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncLog;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncLog10;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncLog2;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncMd5;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncPi;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncPow;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncRadians;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncRand;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncRound;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncSign;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncSin;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncSqrt;
-import io.mycat.plan.common.item.function.mathsfunc.ItemFuncTan;
+import io.mycat.plan.common.item.function.mathsfunc.*;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncCoalesce;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGreatest;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncIsnull;
@@ -52,58 +27,13 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLeast;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncStrcmp;
 import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;
 import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncNullif;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncBitLength;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncCharLength;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncConcat;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncConcatWs;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncElt;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncField;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncFindInSet;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncHex;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncInstr;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncLength;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncLocate;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncLower;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncLpad;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncReverse;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncRpad;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncSoundex;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncSpace;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncSubstrIndex;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim;
+import io.mycat.plan.common.item.function.strfunc.*;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TRIM_TYPE_ENUM;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncUnhex;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncUpper;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncAddTime;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncConvTz;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDateFormat;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDatediff;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDayname;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDayofmonth;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDayofweek;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncDayofyear;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncFromDays;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncFromUnixtime;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncLastDay;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncMakedate;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncMaketime;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncMonthname;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncPeriodAdd;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncPeriodDiff;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncSecToTime;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncStrToDate;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncTimeToSec;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncTimediff;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncToDays;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncToSeconds;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncUnixTimestamp;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncWeekday;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncWeekofyear;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncYearweek;
+import io.mycat.plan.common.item.function.timefunc.*;
 import io.mycat.plan.common.time.MyTime;
 
 public class ItemCreate {
-	private Map<String, ItemFunc> nativFuncs = new HashMap<String, ItemFunc>();
+	private Map<String, ItemFunc> nativFuncs = new HashMap<>();
 	private static ItemCreate _instance = null;
 
 	protected ItemCreate() {
@@ -115,6 +45,7 @@ public class ItemCreate {
 		// proFuncs.put("ANY_VALUE", new Item_func_abs(null));
 		// proFuncs.put("AREA", new Item_func_abs(null));
 		// proFuncs.put("ASBINARY", new Item_func_abs(null));
+		nativFuncs.put("ASCII", new ItemFuncAscii(null));
 		nativFuncs.put("ASIN", new ItemFuncAsin(null));
 		// proFuncs.put("ASTEXT", new Item_func_abs(null));
 		// proFuncs.put("ASWKB", new Item_func_abs(null));
@@ -144,6 +75,9 @@ public class ItemCreate {
 		nativFuncs.put("COT", new ItemFuncCot(null));
 		nativFuncs.put("CRC32", new ItemFuncCrc32(null));
 		// proFuncs.put("CROSSES", new Item_func_abs(null));
+		nativFuncs.put("CURTIME", new ItemFuncCurtimeLocal(null));
+		nativFuncs.put("CURDATE", new ItemFuncCurdateLocal(null));
+		nativFuncs.put("DATE", new ItemFuncDate(null));
 		nativFuncs.put("DATEDIFF", new ItemFuncDatediff(null));
 		nativFuncs.put("DATE_FORMAT", new ItemFuncDateFormat(null, false));
 		nativFuncs.put("DAYNAME", new ItemFuncDayname(null));
@@ -170,6 +104,7 @@ public class ItemCreate {
 		nativFuncs.put("FIELD", new ItemFuncField(null));
 		nativFuncs.put("FIND_IN_SET", new ItemFuncFindInSet(null));
 		nativFuncs.put("FLOOR", new ItemFuncFloor(null));
+		nativFuncs.put("FORMAT", new ItemFuncFormat(null));
 		// proFuncs.put("FOUND_ROWS", new Item_func_(null));
 		// proFuncs.put("FROM_BASE64", new Item_func_(null));
 		nativFuncs.put("FROM_DAYS", new ItemFuncFromDays(null));
@@ -190,6 +125,7 @@ public class ItemCreate {
 		// proFuncs.put("GTID_SUBTRACT", new Item_func_abs(null));
 		// proFuncs.put("GTID_SUBSET", new Item_func_abs(null));
 		nativFuncs.put("HEX", new ItemFuncHex(null));
+		nativFuncs.put("HOUR", new ItemFuncHour(null));
 		nativFuncs.put("IFNULL", new ItemFuncIfnull(null));
 		// proFuncs.put("INET_ATON", new Item_func_abs(null));
 		// proFuncs.put("INET_NTOA", new Item_func_abs(null));
@@ -199,6 +135,7 @@ public class ItemCreate {
 		// proFuncs.put("IS_IPV6", new Item_func_abs(null));
 		// proFuncs.put("IS_IPV4_COMPAT", new Item_func_abs(null));
 		// proFuncs.put("IS_IPV4_MAPPED", new Item_func_abs(null));
+		nativFuncs.put("INSERT", new ItemFuncInsert(null));
 		nativFuncs.put("INSTR", new ItemFuncInstr(null));
 		// proFuncs.put("INTERIORRINGN", new Item_func_abs(null));
 		// proFuncs.put("INTERSECTS", new Item_func_abs(null));
@@ -232,6 +169,7 @@ public class ItemCreate {
 		// proFuncs.put("LAST_INSERT_ID", new Item_func_abs(null));
 		nativFuncs.put("LCASE", new ItemFuncLower(null));
 		nativFuncs.put("LEAST", new ItemFuncLeast(null));
+		nativFuncs.put("LEFT", new ItemFuncLeft(null));
 		nativFuncs.put("LENGTH", new ItemFuncLength(null));
 
 		// proFuncs.put("LIKE_RANGE_MIN", new Item_func_(null));
@@ -242,7 +180,7 @@ public class ItemCreate {
 		// proFuncs.put("LINESTRINGFROMTEXT", new Item_func_abs(null));
 		// proFuncs.put("LINESTRINGFROMWKB", new Item_func_abs(null));
 		nativFuncs.put("LN", new ItemFuncLn(null));
-		// proFuncs.put("LOAD_FILE", new Item_func_abs(null));
+		nativFuncs.put("LOAD_FILE", new ItemfuncLoadFile(null));
 		nativFuncs.put("LOCATE", new ItemFuncLocate(null));
 		nativFuncs.put("LOG", new ItemFuncLog(null));
 		nativFuncs.put("LOG10", new ItemFuncLog10(null));
@@ -250,25 +188,37 @@ public class ItemCreate {
 		nativFuncs.put("LOWER", new ItemFuncLower(null));
 		nativFuncs.put("LPAD", new ItemFuncLpad(null));
 		nativFuncs.put("LTRIM", new ItemFuncTrim(null, TRIM_TYPE_ENUM.LTRIM));
+		nativFuncs.put("MAKE_SET", new ItemFuncMakeSet(null));
 		nativFuncs.put("MAKEDATE", new ItemFuncMakedate(null));
 		nativFuncs.put("MAKETIME", new ItemFuncMaketime(null));
 
 		nativFuncs.put("MD5", new ItemFuncMd5(null));
+		nativFuncs.put("MICROSECOND", new ItemFuncMicrosecond(null));
+		nativFuncs.put("MINUTE", new ItemFuncMinute(null));
 		nativFuncs.put("MONTHNAME", new ItemFuncMonthname(null));
+		nativFuncs.put("MONTH", new ItemFuncMonth(null));
 		nativFuncs.put("NULLIF", new ItemFuncNullif(null, null));
+		nativFuncs.put("NOW", new ItemFuncNowLocal(null));
 		nativFuncs.put("OCT", new ItemFuncLog2(null));
+		nativFuncs.put("ORD", new ItemFuncOrd(null));
 		nativFuncs.put("PERIOD_ADD", new ItemFuncPeriodAdd(null));
 		nativFuncs.put("PERIOD_DIFF", new ItemFuncPeriodDiff(null));
 		nativFuncs.put("PI", new ItemFuncPi(null));
 		nativFuncs.put("POW", new ItemFuncPow(null));
 		nativFuncs.put("POWER", new ItemFuncPow(null));
+		nativFuncs.put("QUARTER", new ItemFuncQuarter(null));
+		nativFuncs.put("QUOTE", new ItemFuncQuote(null));
 		nativFuncs.put("RADIANS", new ItemFuncRadians(null));
 		nativFuncs.put("RAND", new ItemFuncRand(null));
+		nativFuncs.put("REPEAT", new ItemFuncRepeat(null));
+		nativFuncs.put("REPLACE", new ItemFuncReplace(null));
 		nativFuncs.put("REVERSE", new ItemFuncReverse(null));
+		nativFuncs.put("RIGHT", new ItemFuncRight(null));
 		nativFuncs.put("ROUND", new ItemFuncRound(null));
 		nativFuncs.put("RPAD", new ItemFuncRpad(null));
 		nativFuncs.put("RTRIM", new ItemFuncTrim(null, TRIM_TYPE_ENUM.RTRIM));
 		nativFuncs.put("SEC_TO_TIME", new ItemFuncSecToTime(null));
+		nativFuncs.put("SECOND", new ItemFuncSecond(null));
 		nativFuncs.put("SIGN", new ItemFuncSign(null));
 		nativFuncs.put("SIN", new ItemFuncSin(null));
 
@@ -277,22 +227,32 @@ public class ItemCreate {
 		nativFuncs.put("SQRT", new ItemFuncSqrt(null));
 		nativFuncs.put("STRCMP", new ItemFuncStrcmp(null, null));
 		nativFuncs.put("STR_TO_DATE", new ItemFuncStrToDate(null));
+		nativFuncs.put("SUBSTR", new ItemFuncSubstr(null));
+		nativFuncs.put("SUBSTRING", new ItemFuncSubstr(null));
 		nativFuncs.put("SUBSTRING_INDEX", new ItemFuncSubstrIndex(null));
 		nativFuncs.put("SUBTIME", new ItemFuncAddTime(null, false, true));
+		nativFuncs.put("SYSDATE", new ItemFuncSysdateLocal(null));
 		nativFuncs.put("TAN", new ItemFuncTan(null));
+		nativFuncs.put("TIME", new ItemFuncTime(null));
 		nativFuncs.put("TIMEDIFF", new ItemFuncTimediff(null));
 		nativFuncs.put("TIME_FORMAT", new ItemFuncDateFormat(null, true));
 		nativFuncs.put("TIME_TO_SEC", new ItemFuncTimeToSec(null));
 		nativFuncs.put("TO_DAYS", new ItemFuncToDays(null));
 		nativFuncs.put("TO_SECONDS", new ItemFuncToSeconds(null));
+		nativFuncs.put("TRUNCATE", new ItemFuncTruncate(null));
 		nativFuncs.put("UCASE", new ItemFuncUpper(null));
 		nativFuncs.put("UNHEX", new ItemFuncUnhex(null));
 		nativFuncs.put("UNIX_TIMESTAMP", new ItemFuncUnixTimestamp(null));
 		nativFuncs.put("UPPER", new ItemFuncUpper(null));
+		nativFuncs.put("UTC_TIME", new ItemFuncCurtimeUtc(null));
+		nativFuncs.put("UTC_TIMESTAMP", new ItemFuncNowUtc(null));
+		nativFuncs.put("UTC_DATE", new ItemFuncCurdateUtc(null));
 //		nativFuncs.put("VERSION", new ItemFuncVersion());
+		nativFuncs.put("WEEK", new ItemFuncWeek(null));
 		nativFuncs.put("WEEKDAY", new ItemFuncWeekday(null));
 		nativFuncs.put("WEEKOFYEAR", new ItemFuncWeekofyear(null));
 		nativFuncs.put("YEARWEEK", new ItemFuncYearweek(null));
+		nativFuncs.put("YEAR", new ItemFuncYear(null));
 	}
 
 	public static synchronized ItemCreate getInstance() {
@@ -326,11 +286,17 @@ public class ItemCreate {
 			res = new ItemDateTypecast(a);
 
 		} else if (cast_type == CastTarget.ITEM_CAST_TIME || cast_type == CastTarget.ITEM_CAST_DATETIME) {
-			if (type.length > MyTime.DATETIME_MAX_DECIMALS)
+			if (type.length > MyTime.DATETIME_MAX_DECIMALS) {
 				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
 						"too big precision in cast time/datetime,max 6,current:" + type.length);
-			res = (cast_type == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length)
-					: new ItemDatetimeTypecast(a, type.length);
+			}
+			if (type.length == -1) {
+				res = (cast_type == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a)
+						: new ItemDatetimeTypecast(a);
+			}else {
+				res = (cast_type == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length)
+						: new ItemDatetimeTypecast(a, type.length);
+			}
 		} else if (cast_type == CastTarget.ITEM_CAST_DECIMAL) {
 			if (type.length < type.dec) {
 				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",

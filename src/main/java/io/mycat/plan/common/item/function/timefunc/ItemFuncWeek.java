@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 import io.mycat.plan.common.ptr.LongPtr;
 import io.mycat.plan.common.time.MySQLTime;
@@ -25,8 +26,7 @@ public class ItemFuncWeek extends ItemIntFunc {
 		MySQLTime ltime = new MySQLTime();
 		if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
 			return BigInteger.ZERO;
-		return BigInteger
-				.valueOf(MyTime.calc_week(ltime, MyTime.week_mode(args.get(1).valInt().intValue()), new LongPtr(0)));
+		return BigInteger.valueOf(MyTime.calc_week(ltime, MyTime.week_mode(args.size() > 1 ? args.get(1).valInt().intValue() : 0), new LongPtr(0)));
 	}
 
 	@Override
@@ -34,5 +34,8 @@ public class ItemFuncWeek extends ItemIntFunc {
 		fixCharLength(2); /* 0..54 */
 		maybeNull = true;
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncWeek(realArgs);
+	}
 }

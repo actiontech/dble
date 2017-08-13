@@ -36,7 +36,9 @@ public class ItemTimeTypecast extends ItemTimeFunc {
 	public boolean getTime(MySQLTime ltime) {
 		if (getArg0Time(ltime))
 			return true;
-		MyTime.my_time_round(ltime, decimals);
+		if (decimals != NOT_FIXED_DEC) {
+			MyTime.my_time_round(ltime, decimals);
+		}
 		/*
 		 * For MYSQL_TIMESTAMP_TIME value we can have non-zero day part, which
 		 * we should not lose.

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package io.mycat.plan.common.item.function.castfunc;
 
 import java.io.UnsupportedEncodingException;
@@ -61,7 +58,7 @@ public class ItemFuncConvCharset extends ItemStrFunc {
 
 	@Override
 	protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-		List<Item> newArgs = null;
+		List<Item> newArgs;
 		if (!forCalculate)
 			newArgs = cloneStructList(args);
 		else

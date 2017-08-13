@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.timefunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.time.MySQLTime;
 
 
@@ -36,5 +37,8 @@ public class ItemFuncCurtimeLocal extends ItemTimeFunc {
 		ltime.second_part = cal.get(java.util.Calendar.MILLISECOND) * 1000;
 		return false;
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncCurtimeLocal(realArgs);
+	}
 }

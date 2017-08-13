@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.timefunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.time.MySQLTime;
 
 
@@ -25,5 +26,8 @@ public class ItemFuncDate extends ItemDateFunc {
 		nullValue = getArg0Date(ltime, fuzzy_date);
 		return nullValue;
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncDate(realArgs);
+	}
 }

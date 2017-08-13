@@ -40,7 +40,7 @@ public class MySQLTime  implements Serializable {
 
 	public void setCal(java.util.Calendar cal) {
 		year = cal.get(Calendar.YEAR);
-		month = cal.get(Calendar.MONTH);
+		month = cal.get(Calendar.MONTH) + 1;
 		day = cal.get(Calendar.DAY_OF_MONTH);
 		hour = cal.get(Calendar.HOUR_OF_DAY);
 		minute = cal.get(Calendar.MINUTE);

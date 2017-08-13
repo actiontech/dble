@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 import io.mycat.plan.common.time.MySQLTime;
 
@@ -29,5 +30,8 @@ public class ItemFuncSecond extends ItemIntFunc {
 		fixCharLength(2); /* 0..59 */
 		maybeNull = true;
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncSecond(realArgs);
+	}
 }

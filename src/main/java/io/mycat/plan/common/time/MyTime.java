@@ -1430,7 +1430,7 @@ public class MyTime {
 		cal2.clear();
 		cal2.setTimeInMillis(cal1.getTimeInMillis());
 		ltime2.year = cal2.get(java.util.Calendar.YEAR);
-		ltime2.month = cal2.get(java.util.Calendar.MONTH);
+		ltime2.month = cal2.get(java.util.Calendar.MONTH) + 1;
 		ltime.day = cal2.get(java.util.Calendar.DAY_OF_MONTH);
 		ltime2.hour = cal2.get(java.util.Calendar.HOUR_OF_DAY);
 		ltime2.minute = cal2.get(java.util.Calendar.MINUTE);

@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.strfunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 public class ItemFuncSubstr extends ItemStrFunc {
 
@@ -32,5 +33,9 @@ public class ItemFuncSubstr extends ItemStrFunc {
 		if (start == 0 && str.length() == length)
 			return EMPTY;
 		return str.substring((int) start, (int) (start + length));
+	}
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncSubstr(realArgs);
 	}
 }

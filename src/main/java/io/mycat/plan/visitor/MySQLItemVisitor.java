@@ -96,6 +96,7 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncNe;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncRegex;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncStrictEqual;
 import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncCase;
+import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncIf;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
 import io.mycat.plan.common.item.function.operator.logic.ItemFuncNot;
@@ -153,7 +154,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());
 		initName(x);
 	}
-	
+
 	@Override
 	public void endVisit(SQLInSubQueryExpr x){
 		boolean isNeg = x.isNot();
@@ -161,7 +162,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		item = new ItemInSubselect(currentDb, left, x.getSubQuery().getQuery(), isNeg);
 		initName(x);
 	}
-	
+
 	@Override
 	public void endVisit(SQLBooleanExpr x) {
 		if(x.getValue()){
@@ -171,7 +172,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		}
 		initName(x);
 	}
-	
+
 	@Override
 	public void endVisit(SQLBinaryOpExpr x){
 		Item itemLeft = getItem(x.getLeft());
@@ -295,16 +296,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			break;
 		case LessThanOrEqual:
 			item = new ItemFuncLe(itemLeft, itemRight);
-			break; 
+			break;
 		case LessThanOrEqualOrGreaterThan:
 			item = new ItemFuncStrictEqual(itemLeft, itemRight);
-			break; 
+			break;
 		case RegExp:
 			item = new ItemFuncRegex(itemLeft, itemRight);
 			break;
 		case NotRegExp:
 			item = new ItemFuncRegex(itemLeft, itemRight);
-			item = new ItemFuncNot(item); 
+			item = new ItemFuncNot(item);
 			break;
 		case Assignment:
 			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support assignment");
@@ -397,7 +398,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLCastExpr x) {
 		Item a = getItem(x.getExpr());
 		SQLDataType datetype = x.getDataType();
-		
+
 		if(datetype instanceof SQLCharacterDataType){
 			SQLCharacterDataType charType = (SQLCharacterDataType) datetype;
 			String upType = charType.getName().toUpperCase();
@@ -465,11 +466,11 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     	initName(x);
     }
 	@Override
-	public void endVisit(SQLPropertyExpr x) { 
+	public void endVisit(SQLPropertyExpr x) {
 		SQLIdentifierExpr owner= (SQLIdentifierExpr) x.getOwner();
 		item = new ItemField(null, StringUtil.removeBackQuote(owner.getSimpleName()), StringUtil.removeBackQuote(x.getSimpleName()));
 	}
-	
+
 	@Override
 	public void endVisit(SQLAggregateExpr x) {
 		List<Item> args = visitExprList(x.getArguments());
@@ -518,116 +519,119 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		List<Item> args = visitExprList(x.getParameters());
 		String funcName = x.getMethodName().toUpperCase();
 		Map<String, Object> attributes = x.getAttributes();
-		switch(funcName){
-		case "TRIM":
-			if (attributes == null) {
-				item = new ItemFuncTrim(args.get(0), TRIM_TYPE_ENUM.DEFAULT);
-			} else {
-				TRIM_TYPE_ENUM trimType = TRIM_TYPE_ENUM.DEFAULT;
-				String type = (String) attributes.get(ItemFuncKeyWord.TRIM_TYPE);
-				if (type != null) {
-					trimType = TRIM_TYPE_ENUM.valueOf(type);
-				}
-				if (attributes.get(ItemFuncKeyWord.FROM) == null) {
-					item = new ItemFuncTrim(args.get(0), trimType);
+		switch (funcName) {
+			case "TRIM":
+				if (attributes == null) {
+					item = new ItemFuncTrim(args.get(0), TRIM_TYPE_ENUM.DEFAULT);
 				} else {
-					SQLCharExpr from = (SQLCharExpr) attributes.get(ItemFuncKeyWord.FROM);
-					item = new ItemFuncTrim(args.get(0), getItem(from), trimType);
+					TRIM_TYPE_ENUM trimType = TRIM_TYPE_ENUM.DEFAULT;
+					String type = (String) attributes.get(ItemFuncKeyWord.TRIM_TYPE);
+					if (type != null) {
+						trimType = TRIM_TYPE_ENUM.valueOf(type);
+					}
+					if (attributes.get(ItemFuncKeyWord.FROM) == null) {
+						item = new ItemFuncTrim(args.get(0), trimType);
+					} else {
+						SQLCharExpr from = (SQLCharExpr) attributes.get(ItemFuncKeyWord.FROM);
+						item = new ItemFuncTrim(args.get(0), getItem(from), trimType);
+					}
 				}
-			}
-			break;
-		case "CONVERT":
-			if(args.size()>=2){
-				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, type) ,please use CAST(expr AS type)" );
-			}
-			if(attributes ==null || attributes.get(ItemFuncKeyWord.USING)==null){
-				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax" );
-			}
-			item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
-			break;
-		case "CHAR":
-			if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-				item = new ItemFuncChar(args);
-			} else {
-				item = new ItemFuncChar(args, (String) attributes.get(ItemFuncKeyWord.USING));
-			}
-		case "ADDDATE":
-			if(x.getParameters().get(1) instanceof SQLIntegerExpr){
-				item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, false);
 				break;
-			}
-		case "DATE_ADD":
-			MySqlIntervalExpr intervalExpr = (MySqlIntervalExpr)(x.getParameters().get(1));
-			item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUint(x.getParameters().get(1)), false);
-			break;
-		case "SUBDATE":
-			if(x.getParameters().get(1) instanceof SQLIntegerExpr){
-				item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, true);
+			case "CONVERT":
+				if (args.size() >= 2) {
+					throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, type) ,please use CAST(expr AS type)");
+				}
+				if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
+					throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
+				}
+				item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
 				break;
-			}
-		case "DATE_SUB":
-			MySqlIntervalExpr valueExpr = (MySqlIntervalExpr)(x.getParameters().get(1));
-			item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUint(x.getParameters().get(1)), true);
-			break;
-		case "TIMESTAMPADD":
-			SQLIdentifierExpr addUnit = (SQLIdentifierExpr)x.getParameters().get(0);
-			item = new ItemDateAddInterval(args.get(2), args.get(1), MySqlIntervalUnit.valueOf(addUnit.getSimpleName()), false);
-			break;
-		case "TIMESTAMPDIFF":
-			SQLIdentifierExpr diffUnit = (SQLIdentifierExpr)x.getParameters().get(0);
-			item = new ItemFuncTimestampDiff(args.get(1), args.get(2), MySqlIntervalUnit.valueOf(diffUnit.getSimpleName()));
-			break;
-		case "VAR_SAMP":
-			item = new ItemSumVariance(args, 1, false, null);
-			break;
-		case "VAR_POP":
-		case "VARIANCE":
-			item = new ItemSumVariance(args, 0, false, null);
-			break;
-		case "STD":
-		case "STDDEV":
-		case "STDDEV_POP":
-			item =  new ItemSumStd(args, 0, false, null);
-			break;
-		case "STDDEV_SAMP":
-			item =  new ItemSumStd(args, 1, false, null);
-			break;
-		case "BIT_AND":
-			item = new ItemSumAnd(args, false, null);
-			break;
-		case "BIT_OR":
-			item = new ItemSumOr(args, false, null);
-			break;
-		case "BIT_XOR":
-			item = new ItemSumXor(args, false, null);
-			break;
-		default:
-			if (ItemCreate.getInstance().isNativeFunc(funcName)) {
-				item = ItemCreate.getInstance().createNativeFunc(funcName, args);
-			} else {
-				// unKnownFunction
-				item = new ItemFuncUnknown(funcName, args); 
-			}
-			initName(x);
+			case "CHAR":
+				if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
+					item = new ItemFuncChar(args);
+				} else {
+					item = new ItemFuncChar(args, (String) attributes.get(ItemFuncKeyWord.USING));
+				}
+			case "ADDDATE":
+				if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
+					item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, false);
+					break;
+				}
+			case "DATE_ADD":
+				MySqlIntervalExpr intervalExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
+				item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUint(x.getParameters().get(1)), false);
+				break;
+			case "SUBDATE":
+				if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
+					item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, true);
+					break;
+				}
+			case "DATE_SUB":
+				MySqlIntervalExpr valueExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
+				item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUint(x.getParameters().get(1)), true);
+				break;
+			case "TIMESTAMPADD":
+				SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
+				item = new ItemDateAddInterval(args.get(2), args.get(1), MySqlIntervalUnit.valueOf(addUnit.getSimpleName()), false);
+				break;
+			case "TIMESTAMPDIFF":
+				SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
+				item = new ItemFuncTimestampDiff(args.get(1), args.get(2), MySqlIntervalUnit.valueOf(diffUnit.getSimpleName()));
+				break;
+			case "VAR_SAMP":
+				item = new ItemSumVariance(args, 1, false, null);
+				break;
+			case "VAR_POP":
+			case "VARIANCE":
+				item = new ItemSumVariance(args, 0, false, null);
+				break;
+			case "STD":
+			case "STDDEV":
+			case "STDDEV_POP":
+				item = new ItemSumStd(args, 0, false, null);
+				break;
+			case "STDDEV_SAMP":
+				item = new ItemSumStd(args, 1, false, null);
+				break;
+			case "BIT_AND":
+				item = new ItemSumAnd(args, false, null);
+				break;
+			case "BIT_OR":
+				item = new ItemSumOr(args, false, null);
+				break;
+			case "BIT_XOR":
+				item = new ItemSumXor(args, false, null);
+				break;
+			case "IF":
+				item = new ItemFuncIf(args);
+				break;
+			default:
+				if (ItemCreate.getInstance().isNativeFunc(funcName)) {
+					item = ItemCreate.getInstance().createNativeFunc(funcName, args);
+				} else {
+					// unKnownFunction
+					item = new ItemFuncUnknown(funcName, args);
+				}
+				initName(x);
 		}
 	}
-	
+
 
 	@Override
 	public void endVisit(SQLListExpr x) {
 		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Row Subqueries is not supported");
 	}
-	
+
 	@Override
 	public void endVisit(SQLAllExpr x) {
 		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with All is not supported");
 	}
-	
+
 	@Override
 	public void endVisit(SQLSomeExpr x) {
 		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with Some is not supported");
 	}
-	
+
 
 	@Override
 	public void endVisit(SQLAnyExpr x) {
@@ -652,7 +656,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	public void endVisit(SQLSelectStatement node) {
 		SQLSelectQuery sqlSelect = node.getSelect().getQuery();
 		item = new ItemSinglerowSubselect(currentDb, sqlSelect);
-	} 
+	}
 
 	private CastType getCastType(SQLDataTypeImpl dataTypeImpl) {
 		CastType castType = new CastType();

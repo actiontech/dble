@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.common.time.MyTime;
@@ -30,5 +31,8 @@ public class ItemFuncYear extends ItemIntFunc {
 		fixCharLength(4); /* 9999 */
 		maybeNull = true;
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncYear(realArgs);
+	}
 }

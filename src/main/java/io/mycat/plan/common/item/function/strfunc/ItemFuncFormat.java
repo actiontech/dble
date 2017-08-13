@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 public class ItemFuncFormat extends ItemStrFunc {
 
@@ -39,4 +40,8 @@ public class ItemFuncFormat extends ItemStrFunc {
 		return f.format(bdnew);
 	}
 
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncFormat(realArgs);
+	}
 }

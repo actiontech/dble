@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.strfunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 
 public class ItemFuncLeft extends ItemStrFunc {
@@ -29,5 +30,8 @@ public class ItemFuncLeft extends ItemStrFunc {
 			return orgStr;
 		return orgStr.substring(0, (int) len);
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncLeft(realArgs);
+	}
 }

@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.timefunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.time.MySQLTime;
 
 public class ItemFuncTime extends ItemTimeFunc {
@@ -20,5 +21,8 @@ public class ItemFuncTime extends ItemTimeFunc {
 	public boolean getTime(MySQLTime ltime) {
 		return getArg0Time(ltime);
 	}
-
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncTime(realArgs);
+	}
 }

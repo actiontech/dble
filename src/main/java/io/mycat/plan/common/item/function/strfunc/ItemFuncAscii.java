@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 
 
@@ -31,5 +32,10 @@ public class ItemFuncAscii extends ItemIntFunc {
 				return BigInteger.valueOf((int) s.charAt(0));
 			}
 		}
+	}
+
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncAscii(realArgs);
 	}
 }

@@ -3,6 +3,7 @@ package io.mycat.plan.common.item.function.strfunc;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 
 public class ItemfuncLoadFile extends ItemStrFunc {
@@ -19,5 +20,10 @@ public class ItemfuncLoadFile extends ItemStrFunc {
 	@Override
 	public String valStr() {
 		throw new RuntimeException("LOAD_FILE function is not realized");
+	}
+
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemfuncLoadFile(realArgs);
 	}
 }

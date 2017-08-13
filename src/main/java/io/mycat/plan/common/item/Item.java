@@ -227,12 +227,10 @@ public abstract class Item {
 				}
 			else {
 				assert (nullValue);
+				BigInteger bi = valInt();
+				if (!nullValue)
+					result = bi.toString().getBytes();
 			}
-
-
-			BigInteger bi = valInt();
-			if (!nullValue)
-				result = bi.toString().getBytes();
 		}
 		if (nullValue)
 			result = null;

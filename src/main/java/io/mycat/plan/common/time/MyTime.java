@@ -16,8 +16,8 @@ import io.mycat.plan.common.ptr.LongPtr;
 import io.mycat.plan.common.ptr.StringPtr;
 
 public class MyTime {
-	public static DateTimeFormat time_ampm_format = new DateTimeFormat('\0', 0, "%I:%i:%S %p");
-	public static DateTimeFormat time_24hrs_format = new DateTimeFormat('\0', 0, "%H:%i:%S");
+	private static final DateTimeFormat time_ampm_format = new DateTimeFormat('\0', 0, "%I:%i:%S %p");
+	private static final DateTimeFormat time_24hrs_format = new DateTimeFormat('\0', 0, "%H:%i:%S");
 
 	/* Flags to str_to_datetime and number_to_datetime */
 	public final static int TIME_FUZZY_DATE = 1;
@@ -76,7 +76,7 @@ public class MyTime {
 
 	/* Position for YYYY-DD-MM HH-MM-DD.FFFFFF AM in default format */
 
-	public static int internal_format_positions[] = { 0, 1, 2, 3, 4, 5, 6, 255 };
+	private static int internal_format_positions[] = { 0, 1, 2, 3, 4, 5, 6, 255 };
 
 	public static int days_in_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0 };
 
@@ -1147,7 +1147,7 @@ public class MyTime {
 	/*-------------------------Sql_time.h(其它类型向MySqlTime转换)start----------------------------*/
 
 	/* Rounding functions */
-	public static long[] msec_round_add = new long[] { 500000000, 50000000, 5000000, 500000, 50000, 5000, 0 };
+	private static long[] msec_round_add = new long[] { 500000000, 50000000, 5000000, 500000, 50000, 5000, 0 };
 
 	/**
 	 * Convert decimal value to datetime value with a warning.

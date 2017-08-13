@@ -46,7 +46,7 @@ public class MYLOCALES {
 			my_locale_day_names_en_US, null);
 	static TYPELIB my_locale_typelib_ab_day_names_en_US = new TYPELIB((my_locale_ab_day_names_en_US.length) - 1, "",
 			my_locale_ab_day_names_en_US, null);
-	public static MYLOCALE my_locale_en_US = new MYLOCALE(0, "en_US", "English - United States", true,
+	public static final MYLOCALE my_locale_en_US = new MYLOCALE(0, "en_US", "English - United States", true,
 			my_locale_typelib_month_names_en_US, my_locale_typelib_ab_month_names_en_US,
 			my_locale_typelib_day_names_en_US, my_locale_typelib_ab_day_names_en_US, 9, 9,
 			'.', /*

@@ -27,19 +27,20 @@
         <Class name="io.mycat.sqlengine.mpp.UnsafeRowGrouper"/>
     </Match>
 
+    <!--MALICIOUS_CODE 68,STYLE 50+  -->
     <Match>
-        <Bug category="MALICIOUS_CODE,CORRECTNESS"/>
+        <Bug category="MALICIOUS_CODE,STYLE,CORRECTNESS"/>
     </Match>
 
 
-    <!--MALICIOUS_CODE 90 -->
+
     <!-- I18N new String(byte[])  UTF-8 OR EVENT SET? -->
     <Match>
         <Bug category="I18N"/>
         <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
-    <!-- STYLE start:  50+ -->
+    <!-- STYLE start  -->
     <!-- switch without default:TODO-->
     <Match>
         <Bug category="STYLE"/>

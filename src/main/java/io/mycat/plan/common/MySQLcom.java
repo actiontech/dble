@@ -41,7 +41,7 @@ public class MySQLcom {
 	public static final int DECIMAL_MAX_SCALE = 30;
 	public static final int DECIMAL_NOT_SPECIFIED = 31;
 
-	public static BigInteger BI64BACK = new BigInteger("18446744073709551616");
+	public static final BigInteger BI64BACK = new BigInteger("18446744073709551616");
 
 	public static String setInt(long num, boolean unsignedFlag) {
 		return String.valueOf(num);

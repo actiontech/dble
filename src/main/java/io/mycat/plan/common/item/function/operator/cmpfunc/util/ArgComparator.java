@@ -239,7 +239,7 @@ public class ArgComparator {
 			return false;// No date[time] items found
 	}
 
-	public static argCmpFunc[][] comparator_matrix = { { new CompareString(), new CompareEString() },
+	private static argCmpFunc[][] comparator_matrix = { { new CompareString(), new CompareEString() },
 			{ new CompareReal(), new CompareEReal() }, { new CompareIntSigned(), new CompareEInt() },
 			{ new CompareRow(), new CompareERow() }, { new CompareDecimal(), new CompareEDecimal() } };
 

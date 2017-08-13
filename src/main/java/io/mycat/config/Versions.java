@@ -32,7 +32,7 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     /**服务器版本**/
-    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.08.0-dev-20170813130155".getBytes();
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.08.0-dev-20170813134310".getBytes();
 	public static byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
 	public static final String ANNOTATION_NAME = "mycat:";
     public static final String ROOT_PREFIX = "mycat";

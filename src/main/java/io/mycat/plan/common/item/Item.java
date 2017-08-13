@@ -33,7 +33,7 @@ public abstract class Item {
 
 	public static final int NOT_FIXED_DEC = 31;
 	public static final int DECIMAL_MAX_SCALE = 30;
-	public static String FNAF = "$$_";
+	public static final String FNAF = "$$_";
 
 	public enum ItemResult {
 		STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT, DECIMAL_RESULT

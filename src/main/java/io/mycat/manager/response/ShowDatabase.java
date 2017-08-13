@@ -56,7 +56,7 @@ public final class ShowDatabase {
         header.packetId = ++packetId;
 
         fields[i] = PacketUtil.getField("DATABASE", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
 
         eof.packetId = ++packetId;
     }
@@ -78,7 +78,7 @@ public final class ShowDatabase {
         // write rows
         byte packetId = eof.packetId;
         Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
-        for (String name : new TreeSet<String>(schemas.keySet())) {
+        for (String name : new TreeSet<>(schemas.keySet())) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(name, c.getCharset()));
             row.packetId = ++packetId;

@@ -136,7 +136,7 @@ public class ShowSysLog {
 		    while ((line=in.readLine()) != null && i<numLines) {
 		    	lines[end-i] = line;            
 	        	i++;
-	        }	        
+	        }
 		    numLines = start + i;
 		    
 	    } catch (FileNotFoundException ex) {

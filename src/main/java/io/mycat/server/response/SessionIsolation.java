@@ -49,7 +49,7 @@ public class SessionIsolation {
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("@@session.tx_isolation", Fields.FIELD_TYPE_STRING);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
         eof.packetId = ++packetId;
     }
 

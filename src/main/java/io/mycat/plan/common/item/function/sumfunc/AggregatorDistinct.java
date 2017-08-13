@@ -82,7 +82,7 @@ public class AggregatorDistinct extends Aggregator {
 		item_sum.clear();
 		if (distinctRows != null) {
 			distinctRows.done();
-			if (distinctRows != null && !endup_done) {
+			if (!endup_done) {
 				use_distinct_values = true;
 				RowDataPacket row = null;
 				while ((row = distinctRows.next()) != null) {

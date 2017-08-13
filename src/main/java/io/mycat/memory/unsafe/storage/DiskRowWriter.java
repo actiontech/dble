@@ -38,7 +38,6 @@ public  class DiskRowWriter extends OutputStream {
   private FileChannel channel = null;
   private OutputStream bs = null;
   private FileOutputStream fos  = null;
-  private TimeTrackingOutputStream ts  = null;
   private SerializationStream objOut  = null;
   private boolean initialized = false;
   private boolean hasBeenClosed = false;
@@ -106,9 +105,8 @@ public  class DiskRowWriter extends OutputStream {
     }
 
     fos = new FileOutputStream(file,true);
-    ts = new TimeTrackingOutputStream(/**writeMetrics,*/ fos);
     channel = fos.getChannel();
-    bs = new BufferedOutputStream(ts,bufferSize);
+    bs = new BufferedOutputStream(fos,bufferSize);
     objOut = serializerInstance.serializeStream(bs);
     initialized = true;
 
@@ -136,7 +134,6 @@ public  class DiskRowWriter extends OutputStream {
       channel = null;
       bs = null;
       fos = null;
-      ts = null;
       objOut = null;
       initialized = false;
       hasBeenClosed = true;
@@ -199,18 +196,7 @@ public  class DiskRowWriter extends OutputStream {
     }
   }
 
-  /**
-   * Writes a key-value pair.
-   */
-  private void write(Object key, Object value) throws IOException {
-    if (!initialized) {
-      open();
-    }
 
-    objOut.writeKey(key);
-    objOut.writeValue(value);
-    recordWritten();
-  }
   @Override
   public void write(int b){
     throw new UnsupportedOperationException();

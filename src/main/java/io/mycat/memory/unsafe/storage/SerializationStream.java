@@ -20,11 +20,4 @@ public abstract  class SerializationStream{
 
     public abstract void  flush();
     public abstract void close();
-
-    public <T>  SerializationStream writeAll(Iterator<T> iter){
-        while (iter.hasNext()) {
-            writeObject(iter.next());
-        }
-        return this;
-    }
 }

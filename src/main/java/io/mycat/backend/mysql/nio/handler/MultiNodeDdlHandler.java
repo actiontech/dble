@@ -27,10 +27,6 @@ import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.nio.handler.transaction.AutoTxOperation;
-import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
-import io.mycat.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
-import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoCommitNodesHandler;
-import io.mycat.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.log.transaction.TxnLogHelper;
@@ -291,9 +287,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
 				     boolean isLeft, BackendConnection conn) {
-		for (int i = 0, len = fields.size(); i < len; ++i) {
-			byte[] field = fields.get(i);
-		}
 	}
 	@Override
 	public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {

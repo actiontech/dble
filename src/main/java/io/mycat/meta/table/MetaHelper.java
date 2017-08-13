@@ -23,7 +23,7 @@ public class MetaHelper {
 	public static enum INDEX_TYPE{
 		PRI,UNI,MUL
 	}
-	public static String PRIMARY ="PRIMARY";
+	public static final String PRIMARY ="PRIMARY";
 	public static TableMeta initTableMeta(String table, SQLCreateTableStatement createStment, long timeStamp) {
 		TableMeta.Builder tmBuilder = TableMeta.newBuilder();
 		tmBuilder.setTableName(table);

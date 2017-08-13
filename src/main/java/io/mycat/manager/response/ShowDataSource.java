@@ -118,9 +118,6 @@ public final class ShowDataSource {
 		byte packetId = eof.packetId;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 
-
-
-		Map<String, List<PhysicalDatasource>> dataSources = new HashMap<String, List<PhysicalDatasource>>();
 		if (null != name) {
 			PhysicalDBNode dn = conf.getDataNodes().get(name);
 			for(PhysicalDatasource w:dn.getDbPool().getAllDataSources()){

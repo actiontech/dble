@@ -407,7 +407,7 @@ public class ERJoinChooser {
 		}
 
 		for (PlanNode child : jn.getChildren()) {
-			if (!isUnit(child) & child.type().equals(PlanNodeType.JOIN)) {
+			if ((!isUnit(child)) && (child.type().equals(PlanNodeType.JOIN))) {
 				// a join b on a.id=b.id and a.id+b.id=10 join c on
 				// a.id=c.id，将a.id+b.id提上来
 				JoinNode jnChild = (JoinNode) child;

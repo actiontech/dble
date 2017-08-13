@@ -11,7 +11,7 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 
 	private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";
 	private static final IncrSequenceTimeHandler instance = new IncrSequenceTimeHandler();
-	private static IdWorker workey = new IdWorker(1,1);
+	private IdWorker workey;
 
 
 	public static IncrSequenceTimeHandler getInstance() {
@@ -134,10 +134,4 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		}
 	}
 
-	public static void main(String[] args) {
-		int i;
-		for (i = 0; i < 10; i++) {
-			System.out.println(workey.nextId());
-		}
-	}
 }

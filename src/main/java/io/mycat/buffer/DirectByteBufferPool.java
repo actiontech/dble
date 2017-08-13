@@ -51,15 +51,12 @@ public class DirectByteBufferPool implements BufferPool{
         int oldCapacity = buffer.capacity();
         int newCapacity = oldCapacity << 1;
         ByteBuffer newBuffer = allocate(newCapacity);
-        if(newBuffer != null){
-            int newPosition = buffer.position();
-            buffer.flip();
-            newBuffer.put(buffer);
-            newBuffer.position(newPosition);
-            recycle(buffer);
-            return  newBuffer;
-        }
-        return null;
+        int newPosition = buffer.position();
+        buffer.flip();
+        newBuffer.put(buffer);
+        newBuffer.position(newPosition);
+        recycle(buffer);
+        return newBuffer;
     }
     public ByteBuffer allocate() {
     	return allocate(chunkSize);

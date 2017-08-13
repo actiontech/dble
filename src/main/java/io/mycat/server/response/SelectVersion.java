@@ -48,7 +48,7 @@ public class SelectVersion {
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("VERSION()", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
         eof.packetId = ++packetId;
     }
 

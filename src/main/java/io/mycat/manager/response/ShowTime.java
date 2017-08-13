@@ -53,7 +53,7 @@ public final class ShowTime {
         header.packetId = ++packetId;
 
         fields[i] = PacketUtil.getField("TIMESTAMP", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
 
         eof.packetId = ++packetId;
     }

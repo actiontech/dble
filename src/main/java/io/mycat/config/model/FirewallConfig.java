@@ -50,7 +50,7 @@ public final class FirewallConfig {
     
     private WallConfig wallConfig = new WallConfig();
      
-    private static WallProvider provider ;
+    private WallProvider provider ;
     
     public FirewallConfig() { }
     
@@ -113,10 +113,6 @@ public final class FirewallConfig {
 			}
 		}
 		return false ;
-	}
-	
-	public static void setProvider(WallProvider provider) {
-		FirewallConfig.provider = provider;
 	}
 
 	public void setWallConfig(WallConfig wallConfig) {

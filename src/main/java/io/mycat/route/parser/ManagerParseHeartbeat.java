@@ -107,7 +107,6 @@ public final class ManagerParseHeartbeat {
                 if( (c7 == 'N' || c7 == 'n') && (c8 == 'A' || c8 == 'a') && (c9 == 'M' || c9 == 'm')
                         && (c10 == 'E' || c10 == 'e')){
                     offset =   ManagerParseShow.trim(++offset,s);
-                    char x = s.charAt(offset);
                     if(s.charAt(offset) == '='){
                         offset =   ManagerParseShow.trim(++offset,s);
                         String name = s.substring(offset).trim();

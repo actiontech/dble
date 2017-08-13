@@ -13,7 +13,7 @@ import io.mycat.route.RouteResultset;
 import io.mycat.server.NonBlockingSession;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.response.ShowTables;
-import io.mycat.server.util.ShowCreateStmtInfo;
+import io.mycat.server.response.ShowCreateStmtInfo;
 import io.mycat.util.StringUtil;
 
 import java.util.ArrayList;

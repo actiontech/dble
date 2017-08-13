@@ -83,7 +83,7 @@ public class HandlerTool {
 		 */
 		public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type,
 				String charset) {
-			Item ret = null;
+			Item ret;
 			if (sel.basicConstItem())
 				return sel;
 			Item.ItemType i = sel.type();
@@ -109,10 +109,6 @@ public class HandlerTool {
 			} else {
 				ret = createFieldItem(sel, fields, startIndex);
 			}
-			if (ret == null)
-				throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "item not found:" + sel);
-			if (ret.getItemName() == null)
-				ret.setItemName(sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
 			ret.fixFields();
 			return ret;
 		}

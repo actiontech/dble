@@ -23,7 +23,7 @@ public class ShowIndex {
 			"(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
 			"(\\s+(where)\\s+((. *)*)\\s*)?" +
 			"\\s*$";
-	public static Pattern pattern = Pattern.compile(INDEX_PAT, Pattern.CASE_INSENSITIVE);
+	public static final Pattern pattern = Pattern.compile(INDEX_PAT, Pattern.CASE_INSENSITIVE);
 	public static void response(ServerConnection c, String stmt){
 		try {
 			String table;

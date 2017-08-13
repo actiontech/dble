@@ -657,45 +657,6 @@ public final class MysqlDefs {
 				mysqlToJavaType(FIELD_TYPE_GEOMETRY)));
 	}
 
-	static final void appendJdbcTypeMappingQuery(StringBuffer buf,
-			String mysqlTypeColumnName) {
-
-		buf.append("CASE ");
-		Map<String, Integer> typesMap = new HashMap<String, Integer>();
-		typesMap.putAll(mysqlToJdbcTypesMap);
-		typesMap.put("BINARY", Integer.valueOf(Types.BINARY));
-		typesMap.put("VARBINARY", Integer.valueOf(Types.VARBINARY));
-
-		Iterator<String> mysqlTypes = typesMap.keySet().iterator();
-
-		for(Map.Entry<String, Integer> entry:typesMap.entrySet()) {
-			String mysqlTypeName = entry.getKey();
-			buf.append(" WHEN ");
-			buf.append(mysqlTypeColumnName);
-			buf.append("='");
-			buf.append(mysqlTypeName);
-			buf.append("' THEN ");
-			buf.append(entry.getValue());
-
-			if (mysqlTypeName.equalsIgnoreCase("DOUBLE")
-					|| mysqlTypeName.equalsIgnoreCase("FLOAT")
-					|| mysqlTypeName.equalsIgnoreCase("DECIMAL")
-					|| mysqlTypeName.equalsIgnoreCase("NUMERIC")) {
-				buf.append(" WHEN ");
-				buf.append(mysqlTypeColumnName);
-				buf.append("='");
-				buf.append(mysqlTypeName);
-				buf.append(" unsigned' THEN ");
-				buf.append(entry.getValue());
-			}
-		}
-
-		buf.append(" ELSE ");
-		buf.append(Types.OTHER);
-		buf.append(" END ");
-
-	}
-
 	public static final String SQL_STATE_BASE_TABLE_NOT_FOUND = "S0002"; //$NON-NLS-1$
 
 	public static final String SQL_STATE_BASE_TABLE_OR_VIEW_ALREADY_EXISTS = "S0001"; //$NON-NLS-1$

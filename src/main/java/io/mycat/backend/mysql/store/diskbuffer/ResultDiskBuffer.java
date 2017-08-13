@@ -198,8 +198,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 				if (readBuffer.capacity() >= Integer.MAX_VALUE) {
 					throw new IllegalArgumentException("Packet size over the limit.");
 				}
-				int size = readBuffer.capacity() << 1;
-				size = (size > Integer.MAX_VALUE) ? Integer.MAX_VALUE : size;
+				int size = readBuffer.capacity() > (Integer.MAX_VALUE >>1) ? Integer.MAX_VALUE : readBuffer.capacity() << 1;
 				ByteBuffer newBuffer = ByteBuffer.allocate(size);
 				readBuffer.position(offset);
 				newBuffer.put(readBuffer);

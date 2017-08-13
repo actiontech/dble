@@ -350,7 +350,7 @@ public class MySQLcom {
 	public static String getFullString(String charsetName, byte[] buff) throws UnsupportedEncodingException {
 		if (buff == null || charsetName == null)
 			return null;
-		if ((charsetName != null) && (Charset.isSupported(charsetName))) {
+		if (Charset.isSupported(charsetName)) {
 			return new String(buff, charsetName);
 		} else {
 			String msg = "unsupported character set :" + charsetName;

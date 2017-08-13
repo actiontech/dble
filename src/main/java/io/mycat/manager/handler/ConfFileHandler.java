@@ -64,7 +64,7 @@ public final class ConfFileHandler {
 		header.packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("DATA", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+		fields[i].packetId = ++packetId;
 
 		eof.packetId = ++packetId;
 	}
@@ -297,20 +297,20 @@ public final class ConfFileHandler {
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 		try {
 			int i = 1;
-			File[] file = new File(SystemConfig.getHomePath(), "conf")
-					.listFiles();
-			for (File f : file) {
-				if (f.isFile()) {
-					RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-					row.add(StringUtil.encode(
-							(i++) + " : " + f.getName() + "  time:"
-									+ df.format(new Date(f.lastModified())),
-							c.getCharset()));
-					row.packetId = ++packetId;
-					buffer = row.write(buffer, c,true);
+			File[] file = new File(SystemConfig.getHomePath(), "conf").listFiles();
+			if (file != null) {
+				for (File f : file) {
+					if (f.isFile()) {
+						RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+						row.add(StringUtil.encode(
+								(i++) + " : " + f.getName() + "  time:"
+										+ df.format(new Date(f.lastModified())),
+								c.getCharset()));
+						row.packetId = ++packetId;
+						buffer = row.write(buffer, c, true);
+					}
 				}
 			}
-
 			bufINf.buffer = buffer;
 			bufINf.packetId = packetId;
 			return bufINf;

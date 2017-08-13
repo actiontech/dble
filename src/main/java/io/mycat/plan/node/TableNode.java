@@ -54,7 +54,7 @@ public class TableNode extends PlanNode {
 		}
 		this.referedTableNodes.add(this);
 		this.tableMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
-		boolean isGlobaled = tableConfig != null && (tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE);
+		boolean isGlobaled = (tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE);
 		if (!isGlobaled) {
 			this.unGlobalTableCount = 1;
 		}

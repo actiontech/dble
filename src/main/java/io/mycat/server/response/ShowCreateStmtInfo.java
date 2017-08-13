@@ -1,4 +1,4 @@
-package io.mycat.server.util;
+package io.mycat.server.response;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -19,7 +19,7 @@ public class ShowCreateStmtInfo {
 			"(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
 			"((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
 			"\\s*$";
-	public static Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
+	public static final Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
 	private final boolean isFull;
 	private final String schema;
 	private final String cond;

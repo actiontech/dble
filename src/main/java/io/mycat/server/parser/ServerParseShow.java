@@ -26,7 +26,7 @@ package io.mycat.server.parser;
 import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.server.response.ShowColumns;
 import io.mycat.server.response.ShowIndex;
-import io.mycat.server.util.ShowCreateStmtInfo;
+import io.mycat.server.response.ShowCreateStmtInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

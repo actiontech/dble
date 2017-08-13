@@ -39,7 +39,7 @@ public class DailyRotateLogStore {
 		this.suffix = suffix;
 		this.fileName = this.prefix + "." + suffix;
 		this.mode = "rw";
-		this.maxFileSize = rolateSize * 1024 * 1024;
+		this.maxFileSize = 1024L * 1024 * rolateSize;
 		this.nextCheckTime = System.currentTimeMillis() - 1;
 		this.cal = Calendar.getInstance();
 		this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");

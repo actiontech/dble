@@ -352,50 +352,44 @@ public abstract class Item {
 	 * @retval >0 In error.
 	 */
 	public TypeConversionStatus saveInField(Field field, boolean noConversions) {
-		TypeConversionStatus error = null;
 		try {
 			if (resultType() == ItemResult.STRING_RESULT) {
 				String result = valStr();
 				if (nullValue) {
 					field.setPtr(null);
-					error = TypeConversionStatus.TYPE_OK;
-					return error;
+					return TypeConversionStatus.TYPE_OK;
 				}
 				field.setPtr(result.getBytes(charset()));
 			} else if (resultType() == ItemResult.REAL_RESULT && field.resultType() == ItemResult.STRING_RESULT) {
 				BigDecimal nr = valReal();
 				if (nullValue) {
 					field.setPtr(null);
-					error = TypeConversionStatus.TYPE_OK;
-					return error;
+					return TypeConversionStatus.TYPE_OK;
 				}
 				field.setPtr(nr.toString().getBytes());
 			} else if (resultType() == ItemResult.REAL_RESULT) {
 				BigDecimal nr = valReal();
 				if (nullValue) {
 					field.setPtr(null);
-					error = TypeConversionStatus.TYPE_OK;
-					return error;
+					return TypeConversionStatus.TYPE_OK;
 				}
 				field.setPtr(nr.toString().getBytes());
 			} else if (resultType() == ItemResult.DECIMAL_RESULT) {
 				BigDecimal value = valDecimal();
 				if (nullValue) {
 					field.setPtr(null);
-					error = TypeConversionStatus.TYPE_OK;
-					return error;
+					return TypeConversionStatus.TYPE_OK;
 				}
 				field.setPtr(value.toString().getBytes());
 			} else {
 				BigInteger nr = valInt();
 				if (nullValue) {
 					field.setPtr(null);
-					error = TypeConversionStatus.TYPE_OK;
-					return error;
+					return TypeConversionStatus.TYPE_OK;
 				}
 				field.setPtr(nr.toString().getBytes());
 			}
-			return error != null ? error : TypeConversionStatus.TYPE_ERR_BAD_VALUE;
+			return TypeConversionStatus.TYPE_ERR_BAD_VALUE;
 		} catch (Exception e) {
 			return TypeConversionStatus.TYPE_ERR_BAD_VALUE;
 		}

@@ -160,9 +160,8 @@ public class MySQLDataSource extends PhysicalDatasource {
 	        case OkPacket.FIELD_COUNT:
 	            break;
 	        case ErrorPacket.FIELD_COUNT:
-	            ErrorPacket err = new ErrorPacket();
-	            err.read(bin2);
 	            isConnected = false;
+				break;
 	        case EOFPacket.FIELD_COUNT:		        	
 	        	// 发送323响应认证数据包
 	    		Reply323Packet r323 = new Reply323Packet();

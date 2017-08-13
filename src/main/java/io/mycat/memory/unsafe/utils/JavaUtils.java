@@ -25,8 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -274,19 +272,19 @@ public class JavaUtils {
     String unit = null;
 
     if (size >= 2*TB) {
-      value = size/TB;
+      value = (double)size/TB;
       unit = "TB";
     } else if (size >= 2*GB) {
-      value = size/GB;
+      value = (double)size/GB;
       unit = "GB";
     } else if (size >= 2*MB) {
-      value = size/MB;
+      value = (double)size/MB;
       unit = "MB";
     } else if (size >= 2*KB) {
-      value = size/KB;
+      value = (double)size/KB;
       unit = "KB";
     } else {
-      value = size;
+      value = (double)size;
       unit = "B";
     }
 

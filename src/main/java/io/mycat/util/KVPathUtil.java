@@ -114,7 +114,7 @@ public class KVPathUtil {
 		return getSequencesPath() + SEPARATOR + "leader" ;
 	}
 	//depth:3,sequences path:base_path/sequences/common
-	public static String SEQUENCE_COMMON = "common";
+	public static final String SEQUENCE_COMMON = "common";
 	public static String getSequencesCommonPath() {
 		return getSequencesPath() + SEPARATOR + SEQUENCE_COMMON + SEPARATOR;
 	}

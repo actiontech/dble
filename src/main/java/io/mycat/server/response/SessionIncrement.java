@@ -48,7 +48,7 @@ public class SessionIncrement {
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("@@session.auto_increment_increment", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
         eof.packetId = ++packetId;
     }
 

@@ -43,10 +43,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ShowServerLog {
@@ -62,7 +60,7 @@ public final class ShowServerLog {
 		header.packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("LOG", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+		fields[i].packetId = ++packetId;
 
 		eof.packetId = ++packetId;
 	}
@@ -191,13 +189,14 @@ public final class ShowServerLog {
 	private static PackageBufINf showLogSum(ManagerConnection c,
 			ByteBuffer buffer, byte packetId) {
 		PackageBufINf bufINf = new PackageBufINf();
-		File[] logFiles = new File(SystemConfig.getHomePath(), "logs")
-				.listFiles();
+		File[] logFiles = new File(SystemConfig.getHomePath(), "logs").listFiles();
 		StringBuilder fileNames = new StringBuilder();
-		for (File f : logFiles) {
-			if (f.isFile()) {
-				fileNames.append("  " );
-				fileNames.append(f.getName());
+		if (logFiles != null) {
+			for (File f : logFiles) {
+				if (f.isFile()) {
+					fileNames.append("  ");
+					fileNames.append(f.getName());
+				}
 			}
 		}
 
@@ -429,12 +428,6 @@ public final class ShowServerLog {
 		}
 		throw  new Exception();
 	}
-
-	public static void main(String[] args){
-		Map x = getCondPair("log @@file = mysql.log limit = rowLimit key = 'keyWord' regex = regexStr");
-		return ;
-	}
-
 }
 
 class PackageBufINf {

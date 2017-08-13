@@ -31,7 +31,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		}
 
 		if (schema == null) {
-			rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
+			rrs = routeNormalSqlWithAST(null, origSQL, rrs, charset, cachePool, sc);
 		} else {
 			if(sqlType==ServerParse.SHOW){
 				rrs.setStatement(origSQL);

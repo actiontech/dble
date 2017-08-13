@@ -47,7 +47,7 @@ public class SelectDatabase {
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("DATABASE()", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
         eof.packetId = ++packetId;
     }
 

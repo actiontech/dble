@@ -490,6 +490,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			break;
 		case "STDDEV":
 			item =  new ItemSumStd(args, 0, false, null);
+			break;
 		}
     }
 	@Override

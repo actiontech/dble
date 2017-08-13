@@ -24,7 +24,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
-import io.mycat.server.util.ShowCreateStmtInfo;
 import io.mycat.util.StringUtil;
 
 import java.nio.ByteBuffer;

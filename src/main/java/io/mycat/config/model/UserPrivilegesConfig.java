@@ -64,13 +64,7 @@ public class UserPrivilegesConfig {
 		}
 		
 		public TablePrivilege getTablePrivilege(String tableName) {
-			TablePrivilege tablePrivilege = tablePrivileges.get( tableName );
-			if ( tablePrivilege == null ) {
-				tablePrivilege = new TablePrivilege();
-				tablePrivilege.setName(tableName);
-				tablePrivilege.setDml(dml);
-			}
-			return tablePrivilege;
+			return tablePrivileges.get( tableName );
 		}
 	}
 	

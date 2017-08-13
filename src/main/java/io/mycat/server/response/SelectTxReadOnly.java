@@ -49,7 +49,7 @@ public class SelectTxReadOnly {
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        fields[i].packetId = ++packetId;
         eof.packetId = ++packetId;
 
     }

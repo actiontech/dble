@@ -63,8 +63,7 @@ public class RouterUtil {
 			return stmt;
 		}
 		int strtPos = 0;
-		int index = 0;
-		boolean flag = false;
+		boolean flag;
 		int firstE = forCmpStmt.indexOf("'");
 		int endE = forCmpStmt.lastIndexOf("'");
 		StringBuilder result = new StringBuilder();
@@ -80,19 +79,17 @@ public class RouterUtil {
 				flag = false;
 			}
 			if (flag) {
-				index = indx2;
-				result.append(stmt.substring(strtPos, index));
-				strtPos = index + maySchema2.length();
-				if (index > firstE && index < endE && countChar(stmt, index) % 2 == 1) {
-					result.append(stmt.substring(index, strtPos));
+				result.append(stmt.substring(strtPos, indx2));
+				strtPos = indx2 + maySchema2.length();
+				if (indx2 > firstE && indx2 < endE && countChar(stmt, indx2) % 2 != 0) {
+					result.append(stmt.substring(indx2, strtPos));
 				}
 				indx2 = forCmpStmt.indexOf(maySchema2, strtPos);
 			} else {
-				index = indx1;
-				result.append(stmt.substring(strtPos, index));
-				strtPos = index + maySchema1.length();
-				if (index > firstE && index < endE && countChar(stmt, index) % 2 == 1) {
-					result.append(stmt.substring(index, strtPos));
+				result.append(stmt.substring(strtPos, indx1));
+				strtPos = indx1 + maySchema1.length();
+				if (indx1 > firstE && indx1 < endE && countChar(stmt, indx1) % 2 !=0) {
+					result.append(stmt.substring(indx1, strtPos));
 				}
 				indx1 = forCmpStmt.indexOf(maySchema1, strtPos);
 			}

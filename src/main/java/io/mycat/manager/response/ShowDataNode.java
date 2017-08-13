@@ -61,7 +61,7 @@ import io.mycat.util.TimeUtil;
 public final class ShowDataNode {
 
 	private static final NumberFormat nf = DecimalFormat.getInstance();
-	private static final int FIELD_COUNT = 11;
+	private static final int FIELD_COUNT = 8;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];

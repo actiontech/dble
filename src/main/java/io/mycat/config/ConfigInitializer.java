@@ -87,11 +87,11 @@ public class ConfigInitializer {
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_LOCAL_TIME) {
 			IncrSequenceTimeHandler.getInstance().load();
 		}
-		
+
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED) {
 			DistributedSequenceHandler.getInstance().load();
 		}
-		
+
 		if (system.getSequnceHandlerType() == SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT) {
 			IncrSequenceZKHandler.getInstance().load(system.isLowerCaseTableNames());
 		}

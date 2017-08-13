@@ -101,7 +101,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         this.props = props;
-        //      threadLocalLoad();
+        threadLocalLoad();
     }
 
     private void handle(String key) throws Exception {
@@ -135,8 +135,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 } catch (Exception e) {
                     LOGGER.debug("Node exists! Maybe other instance is initializing!");
                 }
+            }else {
+                fetchNextPeriod(table);
             }
-            fetchNextPeriod(table);
         }
     }
 

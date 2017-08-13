@@ -18,7 +18,7 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 		return IncrSequenceTimeHandler.instance;
 	}
 
-	public IncrSequenceTimeHandler() {
+	private IncrSequenceTimeHandler() {
 		load();
 	}
 

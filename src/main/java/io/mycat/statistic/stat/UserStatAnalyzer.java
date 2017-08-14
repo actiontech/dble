@@ -48,6 +48,8 @@ public class UserStatAnalyzer implements QueryResultListener {
             }                
             userStat.update(sqlType, sql, sqlRows, netInBytes, netOutBytes, startTime, endTime,resultSetSize);	
             break;
+		default:
+			break;
 		}
 	}
 	

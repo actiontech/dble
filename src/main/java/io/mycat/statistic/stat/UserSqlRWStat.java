@@ -93,6 +93,8 @@ public class UserSqlRWStat {
     	case ServerParse.REPLACE:
     		this.wCount.incrementAndGet();
     		break;
+		default:
+			break;
     	}
     	
     	//SQL执行所在的耗时区间

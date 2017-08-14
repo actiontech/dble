@@ -72,6 +72,9 @@ public class TableStatAnalyzer implements QueryResultListener {
     			tableStat.update(sqlType, sql, queryResult.getStartTime(), queryResult.getEndTime(), relaTables);		
     		}    		
     		break;
+		default:
+			break;
+
     	}		
 	}	
 	

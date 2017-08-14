@@ -63,6 +63,8 @@ public class TableStat implements Comparable<TableStat> {
     	case ServerParse.REPLACE:
     		this.wCount.incrementAndGet();
     		break;
+		default:
+			break;
     	}
 		
 		// 记录 关联表执行情况

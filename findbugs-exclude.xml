@@ -26,10 +26,20 @@
     <Match>
         <Class name="io.mycat.sqlengine.mpp.UnsafeRowGrouper"/>
     </Match>
-
+	<Match>
+        <Class name="io.mycat.sqlengine.mpp.RowDataPacketGrouper"/>
+    </Match>
+	
+    <!-- need refactor -->
+    <Match>
+		 <Package  name="io.mycat.util.dataMigrator"/>
+    </Match>
+	 <Match>
+		 <Package  name="io.mycat.util.dataMigrator.dataIOImpl"/>
+    </Match>
     <!--MALICIOUS_CODE 68,STYLE 50+  -->
     <Match>
-        <Bug category="MALICIOUS_CODE,STYLE,CORRECTNESS"/>
+        <Bug category="MALICIOUS_CODE,CORRECTNESS"/>
     </Match>
 
 
@@ -40,11 +50,29 @@
         <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
-    <!-- STYLE start  -->
-    <!-- switch without default:TODO-->
-    <Match>
+	<!-- need refactor -->
+	<Match>
         <Bug category="STYLE"/>
         <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+		 <Class name="io.mycat.server.parser.ServerParseSelect"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+		 <Class name="io.mycat.server.response.CharacterSet"/>
+    </Match>
+	
+	<!-- use enum? -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+		 <Class name="io.mycat.backend.heartbeat.MySQLHeartbeat"/>
+    </Match>
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+		 <Class name="io.mycat.server.response.SessionIsolation"/>
     </Match>
     <!-- always throw new exception-->
     <Match>

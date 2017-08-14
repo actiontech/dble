@@ -63,39 +63,26 @@ public class QueryConditionAnalyzer implements QueryResultListener {
 	
 	@Override
 	public void onQueryResult(QueryResult queryResult) {
-		
-//		this.lock.lock();
-//		try {
-			
-			int sqlType = queryResult.getSqlType();
-			String sql = queryResult.getSql();
-	
-			switch(sqlType) {
-	    	case ServerParse.SELECT:		
-    			List<Object> values = sqlParser.parseConditionValues(sql, this.tableName, this.columnName);
-	    		if ( values != null ) {
-	    			
-	    			if ( this.map.size() < MAX_QUERY_MAP_SIZE ) {
-	    				
-		    			for(Object value : values) {
-							AtomicLong count = this.map.get(value);
-		    				if (count == null) {
-		    					count = new AtomicLong(1L);
-		    				} else {
-		    					count.getAndIncrement();
-		    				}	    				
-		    				this.map.put(value, count);	    				
-		    			}
-		    			
-	    			} else {
-	    				LOGGER.debug(" this map is too large size ");
-	    			}
-	    		}
-			}	
-			
-//		} finally {
-//			this.lock.unlock();
-//		}
+		int sqlType = queryResult.getSqlType();
+		String sql = queryResult.getSql();
+		if (sqlType == ServerParse.SELECT) {
+			List<Object> values = sqlParser.parseConditionValues(sql, this.tableName, this.columnName);
+			if (values != null) {
+				if (this.map.size() < MAX_QUERY_MAP_SIZE) {
+					for (Object value : values) {
+						AtomicLong count = this.map.get(value);
+						if (count == null) {
+							count = new AtomicLong(1L);
+						} else {
+							count.getAndIncrement();
+						}
+						this.map.put(value, count);
+					}
+				} else {
+					LOGGER.debug(" this map is too large size ");
+				}
+			}
+		}
 	}
 	
 	public boolean setCf(String cf) {

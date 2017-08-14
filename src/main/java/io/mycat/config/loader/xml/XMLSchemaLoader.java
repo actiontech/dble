@@ -545,25 +545,21 @@ public class XMLSchemaLoader implements SchemaLoader {
 	private void checkRuleSuitTable(TableConfig tableConf) {
 		AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
 		int suitValue = function.suitableFor(tableConf);
-		switch(suitValue) {
-			case -1:
-				// 少节点,给提示并抛异常
-				throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ "
-						+ tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : "
-						+ tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
-			case 0:
-				// table datanode size == rule function partition size
-				break;
-			case 1:
-				// 有些节点是多余的,给出warn log
-				LOGGER.warn("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant", 
-						new String[]{
-								tableConf.getName(),
-								tableConf.getRule().getFunctionName(),
-								String.valueOf(tableConf.getRule().getRuleAlgorithm().getPartitionNum()),
-								String.valueOf(tableConf.getDataNodes().size())
-						});
-				break;
+		if (suitValue <0) {// 少节点,给提示并抛异常
+			throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ "
+					+ tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : "
+					+ tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
+		}else if (suitValue >0) {// 有些节点是多余的,给出warn log
+			LOGGER.warn("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant",
+					new String[]{
+							tableConf.getName(),
+							tableConf.getRule().getFunctionName(),
+							String.valueOf(tableConf.getRule().getRuleAlgorithm().getPartitionNum()),
+							String.valueOf(tableConf.getDataNodes().size())
+					});
+
+		} else {
+			// table datanode size == rule function partition size
 		}
 	}
 

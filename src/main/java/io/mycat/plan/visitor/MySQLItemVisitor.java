@@ -491,6 +491,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		case "STDDEV":
 			item =  new ItemSumStd(args, 0, false, null);
 			break;
+		default:
+			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported "+funcName);
 		}
     }
 	@Override

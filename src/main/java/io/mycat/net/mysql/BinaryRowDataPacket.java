@@ -241,6 +241,8 @@ public class BinaryRowDataPacket extends MySQLPacket {
 				LOGGER.error("error",e);
 			}
 			break;
+		default:
+			throw new IllegalArgumentException("Field type is not supported");
 		}
 		
 	}

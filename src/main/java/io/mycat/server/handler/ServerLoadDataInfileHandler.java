@@ -600,19 +600,22 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
 
     private String parseFieldString(String value, String encose,String escape)
     {
-        if (encose == null || "".equals(encose) || value == null)
-        {
-            return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
-        } else if (value.startsWith(encose) && value.endsWith(encose))
-        {
-            return this.trance(value.substring(encose.length() - 1, value.length() - encose.length())
-                                                .replace("\\","\\\\").replace(escape,"\\"));
+        //avoid null point execption
+        if(value == null){
+            return value;
         }
-        return this.trance(value.replace("\\","\\\\").replace(escape,"\\"));
+        //if the value is cover by enclose char &  enclose char is not null  clear the  enclose char
+        if (encose != null && !"".equals(encose) &&
+                (value.startsWith(encose) && value.endsWith(encose))) {
+            return this.escaped(value.substring(encose.length() - 1, value.length() - encose.length())
+                    .replace("\\","\\\\").replace(escape,"\\"));
+        }
+        //else replace escape because \is used as escape in insert
+        return this.escaped(value.replace("\\","\\\\").replace(escape,"\\"));
     }
 
 
-    private String trance(String input){
+    private String escaped(String input){
         StringBuffer output = new StringBuffer();
         char[] x = input.toCharArray();
         for(int i  =0;i < x.length;i++){
@@ -625,7 +628,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler
                     case 'r':output.append('\r');break;
                     case '"':output.append('\"');break;
                     case '\'':output.append('\'');break;
-                    case '\\':output.append('\\');
+                    case '\\':output.append('\\');break;
+                    default:output.append(x[i]);
                 }
                 i++;
                 continue;

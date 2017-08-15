@@ -75,8 +75,11 @@ public class ItemCreate {
 		nativFuncs.put("COT", new ItemFuncCot(null));
 		nativFuncs.put("CRC32", new ItemFuncCrc32(null));
 		// proFuncs.put("CROSSES", new Item_func_abs(null));
-		nativFuncs.put("CURTIME", new ItemFuncCurtimeLocal(null));
 		nativFuncs.put("CURDATE", new ItemFuncCurdateLocal(null));
+		nativFuncs.put("CURRENT_DATE", new ItemFuncCurdateLocal(null));
+		nativFuncs.put("CURTIME", new ItemFuncCurtimeLocal(null));
+		nativFuncs.put("CURRENT_TIME", new ItemFuncCurtimeLocal(null));
+		nativFuncs.put("CURRENT_TIMESTAMP", new ItemFuncNowLocal(null));
 		nativFuncs.put("DATE", new ItemFuncDate(null));
 		nativFuncs.put("DATEDIFF", new ItemFuncDatediff(null));
 		nativFuncs.put("DATE_FORMAT", new ItemFuncDateFormat(null, false));
@@ -120,6 +123,7 @@ public class ItemCreate {
 		// proFuncs.put("GEOMFROMTEXT", new Item_func_abs(null));
 		// proFuncs.put("GEOMFROMWKB", new Item_func_abs(null));
 		// proFuncs.put("GET_LOCK", new Item_func_abs(null));
+		nativFuncs.put("GET_FORMAT", new ItemFuncGetFormat(null));
 		// proFuncs.put("GLENGTH", new Item_func_abs(null));
 		nativFuncs.put("GREATEST", new ItemFuncGreatest(null));
 		// proFuncs.put("GTID_SUBTRACT", new Item_func_abs(null));
@@ -182,6 +186,8 @@ public class ItemCreate {
 		nativFuncs.put("LN", new ItemFuncLn(null));
 		nativFuncs.put("LOAD_FILE", new ItemfuncLoadFile(null));
 		nativFuncs.put("LOCATE", new ItemFuncLocate(null));
+		nativFuncs.put("LOCALTIME", new ItemFuncNowLocal(null));
+		nativFuncs.put("LOCALTIMESTAMP", new ItemFuncNowLocal(null));
 		nativFuncs.put("LOG", new ItemFuncLog(null));
 		nativFuncs.put("LOG10", new ItemFuncLog10(null));
 		nativFuncs.put("LOG2", new ItemFuncLog2(null));
@@ -200,7 +206,6 @@ public class ItemCreate {
 		nativFuncs.put("NULLIF", new ItemFuncNullif(null, null));
 		nativFuncs.put("NOW", new ItemFuncNowLocal(null));
 		nativFuncs.put("OCT", new ItemFuncLog2(null));
-		nativFuncs.put("ORD", new ItemFuncOrd(null));
 		nativFuncs.put("PERIOD_ADD", new ItemFuncPeriodAdd(null));
 		nativFuncs.put("PERIOD_DIFF", new ItemFuncPeriodDiff(null));
 		nativFuncs.put("PI", new ItemFuncPi(null));

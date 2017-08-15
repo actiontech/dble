@@ -166,12 +166,20 @@ public class Testparser {
 //		obj.test(strCreateIndex);
 //		strCreateIndex = "CREATE UNIQUE INDEX part_of_name ON customer (name(10));";
 //		obj.test(strCreateIndex);
-		
 		String selectSQl = "select avg(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),"
 				+ "COUNT(char_columns.ID),MAX(distinct char_columns.ID),MIN(distinct char_columns.ID),"
 				+ "STD(char_columns.ID),STDDEV(char_columns.ID),STDDEV_POP(char_columns.ID),STDDEV_SAMP(char_columns.ID), "
 				+ "sum(id),VAR_POP(char_columns.ID),VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID)"
 				+ " from char_columns where id =1  and name = 'x';";
+
+//		obj.test(selectSQl);
+//		selectSQl = "SELECT BINARY 'a' = 'A';";
+//		obj.test(selectSQl);
+		selectSQl = "SELECT b'1000001';";
+		obj.test(selectSQl);
+//		selectSQl = "SELECT GET_FORMAT(DATE);";
+//		obj.test(selectSQl);
+//		selectSQl = "select CURRENT_DATE;";//not support
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT student_name, GROUP_CONCAT(test_score) "
 //				+ "FROM student GROUP BY student_name;";

@@ -64,7 +64,15 @@ public abstract class ItemStrFunc extends ItemFunc {
 		try {
 			return new BigInteger(res);
 		} catch (Exception e) {
-			return BigInteger.ZERO;
+			if (e instanceof NumberFormatException) {
+				try {
+					return new BigInteger(res.getBytes());
+				} catch (Exception e2) {
+					return BigInteger.ZERO;
+				}
+			} else {
+				return BigInteger.ZERO;
+			}
 		}
 	}
 

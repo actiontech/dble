@@ -40,9 +40,17 @@ public class ItemString extends ItemBasicConstant {
 	public BigInteger valInt() {
 		BigInteger intValue = BigInteger.ZERO;
 		try {
-			intValue = new BigInteger(value);
+			return new BigInteger(value);
 		} catch (Exception e) {
-			logger.warn("convert string to int exception!", e);
+			if (e instanceof NumberFormatException) {
+				try {
+					return new BigInteger(value.getBytes());
+				} catch (Exception e2) {
+					logger.warn("convert string to int exception!", e);
+				}
+			} else {
+				logger.warn("convert string to int exception!", e);
+			}
 		}
 		return intValue;
 	}

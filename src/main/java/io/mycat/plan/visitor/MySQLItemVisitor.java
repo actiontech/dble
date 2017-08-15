@@ -1,5 +1,6 @@
 package io.mycat.plan.visitor;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,35 +10,7 @@ import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
-import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
-import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
-import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
-import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
-import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.druid.sql.ast.expr.SQLBooleanExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCaseExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
-import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLListExpr;
-import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNotExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
-import com.alibaba.druid.sql.ast.expr.SQLSomeExpr;
-import com.alibaba.druid.sql.ast.expr.SQLUnaryExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -69,6 +42,7 @@ import io.mycat.plan.common.item.function.bitfunc.ItemFuncBitXor;
 import io.mycat.plan.common.item.function.bitfunc.ItemFuncLeftShift;
 import io.mycat.plan.common.item.function.bitfunc.ItemFuncRightShift;
 import io.mycat.plan.common.item.function.castfunc.ItemCharTypecast;
+import io.mycat.plan.common.item.function.castfunc.ItemFuncBinary;
 import io.mycat.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import io.mycat.plan.common.item.function.castfunc.ItemNCharTypecast;
 import io.mycat.plan.common.item.function.mathsfunc.operator.ItemFuncDiv;
@@ -102,6 +76,7 @@ import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
 import io.mycat.plan.common.item.function.operator.logic.ItemFuncNot;
 import io.mycat.plan.common.item.function.operator.logic.ItemFuncXor;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncChar;
+import io.mycat.plan.common.item.function.strfunc.ItemFuncOrd;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TRIM_TYPE_ENUM;
 import io.mycat.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
@@ -117,6 +92,7 @@ import io.mycat.plan.common.item.function.sumfunc.ItemSumVariance;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumXor;
 import io.mycat.plan.common.item.function.timefunc.ItemDateAddInterval;
 import io.mycat.plan.common.item.function.timefunc.ItemExtract;
+import io.mycat.plan.common.item.function.timefunc.ItemFuncGetFormat;
 import io.mycat.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
 import io.mycat.plan.common.item.function.unknown.ItemFuncUnknown;
 import io.mycat.plan.common.item.subquery.ItemInSubselect;
@@ -139,7 +115,6 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	public Item getItem() {
 		return item;
 	}
-
 	public void setItem(Item item) {
 		this.item = item;
 	}
@@ -319,22 +294,25 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 	public void endVisit(SQLUnaryExpr x) {
 		Item a = getItem(x.getExpr());
 		switch(x.getOperator()){
-		case Negative:
-			item = new ItemFuncNeg(a);
-			break;
-		case Not:
-		case NOT:
-			item = new ItemFuncNot(a);
-			break;
-		case Compl:
-			item = new ItemFuncBitInversion(a);
-			break;
-		case Plus:
-			item = a;
-			break;
-		default:
-			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-					"not supported kind expression:" + x.getOperator());
+			case Negative:
+				item = new ItemFuncNeg(a);
+				break;
+			case Not:
+			case NOT:
+				item = new ItemFuncNot(a);
+				break;
+			case Compl:
+				item = new ItemFuncBitInversion(a);
+				break;
+			case Plus:
+				item = a;
+				break;
+			case BINARY:
+				item = new ItemFuncBinary(a, -1);
+				break;
+			default:
+				throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+						"not supported kind expression:" + x.getOperator());
 		}
 		initName(x);
 	}
@@ -548,10 +526,17 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 				break;
 			case "CHAR":
 				if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-					item = new ItemFuncChar(args);
+					attributes = x.getParameters().get(0).getAttributes();
+				}
+				if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
+					item = new ItemFuncChar(args,this.charsetIndex);
 				} else {
 					item = new ItemFuncChar(args, (String) attributes.get(ItemFuncKeyWord.USING));
 				}
+				break;
+			case "ORD":
+				item = new ItemFuncOrd(args,this.charsetIndex);
+				break;
 			case "ADDDATE":
 				if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
 					item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, false);
@@ -605,6 +590,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 			case "IF":
 				item = new ItemFuncIf(args);
 				break;
+			case "GET_FORMAT":
+				SQLExpr expr = x.getParameters().get(0);
+				if(expr instanceof SQLIdentifierExpr){
+					Item arg0 = new ItemString(((SQLIdentifierExpr) expr).getName());
+					args.set(0,arg0);
+				}else{
+					throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '"+expr.toString()+"'");
+				}
+				item = ItemCreate.getInstance().createNativeFunc(funcName, args);
+				break;
 			default:
 				if (ItemCreate.getInstance().isNativeFunc(funcName)) {
 					item = ItemCreate.getInstance().createNativeFunc(funcName, args);
@@ -644,13 +639,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 		// TODO
 		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported exists!");
     }
+	@Override
+	public void endVisit(SQLBinaryExpr x) {
+		String binary = x.getValue();
+		item = new ItemInt(Long.parseLong(binary,2));
+		initName(x);
+	}
 
-	//TODO: CHECK
 	@Override
     public void endVisit(SQLHexExpr x) {
-		item = new ItemString(x.toString());
-		initName(x);
-    }
+		byte[] bytes = x.toBytes();
+		if (bytes ==null) {
+			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'X'" + x.getHex() + "''");
+		}
+		try {
+			item = new ItemString(new String(bytes,CharsetUtil.getJavaCharset(this.charsetIndex)));
+		} catch (UnsupportedEncodingException e) {
+			throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Not Support charset index ="+this.charsetIndex);
+		}
+
+	}
 
 	@Override
 	public void endVisit(SQLSelectStatement node) {

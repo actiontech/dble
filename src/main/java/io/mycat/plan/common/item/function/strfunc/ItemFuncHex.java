@@ -24,7 +24,8 @@ public class ItemFuncHex extends ItemStrFunc {
 			this.nullValue = true;
 			return EMPTY;
 		}
-		return Long.toBinaryString(l);
+		String val = Long.toHexString(l);
+		return val.length() % 2 != 0 ? "0" + val : val;
 	}
 	
 	@Override

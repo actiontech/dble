@@ -35,7 +35,7 @@ public class ItemFuncBinary extends ItemStrFunc {
 			return null;
 		}
 		nullValue = false;
-		if (cast_length < res.length())
+		if (cast_length != -1 && cast_length < res.length())
 			res = res.substring(0, cast_length);
 		return res;
 	}

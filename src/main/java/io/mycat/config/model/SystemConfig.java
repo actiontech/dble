@@ -36,6 +36,9 @@ import io.mycat.config.Isolations;
 public final class SystemConfig {
 
 	public static final String SYS_HOME = "MYCAT_HOME";
+	public static final String XA_COMMIT_DELAY = "COMMIT_DELAY";
+	public static final String XA_PREPARE_DELAY = "PREPARE_DELAY";
+	public static final String XA_ROLLBACK_DELAY = "ROLLBACK_DELAY";
 	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
 	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
 	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
@@ -198,7 +201,7 @@ public final class SystemConfig {
 		this.processors = DEFAULT_PROCESSORS;
 		this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
 		this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
-		
+
 		/**
 		 * 大结果集时 需增大 network buffer pool pages.
 		 */
@@ -829,4 +832,5 @@ public final class SystemConfig {
 	public void setOrderByQueueSize(int orderByQueueSize) {
 		this.orderByQueueSize = orderByQueueSize;
 	}
+
 }

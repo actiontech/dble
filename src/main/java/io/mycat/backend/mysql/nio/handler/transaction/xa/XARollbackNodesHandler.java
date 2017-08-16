@@ -32,6 +32,7 @@ import io.mycat.backend.mysql.xa.ParticipantLogEntry;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.XAStateLog;
 import io.mycat.config.ErrorCode;
+import io.mycat.config.model.SystemConfig;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.route.RouteResultsetNode;
@@ -73,6 +74,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 				return;
 			}
 		}
+
 		for (final RouteResultsetNode node : session.getTargetKeys()) {
 			final BackendConnection conn = session.getTarget(node);
 			conn.setResponseHandler(this);
@@ -104,6 +106,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 					cleanAndFeedback();
 					return false;
 				}
+				this.debugRollbackDelay();
 			}
 			rollbackPhase(mysqlCon);
 
@@ -403,4 +406,20 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 			}
 		}
 	}
+
+
+	public void debugRollbackDelay(){
+        try {
+            if (LOGGER.isDebugEnabled() == true && System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) != null) {
+                long delayTime = System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) == null ?
+                        0 : Long.parseLong(System.getProperty(SystemConfig.XA_ROLLBACK_DELAY)) * 1000;
+                LOGGER.debug("before xa rollback sleep time = " + delayTime);
+                Thread.sleep(delayTime);
+                LOGGER.debug("before xa rollback sleep finished " + delayTime);
+            }
+        }catch(Exception e){
+            LOGGER.debug("before xa rollback  sleep error ");
+        }
+	}
+
 }

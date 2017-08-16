@@ -26,8 +26,6 @@ package io.mycat.config.model;
 import com.alibaba.druid.wall.WallConfig;
 import com.alibaba.druid.wall.WallProvider;
 import com.alibaba.druid.wall.spi.MySqlWallProvider;
-import io.mycat.MycatServer;
-import io.mycat.config.MycatConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

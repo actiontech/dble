@@ -92,7 +92,6 @@ import io.mycat.plan.common.item.function.sumfunc.ItemSumVariance;
 import io.mycat.plan.common.item.function.sumfunc.ItemSumXor;
 import io.mycat.plan.common.item.function.timefunc.ItemDateAddInterval;
 import io.mycat.plan.common.item.function.timefunc.ItemExtract;
-import io.mycat.plan.common.item.function.timefunc.ItemFuncGetFormat;
 import io.mycat.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
 import io.mycat.plan.common.item.function.unknown.ItemFuncUnknown;
 import io.mycat.plan.common.item.subquery.ItemInSubselect;

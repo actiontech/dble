@@ -5,7 +5,6 @@ import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.util.ResourceUtil;
 
 import java.io.*;
-import java.util.ResourceBundle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

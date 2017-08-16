@@ -24,7 +24,6 @@
 package io.mycat.route;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.mycat.server.parser.ServerParse;

@@ -5,7 +5,6 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.xmltozk.listen.*;
-import io.mycat.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import io.mycat.util.KVPathUtil;
 import io.mycat.util.ZKUtils;

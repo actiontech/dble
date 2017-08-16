@@ -40,7 +40,6 @@ import io.mycat.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.Fields;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;

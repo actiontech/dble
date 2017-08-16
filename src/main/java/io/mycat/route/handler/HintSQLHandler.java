@@ -14,7 +14,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.*;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.ServerConnection;

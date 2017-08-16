@@ -3,7 +3,6 @@ package io.mycat.route.handler;
 
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.RouteResultset;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.ServerConnection;

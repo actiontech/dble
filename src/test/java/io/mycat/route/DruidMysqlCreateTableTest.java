@@ -19,8 +19,6 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
-import io.mycat.config.loader.SchemaLoader;
-import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.util.StringUtil;

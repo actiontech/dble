@@ -37,7 +37,6 @@ package io.mycat.util;
 
 import java.sql.Types;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**

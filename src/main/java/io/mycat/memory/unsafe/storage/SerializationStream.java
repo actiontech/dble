@@ -1,7 +1,5 @@
 package io.mycat.memory.unsafe.storage;
 
-import java.util.Iterator;
-
 /**
  * Created by zagnix on 2016/6/3.
  */

@@ -12,7 +12,6 @@ import io.mycat.memory.unsafe.utils.sort.PrefixComparator;
 import io.mycat.memory.unsafe.utils.sort.PrefixComparators;
 import io.mycat.memory.unsafe.utils.sort.RowPrefixComputer;
 import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter;
-import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter.PrefixComputer;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
 import org.slf4j.Logger;

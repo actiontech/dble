@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-import io.mycat.cache.CacheService;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 

@@ -23,11 +23,6 @@
  */
 package io.mycat.server.handler;
 
-import io.mycat.MycatServer;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.TableConfig;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.server.parser.ServerParseShow;

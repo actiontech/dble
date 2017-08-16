@@ -1,6 +1,5 @@
 package io.mycat.plan.common.item.function.timefunc;
 
-import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.strfunc.ItemStrFunc;

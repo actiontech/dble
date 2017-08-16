@@ -7,8 +7,6 @@ import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.net.BackendAIOConnection;
 import io.mycat.net.mysql.BinaryPacket;
-import io.mycat.net.mysql.CommandPacket;
-import io.mycat.net.mysql.MySQLPacket;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.sqlengine.mpp.LoadData;
 

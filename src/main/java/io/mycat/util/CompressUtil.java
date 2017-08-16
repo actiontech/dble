@@ -1,7 +1,5 @@
 package io.mycat.util;
 
-import com.google.common.collect.Lists;
-
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.net.AbstractConnection;

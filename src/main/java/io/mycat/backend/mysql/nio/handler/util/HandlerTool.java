@@ -3,7 +3,6 @@ package io.mycat.backend.mysql.nio.handler.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import io.mycat.util.StringUtil;
 import org.apache.log4j.Logger;

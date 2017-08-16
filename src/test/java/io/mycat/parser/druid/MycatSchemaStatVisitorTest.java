@@ -1,12 +1,10 @@
 package io.mycat.parser.druid;
 
-import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 import org.junit.Test;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -14,7 +12,6 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.stat.TableStat.Condition;
 
-import io.mycat.route.impl.DruidMycatRouteStrategy;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 
 /**

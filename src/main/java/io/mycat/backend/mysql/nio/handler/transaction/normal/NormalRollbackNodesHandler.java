@@ -25,7 +25,6 @@ package io.mycat.backend.mysql.nio.handler.transaction.normal;
 
 
 import io.mycat.backend.BackendConnection;
-import io.mycat.backend.mysql.nio.MySQLConnection;
 import io.mycat.backend.mysql.nio.handler.transaction.AbstractRollbackNodesHandler;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;

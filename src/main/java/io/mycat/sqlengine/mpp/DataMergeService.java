@@ -36,7 +36,6 @@ import org.apache.log4j.Logger;
  *
  */
 
-import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.nio.handler.MultiNodeQueryHandler;
 import io.mycat.net.mysql.EOFPacket;

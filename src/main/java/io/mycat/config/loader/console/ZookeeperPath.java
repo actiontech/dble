@@ -1,7 +1,5 @@
 package io.mycat.config.loader.console;
 
-import io.mycat.config.Versions;
-
 /**
  * 专门用来操作zookeeper路径的文件信息
  * 源文件名：ZkPath.java

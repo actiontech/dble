@@ -24,7 +24,6 @@
 package io.mycat.route.parser;
 
 import io.mycat.route.parser.util.Pair;
-import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.util.SplitUtil;
 
 /**

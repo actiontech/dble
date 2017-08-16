@@ -29,8 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * 记录最近3个时段的平均响应时间，默认1，10，30分钟。
  * 

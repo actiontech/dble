@@ -23,9 +23,6 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
-import io.mycat.server.handler.MysqlInformationSchemaHandler;
-import io.mycat.server.handler.MysqlProcHandler;
-import io.mycat.server.response.InformationSchemaProfiling;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 

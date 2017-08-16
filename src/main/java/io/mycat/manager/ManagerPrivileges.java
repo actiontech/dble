@@ -23,28 +23,10 @@
  */
 package io.mycat.manager;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
-import com.alibaba.druid.wall.WallCheckResult;
-import com.alibaba.druid.wall.WallProvider;
-
 import io.mycat.MycatServer;
-import io.mycat.config.Alarms;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.UserConfig;
-import io.mycat.config.model.UserPrivilegesConfig;
 import io.mycat.config.MycatPrivileges;
-import io.mycat.net.handler.FrontendPrivileges;
-import io.mycat.route.RouteResultset;
-import io.mycat.server.ServerConnection;
 
 /**
  * @author mycat

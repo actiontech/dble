@@ -34,7 +34,6 @@ import io.mycat.config.ErrorCode;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.exception.MySQLOutPutException;
 import io.mycat.plan.common.item.Item;
-import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.node.JoinNode;

@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 
-import com.sun.tools.javac.code.Attribute;
 import io.mycat.config.model.rule.RuleAlgorithm;
 import io.mycat.util.ResourceUtil;
 

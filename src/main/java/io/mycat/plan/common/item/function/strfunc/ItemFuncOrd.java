@@ -9,7 +9,6 @@ import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.Item;
-import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 
 

@@ -2,7 +2,6 @@ package io.mycat.route.sequence.handler;
 
 
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.util.PropertiesUtil;
 import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;

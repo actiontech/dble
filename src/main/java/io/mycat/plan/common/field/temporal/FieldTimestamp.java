@@ -5,7 +5,6 @@ import java.math.BigInteger;
 
 import io.mycat.plan.common.MySQLcom;
 import io.mycat.plan.common.item.FieldTypes;
-import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.common.time.MyTime;
 
 public class FieldTimestamp extends FieldTemporalWithDateAndTime {

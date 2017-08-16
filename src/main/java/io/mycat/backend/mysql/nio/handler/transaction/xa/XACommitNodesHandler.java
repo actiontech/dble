@@ -9,6 +9,7 @@ import io.mycat.backend.mysql.xa.ParticipantLogEntry;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.XAStateLog;
 import io.mycat.config.ErrorCode;
+import io.mycat.config.model.SystemConfig;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.NonBlockingSession;
@@ -48,6 +49,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 					nextParse();
 					return false;
 				}
+                this.debugCommitDelay();
 			}
 			preparePhase(mysqlCon);
 		} else if(state == TxState.TX_PREPARED_STATE) {
@@ -59,7 +61,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 					nextParse();
 					return false;
 				}
+                this.debugCommitDelay();
 			}
+
 			commitPhase(mysqlCon);
 		} else if(state == TxState.TX_COMMIT_FAILED_STATE) {
 			if (position == 0) {
@@ -306,5 +310,34 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 			LOGGER.warn("cleanAndFeedback:" + error);
 
 		}
+	}
+
+
+	public void debugCommitDelay(){
+        try {
+            if(LOGGER.isDebugEnabled() == true) {
+                long delayTime = 0;
+                String xaStatus = "";
+                //before the prepare command
+                if (session.getXaState() == TxState.TX_ENDED_STATE) {
+                    delayTime = System.getProperty(SystemConfig.XA_PREPARE_DELAY) == null ?
+                            0 : Long.parseLong(System.getProperty(SystemConfig.XA_PREPARE_DELAY)) * 1000;
+                    xaStatus = "'XA PREPARED'";
+                } else if (session.getXaState() == TxState.TX_PREPARED_STATE) {
+                    delayTime = System.getProperty(SystemConfig.XA_COMMIT_DELAY) == null ?
+                            0 : Long.parseLong(System.getProperty(SystemConfig.XA_COMMIT_DELAY)) * 1000;
+                    xaStatus = "'XA COMMIT'";
+                }
+                //if using the debug log & using the jvm xa delay properties action will be delay by properties
+                if (delayTime > 0) {
+                    LOGGER.debug("before xa " + xaStatus + " sleep time = " + delayTime);
+                    Thread.sleep(delayTime);
+                    LOGGER.debug("before xa " + xaStatus + " sleep finished " + delayTime);
+                }
+            }
+        }catch(Exception e){
+            LOGGER.debug("before xa commit sleep error ");
+        }
+
 	}
 }

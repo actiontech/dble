@@ -40,6 +40,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 				return;
 			}
 		}
+
 		for (RouteResultsetNode rrn : session.getTargetKeys()) {
 			final BackendConnection conn = session.getTarget(rrn);
 			conn.setResponseHandler(this);
@@ -80,5 +81,10 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 	@Override
 	public void writeQueueAvailable() {
 	
+	}
+
+
+	public void debugCommitDelay(){
+
 	}
 }

@@ -24,8 +24,6 @@
 package io.mycat;
 
 import com.google.common.io.Files;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
@@ -83,7 +81,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class MycatServer {
 	
 	public static final String NAME = "MyCat_";
-	private static final long LOG_WATCH_DELAY = 60000L;
 	private static final long TIME_UPDATE_PERIOD = 20L;
 	private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
 	private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
@@ -134,7 +131,6 @@ public class MycatServer {
 	private NameableExecutor businessExecutor;
 	private NameableExecutor complexQueryExecutor;
 	private NameableExecutor timerExecutor;
-	private ListeningExecutorService listeningExecutorService;
 	private  InterProcessMutex dnindexLock;
 	private  long totalNetWorkBufferSize = 0;
 	private  XASessionCheck xaSessionCheck;
@@ -352,7 +348,6 @@ public class MycatServer {
 		businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
 		complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
 		timerExecutor = ExecutorUtil.createFixed("Timer", 1);
-		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 
 		for (int i = 0; i < processors.length; i++) {
 			processors[i] = new NIOProcessor("Processor" + i, bufferPool,
@@ -678,10 +673,6 @@ public class MycatServer {
 		return txnLogProcessor;
 	}
 
-	public RouteService getRouterService() {
-		return routerService;
-	}
-
 	public CacheService getCacheService() {
 		return cacheService;
 	}
@@ -690,7 +681,7 @@ public class MycatServer {
 		return businessExecutor;
 	}
 
-	public RouteService getRouterservice() {
+	public RouteService getRouterService() {
 		return routerService;
 	}
 
@@ -974,10 +965,6 @@ public class MycatServer {
 
 	public boolean isAIO() {
 		return aio;
-	}
-
-	public ListeningExecutorService getListeningExecutorService() {
-		return listeningExecutorService;
 	}
 
 }

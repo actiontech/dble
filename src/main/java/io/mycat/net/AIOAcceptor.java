@@ -50,7 +50,6 @@ public final class AIOAcceptor implements SocketAcceptor,
 	private final AsynchronousServerSocketChannel serverChannel;
 	private final FrontendConnectionFactory factory;
 
-	private long acceptCount;
 	private final String name;
 
 	public AIOAcceptor(String name, String ip, int port, int backlog,
@@ -77,10 +76,6 @@ public final class AIOAcceptor implements SocketAcceptor,
 
 	public int getPort() {
 		return port;
-	}
-
-	public long getAcceptCount() {
-		return acceptCount;
 	}
 
 	private void accept(NetworkChannel channel, Long id) {

@@ -39,7 +39,7 @@ public final class SystemConfig {
 	public static final String XA_COMMIT_DELAY = "COMMIT_DELAY";
 	public static final String XA_PREPARE_DELAY = "PREPARE_DELAY";
 	public static final String XA_ROLLBACK_DELAY = "ROLLBACK_DELAY";
-	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+	static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
 	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
 	public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
 	public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
@@ -59,9 +59,9 @@ public final class SystemConfig {
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
 	private final static String MEMORY_PAGE_SIZE = "1m";
 	private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
-	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
-	private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1 * 1000L;
-	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1 * 1000L;
+	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1000L;
+	private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1000L;
+	private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1000L;
 	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
@@ -140,28 +140,27 @@ public final class SystemConfig {
 	private int useGlobleTableCheck = 1;	// 全局表一致性检查开关
 	private long glableTableCheckPeriod;
 
-	/**
-	 * Mycat 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
+	 /* 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
 	 */
 	/**
 	 * 是否启用Off Heap for Merge  1-启用，0-不启用
 	 */
 	private int useOffHeapForMerge;
-	/**
+	/*
 	 *页大小,对应MemoryBlock的大小，单位为M
 	 */
 	private String memoryPageSize;
-	/**
+	/*
 	 * DiskRowWriter写磁盘是临时写Buffer，单位为K
 	 */
 	private String spillsFileBufferSize;
 
-	/**
+	/*
 	 * 排序时，内存不够时，将已经排序的结果集
 	 * 写入到临时目录
 	 */
 	private String dataNodeSortedTempDir;
-	/**
+	/*
 	 * 该变量仅在Merge使用On Heap
 	 * 内存方式时起作用，如果使用Off Heap内存方式
 	 * 那么可以认为-Xmx就是系统预留内存。
@@ -200,10 +199,7 @@ public final class SystemConfig {
 		this.processors = DEFAULT_PROCESSORS;
 		this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
 		this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
-
-		/**
-		 * 大结果集时 需增大 network buffer pool pages.
-		 */
+		// 大结果集时 需增大 network buffer pool pages.
 		this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS*20);
 
 		this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
@@ -243,6 +239,7 @@ public final class SystemConfig {
 		return dataNodeSortedTempDir;
 	}
 
+	@SuppressWarnings("unused")
 	public void setDataNodeSortedTempDir(String dataNodeSortedTempDir) {
 		this.dataNodeSortedTempDir = dataNodeSortedTempDir;
 	}
@@ -251,7 +248,7 @@ public final class SystemConfig {
 	public int getTransactionRatateSize() {
 		return transactionRatateSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setTransactionRatateSize(int transactionRatateSize) {
 		this.transactionRatateSize = transactionRatateSize;
 	}
@@ -259,7 +256,7 @@ public final class SystemConfig {
 	public String getTransactionLogBaseDir() {
 		return transactionLogBaseDir;
 	}
-
+	@SuppressWarnings("unused")
 	public void setTransactionLogBaseDir(String transactionLogBaseDir) {
 		this.transactionLogBaseDir = transactionLogBaseDir;
 	}
@@ -267,7 +264,7 @@ public final class SystemConfig {
 	public String getTransactionLogBaseName() {
 		return transactionLogBaseName;
 	}
-
+	@SuppressWarnings("unused")
 	public void setTransactionLogBaseName(String transactionLogBaseName) {
 		this.transactionLogBaseName = transactionLogBaseName;
 	}
@@ -275,7 +272,7 @@ public final class SystemConfig {
 	public int getUseOffHeapForMerge() {
 		return useOffHeapForMerge;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseOffHeapForMerge(int useOffHeapForMerge) {
 		this.useOffHeapForMerge = useOffHeapForMerge;
 	}
@@ -283,7 +280,7 @@ public final class SystemConfig {
 	public String getMemoryPageSize() {
 		return memoryPageSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setMemoryPageSize(String memoryPageSize) {
 		this.memoryPageSize = memoryPageSize;
 	}
@@ -291,7 +288,7 @@ public final class SystemConfig {
 	public String getSpillsFileBufferSize() {
 		return spillsFileBufferSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setSpillsFileBufferSize(String spillsFileBufferSize) {
 		this.spillsFileBufferSize = spillsFileBufferSize;
 	}
@@ -299,7 +296,7 @@ public final class SystemConfig {
 	public boolean isUseZKSwitch() {
 		return useZKSwitch;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseZKSwitch(boolean useZKSwitch) {
 		this.useZKSwitch = useZKSwitch;
 	}
@@ -307,7 +304,7 @@ public final class SystemConfig {
 	public boolean isUseJoinStrategy() {
 		return useJoinStrategy;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseJoinStrategy(boolean useJoinStrategy) {
 		this.useJoinStrategy = useJoinStrategy;
 	}
@@ -316,7 +313,7 @@ public final class SystemConfig {
 	public boolean isLowerCaseTableNames() {
 		return lowerCaseTableNames;
 	}
-
+	@SuppressWarnings("unused")
 	public void setLowerCaseTableNames(boolean lowerCaseTableNames) {
 		this.lowerCaseTableNames = lowerCaseTableNames;
 	}
@@ -324,7 +321,7 @@ public final class SystemConfig {
 	public String getXARecoveryLogBaseDir() {
 		return XARecoveryLogBaseDir;
 	}
-
+	@SuppressWarnings("unused")
 	public void setXARecoveryLogBaseDir(String XARecoveryLogBaseDir) {
 		this.XARecoveryLogBaseDir = XARecoveryLogBaseDir;
 	}
@@ -332,7 +329,7 @@ public final class SystemConfig {
 	public String getXARecoveryLogBaseName() {
 		return XARecoveryLogBaseName;
 	}
-
+	@SuppressWarnings("unused")
 	public void setXARecoveryLogBaseName(String XARecoveryLogBaseName) {
 		this.XARecoveryLogBaseName = XARecoveryLogBaseName;
 	}
@@ -340,7 +337,7 @@ public final class SystemConfig {
 	public int getUseGlobleTableCheck() {
 		return useGlobleTableCheck;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseGlobleTableCheck(int useGlobleTableCheck) {
 		this.useGlobleTableCheck = useGlobleTableCheck;
 	}
@@ -348,7 +345,7 @@ public final class SystemConfig {
 	public long getGlableTableCheckPeriod() {
 		return glableTableCheckPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setGlableTableCheckPeriod(long glableTableCheckPeriod) {
 		this.glableTableCheckPeriod = glableTableCheckPeriod;
 	}
@@ -356,7 +353,7 @@ public final class SystemConfig {
 	public int getSequnceHandlerType() {
 		return sequnceHandlerType;
 	}
-
+	@SuppressWarnings("unused")
 	public void setSequnceHandlerType(int sequnceHandlerType) {
 		this.sequnceHandlerType = sequnceHandlerType;
 	}
@@ -365,7 +362,7 @@ public final class SystemConfig {
 	public int getMaxPacketSize() {
 		return maxPacketSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setMaxPacketSize(int maxPacketSize) {
 		this.maxPacketSize = maxPacketSize;
 	}
@@ -373,7 +370,7 @@ public final class SystemConfig {
 	public String getBindIp() {
 		return bindIp;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBindIp(String bindIp) {
 		this.bindIp = bindIp;
 	}
@@ -417,7 +414,7 @@ public final class SystemConfig {
 	{
 		return useSqlStat;
 	}
-	
+	@SuppressWarnings("unused")
 	public void setUseSqlStat(int useSqlStat) 
 	{
 		this.useSqlStat = useSqlStat;
@@ -427,7 +424,7 @@ public final class SystemConfig {
 	{
 		return useCompression;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseCompression(int useCompression)
 	{
 		this.useCompression = useCompression;
@@ -436,7 +433,7 @@ public final class SystemConfig {
 	public String getCharset() {
 		return charset;
 	}
-
+	@SuppressWarnings("unused")
 	public void setCharset(String charset) {
 		this.charset = charset;
 	}
@@ -444,7 +441,7 @@ public final class SystemConfig {
 	public String getFakeMySQLVersion() {
 		return fakeMySQLVersion;
 	}
-
+	@SuppressWarnings("unused")
 	public void setFakeMySQLVersion(String mysqlVersion) {
 		this.fakeMySQLVersion = mysqlVersion;
 	}
@@ -452,7 +449,7 @@ public final class SystemConfig {
 	public int getServerPort() {
 		return serverPort;
 	}
-
+	@SuppressWarnings("unused")
 	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
 	}
@@ -460,7 +457,7 @@ public final class SystemConfig {
 	public int getServerBacklog() {
 		return serverBacklog;
 	}
-
+	@SuppressWarnings("unused")
 	public void setServerBacklog(int serverBacklog) {
 		this.serverBacklog = serverBacklog;
 	}
@@ -468,7 +465,7 @@ public final class SystemConfig {
 	public int getManagerPort() {
 		return managerPort;
 	}
-
+	@SuppressWarnings("unused")
 	public void setManagerPort(int managerPort) {
 		this.managerPort = managerPort;
 	}
@@ -476,7 +473,7 @@ public final class SystemConfig {
 	public int getProcessors() {
 		return processors;
 	}
-
+	@SuppressWarnings("unused")
 	public void setProcessors(int processors) {
 		this.processors = processors;
 	}
@@ -484,15 +481,15 @@ public final class SystemConfig {
 	public int getProcessorExecutor() {
 		return processorExecutor;
 	}
-
+	@SuppressWarnings("unused")
 	public void setProcessorExecutor(int processorExecutor) {
 		this.processorExecutor = processorExecutor;
 	}
-
+	@SuppressWarnings("unused")
 	public int getManagerExecutor() {
 		return managerExecutor;
 	}
-
+	@SuppressWarnings("unused")
 	public void setManagerExecutor(int managerExecutor) {
 		this.managerExecutor = managerExecutor;
 	}
@@ -500,7 +497,7 @@ public final class SystemConfig {
 	public long getIdleTimeout() {
 		return idleTimeout;
 	}
-
+	@SuppressWarnings("unused")
 	public void setIdleTimeout(long idleTimeout) {
 		this.idleTimeout = idleTimeout;
 	}
@@ -508,7 +505,7 @@ public final class SystemConfig {
 	public long getProcessorCheckPeriod() {
 		return processorCheckPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setProcessorCheckPeriod(long processorCheckPeriod) {
 		this.processorCheckPeriod = processorCheckPeriod;
 	}
@@ -516,14 +513,14 @@ public final class SystemConfig {
 	public long getxaSessionCheckPeriod() {
 		return xaSessionCheckPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setxaSessionCheckPeriod(long xaSessionCheckPeriod) {
 		this.xaSessionCheckPeriod = xaSessionCheckPeriod;
 	}
 	public long getxaLogCleanPeriod() {
 		return xaLogCleanPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setxaLogCleanPeriod(long xaLogCleanPeriod) {
 		this.xaLogCleanPeriod = xaLogCleanPeriod;
 	}
@@ -531,7 +528,7 @@ public final class SystemConfig {
 	public long getDataNodeIdleCheckPeriod() {
 		return dataNodeIdleCheckPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setDataNodeIdleCheckPeriod(long dataNodeIdleCheckPeriod) {
 		this.dataNodeIdleCheckPeriod = dataNodeIdleCheckPeriod;
 	}
@@ -539,7 +536,7 @@ public final class SystemConfig {
 	public long getDataNodeHeartbeatPeriod() {
 		return dataNodeHeartbeatPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setDataNodeHeartbeatPeriod(long dataNodeHeartbeatPeriod) {
 		this.dataNodeHeartbeatPeriod = dataNodeHeartbeatPeriod;
 	}
@@ -547,7 +544,7 @@ public final class SystemConfig {
 	public String getClusterHeartbeatUser() {
 		return clusterHeartbeatUser;
 	}
-
+	@SuppressWarnings("unused")
 	public void setClusterHeartbeatUser(String clusterHeartbeatUser) {
 		this.clusterHeartbeatUser = clusterHeartbeatUser;
 	}
@@ -555,7 +552,7 @@ public final class SystemConfig {
 	public long getSqlExecuteTimeout() {
 		return sqlExecuteTimeout;
 	}
-
+	@SuppressWarnings("unused")
 	public void setSqlExecuteTimeout(long sqlExecuteTimeout) {
 		this.sqlExecuteTimeout = sqlExecuteTimeout;
 	}
@@ -564,14 +561,14 @@ public final class SystemConfig {
 	public long getShowBinlogStatusTimeout() {
 		return showBinlogStatusTimeout;
 	}
-
+	@SuppressWarnings("unused")
 	public void setShowBinlogStatusTimeout(long showBinlogStatusTimeout) {
 		this.showBinlogStatusTimeout = showBinlogStatusTimeout;
 	}
 	public String getClusterHeartbeatPass() {
 		return clusterHeartbeatPass;
 	}
-
+	@SuppressWarnings("unused")
 	public void setClusterHeartbeatPass(String clusterHeartbeatPass) {
 		this.clusterHeartbeatPass = clusterHeartbeatPass;
 	}
@@ -580,7 +577,7 @@ public final class SystemConfig {
 	public int getTxIsolation() {
 		return txIsolation;
 	}
-
+	@SuppressWarnings("unused")
 	public void setTxIsolation(int txIsolation) {
 		this.txIsolation = txIsolation;
 	}
@@ -588,7 +585,7 @@ public final class SystemConfig {
 	public int getSqlRecordCount() {
 		return sqlRecordCount;
 	}
-
+	@SuppressWarnings("unused")
 	public void setSqlRecordCount(int sqlRecordCount) {
 		this.sqlRecordCount = sqlRecordCount;
 	}
@@ -596,7 +593,7 @@ public final class SystemConfig {
 	public int getRecordTxn(){
 		return recordTxn;
 	}
-
+	@SuppressWarnings("unused")
 	public void setRecordTxn(int recordTxn){
 		this.recordTxn = recordTxn;
 	}
@@ -604,7 +601,7 @@ public final class SystemConfig {
 	public short getBufferPoolChunkSize() {
 		return bufferPoolChunkSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBufferPoolChunkSize(short bufferPoolChunkSize) {
 		this.bufferPoolChunkSize = bufferPoolChunkSize;
 	}
@@ -612,7 +609,7 @@ public final class SystemConfig {
 	public int getMaxResultSet() {
 		return maxResultSet;
 	}
-
+	@SuppressWarnings("unused")
 	public void setMaxResultSet(int maxResultSet) {
 		this.maxResultSet = maxResultSet;
 	}
@@ -620,7 +617,7 @@ public final class SystemConfig {
 	public int getBufferUsagePercent() {
 		return bufferUsagePercent;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBufferUsagePercent(int bufferUsagePercent) {
 		this.bufferUsagePercent = bufferUsagePercent;
 	}
@@ -628,7 +625,7 @@ public final class SystemConfig {
 	public long getClearBigSqLResultSetMapMs() {
 		return clearBigSqLResultSetMapMs;
 	}
-
+	@SuppressWarnings("unused")
 	public void setClearBigSqLResultSetMapMs(long clearBigSqLResultSetMapMs) {
 		this.clearBigSqLResultSetMapMs = clearBigSqLResultSetMapMs;
 	}
@@ -636,7 +633,7 @@ public final class SystemConfig {
 	public int getBufferPoolPageSize() {
 		return bufferPoolPageSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBufferPoolPageSize(int bufferPoolPageSize) {
 		this.bufferPoolPageSize = bufferPoolPageSize;
 	}
@@ -644,7 +641,7 @@ public final class SystemConfig {
 	public short getBufferPoolPageNumber() {
 		return bufferPoolPageNumber;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBufferPoolPageNumber(short bufferPoolPageNumber) {
 		this.bufferPoolPageNumber = bufferPoolPageNumber;
 	}
@@ -652,7 +649,7 @@ public final class SystemConfig {
 	public int getFrontSocketSoRcvbuf() {
 		return frontSocketSoRcvbuf;
 	}
-
+	@SuppressWarnings("unused")
 	public void setFrontSocketSoRcvbuf(int frontSocketSoRcvbuf) {
 		this.frontSocketSoRcvbuf = frontSocketSoRcvbuf;
 	}
@@ -660,7 +657,7 @@ public final class SystemConfig {
 	public int getFrontSocketSoSndbuf() {
 		return frontSocketSoSndbuf;
 	}
-
+	@SuppressWarnings("unused")
 	public void setFrontSocketSoSndbuf(int frontSocketSoSndbuf) {
 		this.frontSocketSoSndbuf = frontSocketSoSndbuf;
 	}
@@ -668,7 +665,7 @@ public final class SystemConfig {
 	public int getBackSocketSoRcvbuf() {
 		return backSocketSoRcvbuf;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBackSocketSoRcvbuf(int backSocketSoRcvbuf) {
 		this.backSocketSoRcvbuf = backSocketSoRcvbuf;
 	}
@@ -676,7 +673,7 @@ public final class SystemConfig {
 	public int getBackSocketSoSndbuf() {
 		return backSocketSoSndbuf;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBackSocketSoSndbuf(int backSocketSoSndbuf) {
 		this.backSocketSoSndbuf = backSocketSoSndbuf;
 	}
@@ -684,7 +681,7 @@ public final class SystemConfig {
 	public int getFrontSocketNoDelay() {
 		return frontSocketNoDelay;
 	}
-
+	@SuppressWarnings("unused")
 	public void setFrontSocketNoDelay(int frontSocketNoDelay) {
 		this.frontSocketNoDelay = frontSocketNoDelay;
 	}
@@ -692,7 +689,7 @@ public final class SystemConfig {
 	public int getBackSocketNoDelay() {
 		return backSocketNoDelay;
 	}
-
+	@SuppressWarnings("unused")
 	public void setBackSocketNoDelay(int backSocketNoDelay) {
 		this.backSocketNoDelay = backSocketNoDelay;
 	}
@@ -700,7 +697,7 @@ public final class SystemConfig {
 	public int getUsingAIO() {
 		return usingAIO;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUsingAIO(int usingAIO) {
 		this.usingAIO = usingAIO;
 	}
@@ -708,7 +705,7 @@ public final class SystemConfig {
 	public int getServerNodeId() {
 		return serverNodeId;
 	}
-
+	@SuppressWarnings("unused")
 	public void setServerNodeId(int serverNodeId) {
 		this.serverNodeId = serverNodeId;
 	}
@@ -761,7 +758,7 @@ public final class SystemConfig {
 	public int getCheckTableConsistency() {
 		return checkTableConsistency;
 	}
-
+	@SuppressWarnings("unused")
 	public void setCheckTableConsistency(int checkTableConsistency) {
 		this.checkTableConsistency = checkTableConsistency;
 	}
@@ -769,7 +766,7 @@ public final class SystemConfig {
 	public long getCheckTableConsistencyPeriod() {
 		return checkTableConsistencyPeriod;
 	}
-
+	@SuppressWarnings("unused")
 	public void setCheckTableConsistencyPeriod(long checkTableConsistencyPeriod) {
 		this.checkTableConsistencyPeriod = checkTableConsistencyPeriod;
 	}
@@ -777,48 +774,49 @@ public final class SystemConfig {
 	public int getUseHandshakeV10() {
 		return useHandshakeV10;
 	}
-
+	@SuppressWarnings("unused")
 	public void setUseHandshakeV10(int useHandshakeV10) {
 		this.useHandshakeV10 = useHandshakeV10;
 	}
 	public int getNestLoopRowsSize() {
 		return nestLoopRowsSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setNestLoopRowsSize(int nestLoopRowsSize) {
 		this.nestLoopRowsSize = nestLoopRowsSize;
 	}
 	public int getJoinQueueSize() {
 		return joinQueueSize;
 	}
+	@SuppressWarnings("unused")
 	public void setJoinQueueSize(int joinQueueSize) {
 		this.joinQueueSize = joinQueueSize;
 	}
 	public int getMergeQueueSize() {
 		return mergeQueueSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setMergeQueueSize(int mergeQueueSize) {
 		this.mergeQueueSize = mergeQueueSize;
 	}
 	public int getMappedFileSize() {
 		return mappedFileSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setMappedFileSize(int mappedFileSize) {
 		this.mappedFileSize = mappedFileSize;
 	}
 	public int getNestLoopConnSize() {
 		return nestLoopConnSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setNestLoopConnSize(int nestLoopConnSize) {
 		this.nestLoopConnSize = nestLoopConnSize;
 	}
 	public int getOrderByQueueSize() {
 		return orderByQueueSize;
 	}
-
+	@SuppressWarnings("unused")
 	public void setOrderByQueueSize(int orderByQueueSize) {
 		this.orderByQueueSize = orderByQueueSize;
 	}

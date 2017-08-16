@@ -40,14 +40,12 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManagerQueryHandler.class);
     private static final int SHIFT = 8;
     private final ManagerConnection source;
-    protected Boolean readOnly;
 
     public ManagerQueryHandler(ManagerConnection source) {
         this.source = source;
     }
 
     public void setReadOnly(Boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
     @Override
@@ -68,10 +66,10 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 KillConnection.response(sql, rs >>> SHIFT, c);
                 break;
             case ManagerParse.OFFLINE:
-                Offline.execute(sql, c);
+                Offline.execute(c);
                 break;
             case ManagerParse.ONLINE:
-                Online.execute(sql, c);
+                Online.execute(c);
                 break;
             case ManagerParse.STOP:
                 StopHandler.handle(sql, c, rs >>> SHIFT);

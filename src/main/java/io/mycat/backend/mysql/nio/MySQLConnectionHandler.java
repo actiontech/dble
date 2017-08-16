@@ -73,10 +73,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
 	}
 
-	public MySQLConnection getSource() {
-		return source;
-	}
-
 	@Override
 	public void handle(byte[] data) {
 		if(source.isComplexQuery()){

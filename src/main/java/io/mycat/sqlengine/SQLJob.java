@@ -32,21 +32,10 @@ public class SQLJob implements ResponseHandler, Runnable {
 	private final String dataNodeOrDatabase;
 	private BackendConnection connection;
 	private final SQLJobHandler jobHandler;
-	private final EngineCtx ctx;
 	private final PhysicalDatasource ds;
 	private final int id;
 	private volatile boolean finished;
 
-	public SQLJob(int id, String sql, String dataNode,
-			SQLJobHandler jobHandler, EngineCtx ctx) {
-		super();
-		this.id = id;
-		this.sql = sql;
-		this.dataNodeOrDatabase = dataNode;
-		this.jobHandler = jobHandler;
-		this.ctx = ctx;
-		this.ds = null;
-	}
 
 	public SQLJob(String sql, String databaseName, SQLJobHandler jobHandler,
 			PhysicalDatasource ds) {
@@ -55,7 +44,6 @@ public class SQLJob implements ResponseHandler, Runnable {
 		this.sql = sql;
 		this.dataNodeOrDatabase = databaseName;
 		this.jobHandler = jobHandler;
-		this.ctx = null;
 		this.ds = ds;
 
 	}
@@ -108,9 +96,6 @@ public class SQLJob implements ResponseHandler, Runnable {
 	private void doFinished(boolean failed) {
 		finished = true;
 		jobHandler.finished(dataNodeOrDatabase, failed);
-		if (ctx != null) {
-			ctx.onJobFinished(this);
-		}
 	}
 
 	@Override
@@ -154,7 +139,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
 			boolean isLeft, BackendConnection conn) {
-		jobHandler.onHeader(dataNodeOrDatabase, header, fields);
+		jobHandler.onHeader(fields);
 
 	}
 

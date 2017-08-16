@@ -211,10 +211,6 @@ public class MySQLConnection extends BackendAIOConnection {
 		this.pool = pool;
 	}
 
-	public String getUser() {
-		return user;
-	}
-
 	public void setUser(String user) {
 		this.user = user;
 	}
@@ -237,10 +233,6 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	public void setThreadId(long threadId) {
 		this.threadId = threadId;
-	}
-
-	public boolean isAuthenticated() {
-		return isAuthenticated;
 	}
 
 	public void setAuthenticated(boolean isAuthenticated) {
@@ -609,29 +601,6 @@ public class MySQLConnection extends BackendAIOConnection {
 		if (respHandler != null) {
 			respHandler.writeQueueAvailable();
 		}
-	}
-
-	/**
-	 * 记录sql执行信息
-	 */
-	public void recordSql(String host, String schema, String stmt) {
-		// final long now = TimeUtil.currentTimeMillis();
-		// if (now > this.lastTime) {
-		// // long time = now - this.lastTime;
-		// // SQLRecorder sqlRecorder = this.pool.getSqlRecorder();
-		// // if (sqlRecorder.check(time)) {
-		// // SQLRecord recorder = new SQLRecord();
-		// // recorder.host = host;
-		// // recorder.schema = schema;
-		// // recorder.statement = stmt;
-		// // recorder.startTime = lastTime;
-		// // recorder.executeTime = time;
-		// // recorder.dataNode = pool.getName();
-		// // recorder.dataNodeIndex = pool.getIndex();
-		// // sqlRecorder.add(recorder);
-		// // }
-		// }
-		// this.lastTime = now;
 	}
 
 	private static byte[] passwd(String pass, HandshakePacket hs)

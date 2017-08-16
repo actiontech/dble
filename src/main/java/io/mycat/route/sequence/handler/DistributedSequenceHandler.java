@@ -79,8 +79,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private long nextID = 0L;
     private final static String PATH = KVPathUtil.getSequencesPath();
     private final static String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
-    private SystemConfig mycatConfig;
-    private String ID;
 
     private int mark[];
     private volatile boolean isLeader = false;
@@ -99,33 +97,12 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     public static DistributedSequenceHandler getInstance() {
         return DistributedSequenceHandler.instance;
     }
-
-    public long getClusterId() {
-        return clusterId;
-    }
-
-    public void setClusterId(long clusterId) {
-        this.clusterId = clusterId;
-    }
-
     public LeaderSelector getLeaderSelector() {
         return leaderSelector;
     }
 
     public long getInstanceId() {
         return instanceId;
-    }
-
-    public void setInstanceId(long instanceId) {
-        this.instanceId = instanceId;
-    }
-
-    public CuratorFramework getClient() {
-        return client;
-    }
-
-    public void setClient(CuratorFramework client) {
-        this.client = client;
     }
 
     public void load() {
@@ -138,7 +115,12 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             this.ready = true;
         }
         this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
-
+        if (clusterId > maxclusterId || clusterId < 0) {
+            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0",clusterId));
+        }
+        if (instanceId > maxinstanceId || instanceId < 0) {
+            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0",instanceId));
+        }
     }
 
     public void initializeZK(String zkAddress) {
@@ -182,7 +164,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         };
-        timerExecutor.scheduleAtFixedRate(runnable, 1L, 10L, TimeUnit.SECONDS);
+        timerExecutor.scheduleAtFixedRate(runnable, 1L, SELF_CHECK_PERIOD, TimeUnit.SECONDS);
     }
 
     @Override

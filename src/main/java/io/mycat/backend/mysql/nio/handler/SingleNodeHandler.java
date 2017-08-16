@@ -24,7 +24,6 @@
 package io.mycat.backend.mysql.nio.handler;
 
 import io.mycat.MycatServer;
-import io.mycat.cache.CachePool;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
@@ -160,7 +159,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn 
 				+ " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 		
-		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
+		session.releaseConnectionIfSafe(conn, false);
 		
 		source.setTxInterrupt(errmgs);
 		session.handleSpecial(rrs,session.getSource().getSchema(), false);
@@ -217,7 +216,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			ok.serverStatus = source.isAutocommit() ? 2 : 1;
 			source.setLastInsertId(ok.insertId);
 			//handleSpecial
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
+			session.releaseConnectionIfSafe(conn, false);
 			ok.write(source);
 			waitingResponse = false;
 		}
@@ -235,11 +234,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 		this.netOutBytes += eof.length;
 		
 		ServerConnection source = session.getSource();
-		conn.recordSql(source.getHost(), source.getSchema(), node.getStatement());
         // 判断是调用存储过程的话不能在这里释放链接
 		if (!rrs.isCallStatement()||rrs.getProcedure().isResultSimpleValue())
 		{
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled(), false);
+			session.releaseConnectionIfSafe(conn, false);
 		}
 
 		eof[3] = ++packetId;
@@ -349,7 +347,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 			rowDataPk.read(row);
 			String primaryKey = new String(rowDataPk.fieldValues.get(primaryKeyIndex));
 			RouteResultsetNode rNode = (RouteResultsetNode)conn.getAttachment();
-			LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
+			LayerCachePool pool = MycatServer.getInstance().getRouterService().getTableId2DataNodeCache();
 			if (pool != null) {
 			    	pool.putIfAbsent(priamaryKeyTable, primaryKey, rNode.getName());
 			}
@@ -399,10 +397,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 	@Override
 	public void requestDataResponse(byte[] data, BackendConnection conn) {
 		LoadDataUtil.requestFileDataResponse(data, conn);
-	}
-	
-	public boolean isPrepared() {
-		return prepared;
 	}
 
 	public void setPrepared(boolean prepared) {

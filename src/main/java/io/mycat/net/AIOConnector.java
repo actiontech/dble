@@ -75,8 +75,6 @@ public final class AIOConnector implements SocketConnector,
 	 */
 	private static class ConnectIdGenerator {
 
-		private static final long MAX_VALUE = Long.MAX_VALUE;
-
 		private AtomicLong connectId = new AtomicLong(0);
 
 		private long getId() {

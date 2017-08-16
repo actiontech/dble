@@ -66,8 +66,6 @@ public class HintSQLHandler implements HintHandler {
             String sql=realSQL;
             for (RouteResultsetNode node : rrs.getNodes())
             {
-                node.setProcedure(procedure);
-                node.setHintMap(hintMap);
                 node.setStatement(sql);
             }
 

@@ -46,7 +46,6 @@ public final class NIOConnector extends Thread implements SocketConnector {
 	private final String name;
 	private final Selector selector;
 	private final BlockingQueue<AbstractConnection> connectQueue;
-	private long connectCount;
 	private final NIOReactorPool reactorPool;
 
 	public NIOConnector(String name, NIOReactorPool reactorPool)
@@ -55,11 +54,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
 		this.name = name;
 		this.selector = Selector.open();
 		this.reactorPool = reactorPool;
-		this.connectQueue = new LinkedBlockingQueue<AbstractConnection>();
-	}
-
-	public long getConnectCount() {
-		return connectCount;
+		this.connectQueue = new LinkedBlockingQueue<>();
 	}
 
 	public void postConnect(AbstractConnection c) {
@@ -71,7 +66,6 @@ public final class NIOConnector extends Thread implements SocketConnector {
 	public void run() {
 		final Selector tSelector = this.selector;
 		for (;;) {
-			++connectCount;
 			try {
 			    tSelector.select(1000L);
 				connect(tSelector);
@@ -95,7 +89,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
 	}
 
 	private void connect(Selector selector) {
-		AbstractConnection c = null;
+		AbstractConnection c;
 		while ((c = connectQueue.poll()) != null) {
 			try {
 				SocketChannel channel = (SocketChannel) c.getChannel();
@@ -156,8 +150,6 @@ public final class NIOConnector extends Thread implements SocketConnector {
 	 * @author mycat
 	 */
 	public static class ConnectIdGenerator {
-
-		private static final long MAX_VALUE = Long.MAX_VALUE;
 		private AtomicLong connectId = new AtomicLong(0);
 
 		public long getId() {

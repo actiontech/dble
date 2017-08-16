@@ -68,13 +68,11 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected volatile int readBufferOffset;
 	protected long lastLargeMessageTime;
 	protected final AtomicBoolean isClosed;
-	protected boolean isSocketClosed;
 	protected long startupTime;
 	protected long lastReadTime;
 	protected long lastWriteTime;
 	protected long netInBytes;
 	protected long netOutBytes;
-	protected int writeAttempts;
 	
 	protected volatile boolean isSupportCompress = false;
     protected final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<byte[]>();
@@ -138,10 +136,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		return charsetIndex;
 	}
 
-	public long getIdleTimeout() {
-		return idleTimeout;
-	}
-
 	public SocketWR getSocketWR() {
 		return socketWR;
 	}
@@ -158,16 +152,9 @@ public abstract class AbstractConnection implements NIOConnection {
 		return host;
 	}
 
-	public void setHost(String host) {
-		this.host = host;
-	}
 
 	public int getPort() {
 		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
 	}
 
 	public void setLocalPort(int localPort) {
@@ -224,10 +211,6 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	public long getNetOutBytes() {
 		return netOutBytes;
-	}
-
-	public int getWriteAttempts() {
-		return writeAttempts;
 	}
 
 	public NIOProcessor getProcessor() {
@@ -576,15 +559,13 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	private void closeSocket() {
 		if (channel != null) {
-			
-			boolean isSocketClosed = true;
 			try {
 				channel.close();
 			} catch (Exception e) {
 				LOGGER.error("AbstractConnectionCloseError", e);
 			}
 			
-			boolean closed = isSocketClosed && (!channel.isOpen());
+			boolean closed = !channel.isOpen();
 			if (closed == false) {
 				LOGGER.warn("close socket of connnection failed " + this);
 			}

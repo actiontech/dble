@@ -23,15 +23,15 @@
  */
 package io.mycat.net;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 /**
  * 网络事件反应器
@@ -63,22 +63,13 @@ public final class NIOReactor {
 		reactorR.selector.wakeup();
 	}
 
-	final Queue<AbstractConnection> getRegisterQueue() {
-		return reactorR.registerQueue;
-	}
-
-	final long getReactCount() {
-		return reactorR.reactCount;
-	}
-
 	private final class RW implements Runnable {
 		private final Selector selector;
 		private final ConcurrentLinkedQueue<AbstractConnection> registerQueue;
-		private long reactCount;
 
 		private RW() throws IOException {
 			this.selector = Selector.open();
-			this.registerQueue = new ConcurrentLinkedQueue<AbstractConnection>();
+			this.registerQueue = new ConcurrentLinkedQueue<>();
 		}
 
 		@Override
@@ -86,7 +77,6 @@ public final class NIOReactor {
 			final Selector selector = this.selector;
 			Set<SelectionKey> keys = null;
 			for (;;) {
-				++reactCount;
 				try {
 					selector.select(500L);
 					register(selector);
@@ -130,7 +120,6 @@ public final class NIOReactor {
                         		con.close("Bad: "+e);
                         	}
                         	LOGGER.error("caught err: ", e);
-                        	continue;
                         }
 					}
 				} catch (Exception e) {
@@ -150,7 +139,7 @@ public final class NIOReactor {
 		}
 
 		private void register(Selector selector) {
-			AbstractConnection c = null;
+			AbstractConnection c;
 			if (registerQueue.isEmpty()) {
 				return;
 			}

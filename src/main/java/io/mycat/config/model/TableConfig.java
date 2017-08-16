@@ -264,9 +264,6 @@ public class TableConfig {
 		return reentrantReadWriteLock;
 	}
 
-	public void setReentrantReadWriteLock(ReentrantReadWriteLock reentrantReadWriteLock) {
-		this.reentrantReadWriteLock = reentrantReadWriteLock;
-	}
 
 	public Map<String, List<String>> getDataNodeTableStructureSQLMap() {
 		return dataNodeTableStructureSQLMap;

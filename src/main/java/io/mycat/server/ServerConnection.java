@@ -219,9 +219,8 @@ public class ServerConnection extends FrontendConnection {
 		// 路由计算
 		RouteResultset rrs;
 		try {
-			rrs = MycatServer.getInstance().getRouterservice()
-					.route(MycatServer.getInstance().getConfig().getSystem(),
-							schema, type, sql, this.charset, this);
+			rrs = MycatServer.getInstance().getRouterService()
+					.route(schema, type, sql, this.charset, this);
 
 		} catch (Exception e) {
 			executeException(e, sql);
@@ -261,9 +260,8 @@ public class ServerConnection extends FrontendConnection {
 		// 路由计算
 		RouteResultset rrs;
 		try {
-			rrs = MycatServer.getInstance().getRouterservice()
-					.route(MycatServer.getInstance().getConfig().getSystem(),
-							schema, type, sql, this.charset, this);
+			rrs = MycatServer.getInstance().getRouterService()
+					.route(schema, type, sql, this.charset, this);
 			if (rrs == null) {
 				return;
 			}

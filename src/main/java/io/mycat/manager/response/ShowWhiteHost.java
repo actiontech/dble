@@ -24,7 +24,6 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.util.StringUtil;
 
 public final class ShowWhiteHost {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ShowWhiteHost.class);
 
     private static final int FIELD_COUNT = 2;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);

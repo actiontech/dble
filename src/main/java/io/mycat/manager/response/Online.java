@@ -39,7 +39,7 @@ public class Online {
         ok.serverStatus = 2;
     }
 
-    public static void execute(String stmt, ManagerConnection mc) {
+    public static void execute(ManagerConnection mc) {
         MycatServer.getInstance().online();
         ok.write(mc);
     }

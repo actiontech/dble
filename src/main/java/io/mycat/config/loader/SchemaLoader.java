@@ -36,8 +36,6 @@ import io.mycat.config.model.rule.TableRuleConfig;
  * @author mycat
  */
 public interface SchemaLoader {
-	
-    Map<String, TableRuleConfig> getTableRules();
 
     Map<String, DataHostConfig> getDataHosts();
 

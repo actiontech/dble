@@ -107,16 +107,8 @@ public abstract class FrontendConnection extends AbstractConnection {
 		return host;
 	}
 
-	public void setHost(String host) {
-		this.host = host;
-	}
-
 	public int getPort() {
 		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
 	}
 
 	public int getLocalPort() {
@@ -422,10 +414,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 		writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
 	}
 
-	public void unknown(byte[] data) {
-		writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-	}
-
 	@Override
 	public void register() throws IOException {
 		if (!isClosed.get()) {
@@ -535,14 +523,6 @@ public abstract class FrontendConnection extends AbstractConnection {
         	flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         }
 		return flag;
-	}
-
-	protected boolean isConnectionReset(Throwable t) {
-		if (t instanceof IOException) {
-			String msg = t.getMessage();
-			return (msg != null && msg.contains("Connection reset by peer"));
-		}
-		return false;
 	}
 
 	@Override

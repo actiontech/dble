@@ -88,7 +88,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 				if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
 						&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
 					// 兼容MySQLWorkbench
-					MysqlProcHandler.handle(rrs.getStatement(), sc);
+					MysqlProcHandler.handle(sc);
 					rrs.setFinishedExecute(true);
 					return schema;
 				}
@@ -328,7 +328,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 		}
 
 		if (isNeedChangeSql) {
-			rrs.changeNodeSqlAfterAddLimit(schema, stmt.toString(), 0, -1);
+			rrs.changeNodeSqlAfterAddLimit(stmt.toString(), 0, -1);
 		}
 		return aliaColumns;
 	}
@@ -487,7 +487,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 				mysqlSelectQuery.setLimit(limit);
 				rrs.setLimitSize(limitSize);
 				String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
-				rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitSize);
+				rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
 
 			}
 			SQLLimit limit = mysqlSelectQuery.getLimit();
@@ -521,9 +521,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 
 					mysqlSelectQuery.setLimit(changedLimit);
 					String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
-					rrs.changeNodeSqlAfterAddLimit(schema, sql, 0, limitStart + limitSize);
+					rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
 				} else {
-					rrs.changeNodeSqlAfterAddLimit(schema, rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
+					rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
 				}
 			}
 			rrs.setCacheAble(isNeedCache(schema));
@@ -543,7 +543,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 			return;
 		}
 		for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-			RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, ctx, unit, table, rrs, true, cachePool);
+			RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool);
 			if (rrsTmp != null && rrsTmp.getNodes() != null) {
 				Collections.addAll(nodeSet, rrsTmp.getNodes());
 			}

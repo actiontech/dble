@@ -24,7 +24,6 @@
 package io.mycat.manager.response;
 
 import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,6 @@ public class ShowDatasourceCluster {
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
-	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	/*private static final String[] MYSQL_CLUSTER_STAUTS_COLMS = new String[] {
 	"wsrep_incoming_addresses","wsrep_cluster_size","wsrep_cluster_status", "wsrep_connected", "wsrep_flow_control_paused",
@@ -122,7 +120,7 @@ public class ShowDatasourceCluster {
 		eof.packetId = ++packetId;
 	}
 
-	public static void response(ManagerConnection c,String stmt) {
+	public static void response(ManagerConnection c) {
 		ByteBuffer buffer = c.allocate();
 
 		// write header

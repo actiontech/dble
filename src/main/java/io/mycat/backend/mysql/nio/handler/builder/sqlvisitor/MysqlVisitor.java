@@ -89,10 +89,6 @@ public abstract class MysqlVisitor {
 		sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
 	}
 
-	public boolean isRandomAliasMade() {
-		return randomIndex != 0;
-	}
-
 	// 生成自定义的聚合函数别名
 	public static String getMadeAggAlias(String aggFuncName) {
 		StringBuilder builder = new StringBuilder();

@@ -298,18 +298,6 @@ public class HandlerTool {
 		}
 
 		/**
-		 * 判断name是否是函数
-		 * 
-		 * @param name
-		 * @param func
-		 * @return
-		 */
-		public static boolean matchFunc(String name, String func) {
-			Pattern pt = Pattern.compile("^" + func + "\\(.*", Pattern.CASE_INSENSITIVE);
-			return pt.matcher(name).matches();
-		}
-
-		/**
 		 * 根据distinct的列生成orderby
 		 * 
 		 * @param sels

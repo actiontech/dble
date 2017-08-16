@@ -43,15 +43,6 @@ public class ConQueue {
 		}
 	}
 
-	public boolean isSameCon(BackendConnection con) {
-		if (autoCommitCons.contains(con)) {
-			return true;
-		} else if (manCommitCons.contains(con)) {
-			return true;
-		}
-		return false;
-	}
-
 	public ConcurrentLinkedQueue<BackendConnection> getAutoCommitCons() {
 		return autoCommitCons;
 	}

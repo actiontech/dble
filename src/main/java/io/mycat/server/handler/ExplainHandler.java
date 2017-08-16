@@ -297,9 +297,8 @@ public class ExplainHandler {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
-            SystemConfig system = MycatServer.getInstance().getConfig().getSystem();
-            return MycatServer.getInstance().getRouterservice()
-                    .route(system, schema, sqlType, stmt, c.getCharset(), c);
+            return MycatServer.getInstance().getRouterService()
+                    .route(schema, sqlType, stmt, c.getCharset(), c);
         } catch (Exception e) {
             if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqle = (SQLException)e;

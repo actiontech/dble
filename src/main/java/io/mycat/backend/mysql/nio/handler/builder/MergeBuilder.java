@@ -4,7 +4,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import io.mycat.MycatServer;
-import io.mycat.backend.mysql.nio.handler.builder.BaseHandlerBuilder.MySQLNodeType;
 import io.mycat.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.MycatConfig;
@@ -27,8 +26,6 @@ public class MergeBuilder {
 	private boolean needSendMakerFlag;
 	private PlanNode node;
 	private NonBlockingSession session;
-	private MySQLNodeType nodeType;
-	private String schema;
 	private MycatConfig config;
 	private PushDownVisitor pdVisitor;
 
@@ -38,9 +35,6 @@ public class MergeBuilder {
 		this.needCommonFlag = needCommon;
 		this.needSendMakerFlag = needSendMaker;
 		this.session = session;
-		this.schema = session.getSource().getSchema();
-		this.nodeType = session.getSource().isTxstart() || !session.getSource().isAutocommit() ? MySQLNodeType.MASTER
-				: MySQLNodeType.SLAVE;
 		this.config = MycatServer.getInstance().getConfig();
 		this.pdVisitor = pdVisitor;
 	}
@@ -61,7 +55,7 @@ public class MergeBuilder {
 		DruidParser druidParser = new DruidSingleUnitSelectParser();
 
 		RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
-		LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
+		LayerCachePool pool = MycatServer.getInstance().getRouterService().getTableId2DataNodeCache();
 		SchemaConfig schemaConfig = config.getSchemas().get(node.getReferedTableNodes().get(0).getSchema());
 		return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource());
 
@@ -73,14 +67,6 @@ public class MergeBuilder {
 	}
 	public boolean getNeedSendMakerFlag() {
 		return needSendMakerFlag;
-	}
-
-	public void setNodeType(MySQLNodeType nodeType) {
-		this.nodeType = nodeType;
-	}
-
-	public void setSchema(String schema) {
-		this.schema = schema;
 	}
 
 }

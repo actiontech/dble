@@ -35,10 +35,6 @@ import io.mycat.backend.BackendConnection;
 public abstract class BackendAIOConnection extends AbstractConnection implements
 		BackendConnection {
 
-	
-	
-	protected boolean isFinishConnect;
-
 	public BackendAIOConnection(NetworkChannel channel) {
 		super(channel);
 	}
@@ -61,7 +57,6 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 
 	public boolean finishConnect() throws IOException {
 		localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
-		isFinishConnect = true;
 		return true;
 	}
 

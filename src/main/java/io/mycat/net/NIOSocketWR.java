@@ -11,7 +11,6 @@ import io.mycat.util.TimeUtil;
 
 public class NIOSocketWR extends SocketWR {
 	private SelectionKey processKey;
-	private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
 	private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
 	private final AbstractConnection con;
 	private final SocketChannel channel;
@@ -79,7 +78,6 @@ public class NIOSocketWR extends SocketWR {
 			}
 
 			if (buffer.hasRemaining()) {
-				con.writeAttempts++;
 				return false;
 			} else {
 				con.writeBuffer = null;
@@ -112,7 +110,6 @@ public class NIOSocketWR extends SocketWR {
 			}
 			if (buffer.hasRemaining()) {
 				con.writeBuffer = buffer;
-				con.writeAttempts++;
 				return false;
 			} else {
 				con.recycle(buffer);
@@ -143,27 +140,6 @@ public class NIOSocketWR extends SocketWR {
 
 		}
 		if (needWakeup && wakeup) {
-			processKey.selector().wakeup();
-		}
-	}
-
-	public void disableRead() {
-
-		SelectionKey key = this.processKey;
-		key.interestOps(key.interestOps() & OP_NOT_READ);
-	}
-
-	public void enableRead() {
-
-		boolean needWakeup = false;
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-			needWakeup = true;
-		} catch (Exception e) {
-			AbstractConnection.LOGGER.warn("enable read fail " + e);
-		}
-		if (needWakeup) {
 			processKey.selector().wakeup();
 		}
 	}

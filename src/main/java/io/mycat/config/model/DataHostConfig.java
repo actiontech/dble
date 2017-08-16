@@ -74,10 +74,6 @@ public class DataHostConfig {
 		return slaveThreshold;
 	}
 
-	public void setSlaveThreshold(int slaveThreshold) {
-		this.slaveThreshold = slaveThreshold;
-	}
-
 	public int getSwitchType() {
 		return switchType;
 	}
@@ -85,10 +81,6 @@ public class DataHostConfig {
 
 	public String getName() {
 		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
     public boolean isShowSlaveSql()

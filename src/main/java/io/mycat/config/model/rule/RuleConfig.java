@@ -36,15 +36,10 @@ public class RuleConfig implements Serializable {
 	private final String functionName;
 	private AbstractPartitionAlgorithm ruleAlgorithm;
 
-	public RuleConfig(String column, String functionName) {
-		if (functionName == null) {
-			throw new IllegalArgumentException("functionName is null");
-		}
+	public RuleConfig(String column, String functionName, AbstractPartitionAlgorithm ruleAlgorithm) {
 		this.functionName = functionName;
-		if (column == null || column.length() <= 0) {
-			throw new IllegalArgumentException("no rule column is found");
-		}
 		this.column = column;
+		this.ruleAlgorithm = ruleAlgorithm;
 	}
 
 	
@@ -52,14 +47,6 @@ public class RuleConfig implements Serializable {
 	public AbstractPartitionAlgorithm getRuleAlgorithm() {
 		return ruleAlgorithm;
 	}
-
-
-
-	public void setRuleAlgorithm(AbstractPartitionAlgorithm ruleAlgorithm) {
-		this.ruleAlgorithm = ruleAlgorithm;
-	}
-
-
 
 	/**
 	 * @return unmodifiable, upper-case

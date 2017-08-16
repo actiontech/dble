@@ -27,7 +27,6 @@ import io.mycat.config.ErrorCode;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.manager.response.*;
 import io.mycat.route.parser.ManagerParseShow;
-import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.util.StringUtil;
 
 /**
@@ -158,13 +157,13 @@ public final class ShowHandler {
 			ShowHeartbeatDetail.response(c,stmt);
 			break;
 		case ManagerParseShow.DATASOURCE_SYNC://by songwie
-			ShowDatasourceSyn.response(c,stmt);
+			ShowDatasourceSyn.response(c);
 			break;	
 		case ManagerParseShow.DATASOURCE_SYNC_DETAIL://by songwie
 			ShowDatasourceSynDetail.response(c,stmt);
 			break;	
 		case ManagerParseShow.DATASOURCE_CLUSTER://by songwie
-			ShowDatasourceCluster.response(c,stmt);
+			ShowDatasourceCluster.response(c);
 			break;	
 		case ManagerParseShow.DIRECTMEMORY_DETAILl:
 			ShowDirectMemory.execute(c,2);

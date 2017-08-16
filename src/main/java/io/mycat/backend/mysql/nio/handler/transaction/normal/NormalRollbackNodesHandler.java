@@ -68,7 +68,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
 			}
 			position++;
 			conn.setResponseHandler(this);
-			((MySQLConnection) conn).rollback();
+			conn.rollback();
 		}
 		if(position == 0){
 			if (sendData == null) {

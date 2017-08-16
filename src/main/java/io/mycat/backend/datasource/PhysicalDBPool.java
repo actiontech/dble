@@ -53,7 +53,6 @@ public class PhysicalDBPool {
 	public static final int BALANCE_ALL = 2;
 	public static final int BALANCE_ALL_READ = 3;
 
-	public static final long LONG_TIME = 300000;
 	public static final int WEIGHT = 0;
 
 	private final String hostName;
@@ -528,11 +527,9 @@ public class PhysicalDBPool {
 	 *
 	 * @param handler
 	 * @param attachment
-	 * @param database
 	 * @throws Exception
 	 */
-	public void getRWBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment,
-			String database) throws Exception {
+	public void getRWBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 
 		PhysicalDatasource theNode = null;
 		ArrayList<PhysicalDatasource> okSources = null;
@@ -579,11 +576,9 @@ public class PhysicalDBPool {
 	 * @param autocommit
 	 * @param handler
 	 * @param attachment
-	 * @param database
 	 * @throws Exception
 	 */
-	public void getReadBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment,
-			String database) throws Exception {
+	public void getReadBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 		PhysicalDatasource theNode = null;
 		ArrayList<PhysicalDatasource> okSources = null;
 		okSources = getAllActiveRWSources(false, false, checkSlaveSynStatus());
@@ -600,12 +595,10 @@ public class PhysicalDBPool {
 	 * @param autocommit
 	 * @param handler
 	 * @param attachment
-	 * @param database
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment,
-			String database) throws Exception {
+	public boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 
 		PhysicalDatasource theNode = null;
 		Map<Integer, PhysicalDatasource[]> rs;

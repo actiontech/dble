@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.buffer.BufferPool;
-import io.mycat.buffer.DirectByteBufferPool;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
 import io.mycat.net.NIOProcessor;
@@ -112,7 +111,7 @@ public final class ShowProcessor {
         // write rows
         byte packetId = eof.packetId;
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
-            RowDataPacket row = getRow(p, c.getCharset());
+            RowDataPacket row = getRow(p);
             row.packetId = ++packetId;
             buffer = row.write(buffer, c,true);
         }
@@ -126,7 +125,7 @@ public final class ShowProcessor {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(NIOProcessor processor, String charset) {
+    private static RowDataPacket getRow(NIOProcessor processor) {
     	BufferPool bufferPool=processor.getBufferPool();
     	long bufferSize=bufferPool.size();
     	long bufferCapacity=bufferPool.capacity();

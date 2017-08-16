@@ -28,7 +28,7 @@ public class MysqlInformationSchemaHandler {
 	 * @param fields
 	 * @param c
 	 */
-	private static void doWrite(int field_count, FieldPacket[] fields, ServerConnection c) {
+	public static void doWrite(int field_count, FieldPacket[] fields, ServerConnection c) {
 		
 		ByteBuffer buffer = c.allocate();
 

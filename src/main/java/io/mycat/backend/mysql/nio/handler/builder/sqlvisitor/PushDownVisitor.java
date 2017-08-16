@@ -23,14 +23,11 @@ public class PushDownVisitor extends MysqlVisitor {
 
 	/* 用来记录真正被下发下去的orderby列表 */
 	private List<Order> pushDownOrderBy;
-	/* 存储最后下推的列 */
-	private List<String> pushDownTableInfos;
 
 	public PushDownVisitor(PlanNode pushDownQuery, boolean isTopQuery) {
 		super(pushDownQuery, isTopQuery);
 		this.existUnPushDownGroup = pushDownQuery.existUnPushDownGroup();
 		pushDownOrderBy = new ArrayList<Order>();
-		pushDownTableInfos = new ArrayList<String>();
 	}
 
 	public void visit() {
@@ -73,7 +70,7 @@ public class PushDownVisitor extends MysqlVisitor {
 		if (query.isSubQuery() || isTopQuery) {
 			buildWhere(query);
 			buildGroupBy(query);
-			buildHaving(query);
+			// having中由于可能存在聚合函数，而聚合函数需要merge之后结果才能出来，所以需要自己进行计算
 			buildOrderBy(query);
 			buildLimit(query, sqlBuilder);
 		}
@@ -138,7 +135,7 @@ public class PushDownVisitor extends MysqlVisitor {
 		if (join.isSubQuery() || isTopQuery) {
 			buildWhere(join);
 			buildGroupBy(join);
-			buildHaving(join);
+			// having中由于可能存在聚合函数，而聚合函数需要merge之后结果才能出来，所以需要自己进行计算
 			buildOrderBy(join);
 			buildLimit(join, sqlBuilder);
 		}
@@ -152,7 +149,6 @@ public class PushDownVisitor extends MysqlVisitor {
 	}
 
 	protected void buildSelect(PlanNode query) {
-		boolean addPushDownTableInfo = pushDownTableInfos.isEmpty() && isTopQuery;
 		sqlBuilder.append("select ");
 		List<Item> columns = query.getColumnsRefered();
 		if (query.isDistinct()) {
@@ -177,10 +173,6 @@ public class PushDownVisitor extends MysqlVisitor {
 					String colNameCount = colName.replace(funName + "(", "COUNT(");
 					colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
 					sqlBuilder.append(colNameSum).append(",").append(colNameCount).append(",");
-					if (addPushDownTableInfo) {
-						pushDownTableInfos.add(null);
-						pushDownTableInfos.add(null);
-					}
 					continue;
 				} else if (i == ItemSum.Sumfunctype.STD_FUNC || i == ItemSum.Sumfunctype.VARIANCE_FUNC) {
 					String colNameCount = colName.replace(funName + "(", "COUNT(");
@@ -191,17 +183,10 @@ public class PushDownVisitor extends MysqlVisitor {
 					colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VARIANCE"));
 					sqlBuilder.append(colNameCount).append(",").append(colNameSum).append(",").append(colNameVar)
 							.append(",");
-					if (addPushDownTableInfo) {
-						pushDownTableInfos.add(null);
-						pushDownTableInfos.add(null);
-						pushDownTableInfos.add(null);
-					}
 					continue;
 				}
 			}
 			sqlBuilder.append(pdName);
-			if (addPushDownTableInfo)
-				pushDownTableInfos.add(col.getTableName());
 			sqlBuilder.append(",");
 		}
 		sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
@@ -246,10 +231,6 @@ public class PushDownVisitor extends MysqlVisitor {
 		}
 	}
 
-	protected void buildHaving(PlanNode query) {
-		// having中由于可能存在聚合函数，而聚合函数需要merge之后结果才能出来，所以需要自己进行计算
-	}
-
 	protected void buildOrderBy(PlanNode query) {
 		/* 由于有groupby时，在merge的时候需要根据groupby的列进行排序merge，所以有groupby时不能下发order */
 		boolean realPush = query.getGroupBys().isEmpty();
@@ -283,12 +264,6 @@ public class PushDownVisitor extends MysqlVisitor {
 		}
 	}
 
-	/**
-	 * @return the pushDownTableInfos
-	 */
-	public List<String> getPushDownTableInfos() {
-		return pushDownTableInfos;
-	}
 
 	/* -------------------------- help method ------------------------ */
 

@@ -32,7 +32,6 @@ import io.mycat.util.StringUtil;
 public final class ManagerParseHeartbeat {
 
     public static final int OTHER = -1;
-    public static final int DATASOURCE = 1;
     
    // SHOW @@HEARTBEAT
     static int show2HeaCheck(String stmt, int offset) {

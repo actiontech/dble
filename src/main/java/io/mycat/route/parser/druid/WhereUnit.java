@@ -82,15 +82,6 @@ public class WhereUnit {
 		this.whereExpr = whereExpr;
 		this.canSplitExpr = whereExpr;
 	}
-
-	public SQLBinaryOpExpr getWhereExpr() {
-		return whereExpr;
-	}
-
-	public void setWhereExpr(SQLBinaryOpExpr whereExpr) {
-		this.whereExpr = whereExpr;
-	}
-
 	public SQLBinaryOpExpr getCanSplitExpr() {
 		return canSplitExpr;
 	}

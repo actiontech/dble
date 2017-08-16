@@ -8,60 +8,58 @@ import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.ServerConnection;
 
 public interface BackendConnection extends ClosableConnection {
-	public boolean isModifiedSQLExecuted();
+	boolean isModifiedSQLExecuted();
 
-	public boolean isDDL();
+	boolean isDDL();
 
-	public boolean isFromSlaveDB();
+	boolean isFromSlaveDB();
 
-	public String getSchema();
+	String getSchema();
 
-	public void setSchema(String newSchema);
+	void setSchema(String newSchema);
 
-	public long getLastTime();
+	long getLastTime();
 
-	public boolean isClosedOrQuit();
+	boolean isClosedOrQuit();
 
-	public void setAttachment(Object attachment);
+	void setAttachment(Object attachment);
 
-	public void quit();
+	void quit();
 
-	public void setLastTime(long currentTimeMillis);
+	void setLastTime(long currentTimeMillis);
 
-	public void release();
+	void release();
 
-	public boolean setResponseHandler(ResponseHandler commandHandler);
+	boolean setResponseHandler(ResponseHandler commandHandler);
 
-	public void commit();
+	void commit();
 
-	public void query(String sql) throws UnsupportedEncodingException;
+	void query(String sql) throws UnsupportedEncodingException;
 
-	public Object getAttachment();
+	Object getAttachment();
 
-	// public long getThreadId();
+	// long getThreadId();
 
 
 
-	public void execute(RouteResultsetNode node, ServerConnection source,
+	void execute(RouteResultsetNode node, ServerConnection source,
 			boolean autocommit);
 
-	public void recordSql(String host, String schema, String statement);
+	boolean syncAndExcute();
 
-	public boolean syncAndExcute();
+	void rollback();
 
-	public void rollback();
+	boolean isBorrowed();
 
-	public boolean isBorrowed();
+	void setBorrowed(boolean borrowed);
 
-	public void setBorrowed(boolean borrowed);
+	int getTxIsolation();
 
-	public int getTxIsolation();
+	boolean isAutocommit();
 
-	public boolean isAutocommit();
+	long getId();
 
-	public long getId();
+	void terminate(String reason);
 
-	public void terminate(String reason);
-
-    	public String compactInfo();
+	String compactInfo();
 }

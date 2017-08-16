@@ -1,14 +1,17 @@
 package io.mycat.sqlengine;
 
+import io.mycat.net.mysql.FieldPacket;
+import io.mycat.net.mysql.RowDataPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.mycat.net.mysql.FieldPacket;
-import io.mycat.net.mysql.RowDataPacket;
-
 public class OneRawSQLQueryResultHandler implements SQLJobHandler {
 
+	public static final Logger LOGGER = LoggerFactory.getLogger(OneRawSQLQueryResultHandler.class);
 	private Map<String, Integer> fetchColPosMap;
 	private final SQLQueryResultListener<SQLQueryResult<Map<String, String>>> callback;
 	private final String[] fetchCols;
@@ -20,9 +23,8 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
 		this.fetchCols = fetchCols;
 		this.callback = callBack;
 	}
-
-	private String mark;
-	public void onHeader(String dataNode, byte[] header, List<byte[]> fields) {
+	@Override
+	public void onHeader( List<byte[]> fields) {
 		fieldCount = fields.size();
 		fetchColPosMap = new HashMap<String, Integer>();
 		for (String watchFd : fetchCols) {
@@ -80,14 +82,6 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
 		SQLQueryResult<Map<String, String>> queryRestl=new SQLQueryResult<Map<String, String>>(this.result,!failed, dataNode);
 	     this.callback.onResult(queryRestl);
 
-	}
-
-	public String getMark() {
-		return mark;
-	}
-
-	public void setMark(String mark) {
-		this.mark = mark;
 	}
 	
 	// 子类 MultiRowSQLQueryResultHandler 需要使用

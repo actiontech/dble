@@ -28,7 +28,6 @@ import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.Versions;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.route.handler.HintHandler;
 import io.mycat.route.handler.HintHandlerFactory;
@@ -62,8 +61,8 @@ public class RouteService {
 		return tableId2DataNodeCache;
 	}
 
-	public RouteResultset route(SystemConfig sysconf, SchemaConfig schema,
-			int sqlType, String stmt, String charset, ServerConnection sc)
+	public RouteResultset route(SchemaConfig schema,
+								int sqlType, String stmt, String charset, ServerConnection sc)
 			throws SQLException {
 		RouteResultset rrs = null;
 		String cacheKey = null;

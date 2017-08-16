@@ -52,7 +52,6 @@ public final class RouteResultCopy {
 		RouteResultsetNode[] nodes = new RouteResultsetNode[ns.length];
 		for (int i = 0; i < ns.length; i++) {
 			nodes[i] = RRNCopy(ns[i], sqlType, stmt);
-			nodes[i].setSource(rr);
 		}
 		rr.setNodes(nodes);
 

@@ -269,8 +269,8 @@ public class ConfigInitializer {
 		return nodes;
 	}
 
-	private PhysicalDatasource[] createDataSource(DataHostConfig conf, String hostName, DBHostConfig[] nodes,
-			boolean isRead) {
+	private PhysicalDatasource[] createDataSource(DataHostConfig conf, DBHostConfig[] nodes,
+												  boolean isRead) {
 		PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
 		for (int i = 0; i < nodes.length; i++) {
 			//设置最大idle时间，默认为30分钟
@@ -283,12 +283,12 @@ public class ConfigInitializer {
 	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
 		String name = conf.getName();
 		//针对所有写节点创建PhysicalDatasource
-		PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
+		PhysicalDatasource[] writeSources = createDataSource(conf, conf.getWriteHosts(), false);
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
 		Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(readHostsMap.size());
 		//对于每个读节点建立key为writeHost下标, value为readHost的PhysicalDatasource[]的哈希表
 		for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
-			PhysicalDatasource[] readSources = createDataSource(conf, name, entry.getValue(), true);
+			PhysicalDatasource[] readSources = createDataSource(conf, entry.getValue(), true);
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
 		

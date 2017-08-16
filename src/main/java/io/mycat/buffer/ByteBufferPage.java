@@ -15,7 +15,6 @@ public class ByteBufferPage {
     private final int chunkCount;
     private final BitSet chunkAllocateTrack;
     private final AtomicBoolean allocLockStatus = new AtomicBoolean(false);
-    private final long startAddress;
 
     public ByteBufferPage(ByteBuffer buf, int chunkSize) {
         super();
@@ -23,7 +22,6 @@ public class ByteBufferPage {
         chunkCount = buf.capacity() / chunkSize;
         chunkAllocateTrack = new BitSet(chunkCount);
         this.buf = buf;
-        startAddress = ((sun.nio.ch.DirectBuffer) buf).address();
     }
 
     public ByteBuffer allocatChunk(int theChunkCount) {

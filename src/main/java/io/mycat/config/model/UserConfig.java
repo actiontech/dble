@@ -85,10 +85,6 @@ public class UserConfig {
         return schemas;
     }
 
-	public String getEncryptPassword() {
-		return this.encryptPassword;
-	}
-
 	public void setEncryptPassword(String encryptPassword) {
 		this.encryptPassword = encryptPassword;
 	}

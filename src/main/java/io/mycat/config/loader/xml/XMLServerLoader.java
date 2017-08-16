@@ -243,8 +243,7 @@ public class XMLServerLoader {
 					dml1Array[offset1] =  Character.getNumericValue( dml1.charAt( offset1 ) );
 				}
 				
-				UserPrivilegesConfig.SchemaPrivilege schemaPrivilege = new UserPrivilegesConfig.SchemaPrivilege(); 
-				schemaPrivilege.setName( name1 );
+				UserPrivilegesConfig.SchemaPrivilege schemaPrivilege = new UserPrivilegesConfig.SchemaPrivilege();
 				schemaPrivilege.setDml( dml1Array );
 				
 				NodeList tableNodes = schemaNode.getElementsByTagName("table");
@@ -264,8 +263,6 @@ public class XMLServerLoader {
 					for(int offset2 = 0; offset2 < dml2.length(); offset2++ ) {
 						dml2Array[offset2] =  Character.getNumericValue( dml2.charAt( offset2 ) );
 					}
-					
-					tablePrivilege.setName( name2 );
 					tablePrivilege.setDml( dml2Array );
 					
 					schemaPrivilege.addTablePrivilege(name2, tablePrivilege);

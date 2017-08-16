@@ -103,11 +103,6 @@ public class XMLSchemaLoader implements SchemaLoader {
 	}
 
 	@Override
-	public Map<String, TableRuleConfig> getTableRules() {
-		return tableRules;
-	}
-
-	@Override
 	public Map<String, DataHostConfig> getDataHosts() {
 		return (Map<String, DataHostConfig>) (dataHosts.isEmpty() ? Collections.emptyMap() : dataHosts);
 	}
@@ -673,7 +668,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 		ip = nodeUrl.substring(0, colonIndex).trim();
 		port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
 
-		DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty,password);
+		DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
 		conf.setMaxCon(maxCon);
 		conf.setMinCon(minCon);
 		conf.setWeight(weight); 	//新增权重

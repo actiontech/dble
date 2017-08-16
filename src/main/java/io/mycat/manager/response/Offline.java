@@ -39,7 +39,7 @@ public class Offline {
         ok.serverStatus = 2;
     }
 
-    public static void execute(String stmt, ManagerConnection c) {
+    public static void execute(ManagerConnection c) {
         MycatServer.getInstance().offline();
         ok.write(c);
     }

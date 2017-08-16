@@ -43,13 +43,9 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	private final int sqlType;
 	private volatile boolean canRunInReadDB;
 	private final boolean hasBlanceFlag;
-    private boolean callStatement = false; // 处理call关键字
 	private int limitStart;
 	private int limitSize;
-	private int totalNodeSize =0; //方便后续jdbc批量获取扩展
-   private Procedure procedure;
 	private LoadData loadData;
-	private RouteResultset source;
 	
 	// 强制走 master，可以通过 RouteResultset的属性canRunInReadDB(false)
 	// 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
@@ -64,8 +60,7 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		this.sqlType = sqlType;
 		this.statement = srcStatement;
 		canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
-		hasBlanceFlag = (statement != null)
-				&& statement.startsWith("/*balance*/");
+		hasBlanceFlag = (statement != null) && statement.startsWith("/*balance*/");
 		this.multiplexNum = new AtomicLong(0);
 	}
 
@@ -76,19 +71,10 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	public void setRunOnSlave(Boolean runOnSlave) {
 		this.runOnSlave = runOnSlave;
 	}
-	  private Map hintMap;
 
-    public Map getHintMap()
-    {
-        return hintMap;
-    }
     public AtomicLong getMultiplexNum() {
 		return multiplexNum;
 	}
-    public void setHintMap(Map hintMap)
-    {
-        this.hintMap = hintMap;
-    }
 
 	public void setStatement(String statement) {
 		this.statement = statement;
@@ -111,33 +97,8 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	 * @return
 	 */
 	public boolean canRunnINReadDB(boolean autocommit) {
-		return canRunInReadDB && ( autocommit || (!autocommit && hasBlanceFlag) );
+		return canRunInReadDB && (autocommit || hasBlanceFlag);
 	}
-	
-//	public boolean canRunnINReadDB(boolean autocommit) {
-//		return canRunInReadDB && autocommit && !hasBlanceFlag
-//			|| canRunInReadDB && !autocommit && hasBlanceFlag;
-//	}
-  public Procedure getProcedure()
-    {
-        return procedure;
-    }
-
-
-	public void setProcedure(Procedure procedure)
-    {
-        this.procedure = procedure;
-    }
-
-    public boolean isCallStatement()
-    {
-        return callStatement;
-    }
-
-    public void setCallStatement(boolean callStatement)
-    {
-        this.callStatement = callStatement;
-    }
 	public String getName() {
 		return name;
 	}
@@ -168,16 +129,6 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 	public void setLimitSize(int limitSize)
 	{
 		this.limitSize = limitSize;
-	}
-
-	public int getTotalNodeSize()
-	{
-		return totalNodeSize;
-	}
-
-	public void setTotalNodeSize(int totalNodeSize)
-	{
-		this.totalNodeSize = totalNodeSize;
 	}
 
 	public LoadData getLoadData()
@@ -247,11 +198,4 @@ public final class RouteResultsetNode implements Serializable , Comparable<Route
 		return hasBlanceFlag;
 	}
 
-	public RouteResultset getSource() {
-		return source;
-	}
-
-	public void setSource(RouteResultset source) {
-		this.source = source;
-	}
 }

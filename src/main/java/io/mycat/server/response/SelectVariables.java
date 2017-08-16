@@ -51,10 +51,9 @@ public final class SelectVariables
 
 
     public static void execute(ServerConnection c, String sql) {
-
-     String subSql=   sql.substring(sql.indexOf("SELECT")+6);
-    List<String>  splitVar=   Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql) ;
-        splitVar=convert(splitVar);
+        String subSql = sql.substring(sql.indexOf("SELECT") + 6);
+        List<String> splitVar = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql);
+        splitVar = convert(splitVar);
         int FIELD_COUNT = splitVar.size();
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
         FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -62,8 +61,7 @@ public final class SelectVariables
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
-        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++)
-        {
+        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
             String s = splitVar.get(i1);
             fields[i] = PacketUtil.getField(s, Fields.FIELD_TYPE_VAR_STRING);
             fields[i++].packetId = ++packetId;
@@ -73,40 +71,38 @@ public final class SelectVariables
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
 
         EOFPacket eof = new EOFPacket();
         eof.packetId = ++packetId;
         // write eof
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
         //byte packetId = eof.packetId;
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++)
-        {
+        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
             String s = splitVar.get(i1);
-            String value=  variables.get(s) ==null?"":variables.get(s) ;
+            String value = variables.get(s) == null ? "" : variables.get(s);
             row.add(value.getBytes());
 
         }
 
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c,true);
-
+        buffer = row.write(buffer, c, true);
 
 
         // write lastEof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);

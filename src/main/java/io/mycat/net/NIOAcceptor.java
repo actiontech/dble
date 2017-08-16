@@ -50,7 +50,6 @@ public final class NIOAcceptor extends Thread  implements SocketAcceptor{
 	private final Selector selector;
 	private final ServerSocketChannel serverChannel;
 	private final FrontendConnectionFactory factory;
-	private long acceptCount;
 	private final NIOReactorPool reactorPool;
 
 	public NIOAcceptor(String name, String bindIp, int port, int backlog, FrontendConnectionFactory factory,
@@ -60,7 +59,7 @@ public final class NIOAcceptor extends Thread  implements SocketAcceptor{
 		this.selector = Selector.open();
 		this.serverChannel = ServerSocketChannel.open();
 		this.serverChannel.configureBlocking(false);
-		/** 设置TCP属性 */
+		//设置TCP属性
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
 		serverChannel.bind(new InetSocketAddress(bindIp, port), backlog);
@@ -72,16 +71,10 @@ public final class NIOAcceptor extends Thread  implements SocketAcceptor{
 	public int getPort() {
 		return port;
 	}
-
-	public long getAcceptCount() {
-		return acceptCount;
-	}
-
 	@Override
 	public void run() {
 		final Selector tSelector = this.selector;
 		for (;;) {
-			++acceptCount;
 			try {
 			    tSelector.select(1000L);
 				Set<SelectionKey> keys = tSelector.selectedKeys();
@@ -110,8 +103,7 @@ public final class NIOAcceptor extends Thread  implements SocketAcceptor{
 			FrontendConnection c = factory.make(channel);
 			c.setAccepted(true);
 			c.setId(ID_GENERATOR.getId());
-			NIOProcessor processor = (NIOProcessor) MycatServer.getInstance()
-					.nextProcessor();
+			NIOProcessor processor = MycatServer.getInstance().nextProcessor();
 			c.setProcessor(processor);
 			
 			NIOReactor reactor = reactorPool.getNextReactor();

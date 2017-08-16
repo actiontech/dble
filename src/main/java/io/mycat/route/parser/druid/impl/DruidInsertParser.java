@@ -71,7 +71,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (tc.isGlobalTable()) {
 			String sql = rrs.getStatement();
 			if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
-				sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck(), sc);
+				sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck());
 			}else{
 				sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
 			} 
@@ -82,7 +82,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 
 		if (tc.isAutoIncrement()) {
-			String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false, sc);
+			String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false);
 			rrs.setStatement(sql);
 			SQLStatementParser parser = new MySqlStatementParser(sql);
 			stmt = parser.parseStatement();
@@ -226,7 +226,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 		}
 		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
 		nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
-		nodes[0].setSource(rrs);
 
 		// insert into .... on duplicateKey 
 		//such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b); 
@@ -299,7 +298,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 			insertStmt.setValuesList(valuesList);
 			nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
 					RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
-			nodes[count++].setSource(rrs);
+			count++;
 
 		}
 		rrs.setNodes(nodes);
@@ -396,7 +395,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 	private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String joinKey) throws SQLNonTransientException {
 		return getShardingColIndex(schemaInfo, insertStmt, joinKey);
 	}
-	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc , boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
+	private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc, boolean isGlobalCheck) throws SQLNonTransientException {
 		TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
 				schemaInfo.table);
 		if (orgTbMeta == null)
@@ -478,13 +477,13 @@ public class DruidInsertParser extends DefaultDruidParser {
 		if (vcl != null && vcl.size() > 1) { // 批量insert
 			for (int j = 0; j < vcl.size(); j++) {
 				if (j != vcl.size() - 1)
-					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, sc).append(",");
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
 				else
-					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, sc);
+					appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
 			}
 		} else { // 非批量 insert
 			List<SQLExpr> valuse = insert.getValues().getValues();
-			appendValues(tableKey,valuse, sb ,autoIncrement, idxGlobal, colSize, sc);
+			appendValues(tableKey,valuse, sb ,autoIncrement, idxGlobal, colSize);
 		}
 
 		List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
@@ -524,7 +523,7 @@ public class DruidInsertParser extends DefaultDruidParser {
 		sb.append(")");
 	}
 
-	private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize, ServerConnection sc) throws SQLNonTransientException {
+	private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
 		int size = valuse.size();
 		int checkSize = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
 		if (checkSize != size){

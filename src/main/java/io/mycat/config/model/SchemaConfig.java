@@ -54,7 +54,7 @@ public class SchemaConfig {
 		this.dataNode = dataNode;
 		this.tables = tables;
 		this.defaultMaxLimit = defaultMaxLimit;
-		buildERMap(tables);
+		buildERMap();
 		this.noSharding = (tables == null || tables.isEmpty());
 		if (noSharding && dataNode == null) {
 			throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
@@ -73,7 +73,7 @@ public class SchemaConfig {
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
 	}
-	private void buildERMap(Map<String, TableConfig> tables2) {
+	private void buildERMap() {
 		if (tables == null || tables.isEmpty()) {
 			return;
 		}
@@ -88,11 +88,11 @@ public class SchemaConfig {
 				String key = tc.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
 				String column = root.getRule().getColumn();
 				if (funcNodeERMap == null) {
-					funcNodeERMap = new HashMap<String, Set<ERTable>>();
+					funcNodeERMap = new HashMap<>();
 				}
 				Set<ERTable> eratables = funcNodeERMap.get(key);
 				if (eratables == null) {
-					eratables = new HashSet<ERTable>();
+					eratables = new HashSet<>();
 					funcNodeERMap.put(key, eratables);
 				}
 				eratables.add(new ERTable(name, tc.getName(), column));
@@ -100,20 +100,20 @@ public class SchemaConfig {
 			}
 			if (parent.getDirectRouteTC() == null || tc.getDirectRouteTC() == null) {
 				if (FkErRelations == null) {
-					FkErRelations = new HashMap<ERTable, Set<ERTable>>();
+					FkErRelations = new HashMap<>();
 				}
 				ERTable parentTable = new ERTable(name, parent.getName(), tc.getParentKey());
 				ERTable childTable = new ERTable(name, tc.getName(), tc.getJoinKey());
 				Set<ERTable> relationParent = FkErRelations.get(parentTable);
 				if (relationParent == null) {
-					relationParent = new HashSet<ERTable>(1);
+					relationParent = new HashSet<>(1);
 				}
 				relationParent.add(childTable);
 				FkErRelations.put(parentTable, relationParent);
 
 				Set<ERTable> relationChild = FkErRelations.get(childTable);
 				if (relationChild == null) {
-					relationChild = new HashSet<ERTable>(1);
+					relationChild = new HashSet<>(1);
 				}
 				relationChild.add(parentTable);
 				FkErRelations.put(childTable, relationChild);
@@ -122,11 +122,11 @@ public class SchemaConfig {
 					TableConfig root = tc.getDirectRouteTC();
 					String key = root.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
 					if (funcNodeERMap == null) {
-						funcNodeERMap = new HashMap<String, Set<ERTable>>();
+						funcNodeERMap = new HashMap<>();
 					}
 					Set<ERTable> eratables = funcNodeERMap.get(key);
 					if (eratables == null) {
-						eratables = new HashSet<ERTable>();
+						eratables = new HashSet<>();
 						funcNodeERMap.put(key, eratables);
 					}
 					eratables.add(new ERTable(name, tc.getName(), tc.getJoinKey()));
@@ -189,7 +189,7 @@ public class SchemaConfig {
 	 * 取得该schema的所有数据节点
 	 */
 	private Set<String> buildAllDataNodes() {
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		if (!isEmpty(dataNode)) {
 			set.add(dataNode);
 		}

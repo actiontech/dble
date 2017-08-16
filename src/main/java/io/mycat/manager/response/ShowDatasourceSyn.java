@@ -24,7 +24,6 @@
 package io.mycat.manager.response;
 
 import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,6 @@ public class ShowDatasourceSyn {
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
-	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	
 	static {
@@ -102,7 +100,7 @@ public class ShowDatasourceSyn {
 		eof.packetId = ++packetId;
 	}
 
-	public static void response(ManagerConnection c,String stmt) {
+	public static void response(ManagerConnection c) {
 		ByteBuffer buffer = c.allocate();
 
 		// write header

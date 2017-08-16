@@ -132,14 +132,6 @@ public class DirectByteBufferPool implements BufferPool{
         return memoryUsage;
     }
 
-    public int getPageSize() {
-        return pageSize;
-    }
-
-    public short getPageCount() {
-        return pageCount;
-    }
-
     //TODO   should  fix it
     public long capacity(){
         return size();

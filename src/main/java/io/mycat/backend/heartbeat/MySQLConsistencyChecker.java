@@ -182,16 +182,7 @@ public class MySQLConsistencyChecker{
 	public String getColumnExistSQL() {
 		return columnExistSQL;
 	}
-	public void setColumnExistSQL(String columnExistSQL) {
-		this.columnExistSQL = columnExistSQL;
-	}
 	public String getMaxSQL() {
 		return maxSQL;
-	}
-	public String getTableName() {
-		return tableName;
-	}
-	public MySQLDataSource getSource() {
-		return source;
 	}
 }

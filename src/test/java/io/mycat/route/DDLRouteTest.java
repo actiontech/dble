@@ -7,7 +7,6 @@ import io.mycat.SimpleCachePool;
 import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.TableConfig;
 import io.mycat.route.parser.druid.impl.ddl.DruidCreateTableParser;
 import io.mycat.route.util.RouterUtil;
@@ -58,7 +57,7 @@ public class DDLRouteTest {
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
-        RouteResultset rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        RouteResultset rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
     }
@@ -95,7 +94,7 @@ public class DDLRouteTest {
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
-        RouteResultset rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        RouteResultset rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -113,7 +112,7 @@ public class DDLRouteTest {
 
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -129,7 +128,7 @@ public class DDLRouteTest {
         nodeSize = dataNodes.size();
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -145,7 +144,7 @@ public class DDLRouteTest {
         nodeSize = dataNodes.size();
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -273,7 +272,7 @@ public class DDLRouteTest {
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
-        RouteResultset rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        RouteResultset rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -292,7 +291,7 @@ public class DDLRouteTest {
         }
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -311,7 +310,7 @@ public class DDLRouteTest {
         }
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -331,7 +330,7 @@ public class DDLRouteTest {
         }
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 
@@ -352,7 +351,7 @@ public class DDLRouteTest {
 
         rs = ServerParse.parse(sql);
         sqlType = rs & 0xff;
-        rrs = routerService.route(new SystemConfig(), schema, sqlType, sql, "UTF-8", null);
+        rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
 

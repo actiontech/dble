@@ -100,11 +100,11 @@ public class PhysicalDBNode {
 					LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBlanceFlag());
 					if (rrs.isHasBlanceFlag()) {  // 带有 /*balance*/ 注解(目前好像只支持一个注解...)
 					    dbPool.getReadBanlanceCon(schema, autoCommit, handler,
-									  attachment, this.database);
+									  attachment);
 					}else{	// 没有 /*balance*/ 注解
 						LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());
 						if(!dbPool.getReadCon(schema, autoCommit, handler,
-								      attachment, this.database)){
+								      attachment)){
 							LOGGER.warn("Do not have slave connection to use, "
 								    + "use master connection instead.");
 							PhysicalDatasource writeSource = dbPool.getSource();
@@ -128,7 +128,7 @@ public class PhysicalDBNode {
 			}else{	// 没有  /*db_type=master/slave*/ 注解，按照原来的处理方式
 				LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());	// null
 				if (rrs.canRunnINReadDB(autoCommit)) {
-					dbPool.getRWBanlanceCon(schema, autoCommit, handler, attachment, this.database);
+					dbPool.getRWBanlanceCon(schema, autoCommit, handler, attachment);
 				} else {
 					PhysicalDatasource writeSource = dbPool.getSource();
 					//记录写节点写负载值

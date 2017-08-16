@@ -113,20 +113,7 @@ public class ProxyMetaManager {
 		return catalogs;
 	}
 
-	public SchemaMeta getSchema(String schema) {
-		if (schema == null)
-			return null;
-		return this.catalogs.get(schema);
-	}
 
-	/**
-	 * synchronously getting schemas from cluster. just for show databases
-	 * command
-	 *
-	 */
-	public synchronized Map<String, SchemaMeta> getSchemas() {
-		return catalogs;
-	}
 
 	public boolean createDatabase(String schema) {
 		SchemaMeta schemaMeta = catalogs.get(schema);
@@ -188,13 +175,13 @@ public class ProxyMetaManager {
 		return catalogs.get(schema).getTableMeta(tbName);
 	}
 
-	public TableMeta removeTableMetaNosync(String schema, String tbName) {
-		SchemaMeta schemaMeta = catalogs.remove(schema);
-		if (schemaMeta == null) {
-			return null;
-		}
-		return schemaMeta.dropTable(tbName);
-	}
+//	public TableMeta removeTableMetaNosync(String schema, String tbName) {
+//		SchemaMeta schemaMeta = catalogs.remove(schema);
+//		if (schemaMeta == null) {
+//			return null;
+//		}
+//		return schemaMeta.dropTable(tbName);
+//	}
  
 //	public void createView(String schema, String viewName, String createSql, List<String> columns, PlanNode selectNode,
 //			ViewCreateMode mode, boolean writeToZk) {

@@ -27,14 +27,6 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 	private List<Field> cmpFields;
 	private List<Boolean> ascs;
 
-	// only for test unit
-	public RowDataComparator(List<Field> sourceFields, List<Item> cmpItems, List<Field> cmpFields, List<Boolean> ascs,
-			String charset) {
-		this.sourceFields = sourceFields;
-		this.cmpItems = cmpItems;
-		this.cmpFields = cmpFields;
-		this.ascs = ascs;
-	}
 
 	public RowDataComparator(List<FieldPacket> fps, List<Order> orders, boolean allPushDown, HandlerType type,
 			String charset) {
@@ -55,9 +47,6 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 		}
 	}
 
-	public int getSourceFieldCount() {
-		return sourceFields.size();
-	}
 
 	public void sort(List<RowDataPacket> rows) {
 		Comparator<RowDataPacket> c = new Comparator<RowDataPacket>() {

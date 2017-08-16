@@ -183,11 +183,6 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 			}
 		}
 	}
-	
-	public int getDefaultNode() {
-		return defaultNode;
-	}
-
 	public void setDefaultNode(int defaultNode) {
 		this.defaultNode = defaultNode;
 	}

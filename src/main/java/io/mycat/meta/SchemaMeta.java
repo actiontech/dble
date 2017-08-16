@@ -33,13 +33,7 @@ public class SchemaMeta {
 	public void addTableMeta(String tbName, TableMeta tblMeta) {
 		this.tableMetas.put(tbName, tblMeta);
 	}
-	public TableMeta addTableMetaIfAbsent(String tbName, TableMeta tblMeta) {
-		return this.tableMetas.putIfAbsent(tbName, tblMeta);
-	}
 
-	public boolean flushTableMeta(String tbName, TableMeta oldMeta, TableMeta newMeta) {
-		return this.tableMetas.replace(tbName, oldMeta, newMeta);
-	}
 	public TableMeta dropTable(String tbName) {
 		return this.tableMetas.remove(tbName);
 	}
@@ -72,10 +66,10 @@ public class SchemaMeta {
 //		return this.indexMetas.get(name);
 //	}
 
-	public List<String> getTables() {
-		List<String> tbList = new ArrayList<String>();
-		tbList.addAll(tableMetas.keySet());
-//		tbList.addAll(viewMetas.keySet());
-		return tbList;
-	}
+//	public List<String> getTables() {
+//		List<String> tbList = new ArrayList<String>();
+//		tbList.addAll(tableMetas.keySet());
+////		tbList.addAll(viewMetas.keySet());
+//		return tbList;
+//	}
 }

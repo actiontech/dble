@@ -29,7 +29,6 @@ import java.util.Map;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 
-import io.mycat.config.model.SchemaConfig;
 import io.mycat.sqlengine.mpp.HavingCols;
 import io.mycat.util.FormatUtil;
 
@@ -234,12 +233,6 @@ public final class RouteResultset implements Serializable {
         return primaryKey.split("\\.");
     }
 
-    public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
-        if (orderByCols != null && !orderByCols.isEmpty()) {
-            createSQLMergeIfNull().setOrderByCols(orderByCols);
-//            this.setNeedOptimizer(true);
-        }
-    }
 
     public void setHasAggrColumn(boolean hasAggrColumn) {
         if (hasAggrColumn) {
@@ -285,15 +278,6 @@ public final class RouteResultset implements Serializable {
     }
 
     public void setNodes(RouteResultsetNode[] nodes) {
-        if(nodes!=null)
-        {
-           int nodeSize=nodes.length;
-            for (RouteResultsetNode node : nodes)
-            {
-                node.setTotalNodeSize(nodeSize);
-            }
-
-        }
         this.nodes = nodes;
     }
 
@@ -334,17 +318,9 @@ public final class RouteResultset implements Serializable {
 
     public void setCallStatement(boolean callStatement) {
         this.callStatement = callStatement;
-        if(nodes!=null)
-        {
-            for (RouteResultsetNode node : nodes)
-            {
-                node.setCallStatement(callStatement);
-            }
-
-        }
     }
 
-	public void changeNodeSqlAfterAddLimit(SchemaConfig schemaConfig, String sql, int offset, int count) {
+	public void changeNodeSqlAfterAddLimit(String sql, int offset, int count) {
 		this.setStatement(sql);
 		if (nodes != null) {
 			for (RouteResultsetNode node : nodes) {
@@ -372,14 +348,6 @@ public final class RouteResultset implements Serializable {
 			createSQLMergeIfNull().setHavingCols(havings);
 		}
 	}
-
-	// Added by winbill, 20160314, for having clause, Begin ==>
-	public void setHavingColsName(Object[] names) {
-		if (names != null && names.length > 0) {
-			createSQLMergeIfNull().setHavingColsName(names);
-		}
-	}
-	// Added by winbill, 20160314, for having clause, End  <==
 
     public SQLStatement getSqlStatement() {
 		return this.sqlStatement;

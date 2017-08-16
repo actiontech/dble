@@ -33,6 +33,7 @@ import java.util.Map;
 
 import io.mycat.route.function.*;
 import io.mycat.util.ResourceUtil;
+import io.mycat.util.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -63,10 +64,6 @@ public class XMLRuleLoader {
 		//function名 -> 具体分片算法
 		this.functions = new HashMap<String, AbstractPartitionAlgorithm>();
 		load(DEFAULT_DTD, ruleFile == null ? DEFAULT_XML : ruleFile);
-	}
-
-	public XMLRuleLoader() {
-		this(null);
 	}
 
 	public Map<String, TableRuleConfig> getTableRules() {
@@ -130,6 +127,9 @@ public class XMLRuleLoader {
 				Element e = (Element) node;
 				//先判断是否重复
 				String name = e.getAttribute("name");
+				if (StringUtil.isEmpty(name)) {
+					throw new ConfigException("name is null or empty");
+				}
 				if (tableRules.containsKey(name)) {
 					throw new ConfigException("table rule " + name
 							+ " duplicated!");
@@ -144,14 +144,6 @@ public class XMLRuleLoader {
 				//目前只处理第一个，未来可能有多列复合逻辑需求
 				//RuleConfig是保存着rule与function对应关系的对象
 				RuleConfig rule = loadRule((Element) ruleNodes.item(0));
-				String funName = rule.getFunctionName();
-				//判断function是否存在，获取function
-				AbstractPartitionAlgorithm func = functions.get(funName);
-				if (func == null) {
-					throw new ConfigException("can't find function of name :"
-							+ funName);
-				}
-				rule.setRuleAlgorithm(func);
 				//保存到tableRules
 				tableRules.put(name, new TableRuleConfig(name, rule));
 			}
@@ -162,6 +154,9 @@ public class XMLRuleLoader {
 		//读取columns
 		Element columnsEle = ConfigUtil.loadElement(element, "columns");
 		String column = columnsEle.getTextContent();
+		if (StringUtil.isEmpty(column)) {
+			throw new ConfigException("no rule column is found");
+		}
 		String[] columns = SplitUtil.split(column, ',', true);
 		if (columns.length > 1) {
 			throw new ConfigException("table rule coulmns has multi values:"
@@ -169,8 +164,17 @@ public class XMLRuleLoader {
 		}
 		//读取algorithm
 		Element algorithmEle = ConfigUtil.loadElement(element, "algorithm");
-		String algorithm = algorithmEle.getTextContent();
-		return new RuleConfig(column.toUpperCase(), algorithm);
+		String algorithmName = algorithmEle.getTextContent();
+
+		if (StringUtil.isEmpty(algorithmName)) {
+			throw new ConfigException("algorithm is null or empty");
+		}
+		//判断function是否存在，获取function
+		AbstractPartitionAlgorithm algorithm = functions.get(algorithmName);
+		if (algorithm == null) {
+			throw new ConfigException("can't find function of name :" + algorithmName);
+		}
+		return new RuleConfig(column.toUpperCase(), algorithmName, algorithm);
 	}
 
 	/**

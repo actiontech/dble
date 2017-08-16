@@ -104,7 +104,7 @@ public final class ShowCommand {
         // write rows
         byte packetId = eof.packetId;
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
-            RowDataPacket row = getRow(p, c.getCharset());
+            RowDataPacket row = getRow(p);
             row.packetId = ++packetId;
             buffer = row.write(buffer, c,true);
         }
@@ -118,7 +118,7 @@ public final class ShowCommand {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(NIOProcessor processor, String charset) {
+    private static RowDataPacket getRow(NIOProcessor processor) {
         CommandCount cc = processor.getCommands();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(processor.getName().getBytes());

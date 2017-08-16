@@ -59,31 +59,6 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 			
 			SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
 			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-			// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
-				MysqlInformationSchemaHandler.handle(schemaInfo, sc);
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
-
-			if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
-				// 兼容MySQLWorkbench
-				MysqlProcHandler.handle(rrs.getStatement(), sc);
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
-			// fix navicat SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS
-			// `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
-			// `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
-			// GROUP BY STATE ORDER BY SEQ
-			if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
-					&& SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
-					&& rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-				InformationSchemaProfiling.response(sc);
-				rrs.setFinishedExecute(true);
-				return schema;
-			}
 			if (schemaInfo.schemaConfig == null) {
 				String msg = "No Supported, sql:" + stmt;
 				throw new SQLNonTransientException(msg);

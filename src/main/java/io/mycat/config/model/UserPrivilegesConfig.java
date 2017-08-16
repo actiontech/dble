@@ -37,19 +37,11 @@ public class UserPrivilegesConfig {
 	 * 库级权限
 	 */
 	public static class SchemaPrivilege {
-		
-		private String name;
+
 		private int[] dml = new int[]{0, 0, 0, 0};
 		
 		private Map<String, TablePrivilege> tablePrivileges = new HashMap<String, TablePrivilege>();
-		
-		public String getName() {
-			return name;
-		}
-		
-		public void setName(String name) {
-			this.name = name;
-		}
+
 		
 		public int[] getDml() {
 			return dml;
@@ -72,17 +64,7 @@ public class UserPrivilegesConfig {
 	 * 表级权限
 	 */
 	public static class TablePrivilege {
-
-		private String name;
-		private int[] dml = new int[] { 0, 0, 0, 0 };
-		
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
+		private int[] dml = new int[]{0, 0, 0, 0};
 
 		public int[] getDml() {
 			return dml;

@@ -1,8 +1,6 @@
 package io.mycat.backend.mysql.nio.handler.builder;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -29,22 +27,6 @@ public class HandlerBuilder {
 	public HandlerBuilder(PlanNode node, NonBlockingSession session) {
 		this.node = node;
 		this.session = session;
-	}
-
-	public List<RouteResultsetNode> buildRouteSources() {
-		List<RouteResultsetNode> list = new ArrayList<RouteResultsetNode>();
-		BaseHandlerBuilder builder = createBuilder(session, node, this);
-		builder.build();
-		fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, false);
-		DMLResponseHandler endHandler = builder.getEndHandler();
-		endHandler.setNextHandler(fh);
-		for (DMLResponseHandler handler : fh.getMerges()) {
-			MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) handler;
-			for (int i = 0; i < mergeHandler.getRouteSources().length; i++) {
-				list.add(mergeHandler.getRouteSources()[i]);
-			}
-		}
-		return list;
 	}
 	
 	public void checkRRSS(RouteResultsetNode[] rrssArray) {
@@ -73,7 +55,7 @@ public class HandlerBuilder {
 	 * @return
 	 */
 	public DMLResponseHandler buildNode(NonBlockingSession session, PlanNode node) {
-		BaseHandlerBuilder builder = createBuilder(session, node, this);
+		BaseHandlerBuilder builder = createBuilder(session, node);
 		builder.build();
 		return builder.getEndHandler();
 	}
@@ -88,7 +70,7 @@ public class HandlerBuilder {
 		logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
 	}
 
-	private BaseHandlerBuilder createBuilder(final NonBlockingSession session, PlanNode node, HandlerBuilder context) {
+	private BaseHandlerBuilder createBuilder(final NonBlockingSession session, PlanNode node) {
 		PlanNode.PlanNodeType i = node.type();
 		if (i == PlanNode.PlanNodeType.TABLE) {
 			return new TableNodeHandlerBuilder(session, (TableNode) node, this);

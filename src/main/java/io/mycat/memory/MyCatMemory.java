@@ -38,12 +38,10 @@ public class MyCatMemory {
 	private final MemoryManager resultMergeMemoryManager;
 	private final DataNodeDiskManager blockManager;
 	private final SerializerManager serializerManager;
-	private final SystemConfig system;
 
 
 	public MyCatMemory(SystemConfig system,long totalNetWorkBufferSize) throws NoSuchFieldException, IllegalAccessException {
 
-		this.system = system;
 
 		LOGGER.info("useOffHeapForMerge = " + system.getUseOffHeapForMerge());
 		LOGGER.info("memoryPageSize = " + system.getMemoryPageSize());
@@ -110,7 +108,6 @@ public class MyCatMemory {
 
 	@VisibleForTesting
 	public MyCatMemory() throws NoSuchFieldException, IllegalAccessException {
-		this.system = null;
 		conf = new MycatPropertyConf();
 		numCores = Runtime.getRuntime().availableProcessors();
 

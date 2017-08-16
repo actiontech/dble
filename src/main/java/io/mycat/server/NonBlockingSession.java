@@ -104,9 +104,7 @@ public class NonBlockingSession implements Session {
 	// 取消状态 0 - 初始 1 - 提交进行  2 - 切断进行
 	private int cancelStatus = 0;
 
-	private ResponseHandler responseHandler;
 	private OutputHandler outputHandler;
-	private volatile boolean terminated;
 	private volatile boolean inTransactionKilled;
 	
 	// 以链接为单位，对链接中使用的join，orderby以及其它内存使用进行控制
@@ -121,9 +119,6 @@ public class NonBlockingSession implements Session {
 		this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
 		this.orderBufferMC = new MemSizeController(4 * 1024 * 1024);
 		this.otherBufferMC = new MemSizeController(4 * 1024 * 1024);
-	}
-    public OutputHandler getOutputHandler() {
-		return outputHandler;
 	}
 
 	public void setOutputHandler(OutputHandler outputHandler) {
@@ -301,8 +296,6 @@ public class NonBlockingSession implements Session {
     
     private void init() {
 		this.outputHandler = null;
-		this.responseHandler = null;
-		this.terminated = false;
 		if (inTransactionKilled) {
 			//TODO:YHQ
 			// kill query is asynchronized, wait for last query is killed.
@@ -465,7 +458,7 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
-    public void releaseConnectionIfSafe(BackendConnection conn, boolean debug, boolean needRollBack) {
+    public void releaseConnectionIfSafe(BackendConnection conn, boolean needRollBack) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
             if ((this.source.isAutocommit() || conn.isFromSlaveDB())&&!this.source.isTxstart() && !this.source.isLocked()) {

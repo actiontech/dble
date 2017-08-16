@@ -39,13 +39,9 @@ import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
 
 abstract class BaseHandlerBuilder {
-	public enum MySQLNodeType {
-		MASTER, SLAVE
-	}
 	private static AtomicLong sequenceId = new AtomicLong(0);
 	protected NonBlockingSession session;
 	protected HandlerBuilder hBuilder;
-	protected MySQLNodeType nodeType;
 	protected DMLResponseHandler start;
 	/* 当前的最后一个handler */
 	protected DMLResponseHandler currentLast;
@@ -62,8 +58,6 @@ abstract class BaseHandlerBuilder {
 
 	protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder) {
 		this.session = session;
-		this.nodeType = session.getSource().isTxstart() || !session.getSource().isAutocommit() ? MySQLNodeType.MASTER
-				: MySQLNodeType.SLAVE;
 		this.node = node;
 		this.hBuilder = hBuilder;
 		this.config = MycatServer.getInstance().getConfig();

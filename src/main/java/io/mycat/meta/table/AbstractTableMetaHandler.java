@@ -57,7 +57,6 @@ public abstract class AbstractTableMetaHandler {
 				tbConfig.getReentrantReadWriteLock().writeLock().unlock();
 			}
 			OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLMS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
-			resultHandler.setMark("Table Structure");
 			PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
 			SQLJob sqlJob = new SQLJob(sqlPrefix + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
 			sqlJob.run();

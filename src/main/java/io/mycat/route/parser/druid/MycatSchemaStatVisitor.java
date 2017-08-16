@@ -59,10 +59,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 		return notSupportMsg;
 	}
 
-	public List<WhereUnit> getWhereUnits() {
-		return whereUnits;
-	}
-
 	public boolean hasOrCondition() {
 		return hasOrCondition;
 	}

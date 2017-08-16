@@ -50,10 +50,6 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
     }
 
 
-	public void setHashLength(int hashLength) {
-        setHashSlice(String.valueOf(hashLength));
-    }
-
     public void setHashSlice(String hashSlice) {
         Pair<Integer, Integer> p = sequenceSlicing(hashSlice);
         hashSliceStart = p.getKey();

@@ -68,9 +68,10 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
     public void onResult(SQLQueryResult<Map<String, String>> result) {
     	LOGGER.debug("resultresultresultresult:" + JSON.toJSONString(result));
     	Map<String, String> rowMap = null;
-    	String count = null; String innerCol = null;
-    	String maxTimestamp = null;
-    	if(result != null)
+		String count = null;
+		String innerCol = null;
+		String maxTimestamp = null;
+		if(result != null)
     		rowMap = result.getResult();
     	
     	if(rowMap != null){
@@ -117,12 +118,6 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
             sqlJob = null;
         }
     }
-    public MySQLConsistencyChecker getHeartbeat() {
-        return heartbeat;
-    }
-	public SQLJob getSqlJob() {
-		return sqlJob;
-	}
 	public void setSqlJob(SQLJob sqlJob) {
 		this.sqlJob = sqlJob;
 	}

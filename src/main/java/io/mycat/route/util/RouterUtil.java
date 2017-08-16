@@ -5,7 +5,6 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import io.mycat.MycatServer;
-import io.mycat.cache.CachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.ErrorCode;
 import io.mycat.config.model.SchemaConfig;
@@ -206,7 +205,6 @@ public class RouterUtil {
 		}
 		RouteResultsetNode[] nodes = new RouteResultsetNode[1];
 		nodes[0] = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
-		nodes[0].setSource(rrs);
 		rrs.setNodes(nodes);
 		rrs.setFinishedRoute(true);
 		if (rrs.getCanRunInReadDB() != null) {
@@ -238,7 +236,6 @@ public class RouterUtil {
 		for (int i = 0; i < nodeSize; i++) {
 			String name = iterator1.next();
 			nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt);
-			nodes[i].setSource(rrs);
 		}
 		rrs.setNodes(nodes);
 		rrs.setSchema(schemaInfo.schema);
@@ -297,30 +294,7 @@ public class RouterUtil {
 	}
 
 
-	/**
-	 * 获取show语句table名字
-	 *
-	 * @param stmt   执行语句
-	 * @param repPos 开始位置和位数
-	 * @return 表名
-	 * @author AStoneGod
-	 */
-	public static String getShowTableName(String stmt, int[] repPos) {
-		int startPos = repPos[0];
-		int secInd = stmt.indexOf(' ', startPos + 1);
-		if (secInd < 0) {
-			secInd = stmt.length();
-		}
 
-		repPos[1] = secInd;
-		String tableName = stmt.substring(startPos, secInd).trim();
-
-		int ind2 = tableName.indexOf('.');
-		if (ind2 > 0) {
-			tableName = tableName.substring(ind2 + 1);
-		}
-		return lowerCaseTable(tableName);
-	}
 
 	public static String lowerCaseTable(String tableName) {
 		if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
@@ -350,28 +324,7 @@ public class RouterUtil {
 		}
 	}
 
-	/**
-	 * 获取语句中前关键字位置和占位个数表名位置
-	 *
-	 * @param upStmt 执行语句
-	 * @param start  开始位置
-	 * @return int[]关键字位置和占位个数
-	 * @author aStoneGod
-	 */
-	public static int[] getCreateIndexPos(String upStmt, int start) {
-		String token1 = "CREATE ";
-		String token2 = " INDEX ";
-		String token3 = " ON ";
-		int createInd = upStmt.indexOf(token1, start);
-		int idxInd = upStmt.indexOf(token2, start);
-		int onInd = upStmt.indexOf(token3, start);
-		// 既包含CREATE又包含INDEX，且CREATE关键字在INDEX关键字之前, 且包含ON...
-		if (createInd >= 0 && idxInd > 0 && idxInd > createInd && onInd > 0 && onInd > idxInd) {
-			return new int[]{onInd, token3.length()};
-		} else {
-			return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
-		}
-	}
+
 
 	/**
 	 * 获取ALTER语句中前关键字位置和占位个数表名位置
@@ -429,29 +382,6 @@ public class RouterUtil {
 	}
 
 
-	/**
-	 * 获取DROP语句中前关键字位置和占位个数表名位置
-	 *
-	 * @param upStmt 执行语句
-	 * @param start  开始位置
-	 * @return int[]关键字位置和占位个数
-	 * @author aStoneGod
-	 */
-
-	public static int[] getDropIndexPos(String upStmt, int start) {
-		String token1 = "DROP ";
-		String token2 = " INDEX ";
-		String token3 = " ON ";
-		int createInd = upStmt.indexOf(token1, start);
-		int idxInd = upStmt.indexOf(token2, start);
-		int onInd = upStmt.indexOf(token3, start);
-		// 既包含CREATE又包含INDEX，且CREATE关键字在INDEX关键字之前, 且包含ON...
-		if (createInd >= 0 && idxInd > 0 && idxInd > createInd && onInd > 0 && onInd > idxInd) {
-			return new int[]{onInd, token3.length()};
-		} else {
-			return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
-		}
-	}
 
 	/**
 	 * 获取TRUNCATE语句中前关键字位置和占位个数表名位置
@@ -474,49 +404,6 @@ public class RouterUtil {
 		}
 	}
 
-	/**
-	 * 获取语句中前关键字位置和占位个数表名位置
-	 *
-	 * @param upStmt 执行语句
-	 * @param start  开始位置
-	 * @return int[]   关键字位置和占位个数
-	 * @author mycat
-	 */
-	public static int[] getSpecPos(String upStmt, int start) {
-		String token1 = " FROM ";
-		String token2 = " IN ";
-		int tabInd1 = upStmt.indexOf(token1, start);
-		int tabInd2 = upStmt.indexOf(token2, start);
-		if (tabInd1 > 0) {
-			if (tabInd2 < 0) {
-				return new int[]{tabInd1, token1.length()};
-			}
-			return (tabInd1 < tabInd2) ? new int[]{tabInd1, token1.length()}
-					: new int[]{tabInd2, token2.length()};
-		} else {
-			return new int[]{tabInd2, token2.length()};
-		}
-	}
-
-	/**
-	 * 获取开始位置后的 LIKE、WHERE 位置 如果不含 LIKE、WHERE 则返回执行语句的长度
-	 *
-	 * @param upStmt 执行sql
-	 * @param start  开始位置
-	 * @return int
-	 * @author mycat
-	 */
-	public static int getSpecEndPos(String upStmt, int start) {
-		int tabInd = upStmt.toUpperCase().indexOf(" LIKE ", start);
-		if (tabInd < 0) {
-			tabInd = upStmt.toUpperCase().indexOf(" WHERE ", start);
-		}
-		if (tabInd < 0) {
-			return upStmt.length();
-		}
-		return tabInd;
-	}
-
 
 	public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> dataNodes) {
 		RouteResultsetNode[] nodes = new RouteResultsetNode[dataNodes.size()];
@@ -524,7 +411,6 @@ public class RouterUtil {
 		RouteResultsetNode node;
 		for (String dataNode : dataNodes) {
 			node = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
-			node.setSource(rrs);
 			if (rrs.getCanRunInReadDB() != null) {
 				node.setCanRunInReadDB(rrs.getCanRunInReadDB());
 			}
@@ -645,7 +531,7 @@ public class RouterUtil {
 
 		//只有一个表的
 		if (tables.size() == 1) {
-			return RouterUtil.tryRouteForOneTable(schema, ctx, routeUnit, tables.get(0), rrs, isSelect, cachePool);
+			return RouterUtil.tryRouteForOneTable(schema, routeUnit, tables.get(0), rrs, isSelect, cachePool);
 		}
 
 		/**
@@ -702,7 +588,7 @@ public class RouterUtil {
 	/**
 	 * 单表路由
 	 */
-	public static RouteResultset tryRouteForOneTable(SchemaConfig schema, DruidShardingParseInfo ctx,
+	public static RouteResultset tryRouteForOneTable(SchemaConfig schema,
 													 RouteCalculateUnit routeUnit, String tableName, RouteResultset rrs, boolean isSelect,
 													 LayerCachePool cachePool) throws SQLException {
 		TableConfig tc = schema.getTables().get(tableName);
@@ -721,7 +607,7 @@ public class RouterUtil {
 				return routeToMultiNode(false, rrs, tc.getDataNodes(), true);
 			}
 		} else {//单表或者分库表
-			if (!checkRuleRequired(schema, ctx, routeUnit, tc)) {
+			if (!checkRuleRequired(schema, routeUnit, tc)) {
 				throw new IllegalArgumentException("route rule for table "
 						+ tc.getName() + " is required: " + rrs.getStatement());
 
@@ -930,11 +816,10 @@ public class RouterUtil {
 
 	/**
 	 * @param schema
-	 * @param ctx
 	 * @param tc
 	 * @return true表示校验通过，false表示检验不通过
 	 */
-	public static boolean checkRuleRequired(SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, TableConfig tc) {
+	public static boolean checkRuleRequired(SchemaConfig schema, RouteCalculateUnit routeUnit, TableConfig tc) {
 		if (!tc.isRuleRequired()) {
 			return true;
 		}

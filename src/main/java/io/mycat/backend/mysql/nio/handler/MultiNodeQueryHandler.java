@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.MycatServer;
-import io.mycat.cache.CachePool;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.mysql.LoadDataUtil;
@@ -771,7 +770,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 					rowDataPkg = new RowDataPacket(fieldCount);
 					rowDataPkg.read(row);
 					String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
-					LayerCachePool pool = MycatServer.getInstance().getRouterservice().getTableId2DataNodeCache();
+					LayerCachePool pool = MycatServer.getInstance().getRouterService().getTableId2DataNodeCache();
 					if (pool != null) {
 					    	pool.putIfAbsent(priamaryKeyTable, primaryKey, dataNode);
 					}
@@ -818,11 +817,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 	public void requestDataResponse(byte[] data, BackendConnection conn) {
 		LoadDataUtil.requestFileDataResponse(data, conn);
 	}
-
-	public boolean isPrepared() {
-		return prepared;
-	}
-
 	public void setPrepared(boolean prepared) {
 		this.prepared = prepared;
 	}

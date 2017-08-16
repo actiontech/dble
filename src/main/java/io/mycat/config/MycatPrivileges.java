@@ -213,26 +213,23 @@ public class MycatPrivileges implements FrontendPrivileges {
 			return true;
 		}
 		UserPrivilegesConfig.TablePrivilege tablePrivilege = schemaPrivilege.getTablePrivilege(tableName);
-		if (tablePrivilege == null) {
+		if (tablePrivilege == null && schemaPrivilege.getDml().length == 0) {
 			return true;
 		}
 		int index = -1;
 		if (chekctype == Checktype.INSERT) {
 			index = 0;
-
 		} else if (chekctype == Checktype.UPDATE) {
 			index = 1;
-
 		} else if (chekctype == Checktype.SELECT) {
 			index = 2;
-
 		} else if (chekctype == Checktype.DELETE) {
 			index = 3;
-
 		}
-		if (tablePrivilege.getDml()[index] > 0) {
-			return true;
+		if (tablePrivilege != null) {
+			return tablePrivilege.getDml()[index] > 0;
+		} else {
+			return schemaPrivilege.getDml()[index] > 0;
 		}
-		return false;
 	}
 }

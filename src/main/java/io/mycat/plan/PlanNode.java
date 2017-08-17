@@ -398,8 +398,7 @@ public abstract class PlanNode {
 					String selTable = wildField.tableName;
 					boolean found = false;
 					for (NamedField field : innerFields.keySet()) {
-						if (selTable != null && selTable.equals(field.getTable())
-								|| (selTable == null && field.getTable() == null)) {
+						if (selTable.equals(field.getTable())) {
 							ItemField col = new ItemField(null, field.getTable(), field.getName());
 							newSels.add(col);
 							found = true;

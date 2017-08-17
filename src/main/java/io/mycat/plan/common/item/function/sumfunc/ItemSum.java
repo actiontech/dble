@@ -62,8 +62,6 @@ public abstract class ItemSum extends ItemResultField {
 
 	protected List<Item> args;
 
-	public boolean quick_group; /* If incremental update of fields */
-
 	public ItemSum(List<Item> args, boolean isPushDown, List<Field> fields) {
 		this.isPushDown = isPushDown;
 		this.args = args;
@@ -202,7 +200,6 @@ public abstract class ItemSum extends ItemResultField {
 	/* stores the declared DISTINCT flag (from the parser) */
 	public void setDistinct(boolean distinct) {
 		withDistinct = distinct;
-		quick_group = withDistinct ? false : true;
 	}
 
 	/*
@@ -241,8 +238,7 @@ public abstract class ItemSum extends ItemResultField {
 
 	/**
 	 * 函数不下发时候的add方法，和mysql原生代码基本一致
-	 * 
-	 * @param rowbytes
+	 *
 	 * @return
 	 */
 	protected abstract boolean add(RowDataPacket row, Object transObj);

@@ -20,9 +20,8 @@ import io.mycat.plan.common.time.MySQLTime;
 public class ItemFuncCase extends ItemFunc {
 
 	int first_expr_num, else_expr_num;
-	ItemResult cached_result_type, left_result_type;
+	ItemResult cached_result_type;
 	int ncases;
-	ItemResult cmp_type;
 	FieldTypes cached_field_type;
 
 	/**
@@ -38,7 +37,6 @@ public class ItemFuncCase extends ItemFunc {
 		this.first_expr_num = first_expr_num;
 		this.else_expr_num = else_expr_num;
 		this.cached_result_type = ItemResult.INT_RESULT;
-		this.left_result_type = ItemResult.INT_RESULT;
 	}
 
 	@Override
@@ -61,8 +59,6 @@ public class ItemFuncCase extends ItemFunc {
 			agg.add(args.get(else_expr_num));
 		cached_field_type = MySQLcom.agg_field_type(agg, 0, agg.size());
 		cached_result_type = MySQLcom.agg_result_type(agg, 0, agg.size());
-		if (first_expr_num != -1)
-			left_result_type = args.get(first_expr_num).resultType();
 	}
 
 	@Override

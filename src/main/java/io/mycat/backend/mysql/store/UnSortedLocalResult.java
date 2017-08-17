@@ -16,7 +16,7 @@ public class UnSortedLocalResult extends LocalResult {
 
 	@Override
 	protected ResultExternal makeExternal() {
-		return new UnSortedResultDiskBuffer(pool, fieldsCount, charset);
+		return new UnSortedResultDiskBuffer(pool, fieldsCount);
 	}
 
 	@Override

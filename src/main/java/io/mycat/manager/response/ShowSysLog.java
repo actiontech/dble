@@ -101,57 +101,47 @@ public class ShowSysLog {
 	}
 	
 	private static String[] getLinesByLogFile(String filename, int numLines) {
-		
-
 		String lines[] = new String[numLines];
-		
 		BufferedReader in = null;
-	    try {
-	    	//获取长度
-	    	int start = 0;
-	    	int totalNumLines = 0;
-	    	 
-	    	File logFile = new File(filename);  
-		    in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
-		    
-		    String line;
-		    while ((line=in.readLine()) != null) {
-		        totalNumLines++;
-		    }
-		    in.close();
-		    
-		    //
-		    in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
-		   
-		    // 跳过行
-		    start = totalNumLines - numLines;
-		    if (start < 0) { start = 0; }
-		    for (int i=0; i<start; i++) {
-		        in.readLine();
-		    }
-		    
-		    // DESC		    
-		    int i = 0;
-		    int end = lines.length-1;
-		    while ((line=in.readLine()) != null && i<numLines) {
-		    	lines[end-i] = line;            
-	        	i++;
-	        }
-		    numLines = start + i;
-		    
-	    } catch (FileNotFoundException ex) {
-	    } catch (UnsupportedEncodingException e) {
+		try {
+			//获取长度
+			int totalNumLines = 0;
+			File logFile = new File(filename);
+			in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				totalNumLines++;
+			}
+			in.close();
+
+
+			in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+
+			// 跳过行
+			for (int i = 0; i < totalNumLines - numLines; i++) {
+				in.readLine();
+			}
+
+			// DESC
+			int i = 0;
+			int end = lines.length - 1;
+
+			while ((line = in.readLine()) != null && i < numLines) {
+				lines[end - i] = line;
+				i++;
+			}
+
+		} catch (FileNotFoundException ex) {
+		} catch (UnsupportedEncodingException e) {
 		} catch (IOException e) {
 		} finally {
-			if ( in != null ) {
+			if (in != null) {
 				try {
 					in.close();
-					in = null;
 				} catch (IOException e) {
 				}
 			}
 		}
-
 		return lines;
 	}	
 	

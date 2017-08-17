@@ -37,9 +37,9 @@
 	 <Match>
 		 <Package  name="io.mycat.util.dataMigrator.dataIOImpl"/>
     </Match>
-    <!--MALICIOUS_CODE 68,STYLE 50+  -->
+    <!--MALICIOUS_CODE ,need refactor?  -->
     <Match>
-        <Bug category="MALICIOUS_CODE,CORRECTNESS"/>
+        <Bug category="MALICIOUS_CODE"/>
     </Match>
 
 
@@ -50,6 +50,76 @@
         <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
+	 <!-- subquery need to refactor  -->
+	 <Match>
+        <Class name="io.mycat.plan.common.item.subquery.ItemSinglerowSubselect"/>
+    </Match>
+	<Match>
+        <Class name="io.mycat.plan.common.item.subquery.ItemAllanySubselect"/>
+    </Match> 
+	<Match>
+        <Class name="io.mycat.plan.common.item.subquery.ItemExistsSubselect"/>
+    </Match> 
+	<Match>
+        <Class name="io.mycat.plan.common.item.subquery.ItemMaxminSubselect"/>
+    </Match> 
+	<!-- subquery need to refactor  end -->
+	
+	<!-- need remove??? -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+		 <Class name="io.mycat.plan.common.item.function.timefunc.ItemTemporalHybridFunc"/>
+    </Match>
+	
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.plan.common.time.MySQLTimeStatus"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+		 <Class name="io.mycat.plan.common.time.MyTime"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.route.sequence.handler.SequenceVal"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.plan.common.typelib.TYPELIB"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.plan.common.locale.MYLOCALEERRMSGS"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.plan.common.locale.MYLOCALE"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.backend.mysql.BindValue"/>
+    </Match>
+	<!-- need refactor -->
+	<Match>
+        <Bug category="STYLE"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+		 <Class name="io.mycat.net.mysql.ExecutePacket"/>
+    </Match>
 	<!-- need refactor -->
 	<Match>
         <Bug category="STYLE"/>
@@ -104,14 +174,14 @@
     </Match>
     <!-- STYLE end -->
 
-    <!-- PERFORMANCE start: 24 -->
+    <!-- PERFORMANCE system.gc() is needed? -->
     <Match>
         <Bug category="PERFORMANCE"/>
-        <Bug pattern="UUF_UNUSED_FIELD,URF_UNREAD_FIELD,DM_GC"/>
-    </Match>
+        <Bug pattern="DM_GC"/>
+    </Match> 
     <!-- PERFORMANCE end -->
 
-    <!-- CORRECTNESS start num:1,other 12 need to debug -->
+    <!-- CORRECTNESS start -->
     <Match>
         <Bug category="CORRECTNESS"/>
         <Class name="io.mycat.plan.node.JoinNode"/>

@@ -19,8 +19,7 @@ import java.util.List;
  * Created by huqing.yan on 2017/7/3.
  */
 public class FetchMySQLSequnceHandler implements ResponseHandler {
-	protected static final Logger LOGGER = LoggerFactory
-			.getLogger(FetchMySQLSequnceHandler.class);
+	protected static final Logger LOGGER = LoggerFactory.getLogger(FetchMySQLSequnceHandler.class);
 	public void execute(SequenceVal seqVal) {
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 		PhysicalDBNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);

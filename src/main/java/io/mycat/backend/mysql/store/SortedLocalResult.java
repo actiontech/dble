@@ -23,7 +23,7 @@ public class SortedLocalResult extends LocalResult {
 
 	@Override
 	protected ResultExternal makeExternal() {
-		return new SortedResultDiskBuffer(pool, fieldsCount, rowcmp, charset);
+		return new SortedResultDiskBuffer(pool, fieldsCount, rowcmp);
 	}
 
 	@Override

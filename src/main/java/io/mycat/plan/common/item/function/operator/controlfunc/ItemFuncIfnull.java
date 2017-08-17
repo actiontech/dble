@@ -12,8 +12,6 @@ import io.mycat.plan.common.time.MySQLTime;
 
 
 public class ItemFuncIfnull extends ItemFuncCoalesce {
-	protected boolean field_type_defined;
-
 	public ItemFuncIfnull(List<Item> args) {
 		super(args);
 	}

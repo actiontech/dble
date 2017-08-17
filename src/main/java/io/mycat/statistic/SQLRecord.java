@@ -28,13 +28,9 @@ package io.mycat.statistic;
  */
 public final class SQLRecord implements Comparable<SQLRecord> {
 
-    public String host;
-    public String schema;
     public String statement;
     public long startTime;
     public long executeTime;
-    public String dataNode;
-    public int dataNodeIndex;
 
     @Override
     public int compareTo(SQLRecord o) {
@@ -51,8 +47,9 @@ public final class SQLRecord implements Comparable<SQLRecord> {
 
     @Override
     public int hashCode() {
-        // TODO Auto-generated method stub
-        return super.hashCode();
+        long hash = executeTime;
+        hash = hash * 31 + startTime;
+        return (int) hash;
     }
     
     

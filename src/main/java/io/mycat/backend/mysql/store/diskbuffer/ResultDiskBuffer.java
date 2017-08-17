@@ -22,16 +22,12 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 	protected ByteBuffer writeBuffer;
 	protected FileStore file;
 	protected int rowCount = 0;
-	/* @bug 1208 */
-	protected String charset = "UTF-8";
 
-	public ResultDiskBuffer(BufferPool pool, int columnCount, String charset) {
+	public ResultDiskBuffer(BufferPool pool, int columnCount) {
 		this.pool = pool;
 		this.columnCount = columnCount;
 		this.writeBuffer = pool.allocate();
 		this.file = new FileStore("nioMapped:Memory", "rw");
-		if (charset != null)
-			this.charset = charset;
 	}
 
 	@Override

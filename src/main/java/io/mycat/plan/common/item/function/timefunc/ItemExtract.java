@@ -126,7 +126,6 @@ public class ItemExtract extends ItemIntFunc {
 	@Override
 	public BigInteger valInt() {
 		MySQLTime ltime = new MySQLTime();
-		int year;
 		int week_format;
 		long neg;
 		if (date_value) {
@@ -150,9 +149,7 @@ public class ItemExtract extends ItemIntFunc {
 			return BigInteger.valueOf(ltime.month);
 		case WEEK: {
 			week_format = MyTime.WEEK_MONDAY_FIRST;
-			LongPtr lptr = new LongPtr(0);
-			long ret = MyTime.calc_week(ltime, MyTime.week_mode(week_format), lptr);
-			year = (int) lptr.get();
+			long ret = MyTime.calc_week(ltime, MyTime.week_mode(week_format), new LongPtr(0));
 			return BigInteger.valueOf(ret);
 
 		}

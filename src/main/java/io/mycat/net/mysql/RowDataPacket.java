@@ -58,7 +58,6 @@ public class RowDataPacket extends MySQLPacket {
 	protected static final byte NULL_MARK = (byte) 251;
     protected static final byte EMPTY_MARK = (byte) 0;
 
-	public byte[] value;
 	public int fieldCount;
 	public final List<byte[]> fieldValues;
 	private List<byte[]> cmpValue;
@@ -85,7 +84,6 @@ public class RowDataPacket extends MySQLPacket {
 		fieldValues.set(index, value);
 	}
 	public void read(byte[] data) {
-		value = data;
 		MySQLMessage mm = new MySQLMessage(data);
 		packetLength = mm.readUB3();
 		packetId = mm.read();

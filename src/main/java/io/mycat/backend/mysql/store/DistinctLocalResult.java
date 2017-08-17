@@ -22,7 +22,8 @@ public class DistinctLocalResult extends LocalResult {
 	 * @param initialCapacity
 	 * @param fieldsCount
 	 * @param pool
-	 * @param rowcmp
+	 * @param distinctCmp
+	 * @param charset
 	 *            distinct selectable compator
 	 */
 	public DistinctLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator distinctCmp,
@@ -38,7 +39,7 @@ public class DistinctLocalResult extends LocalResult {
 
 	@Override
 	protected ResultExternal makeExternal() {
-		return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp, charset);
+		return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp);
 	}
 
 	/**

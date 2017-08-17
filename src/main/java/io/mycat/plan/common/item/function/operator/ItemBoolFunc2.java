@@ -12,12 +12,10 @@ import io.mycat.plan.common.item.function.primary.ItemBoolFunc;
  */
 public abstract class ItemBoolFunc2 extends ItemBoolFunc {
 	protected ArgComparator cmp;
-	protected boolean abort_on_null;
 
 	public ItemBoolFunc2(Item a, Item b) {
 		super(a, b);
 		cmp = new ArgComparator(a, b);
-		abort_on_null = false;
 	}
 
 	public int set_cmp_func() {

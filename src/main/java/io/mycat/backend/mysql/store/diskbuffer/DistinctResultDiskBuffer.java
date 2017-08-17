@@ -14,14 +14,12 @@ import io.mycat.net.mysql.RowDataPacket;
 public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {
 
 	/**
-	 * 
-	 * @param pool
+	 *  @param pool
 	 * @param columnCount
 	 * @param cmp
-	 *            distinct selectable compator
 	 */
-	public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, String charset) {
-		super(pool, columnCount, cmp, charset);
+	public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp) {
+		super(pool, columnCount, cmp);
 	}
 
 	@Override
@@ -36,7 +34,7 @@ public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {
 	/**
 	 * if heap already contains row, no add into heap
 	 * 
-	 * @param row
+	 * @param tape
 	 */
 	protected void addToHeap(ResultDiskTape tape) {
 		while (true) {

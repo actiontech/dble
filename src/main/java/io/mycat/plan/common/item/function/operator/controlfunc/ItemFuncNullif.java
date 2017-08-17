@@ -10,7 +10,7 @@ import io.mycat.plan.common.item.function.operator.ItemBoolFunc2;
 
 
 public class ItemFuncNullif extends ItemBoolFunc2 {
-	ItemResult cached_result_type;
+//	ItemResult cached_result_type;//use for agg_arg_charsets_for_comparison
 
 	public ItemFuncNullif(Item a, Item b) {
 		super( a, b);

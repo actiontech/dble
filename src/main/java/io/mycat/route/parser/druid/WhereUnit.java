@@ -33,10 +33,6 @@ LIMIT  20
  * 
  */
 public class WhereUnit {
-	/**
-	 * 完整的where条件
-	 */
-	private SQLBinaryOpExpr whereExpr;
 	
 	/**
 	 * 还能继续再分的表达式:可能还有or关键字
@@ -79,7 +75,6 @@ public class WhereUnit {
 	}
 	
 	public WhereUnit(SQLBinaryOpExpr whereExpr) {
-		this.whereExpr = whereExpr;
 		this.canSplitExpr = whereExpr;
 	}
 	public SQLBinaryOpExpr getCanSplitExpr() {

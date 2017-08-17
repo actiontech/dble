@@ -281,7 +281,6 @@ public class ConfigInitializer {
 		return dataSources;
 	}
 	private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
-		String name = conf.getName();
 		//针对所有写节点创建PhysicalDatasource
 		PhysicalDatasource[] writeSources = createDataSource(conf, conf.getWriteHosts(), false);
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();

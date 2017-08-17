@@ -21,8 +21,8 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
 	 */
 	private final ResultDiskTape mainTape;
 
-	public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, String charset) {
-		super(pool, columnCount, charset);
+	public UnSortedResultDiskBuffer(BufferPool pool, int columnCount) {
+		super(pool, columnCount);
 		mainTape = new ResultDiskTape(pool, file, columnCount);
 	}
 

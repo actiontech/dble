@@ -28,8 +28,8 @@ public class ItemFuncBinary extends ItemStrFunc {
 
 	@Override
 	public String valStr() {
-		assert (fixed == true && cast_length >= 0);
-		String res = null;
+		assert (fixed == true);
+		String res;
 		if ((res = args.get(0).valStr()) == null) {
 			nullValue = true;
 			return null;

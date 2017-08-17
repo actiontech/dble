@@ -10,9 +10,7 @@ import io.mycat.plan.common.item.function.primary.ItemRealFunc;
 
 public class ItemFuncRand extends ItemRealFunc {
 	// 理论上应该是每个连接有一个单独的种子保存起来，我们这里使用一个全局种子模拟下
-	// TODO
-
-	boolean first_eval; // TRUE if val_real() is called 1st time
+	// boolean first_eval; // TRUE if val_real() is called 1st time
 
 	public ItemFuncRand(List<Item> args) {
 		super(args);

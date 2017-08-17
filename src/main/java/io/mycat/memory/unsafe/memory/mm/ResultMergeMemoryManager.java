@@ -8,14 +8,8 @@ import io.mycat.memory.unsafe.utils.MycatPropertyConf;
  */
 public class ResultMergeMemoryManager extends MemoryManager {
 
-    private long  maxOnHeapExecutionMemory;
-    private int numCores;
-    private MycatPropertyConf conf;
     public ResultMergeMemoryManager(MycatPropertyConf conf, int numCores, long onHeapExecutionMemory){
         super(conf,numCores,onHeapExecutionMemory);
-        this.conf = conf;
-        this.numCores = numCores;
-        this.maxOnHeapExecutionMemory = onHeapExecutionMemory;
     }
 
     @Override

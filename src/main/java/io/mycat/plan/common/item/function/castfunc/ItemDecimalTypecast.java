@@ -19,9 +19,8 @@ import io.mycat.plan.common.time.MySQLTime;
 
 
 public class ItemDecimalTypecast extends ItemFunc {
-	BigDecimal decimal_value = null;
-	int precision;
-	int dec;
+	private int precision;
+	private int dec;
 
 	public ItemDecimalTypecast(Item a, int precision, int dec) {
 		super(new ArrayList<Item>());
@@ -69,8 +68,7 @@ public class ItemDecimalTypecast extends ItemFunc {
 
 		if ((nullValue = args.get(0).nullValue))
 			return null;
-		BigDecimal dec = tmp.setScale(this.dec, RoundingMode.HALF_UP);
-		return dec;
+		return tmp.setScale(this.dec, RoundingMode.HALF_UP);
 	}
 
 	@Override
@@ -110,7 +108,7 @@ public class ItemDecimalTypecast extends ItemFunc {
 
 	@Override
 	protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-		List<Item> newArgs = null;
+		List<Item> newArgs;
 		if (!forCalculate) {
 			newArgs = cloneStructList(args);
 		} else {

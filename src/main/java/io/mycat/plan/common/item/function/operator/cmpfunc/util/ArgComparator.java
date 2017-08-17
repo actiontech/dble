@@ -20,7 +20,7 @@ public class ArgComparator {
 	private argCmpFunc func; // compare function name,在mysql源代码中为函数指针
 	double precision = 0.0;
 	/* Fields used in DATE/DATETIME comparison. */
-	FieldTypes atype, btype; // Types of a and b items
+//	FieldTypes atype, btype; // Types of a and b items
 	boolean is_nulls_eq; // TRUE <=> compare for the EQUAL_FUNC
 	boolean setNull = true; // TRUE <=> set owner->null_value
 	// when one of arguments is NULL.
@@ -141,8 +141,8 @@ public class ArgComparator {
 		a = a1;
 		b = a2;
 		if (canCompareAsDates(a, b, constvalue)) {
-			atype = a.fieldType();
-			btype = b.fieldType();
+//			atype = a.fieldType();
+//			btype = b.fieldType();
 			is_nulls_eq = isOwnerEqualFunc();
 			func = new CompareDatetime();
 			getValueAFunc = new GetDatetimeValue();
@@ -185,8 +185,8 @@ public class ArgComparator {
 		owner = ownerArg;
 		a = a1;
 		b = a2;
-		atype = a.fieldType();
-		btype = b.fieldType();
+//		atype = a.fieldType();
+//		btype = b.fieldType();
 		is_nulls_eq = false;
 		func = new CompareDatetime();
 		getValueAFunc = new GetDatetimeValue();

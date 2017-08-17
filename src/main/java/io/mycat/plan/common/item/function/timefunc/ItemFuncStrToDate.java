@@ -1,6 +1,3 @@
-/**
- * 
- */
 package io.mycat.plan.common.item.function.timefunc;
 
 import java.util.ArrayList;
@@ -16,15 +13,12 @@ import io.mycat.plan.common.time.MyTime;
 
 public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 	private MySQLTimestampType cached_timestamp_type;
-	private boolean const_item;
 
 	/**
-	 * @param name
 	 * @param args
 	 */
 	public ItemFuncStrToDate(List<Item> args) {
 		super(new ArrayList<Item>());
-		const_item = false;
 	}
 
 	@Override
@@ -37,7 +31,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 		maybeNull = true;
 		cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
 		cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
-		if ((const_item = args.get(1).basicConstItem())) {
+		if (args.get(1).basicConstItem()) {
 			String format = args.get(1).valStr();
 			if (!args.get(1).nullValue)
 				fix_from_format(format);

@@ -23,7 +23,6 @@ import io.mycat.plan.common.time.MySQLTime;
 public class ItemFuncGroupConcat extends ItemSum {
 	protected StringBuilder resultSb;
 	protected String seperator;
-	protected boolean no_appended;
 	private List<Order> orders;
 	protected boolean always_null;// 如果参数存在null时
 
@@ -66,7 +65,6 @@ public class ItemFuncGroupConcat extends ItemSum {
 	public void clear() {
 		resultSb.setLength(0);
 		nullValue = true;
-		no_appended = true;
 	}
 
 	@Override

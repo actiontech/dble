@@ -48,7 +48,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
 	 */
 	public GroupResultDiskBuffer(BufferPool pool, int fieldsCount, RowDataComparator cmp, List<FieldPacket> packets,
 			List<ItemSum> sumFunctions, boolean isAllPushDown, String charset) {
-		super(pool, fieldsCount, cmp, charset);
+		super(pool, fieldsCount, cmp);
 		this.fields = HandlerTool.createFields(packets);
 		this.sums = new ArrayList<ItemSum>();
 		for (ItemSum sumFunc : sumFunctions) {

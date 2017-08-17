@@ -127,7 +127,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
 
   // for serialization
   public UTF8String() {
-    this(null, 0, 0);
+    this(new Object(), 0, 0);
   }
 
   /**

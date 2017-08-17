@@ -16,8 +16,8 @@ import io.mycat.plan.common.ptr.LongPtr;
 import io.mycat.plan.common.ptr.StringPtr;
 
 public class MyTime {
-	private static final DateTimeFormat time_ampm_format = new DateTimeFormat('\0', 0, "%I:%i:%S %p");
-	private static final DateTimeFormat time_24hrs_format = new DateTimeFormat('\0', 0, "%H:%i:%S");
+	private static final DateTimeFormat time_ampm_format = new DateTimeFormat("%I:%i:%S %p");
+	private static final DateTimeFormat time_24hrs_format = new DateTimeFormat("%H:%i:%S");
 
 	/* Flags to str_to_datetime and number_to_datetime */
 	public final static int TIME_FUZZY_DATE = 1;
@@ -470,7 +470,7 @@ public class MyTime {
 				 * We don't need the exact nanoseconds value. Knowing the first
 				 * digit is enough for rounding.
 				 */
-				status.nanoseconds = 100 * (int) (chars[strindex++] - '0');
+				status.nanoseconds = 100 * (chars[strindex++] - '0');
 				for (; strindex != end && Ctype.isDigit(chars[strindex]); strindex++) {
 				}
 			}

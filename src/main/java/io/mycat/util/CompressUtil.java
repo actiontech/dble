@@ -134,7 +134,7 @@ public class CompressUtil {
 		//包头
 		//-----------------------------------------
 		int packetLength = msg.readUB3();  //压缩的包长
-		byte packetId = msg.read();		   //压缩的包号
+		msg.read();		   //压缩的包号byte packetId = msg.read();
 		int oldLen = msg.readUB3();		   //压缩前的长度
 		
 		//未压缩, 直接返回

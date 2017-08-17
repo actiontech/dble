@@ -24,6 +24,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
 	 */
 	public ItemFuncIn(List<Item> args, boolean isNegation) {
 		super(args, isNegation);
+		left_result_type =args.get(0).resultType();
 	}
 
 	@Override
@@ -54,7 +55,6 @@ public class ItemFuncIn extends ItemFuncOptNeg {
 				have_null = true;
 				continue;
 			}
-			left.valInt();
 			if (nullValue = left.nullValue)
 				return BigInteger.ZERO;
 			ArgComparator cmp = new ArgComparator(left, right);

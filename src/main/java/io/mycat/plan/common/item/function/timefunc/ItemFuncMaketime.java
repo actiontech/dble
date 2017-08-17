@@ -35,12 +35,15 @@ public class ItemFuncMaketime extends ItemTimeFunc {
 		long hour = args.get(0).valInt().longValue();
 		long minute = args.get(1).valInt().longValue();
 		BigDecimal sec = args.get(2).valDecimal();
+		if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null
+				|| minute < 0 || minute > 59))) {
+			return true;
+		}
 		long scdquot = sec.longValue();
 		long scdrem = (long) ((sec.doubleValue() - scdquot) * 1000000);
-
-		if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null
-				|| minute < 0 || minute > 59 || scdquot < 0 || scdquot > 59 || scdrem < 0)))
+		if ((nullValue = (scdquot < 0 || scdquot > 59 || scdrem < 0))) {
 			return true;
+		}
 
 		ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
 
@@ -48,14 +51,11 @@ public class ItemFuncMaketime extends ItemTimeFunc {
 		if (hour < 0) {
 			ltime.neg = true;
 		}
-
-		{
-			ltime.hour = ((hour < 0 ? -hour : hour));
-			ltime.minute = minute;
-			ltime.second = scdquot;
-			ltime.second_part = scdrem;
-			return false;
-		}
+		ltime.hour = ((hour < 0 ? -hour : hour));
+		ltime.minute = minute;
+		ltime.second = scdquot;
+		ltime.second_part = scdrem;
+		return false;
 	}
 	
 	@Override

@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
 
 
@@ -39,11 +40,15 @@ public class ItemFuncInterval extends ItemIntFunc {
 			if (arg0.compareTo(tmp) < 0)
 				break;
 		}
-		return BigInteger.valueOf(i);
+		return BigInteger.valueOf(i - 1);
 	}
 
 	@Override
 	public int decimalPrecision() {
 		return 2;
+	}
+	@Override
+	public ItemFunc nativeConstruct(List<Item> realArgs) {
+		return new ItemFuncInterval(realArgs);
 	}
 }

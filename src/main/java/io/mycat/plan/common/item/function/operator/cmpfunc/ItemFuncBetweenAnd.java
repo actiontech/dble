@@ -16,21 +16,21 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.util.CmpUtil;
 import io.mycat.plan.common.ptr.ItemResultPtr;
 
 
+
 public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
-	private ItemResult cmp_type;
-	String value0, value1, value2;
+	private ItemResultPtr cmp_type =new ItemResultPtr(null);
 	/* TRUE <=> arguments will be compared as dates. */
 	boolean compare_as_dates_with_strings;
 	boolean compare_as_temporal_dates;
 	boolean compare_as_temporal_times;
 
 	/* Comparators used for DATE/DATETIME comparison. */
-	ArgComparator ge_cmp, le_cmp;
+	ArgComparator ge_cmp = new ArgComparator();
+	ArgComparator le_cmp = new ArgComparator();
 
 	/**
 	 * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
-	 * 
-	 * @param args
+	 *
 	 */
 	public ItemFuncBetweenAnd(Item a, Item b, Item c, boolean isNegation) {
 		super(new ArrayList<Item>(), isNegation);
@@ -66,7 +66,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 			} else {
 				nullValue = ge_res < 0;
 			}
-		} else if (cmp_type == ItemResult.STRING_RESULT) {
+		} else if (cmp_type.get() == ItemResult.STRING_RESULT) {
 			String value, a, b;
 			value = args.get(0).valStr();
 			if (nullValue = args.get(0).isNull())
@@ -85,7 +85,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 				// Set to not null if false range.
 				nullValue = value.compareTo(a) >= 0;
 			}
-		} else if (cmp_type == ItemResult.INT_RESULT) {
+		} else if (cmp_type.get() == ItemResult.INT_RESULT) {
 			long a, b, value;
 			value = compare_as_temporal_times ? args.get(0).valTimeTemporal()
 					: compare_as_temporal_dates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
@@ -110,7 +110,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 			} else {
 				nullValue = value >= a;
 			}
-		} else if (cmp_type == ItemResult.DECIMAL_RESULT) {
+		} else if (cmp_type.get() == ItemResult.DECIMAL_RESULT) {
 			BigDecimal dec = args.get(0).valDecimal();
 			BigDecimal a_dec, b_dec;
 			if (nullValue = args.get(0).isNull())
@@ -168,14 +168,14 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 		 */
 		if (args.get(0) == null || args.get(1) == null || args.get(2) == null)
 			return;
-		if (CmpUtil.agg_cmp_type(new ItemResultPtr(cmp_type), args, 3) != 0)
+		if (CmpUtil.agg_cmp_type(cmp_type, args, 3) != 0)
 			return;
 		/*
 		 * Detect the comparison of DATE/DATETIME items. At least one of items
 		 * should be a DATE/DATETIME item and other items should return the
 		 * STRING result.
 		 */
-		if (cmp_type == ItemResult.STRING_RESULT) {
+		if (cmp_type.get() == ItemResult.STRING_RESULT) {
 			for (i = 0; i < 3; i++) {
 				if (args.get(i).isTemporalWithDate())
 					datetime_items_found++;
@@ -187,14 +187,14 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 		if (datetime_items_found + time_items_found == 3) {
 			if (time_items_found == 3) {
 				// All items are TIME
-				cmp_type = ItemResult.INT_RESULT;
+				cmp_type.set(ItemResult.INT_RESULT);
 				compare_as_temporal_times = true;
 			} else {
 				/*
 				 * There is at least one DATE or DATETIME item, all other items
 				 * are DATE, DATETIME or TIME.
 				 */
-				cmp_type = ItemResult.INT_RESULT;
+				cmp_type.set(ItemResult.INT_RESULT);
 				compare_as_temporal_dates = true;
 			}
 		} else if (datetime_items_found > 0) {
@@ -205,8 +205,13 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 			compare_as_dates_with_strings = true;
 			ge_cmp.setDatetimeCmpFunc(this, args.get(0), args.get(1));
 			le_cmp.setDatetimeCmpFunc(this, args.get(0), args.get(2));
-		} else {
-			// TODO
+		} else if (args.get(0).type().equals(ItemType.FIELD_ITEM)
+//				 &&thd->lex->sql_command != SQLCOM_CREATE_VIEW &&
+//						thd->lex->sql_command != SQLCOM_SHOW_CREATE)
+				)
+		{
+			//in fact ,it will not reach here
+			throw new RuntimeException("not supportted yet!");
 		}
 	}
 

@@ -186,7 +186,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
 
             paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
-            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period + 1) + "");
+            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
             paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
 
         } catch (Exception e) {

@@ -416,11 +416,16 @@ public class MycatServer {
 			txnLogProcessor.setName("TxnLogProcessor");
 			txnLogProcessor.start();
 		}
+
+
 		tmManager = new ProxyMetaManager();
-		try {
-			tmManager.init();
-		}catch(Exception e){
-			throw new IOException(e);
+		if(!this.getConfig().isDataHostWithoutWR()) {
+			//init tmManager
+			try {
+				tmManager.init();
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
 		}
 
 
@@ -438,40 +443,44 @@ public class MycatServer {
 		LOGGER.info(server.getName() + " is started and listening on " + server.getPort());
 		
 		LOGGER.info("===============================================");
-		
-		// init datahost
-		Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
-		LOGGER.info("Initialize dataHost ...");
-		for (PhysicalDBPool node : dataHosts.values()) {
-			String index = dnIndexProperties.getProperty(node.getHostName(),"0");
-			if (!"0".equals(index)) {
-				LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
-			}
-			int activeIndex = node.init(Integer.parseInt(index));
-			saveDataHostIndex(node.getHostName(), activeIndex);
-			node.startHeartbeat();
-		}
-		
+
+
 		long dataNodeIldeCheckPeriod = system.getDataNodeIdleCheckPeriod();
 		scheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD,TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(processorCheck(), 0L, system.getProcessorCheckPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleAtFixedRate(dataNodeConHeartBeatCheck(dataNodeIldeCheckPeriod), 0L, dataNodeIldeCheckPeriod,TimeUnit.MILLISECONDS);
+		//dataHost heartBeat  will be influence by dataHostWithoutWR
 		scheduler.scheduleAtFixedRate(dataNodeHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
 		scheduler.schedule(catletClassClear(), 30000,TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getxaSessionCheckPeriod(),TimeUnit.MILLISECONDS);
 		scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getxaLogCleanPeriod(),TimeUnit.MILLISECONDS);
-		
-		if (system.getUseSqlStat() == 1) {
-			scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
-		}
-		
-		if(system.getUseGlobleTableCheck() == 1){	// 全局表一致性检测是否开启
-			scheduler.scheduleWithFixedDelay(glableTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
-		}
-		
 		//定期清理结果集排行榜，控制拒绝策略
 		scheduler.scheduleWithFixedDelay(resultSetMapClear(),0L,  system.getClearBigSqLResultSetMapMs(),TimeUnit.MILLISECONDS);
+		if (system.getUseSqlStat() == 1) {
+			//sql record detail timing clean
+ 			scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
+		}
+		
+		if(system.getUseGlobleTableCheck() == 1){	// 全局表一致性检测是否开启  will be influence by dataHostWithoutWR
+			scheduler.scheduleWithFixedDelay(glableTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
+		}
+
+
+		if(!this.getConfig().isDataHostWithoutWR()) {
+			// init datahost
+			Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
+			LOGGER.info("Initialize dataHost ...");
+			for (PhysicalDBPool node : dataHosts.values()) {
+				String index = dnIndexProperties.getProperty(node.getHostName(), "0");
+				if (!"0".equals(index)) {
+					LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
+				}
+				int activeIndex = node.init(Integer.parseInt(index));
+				saveDataHostIndex(node.getHostName(), activeIndex);
+				node.startHeartbeat();
+			}
+		}
 		
 
 		if(isUseZkSwitch()) {
@@ -848,16 +857,19 @@ public class MycatServer {
 		return new Runnable() {
 			@Override
 			public void run() {
-				timerExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						Map<String, PhysicalDBPool> nodes = config.getDataHosts();
-						for (PhysicalDBPool node : nodes.values()) {
-							node.doHeartbeat();
+
+					timerExecutor.execute(new Runnable() {
+						@Override
+						public void run() {
+							if (!MycatServer.getInstance().getConfig().isDataHostWithoutWR()) {
+								Map<String, PhysicalDBPool> nodes = config.getDataHosts();
+								for (PhysicalDBPool node : nodes.values()) {
+									node.doHeartbeat();
+								}
+							}
 						}
-					}
-				});
-			}
+					});
+				}
 		};
 	}
 
@@ -882,12 +894,15 @@ public class MycatServer {
 		return new Runnable() {
 			@Override
 			public void run() {
-				timerExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						GlobalTableUtil.consistencyCheck();
-					}
-				});
+
+					timerExecutor.execute(new Runnable() {
+						@Override
+						public void run() {
+							if (!MycatServer.getInstance().getConfig().isDataHostWithoutWR()) {
+								GlobalTableUtil.consistencyCheck();
+							}
+						}
+					});
 			}
 		};
 	}

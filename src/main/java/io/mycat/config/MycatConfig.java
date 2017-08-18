@@ -75,6 +75,16 @@ public class MycatConfig {
 	private int status;
 	private final ReentrantLock lock;
 
+	public boolean isDataHostWithoutWR() {
+		return dataHostWithoutWR;
+	}
+
+	public void setDataHostWithoutWR(boolean dataHostWithoutWR) {
+		this.dataHostWithoutWR = dataHostWithoutWR;
+	}
+
+	private volatile boolean dataHostWithoutWR;
+
 	public MycatConfig() {
 		
 		//读取schema.xml,rule.xml和server.xml
@@ -85,6 +95,7 @@ public class MycatConfig {
 		this.dataHosts = confInit.getDataHosts();
 		this.dataNodes = confInit.getDataNodes();
 		this.erRelations = confInit.getErRelations();
+		this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
 		for (PhysicalDBPool dbPool : dataHosts.values()) {
 			dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
 		}

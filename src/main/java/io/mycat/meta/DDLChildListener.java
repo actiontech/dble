@@ -103,7 +103,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
 		if (DDLStatus.INIT == ddlInfo.getStatus()) {
 			return;
 		}
-		MycatServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(ddlInfo.getStatus()));
+		MycatServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
 	}
 
 	private void deleteNode(ChildData childData){

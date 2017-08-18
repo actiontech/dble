@@ -296,7 +296,7 @@ public class ServerConnection extends FrontendConnection {
 					}
 					times++;
 				}
-				MycatServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
+				MycatServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT, true);
 			}
 		} catch (Exception e) {
 			MycatServer.getInstance().getTmManager().removeMetaLock(schema, table);

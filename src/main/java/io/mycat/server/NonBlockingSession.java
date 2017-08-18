@@ -737,7 +737,7 @@ public class NonBlockingSession implements Session {
 				source.setTxstart(false);
 				source.getAndIncrementXid();
 			}
-			MycatServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess);
+			MycatServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
 		}
 	}
 	public MemSizeController getJoinBufferMC() {

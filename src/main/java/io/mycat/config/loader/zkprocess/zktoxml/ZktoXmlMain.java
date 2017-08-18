@@ -94,9 +94,6 @@ public class ZktoXmlMain {
         // 通知所有人
         zkListen.initAllNode();
         zkListen.clearInited();
-        if (MycatServer.getInstance().getProcessors() != null) {
-            ReloadConfig.reload_all();
-        }
     }
 
     private static void initZKIfNot(CuratorFramework zkConn) throws Exception {

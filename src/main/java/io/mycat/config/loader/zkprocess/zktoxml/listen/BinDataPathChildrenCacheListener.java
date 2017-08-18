@@ -19,8 +19,10 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
         ChildData data = event.getData();
         switch (event.getType()) {
             case CHILD_ADDED:
+                add(data, false);
+                break;
             case CHILD_UPDATED:
-                add(data);
+                add(data,true);
                 break;
             case CHILD_REMOVED:
                 delete(data);
@@ -30,15 +32,15 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
         }
     }
 
-    private void add(ChildData childData) throws IOException {
-        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/")+1);
+    private void add(ChildData childData, boolean reload) throws IOException {
+        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
         byte[] data = childData.getData();
         File file = new File(
-                SystemConfig.getHomePath() + File.separator + "conf" ,
+                SystemConfig.getHomePath() + File.separator + "conf",
                 name);
-        Files.write(data,file);
+        Files.write(data, file);
         //try to reload dnindex
-        if("dnindex.properties".equals(name)) {
+        if (reload && "dnindex.properties".equals(name)) {
             MycatServer.getInstance().reloadDnIndex();
         }
     }

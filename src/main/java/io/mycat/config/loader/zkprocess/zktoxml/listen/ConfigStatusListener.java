@@ -26,8 +26,8 @@ import java.util.Set;
  * Created by huqing.yan on 2017/6/23.
  */
 public class ConfigStatusListener extends ZkMultLoader implements NotifyService {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusListener.class);
+	public static final String SUCCESS ="SUCCESS";
 	private final String currZkPath;
 	private Set<NotifyService> childService = new HashSet<>();
 	public ConfigStatusListener(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
@@ -46,8 +46,8 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
 			// 进行递归的数据获取
 			this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, StatusDirectory);
 			// 从当前的下一级开始进行遍历,获得到
-			ZkDataImpl zkDdata = (ZkDataImpl) StatusDirectory.getSubordinateInfo().get(0);
-			ConfStatus status = new ConfStatus(zkDdata.getDataValue());
+			ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) StatusDirectory.getSubordinateInfo().get(0);
+			ConfStatus status = new ConfStatus(zkDdata.getValue());
 			if(status.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
 				return true; //self node
 			}
@@ -55,7 +55,7 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
 			if (status.getStatus() == ConfStatus.Status.ROLLBACK){
 				try {
 					RollbackConfig.rollback();
-					ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+					ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),SUCCESS.getBytes(StandardCharsets.UTF_8));
 				}catch (Exception e){
 					String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
 					ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));
@@ -76,7 +76,7 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
 				} else {
 					ReloadConfig.reload();
 				}
-				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),SUCCESS.getBytes(StandardCharsets.UTF_8));
 			} catch (Exception e) {
 				String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
 				ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));

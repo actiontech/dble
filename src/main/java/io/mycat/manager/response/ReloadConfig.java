@@ -35,6 +35,7 @@ import io.mycat.config.MycatConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
+import io.mycat.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SchemaConfig;
@@ -86,9 +87,9 @@ public final class ReloadConfig {
 							} else {
 								reload();
 							}
-							XmltoZkMain.writeConfFileToZK(loadAll);
 							//tell zk this instance has prepared
-							ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+							ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
+							XmltoZkMain.writeConfFileToZK(loadAll);
 							//check all session waiting status
 							List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
 							List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
@@ -102,7 +103,7 @@ public final class ReloadConfig {
 							for (String child : preparedList) {
 								String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(),child);
 								byte[] errorInfo = zkConn.getData().forPath(childPath);
-								if (errorInfo != null) {
+								if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
 									sbErrorInfo.append(child + ":");
 									sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
 									sbErrorInfo.append(";");

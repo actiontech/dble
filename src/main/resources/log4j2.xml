@@ -5,8 +5,8 @@
             <PatternLayout pattern="%d [%-5p][%t] %m %throwable{full} (%C:%F:%L) %n"/>
         </Console>
 
-        <RollingRandomAccessFile  name="RollingFile" fileName="logs/mycat.log"
-                     filePattern="logs/$${date:yyyy-MM}/mycat-%d{MM-dd}-%i.log.gz">
+        <RollingRandomAccessFile name="RollingFile" fileName="logs/mycat.log"
+                                 filePattern="logs/$${date:yyyy-MM}/mycat-%d{MM-dd}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
             </PatternLayout>
@@ -15,16 +15,16 @@
                 <SizeBasedTriggeringPolicy size="250 MB"/>
                 <TimeBasedTriggeringPolicy/>
             </Policies>
-        </RollingRandomAccessFile >
+        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <!--<AsyncLogger name="io.mycat" level="info" includeLocation="true" additivity="false">-->
-            <!--<AppenderRef ref="Console"/>-->
-            <!--<AppenderRef ref="RollingFile"/>-->
+        <!--<AppenderRef ref="Console"/>-->
+        <!--<AppenderRef ref="RollingFile"/>-->
         <!--</AsyncLogger>-->
         <asyncRoot level="debug" includeLocation="true">
 
-            <AppenderRef ref="Console" />
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
 
         </asyncRoot>

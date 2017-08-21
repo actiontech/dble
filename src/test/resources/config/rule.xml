@@ -16,19 +16,19 @@
 <!DOCTYPE mycat:rule SYSTEM "rule.dtd">
 <mycat:rule xmlns:mycat="http://io.mycat/">
 
-  <!-- 路由规则定义，定义什么表，什么字段，采用什么路由算法 -->
-  <tableRule name="rule1">
-    <rule>
-      <columns>id</columns>
-      <algorithm>func1</algorithm>
-    </rule>
-  </tableRule>
+    <!-- 路由规则定义，定义什么表，什么字段，采用什么路由算法 -->
+    <tableRule name="rule1">
+        <rule>
+            <columns>id</columns>
+            <algorithm>func1</algorithm>
+        </rule>
+    </tableRule>
 
-  <!-- 路由函数定义 -->
-  <function name="func1"
-    class="io.mycat.route.function.PartitionByLong">
-    <property name="partitionCount">2</property>
-    <property name="partitionLength">512</property>
-  </function>
+    <!-- 路由函数定义 -->
+    <function name="func1"
+              class="io.mycat.route.function.PartitionByLong">
+        <property name="partitionCount">2</property>
+        <property name="partitionLength">512</property>
+    </function>
 
 </mycat:rule>

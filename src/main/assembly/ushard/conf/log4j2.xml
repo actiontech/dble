@@ -5,8 +5,8 @@
             <PatternLayout pattern="%d [%-5p][%t] %m %throwable{full} (%C:%F:%L) %n"/>
         </Console>
 
-        <RollingRandomAccessFile  name="RollingFile" fileName="${sys:USHARD_HOME}/logs/ushard.log"
-			filePattern="${sys:USHARD_HOME}/logs/$${date:yyyy-MM}/ushard-%d{MM-dd}-%i.log.gz">
+        <RollingRandomAccessFile name="RollingFile" fileName="${sys:USHARD_HOME}/logs/ushard.log"
+                                 filePattern="${sys:USHARD_HOME}/logs/$${date:yyyy-MM}/ushard-%d{MM-dd}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
             </PatternLayout>
@@ -15,7 +15,7 @@
                 <SizeBasedTriggeringPolicy size="250 MB"/>
                 <TimeBasedTriggeringPolicy/>
             </Policies>
-        </RollingRandomAccessFile >
+        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <asyncRoot level="info" includeLocation="true">

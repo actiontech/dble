@@ -819,8 +819,8 @@ public class UnsafeRowGrouper {
             case MergeCol.MERGE_SUM:
                 if (colType == ColMeta.COL_TYPE_DOUBLE
                         || colType == ColMeta.COL_TYPE_FLOAT) {
-                    double value = BytesTools.getDouble(bs)
-                    BytesTools.getDouble(bs2);
+                    double value = BytesTools.getDouble(bs) +
+                            BytesTools.getDouble(bs2);
 
                     return BytesTools.double2Bytes(value);
                 } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL

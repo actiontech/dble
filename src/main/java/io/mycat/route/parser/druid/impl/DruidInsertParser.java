@@ -4,8 +4,6 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -26,12 +24,12 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
+import io.mycat.route.parser.util.RouteParseUtil;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.util.GlobalTableUtil;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
-import io.mycat.sqlengine.mpp.ColumnRoutePair;
 import io.mycat.util.StringUtil;
 
 import java.sql.SQLException;
@@ -148,7 +146,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
-        RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
+        RouteResultset theRrs = RouteParseUtil.routeByERParentKey(rrs, tc, realVal);
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
             return theRrs;
@@ -169,39 +167,6 @@ public class DruidInsertParser extends DefaultDruidParser {
         return RouterUtil.routeToSingleNode(rrs, dn);
     }
 
-    private RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal)
-            throws SQLNonTransientException {
-        if (tc.getDirectRouteTC() != null) {
-            Set<ColumnRoutePair> parentColVal = new HashSet<>(1);
-            ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
-            parentColVal.add(pair);
-            Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
-            if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
-                throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + dataNodeSet.size());
-            }
-            String dn = dataNodeSet.iterator().next();
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
-            }
-            return RouterUtil.routeToSingleNode(rrs, dn);
-        }
-        return null;
-    }
-
-    private String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
-        String shardingValue = null;
-        if (valueExpr instanceof SQLIntegerExpr) {
-            SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
-            shardingValue = intExpr.getNumber() + "";
-        } else if (valueExpr instanceof SQLCharExpr) {
-            SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
-            shardingValue = charExpr.getText();
-        }
-        if (shardingValue == null) {
-            throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
-        }
-        return shardingValue;
-    }
 
     /**
      *
@@ -214,7 +179,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr);
+        String shardingValue = RouteParseUtil.shardingValueToSting(valueExpr);
         TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         Integer nodeIndex = algorithm.calculate(shardingValue);
@@ -275,7 +240,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr);
+            String shardingValue = RouteParseUtil.shardingValueToSting(expr);
             Integer nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
             if (nodeIndex == null) {

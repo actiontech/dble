@@ -2,12 +2,12 @@
  Copyright (C) 2002-2004 MySQL AB
 
  This program is free software; you can redistribute it and/or modify
- it under the terms of version 2 of the GNU AFFERO GENERAL PUBLIC LICENSE as 
+ it under the terms of version 2 of the GNU AFFERO GENERAL PUBLIC LICENSE as
  published by the Free Software Foundation.
 
- There are special exceptions to the terms and conditions of the GPL 
- as it is applied to this software. View the full text of the 
- exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
+ There are special exceptions to the terms and conditions of the GPL
+ as it is applied to this software. View the full text of the
+ exception in file EXCEPTIONS-CONNECTOR-J in the directory of this
  software distribution.
 
  This program is distributed in the hope that it will be useful,
@@ -23,14 +23,14 @@
 
  */
 /*
- * 	This program is free software; you can redistribute it and/or modify it under the terms of 
- * the GNU AFFERO GENERAL PUBLIC LICENSE as published by the Free Software Foundation; either version 3 of the License, 
- * or (at your option) any later version. 
- * 
- * 	This program is distributed in the hope that it will be useful, 
- * but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
- * See the GNU AFFERO GENERAL PUBLIC LICENSE for more details. 
- * 	You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE along with this program; 
+ *     This program is free software; you can redistribute it and/or modify it under the terms of
+ * the GNU AFFERO GENERAL PUBLIC LICENSE as published by the Free Software Foundation; either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *     You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE along with this program;
  * if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 package io.mycat.util;
@@ -425,7 +425,7 @@ public final class MysqlDefs {
 
             default:
                 return MysqlDefs.FIELD_TYPE_VAR_STRING;   //其他未知类型返回字符类型
-            //	return Types.VARCHAR;
+            //    return Types.VARCHAR;
         }
 
     }

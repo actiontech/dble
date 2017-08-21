@@ -207,21 +207,21 @@ public abstract class ItemSum extends ItemResultField {
         withDistinct = distinct;
     }
 
-	/*
+    /*
      * Set the type of aggregation : DISTINCT or not.
-	 * 
-	 * May be called multiple times.
-	 */
+     *
+     * May be called multiple times.
+     */
 
     public int setAggregator(AggregatorType aggregator, ResultStore store) {
         /*
          * Dependent subselects may be executed multiple times, making
-		 * set_aggregator to be called multiple times. The aggregator type will
-		 * be the same, but it needs to be reset so that it is reevaluated with
-		 * the new dependent data. This function may also be called multiple
-		 * times during query optimization. In this case, the type may change,
-		 * so we delete the old aggregator, and create a new one.
-		 */
+         * set_aggregator to be called multiple times. The aggregator type will
+         * be the same, but it needs to be reset so that it is reevaluated with
+         * the new dependent data. This function may also be called multiple
+         * times during query optimization. In this case, the type may change,
+         * so we delete the old aggregator, and create a new one.
+         */
         if (aggr != null && aggregator == aggr.aggrType()) {
             aggr.clear();
             return FALSE;
@@ -265,13 +265,13 @@ public abstract class ItemSum extends ItemResultField {
      * This alters the value at m, s, and increments count.
      */
 
-	/*
+    /*
      * These two functions are used by the Item_sum_variance and the
-	 * Item_variance_field classes, which are unrelated, and each need to
-	 * calculate variance. The difference between the two classes is that the
-	 * first is used for a mundane SELECT, while the latter is used in a
-	 * GROUPing SELECT.
-	 */
+     * Item_variance_field classes, which are unrelated, and each need to
+     * calculate variance. The difference between the two classes is that the
+     * first is used for a mundane SELECT, while the latter is used in a
+     * GROUPing SELECT.
+     */
     protected static void varianceFpRecurrenceNext(DoublePtr m, DoublePtr s, LongPtr count, double nr) {
         count.incre();
 
@@ -292,7 +292,7 @@ public abstract class ItemSum extends ItemResultField {
         if (is_sample_variance)
             return s / (count - 1);
 
-		/* else, is a population variance */
+        /* else, is a population variance */
         return s / count;
     }
 

@@ -68,9 +68,9 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
                 if (date_part_used && frac_second_used) {
                     /*
                      * frac_second_used implies time_part_used, and thus we
-					 * already have all types of date-time components and can
-					 * end our search.
-					 */
+                     * already have all types of date-time components and can
+                     * end our search.
+                     */
                     cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
                     cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
                     fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATETIME_WIDTH, MyTime.DATETIME_MAX_DECIMALS);
@@ -79,7 +79,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
             }
         }
 
-		/* We don't have all three types of date-time components */
+        /* We don't have all three types of date-time components */
         if (frac_second_used) /* TIME with microseconds */ {
             cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
             cached_field_type = FieldTypes.MYSQL_TYPE_TIME;
@@ -122,9 +122,9 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
             if (cached_timestamp_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.day != 0) {
                 /*
                  * Day part for time type can be nonzero value and so we should
-				 * add hours from day part to hour part to keep valid time
-				 * value.
-				 */
+                 * add hours from day part to hour part to keep valid time
+                 * value.
+                 */
                 ltime.hour += ltime.day * 24;
                 ltime.day = 0;
             }

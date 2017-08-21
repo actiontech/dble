@@ -67,21 +67,21 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
-//	@Override
-//	protected void cleanAndFeedback() {
-//		// clear all resources
-//		session.clearResources(false);
-//		if (session.closed()) {
-//			return;
-//		}
-//		if (this.isFail()) {
-//			session.getSource().setTxInterrupt(error);
-//			session.getSource().setTxstart(true);
-//			createErrPkg(error).write(session.getSource());
-//		} else {
-//			session.getSource().write(sendData);
-//		}
-//	}
+//    @Override
+//    protected void cleanAndFeedback() {
+//        // clear all resources
+//        session.clearResources(false);
+//        if (session.closed()) {
+//            return;
+//        }
+//        if (this.isFail()) {
+//            session.getSource().setTxInterrupt(error);
+//            session.getSource().setTxstart(true);
+//            createErrPkg(error).write(session.getSource());
+//        } else {
+//            session.getSource().write(sendData);
+//        }
+//    }
 
     private void cleanAndFeedback() {
         byte[] send = sendData;

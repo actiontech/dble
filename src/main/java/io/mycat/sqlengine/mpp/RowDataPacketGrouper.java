@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -126,22 +126,22 @@ public class RowDataPacketGrouper {
      * Modified by winbill. 20160312.
      */
     private boolean lt(byte[] l, byte[] r, final int colType) {
-//		return -1 != ByteUtil.compareNumberByte(l, r);
+//        return -1 != ByteUtil.compareNumberByte(l, r);
         return -1 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean gt(byte[] l, byte[] r, final int colType) {
-//		return 1 != ByteUtil.compareNumberByte(l, r, havingCol);
+//        return 1 != ByteUtil.compareNumberByte(l, r, havingCol);
         return 1 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean eq(byte[] l, byte[] r, final int colType) {
-//		return 0 != ByteUtil.compareNumberByte(l, r, havingCol);
+//        return 0 != ByteUtil.compareNumberByte(l, r, havingCol);
         return 0 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean neq(byte[] l, byte[] r, final int colType) {
-//		return 0 == ByteUtil.compareNumberByte(l, r, havingCol);
+//        return 0 == ByteUtil.compareNumberByte(l, r, havingCol);
         return 0 == RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
@@ -227,8 +227,8 @@ public class RowDataPacketGrouper {
                         merg.colMeta.colType, merg.mergeType);
                 if (result != null) {
                     toRow.fieldValues.set(merg.colMeta.avgSumIndex, result);
-//					toRow.fieldValues.remove(merg.colMeta.avgCountIndex) ;
-//					toRow.fieldCount=toRow.fieldCount-1;
+//                    toRow.fieldValues.remove(merg.colMeta.avgCountIndex) ;
+//                    toRow.fieldCount=toRow.fieldCount-1;
                     rmIndexSet.add(merg.colMeta.avgCountIndex);
                 }
             }

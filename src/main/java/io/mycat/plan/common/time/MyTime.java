@@ -101,9 +101,9 @@ public class MyTime {
 
     /*
      * Handle 2 digit year conversions
-     * 
+     *
      * SYNOPSIS year_2000_handling() year 2 digit year
-     * 
+     *
      * RETURN Year between 1970-2069
      */
 
@@ -269,7 +269,7 @@ public class MyTime {
      * Only allow space in the first "part" of the datetime field and: -
      * after days, part seconds - before and after AM/PM (handled by code
      * later)
-     * 
+     *
      * 2003-03-03 20:00:20 AM 20:00:20.000000 AM 03-03-2000
      */
         i = Math.max((long) format_position[0], (long) format_position[1]);
@@ -1020,12 +1020,12 @@ public class MyTime {
 
     /*
      * Calculate nr of day since year 0 in new date-system (from 1615)
-     * 
+     *
      * SYNOPSIS calc_daynr() year Year (exact 4 digit year, no year conversions)
      * month Month day Day
-     * 
+     *
      * NOTES: 0000-00-00 is a valid date, and will return 0
-     * 
+     *
      * RETURN Days since 0000-00-00
      */
 
@@ -1596,21 +1596,21 @@ public class MyTime {
      * The bits in week_format has the following meaning: WEEK_MONDAY_FIRST (0)
      * If not set Sunday is first day of week If set Monday is first day of week
      * WEEK_YEAR (1) If not set Week is in range 0-53
-     * 
+     *
      * Week 0 is returned for the the last week of the previous year (for a date
      * at start of january) In this case one can get 53 for the first week of
      * next year. This flag ensures that the week is relevant for the given
      * year. Note that this flag is only releveant if WEEK_JANUARY is not set.
-     * 
+     *
      * If set Week is in range 1-53.
-     * 
+     *
      * In this case one may get week 53 for a date in January (when the week is
      * that last week of previous year) and week 1 for a date in December.
-     * 
+     *
      * WEEK_FIRST_WEEKDAY (2) If not set Weeks are numbered according to ISO
      * 8601:1988 If set The week that contains the first 'first-day-of-week' is
      * week 1.
-     * 
+     *
      * ISO 8601:1988 means that if the week containing January 1 has four or
      * more days in the new year, then it is week 1; Otherwise it is the last
      * week of the previous year, and the next week is week 1.
@@ -1945,7 +1945,7 @@ public class MyTime {
     }
 
     /*
-     * Calculate difference between two datetime values as seconds +
+     * Calculate difference between two datetime values as seconds
      * microseconds.
      *
      * SYNOPSIS calc_time_diff() l_time1 - TIME/DATE/DATETIME value l_time2 -
@@ -2038,7 +2038,7 @@ public class MyTime {
                                              INTERVAL interval) {
         long[] array = new long[5];
         long value = 0;
-        //		int int_type = unit.ordinal();
+        //        int int_type = unit.ordinal();
 
         if (unit == MySqlIntervalUnit.SECOND && arg.decimals != 0) {
             BigDecimal decimal_value = arg.valDecimal();

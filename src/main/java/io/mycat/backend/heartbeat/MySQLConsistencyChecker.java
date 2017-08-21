@@ -52,9 +52,9 @@ public class MySQLConsistencyChecker {
     private String tableName;    // global table name
     private long beginTime;
     private String[] physicalSchemas;
-//	private String columnExistSQL = "select count(*) as "+GlobalTableUtil.INNER_COLUMN
-//							+ " from information_schema.columns where column_name='"
-//							+ GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + "' and table_name='";
+//    private String columnExistSQL = "select count(*) as "+GlobalTableUtil.INNER_COLUMN
+//                            + " from information_schema.columns where column_name='"
+//                            + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + "' and table_name='";
 
     // 此处用到了 mysql 多行转一行 group_concat 的用法，主要是为了简化对结果的处理
     // 得到的结果类似于：id,name,_mycat_op_time
@@ -71,8 +71,8 @@ public class MySQLConsistencyChecker {
         this.tableName = tableName;
         this.countSQL = " select count(*) as " + GlobalTableUtil.COUNT_COLUMN + " from "
                 + this.tableName;
-        this.maxSQL = " select max(" + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + ") as " +
-                GlobalTableUtil.MAX_COLUMN + " from " + this.tableName;
+        this.maxSQL = " select max(" + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + ") as "
+        GlobalTableUtil.MAX_COLUMN + " from " + this.tableName;
         this.columnExistSQL += this.tableName + "' ";
     }
 

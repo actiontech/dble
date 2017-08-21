@@ -166,14 +166,14 @@ public class DruidSelectParser extends DefaultDruidParser {
             return;
         }
         parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
-//		if(rrs.isNeedOptimizer()){
-//			return;
-//		}
-//		// setOrderByCols TODO: ORDER BY has bugs,so it will not reach here. BY YHQ
-//		if (mysqlSelectQuery.getOrderBy() != null) {
-//			List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
-//			rrs.setOrderByCols(buildOrderByCols(orderByItems, aliaColumns));
-//		}
+//        if(rrs.isNeedOptimizer()){
+//            return;
+//        }
+//        // setOrderByCols TODO: ORDER BY has bugs,so it will not reach here. BY YHQ
+//        if (mysqlSelectQuery.getOrderBy() != null) {
+//            List<SQLSelectOrderByItem> orderByItems = mysqlSelectQuery.getOrderBy().getItems();
+//            rrs.setOrderByCols(buildOrderByCols(orderByItems, aliaColumns));
+//        }
     }
 
     private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLException {
@@ -183,9 +183,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (itemExpr instanceof SQLAggregateExpr) {
                 /*
                  * MAX,MIN; SUM,COUNT without distinct is not need optimize, but
-				 * there is bugs in default Aggregate IN FACT ,ONLY:
-				 * SUM(distinct ),COUNT(distinct),AVG,STDDEV,GROUP_CONCAT
-				 */
+                 * there is bugs in default Aggregate IN FACT ,ONLY:
+                 * SUM(distinct ),COUNT(distinct),AVG,STDDEV,GROUP_CONCAT
+                 */
                 rrs.setNeedOptimizer(true);
                 return;
             } else if (itemExpr instanceof SQLMethodInvokeExpr) {
@@ -412,8 +412,8 @@ public class DruidSelectParser extends DefaultDruidParser {
             } else if (sqlExpr instanceof SQLPropertyExpr) {
                 /*
                  * 针对子查询别名，例如select id from (select h.id from hotnews h union
-				 * select h.title from hotnews h ) as t1 group by t1.id;
-				 */
+                 * select h.title from hotnews h ) as t1 group by t1.id;
+                 */
                 column = sqlExpr.toString();
             }
             if (column == null) {
@@ -431,28 +431,28 @@ public class DruidSelectParser extends DefaultDruidParser {
         return groupByCols;
     }
 
-    //	private LinkedHashMap<String, Integer> buildOrderByCols(List<SQLSelectOrderByItem> orderByItems,
-//															  Map<String, String> aliaColumns) {
-//		LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
-//		for (int i = 0; i < orderByItems.size(); i++) {
-//			SQLOrderingSpecification type = orderByItems.get(i).getType();
-//			// orderColumn只记录字段名称,因为返回的结果集是不带表名的。
-//			SQLExpr expr = orderByItems.get(i).getExpr();
-//			String col;
-//			if (expr instanceof SQLName) {
-//				col = ((SQLName) expr).getSimpleName();
-//			} else {
-//				col = expr.toString();
-//			}
-//			if (type == null) {
-//				type = SQLOrderingSpecification.ASC;
-//			}
-//			col = getAliaColumn(aliaColumns, col);// 此步骤得到的col必须是不带.的，有别名的用别名，无别名的用字段名
-//			map.put(col,
-//					type == SQLOrderingSpecification.ASC ? OrderCol.COL_ORDER_TYPE_ASC : OrderCol.COL_ORDER_TYPE_DESC);
-//		}
-//		return map;
-//	}
+    //    private LinkedHashMap<String, Integer> buildOrderByCols(List<SQLSelectOrderByItem> orderByItems,
+//                                                              Map<String, String> aliaColumns) {
+//        LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
+//        for (int i = 0; i < orderByItems.size(); i++) {
+//            SQLOrderingSpecification type = orderByItems.get(i).getType();
+//            // orderColumn只记录字段名称,因为返回的结果集是不带表名的。
+//            SQLExpr expr = orderByItems.get(i).getExpr();
+//            String col;
+//            if (expr instanceof SQLName) {
+//                col = ((SQLName) expr).getSimpleName();
+//            } else {
+//                col = expr.toString();
+//            }
+//            if (type == null) {
+//                type = SQLOrderingSpecification.ASC;
+//            }
+//            col = getAliaColumn(aliaColumns, col);// 此步骤得到的col必须是不带.的，有别名的用别名，无别名的用字段名
+//            map.put(col,
+//                    type == SQLOrderingSpecification.ASC ? OrderCol.COL_ORDER_TYPE_ASC : OrderCol.COL_ORDER_TYPE_DESC);
+//        }
+//        return map;
+//    }
     private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
             throws SQLException {
         StringPtr sqlSchema = new StringPtr(null);

@@ -116,7 +116,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
          * TS-TODO: val_str decides which type to use using cmp_type. val_int,
      * val_decimal, val_real do not check cmp_type and decide data type
      * according to the method type. This is probably not good:
-     * 
+     *
      * mysql> select least('11', '2'), least('11', '2')+0,
      * concat(least(11,2));
      * +------------------+--------------------+---------------------+ |
@@ -125,7 +125,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
      * | 2 | 2 |
      * +------------------+--------------------+---------------------+ 1 row
      * in set (0.00 sec)
-     * 
+     *
      * Should not the second column return 11? I.e. compare as strings and
      * return '11', then convert to number.
      */

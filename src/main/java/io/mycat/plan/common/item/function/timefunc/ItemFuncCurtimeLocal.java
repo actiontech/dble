@@ -22,8 +22,8 @@ public class ItemFuncCurtimeLocal extends ItemTimeFunc {
     public void fixLengthAndDec() {
         /*
          * We use 8 instead of MAX_TIME_WIDTH (which is 10) because: - there is
-		 * no sign - hour is in the 2-digit range
-		 */
+         * no sign - hour is in the 2-digit range
+         */
         fixLengthAndDecAndCharsetDatetime(8, decimals);
     }
 

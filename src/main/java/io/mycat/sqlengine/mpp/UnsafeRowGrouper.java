@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -191,7 +191,7 @@ public class UnsafeRowGrouper {
                     groupKey.setDouble(i, 0);
                     break;
                 case ColMeta.COL_TYPE_NEWDECIMAL:
-//						groupKey.setDouble(i, 0);
+//                        groupKey.setDouble(i, 0);
                     unsafeRowWriter.write(i, new BigDecimal(0L));
                     break;
                 case ColMeta.COL_TYPE_LONGLONG:
@@ -244,7 +244,7 @@ public class UnsafeRowGrouper {
                     emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
                     break;
                 case ColMeta.COL_TYPE_NEWDECIMAL:
-//						emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
+//                        emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
                     unsafeRowWriter.write(curColMeta.colIndex, new BigDecimal(0L));
                     break;
                 default:
@@ -503,8 +503,8 @@ public class UnsafeRowGrouper {
                                 BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//						key.setDouble(i,
-//								BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+//                        key.setDouble(i,
+//                                BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         unsafeRowWriter.write(i,
                                 new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
                         break;
@@ -572,7 +572,7 @@ public class UnsafeRowGrouper {
 
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//						value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+//                        value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         unsafeRowWriter.write(curColMeta.colIndex,
                                 new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
                         break;
@@ -760,8 +760,8 @@ public class UnsafeRowGrouper {
                         avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//						avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
-//						avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
+//                        avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
+//                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
                         int scale = merg.colMeta.decimals;
                         BigDecimal sumDecimal = toRow.getDecimal(avgSumIndex, scale);
                         avgSum = sumDecimal == null ? null : sumDecimal.toString().getBytes();
@@ -819,8 +819,8 @@ public class UnsafeRowGrouper {
             case MergeCol.MERGE_SUM:
                 if (colType == ColMeta.COL_TYPE_DOUBLE
                         || colType == ColMeta.COL_TYPE_FLOAT) {
-                    double value = BytesTools.getDouble(bs) +
-                            BytesTools.getDouble(bs2);
+                    double value = BytesTools.getDouble(bs)
+                    BytesTools.getDouble(bs2);
 
                     return BytesTools.double2Bytes(value);
                 } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL

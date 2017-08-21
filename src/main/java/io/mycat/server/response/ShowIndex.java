@@ -17,12 +17,12 @@ import java.util.regex.Pattern;
  * Created by huqing.yan on 2017/7/19.
  */
 public class ShowIndex {
-    private static String INDEX_PAT = "^\\s*(show)" +
-            "(\\s+(index|indexes|keys))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9.]+))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
-            "(\\s+(where)\\s+((. *)*)\\s*)?" +
-            "\\s*$";
+    private static String INDEX_PAT = "^\\s*(show)"
+            "(\\s+(index|indexes|keys))"
+                    "(\\s+(from|in)\\s+([a-zA-Z_0-9.]+))"
+                    "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?"
+                    "(\\s+(where)\\s+((. *)*)\\s*)?"
+                    "\\s*$";
     public static final Pattern pattern = Pattern.compile(INDEX_PAT, Pattern.CASE_INSENSITIVE);
 
     public static void response(ServerConnection c, String stmt) {
@@ -70,7 +70,7 @@ public class ShowIndex {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, stmt);
                 return;
             }
-//			show index with where :druid has a bug ：no where
+//            show index with where :druid has a bug ：no where
             if (changeSQL && whereIndex > 0 && !sql.toString().toLowerCase().contains("where")) {
                 sql.append(" ");
                 sql.append(strWhere);

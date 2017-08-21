@@ -27,8 +27,8 @@ public class ItemFuncIntDiv extends ItemIntFunc {
     public BigInteger valInt() {
         /*
          * Perform division using DECIMAL math if either of the operands has a
-		 * non-integer type
-		 */
+         * non-integer type
+         */
         if (args.get(0).resultType() != ItemResult.INT_RESULT
                 || args.get(1).resultType() != ItemResult.INT_RESULT) {
             BigDecimal val0p = args.get(0).valDecimal();

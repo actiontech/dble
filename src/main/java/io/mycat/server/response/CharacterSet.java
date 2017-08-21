@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -48,10 +48,10 @@ public class CharacterSet {
     public static void response(String stmt, ServerConnection c, int rs) {
     /* TODO: completely charsets support
 
-	   Currently, we don't support setting single nature of the character set.
-	   When these statements are used, we justly give a caution.
-	   Maybe, we implement completely charsets in future. By then, regain here.
-	*/
+       Currently, we don't support setting single nature of the character set.
+       When these statements are used, we justly give a caution.
+       Maybe, we implement completely charsets in future. By then, regain here.
+    */
 //        if (true) {
 //            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Unsupported statement, please use 'SET NAMES xxx'");
 //            return;

@@ -67,35 +67,35 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         this.merges.add(this);
     }
 
-//	/**
-//	 * @param route
-//	 * @param autocommit
-//	 * @param orderBys
-//	 * @param session
-//	 */
-//	public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
-//			List<Order> orderBys,List<String> colTables) {
-//		super(id, session);
-//		this.exeHandlers = new ArrayList<BaseSelectHandler>();
-//		this.lock = new ReentrantLock();
-//		if (route.length == 0)
-//			throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "can not execute empty rrss!");
-//		for (RouteResultsetNode rrss : route) {
-//			BaseSelectHandler exeHandler = new BaseSelectHandler(id, rrss, autocommit, session);
-//			exeHandler.setNextHandler(this);
-//			this.exeHandlers.add(exeHandler);
-//		}
-//		this.route = route;
-//		this.orderBys = orderBys;
-//		this.queueSize = ProxyServer.getInstance().getConfig().getSystem().getMergeQueueSize();
-//		if (route.length == 1 || (orderBys == null || orderBys.size() == 0)) {
-//			this.isEasyMerge = true;
-//		} else {
-//			this.isEasyMerge = false;
-//		}
-//		this.queues = new ConcurrentHashMap<MySQLConnection, BlockingQueue<HeapItem>>();
-//		this.merges.add(this);
-//	}
+//    /**
+//     * @param route
+//     * @param autocommit
+//     * @param orderBys
+//     * @param session
+//     */
+//    public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
+//            List<Order> orderBys,List<String> colTables) {
+//        super(id, session);
+//        this.exeHandlers = new ArrayList<BaseSelectHandler>();
+//        this.lock = new ReentrantLock();
+//        if (route.length == 0)
+//            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "can not execute empty rrss!");
+//        for (RouteResultsetNode rrss : route) {
+//            BaseSelectHandler exeHandler = new BaseSelectHandler(id, rrss, autocommit, session);
+//            exeHandler.setNextHandler(this);
+//            this.exeHandlers.add(exeHandler);
+//        }
+//        this.route = route;
+//        this.orderBys = orderBys;
+//        this.queueSize = ProxyServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+//        if (route.length == 1 || (orderBys == null || orderBys.size() == 0)) {
+//            this.isEasyMerge = true;
+//        } else {
+//            this.isEasyMerge = false;
+//        }
+//        this.queues = new ConcurrentHashMap<MySQLConnection, BlockingQueue<HeapItem>>();
+//        this.merges.add(this);
+//    }
 
 
     public List<BaseSelectHandler> getExeHandlers() {

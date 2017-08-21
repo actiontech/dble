@@ -57,7 +57,7 @@ public class UserStat {
     /**
      * 读写锁
      */
-//	private ReentrantReadWriteLock lock  = new ReentrantReadWriteLock();
+//    private ReentrantReadWriteLock lock  = new ReentrantReadWriteLock();
     public UserStat(String user) {
         super();
 
@@ -154,7 +154,7 @@ public class UserStat {
         }
         //-----------------------------------------------------
 
-//		this.lock.writeLock().lock();
+//        this.lock.writeLock().lock();
 //        try {
 
         //慢查询记录
@@ -188,7 +188,7 @@ public class UserStat {
         }
 
 //        } finally {
-//        	this.lock.writeLock().unlock();
+//            this.lock.writeLock().unlock();
 //        }
 
         //after

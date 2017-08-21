@@ -60,7 +60,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
             } else {
                 packetId = ShowTables.writeFullTablesRow(buffer, source, shardingTablesMap, packetId, null, null);
             }
-//			packetId = ShowTables.writeFullTablesHeader(buffer, source, shardingTablesMap, showTableSchema);
+//            packetId = ShowTables.writeFullTablesHeader(buffer, source, shardingTablesMap, showTableSchema);
         } else {
             packetId = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
         }

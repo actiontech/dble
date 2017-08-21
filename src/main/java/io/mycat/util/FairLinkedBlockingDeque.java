@@ -8,28 +8,28 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements BlockingDeque<E>, java.io.Serializable {
 
-	/*
+    /*
      * Implemented as a simple doubly-linked list protected by a single lock and
-	 * using conditions to manage blocking.
-	 * 
-	 * To implement weakly consistent iterators, it appears we need to keep all
-	 * Nodes GC-reachable from a predecessor dequeued Node. That would cause two
-	 * problems: - allow a rogue Iterator to cause unbounded memory retention -
-	 * cause cross-generational linking of old Nodes to new Nodes if a Node was
-	 * tenured while live, which generational GCs have a hard time dealing with,
-	 * causing repeated major collections. However, only non-deleted Nodes need
-	 * to be reachable from dequeued Nodes, and reachability does not
-	 * necessarily have to be of the kind understood by the GC. We use the trick
-	 * of linking a Node that has just been dequeued to itself. Such a self-link
-	 * implicitly means to advance to head.
-	 */
+     * using conditions to manage blocking.
+     *
+     * To implement weakly consistent iterators, it appears we need to keep all
+     * Nodes GC-reachable from a predecessor dequeued Node. That would cause two
+     * problems: - allow a rogue Iterator to cause unbounded memory retention -
+     * cause cross-generational linking of old Nodes to new Nodes if a Node was
+     * tenured while live, which generational GCs have a hard time dealing with,
+     * causing repeated major collections. However, only non-deleted Nodes need
+     * to be reachable from dequeued Nodes, and reachability does not
+     * necessarily have to be of the kind understood by the GC. We use the trick
+     * of linking a Node that has just been dequeued to itself. Such a self-link
+     * implicitly means to advance to head.
+     */
 
-	/*
+    /*
      * We have "diamond" multiple interface/abstract class inheritance here, and
-	 * that introduces ambiguities. Often we want the BlockingDeque javadoc
-	 * combined with the AbstractQueue implementation, so a lot of method specs
-	 * are duplicated here.
-	 */
+     * that introduces ambiguities. Often we want the BlockingDeque javadoc
+     * combined with the AbstractQueue implementation, so a lot of method specs
+     * are duplicated here.
+     */
 
     private static final long serialVersionUID = -387911632671998426L;
 
@@ -813,13 +813,13 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         }
     }
 
-	/*
+    /*
      * TODO: Add support for more efficient bulk operations.
-	 * 
-	 * We don't want to acquire the lock for every iteration, but we also want
-	 * other threads a chance to interact with the collection, especially when
-	 * count is close to capacity.
-	 */
+     *
+     * We don't want to acquire the lock for every iteration, but we also want
+     * other threads a chance to interact with the collection, especially when
+     * count is close to capacity.
+     */
 
     // /**
     // * Adds all of the elements in the specified collection to this

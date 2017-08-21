@@ -73,11 +73,11 @@ public class ItemFuncTimediff extends ItemTimeFunc {
 
         l_time3.neg = MyTime.calc_time_diff(l_time1, l_time2, l_sign, seconds, microseconds);
 
-		/*
+        /*
          * For MYSQL_TIMESTAMP_TIME only: If first argument was negative and
-		 * diff between arguments is non-zero we need to swap sign to get proper
-		 * result.
-		 */
+         * diff between arguments is non-zero we need to swap sign to get proper
+         * result.
+         */
         if (l_time1.neg && (seconds.get() != 0 || microseconds.get() != 0))
             l_time3.neg = l_time3.neg ? false : true; // Swap sign of result
 

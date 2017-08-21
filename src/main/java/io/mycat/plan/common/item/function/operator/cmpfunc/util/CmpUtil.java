@@ -46,14 +46,14 @@ public class CmpUtil {
                 || l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
             /*
              * Do not return yet, we may still want to throw a
-			 * "trailing garbage" warning.
-			 */
+             * "trailing garbage" warning.
+             */
             value = false;
         else {
             value = true;
             status.warnings = MyTime.MYSQL_TIME_WARN_TRUNCATED; /*
                                                                  * force warning
-																 */
+                                                                 */
         }
 
         if (status.warnings > 0)
@@ -113,11 +113,11 @@ public class CmpUtil {
             type.set(MySQLcom.item_cmp_type(type.get(), items.get(i).resultType()));
             /*
              * When aggregating types of two row expressions we have to check
-			 * that they have the same cardinality and that each component of
-			 * the first row expression has a compatible row signature with the
-			 * signature of the corresponding component of the second row
-			 * expression.
-			 */
+             * that they have the same cardinality and that each component of
+             * the first row expression has a compatible row signature with the
+             * signature of the corresponding component of the second row
+             * expression.
+             */
             if (type.get() == ItemResult.ROW_RESULT && MySQLcom.cmpRowType(items.get(0), items.get(i)) != 0)
                 return 1; // error found: invalid usage of rows
         }

@@ -40,12 +40,12 @@ public class GetYearValue implements GetValueFunc {
         if (is_null.get())
             return 0;
 
-		/*
+        /*
          * Coerce value to the 19XX form in order to correctly compare YEAR(2) &
-		 * YEAR(4) types. Here we are converting all item values but YEAR(4)
-		 * fields since 1) YEAR(4) already has a regular YYYY form and 2) we
-		 * don't want to convert zero/bad YEAR(4) values to the value of 2000.
-		 */
+         * YEAR(4) types. Here we are converting all item values but YEAR(4)
+         * fields since 1) YEAR(4) already has a regular YYYY form and 2) we
+         * don't want to convert zero/bad YEAR(4) values to the value of 2000.
+         */
         if (item.type() == ItemType.FIELD_ITEM) {
             Field field = ((ItemField) item).field;
             if (field.fieldType() == FieldTypes.MYSQL_TYPE_YEAR && field.fieldLength == 4) {

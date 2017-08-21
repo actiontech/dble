@@ -117,8 +117,8 @@ public class ItemSumVariance extends ItemSumNum {
         } else {
             /*
              * Why use a temporary variable? We don't know if it is null until
-			 * we evaluate it, which has the side-effect of setting null_value .
-			 */
+             * we evaluate it, which has the side-effect of setting null_value .
+             */
             double nr = args.get(0).valReal().doubleValue();
             // add for transObj
             sumA += nr;
@@ -161,15 +161,15 @@ public class ItemSumVariance extends ItemSumNum {
         if (!isPushDown) {
             /*
              * 'sample' is a 1/0 boolean value. If it is 1/true, id est this is
-			 * a sample variance call, then we should set nullness when the
-			 * count of the items is one or zero. If it's zero, i.e. a
-			 * population variance, then we only set nullness when the count is
-			 * zero.
-			 * 
-			 * Another way to read it is that 'sample' is the numerical
-			 * threshhold, at and below which a 'count' number of items is
-			 * called NULL.
-			 */
+             * a sample variance call, then we should set nullness when the
+             * count of the items is one or zero. If it's zero, i.e. a
+             * population variance, then we only set nullness when the count is
+             * zero.
+             *
+             * Another way to read it is that 'sample' is the numerical
+             * threshhold, at and below which a 'count' number of items is
+             * called NULL.
+             */
             assert ((sample == 0) || (sample == 1));
             if (count <= sample) {
                 nullValue = true;

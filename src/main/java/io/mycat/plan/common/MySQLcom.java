@@ -194,8 +194,8 @@ public class MySQLcom {
         }
         /*
          * Even if all right-hand items are NULLs and we are skipping them all,
-		 * we need at least one type bit in the found_type bitmask.
-		 */
+         * we need at least one type bit in the found_type bitmask.
+         */
         if (skipnulls && foundtypes == 0)
             foundtypes |= 1 << leftResult.ordinal();
         return foundtypes;

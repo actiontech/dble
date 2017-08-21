@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -152,20 +152,20 @@ public class PhysicalDBNode {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }
     }
-//	public void getConnection(String schema,boolean autoCommit, RouteResultsetNode rrs,
-//			ResponseHandler handler, Object attachment) throws Exception {
-//		checkRequest(schema);
-//		if (dbPool.isInitSuccess()) {
-//			if (rrs.canRunnINReadDB(autoCommit)) {
-//				dbPool.getRWBanlanceCon(schema,autoCommit, handler, attachment,
-//						this.database);
-//			} else {
-//				dbPool.getSource().getConnection(schema,autoCommit, handler, attachment);
-//			}
+//    public void getConnection(String schema,boolean autoCommit, RouteResultsetNode rrs,
+//            ResponseHandler handler, Object attachment) throws Exception {
+//        checkRequest(schema);
+//        if (dbPool.isInitSuccess()) {
+//            if (rrs.canRunnINReadDB(autoCommit)) {
+//                dbPool.getRWBanlanceCon(schema,autoCommit, handler, attachment,
+//                        this.database);
+//            } else {
+//                dbPool.getSource().getConnection(schema,autoCommit, handler, attachment);
+//            }
 //
-//		} else {
-//			throw new IllegalArgumentException("Invalid DataSource:"
-//					+ dbPool.getActiveIndex());
-//		}
-//	}
+//        } else {
+//            throw new IllegalArgumentException("Invalid DataSource:"
+//                    + dbPool.getActiveIndex());
+//        }
+//    }
 }

@@ -31,9 +31,9 @@ public abstract class ItemNumOp extends ItemFuncNumhybrid {
         if (r0 == ItemResult.REAL_RESULT || r1 == ItemResult.REAL_RESULT) {
             /*
              * Since DATE/TIME/DATETIME data types return
-			 * INT_RESULT/DECIMAL_RESULT type codes, we should never get to here
-			 * when both fields are temporal.
-			 */
+             * INT_RESULT/DECIMAL_RESULT type codes, we should never get to here
+             * when both fields are temporal.
+             */
             assert (!args.get(0).isTemporal() || !args.get(1).isTemporal());
             countRealLength();
             maxLength = floatLength(decimals);

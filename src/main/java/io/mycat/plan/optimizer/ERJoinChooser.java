@@ -65,7 +65,7 @@ public class ERJoinChooser {
         }
     }
 
-	/* ------------------- left join optimizer start -------------------- */
+    /* ------------------- left join optimizer start -------------------- */
 
     /**
      * left join时也可以进行ER优化，但是策略和inner join不同
@@ -120,7 +120,7 @@ public class ERJoinChooser {
         }
     }
 
-	/* ------------------- left join optimizer end -------------------- */
+    /* ------------------- left join optimizer end -------------------- */
 
     /**
      * inner join的er优化，将inner join的unit拆分进行重新拼接

@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -362,12 +362,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
             binRowDataPk.read(fieldPackets, rowDataPk);
             binRowDataPk.packetId = rowDataPk.packetId;
-//			binRowDataPk.write(session.getSource());
+//            binRowDataPk.write(session.getSource());
             /*
              * [fix bug] : 这里不能直接将包写到前端连接,
-			 * 因为在fieldEofResponse()方法结束后buffer还没写出,
-			 * 所以这里应该将包数据顺序写入buffer(如果buffer满了就写出),然后再将buffer写出
-			 */
+             * 因为在fieldEofResponse()方法结束后buffer还没写出,
+             * 所以这里应该将包数据顺序写入buffer(如果buffer满了就写出),然后再将buffer写出
+             */
             buffer = binRowDataPk.write(buffer, session.getSource(), true);
         } else {
             buffer = session.getSource().writeToBuffer(row, allocBuffer());

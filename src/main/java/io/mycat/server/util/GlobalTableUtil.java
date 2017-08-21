@@ -202,7 +202,7 @@ public class GlobalTableUtil {
                             } else {
                                 LOGGER.debug("columnsList: " + columnsList);
                             }
-//							isInnerColumnCheckFinished = 1;
+//                            isInnerColumnCheckFinished = 1;
                         }
                     }
                 }

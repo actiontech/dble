@@ -50,10 +50,10 @@ public class HandlerTool {
         }
     }
 
-//		public static byte[] getEofBytes(MySQLConnection conn) {
-//			EOFPacket eof = new EOFPacket();
-//			return eof.toByteBuffer(conn.getCharset()).array();
-//		}
+//        public static byte[] getEofBytes(MySQLConnection conn) {
+//            EOFPacket eof = new EOFPacket();
+//            return eof.toByteBuffer(conn.getCharset()).array();
+//        }
 
     public static Field createField(FieldPacket fp) {
         Field field = Field.getFieldItem(fp.name, fp.table, fp.type, fp.charsetIndex, (int) fp.length, fp.decimals,
@@ -138,9 +138,9 @@ public class HandlerTool {
         return new ItemField(field);
     }
 
-		/*
+        /*
          * ------------------------------- helper methods ------------------------
-		 */
+         */
 
     /**
      * 计算下发的聚合函数 1.count(id) 下发count(id) 之后 count(id) = sum[count(id) 0...n];

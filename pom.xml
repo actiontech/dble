@@ -670,6 +670,15 @@
 
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <outputFileFormat>plain</outputFileFormat>
+                    <outputFile>checkstyle-result.out</outputFile>
+                    <configLocation>dble_checkstyle.xml</configLocation>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <reporting>

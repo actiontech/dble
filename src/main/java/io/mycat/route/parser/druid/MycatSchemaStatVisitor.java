@@ -523,7 +523,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         List<List<Condition>> retList = new ArrayList<List<Condition>>();
         //or语句外层的条件:如where condition1 and (condition2 or condition3),condition1就会在外层条件中,因为之前提取
         List<Condition> outSideCondition = new ArrayList<Condition>();
-//		stashOutSideConditions();
+//        stashOutSideConditions();
         outSideCondition.addAll(conditions);
         this.conditions.clear();
         for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
@@ -556,7 +556,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         } else {
             SQLBinaryOpExpr expr = whereUnit.getCanSplitExpr();
             if (expr.getOperator() == SQLBinaryOperator.BooleanOr) {
-//				whereUnit.addSplitedExpr(expr.getRight());
+//                whereUnit.addSplitedExpr(expr.getRight());
                 addExprIfNotFalse(whereUnit, expr.getRight());
                 if (expr.getLeft() instanceof SQLBinaryOpExpr) {
                     whereUnit.setCanSplitExpr((SQLBinaryOpExpr) expr.getLeft());

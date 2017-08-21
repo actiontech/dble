@@ -67,8 +67,8 @@ public class ItemFuncUnsigned extends ItemIntFunc {
     protected BigInteger val_int_from_str() throws Exception {
         /*
          * For a string result, we must first get the string and then convert it
-		 * to a longlong
-		 */
+         * to a longlong
+         */
 
         String res = args.get(0).valStr();
         if (res == null) {

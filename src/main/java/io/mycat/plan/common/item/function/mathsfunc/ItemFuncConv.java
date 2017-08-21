@@ -34,9 +34,9 @@ public class ItemFuncConv extends ItemStrFunc {
         if (args.get(0).fieldType() == FieldTypes.MYSQL_TYPE_BIT) {
             /*
              * Special case: The string representation of BIT doesn't resemble
-			 * the decimal representation, so we shouldn't change it to string
-			 * and then to decimal.
-			 */
+             * the decimal representation, so we shouldn't change it to string
+             * and then to decimal.
+             */
             dec = args.get(0).valInt().longValue();
         } else {
             if (from_base < 0)

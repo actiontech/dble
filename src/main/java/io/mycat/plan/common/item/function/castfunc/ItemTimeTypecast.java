@@ -40,8 +40,8 @@ public class ItemTimeTypecast extends ItemTimeFunc {
         }
         /*
          * For MYSQL_TIMESTAMP_TIME value we can have non-zero day part, which
-		 * we should not lose.
-		 */
+         * we should not lose.
+         */
         if (ltime.time_type != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.datetime_to_time(ltime);
         return false;

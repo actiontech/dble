@@ -41,16 +41,16 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
 
         maybeNull = true;
 
-		/*
+        /*
          * The field type for the result of an Item_date function is defined as
-		 * follows:
-		 * 
-		 * - If first arg is a MYSQL_TYPE_DATETIME result is MYSQL_TYPE_DATETIME
-		 * - If first arg is a MYSQL_TYPE_DATE and the interval type uses hours,
-		 * minutes or seconds then type is MYSQL_TYPE_DATETIME. - Otherwise the
-		 * result is MYSQL_TYPE_STRING (This is because you can't know if the
-		 * string contains a DATE, MYSQL_TIME or DATETIME argument)
-		 */
+         * follows:
+         *
+         * - If first arg is a MYSQL_TYPE_DATETIME result is MYSQL_TYPE_DATETIME
+         * - If first arg is a MYSQL_TYPE_DATE and the interval type uses hours,
+         * minutes or seconds then type is MYSQL_TYPE_DATETIME. - Otherwise the
+         * result is MYSQL_TYPE_STRING (This is because you can't know if the
+         * string contains a DATE, MYSQL_TIME or DATETIME argument)
+         */
         arg0_field_type = args.get(0).fieldType();
         int interval_dec = 0;
         if (int_type == MySqlIntervalUnit.MICROSECOND || int_type == MySqlIntervalUnit.DAY_MICROSECOND
@@ -97,9 +97,9 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
         if (date_sub_interval)
             interval.neg = !interval.neg;
 
-		/*
+        /*
          * Make sure we return proper time_type. It's important for val_str().
-		 */
+         */
         if (cached_field_type == FieldTypes.MYSQL_TYPE_DATE
                 && ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME)
             MyTime.datetime_to_date(ltime);

@@ -354,14 +354,14 @@ public class PlanUtil {
     }
 
 
-//	public static boolean existPartiTable(PlanNode tn) {
-//		boolean existNumParti = false;
-//		for (TableNode table : tn.getReferedTableNodes()) {
-//			if (table.isPartitioned()) {
-//				existNumParti = true;
-//				break;
-//			}
-//		}
-//		return existNumParti;
-//	}
+//    public static boolean existPartiTable(PlanNode tn) {
+//        boolean existNumParti = false;
+//        for (TableNode table : tn.getReferedTableNodes()) {
+//            if (table.isPartitioned()) {
+//                existNumParti = true;
+//                break;
+//            }
+//        }
+//        return existNumParti;
+//    }
 }

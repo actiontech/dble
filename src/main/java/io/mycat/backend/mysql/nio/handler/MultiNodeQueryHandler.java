@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -515,28 +515,28 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 end = results.size();
             }
 
-//			// 对于不需要排序的语句,返回的数据只有rrs.getLimitSize()
-//			if (rrs.getOrderByCols() == null) {
-//				end = results.size();
-//				start = 0;
-//			}
+//            // 对于不需要排序的语句,返回的数据只有rrs.getLimitSize()
+//            if (rrs.getOrderByCols() == null) {
+//                end = results.size();
+//                start = 0;
+//            }
             if (end > results.size()) {
                 end = results.size();
             }
 
-//			for (int i = start; i < end; i++) {
-//				RowDataPacket row = results.get(i);
-//				if( prepared ) {
-//					BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-//					binRowDataPk.read(fieldPackets, row);
-//					binRowDataPk.packetId = ++packetId;
-//					//binRowDataPk.write(source);
-//					buffer = binRowDataPk.write(buffer, session.getSource(), true);
-//				} else {
-//					row.packetId = ++packetId;
-//					buffer = row.write(buffer, source, true);
-//				}
-//			}
+//            for (int i = start; i < end; i++) {
+//                RowDataPacket row = results.get(i);
+//                if( prepared ) {
+//                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+//                    binRowDataPk.read(fieldPackets, row);
+//                    binRowDataPk.packetId = ++packetId;
+//                    //binRowDataPk.write(source);
+//                    buffer = binRowDataPk.write(buffer, session.getSource(), true);
+//                } else {
+//                    row.packetId = ++packetId;
+//                    buffer = row.write(buffer, source, true);
+//                }
+//            }
 
             if (prepared) {
                 for (int i = start; i < end; i++) {

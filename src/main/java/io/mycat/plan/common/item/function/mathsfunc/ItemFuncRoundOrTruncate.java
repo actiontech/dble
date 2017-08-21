@@ -87,7 +87,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
             hybrid_type = ItemResult.INT_RESULT;
             decimals = 0;
 
-		/* fall through */
+        /* fall through */
         } else if (i == ItemResult.DECIMAL_RESULT) {
             hybrid_type = ItemResult.DECIMAL_RESULT;
             decimals_to_set = Math.min(DECIMAL_MAX_SCALE, decimals_to_set);

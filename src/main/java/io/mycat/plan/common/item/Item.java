@@ -328,14 +328,14 @@ public abstract class Item {
         initMakeField(tmpFp, fieldType());
     }
 
-	/*
+    /*
      * This implementation can lose str_value content, so if the Item uses
-	 * str_value to store something, it should reimplement it's
-	 * ::save_in_field() as Item_string, for example, does.
-	 * 
-	 * Note: all Item_XXX::val_str(str) methods must NOT rely on the fact that
-	 * str != str_value. For example, see fix for bug #44743.
-	 */
+     * str_value to store something, it should reimplement it's
+     * ::save_in_field() as Item_string, for example, does.
+     *
+     * Note: all Item_XXX::val_str(str) methods must NOT rely on the fact that
+     * str != str_value. For example, see fix for bug #44743.
+     */
 
     /**
      * Save a temporal value in packed longlong format into a Field. Used in
@@ -686,7 +686,7 @@ public abstract class Item {
         return (nullValue = true); // Impossible result type
     }
 
-	/*-----------------------------end helper functions----------------*/
+    /*-----------------------------end helper functions----------------*/
 
     /**
      * -- not so important functions --
@@ -728,7 +728,7 @@ public abstract class Item {
         if (MyTime.datetime_to_timeval(ltime,
                 tm)) { /*
                          * Value is out of the supported range
-						 */
+                         */
             tm.tv_sec = tm.tv_usec = 0;
             return false;
         }

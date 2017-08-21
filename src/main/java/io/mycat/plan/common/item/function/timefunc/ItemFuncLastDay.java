@@ -27,8 +27,8 @@ public class ItemFuncLastDay extends ItemDateFunc {
         if (ltime.month == 0) {
             /*
              * Cannot calculate last day for zero month. Let's print a warning
-			 * and return NULL.
-			 */
+             * and return NULL.
+             */
             ltime.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
             return (nullValue = true);
         }

@@ -47,7 +47,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
 
         ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
 
-		/* Check for integer overflows */
+        /* Check for integer overflows */
         if (hour < 0) {
             ltime.neg = true;
         }

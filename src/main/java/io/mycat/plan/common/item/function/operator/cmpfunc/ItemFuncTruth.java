@@ -31,8 +31,8 @@ public abstract class ItemFuncTruth extends ItemBoolFunc {
         if (args.get(0).isNull()) {
             /*
              * NULL val IS {TRUE, FALSE} --> FALSE NULL val IS NOT {TRUE, FALSE}
-			 * --> TRUE
-			 */
+             * --> TRUE
+             */
             return (!affirmative);
         }
 
@@ -41,7 +41,7 @@ public abstract class ItemFuncTruth extends ItemBoolFunc {
             return (val == value);
         }
 
-		/* {TRUE, FALSE} val IS NOT {TRUE, FALSE} value */
+        /* {TRUE, FALSE} val IS NOT {TRUE, FALSE} value */
         return (val != value);
     }
 

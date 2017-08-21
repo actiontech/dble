@@ -140,7 +140,7 @@ public final class SystemConfig {
     private int useGlobleTableCheck = 1;    // 全局表一致性检查开关
     private long glableTableCheckPeriod;
 
-	 /* 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
+     /* 使用 Off Heap For Merge/Order/Group/Limit计算相关参数
      */
     /**
      * 是否启用Off Heap for Merge  1-启用，0-不启用

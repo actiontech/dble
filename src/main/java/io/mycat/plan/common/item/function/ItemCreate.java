@@ -242,7 +242,7 @@ public class ItemCreate {
         nativFuncs.put("UTC_TIME", new ItemFuncCurtimeUtc(null));
         nativFuncs.put("UTC_TIMESTAMP", new ItemFuncNowUtc(null));
         nativFuncs.put("UTC_DATE", new ItemFuncCurdateUtc(null));
-//		nativFuncs.put("VERSION", new ItemFuncVersion());
+//        nativFuncs.put("VERSION", new ItemFuncVersion());
         nativFuncs.put("WEEK", new ItemFuncWeek(null));
         nativFuncs.put("WEEKDAY", new ItemFuncWeekday(null));
         nativFuncs.put("WEEKOFYEAR", new ItemFuncWeekofyear(null));

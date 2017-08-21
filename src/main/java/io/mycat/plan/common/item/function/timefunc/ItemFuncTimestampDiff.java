@@ -85,12 +85,12 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
                 microsecond_end = ltime2.second_part;
             }
 
-			/* calc years */
+            /* calc years */
             years = year_end - year_beg;
             if (month_end < month_beg || (month_end == month_beg && day_end < day_beg))
                 years -= 1;
 
-			/* calc months */
+            /* calc months */
             months = 12 * years;
             if (month_end < month_beg || (month_end == month_beg && day_end < day_beg))
                 months += 12 - (month_beg - month_end);
@@ -123,8 +123,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
         if (int_type == MySqlIntervalUnit.MICROSECOND)
             /*
              * In MySQL difference between any two valid datetime values in
-			 * microseconds fits into longlong.
-			 */
+             * microseconds fits into longlong.
+             */
             return BigInteger.valueOf((seconds * 1000000L + microseconds) * neg);
         else {
             nullValue = true;

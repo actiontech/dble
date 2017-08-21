@@ -47,8 +47,8 @@ public class ItemFuncCase extends ItemFunc {
         int nagg;
         /*
          * Aggregate all THEN and ELSE expression types and collations when
-		 * string result
-		 */
+         * string result
+         */
 
         for (nagg = 0; nagg < ncases / 2; nagg++)
             agg.add(args.get(nagg * 2 + 1));

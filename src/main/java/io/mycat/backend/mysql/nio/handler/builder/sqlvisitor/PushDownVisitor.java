@@ -262,7 +262,7 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
 
-	/* -------------------------- help method ------------------------ */
+    /* -------------------------- help method ------------------------ */
 
     /* 判断node是否需要groupby */
     public static boolean nodeHasGroupBy(PlanNode node) {

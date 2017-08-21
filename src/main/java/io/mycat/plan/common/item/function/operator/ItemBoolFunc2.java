@@ -24,17 +24,17 @@ public abstract class ItemBoolFunc2 extends ItemBoolFunc {
     public void fixLengthAndDec() {
         maxLength = 1; // Function returns 0 or 1
 
-		/*
+        /*
          * As some compare functions are generated after sql_yacc, we have to
-		 * check for out of memory conditions here
-		 */
+         * check for out of memory conditions here
+         */
         if (args.get(0) == null || args.get(1) == null)
             return;
 
-		/*
+        /*
          * See agg_item_charsets() in item.cc for comments on character set and
-		 * collation aggregation.
-		 */
+         * collation aggregation.
+         */
 
         args.get(0).cmpContext = args.get(1).cmpContext = MySQLcom.item_cmp_type(args.get(0).resultType(),
                 args.get(1).resultType());

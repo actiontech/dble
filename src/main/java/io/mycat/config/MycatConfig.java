@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -359,11 +359,11 @@ public class MycatConfig {
             this._schemas = this.schemas;
             this._firewall = this.firewall;
             this._erRelations = this.erRelations;
-//			comment BY huqing.yan and will reopen later
-//			if (!isLoadAll) {
-//				DsDiff diff = dsdiff(newDataHosts);
-//				diff.apply();
-//			}
+//            comment BY huqing.yan and will reopen later
+//            if (!isLoadAll) {
+//                DsDiff diff = dsdiff(newDataHosts);
+//                diff.apply();
+//            }
             // new 处理
             // 1、启动新的数据源心跳
             // 2、执行新的配置

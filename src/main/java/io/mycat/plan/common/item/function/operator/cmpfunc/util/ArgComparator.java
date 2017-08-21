@@ -20,7 +20,7 @@ public class ArgComparator {
     private argCmpFunc func; // compare function name,在mysql源代码中为函数指针
     double precision = 0.0;
     /* Fields used in DATE/DATETIME comparison. */
-//	FieldTypes atype, btype; // Types of a and b items
+//    FieldTypes atype, btype; // Types of a and b items
     boolean is_nulls_eq; // TRUE <=> compare for the EQUAL_FUNC
     boolean setNull = true; // TRUE <=> set owner->null_value
     // when one of arguments is NULL.
@@ -139,8 +139,8 @@ public class ArgComparator {
         a = a1;
         b = a2;
         if (canCompareAsDates(a, b, constvalue)) {
-//			atype = a.fieldType();
-//			btype = b.fieldType();
+//            atype = a.fieldType();
+//            btype = b.fieldType();
             is_nulls_eq = isOwnerEqualFunc();
             func = new CompareDatetime();
             getValueAFunc = new GetDatetimeValue();
@@ -183,8 +183,8 @@ public class ArgComparator {
         owner = ownerArg;
         a = a1;
         b = a2;
-//		atype = a.fieldType();
-//		btype = b.fieldType();
+//        atype = a.fieldType();
+//        btype = b.fieldType();
         is_nulls_eq = false;
         func = new CompareDatetime();
         getValueAFunc = new GetDatetimeValue();
@@ -223,13 +223,13 @@ public class ArgComparator {
             {
                 return true;
             } else if (b.resultType() == ItemResult.STRING_RESULT) {// date[time]
-                // +
+                //
                 // string
                 return !getDateFromConst(a, b, constvalue);
             } else
                 return false;
         } else if (b.isTemporalWithDate() && a.resultType() == ItemResult.STRING_RESULT) // string
-        // +
+        //
         // date[time]
         {
             return !getDateFromConst(b, a, constvalue);
@@ -375,17 +375,17 @@ public class ArgComparator {
         public int compare(ArgComparator ac) {
             /*
              * Note, we cannot do this: DBUG_ASSERT((*a)->field_type() ==
-			 * MYSQL_TYPE_TIME); DBUG_ASSERT((*b)->field_type() ==
-			 * MYSQL_TYPE_TIME);
-			 * 
-			 * SELECT col_time_key FROM t1 WHERE col_time_key != UTC_DATE() AND
-			 * col_time_key = MAKEDATE(43, -2852);
-			 * 
-			 * is rewritten to:
-			 * 
-			 * SELECT col_time_key FROM t1 WHERE MAKEDATE(43, -2852) !=
-			 * UTC_DATE() AND col_time_key = MAKEDATE(43, -2852);
-			 */
+             * MYSQL_TYPE_TIME); DBUG_ASSERT((*b)->field_type() ==
+             * MYSQL_TYPE_TIME);
+             *
+             * SELECT col_time_key FROM t1 WHERE col_time_key != UTC_DATE() AND
+             * col_time_key = MAKEDATE(43, -2852);
+             *
+             * is rewritten to:
+             *
+             * SELECT col_time_key FROM t1 WHERE MAKEDATE(43, -2852) !=
+             * UTC_DATE() AND col_time_key = MAKEDATE(43, -2852);
+             */
             long val1 = ac.a.valDateTemporal();
             if (!ac.a.isNull()) {
                 long val2 = ac.b.valDateTemporal();
@@ -500,9 +500,9 @@ public class ArgComparator {
         public int compare(ArgComparator ac) {
             /*
              * Fix yet another manifestation of Bug#2338. 'Volatile' will
-			 * instruct gcc to flush double values out of 80-bit Intel FPU
-			 * registers before performing the comparison.
-			 */
+             * instruct gcc to flush double values out of 80-bit Intel FPU
+             * registers before performing the comparison.
+             */
             BigDecimal val1, val2;
             val1 = ac.a.valReal();
             if (!ac.a.isNull()) {
@@ -559,7 +559,7 @@ public class ArgComparator {
             BoolPtr bIsNull = new BoolPtr(false);
             long a_value, b_value;
 
-			/* Get DATE/DATETIME/TIME value of the 'a' item. */
+            /* Get DATE/DATETIME/TIME value of the 'a' item. */
             a_value = ac.getValueAFunc.get(ac.a, ac.b, aIsNull);
             if (!ac.is_nulls_eq && aIsNull.get()) {
                 if (ac.setNull && ac.owner != null)
@@ -567,7 +567,7 @@ public class ArgComparator {
                 return -1;
             }
 
-			/* Get DATE/DATETIME/TIME value of the 'b' item. */
+            /* Get DATE/DATETIME/TIME value of the 'b' item. */
             b_value = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
                 if (ac.setNull)
@@ -575,11 +575,11 @@ public class ArgComparator {
                 return ac.is_nulls_eq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
             }
 
-			/* Here we have two not-NULL values. */
+            /* Here we have two not-NULL values. */
             if (ac.setNull)
                 ac.owner.nullValue = (false);
 
-			/* Compare values. */
+            /* Compare values. */
             if (ac.is_nulls_eq)
                 return a_value == (b_value) ? 1 : 0;
             return a_value < b_value ? -1 : (a_value > b_value ? 1 : 0);

@@ -116,9 +116,9 @@ public class TableNode extends PlanNode {
         return this.schema;
     }
 
-//	public String getFullName() {
-//		return String.format("`%s`.`%s`", schema, tableName);
-//	}
+//    public String getFullName() {
+//        return String.format("`%s`.`%s`", schema, tableName);
+//    }
 
     @Override
     public int getHeight() {

@@ -65,19 +65,19 @@ public class LevelDBPool implements CachePool {
     @Override
     public CacheStatic getCacheStatic() {
 
-		/*
+        /*
         int i=0;
-		try {
-		 // DBIterator iterator = cache.iterator();	
-		  for(cache.iterator().seekToFirst(); cache.iterator().hasNext(); cache.iterator().next()) {
-			  i++;
-		  }
-		  cache.iterator().close();
-		} catch (Exception e) {
-			  // Make sure you close the iterator to avoid resource leaks.			  
-		}		
-		//long[] sizes = cache.getApproximateSizes(new Range(bytes("TESTDB"), bytes("TESTDC")));
-		 */
+        try {
+         // DBIterator iterator = cache.iterator();    
+          for(cache.iterator().seekToFirst(); cache.iterator().hasNext(); cache.iterator().next()) {
+              i++;
+          }
+          cache.iterator().close();
+        } catch (Exception e) {
+              // Make sure you close the iterator to avoid resource leaks.             
+        }        
+        //long[] sizes = cache.getApproximateSizes(new Range(bytes("TESTDB"), bytes("TESTDC")));
+         */
         //cacheStati.setItemSize(cache.getSize());//sizes[0]);//需要修改leveldb的代码
         cacheStati.setItemSize(cacheStati.getPutTimes());
         return cacheStati;

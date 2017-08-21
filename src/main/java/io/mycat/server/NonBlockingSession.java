@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -230,10 +230,10 @@ public class NonBlockingSession implements Session {
     }
 
     private void executeMultiSelect(RouteResultset rrs) {
-//    	if (this.source.isTxInterrupted()) {
-//			sendErrorPacket(ErrorCode.ER_YES, "Transaction error, need to rollback.");
-//			return;
-//		}
+//        if (this.source.isTxInterrupted()) {
+//            sendErrorPacket(ErrorCode.ER_YES, "Transaction error, need to rollback.");
+//            return;
+//        }
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
         MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharsetIndex());
         visitor.visit(ast);
@@ -242,14 +242,14 @@ public class NonBlockingSession implements Session {
         node.setUpFields();
         checkTablesPrivilege(node, ast);
         node = MyOptimizer.optimize(node);
-//		if (LOGGER.isInfoEnabled()) {
-//			long currentTime = System.nanoTime();
-//			StringBuilder builder = new StringBuilder();
-//			builder.append(toString()).append("| sql optimize's elapsedTime is ")
-//					.append(currentTime - getExecutedNanos());
-//			logger.info(builder.toString());
-//			setExecutedNanos(currentTime);
-//		}
+//        if (LOGGER.isInfoEnabled()) {
+//            long currentTime = System.nanoTime();
+//            StringBuilder builder = new StringBuilder();
+//            builder.append(toString()).append("| sql optimize's elapsedTime is ")
+//                    .append(currentTime - getExecutedNanos());
+//            logger.info(builder.toString());
+//            setExecutedNanos(currentTime);
+//        }
         execute(node);
     }
 
@@ -269,16 +269,16 @@ public class NonBlockingSession implements Session {
             builder.build(false);//no next
         } catch (SQLSyntaxErrorException e) {
             LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//			source.setCurrentSQL(null);
+//            source.setCurrentSQL(null);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
             LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//			source.setCurrentSQL(null);
+//            source.setCurrentSQL(null);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (Exception e) {
             LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//			source.setCurrentSQL(null);
+//            source.setCurrentSQL(null);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
@@ -289,18 +289,18 @@ public class NonBlockingSession implements Session {
         if (inTransactionKilled) {
             //TODO:YHQ
             // kill query is asynchronized, wait for last query is killed.
-//			for (BackendConnection conn : target.values()) {
-//				while (conn.isRunning()) {
-//					LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
-//				}
-//			}
+//            for (BackendConnection conn : target.values()) {
+//                while (conn.isRunning()) {
+//                    LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+//                }
+//            }
             inTransactionKilled = false;
         }
     }
 
     public void onQueryError(byte[] message) {
-//		source.unlockTable();
-//		source.getIsRunning().set(false);
+//        source.unlockTable();
+//        source.getIsRunning().set(false);
         if (outputHandler != null)
             outputHandler.backendConnError(message);
     }
@@ -476,8 +476,8 @@ public class NonBlockingSession implements Session {
                 if (c.isAutocommit()) {
                     c.release();
                 } else if (needRollback) {
-//					c.setResponseHandler(new RollbackReleaseHandler());
-//					c.rollback();
+//                    c.setResponseHandler(new RollbackReleaseHandler());
+//                    c.rollback();
                     c.quit();
                 } else {
                     c.release();
@@ -556,30 +556,30 @@ public class NonBlockingSession implements Session {
         return false;
     }
 
-//	public boolean tryExistsCon(final BackendConnection conn,
-//			RouteResultsetNode node) {
+//    public boolean tryExistsCon(final BackendConnection conn,
+//            RouteResultsetNode node) {
 //
-//		if (conn == null) {
-//			return false;
-//		}
-//		if (!conn.isFromSlaveDB()
-//				|| node.canRunnINReadDB(getSource().isAutocommit())) {
-//			if (LOGGER.isDebugEnabled()) {
-//				LOGGER.debug("found connections in session to use " + conn
-//						+ " for " + node);
-//			}
-//			conn.setAttachment(node);
-//			return true;
-//		} else {
-//			// slavedb connection and can't use anymore ,release it
-//			if (LOGGER.isDebugEnabled()) {
-//				LOGGER.debug("release slave connection,can't be used in trasaction  "
-//						+ conn + " for " + node);
-//			}
-//			releaseConnection(node, LOGGER.isDebugEnabled(), false);
-//		}
-//		return false;
-//	}
+//        if (conn == null) {
+//            return false;
+//        }
+//        if (!conn.isFromSlaveDB()
+//                || node.canRunnINReadDB(getSource().isAutocommit())) {
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("found connections in session to use " + conn
+//                        + " for " + node);
+//            }
+//            conn.setAttachment(node);
+//            return true;
+//        } else {
+//            // slavedb connection and can't use anymore ,release it
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("release slave connection,can't be used in trasaction  "
+//                        + conn + " for " + node);
+//            }
+//            releaseConnection(node, LOGGER.isDebugEnabled(), false);
+//        }
+//        return false;
+//    }
 
     protected void kill() {
         boolean hooked = false;

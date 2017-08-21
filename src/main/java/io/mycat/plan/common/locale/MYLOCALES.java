@@ -52,7 +52,7 @@ public class MYLOCALES {
             my_locale_typelib_day_names_en_US, my_locale_typelib_ab_day_names_en_US, 9, 9,
             '.', /*
                      * decimal point en_US
-					 */
+                     */
             ',', /* thousands_sep en_US */
             new String(new byte[]{3, 3}), /* grouping en_US */
             global_errmsgs[err_msgs_index.en_US.ordinal()]);

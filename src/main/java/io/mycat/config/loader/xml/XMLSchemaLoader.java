@@ -254,7 +254,7 @@ public class XMLSchemaLoader implements SchemaLoader {
     /**
      * 处理动态日期表, 支持 YYYYMM、YYYYMMDD 两种格式
      * <p>
-     * YYYYMM格式： 	  yyyymm,2015,01,60
+     * YYYYMM格式：       yyyymm,2015,01,60
      * YYYYMMDD格式:  yyyymmdd,2015,01,10,50
      *
      * @param tableNameElement

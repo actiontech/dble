@@ -23,13 +23,13 @@
  */
 package io.mycat.config.loader;
 
-import java.util.Map;
-import java.util.Set;
-
 import io.mycat.config.model.DataHostConfig;
 import io.mycat.config.model.DataNodeConfig;
 import io.mycat.config.model.ERTable;
 import io.mycat.config.model.SchemaConfig;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author mycat

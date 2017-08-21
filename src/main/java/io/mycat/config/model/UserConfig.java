@@ -31,31 +31,31 @@ import java.util.Set;
 public class UserConfig {
 
     private String name;
-    private String password;						//明文
-    private String encryptPassword; 				//密文
-    private int benchmark = 0;						// 负载限制, 默认0表示不限制
-    private UserPrivilegesConfig privilegesConfig;	//SQL表级的增删改查权限控制
-    
+    private String password;                        //明文
+    private String encryptPassword;                //密文
+    private int benchmark = 0;                        // 负载限制, 默认0表示不限制
+    private UserPrivilegesConfig privilegesConfig;    //SQL表级的增删改查权限控制
+
     private boolean readOnly = false;
     private boolean manager = false;
 
     public boolean isManager() {
-		return manager;
+        return manager;
     }
 
     public void setManager(boolean manager) {
-		this.manager = manager;
+        this.manager = manager;
     }
-    
+
     public boolean isReadOnly() {
-		return readOnly;
-	}
+        return readOnly;
+    }
 
-	public void setReadOnly(boolean readOnly) {
-		this.readOnly = readOnly;
-	}
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
 
-	private Set<String> schemas;
+    private Set<String> schemas;
 
     public String getName() {
         return name;
@@ -73,41 +73,40 @@ public class UserConfig {
         this.password = password;
     }
 
-	public int getBenchmark() {
-		return benchmark;
-	}
+    public int getBenchmark() {
+        return benchmark;
+    }
 
-	public void setBenchmark(int benchmark) {
-		this.benchmark = benchmark;
-	}
+    public void setBenchmark(int benchmark) {
+        this.benchmark = benchmark;
+    }
 
-	public Set<String> getSchemas() {
+    public Set<String> getSchemas() {
         return schemas;
     }
 
-	public void setEncryptPassword(String encryptPassword) {
-		this.encryptPassword = encryptPassword;
-	}
+    public void setEncryptPassword(String encryptPassword) {
+        this.encryptPassword = encryptPassword;
+    }
 
-	public void setSchemas(Set<String> schemas) {
+    public void setSchemas(Set<String> schemas) {
         this.schemas = schemas;
     }
-	
-	public UserPrivilegesConfig getPrivilegesConfig() {
-		return privilegesConfig;
-	}
-	
-	public void setPrivilegesConfig(UserPrivilegesConfig privilegesConfig) {
-		this.privilegesConfig = privilegesConfig;
-	}
 
-	@Override
-	public String toString() {
-		return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword="
-		    + this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager
-		    + ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
-	}
-	
-	
+    public UserPrivilegesConfig getPrivilegesConfig() {
+        return privilegesConfig;
+    }
+
+    public void setPrivilegesConfig(UserPrivilegesConfig privilegesConfig) {
+        this.privilegesConfig = privilegesConfig;
+    }
+
+    @Override
+    public String toString() {
+        return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword="
+                + this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager
+                + ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
+    }
+
 
 }

@@ -7,7 +7,7 @@ public class Histogram {
     private final long[] ranges;
     private final AtomicLongArray rangeCounters;
 
-    public Histogram(long... ranges){
+    public Histogram(long... ranges) {
         this.ranges = ranges;
         this.rangeCounters = new AtomicLongArray(ranges.length);
     }

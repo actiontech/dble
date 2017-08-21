@@ -11,7 +11,7 @@ package io.mycat.sqlengine.mpp;
  * 将数据放到对应的datanode的sorter，
  * 进行排序.
  */
-public final  class PackWraper {
+public final class PackWraper {
     public byte[] rowData;
     public String dataNode;
 }

@@ -10,11 +10,12 @@ import java.sql.SQLSyntaxErrorException;
 
 /**
  * 路由策略接口
- * @author wang.dw
  *
+ * @author wang.dw
  */
 public interface RouteStrategy {
-	public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
-	RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, String charset, ServerConnection sc, LayerCachePool cachePool)
-			throws SQLException;
+    public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
+
+    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, String charset, ServerConnection sc, LayerCachePool cachePool)
+            throws SQLException;
 }

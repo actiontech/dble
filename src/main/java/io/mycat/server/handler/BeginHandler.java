@@ -28,13 +28,13 @@ import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 
 public final class BeginHandler {
-	public static void handle(String stmt, ServerConnection c) {
-		if (c.isTxstart() || !c.isAutocommit()) {
-			c.beginInTx(stmt);
-		} else {
-			c.setTxstart(true);
-			TxnLogHelper.putTxnLog(c, stmt);
-			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-		}
-	}
+    public static void handle(String stmt, ServerConnection c) {
+        if (c.isTxstart() || !c.isAutocommit()) {
+            c.beginInTx(stmt);
+        } else {
+            c.setTxstart(true);
+            TxnLogHelper.putTxnLog(c, stmt);
+            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+        }
+    }
 }

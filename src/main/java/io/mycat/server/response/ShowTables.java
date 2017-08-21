@@ -37,206 +37,206 @@ import java.util.regex.Pattern;
  * @author yanglixue
  */
 public class ShowTables {
-	public static void response(ServerConnection c, String stmt) {
-		ShowCreateStmtInfo info;
-		try {
-			info = new ShowCreateStmtInfo(stmt);
-		} catch (Exception e) {
-			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
-			return;
-		}
-		String showSchema = info.getSchema();
-		if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-			showSchema = showSchema.toLowerCase();
-		}
-		String cSchema = showSchema == null ? c.getSchema() : showSchema;
-		if (cSchema == null) {
-			c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
-			return;
-		}
-		SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(cSchema);
-		if (schema == null) {
-			c.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
-			return;
-		}
+    public static void response(ServerConnection c, String stmt) {
+        ShowCreateStmtInfo info;
+        try {
+            info = new ShowCreateStmtInfo(stmt);
+        } catch (Exception e) {
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+            return;
+        }
+        String showSchema = info.getSchema();
+        if (showSchema != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+            showSchema = showSchema.toLowerCase();
+        }
+        String cSchema = showSchema == null ? c.getSchema() : showSchema;
+        if (cSchema == null) {
+            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            return;
+        }
+        SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(cSchema);
+        if (schema == null) {
+            c.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
+            return;
+        }
 
-		MycatConfig conf = MycatServer.getInstance().getConfig();
-		UserConfig user = conf.getUsers().get(c.getUser());
-		if (user == null || !user.getSchemas().contains(cSchema)) {
-			c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
-			return;
-		}
-		//不分库的schema，show tables从后端 mysql中查
-		String node = schema.getDataNode();
-		if (!Strings.isNullOrEmpty(node)) {
-			try {
-				parserAndExecuteShowTables(c, stmt, node, info);
-			} catch (Exception e) {
-				c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
-			}
-		}else {
-			responseDirect(c, cSchema, info);
-		}
-	}
+        MycatConfig conf = MycatServer.getInstance().getConfig();
+        UserConfig user = conf.getUsers().get(c.getUser());
+        if (user == null || !user.getSchemas().contains(cSchema)) {
+            c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            return;
+        }
+        //不分库的schema，show tables从后端 mysql中查
+        String node = schema.getDataNode();
+        if (!Strings.isNullOrEmpty(node)) {
+            try {
+                parserAndExecuteShowTables(c, stmt, node, info);
+            } catch (Exception e) {
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+            }
+        } else {
+            responseDirect(c, cSchema, info);
+        }
+    }
 
-	private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowCreateStmtInfo info) throws Exception {
-		RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
-		if (info.getSchema() != null) {
-			StringBuilder sql = new StringBuilder();
-			sql.append("SHOW ");
-			if (info.isFull()) {
-				sql.append("FULL ");
-			}
-			sql.append("TABLES ");
-			if (info.getCond() != null) {
-				sql.append(info.getCond());
-			}
-			rrs.setStatement(sql.toString());
-		}
-		RouterUtil.routeToSingleNode(rrs, node);
-		ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, c.getSession2(), info);
-		showTablesHandler.execute();
-	}
+    private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowCreateStmtInfo info) throws Exception {
+        RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
+        if (info.getSchema() != null) {
+            StringBuilder sql = new StringBuilder();
+            sql.append("SHOW ");
+            if (info.isFull()) {
+                sql.append("FULL ");
+            }
+            sql.append("TABLES ");
+            if (info.getCond() != null) {
+                sql.append(info.getCond());
+            }
+            rrs.setStatement(sql.toString());
+        }
+        RouterUtil.routeToSingleNode(rrs, node);
+        ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, c.getSession2(), info);
+        showTablesHandler.execute();
+    }
 
-	private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
-		ByteBuffer buffer = c.allocate();
-		Map<String, String> tableMap = getTableSet(cSchema, info);
-		if (info.isFull()) {
-			List<FieldPacket> fieldPackets = new ArrayList<>(2);
-			byte packetId = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
-			if (info.getWhere() != null) {
-				MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharsetIndex());
-				info.getWhereExpr().accept(mev);
-				List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
-				Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE,
-						c.getCharset());
-				packetId = writeFullTablesRow(buffer, c, tableMap, packetId, whereItem, sourceFields);
-			} else {
-				packetId = writeFullTablesRow(buffer, c, tableMap, packetId, null, null);
-			}
-			writeRowEof(buffer, c, packetId);
-		} else {
-			byte packetId = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
-			writeRowEof(buffer, c, packetId);
-		}
-	}
+    private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
+        ByteBuffer buffer = c.allocate();
+        Map<String, String> tableMap = getTableSet(cSchema, info);
+        if (info.isFull()) {
+            List<FieldPacket> fieldPackets = new ArrayList<>(2);
+            byte packetId = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
+            if (info.getWhere() != null) {
+                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharsetIndex());
+                info.getWhereExpr().accept(mev);
+                List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
+                Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE,
+                        c.getCharset());
+                packetId = writeFullTablesRow(buffer, c, tableMap, packetId, whereItem, sourceFields);
+            } else {
+                packetId = writeFullTablesRow(buffer, c, tableMap, packetId, null, null);
+            }
+            writeRowEof(buffer, c, packetId);
+        } else {
+            byte packetId = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
+            writeRowEof(buffer, c, packetId);
+        }
+    }
 
-	public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
-		int FIELD_COUNT = 2;
-		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-		EOFPacket eof = new EOFPacket();
-		int i = 0;
-		byte packetId = 0;
-		header.packetId = ++packetId;
-		fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
-		fields[i].packetId = ++packetId;
-		fieldPackets.add(fields[i]);
-		fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i + 1].packetId = ++packetId;
-		fieldPackets.add(fields[i + 1]);
-		eof.packetId = ++packetId;
-		// write header
-		buffer = header.write(buffer, c, true);
-		// write fields
-		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c, true);
-		}
-		eof.write(buffer, c, true);
-		return packetId;
-	}
+    public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
+        int FIELD_COUNT = 2;
+        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+        FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+        EOFPacket eof = new EOFPacket();
+        int i = 0;
+        byte packetId = 0;
+        header.packetId = ++packetId;
+        fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
+        fields[i].packetId = ++packetId;
+        fieldPackets.add(fields[i]);
+        fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i + 1].packetId = ++packetId;
+        fieldPackets.add(fields[i + 1]);
+        eof.packetId = ++packetId;
+        // write header
+        buffer = header.write(buffer, c, true);
+        // write fields
+        for (FieldPacket field : fields) {
+            buffer = field.write(buffer, c, true);
+        }
+        eof.write(buffer, c, true);
+        return packetId;
+    }
 
-	public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
-		for (Map.Entry<String, String> entry: tableMap.entrySet()) {
-			RowDataPacket row = new RowDataPacket(2);
-			row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset()));
-			row.add(StringUtil.encode(entry.getValue(), c.getCharset()));
-			if (whereItem != null) {
-				HandlerTool.initFields(sourceFields, row.fieldValues);
-				/* 根据where条件进行过滤 */
-				if (whereItem.valBool()) {
-					row.packetId = ++packetId;
-					buffer = row.write(buffer, c, true);
-				}
-			}else{
-				row.packetId = ++packetId;
-				buffer = row.write(buffer, c, true);
-			}
-		}
-		return packetId;
-	}
+    public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
+        for (Map.Entry<String, String> entry : tableMap.entrySet()) {
+            RowDataPacket row = new RowDataPacket(2);
+            row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset()));
+            row.add(StringUtil.encode(entry.getValue(), c.getCharset()));
+            if (whereItem != null) {
+                HandlerTool.initFields(sourceFields, row.fieldValues);
+                /* 根据where条件进行过滤 */
+                if (whereItem.valBool()) {
+                    row.packetId = ++packetId;
+                    buffer = row.write(buffer, c, true);
+                }
+            } else {
+                row.packetId = ++packetId;
+                buffer = row.write(buffer, c, true);
+            }
+        }
+        return packetId;
+    }
 
-	public static byte writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
-		int FIELD_COUNT = 1;
-		ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-		FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-		EOFPacket eof = new EOFPacket();
-		int i = 0;
-		byte packetId = 0;
-		header.packetId = ++packetId;
-		fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
-		fields[i].packetId = ++packetId;
-		eof.packetId = ++packetId;
-		// write header
-		buffer = header.write(buffer, c, true);
-		// write fields
-		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c, true);
-		}
-		// write eof
-		eof.write(buffer, c, true);
-		for (String name : tableMap.keySet()) {
-			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-			row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c, true);
-		}
-		return packetId;
-	}
+    public static byte writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
+        int FIELD_COUNT = 1;
+        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+        FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+        EOFPacket eof = new EOFPacket();
+        int i = 0;
+        byte packetId = 0;
+        header.packetId = ++packetId;
+        fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
+        fields[i].packetId = ++packetId;
+        eof.packetId = ++packetId;
+        // write header
+        buffer = header.write(buffer, c, true);
+        // write fields
+        for (FieldPacket field : fields) {
+            buffer = field.write(buffer, c, true);
+        }
+        // write eof
+        eof.write(buffer, c, true);
+        for (String name : tableMap.keySet()) {
+            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+            row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
+            row.packetId = ++packetId;
+            buffer = row.write(buffer, c, true);
+        }
+        return packetId;
+    }
 
-	private static void writeRowEof(ByteBuffer buffer, ServerConnection c, byte packetId) {
+    private static void writeRowEof(ByteBuffer buffer, ServerConnection c, byte packetId) {
 
-		// write last eof
-		EOFPacket lastEof = new EOFPacket();
-		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c, true);
+        // write last eof
+        EOFPacket lastEof = new EOFPacket();
+        lastEof.packetId = ++packetId;
+        buffer = lastEof.write(buffer, c, true);
 
-		// post write
-		c.write(buffer);
-	}
+        // post write
+        c.write(buffer);
+    }
 
-	public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
-		//在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
-		SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
-		if (schemata == null) {
-			return new HashMap<>();
-		}
-		Map meta = schemata.getTableMetas();
-		TreeMap<String, String> tableMap = new TreeMap<>();
-		Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
-		if (null != info.getLike()) {
-			String p = "^" + info.getLike().replaceAll("%", ".*");
-			Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
-			Matcher maLike;
+    public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
+        //在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
+        SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
+        if (schemata == null) {
+            return new HashMap<>();
+        }
+        Map meta = schemata.getTableMetas();
+        TreeMap<String, String> tableMap = new TreeMap<>();
+        Map<String, SchemaConfig> schemas = MycatServer.getInstance().getConfig().getSchemas();
+        if (null != info.getLike()) {
+            String p = "^" + info.getLike().replaceAll("%", ".*");
+            Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
+            Matcher maLike;
 
-			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
-				String tbName = tbConfig.getName();
-				maLike = pattern.matcher(tbName);
-				if (maLike.matches() && meta.get(tbName) != null) {
-					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
-					tableMap.put(tbName, tbType);
-				}
-			}
-		}else {
-			for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
-				String tbName = tbConfig.getName();
-				if (meta.get(tbName) != null) {
-					String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
-					tableMap.put(tbName, tbType);
-				}
-			}
-		}
-		return tableMap;
-	}
+            for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+                String tbName = tbConfig.getName();
+                maLike = pattern.matcher(tbName);
+                if (maLike.matches() && meta.get(tbName) != null) {
+                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    tableMap.put(tbName, tbType);
+                }
+            }
+        } else {
+            for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+                String tbName = tbConfig.getName();
+                if (meta.get(tbName) != null) {
+                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    tableMap.put(tbName, tbType);
+                }
+            }
+        }
+        return tableMap;
+    }
 
 }

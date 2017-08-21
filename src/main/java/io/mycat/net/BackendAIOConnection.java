@@ -23,55 +23,55 @@
  */
 package io.mycat.net;
 
+import io.mycat.backend.BackendConnection;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.NetworkChannel;
-
-import io.mycat.backend.BackendConnection;
 
 /**
  * @author mycat
  */
 public abstract class BackendAIOConnection extends AbstractConnection implements
-		BackendConnection {
+        BackendConnection {
 
-	public BackendAIOConnection(NetworkChannel channel) {
-		super(channel);
-	}
+    public BackendAIOConnection(NetworkChannel channel) {
+        super(channel);
+    }
 
-	public void register() throws IOException {
-		this.asynRead();
-	}
-
-
-	public void setHost(String host) {
-		this.host = host;
-	}
+    public void register() throws IOException {
+        this.asynRead();
+    }
 
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+    public void setHost(String host) {
+        this.host = host;
+    }
 
-	public abstract void onConnectFailed(Throwable e);
 
-	public boolean finishConnect() throws IOException {
-		localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
-		return true;
-	}
+    public void setPort(int port) {
+        this.port = port;
+    }
 
-	public void setProcessor(NIOProcessor processor) {
-		super.setProcessor(processor);
-		processor.addBackend(this);
-	}
+    public abstract void onConnectFailed(Throwable e);
 
-	@Override
-	public String toString() {
-		return "BackendConnection [id=" + id + ", host=" + host + ", port="
-				+ port + ", localPort=" + localPort + "]";
-	}
+    public boolean finishConnect() throws IOException {
+        localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
+        return true;
+    }
+
+    public void setProcessor(NIOProcessor processor) {
+        super.setProcessor(processor);
+        processor.addBackend(this);
+    }
+
+    @Override
+    public String toString() {
+        return "BackendConnection [id=" + id + ", host=" + host + ", port="
+                + port + ", localPort=" + localPort + "]";
+    }
 
     public String compactInfo() {
-		return "BackendConnection host=" + host + ", port=" + port;
+        return "BackendConnection host=" + host + ", port=" + port;
     }
 }

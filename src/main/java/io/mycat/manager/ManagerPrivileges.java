@@ -25,33 +25,33 @@ package io.mycat.manager;
 
 import io.mycat.MycatServer;
 import io.mycat.config.MycatConfig;
-import io.mycat.config.model.UserConfig;
 import io.mycat.config.MycatPrivileges;
+import io.mycat.config.model.UserConfig;
 
 /**
  * @author mycat
  */
 public class ManagerPrivileges extends MycatPrivileges {
-	/**
-	 * 无需每次建立连接都new实例。
-	 */
+    /**
+     * 无需每次建立连接都new实例。
+     */
     private static ManagerPrivileges instance = new ManagerPrivileges();
 
     public static ManagerPrivileges instance() {
-    	return instance;
+        return instance;
     }
-    
+
     private ManagerPrivileges() {
-    	super();
+        super();
     }
 
     protected boolean checkManagerPrivilege(String user) {
-		MycatConfig config = MycatServer.getInstance().getConfig();
-		UserConfig rUser = config.getUsers().get(user);
-		// Manager privilege must be assign explicitly
-		if (rUser == null || rUser.isManager() == false)
-		    return false;
+        MycatConfig config = MycatServer.getInstance().getConfig();
+        UserConfig rUser = config.getUsers().get(user);
+        // Manager privilege must be assign explicitly
+        if (rUser == null || rUser.isManager() == false)
+            return false;
 
-		return true;
+        return true;
     }
 }

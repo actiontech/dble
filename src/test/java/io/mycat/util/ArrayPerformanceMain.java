@@ -32,7 +32,7 @@ import java.util.List;
 public class ArrayPerformanceMain {
 
     public void tArray() {
-        byte[] a = new byte[] { 1, 2, 3, 4, 5, 6, 7 };
+        byte[] a = new byte[]{1, 2, 3, 4, 5, 6, 7};
         System.currentTimeMillis();
         long t1 = System.currentTimeMillis();
         for (int x = 0; x < 1000000; x++) {
@@ -46,7 +46,7 @@ public class ArrayPerformanceMain {
     }
 
     public void tList() {
-        byte[] a = new byte[] { 1, 2, 3, 4, 5, 6, 7 };
+        byte[] a = new byte[]{1, 2, 3, 4, 5, 6, 7};
         System.currentTimeMillis();
         long t1 = System.currentTimeMillis();
         for (int x = 0; x < 1000000; x++) {

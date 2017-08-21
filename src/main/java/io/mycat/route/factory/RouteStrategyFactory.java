@@ -5,17 +5,18 @@ import io.mycat.route.impl.DruidMycatRouteStrategy;
 
 /**
  * 路由策略工厂类
- * @author wang.dw
  *
+ * @author wang.dw
  */
 public class RouteStrategyFactory {
-	private static RouteStrategy defaultStrategy = new DruidMycatRouteStrategy();
-	private RouteStrategyFactory() {
-	    
-	}
+    private static RouteStrategy defaultStrategy = new DruidMycatRouteStrategy();
 
-	
-	public static RouteStrategy getRouteStrategy() {
-		return defaultStrategy;
-	}
+    private RouteStrategyFactory() {
+
+    }
+
+
+    public static RouteStrategy getRouteStrategy() {
+        return defaultStrategy;
+    }
 }

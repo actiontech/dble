@@ -29,6 +29,4 @@ package io.mycat.statistic;
 public class SQLStatisticsMain {
 
 
-
-
 }

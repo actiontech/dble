@@ -25,7 +25,7 @@ package io.mycat.util.exception;
 
 /**
  * 未知事物隔离级别异常
- * 
+ *
  * @author mycat
  */
 public class UnknownTxIsolationException extends RuntimeException {

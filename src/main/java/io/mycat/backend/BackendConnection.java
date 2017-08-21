@@ -1,65 +1,64 @@
 package io.mycat.backend;
 
-import java.io.UnsupportedEncodingException;
-
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import io.mycat.net.ClosableConnection;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.server.ServerConnection;
 
+import java.io.UnsupportedEncodingException;
+
 public interface BackendConnection extends ClosableConnection {
-	boolean isModifiedSQLExecuted();
+    boolean isModifiedSQLExecuted();
 
-	boolean isDDL();
+    boolean isDDL();
 
-	boolean isFromSlaveDB();
+    boolean isFromSlaveDB();
 
-	String getSchema();
+    String getSchema();
 
-	void setSchema(String newSchema);
+    void setSchema(String newSchema);
 
-	long getLastTime();
+    long getLastTime();
 
-	boolean isClosedOrQuit();
+    boolean isClosedOrQuit();
 
-	void setAttachment(Object attachment);
+    void setAttachment(Object attachment);
 
-	void quit();
+    void quit();
 
-	void setLastTime(long currentTimeMillis);
+    void setLastTime(long currentTimeMillis);
 
-	void release();
+    void release();
 
-	boolean setResponseHandler(ResponseHandler commandHandler);
+    boolean setResponseHandler(ResponseHandler commandHandler);
 
-	void commit();
+    void commit();
 
-	void query(String sql) throws UnsupportedEncodingException;
+    void query(String sql) throws UnsupportedEncodingException;
 
-	Object getAttachment();
+    Object getAttachment();
 
-	// long getThreadId();
+    // long getThreadId();
 
 
+    void execute(RouteResultsetNode node, ServerConnection source,
+                 boolean autocommit);
 
-	void execute(RouteResultsetNode node, ServerConnection source,
-			boolean autocommit);
+    boolean syncAndExcute();
 
-	boolean syncAndExcute();
+    void rollback();
 
-	void rollback();
+    boolean isBorrowed();
 
-	boolean isBorrowed();
+    void setBorrowed(boolean borrowed);
 
-	void setBorrowed(boolean borrowed);
+    int getTxIsolation();
 
-	int getTxIsolation();
+    boolean isAutocommit();
 
-	boolean isAutocommit();
+    long getId();
 
-	long getId();
+    void terminate(String reason);
 
-	void terminate(String reason);
-
-	String compactInfo();
+    String compactInfo();
 }

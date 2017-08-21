@@ -23,19 +23,14 @@
  */
 package io.mycat.util;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author mycat
  */
 public class CollectionUtil {
     /**
-     * @param orig
-     *            if null, return intersect
+     * @param orig if null, return intersect
      */
     public static Set<? extends Object> intersectSet(Set<? extends Object> orig, Set<? extends Object> intersect) {
         if (orig == null) {
@@ -52,10 +47,12 @@ public class CollectionUtil {
         }
         return set;
     }
-    public static boolean isEmpty(Collection<?> collection){
-    	return collection==null || collection.isEmpty();
+
+    public static boolean isEmpty(Collection<?> collection) {
+        return collection == null || collection.isEmpty();
     }
-    public static boolean isEmpty(Map<?,?> map){
-    	return map==null || map.isEmpty();
+
+    public static boolean isEmpty(Map<?, ?> map) {
+        return map == null || map.isEmpty();
     }
 }

@@ -63,7 +63,7 @@ public class DruidSelectParserTest {
         Class c = DruidSelectParser.class;
         Method method = c.getDeclaredMethod("buildGroupByCols", new Class[]{List.class, Map.class});
         method.setAccessible(true);
-        return  method.invoke(druidSelectParser, groupByItems, aliaColumns);
+        return method.invoke(druidSelectParser, groupByItems, aliaColumns);
     }
 
 

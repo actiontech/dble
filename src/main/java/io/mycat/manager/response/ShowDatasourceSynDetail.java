@@ -23,13 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.datasource.PhysicalDatasource;
@@ -48,116 +41,123 @@ import io.mycat.statistic.DataSourceSyncRecorder.Record;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * @author songwie
  */
 public class ShowDatasourceSynDetail {
 
-	private static final int FIELD_COUNT = 8;
-	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-	private static final EOFPacket eof = new EOFPacket();
+    private static final int FIELD_COUNT = 8;
+    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket eof = new EOFPacket();
 
-	
-	static {
-		int i = 0;
-		byte packetId = 0;
-		header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-		
-		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-		
-		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-		
-		fields[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+    static {
+        int i = 0;
+        byte packetId = 0;
+        header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
-		
-		fields[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
-		fields[i++].packetId = ++packetId;
-		
-		fields[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
-		
-		eof.packetId = ++packetId;
-	}
+        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-	public static void response(ManagerConnection c,String stmt) {
-		ByteBuffer buffer = c.allocate();
+        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		// write header
-		buffer = header.write(buffer, c,true);
+        fields[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		// write fields
-		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c,true);
-		}
+        fields[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		// write eof
-		buffer = eof.write(buffer, c,true);
+        fields[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		// write rows
-		byte packetId = eof.packetId;
-		
-		String name = ManagerParseShow.getWhereParameter(stmt);
-		for (RowDataPacket row : getRows(name,c.getCharset())) {
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c,true);
-		}
+        fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
+        fields[i++].packetId = ++packetId;
 
-		// write last eof
-		EOFPacket lastEof = new EOFPacket();
-		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c,true);
+        fields[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		// post write
-		c.write(buffer);
-	}
-	 
-	private static List<RowDataPacket> getRows(String name,String charset) {
-		List<RowDataPacket> list = new LinkedList<RowDataPacket>();
-		MycatConfig conf = MycatServer.getInstance().getConfig();
-		// host nodes
-		Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-		for (PhysicalDBPool pool : dataHosts.values()) {
-			for (PhysicalDatasource ds : pool.getAllDataSources()) {
-				DBHeartbeat hb = ds.getHeartbeat();
-				DataSourceSyncRecorder record = hb.getAsynRecorder();
-				Map<String, String> states = record.getRecords();
-				if(name.equals(ds.getName())){
-					List<Record> data = record.getAsynRecords();
-					for(Record r : data){
-						RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        eof.packetId = ++packetId;
+    }
 
-						row.add(StringUtil.encode(ds.getName(),charset));
-						row.add(StringUtil.encode(ds.getConfig().getIp(),charset));
-						row.add(LongUtil.toBytes(ds.getConfig().getPort()));
-						row.add(StringUtil.encode(states.get("Master_Host"),charset));
-						row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
-						row.add(StringUtil.encode(states.get("Master_User"),charset));
-						//DateFormat非线程安全
-						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-						String time = sdf.format(new Date(r.getTime()));
-						row.add(StringUtil.encode(time,charset));
-						row.add(LongUtil.toBytes((Long)r.getValue()));
+    public static void response(ManagerConnection c, String stmt) {
+        ByteBuffer buffer = c.allocate();
 
-						list.add(row);
-					}
-					break;
-				}
+        // write header
+        buffer = header.write(buffer, c, true);
 
-			}
-		}
-		return list;
-	}
+        // write fields
+        for (FieldPacket field : fields) {
+            buffer = field.write(buffer, c, true);
+        }
+
+        // write eof
+        buffer = eof.write(buffer, c, true);
+
+        // write rows
+        byte packetId = eof.packetId;
+
+        String name = ManagerParseShow.getWhereParameter(stmt);
+        for (RowDataPacket row : getRows(name, c.getCharset())) {
+            row.packetId = ++packetId;
+            buffer = row.write(buffer, c, true);
+        }
+
+        // write last eof
+        EOFPacket lastEof = new EOFPacket();
+        lastEof.packetId = ++packetId;
+        buffer = lastEof.write(buffer, c, true);
+
+        // post write
+        c.write(buffer);
+    }
+
+    private static List<RowDataPacket> getRows(String name, String charset) {
+        List<RowDataPacket> list = new LinkedList<RowDataPacket>();
+        MycatConfig conf = MycatServer.getInstance().getConfig();
+        // host nodes
+        Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
+        for (PhysicalDBPool pool : dataHosts.values()) {
+            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                DBHeartbeat hb = ds.getHeartbeat();
+                DataSourceSyncRecorder record = hb.getAsynRecorder();
+                Map<String, String> states = record.getRecords();
+                if (name.equals(ds.getName())) {
+                    List<Record> data = record.getAsynRecords();
+                    for (Record r : data) {
+                        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+
+                        row.add(StringUtil.encode(ds.getName(), charset));
+                        row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
+                        row.add(LongUtil.toBytes(ds.getConfig().getPort()));
+                        row.add(StringUtil.encode(states.get("Master_Host"), charset));
+                        row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
+                        row.add(StringUtil.encode(states.get("Master_User"), charset));
+                        //DateFormat非线程安全
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String time = sdf.format(new Date(r.getTime()));
+                        row.add(StringUtil.encode(time, charset));
+                        row.add(LongUtil.toBytes((Long) r.getValue()));
+
+                        list.add(row);
+                    }
+                    break;
+                }
+
+            }
+        }
+        return list;
+    }
 }

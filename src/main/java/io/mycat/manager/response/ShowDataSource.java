@@ -23,9 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
@@ -42,6 +39,9 @@ import io.mycat.util.IntegerUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+
 /**
  * 查看数据源信息
  *
@@ -50,124 +50,125 @@ import io.mycat.util.StringUtil;
  */
 public final class ShowDataSource {
 
-	private static final int FIELD_COUNT = 10;
-	private static final ResultSetHeaderPacket header = PacketUtil
-			.getHeader(FIELD_COUNT);
-	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-	private static final EOFPacket eof = new EOFPacket();
-	static {
-		int i = 0;
-		byte packetId = 0;
-		header.packetId = ++packetId;
+    private static final int FIELD_COUNT = 10;
+    private static final ResultSetHeaderPacket header = PacketUtil
+            .getHeader(FIELD_COUNT);
+    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket eof = new EOFPacket();
+
+    static {
+        int i = 0;
+        byte packetId = 0;
+        header.packetId = ++packetId;
 
 		/*fields[i] = PacketUtil.getField("DATANODE",
-				Fields.FIELD_TYPE_VAR_STRING);
+                Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;*/
 
-		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		eof.packetId = ++packetId;
-	}
+        eof.packetId = ++packetId;
+    }
 
-	public static void execute(ManagerConnection c, String name) {
-		ByteBuffer buffer = c.allocate();
+    public static void execute(ManagerConnection c, String name) {
+        ByteBuffer buffer = c.allocate();
 
-		// write header
-		buffer = header.write(buffer, c,true);
+        // write header
+        buffer = header.write(buffer, c, true);
 
-		// write fields
-		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c,true);
-		}
+        // write fields
+        for (FieldPacket field : fields) {
+            buffer = field.write(buffer, c, true);
+        }
 
-		// write eof
-		buffer = eof.write(buffer, c,true);
+        // write eof
+        buffer = eof.write(buffer, c, true);
 
-		// write rows
-		byte packetId = eof.packetId;
-		MycatConfig conf = MycatServer.getInstance().getConfig();
+        // write rows
+        byte packetId = eof.packetId;
+        MycatConfig conf = MycatServer.getInstance().getConfig();
 
-		if (null != name) {
-			PhysicalDBNode dn = conf.getDataNodes().get(name);
-			for(PhysicalDatasource w:dn.getDbPool().getAllDataSources()){
-				RowDataPacket row = getRow(w, c.getCharset());
-				row.packetId = ++packetId;
-				buffer = row.write(buffer, c,true);
-			}
+        if (null != name) {
+            PhysicalDBNode dn = conf.getDataNodes().get(name);
+            for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
+                RowDataPacket row = getRow(w, c.getCharset());
+                row.packetId = ++packetId;
+                buffer = row.write(buffer, c, true);
+            }
 
-		} else {
-			// add all
-			for (Map.Entry<String,PhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
+        } else {
+            // add all
+            for (Map.Entry<String, PhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
 
-				PhysicalDBPool datahost =  entry.getValue();
+                PhysicalDBPool datahost = entry.getValue();
 
-				for( int i = 0;i < datahost.getSources().length;i++){
-					RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
-					row.packetId = ++packetId;
-					buffer = row.write(buffer, c,true);
-					if(datahost.getrReadSources().get(i) != null){
-						for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
-							RowDataPacket rsow = getRow(w, c.getCharset());
-							rsow.packetId = ++packetId;
-							buffer = rsow.write(buffer, c, true);
-						}
-					}
-				}
-			}
+                for (int i = 0; i < datahost.getSources().length; i++) {
+                    RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
+                    row.packetId = ++packetId;
+                    buffer = row.write(buffer, c, true);
+                    if (datahost.getrReadSources().get(i) != null) {
+                        for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
+                            RowDataPacket rsow = getRow(w, c.getCharset());
+                            rsow.packetId = ++packetId;
+                            buffer = rsow.write(buffer, c, true);
+                        }
+                    }
+                }
+            }
 
-		}
-		// write last eof
-		EOFPacket lastEof = new EOFPacket();
-		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c,true);
+        }
+        // write last eof
+        EOFPacket lastEof = new EOFPacket();
+        lastEof.packetId = ++packetId;
+        buffer = lastEof.write(buffer, c, true);
 
-		// post write
-		c.write(buffer);
-	}
+        // post write
+        c.write(buffer);
+    }
 
-	private static RowDataPacket getRow( PhysicalDatasource ds,
-			String charset) {
-		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-		//row.add(StringUtil.encode(dataNode, charset));
-		row.add(StringUtil.encode(ds.getName(), charset));
-		row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
-		row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-		row.add(StringUtil.encode(ds.isReadNode() ? "R" : "W", charset));
-		row.add(IntegerUtil.toBytes(ds.getActiveCount()));
-		row.add(IntegerUtil.toBytes(ds.getIdleCount()));
-		row.add(IntegerUtil.toBytes(ds.getSize()));
-		row.add(LongUtil.toBytes(ds.getExecuteCount()));
-		row.add(LongUtil.toBytes(ds.getReadCount()));
-		row.add(LongUtil.toBytes(ds.getWriteCount()));
-		return row;
-	}
+    private static RowDataPacket getRow(PhysicalDatasource ds,
+                                        String charset) {
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        //row.add(StringUtil.encode(dataNode, charset));
+        row.add(StringUtil.encode(ds.getName(), charset));
+        row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
+        row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
+        row.add(StringUtil.encode(ds.isReadNode() ? "R" : "W", charset));
+        row.add(IntegerUtil.toBytes(ds.getActiveCount()));
+        row.add(IntegerUtil.toBytes(ds.getIdleCount()));
+        row.add(IntegerUtil.toBytes(ds.getSize()));
+        row.add(LongUtil.toBytes(ds.getExecuteCount()));
+        row.add(LongUtil.toBytes(ds.getReadCount()));
+        row.add(LongUtil.toBytes(ds.getWriteCount()));
+        return row;
+    }
 
 }

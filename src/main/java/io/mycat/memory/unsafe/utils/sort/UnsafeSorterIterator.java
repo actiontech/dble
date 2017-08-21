@@ -21,17 +21,17 @@ import java.io.IOException;
 
 public abstract class UnsafeSorterIterator {
 
-  public abstract boolean hasNext();
+    public abstract boolean hasNext();
 
-  public abstract void loadNext() throws IOException;
+    public abstract void loadNext() throws IOException;
 
-  public abstract Object getBaseObject();
+    public abstract Object getBaseObject();
 
-  public abstract long getBaseOffset();
+    public abstract long getBaseOffset();
 
-  public abstract int getRecordLength();
+    public abstract int getRecordLength();
 
-  public abstract long getKeyPrefix();
+    public abstract long getKeyPrefix();
 
-  public abstract int getNumRecords();
+    public abstract int getNumRecords();
 }

@@ -1,7 +1,7 @@
 package io.mycat.backend.mysql.nio.handler.transaction;
 
 public interface CommitNodesHandler {
-	void commit();
+    void commit();
 
-	void clearResources();
+    void clearResources();
 }

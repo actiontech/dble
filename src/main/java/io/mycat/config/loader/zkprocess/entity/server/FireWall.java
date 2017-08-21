@@ -14,29 +14,29 @@ import javax.xml.bind.annotation.XmlType;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "firewall")
 public class FireWall {
-	@XmlElement
-	protected WhiteHost whitehost;
-	@XmlElement
-	protected BlackList blacklist;
+    @XmlElement
+    protected WhiteHost whitehost;
+    @XmlElement
+    protected BlackList blacklist;
 
-	public WhiteHost getWhitehost() {
-		return whitehost;
-	}
+    public WhiteHost getWhitehost() {
+        return whitehost;
+    }
 
-	public void setWhiteHost(WhiteHost whiteHost) {
-		this.whitehost = whiteHost;
-	}
+    public void setWhiteHost(WhiteHost whiteHost) {
+        this.whitehost = whiteHost;
+    }
 
-	public BlackList getBlacklist() {
-		return blacklist;
-	}
+    public BlackList getBlacklist() {
+        return blacklist;
+    }
 
-	public void setBlacklist(BlackList blacklist) {
-		this.blacklist = blacklist;
-	}
+    public void setBlacklist(BlackList blacklist) {
+        this.blacklist = blacklist;
+    }
 
-	@Override
-	public String toString() {
-		return "FireWall{whiteHost ="+whitehost+", blacklist="+blacklist+"}";
-	}
+    @Override
+    public String toString() {
+        return "FireWall{whiteHost =" + whitehost + ", blacklist=" + blacklist + "}";
+    }
 }

@@ -23,22 +23,18 @@
  */
 package io.mycat.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author mycat
@@ -47,56 +43,49 @@ public final class ObjectUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ObjectUtil.class);
 
 
-    public static Object getStaticFieldValue(String className,String fieldName)
-    {
+    public static Object getStaticFieldValue(String className, String fieldName) {
         Class clazz = null;
-        try
-        {
+        try {
             clazz = Class.forName(className);
-           Field field = clazz.getField(fieldName);
-             if(field!=null) {
-                 return field.get(null);
-             }
-        } catch (ClassNotFoundException e)
-        {
+            Field field = clazz.getField(fieldName);
+            if (field != null) {
+                return field.get(null);
+            }
+        } catch (ClassNotFoundException e) {
             //LOGGER.error("getStaticFieldValue", e);
-        } catch (NoSuchFieldException e)
-        {
-           // LOGGER.error("getStaticFieldValue", e);
-        } catch (IllegalAccessException e)
-        {
-          //  LOGGER.error("getStaticFieldValue", e);
+        } catch (NoSuchFieldException e) {
+            // LOGGER.error("getStaticFieldValue", e);
+        } catch (IllegalAccessException e) {
+            //  LOGGER.error("getStaticFieldValue", e);
         }
         return null;
     }
 
-    
-	public static Object copyObject(Object object) {
-		ByteArrayOutputStream b = new ByteArrayOutputStream();
-		ObjectOutputStream s = null;
-		try {
-			s = new ObjectOutputStream(b);
-			s.writeObject(object);
-			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b.toByteArray()));
-			return ois.readObject();
-		} catch (IOException e) {
-            throw new RuntimeException(e);
-		} catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-		}
 
-	}
-	
+    public static Object copyObject(Object object) {
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        ObjectOutputStream s = null;
+        try {
+            s = new ObjectOutputStream(b);
+            s.writeObject(object);
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b.toByteArray()));
+            return ois.readObject();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     /**
      * 递归地比较两个数组是否相同，支持多维数组。
      * <p>
      * 如果比较的对象不是数组，则此方法的结果同<code>ObjectUtil.equals</code>。
      * </p>
-     * 
-     * @param array1
-     *            数组1
-     * @param array2
-     *            数组2
+     *
+     * @param array1 数组1
+     * @param array2 数组2
      * @return 如果相等, 则返回<code>true</code>
      */
     public static boolean equals(Object array1, Object array2) {
@@ -278,18 +267,18 @@ public final class ObjectUtil {
                         propertyDescriptor.getDisplayName())
                         && !pd.getDisplayName().equals("class")
                         && propertyDescriptor.getWriteMethod() != null) {
-                        propertyDescriptor.getWriteMethod().invoke(toObj, pd.getReadMethod().invoke(fromObj, null));
+                    propertyDescriptor.getWriteMethod().invoke(toObj, pd.getReadMethod().invoke(fromObj, null));
                 }
 
             }
         } catch (IntrospectionException e) {
-          throw  new RuntimeException(e);
+            throw new RuntimeException(e);
         } catch (IllegalArgumentException e) {
-            throw  new RuntimeException(e);
+            throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
-            throw  new RuntimeException(e);
+            throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
-            throw  new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 }

@@ -1,10 +1,5 @@
 package io.mycat.manager.response;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -16,6 +11,11 @@ import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 实现show@@directmemory功能
@@ -67,8 +67,8 @@ public class ShowDirectMemory {
         totalFields[i] = PacketUtil.getField("DIRECT_MEMORY_AVAILABLE", Fields.FIELD_TYPE_VAR_STRING);
         totalFields[i++].packetId = ++packetId;
 
-       totalFields[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
-       totalFields[i++].packetId = ++packetId;
+        totalFields[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
+        totalFields[i++].packetId = ++packetId;
 
         totalFields[i] = PacketUtil.getField("DIRECT_MEMORY_RESERVED", Fields.FIELD_TYPE_VAR_STRING);
         totalFields[i++].packetId = ++packetId;
@@ -78,42 +78,42 @@ public class ShowDirectMemory {
     }
 
 
-    public static void execute(ManagerConnection c,int showtype) {
+    public static void execute(ManagerConnection c, int showtype) {
 
-        if(showtype == 1){
+        if (showtype == 1) {
             showDirectMemoryTotal(c);
-        }else if (showtype==2){
+        } else if (showtype == 2) {
             showDirectMemoryDetail(c);
         }
     }
 
 
-    public static void showDirectMemoryDetail(ManagerConnection c){
+    public static void showDirectMemoryDetail(ManagerConnection c) {
 
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = detailHeader.write(buffer, c,true);
+        buffer = detailHeader.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : detailFields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = detailEof.write(buffer, c,true);
+        buffer = detailEof.write(buffer, c, true);
 
         // write rows
         byte packetId = detailEof.packetId;
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
 
-        ConcurrentMap<Long,Long> networkbufferpool = MycatServer.getInstance().
+        ConcurrentMap<Long, Long> networkbufferpool = MycatServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         try {
 
-            if(useOffHeapForMerge == 1) {
+            if (useOffHeapForMerge == 1) {
                 ConcurrentMap<Long, Long> map = MycatServer.getInstance().
                         getServerMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
@@ -132,7 +132,7 @@ public class ShowDirectMemory {
                 }
             }
 
-            for (Map.Entry<Long,Long> entry:networkbufferpool.entrySet()) {
+            for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
                 RowDataPacket row = new RowDataPacket(DETAILl_FIELD_COUNT);
                 long value = entry.getValue();
                 row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
@@ -140,11 +140,11 @@ public class ShowDirectMemory {
                  * 该DIRECTMEMORY内存属于Buffer Pool管理的！
                  */
                 row.add("NetWorkBufferPool".getBytes(c.getCharset()));
-                row.add(value >0 ?
-                        JavaUtils.bytesToString2(value).getBytes(c.getCharset()):"0".getBytes(c.getCharset()));
+                row.add(value > 0 ?
+                        JavaUtils.bytesToString2(value).getBytes(c.getCharset()) : "0".getBytes(c.getCharset()));
 
                 row.packetId = ++packetId;
-                buffer = row.write(buffer, c,true);
+                buffer = row.write(buffer, c, true);
             }
 
         } catch (UnsupportedEncodingException e) {
@@ -154,7 +154,7 @@ public class ShowDirectMemory {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
@@ -162,26 +162,26 @@ public class ShowDirectMemory {
     }
 
 
-    public static void showDirectMemoryTotal(ManagerConnection c){
+    public static void showDirectMemoryTotal(ManagerConnection c) {
 
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = totalHeader.write(buffer, c,true);
+        buffer = totalHeader.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : totalFields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
         // write eof
-        buffer = totalEof.write(buffer, c,true);
+        buffer = totalEof.write(buffer, c, true);
         // write rows
         byte packetId = totalEof.packetId;
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();
 
-        ConcurrentMap<Long,Long> networkbufferpool = MycatServer.getInstance().
+        ConcurrentMap<Long, Long> networkbufferpool = MycatServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         RowDataPacket row = new RowDataPacket(TOTAL_FIELD_COUNT);
@@ -195,7 +195,7 @@ public class ShowDirectMemory {
              */
             row.add(JavaUtils.bytesToString2(Platform.getMaxDirectMemory()).getBytes(c.getCharset()));
 
-            if(useOffHeapForMerge == 1) {
+            if (useOffHeapForMerge == 1) {
 
                 /**
                  * 结果集合并时，总共消耗的DirectMemory内存
@@ -215,32 +215,32 @@ public class ShowDirectMemory {
                 usedforNetworkd += entry.getValue();
             }
 
-            row.add(JavaUtils.bytesToString2(usedforMerge+usedforNetworkd).getBytes(c.getCharset()));
+            row.add(JavaUtils.bytesToString2(usedforMerge + usedforNetworkd).getBytes(c.getCharset()));
 
 
             long totalAvailable = 0;
 
-            if(useOffHeapForMerge == 1) {
+            if (useOffHeapForMerge == 1) {
                 /**
                  * 设置使用off-heap内存处理结果集时，防止客户把MaxDirectMemorySize设置到物理内存的极限。
                  * Mycat能使用的DirectMemory是MaxDirectMemorySize*DIRECT_SAFETY_FRACTION大小，
                  * DIRECT_SAFETY_FRACTION为安全系数，为OS，Heap预留空间，避免因大结果集造成系统物理内存被耗尽！
                  */
-                totalAvailable =  (long) (Platform.getMaxDirectMemory() * MyCatMemory.DIRECT_SAFETY_FRACTION);
-            }else {
+                totalAvailable = (long) (Platform.getMaxDirectMemory() * MyCatMemory.DIRECT_SAFETY_FRACTION);
+            } else {
                 totalAvailable = Platform.getMaxDirectMemory();
             }
 
-            row.add(JavaUtils.bytesToString2(totalAvailable-usedforMerge-usedforNetworkd)
+            row.add(JavaUtils.bytesToString2(totalAvailable - usedforMerge - usedforNetworkd)
                     .getBytes(c.getCharset()));
 
-            if(useOffHeapForMerge == 1) {
+            if (useOffHeapForMerge == 1) {
                 /**
                  * 输出安全系统DIRECT_SAFETY_FRACTION
                  */
                 row.add(("" + MyCatMemory.DIRECT_SAFETY_FRACTION)
                         .getBytes(c.getCharset()));
-            }else {
+            } else {
                 row.add(("1.0")
                         .getBytes(c.getCharset()));
             }
@@ -248,19 +248,19 @@ public class ShowDirectMemory {
 
             long resevedForOs = 0;
 
-            if(useOffHeapForMerge == 1){
+            if (useOffHeapForMerge == 1) {
                 /**
                  * 预留OS系统部分内存！！！
                  */
-                resevedForOs = (long) ((1-MyCatMemory.DIRECT_SAFETY_FRACTION)*
-                        (Platform.getMaxDirectMemory()-
-                                2*MycatServer.getInstance().getTotalNetWorkBufferSize()));
+                resevedForOs = (long) ((1 - MyCatMemory.DIRECT_SAFETY_FRACTION) *
+                        (Platform.getMaxDirectMemory() -
+                                2 * MycatServer.getInstance().getTotalNetWorkBufferSize()));
             }
 
-            row.add(resevedForOs > 0 ?JavaUtils.bytesToString2(resevedForOs).getBytes(c.getCharset()):"0".getBytes(c.getCharset()));
+            row.add(resevedForOs > 0 ? JavaUtils.bytesToString2(resevedForOs).getBytes(c.getCharset()) : "0".getBytes(c.getCharset()));
 
             row.packetId = ++packetId;
-            buffer = row.write(buffer, c,true);
+            buffer = row.write(buffer, c, true);
 
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -269,14 +269,12 @@ public class ShowDirectMemory {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
 
     }
-
-
 
 
 }

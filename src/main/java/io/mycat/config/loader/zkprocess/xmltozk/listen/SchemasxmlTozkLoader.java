@@ -24,40 +24,40 @@ import java.util.List;
 
 /**
  * 进行从xml加载到zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemasxmlTozkLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * schema文件的路径信息
-    */
+     */
     private static final String SCHEMA_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "schema.xml";
 
     /**
      * schema类与xml转换服务
-    */
+     */
     private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
 
     /**
      * 进行将schema
-    */
+     */
     private ParseJsonServiceInf<List<Schema>> parseJsonSchema = new SchemaJsonParse();
 
     /**
@@ -71,9 +71,9 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
     private ParseJsonServiceInf<List<DataHost>> parseJsonDataHost = new DataHostJsonParse();
 
     public SchemasxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
+                                XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
-        currZkPath =  KVPathUtil.getConfSchemaPath();
+        currZkPath = KVPathUtil.getConfSchemaPath();
         // 将当前自己注册为事件接收对象
         zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
@@ -97,12 +97,13 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
     /**
      * 将xml文件的信息写入到zk中
-    * 方法描述
-    * @param basePath 基本路径
-    * @param schema schema文件的信息
-    * @throws Exception 异常信息
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param basePath 基本路径
+     * @param schema   schema文件的信息
+     * @throws Exception 异常信息
+     * @创建日期 2016年9月17日
+     */
     private void xmlTozkSchemasJson(String basePath, Schemas schema) throws Exception {
 
         // 设置schema目录的值

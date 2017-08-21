@@ -7,9 +7,8 @@ import java.util.*;
 
 /**
  * 进行zookeeper操作的监控器器父类信息
- * 
+ *
  * @author liujun
- * 
  * @date 2015年2月4日
  * @vsersion 0.0.1
  */
@@ -24,23 +23,23 @@ public class ZookeeperProcessListen {
         initCache.add(service);
     }
 
-    public void clearInited( ) {
+    public void clearInited() {
         initCache.clear();
     }
+
     public void addWatch(String key, NotifyService service) {
-        watchMap.put(key,service);
+        watchMap.put(key, service);
     }
 
     /**
      * 返回路径集合
-    */
+     */
     public Set<String> getWatchPath() {
         return watchMap.keySet();
     }
 
     /**
      * 进行缓存更新通知
-     *
      */
     public boolean notify(String key) {
         boolean result = false;

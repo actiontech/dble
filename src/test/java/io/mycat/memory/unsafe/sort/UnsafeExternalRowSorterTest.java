@@ -19,9 +19,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.io.IOException;
-
 import java.util.*;
 
 /**
@@ -29,16 +27,15 @@ import java.util.*;
  */
 public class UnsafeExternalRowSorterTest {
 
-    private static  final  int TEST_SIZE = 100000;
+    private static final int TEST_SIZE = 100000;
     public static final Logger LOGGER = LoggerFactory.getLogger(UnsafeExternalRowSorterTest.class);
 
     /**
      * 测试类型 LONG，INT，SHORT,Float，Double，String，Binary
      * 经测试基数排序可以适用上述数据类型，大大提高排序速度
-
      */
     @Test
-    public  void  testUnsafeExternalRowSorter() throws NoSuchFieldException, IllegalAccessException, IOException {
+    public void testUnsafeExternalRowSorter() throws NoSuchFieldException, IllegalAccessException, IOException {
         MyCatMemory myCatMemory = new MyCatMemory();
         MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
         MycatPropertyConf conf = myCatMemory.getConf();
@@ -83,7 +80,7 @@ public class UnsafeExternalRowSorterTest {
                         schema,
                         prefixComparator,
                         prefixComputer,
-                        conf.getSizeAsBytes("mycat.buffer.pageSize","1m"),
+                        conf.getSizeAsBytes("mycat.buffer.pageSize", "1m"),
                         true, /**使用基数排序？true or false*/
                         true);
 
@@ -91,21 +88,21 @@ public class UnsafeExternalRowSorterTest {
         BufferHolder bufferHolder;
         UnsafeRowWriter unsafeRowWriter;
         String line = "testUnsafeRow";
-       // List<Float> floats = new ArrayList<Float>();
-         List<Long> longs = new ArrayList<Long>();
+        // List<Float> floats = new ArrayList<Float>();
+        List<Long> longs = new ArrayList<Long>();
         final Random rand = new Random(42);
         for (int i = 0; i < TEST_SIZE; i++) {
             unsafeRow = new UnsafeRow(3);
             bufferHolder = new BufferHolder(unsafeRow);
-            unsafeRowWriter = new UnsafeRowWriter(bufferHolder,3);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 3);
             bufferHolder.reset();
 
-            String key = getRandomString(rand.nextInt(300)+100);
+            String key = getRandomString(rand.nextInt(300) + 100);
 
             //long v = rand.nextLong();
-           // longs.add(v);
-            unsafeRowWriter.write(0,key.getBytes());
-           // unsafeRowWriter.write(0, BytesTools.toBytes(v));
+            // longs.add(v);
+            unsafeRowWriter.write(0, key.getBytes());
+            // unsafeRowWriter.write(0, BytesTools.toBytes(v));
             unsafeRowWriter.write(1, line.getBytes());
             unsafeRowWriter.write(2, ("35" + 1).getBytes());
 
@@ -134,16 +131,16 @@ public class UnsafeExternalRowSorterTest {
         while (iter.hasNext()) {
             row = iter.next();
 
-           // LOGGER.error(indexprint + "    " +  row.getUTF8String(0));
+            // LOGGER.error(indexprint + "    " +  row.getUTF8String(0));
             //Assert.assertEquals(com[indexprint],
             //        BytesTools.toLong(row.getBinary(0)));
-           // Double c = Double.parseDouble(String.valueOf(com[indexprint])) ;
-           // Double c1 = Double.parseDouble(String.valueOf(BytesTools.toFloat(row.getBinary(0)))) ;
-          //  Assert.assertEquals(0,c.compareTo(c1));
+            // Double c = Double.parseDouble(String.valueOf(com[indexprint])) ;
+            // Double c1 = Double.parseDouble(String.valueOf(BytesTools.toFloat(row.getBinary(0)))) ;
+            //  Assert.assertEquals(0,c.compareTo(c1));
 
             indexprint++;
         }
-        Assert.assertEquals(TEST_SIZE,indexprint);
+        Assert.assertEquals(TEST_SIZE, indexprint);
     }
 
     public static String getRandomString(int length) { //length表示生成字符串的长度

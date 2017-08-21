@@ -23,10 +23,10 @@
  */
 package io.mycat.net.mysql;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.net.BackendAIOConnection;
 import io.mycat.net.FrontendConnection;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author mycat
@@ -181,7 +181,7 @@ public abstract class MySQLPacket {
      * Mycat heartbeat
      */
     public static final byte COM_HEARTBEAT = 64;
-    
+
     //包头大小
     public static final int packetHeaderSize = 4;
 
@@ -192,7 +192,7 @@ public abstract class MySQLPacket {
     /**
      * 把数据包写到buffer中，如果buffer满了就把buffer通过前端连接写出 (writeSocketIfFull=true)。
      */
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         throw new UnsupportedOperationException();
     }
 

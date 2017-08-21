@@ -19,7 +19,7 @@ public class CharArray {
 
     private final long length;
 
-    public CharArray(MemoryBlock memory,MemoryConsumer memoryConsumer) {
+    public CharArray(MemoryBlock memory, MemoryConsumer memoryConsumer) {
         assert memory.size() < (long) Integer.MAX_VALUE * 2 : "Array size > 4 billion elements";
         this.memory = memory;
         this.baseObj = memory.getBaseObject();

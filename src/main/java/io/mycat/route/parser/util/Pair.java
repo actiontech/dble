@@ -25,7 +25,7 @@ package io.mycat.route.parser.util;
 
 /**
  * (created at 2010-7-21)
- * 
+ *
  * @author mycat
  */
 public final class Pair<K, V> {

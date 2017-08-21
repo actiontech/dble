@@ -23,8 +23,6 @@
  */
 package io.mycat.server.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.config.Isolations;
@@ -35,6 +33,8 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author mycat
  */
@@ -44,6 +44,7 @@ public class SessionIsolation {
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
+
     static {
         int i = 0;
         byte packetId = 0;
@@ -55,35 +56,35 @@ public class SessionIsolation {
 
     public static void response(ServerConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
         byte packetId = eof.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        
-		String value = "";
-		switch (c.getTxIsolation()) {
-		case Isolations.READ_COMMITTED:
-			value = "READ-COMMITTED";
-			break;
-		case Isolations.READ_UNCOMMITTED:
-			value = "READ-UNCOMMITTED";
-			break;
-		case Isolations.REPEATED_READ:
-			value = "REPEATED-READ";
-			break;
-		case Isolations.SERIALIZABLE:
-			value = "SERIALIZABLE";
-			break;
-		}
-        row.add(StringUtil.encode(value,c.getCharset()));
+
+        String value = "";
+        switch (c.getTxIsolation()) {
+            case Isolations.READ_COMMITTED:
+                value = "READ-COMMITTED";
+                break;
+            case Isolations.READ_UNCOMMITTED:
+                value = "READ-UNCOMMITTED";
+                break;
+            case Isolations.REPEATED_READ:
+                value = "REPEATED-READ";
+                break;
+            case Isolations.SERIALIZABLE:
+                value = "SERIALIZABLE";
+                break;
+        }
+        row.add(StringUtil.encode(value, c.getCharset()));
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c,true);
+        buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }
 

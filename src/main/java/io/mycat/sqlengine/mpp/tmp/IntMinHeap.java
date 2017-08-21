@@ -1,13 +1,8 @@
 package io.mycat.sqlengine.mpp.tmp;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 /**
- * 
  * @author coderczp-2014-12-8
  */
 public class IntMinHeap {

@@ -12,7 +12,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io."+ Versions.ROOT_PREFIX+"/", name = "server")
+@XmlRootElement(namespace = "http://io." + Versions.ROOT_PREFIX + "/", name = "server")
 public class Server {
 
     @XmlElement(required = true)
@@ -21,6 +21,7 @@ public class Server {
     protected FireWall firewall;
     @XmlElement(required = true)
     protected List<User> user;
+
     public System getSystem() {
         return system;
     }
@@ -53,7 +54,7 @@ public class Server {
         builder.append(system);
         builder.append(", user=");
         builder.append(user);
-        if(firewall!= null){
+        if (firewall != null) {
             builder.append(", firewall=");
             builder.append(firewall);
         }

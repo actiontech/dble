@@ -45,7 +45,7 @@ public class QueueSimpleMain {
         new Thread() {
             @Override
             public void run() {
-                for (;;) {
+                for (; ; ) {
                     long put = putCount;
                     long take = takeCount;
                     try {
@@ -61,7 +61,7 @@ public class QueueSimpleMain {
         new Thread() {
             @Override
             public void run() {
-                for (;;) {
+                for (; ; ) {
                     if (queue.offer("A")) {
                         putCount++;
                     }
@@ -72,7 +72,7 @@ public class QueueSimpleMain {
         new Thread() {
             @Override
             public void run() {
-                for (;;) {
+                for (; ; ) {
                     // try {
                     if (queue.poll() != null) {
                         takeCount++;

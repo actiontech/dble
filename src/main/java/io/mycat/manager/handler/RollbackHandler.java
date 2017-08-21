@@ -35,11 +35,11 @@ public final class RollbackHandler {
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
         switch (ManagerParseRollback.parse(stmt, offset)) {
-        case ManagerParseRollback.CONFIG:
-            RollbackConfig.execute(c);
-            break;
-        default:
-            c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+            case ManagerParseRollback.CONFIG:
+                RollbackConfig.execute(c);
+                break;
+            default:
+                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }
     }
 

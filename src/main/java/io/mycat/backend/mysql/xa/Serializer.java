@@ -21,13 +21,15 @@ public class Serializer {
         strBuilder.append(PROPERTY_SEPARATOR);
 
         String prefix = "";
-        if(coordinatorLogEntry.getParticipants().length>0){
+        if (coordinatorLogEntry.getParticipants().length > 0) {
             strBuilder.append(QUOTE).append(CoordinatorLogEntry.PARTICIPANTS).append(QUOTE);
             strBuilder.append(":");
             strBuilder.append(START_ARRAY);
 
-            for(ParticipantLogEntry participantLogEntry :coordinatorLogEntry.getParticipants()){
-                if(participantLogEntry==null){continue;}
+            for (ParticipantLogEntry participantLogEntry : coordinatorLogEntry.getParticipants()) {
+                if (participantLogEntry == null) {
+                    continue;
+                }
                 strBuilder.append(prefix);
                 prefix = PROPERTY_SEPARATOR;
                 strBuilder.append(START_OBJECT);
@@ -38,7 +40,7 @@ public class Serializer {
                 strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_STATE).append(QUOTE).append(":").append(QUOTE).append(participantLogEntry.getTxState()).append(QUOTE);
                 strBuilder.append(PROPERTY_SEPARATOR);
                 strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_EXPIRES).append(QUOTE).append(":").append(participantLogEntry.getExpires());
-                if (participantLogEntry.getSchema()!=null) {
+                if (participantLogEntry.getSchema() != null) {
                     strBuilder.append(PROPERTY_SEPARATOR);
                     strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_SCHEMA).append(QUOTE).append(":").append(QUOTE).append(participantLogEntry.getSchema()).append(QUOTE);
                 }

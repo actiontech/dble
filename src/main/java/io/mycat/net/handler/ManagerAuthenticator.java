@@ -28,16 +28,16 @@ import io.mycat.net.NIOHandler;
 
 /**
  * manager认证处理器
- * 
+ *
  * @author mycat
  */
 public class ManagerAuthenticator extends FrontendAuthenticator {
-	public ManagerAuthenticator(FrontendConnection source) {
-		super(source);
-	}
+    public ManagerAuthenticator(FrontendConnection source) {
+        super(source);
+    }
 
-	@Override
-	protected NIOHandler successCommendHander() {
-		return new ManagerCommandHandler(source);
-	}
+    @Override
+    protected NIOHandler successCommendHander() {
+        return new ManagerCommandHandler(source);
+    }
 }

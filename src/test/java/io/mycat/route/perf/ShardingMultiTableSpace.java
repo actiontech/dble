@@ -23,9 +23,6 @@
  */
 package io.mycat.route.perf;
 
-import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
-
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
@@ -33,30 +30,34 @@ import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+
 /**
  * @author mycat
  */
 public class ShardingMultiTableSpace {
     private SchemaConfig schema;
-    private static int total=1000000;
+    private static int total = 1000000;
     protected LayerCachePool cachePool = new SimpleCachePool();
+
     public ShardingMultiTableSpace() throws InterruptedException {
-         String schemaFile = "/route/schema.xml";
- 		String ruleFile = "/route/rule.xml";
- 		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
- 		schema = schemaLoader.getSchemas().get("cndb");
+        String schemaFile = "/route/schema.xml";
+        String ruleFile = "/route/rule.xml";
+        SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+        schema = schemaLoader.getSchemas().get("cndb");
     }
 
     /**
      * 路由到tableSpace的性能测试
-     * 
+     *
      * @throws SQLNonTransientException
      */
     public void testTableSpace() throws SQLException {
         SchemaConfig schema = getSchema();
         String sql = "select id,member_id,gmt_create from offer where member_id in ('1','22','333','1124','4525')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(schema, -1,sql, null, null,cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null, null, cachePool);
         }
     }
 
@@ -71,6 +72,6 @@ public class ShardingMultiTableSpace {
         long start = System.currentTimeMillis();
         test.testTableSpace();
         long end = System.currentTimeMillis();
-        System.out.println("take " + (end - start) + " ms. avg "+(end-start+0.0)/total);
+        System.out.println("take " + (end - start) + " ms. avg " + (end - start + 0.0) / total);
     }
 }

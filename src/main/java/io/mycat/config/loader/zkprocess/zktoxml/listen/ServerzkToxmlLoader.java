@@ -29,41 +29,41 @@ import java.util.List;
 
 /**
  * 进行server的文件从zk中加载
-* 源文件名：ServerzkToxmlLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：ServerzkToxmlLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerzkToxmlLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * 写入本地的文件路径
-    */
+     */
     private static final String WRITEPATH = "server.xml";
 
 
     /**
      * server的xml的转换信息
-    */
+     */
     private ParseXmlServiceInf<Server> parseServerXMl;
 
     /**
      * system信息
-    */
+     */
     private ParseJsonServiceInf<System> parseJsonSystem = new SystemJsonParse();
 
     /**
@@ -78,7 +78,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfServerPath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addToInit( this);
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         parseServerXMl = new ServerParseXmlImpl(xmlParseBase);
         confListener.addChild(this);
@@ -100,7 +100,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         // 数配制信息写入文件
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-        path=new File(path).getPath()+File.separator;
+        path = new File(path).getPath() + File.separator;
         path += WRITEPATH;
 
         LOGGER.info("ServerzkToxmlLoader notifyProcess zk to object writePath :" + path);
@@ -114,11 +114,12 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 将zk上面的信息转换为javabean对象
-    * 方法描述
-    * @param zkDirectory
-    * @return
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param zkDirectory
+     * @return
+     * @创建日期 2016年9月17日
+     */
     private Server zktoServerBean(DiretoryInf zkDirectory) {
         Server server = new Server();
 
@@ -139,7 +140,6 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         return server;
     }
-
 
 
 }

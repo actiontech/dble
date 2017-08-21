@@ -23,13 +23,13 @@
  */
 package io.mycat.server.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.backend.mysql.PreparedStatement;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.EOFPacket;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.PreparedOkPacket;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author mycat
@@ -45,7 +45,7 @@ public class PreparedStmtResponse {
         preparedOk.statementId = pstmt.getId();
         preparedOk.columnsNumber = pstmt.getColumnsNumber();
         preparedOk.parametersNumber = pstmt.getParametersNumber();
-        ByteBuffer buffer = preparedOk.write(c.allocate(), c,true);
+        ByteBuffer buffer = preparedOk.write(c.allocate(), c, true);
 
         // write parameter field packet
         int parametersNumber = preparedOk.parametersNumber;
@@ -53,11 +53,11 @@ public class PreparedStmtResponse {
             for (int i = 0; i < parametersNumber; i++) {
                 FieldPacket field = new FieldPacket();
                 field.packetId = ++packetId;
-                buffer = field.write(buffer, c,true);
+                buffer = field.write(buffer, c, true);
             }
             EOFPacket eof = new EOFPacket();
             eof.packetId = ++packetId;
-            buffer = eof.write(buffer, c,true);
+            buffer = eof.write(buffer, c, true);
         }
 
         // write column field packet
@@ -66,11 +66,11 @@ public class PreparedStmtResponse {
             for (int i = 0; i < columnsNumber; i++) {
                 FieldPacket field = new FieldPacket();
                 field.packetId = ++packetId;
-                buffer = field.write(buffer, c,true);
+                buffer = field.write(buffer, c, true);
             }
             EOFPacket eof = new EOFPacket();
             eof.packetId = ++packetId;
-            buffer = eof.write(buffer, c,true);
+            buffer = eof.write(buffer, c, true);
         }
 
         // send buffer

@@ -31,11 +31,13 @@ import io.mycat.util.StringUtil;
 /**
  * @author <a href="mailto:daasadmin@hp.com">yangwenx</a>
  */
-public final class PartitionByString extends AbstractPartitionAlgorithm implements RuleAlgorithm  {
-  
+public final class PartitionByString extends AbstractPartitionAlgorithm implements RuleAlgorithm {
+
     private static final long serialVersionUID = 3777423001153345948L;
-	private int hashSliceStart = 0;
-    /** 0 means str.length(), -1 means str.length()-1 */
+    private int hashSliceStart = 0;
+    /**
+     * 0 means str.length(), -1 means str.length()-1
+     */
     private int hashSliceEnd = 8;
     protected int[] count;
     protected int[] length;
@@ -91,38 +93,42 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         return new Pair<Integer, Integer>(start, end);
     }
 
-	@Override
-	public void init() {
-		partitionUtil = new PartitionUtil(count,length);
-		
-	}
-	private static int[] toIntArray(String string) {
-		String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
-		int[] ints = new int[strs.length];
-		for (int i = 0; i < strs.length; ++i) {
-			ints[i] = Integer.parseInt(strs[i]);
-		}
-		return ints;
-	}
-	@Override
-	public Integer calculate(String key) {
+    @Override
+    public void init() {
+        partitionUtil = new PartitionUtil(count, length);
+
+    }
+
+    private static int[] toIntArray(String string) {
+        String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
+        int[] ints = new int[strs.length];
+        for (int i = 0; i < strs.length; ++i) {
+            ints[i] = Integer.parseInt(strs[i]);
+        }
+        return ints;
+    }
+
+    @Override
+    public Integer calculate(String key) {
         int start = hashSliceStart >= 0 ? hashSliceStart : key.length() + hashSliceStart;
         int end = hashSliceEnd > 0 ? hashSliceEnd : key.length() + hashSliceEnd;
         long hash = StringUtil.hash(key, start, end);
         return partitionUtil.partition(hash);
-	}
-	@Override
-	public Integer[] calculateRange(String beginValue, String endValue)  {
-		//all node
-		return new Integer[0];
-	}
-	@Override
-	public int getPartitionNum() {
-		int nPartition = 0;
-		for(int i = 0; i < count.length; i++) {
-			nPartition += count[i];
-		}
-		return nPartition;
-	}
-	
+    }
+
+    @Override
+    public Integer[] calculateRange(String beginValue, String endValue) {
+        //all node
+        return new Integer[0];
+    }
+
+    @Override
+    public int getPartitionNum() {
+        int nPartition = 0;
+        for (int i = 0; i < count.length; i++) {
+            nPartition += count[i];
+        }
+        return nPartition;
+    }
+
 }

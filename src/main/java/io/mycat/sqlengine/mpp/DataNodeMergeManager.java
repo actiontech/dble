@@ -1,15 +1,5 @@
 package io.mycat.sqlengine.mpp;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
@@ -31,6 +21,11 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.route.RouteResultset;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 
 /**
@@ -61,10 +56,10 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     private final MyCatMemory serverMemory;
     private final MemoryManager memoryManager;
     private final MycatPropertyConf conf;
-    
+
 
     public DataNodeMergeManager(MultiNodeQueryHandler handler, RouteResultset rrs) {
-        super(handler,rrs);
+        super(handler, rrs);
         this.serverMemory = MycatServer.getInstance().getServerMemory();
         this.memoryManager = serverMemory.getResultMergeMemoryManager();
         this.conf = serverMemory.getConf();
@@ -83,7 +78,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         UnsafeExternalRowSorter.PrefixComputer prefixComputer = null;
         PrefixComparator prefixComparator = null;
 
-      
+
         DataNodeMemoryManager dataNodeMemoryManager = null;
 
         this.fieldCount = fieldCount;
@@ -105,9 +100,9 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             Map<String, Integer> mergeColsMap = rrs.getMergeCols();
 
             if (mergeColsMap != null) {
-            	if (LOGGER.isDebugEnabled()) {
-                	LOGGER.debug("isHasAggrColumn:" + mergeColsMap.toString());
-            	}
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("isHasAggrColumn:" + mergeColsMap.toString());
+                }
                 for (Map.Entry<String, Integer> mergEntry : mergeColsMap
                         .entrySet()) {
                     String colName = mergEntry.getKey().toUpperCase();
@@ -143,7 +138,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             /**
              * Group操作
              */
-            unsafeRowGrouper = new UnsafeRowGrouper(columToIndx,rrs.getGroupByCols(),
+            unsafeRowGrouper = new UnsafeRowGrouper(columToIndx, rrs.getGroupByCols(),
                     mergCols.toArray(new MergeCol[mergCols.size()]),
                     rrs.getHavingCols());
         }
@@ -168,7 +163,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             /**
              * 构造全局排序器
              */
-            schema = new StructType(columToIndx,fieldCount);
+            schema = new StructType(columToIndx, fieldCount);
             schema.setOrderCols(orderCols);
 
             prefixComputer = new RowPrefixComputer(schema);
@@ -176,7 +171,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             prefixComparator = getPrefixComparator(orderCols);
 
             dataNodeMemoryManager =
-                    new DataNodeMemoryManager(memoryManager,Thread.currentThread().getId());
+                    new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
 
             /**
              * 默认排序，只是将数据连续存储到内存中即可。
@@ -186,89 +181,89 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     serverMemory,
                     schema,
                     prefixComparator, prefixComputer,
-                    conf.getSizeAsBytes("server.buffer.pageSize","1m"),
+                    conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
                     false/**是否使用基数排序*/,
                     true/**排序*/);
         }
 
 
-            /**
-             * 1.schema 
-             */
+        /**
+         * 1.schema
+         */
 
-             schema = new StructType(columToIndx,fieldCount);
-             schema.setOrderCols(orderCols);
+        schema = new StructType(columToIndx, fieldCount);
+        schema.setOrderCols(orderCols);
 
-            /**
-             * 2 .PrefixComputer
-             */
-             prefixComputer = new RowPrefixComputer(schema);
+        /**
+         * 2 .PrefixComputer
+         */
+        prefixComputer = new RowPrefixComputer(schema);
 
-            /**
-             * 3 .PrefixComparator 默认是ASC，可以选择DESC
-             */
+        /**
+         * 3 .PrefixComparator 默认是ASC，可以选择DESC
+         */
 
-            prefixComparator = PrefixComparators.LONG;
+        prefixComparator = PrefixComparators.LONG;
 
 
-            dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
-                            Thread.currentThread().getId());
+        dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
+                Thread.currentThread().getId());
 
-            globalMergeResult = new UnsafeExternalRowSorter(
-                    dataNodeMemoryManager,
-                    serverMemory,
-                    schema,
-                    prefixComparator,
-                    prefixComputer,
-                    conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
-                    false,/**是否使用基数排序*/
-                    false/**不排序*/);
+        globalMergeResult = new UnsafeExternalRowSorter(
+                dataNodeMemoryManager,
+                serverMemory,
+                schema,
+                prefixComparator,
+                prefixComputer,
+                conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
+                false,/**是否使用基数排序*/
+                false/**不排序*/);
     }
 
-	private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
-		PrefixComparator prefixComparator = null;
-		OrderCol firstOrderCol = orderCols[0];
-		int orderType = firstOrderCol.getOrderType();
-		int colType = firstOrderCol.colMeta.colType;
+    private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
+        PrefixComparator prefixComparator = null;
+        OrderCol firstOrderCol = orderCols[0];
+        int orderType = firstOrderCol.getOrderType();
+        int colType = firstOrderCol.colMeta.colType;
 
-		switch (colType) {
-		case ColMeta.COL_TYPE_INT:
-		case ColMeta.COL_TYPE_LONG:
-		case ColMeta.COL_TYPE_INT24:
-		case ColMeta.COL_TYPE_SHORT:
-		case ColMeta.COL_TYPE_LONGLONG:
-			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
-					: PrefixComparators.LONG_DESC);
-			break;
-		case ColMeta.COL_TYPE_FLOAT:
-		case ColMeta.COL_TYPE_DOUBLE:
-		case ColMeta.COL_TYPE_DECIMAL:
-		case ColMeta.COL_TYPE_NEWDECIMAL:
-			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.DOUBLE
-					: PrefixComparators.DOUBLE_DESC);
-			break;
-		case ColMeta.COL_TYPE_DATE:
-		case ColMeta.COL_TYPE_TIMSTAMP:
-		case ColMeta.COL_TYPE_TIME:
-		case ColMeta.COL_TYPE_YEAR:
-		case ColMeta.COL_TYPE_DATETIME:
-		case ColMeta.COL_TYPE_NEWDATE:
-		case ColMeta.COL_TYPE_BIT:
-		case ColMeta.COL_TYPE_VAR_STRING:
-		case ColMeta.COL_TYPE_STRING:
-		case ColMeta.COL_TYPE_ENUM:
-		case ColMeta.COL_TYPE_SET:
-			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.BINARY
-					: PrefixComparators.BINARY_DESC);
-			break;
-		default:
-			prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
-					: PrefixComparators.LONG_DESC);
-			break;
-		}
+        switch (colType) {
+            case ColMeta.COL_TYPE_INT:
+            case ColMeta.COL_TYPE_LONG:
+            case ColMeta.COL_TYPE_INT24:
+            case ColMeta.COL_TYPE_SHORT:
+            case ColMeta.COL_TYPE_LONGLONG:
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
+                        : PrefixComparators.LONG_DESC);
+                break;
+            case ColMeta.COL_TYPE_FLOAT:
+            case ColMeta.COL_TYPE_DOUBLE:
+            case ColMeta.COL_TYPE_DECIMAL:
+            case ColMeta.COL_TYPE_NEWDECIMAL:
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.DOUBLE
+                        : PrefixComparators.DOUBLE_DESC);
+                break;
+            case ColMeta.COL_TYPE_DATE:
+            case ColMeta.COL_TYPE_TIMSTAMP:
+            case ColMeta.COL_TYPE_TIME:
+            case ColMeta.COL_TYPE_YEAR:
+            case ColMeta.COL_TYPE_DATETIME:
+            case ColMeta.COL_TYPE_NEWDATE:
+            case ColMeta.COL_TYPE_BIT:
+            case ColMeta.COL_TYPE_VAR_STRING:
+            case ColMeta.COL_TYPE_STRING:
+            case ColMeta.COL_TYPE_ENUM:
+            case ColMeta.COL_TYPE_SET:
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.BINARY
+                        : PrefixComparators.BINARY_DESC);
+                break;
+            default:
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
+                        : PrefixComparators.LONG_DESC);
+                break;
+        }
 
-		return prefixComparator;
-	}
+        return prefixComparator;
+    }
 
     @Override
     public List<RowDataPacket> getResults(byte[] eof) {
@@ -307,8 +302,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     BufferUtil.writeUB3(eof, eofp.calcPacketSize());
                     eof.put(eofp.packetId);
                     eof.put(eofp.fieldCount);
-                    BufferUtil.writeUB2(eof,warningCount);
-                    BufferUtil.writeUB2(eof,eofp.status);
+                    BufferUtil.writeUB2(eof, warningCount);
+                    BufferUtil.writeUB2(eof, eofp.status);
                     final ServerConnection source = multiQueryHandler.getSession().getSource();
                     final byte[] array = eof.array();
 
@@ -316,41 +311,41 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     Iterator<UnsafeRow> iters = null;
 
 
-                    if (unsafeRowGrouper != null){
+                    if (unsafeRowGrouper != null) {
                         /**
                          * group by里面需要排序情况
                          */
-                        if (globalSorter != null){
+                        if (globalSorter != null) {
                             iters = unsafeRowGrouper.getResult(globalSorter);
-                        }else {
+                        } else {
                             iters = unsafeRowGrouper.getResult(globalMergeResult);
                         }
 
-                    }else if(globalSorter != null){
+                    } else if (globalSorter != null) {
 
                         iters = globalSorter.sort();
 
-                    }else {
+                    } else {
 
                         iters = globalMergeResult.sort();
 
                     }
 
-                    if(iters != null)
-                        multiQueryHandler.outputMergeResult(source,array,iters);
+                    if (iters != null)
+                        multiQueryHandler.outputMergeResult(source, array, iters);
 
 
-                    if(unsafeRowGrouper!=null){
+                    if (unsafeRowGrouper != null) {
                         unsafeRowGrouper.free();
                         unsafeRowGrouper = null;
                     }
 
-                    if(globalSorter != null){
+                    if (globalSorter != null) {
                         globalSorter.cleanupResources();
                         globalSorter = null;
                     }
 
-                    if (globalMergeResult != null){
+                    if (globalMergeResult != null) {
                         globalMergeResult.cleanupResources();
                         globalMergeResult = null;
                     }
@@ -359,8 +354,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 }
 
                 unsafeRow = new UnsafeRow(fieldCount);
-                bufferHolder = new BufferHolder(unsafeRow,0);
-                unsafeRowWriter = new UnsafeRowWriter(bufferHolder,fieldCount);
+                bufferHolder = new BufferHolder(unsafeRow, 0);
+                unsafeRowWriter = new UnsafeRowWriter(bufferHolder, fieldCount);
                 bufferHolder.reset();
 
                 /**
@@ -373,18 +368,18 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 for (int i = 0; i < fieldCount; i++) {
                     byte[] colValue = mm.readBytesWithLength();
                     if (colValue != null)
-                    	unsafeRowWriter.write(i,colValue);
+                        unsafeRowWriter.write(i, colValue);
                     else
                         unsafeRow.setNullAt(i);
                 }
 
                 unsafeRow.setTotalSize(bufferHolder.totalSize());
 
-                if(unsafeRowGrouper != null){
+                if (unsafeRowGrouper != null) {
                     unsafeRowGrouper.addRow(unsafeRow);
-                }else if (globalSorter != null){
+                } else if (globalSorter != null) {
                     globalSorter.insertRow(unsafeRow);
-                }else {
+                } else {
                     globalMergeResult.insertRow(unsafeRow);
                 }
 
@@ -408,17 +403,17 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
      */
     public void clear() {
 
-        if(unsafeRowGrouper!=null){
+        if (unsafeRowGrouper != null) {
             unsafeRowGrouper.free();
             unsafeRowGrouper = null;
         }
 
-        if(globalSorter != null){
+        if (globalSorter != null) {
             globalSorter.cleanupResources();
             globalSorter = null;
         }
 
-        if (globalMergeResult != null){
+        if (globalMergeResult != null) {
             globalMergeResult.cleanupResources();
             globalMergeResult = null;
         }

@@ -25,7 +25,7 @@ package io.mycat.util.exception;
 
 /**
  * 未知数据包异常
- * 
+ *
  * @author mycat
  */
 public class UnknownPacketException extends RuntimeException {

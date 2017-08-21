@@ -68,14 +68,17 @@ public class ZKUtils {
             throw new RuntimeException(e);
         }
     }
+
     public static void createTempNode(String parent, String node) throws Exception {
         String path = ZKPaths.makePath(parent, node);
         createTempNode(path);
     }
+
     public static void createTempNode(String parent, String node, byte[] data) throws Exception {
         String path = ZKPaths.makePath(parent, node);
         curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path, data);
     }
+
     public static void createTempNode(String path) throws Exception {
         curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
     }

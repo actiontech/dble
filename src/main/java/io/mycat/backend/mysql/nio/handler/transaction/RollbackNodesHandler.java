@@ -2,7 +2,7 @@ package io.mycat.backend.mysql.nio.handler.transaction;
 
 public interface RollbackNodesHandler {
 
-	void rollback();
+    void rollback();
 
-	void clearResources();
+    void clearResources();
 }

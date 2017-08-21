@@ -24,142 +24,142 @@ import org.apache.log4j.Logger;
  */
 
 public class MyCatMemory {
-	private static Logger LOGGER = Logger.getLogger(MyCatMemory.class);
+    private static Logger LOGGER = Logger.getLogger(MyCatMemory.class);
 
-	public final  static double DIRECT_SAFETY_FRACTION  = 0.7;
-	private final long resultSetBufferSize;
-	private final int numCores;
-
-
-	/**
-	 * 内存管理相关关键类
-	 */
-	private final MycatPropertyConf conf;
-	private final MemoryManager resultMergeMemoryManager;
-	private final DataNodeDiskManager blockManager;
-	private final SerializerManager serializerManager;
+    public final static double DIRECT_SAFETY_FRACTION = 0.7;
+    private final long resultSetBufferSize;
+    private final int numCores;
 
 
-	public MyCatMemory(SystemConfig system,long totalNetWorkBufferSize) throws NoSuchFieldException, IllegalAccessException {
+    /**
+     * 内存管理相关关键类
+     */
+    private final MycatPropertyConf conf;
+    private final MemoryManager resultMergeMemoryManager;
+    private final DataNodeDiskManager blockManager;
+    private final SerializerManager serializerManager;
 
 
-		LOGGER.info("useOffHeapForMerge = " + system.getUseOffHeapForMerge());
-		LOGGER.info("memoryPageSize = " + system.getMemoryPageSize());
-		LOGGER.info("spillsFileBufferSize = " + system.getSpillsFileBufferSize());
-		LOGGER.info("totalNetWorkBufferSize = " + JavaUtils.bytesToString2(totalNetWorkBufferSize));
-		LOGGER.info("dataNodeSortedTempDir = "+ system.getDataNodeSortedTempDir());
-		this.conf = new MycatPropertyConf();
-		numCores = Runtime.getRuntime().availableProcessors();
+    public MyCatMemory(SystemConfig system, long totalNetWorkBufferSize) throws NoSuchFieldException, IllegalAccessException {
 
 
-		/**
-		 * 目前merge，order by ，limit 没有使用On Heap内存
-		 */
-
-		resultSetBufferSize =
-				(long)((Platform.getMaxDirectMemory()-totalNetWorkBufferSize)*DIRECT_SAFETY_FRACTION);
-
-		assert resultSetBufferSize > 0;
-
-		/**
-		 * mycat.merge.memory.offHeap.enabled
-		 * mycat.buffer.pageSize
-		 * mycat.memory.offHeap.size
-		 * mycat.merge.file.buffer
-		 * mycat.direct.output.result
-		 * mycat.local.dir
-		 */
-
-		if(system.getUseOffHeapForMerge()== 1){
-			conf.set("server.memory.offHeap.enabled","true");
-		}else{
-			conf.set("server.memory.offHeap.enabled","false");
-		}
-
-		if(system.getMemoryPageSize() != null){
-			conf.set("server.buffer.pageSize",system.getMemoryPageSize());
-		}else{
-			conf.set("server.buffer.pageSize","1m");
-		}
+        LOGGER.info("useOffHeapForMerge = " + system.getUseOffHeapForMerge());
+        LOGGER.info("memoryPageSize = " + system.getMemoryPageSize());
+        LOGGER.info("spillsFileBufferSize = " + system.getSpillsFileBufferSize());
+        LOGGER.info("totalNetWorkBufferSize = " + JavaUtils.bytesToString2(totalNetWorkBufferSize));
+        LOGGER.info("dataNodeSortedTempDir = " + system.getDataNodeSortedTempDir());
+        this.conf = new MycatPropertyConf();
+        numCores = Runtime.getRuntime().availableProcessors();
 
 
-		if(system.getSpillsFileBufferSize() != null){
-			conf.set("server.merge.file.buffer",system.getSpillsFileBufferSize());
-		}else{
-			conf.set("server.merge.file.buffer","32k");
-		}
+        /**
+         * 目前merge，order by ，limit 没有使用On Heap内存
+         */
 
-		conf.set("server.local.dirs",system.getDataNodeSortedTempDir());
-		conf.set("server.pointer.array.len","8k")
-			.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
+        resultSetBufferSize =
+                (long) ((Platform.getMaxDirectMemory() - totalNetWorkBufferSize) * DIRECT_SAFETY_FRACTION);
 
-		LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
+        assert resultSetBufferSize > 0;
 
-		resultMergeMemoryManager =
-				new ResultMergeMemoryManager(conf,numCores,0);
+        /**
+         * mycat.merge.memory.offHeap.enabled
+         * mycat.buffer.pageSize
+         * mycat.memory.offHeap.size
+         * mycat.merge.file.buffer
+         * mycat.direct.output.result
+         * mycat.local.dir
+         */
+
+        if (system.getUseOffHeapForMerge() == 1) {
+            conf.set("server.memory.offHeap.enabled", "true");
+        } else {
+            conf.set("server.memory.offHeap.enabled", "false");
+        }
+
+        if (system.getMemoryPageSize() != null) {
+            conf.set("server.buffer.pageSize", system.getMemoryPageSize());
+        } else {
+            conf.set("server.buffer.pageSize", "1m");
+        }
 
 
-		serializerManager = new SerializerManager();
+        if (system.getSpillsFileBufferSize() != null) {
+            conf.set("server.merge.file.buffer", system.getSpillsFileBufferSize());
+        } else {
+            conf.set("server.merge.file.buffer", "32k");
+        }
 
-		blockManager = new DataNodeDiskManager(conf,true);
+        conf.set("server.local.dirs", system.getDataNodeSortedTempDir());
+        conf.set("server.pointer.array.len", "8k")
+                .set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
-	}
+        LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
+
+        resultMergeMemoryManager =
+                new ResultMergeMemoryManager(conf, numCores, 0);
 
 
-	@VisibleForTesting
-	public MyCatMemory() throws NoSuchFieldException, IllegalAccessException {
-		conf = new MycatPropertyConf();
-		numCores = Runtime.getRuntime().availableProcessors();
+        serializerManager = new SerializerManager();
 
-		long maxOnHeapMemory =  (Platform.getMaxHeapMemory());
-		assert maxOnHeapMemory > 0;
+        blockManager = new DataNodeDiskManager(conf, true);
 
-		resultSetBufferSize = (long)((Platform.getMaxDirectMemory())*DIRECT_SAFETY_FRACTION);
+    }
 
-		assert resultSetBufferSize > 0;
-		/**
-		 * mycat.memory.offHeap.enabled
-		 * mycat.buffer.pageSize
-		 * mycat.memory.offHeap.size
-		 * mycat.testing.memory
-		 * mycat.merge.file.buffer
-		 * mycat.direct.output.result
-		 * mycat.local.dir
-		 */
-		conf.set("server.memory.offHeap.enabled","true")
-				.set("server.pointer.array.len","8K")
-				.set("server.buffer.pageSize","1m")
-				.set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
-		LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
+    @VisibleForTesting
+    public MyCatMemory() throws NoSuchFieldException, IllegalAccessException {
+        conf = new MycatPropertyConf();
+        numCores = Runtime.getRuntime().availableProcessors();
 
-		resultMergeMemoryManager =
-				new ResultMergeMemoryManager(conf,numCores,maxOnHeapMemory);
+        long maxOnHeapMemory = (Platform.getMaxHeapMemory());
+        assert maxOnHeapMemory > 0;
 
-		serializerManager = new SerializerManager();
+        resultSetBufferSize = (long) ((Platform.getMaxDirectMemory()) * DIRECT_SAFETY_FRACTION);
 
-		blockManager = new DataNodeDiskManager(conf,true);
+        assert resultSetBufferSize > 0;
+        /**
+         * mycat.memory.offHeap.enabled
+         * mycat.buffer.pageSize
+         * mycat.memory.offHeap.size
+         * mycat.testing.memory
+         * mycat.merge.file.buffer
+         * mycat.direct.output.result
+         * mycat.local.dir
+         */
+        conf.set("server.memory.offHeap.enabled", "true")
+                .set("server.pointer.array.len", "8K")
+                .set("server.buffer.pageSize", "1m")
+                .set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
-	}
+        LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 
-	public MycatPropertyConf getConf() {
-		return conf;
-	}
+        resultMergeMemoryManager =
+                new ResultMergeMemoryManager(conf, numCores, maxOnHeapMemory);
 
-	public long getResultSetBufferSize() {
-		return resultSetBufferSize;
-	}
+        serializerManager = new SerializerManager();
 
-	public MemoryManager getResultMergeMemoryManager() {
-		return resultMergeMemoryManager;
-	}
+        blockManager = new DataNodeDiskManager(conf, true);
 
-	public SerializerManager getSerializerManager() {
-		return serializerManager;
-	}
+    }
 
-	public DataNodeDiskManager getBlockManager() {
-		return blockManager;
-	}
+    public MycatPropertyConf getConf() {
+        return conf;
+    }
+
+    public long getResultSetBufferSize() {
+        return resultSetBufferSize;
+    }
+
+    public MemoryManager getResultMergeMemoryManager() {
+        return resultMergeMemoryManager;
+    }
+
+    public SerializerManager getSerializerManager() {
+        return serializerManager;
+    }
+
+    public DataNodeDiskManager getBlockManager() {
+        return blockManager;
+    }
 
 }

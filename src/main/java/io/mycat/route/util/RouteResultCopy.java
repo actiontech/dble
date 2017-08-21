@@ -33,28 +33,28 @@ import io.mycat.route.RouteResultsetNode;
  * So here.
  */
 public final class RouteResultCopy {
-	public static RouteResultsetNode RRNCopy(RouteResultsetNode node, int sqlType, String stmt) {
-		RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
-		nn.setRunOnSlave(node.getRunOnSlave());
-		nn.setCanRunInReadDB(true);
-		nn.setLimitSize(0);
-		return nn;
-	}
+    public static RouteResultsetNode RRNCopy(RouteResultsetNode node, int sqlType, String stmt) {
+        RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
+        nn.setRunOnSlave(node.getRunOnSlave());
+        nn.setCanRunInReadDB(true);
+        nn.setLimitSize(0);
+        return nn;
+    }
 
-	public static RouteResultset RRCopy(RouteResultset rrs, int sqlType, String stmt) {
-		RouteResultset rr = new RouteResultset(stmt, sqlType);
-		rr.setRunOnSlave(rrs.getRunOnSlave());
-		rr.setFinishedRoute(rrs.isFinishedRoute());
-		rr.setGlobalTable(rrs.isGlobalTable());
-		rr.setCanRunInReadDB(rrs.getCanRunInReadDB());
+    public static RouteResultset RRCopy(RouteResultset rrs, int sqlType, String stmt) {
+        RouteResultset rr = new RouteResultset(stmt, sqlType);
+        rr.setRunOnSlave(rrs.getRunOnSlave());
+        rr.setFinishedRoute(rrs.isFinishedRoute());
+        rr.setGlobalTable(rrs.isGlobalTable());
+        rr.setCanRunInReadDB(rrs.getCanRunInReadDB());
 
-		RouteResultsetNode[] ns = rrs.getNodes();
-		RouteResultsetNode[] nodes = new RouteResultsetNode[ns.length];
-		for (int i = 0; i < ns.length; i++) {
-			nodes[i] = RRNCopy(ns[i], sqlType, stmt);
-		}
-		rr.setNodes(nodes);
+        RouteResultsetNode[] ns = rrs.getNodes();
+        RouteResultsetNode[] nodes = new RouteResultsetNode[ns.length];
+        for (int i = 0; i < ns.length; i++) {
+            nodes[i] = RRNCopy(ns[i], sqlType, stmt);
+        }
+        rr.setNodes(nodes);
 
-		return rr;
-	}
+        return rr;
+    }
 }

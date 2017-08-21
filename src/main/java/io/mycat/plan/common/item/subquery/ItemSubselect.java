@@ -1,10 +1,9 @@
 /**
- * 
+ *
  */
 package io.mycat.plan.common.item.subquery;
 
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-
 import io.mycat.config.ErrorCode;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.PlanNode.PlanNodeType;
@@ -16,92 +15,95 @@ import io.mycat.plan.common.item.ItemResultField;
 import io.mycat.plan.visitor.MySQLPlanNodeVisitor;
 
 public abstract class ItemSubselect extends ItemResultField {
-	protected SQLSelectQuery query;
-	private String currentDb;
-	private PlanNode planNode;
-	public enum SubSelectType {
-		UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
-	};
+    protected SQLSelectQuery query;
+    private String currentDb;
+    private PlanNode planNode;
 
-	public SubSelectType substype() {
-		return SubSelectType.UNKNOWN_SUBS;
-	}
+    public enum SubSelectType {
+        UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
+    }
 
-	public ItemSubselect(String currentDb, SQLSelectQuery query) {
-		this.query = query;
-		this.currentDb = currentDb;
-		init();
-	}
+    ;
 
-	@Override
-	public ItemType type() {
-		return ItemType.SUBSELECT_ITEM;
-	}
+    public SubSelectType substype() {
+        return SubSelectType.UNKNOWN_SUBS;
+    }
 
-	private void init() {
-		MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex);
-		pv.visit(this.query);
-		this.planNode = pv.getTableNode();
-		if (planNode.type() != PlanNodeType.NONAME) {
-			this.withSubQuery = true;
-		}
-	}
+    public ItemSubselect(String currentDb, SQLSelectQuery query) {
+        this.query = query;
+        this.currentDb = currentDb;
+        init();
+    }
 
-	public void reset() {
-		this.nullValue = true;
-	}
+    @Override
+    public ItemType type() {
+        return ItemType.SUBSELECT_ITEM;
+    }
 
-	@Override
-	public final boolean isNull() {
-		updateNullValue();
-		return nullValue;
-	}
+    private void init() {
+        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex);
+        pv.visit(this.query);
+        this.planNode = pv.getTableNode();
+        if (planNode.type() != PlanNodeType.NONAME) {
+            this.withSubQuery = true;
+        }
+    }
 
-	@Override
-	public boolean fixFields() {
-		throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not supported!");
-	}
+    public void reset() {
+        this.nullValue = true;
+    }
 
-	public Item fixFields(NameResolutionContext context) {
-		this.planNode.setUpFields();
-		return this;
-	}
+    @Override
+    public final boolean isNull() {
+        updateNullValue();
+        return nullValue;
+    }
 
-	/**
-	 * added to construct all refers in an item
-	 * 
-	 * @param context
-	 */
-	public void fixRefer(ReferContext context) {
-		if (context.isPushDownNode())
-			return;
-		else
-			context.getPlanNode().subSelects.add(this);
-	}
+    @Override
+    public boolean fixFields() {
+        throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not supported!");
+    }
 
-	@Override
-	public String funcName() {
-		return "subselect";
-	}
+    public Item fixFields(NameResolutionContext context) {
+        this.planNode.setUpFields();
+        return this;
+    }
 
-	/**
-	 * 计算子查询相关数据
-	 */
-	public boolean execute() {
-		// TODO
-		return false;
-	}
+    /**
+     * added to construct all refers in an item
+     *
+     * @param context
+     */
+    public void fixRefer(ReferContext context) {
+        if (context.isPushDownNode())
+            return;
+        else
+            context.getPlanNode().subSelects.add(this);
+    }
 
-	public PlanNode getPlanNode() {
-		return planNode;
-	}
+    @Override
+    public String funcName() {
+        return "subselect";
+    }
 
-	public void setPlanNode(PlanNode planNode) {
-		this.planNode = planNode;
-	}
+    /**
+     * 计算子查询相关数据
+     */
+    public boolean execute() {
+        // TODO
+        return false;
+    }
 
-	@Override
-	public String toString(){
-		throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported!");
-	}
+    public PlanNode getPlanNode() {
+        return planNode;
+    }
+
+    public void setPlanNode(PlanNode planNode) {
+        this.planNode = planNode;
+    }
+
+    @Override
+    public String toString() {
+        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported!");
+    }
 }

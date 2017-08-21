@@ -18,40 +18,40 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 public class ShowSQLSumTable {
-	
-	private static DecimalFormat decimalFormat = new DecimalFormat("0.00");
+
+    private static DecimalFormat decimalFormat = new DecimalFormat("0.00");
 
     private static final int FIELD_COUNT = 8;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
-    
+
     static {
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
 
         fields[i] = PacketUtil.getField("TABLE", Fields.FIELD_TYPE_VARCHAR);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("R", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("W", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("R%", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("RELATABLE", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("RELACOUNT", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("LAST_TIME", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
         eof.packetId = ++packetId;
@@ -61,15 +61,15 @@ public class ShowSQLSumTable {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
         byte packetId = eof.packetId;          
@@ -85,21 +85,21 @@ public class ShowSQLSumTable {
         }
         */
         List<TableStat> list = TableStatAnalyzer.getInstance().getTableStats(isClear);
-        if ( list != null ) {
+        if (list != null) {
             int i = 1;
-	        for (TableStat tableStat : list) {
-                if(tableStat!=null){
-	                RowDataPacket row = getRow(tableStat,i, c.getCharset());
+            for (TableStat tableStat : list) {
+                if (tableStat != null) {
+                    RowDataPacket row = getRow(tableStat, i, c.getCharset());
                     i++;
-	                row.packetId = ++packetId;
-	                buffer = row.write(buffer, c,true);
+                    row.packetId = ++packetId;
+                    buffer = row.write(buffer, c, true);
                 }
-	        }
+            }
         }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
@@ -108,40 +108,40 @@ public class ShowSQLSumTable {
     private static RowDataPacket getRow(TableStat tableStat, long idx, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(idx));
-        if (tableStat == null){
-        	row.add(StringUtil.encode(("not fond"), charset));
-        	return row;
+        if (tableStat == null) {
+            row.add(StringUtil.encode(("not fond"), charset));
+            return row;
         }
-        
+
         String table = tableStat.getTable();
         long R = tableStat.getRCount();
         long W = tableStat.getWCount();
-        String __R = decimalFormat.format( 1.0D * R / (R + W) );
-        
-        
+        String __R = decimalFormat.format(1.0D * R / (R + W));
+
+
         StringBuffer relaTableNameBuffer = new StringBuffer();
         StringBuffer relaTableCountBuffer = new StringBuffer();
         List<TableStat.RelaTable> relaTables = tableStat.getRelaTables();
-        if ( !relaTables.isEmpty() ) { 
-        	
-	        for(TableStat.RelaTable relaTable: relaTables) {
-	        	relaTableNameBuffer.append( relaTable.getTableName() ).append(", ");
-	        	relaTableCountBuffer.append( relaTable.getCount() ).append(", ");
-	        }
-	        
+        if (!relaTables.isEmpty()) {
+
+            for (TableStat.RelaTable relaTable : relaTables) {
+                relaTableNameBuffer.append(relaTable.getTableName()).append(", ");
+                relaTableCountBuffer.append(relaTable.getCount()).append(", ");
+            }
+
         } else {
-        	relaTableNameBuffer.append("NULL");
-        	relaTableCountBuffer.append("NULL");
+            relaTableNameBuffer.append("NULL");
+            relaTableCountBuffer.append("NULL");
         }
-        
-        row.add( StringUtil.encode( table, charset) );
-        row.add( LongUtil.toBytes( R ) );
-        row.add( LongUtil.toBytes( W ) );
-        row.add( StringUtil.encode( String.valueOf( __R ), charset) );
-        row.add( StringUtil.encode( relaTableNameBuffer.toString(), charset) );
-        row.add( StringUtil.encode( relaTableCountBuffer.toString(), charset) );
-        row.add( StringUtil.encode(FormatUtil.formatDate(tableStat.getLastExecuteTime()), charset) );
-        
+
+        row.add(StringUtil.encode(table, charset));
+        row.add(LongUtil.toBytes(R));
+        row.add(LongUtil.toBytes(W));
+        row.add(StringUtil.encode(String.valueOf(__R), charset));
+        row.add(StringUtil.encode(relaTableNameBuffer.toString(), charset));
+        row.add(StringUtil.encode(relaTableCountBuffer.toString(), charset));
+        row.add(StringUtil.encode(FormatUtil.formatDate(tableStat.getLastExecuteTime()), charset));
+
         return row;
     }
 

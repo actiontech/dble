@@ -12,7 +12,7 @@ import java.util.Map;
 public class ShowServerLogTest {
 
     @Test
-    public void testPase(){
+    public void testPase() {
         String[] testlist = {
                 "log @@ file =    logname  limit  = rowLimit          key  =  'keyWord'  regex   =    regexStr",
                 "log @@ file =    logname  limit  = rowLimit          key  =  keyWord  regex   =    regexStr",
@@ -75,37 +75,36 @@ public class ShowServerLogTest {
                 null
         };
 
-        for(int i = 0;i < testlist.length;i++){
-            System.out.println(""+i);
-            Assert.assertTrue(mapEquals(ShowServerLog.getCondPair(testlist[i]),resultlist[i]));
+        for (int i = 0; i < testlist.length; i++) {
+            System.out.println("" + i);
+            Assert.assertTrue(mapEquals(ShowServerLog.getCondPair(testlist[i]), resultlist[i]));
         }
-
 
 
     }
 
-    public boolean mapEquals(Map<String,String> m1,String value){
-        if(m1 ==null && value == null){
+    public boolean mapEquals(Map<String, String> m1, String value) {
+        if (m1 == null && value == null) {
             return true;
         }
         String[] values = value.split("\\|\\|");
-        if(!"null".equals(values[0])){
-            if(!m1.get("file").equals(values[0])){
+        if (!"null".equals(values[0])) {
+            if (!m1.get("file").equals(values[0])) {
                 return false;
             }
         }
-        if(!"null".equals(values[1])){
-            if(!m1.get("limit").equals(values[1])){
+        if (!"null".equals(values[1])) {
+            if (!m1.get("limit").equals(values[1])) {
                 return false;
             }
         }
-        if(!"null".equals(values[2])){
-            if(!m1.get("key").equals(values[2])){
+        if (!"null".equals(values[2])) {
+            if (!m1.get("key").equals(values[2])) {
                 return false;
             }
         }
-        if(!"null".equals(values[3])){
-            if(!m1.get("regex").equals(values[3])){
+        if (!"null".equals(values[3])) {
+            if (!m1.get("regex").equals(values[3])) {
                 return false;
             }
         }

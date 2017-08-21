@@ -11,15 +11,15 @@ import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
 public class DescribeHandler {
-	public static void handle(String stmt, ServerConnection c) {
-		try {
-			SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-			MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
-			SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), describeStatement.getTableName());
-			c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.DESCRIBE);
-		} catch (Exception e) {
-			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
-			return;
-		}
-	}
+    public static void handle(String stmt, ServerConnection c) {
+        try {
+            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
+            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), describeStatement.getTableName());
+            c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.DESCRIBE);
+        } catch (Exception e) {
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+            return;
+        }
+    }
 }

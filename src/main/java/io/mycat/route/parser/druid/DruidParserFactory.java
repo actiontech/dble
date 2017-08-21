@@ -14,45 +14,44 @@ import java.sql.SQLNonTransientException;
  *
  * @author wdw
  */
-public class DruidParserFactory
-{
-	public static DruidParser create(SQLStatement statement, int sqlType)
-			throws SQLNonTransientException {
-		DruidParser parser = null;
-		if (statement instanceof SQLSelectStatement) {
-			parser = new DruidSelectParser();
-		} else if (statement instanceof MySqlInsertStatement) {
-			parser = new DruidInsertParser();
-		} else if (statement instanceof MySqlDeleteStatement) {
-			parser = new DruidDeleteParser();
-		} else if (statement instanceof MySqlUpdateStatement) {
-			parser = new DruidUpdateParser();
-		} else if (statement instanceof MySqlLockTableStatement) {
-			parser = new DruidLockTableParser();
-		} else if (statement instanceof SQLDDLStatement) {
-			if (statement instanceof MySqlCreateTableStatement) {
-				parser = new DruidCreateTableParser();
-			} else if (statement instanceof SQLDropTableStatement) {
-				parser = new DruidDropTableParser();
-			} else if (statement instanceof SQLAlterTableStatement) {
-				parser = new DruidAlterTableParser();
-			} else if (statement instanceof SQLCreateIndexStatement) {
-				parser = new DruidCreateIndexParser();
-			} else if (statement instanceof SQLDropIndexStatement) {
-				parser = new DruidDropIndexParser();
-			} else {
-				String msg = "THE DDL is not supported :" + statement;
-				throw new SQLNonTransientException(msg);
-			}
-		} else if (statement instanceof SQLTruncateStatement) {
-			parser = new DruidTruncateTableParser();
-		}else if (sqlType == ServerParse.DDL) {
-			String msg = "THE DDL is not supported :" + statement;
-			throw new SQLNonTransientException(msg);
-		} else {
-			parser = new DefaultDruidParser();
-		}
+public class DruidParserFactory {
+    public static DruidParser create(SQLStatement statement, int sqlType)
+            throws SQLNonTransientException {
+        DruidParser parser = null;
+        if (statement instanceof SQLSelectStatement) {
+            parser = new DruidSelectParser();
+        } else if (statement instanceof MySqlInsertStatement) {
+            parser = new DruidInsertParser();
+        } else if (statement instanceof MySqlDeleteStatement) {
+            parser = new DruidDeleteParser();
+        } else if (statement instanceof MySqlUpdateStatement) {
+            parser = new DruidUpdateParser();
+        } else if (statement instanceof MySqlLockTableStatement) {
+            parser = new DruidLockTableParser();
+        } else if (statement instanceof SQLDDLStatement) {
+            if (statement instanceof MySqlCreateTableStatement) {
+                parser = new DruidCreateTableParser();
+            } else if (statement instanceof SQLDropTableStatement) {
+                parser = new DruidDropTableParser();
+            } else if (statement instanceof SQLAlterTableStatement) {
+                parser = new DruidAlterTableParser();
+            } else if (statement instanceof SQLCreateIndexStatement) {
+                parser = new DruidCreateIndexParser();
+            } else if (statement instanceof SQLDropIndexStatement) {
+                parser = new DruidDropIndexParser();
+            } else {
+                String msg = "THE DDL is not supported :" + statement;
+                throw new SQLNonTransientException(msg);
+            }
+        } else if (statement instanceof SQLTruncateStatement) {
+            parser = new DruidTruncateTableParser();
+        } else if (sqlType == ServerParse.DDL) {
+            String msg = "THE DDL is not supported :" + statement;
+            throw new SQLNonTransientException(msg);
+        } else {
+            parser = new DefaultDruidParser();
+        }
 
-		return parser;
-	}
+        return parser;
+    }
 }

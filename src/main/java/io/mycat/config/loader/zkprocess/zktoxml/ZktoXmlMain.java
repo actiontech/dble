@@ -1,12 +1,10 @@
 package io.mycat.config.loader.zkprocess.zktoxml;
 
-import io.mycat.MycatServer;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import io.mycat.config.loader.zkprocess.parse.XmlProcessBase;
 import io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import io.mycat.config.loader.zkprocess.zktoxml.listen.*;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.manager.response.ReloadConfig;
 import io.mycat.util.KVPathUtil;
 import io.mycat.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -22,22 +20,24 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * 将xk的信息转换为xml文件的操作
-* 源文件名：ZktoxmlMain.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月20日
-* 修改作者：liujun
-* 修改日期：2016年9月20日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：ZktoxmlMain.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月20日
+ * 修改作者：liujun
+ * 修改日期：2016年9月20日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class ZktoXmlMain {
 
     /**
      * 日志
-    * @字段说明 LOGGER
-    */
+     *
+     * @字段说明 LOGGER
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
+
     public static void main(String[] args) throws Exception {
         loadZktoFile();
         System.out.println("ZktoXmlMain Finished");
@@ -45,10 +45,11 @@ public class ZktoXmlMain {
 
     /**
      * 将zk数据放到到本地
-    * 方法描述
-     * @throws Exception 
+     * 方法描述
+     *
+     * @throws Exception
      * @创建日期 2016年9月21日
-    */
+     */
     public static void loadZktoFile() throws Exception {
         // 获得zk的连接信息
         CuratorFramework zkConn = ZKUtils.getConnection();
@@ -64,7 +65,7 @@ public class ZktoXmlMain {
 
     private static void initLocalConfFromZK(ZookeeperProcessListen zkListen, CuratorFramework zkConn) throws Exception {
 
-        ConfigStatusListener confListener = new ConfigStatusListener(zkListen,zkConn);
+        ConfigStatusListener confListener = new ConfigStatusListener(zkListen, zkConn);
         // 获得公共的xml转换器对象
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
@@ -84,7 +85,7 @@ public class ZktoXmlMain {
         new EcacheszkToxmlLoader(zkListen, zkConn, xmlProcess);
 
         // 将bindata目录的数据进行转换到本地文件
-        ZKUtils.addChildPathCache(KVPathUtil.getBinDataPath(),new BinDataPathChildrenCacheListener());
+        ZKUtils.addChildPathCache(KVPathUtil.getBinDataPath(), new BinDataPathChildrenCacheListener());
 
         new BinlogPauseStatusListener(zkListen, zkConn);
 
@@ -97,7 +98,7 @@ public class ZktoXmlMain {
     }
 
     private static void initZKIfNot(CuratorFramework zkConn) throws Exception {
-        String confInited =  KVPathUtil.getConfInitedPath();
+        String confInited = KVPathUtil.getConfInitedPath();
         //init conf if not
         if (zkConn.checkExists().forPath(confInited) == null) {
             InterProcessMutex confLock = new InterProcessMutex(zkConn, KVPathUtil.getConfInitLockPath());
@@ -142,12 +143,13 @@ public class ZktoXmlMain {
 
     /**
      * 进行zk的watch操作
-    * 方法描述
-    * @param cache NodeCache
-    * @param zkListen 监控路径信息
-    * @throws Exception
-    * @创建日期 2016年9月20日
-    */
+     * 方法描述
+     *
+     * @param cache    NodeCache
+     * @param zkListen 监控路径信息
+     * @throws Exception
+     * @创建日期 2016年9月20日
+     */
     private static void runWatch(final NodeCache cache, final ZookeeperProcessListen zkListen)
             throws Exception {
         cache.getListenable().addListener(new NodeCacheListener() {

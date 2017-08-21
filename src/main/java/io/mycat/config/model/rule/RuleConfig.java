@@ -29,36 +29,35 @@ import java.io.Serializable;
 
 /**
  * 分片规则，column是用于分片的数据库物理字段
+ *
  * @author mycat
  */
 public class RuleConfig implements Serializable {
-	private final String column;
-	private final String functionName;
-	private AbstractPartitionAlgorithm ruleAlgorithm;
+    private final String column;
+    private final String functionName;
+    private AbstractPartitionAlgorithm ruleAlgorithm;
 
-	public RuleConfig(String column, String functionName, AbstractPartitionAlgorithm ruleAlgorithm) {
-		this.functionName = functionName;
-		this.column = column;
-		this.ruleAlgorithm = ruleAlgorithm;
-	}
+    public RuleConfig(String column, String functionName, AbstractPartitionAlgorithm ruleAlgorithm) {
+        this.functionName = functionName;
+        this.column = column;
+        this.ruleAlgorithm = ruleAlgorithm;
+    }
 
-	
 
-	public AbstractPartitionAlgorithm getRuleAlgorithm() {
-		return ruleAlgorithm;
-	}
+    public AbstractPartitionAlgorithm getRuleAlgorithm() {
+        return ruleAlgorithm;
+    }
 
-	/**
-	 * @return unmodifiable, upper-case
-	 */
-	public String getColumn() {
-		return column;
-	}
+    /**
+     * @return unmodifiable, upper-case
+     */
+    public String getColumn() {
+        return column;
+    }
 
-	public String getFunctionName() {
-		return functionName;
-	}
+    public String getFunctionName() {
+        return functionName;
+    }
 
-	
 
 }

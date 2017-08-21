@@ -15,35 +15,35 @@ import java.util.Properties;
 
 /**
  * 进行从sequence加载到zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTozkLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * 后缀名
-    */
+     */
     private static final String PROPERTIES_SUFFIX = ".properties";
 
     /**
      * 序列配制信息
-    */
+     */
     private static final String PROPERTIES_SEQUENCE_CONF = "sequence_conf";
 
     /**
@@ -57,7 +57,7 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
     private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
 
-    public SequenceTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator ) {
+    public SequenceTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getSequencesPath();
         // 将当前自己注册为事件接收对象
@@ -88,22 +88,23 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 将xml文件的信息写入到zk中
-    * 方法描述
-    * @param basePath 基本路径
-    * @param name 文件的信息
-    * @throws Exception 异常信息
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param basePath 基本路径
+     * @param name     文件的信息
+     * @throws Exception 异常信息
+     * @创建日期 2016年9月17日
+     */
     private void sequenceTozk(String basePath, String name) throws Exception {
         // 读取当前节的信息
         String readFile = name + PROPERTIES_SUFFIX;
         // 读取公共节点的信息
         String commSequence = ConfFileRWUtils.readFile(readFile);
-        if(name.equals(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF)){
+        if (name.equals(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF)) {
             Properties props = new Properties();
             props.load(new StringReader(commSequence));
             if (!"ZK".equals(props.getProperty("INSTANCEID"))) {
-                LOGGER.info("The property of INSTANCEID in " +readFile + " is not zk,no need to store in zk");
+                LOGGER.info("The property of INSTANCEID in " + readFile + " is not zk,no need to store in zk");
                 return;
             }
         }

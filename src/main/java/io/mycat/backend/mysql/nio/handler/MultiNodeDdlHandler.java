@@ -51,274 +51,275 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author guoji.ma@gmail.com
  */
 public class MultiNodeDdlHandler extends MultiNodeHandler {
-	private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
-	private static final String stmt = "select 1";
-	private final RouteResultset rrs;
-	private final RouteResultset orirrs;
-	private final NonBlockingSession session;
-	private final boolean sessionAutocommit;
-	private final MultiNodeQueryHandler handler;
+    private static final String stmt = "select 1";
+    private final RouteResultset rrs;
+    private final RouteResultset orirrs;
+    private final NonBlockingSession session;
+    private final boolean sessionAutocommit;
+    private final MultiNodeQueryHandler handler;
 
-	private final ReentrantLock lock;
+    private final ReentrantLock lock;
 
-	protected volatile boolean terminated;
+    protected volatile boolean terminated;
 
-	private ErrorPacket err;
-	private List<BackendConnection> errConnection;
+    private ErrorPacket err;
+    private List<BackendConnection> errConnection;
 
-	public MultiNodeDdlHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
-		super(session);
-		if (rrs.getNodes() == null) {
-			throw new IllegalArgumentException("routeNode is null!");
-		}
-		
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("execute mutinode query " + rrs.getStatement());
-		}
-		
-		this.rrs = RouteResultCopy.RRCopy(rrs, ServerParse.SELECT, stmt);
-		this.sessionAutocommit = session.getSource().isAutocommit();
-		this.session = session;
+    public MultiNodeDdlHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
+        super(session);
+        if (rrs.getNodes() == null) {
+            throw new IllegalArgumentException("routeNode is null!");
+        }
 
-		this.orirrs = rrs;
-		this.handler = new MultiNodeQueryHandler(sqlType, rrs, session); 
-		
-		this.lock = new ReentrantLock();
-	}
-    
-	protected void reset(int initCount) {
-		super.reset(initCount);
-		this.terminated = false;
-	}
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("execute mutinode query " + rrs.getStatement());
+        }
 
-	public NonBlockingSession getSession() {
-		return session;
-	}
+        this.rrs = RouteResultCopy.RRCopy(rrs, ServerParse.SELECT, stmt);
+        this.sessionAutocommit = session.getSource().isAutocommit();
+        this.session = session;
 
-	public void execute() throws Exception {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			this.reset(rrs.getNodes().length);
-		} finally {
-			lock.unlock();
-		}
-		
-		MycatConfig conf = MycatServer.getInstance().getConfig();
-		LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
-		StringBuilder sb = new StringBuilder();
-		for (final RouteResultsetNode node : rrs.getNodes()) {
-			if(node.isModifySQL()){
-				sb.append("["+node.getName()+"]"+node.getStatement()).append(";\n");
-			}
-		}
-		if(sb.length()>0){
-			TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
-		}
-		
-		for (final RouteResultsetNode node : rrs.getNodes()) {
-			BackendConnection conn = session.getTarget(node);
-			if (session.tryExistsCon(conn, node)) {
-				LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-				node.setRunOnSlave(rrs.getRunOnSlave());	// 实现 master/slave注解
-				LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-				_execute(conn, node);
-			} else {
-				// create new connection
-				LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
-				node.setRunOnSlave(rrs.getRunOnSlave());	// 实现 master/slave注解
-				LOGGER.debug("node.getRunOnSlave()2-" + node.getRunOnSlave());
-				PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-				dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
-			}
-		}
-	}
+        this.orirrs = rrs;
+        this.handler = new MultiNodeQueryHandler(sqlType, rrs, session);
 
-	private void _execute(BackendConnection conn, RouteResultsetNode node) {
-		if (clearIfSessionClosed(session)) {
-			return;
-		}
-		conn.setResponseHandler(this);
-		conn.execute(node, session.getSource(), sessionAutocommit&&!session.getSource().isTxstart());
-	}
-    
-	@Override
-	public void connectionClose(BackendConnection conn, String reason) {
-		LOGGER.warn("backend connect"+reason);
-		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.packetId = ++packetId;
-		errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
-		errPacket.message = StringUtil.encode(reason, session.getSource().getCharset());
-		err = errPacket;
-		
-		lock.lock();
-		try {
-			if (!terminated) {
-				terminated = true;
-			}
-			if (errConnection == null) {
-				errConnection = new ArrayList<BackendConnection>();
-			}
-			errConnection.add(conn);
-			if (!conn.syncAndExcute()) {
-				return;
-			}
-			if (--nodeCount <= 0) {
-				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
-    	
-	@Override
-	public void connectionError(Throwable e, BackendConnection conn) {
-		LOGGER.warn("backend connect", e);
-		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.packetId = ++packetId;
-		errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
-		errPacket.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
-		err = errPacket;
+        this.lock = new ReentrantLock();
+    }
 
-		lock.lock();
-		try {
-			if (!terminated) {
-				terminated = true;
-			}
-			if (errConnection == null) {
-				errConnection = new ArrayList<BackendConnection>();
-			}
-			errConnection.add(conn);
-			if (!conn.syncAndExcute()) {
-				return;
-			}
-			if (--nodeCount <= 0) {
-				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
+    protected void reset(int initCount) {
+        super.reset(initCount);
+        this.terminated = false;
+    }
 
-	@Override
-	public void connectionAcquired(final BackendConnection conn) {
-		final RouteResultsetNode node = (RouteResultsetNode)conn.getAttachment();
-		session.bindConnection(node, conn);
-		_execute(conn, node);
-	}
+    public NonBlockingSession getSession() {
+        return session;
+    }
+
+    public void execute() throws Exception {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            this.reset(rrs.getNodes().length);
+        } finally {
+            lock.unlock();
+        }
+
+        MycatConfig conf = MycatServer.getInstance().getConfig();
+        LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
+        StringBuilder sb = new StringBuilder();
+        for (final RouteResultsetNode node : rrs.getNodes()) {
+            if (node.isModifySQL()) {
+                sb.append("[" + node.getName() + "]" + node.getStatement()).append(";\n");
+            }
+        }
+        if (sb.length() > 0) {
+            TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
+        }
+
+        for (final RouteResultsetNode node : rrs.getNodes()) {
+            BackendConnection conn = session.getTarget(node);
+            if (session.tryExistsCon(conn, node)) {
+                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
+                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
+                _execute(conn, node);
+            } else {
+                // create new connection
+                LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
+                LOGGER.debug("node.getRunOnSlave()2-" + node.getRunOnSlave());
+                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
+            }
+        }
+    }
+
+    private void _execute(BackendConnection conn, RouteResultsetNode node) {
+        if (clearIfSessionClosed(session)) {
+            return;
+        }
+        conn.setResponseHandler(this);
+        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxstart());
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        LOGGER.warn("backend connect" + reason);
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.packetId = ++packetId;
+        errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
+        errPacket.message = StringUtil.encode(reason, session.getSource().getCharset());
+        err = errPacket;
+
+        lock.lock();
+        try {
+            if (!terminated) {
+                terminated = true;
+            }
+            if (errConnection == null) {
+                errConnection = new ArrayList<BackendConnection>();
+            }
+            errConnection.add(conn);
+            if (!conn.syncAndExcute()) {
+                return;
+            }
+            if (--nodeCount <= 0) {
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void connectionError(Throwable e, BackendConnection conn) {
+        LOGGER.warn("backend connect", e);
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.packetId = ++packetId;
+        errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
+        errPacket.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
+        err = errPacket;
+
+        lock.lock();
+        try {
+            if (!terminated) {
+                terminated = true;
+            }
+            if (errConnection == null) {
+                errConnection = new ArrayList<BackendConnection>();
+            }
+            errConnection.add(conn);
+            if (!conn.syncAndExcute()) {
+                return;
+            }
+            if (--nodeCount <= 0) {
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void connectionAcquired(final BackendConnection conn) {
+        final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+        session.bindConnection(node, conn);
+        _execute(conn, node);
+    }
 
 
-	@Override
-	public void errorResponse(byte[] data, BackendConnection conn) {
-		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.read(data);
-		errPacket.packetId = 1;
-		err = errPacket;
-		lock.lock();
-		try {
-			if (!isFail())
-				setFail(err.toString());
-			if (!conn.syncAndExcute()) {
-				return;
-			}
-			if (--nodeCount > 0)
-				return;
-			handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-		} finally {
-			lock.unlock();
-		}
-	}
+    @Override
+    public void errorResponse(byte[] data, BackendConnection conn) {
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.read(data);
+        errPacket.packetId = 1;
+        err = errPacket;
+        lock.lock();
+        try {
+            if (!isFail())
+                setFail(err.toString());
+            if (!conn.syncAndExcute()) {
+                return;
+            }
+            if (--nodeCount > 0)
+                return;
+            handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+        } finally {
+            lock.unlock();
+        }
+    }
 
-    	/* arriving here is impossible */
-	@Override
-	public void okResponse(byte[] data, BackendConnection conn) {
-		if(!conn.syncAndExcute()) {
-			LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
-		}
-	}
+    /* arriving here is impossible */
+    @Override
+    public void okResponse(byte[] data, BackendConnection conn) {
+        if (!conn.syncAndExcute()) {
+            LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
+        }
+    }
 
-	@Override
-	public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("on row end reseponse " + conn);
-		}
+    @Override
+    public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("on row end reseponse " + conn);
+        }
 
-		if (errorRepsponsed.get()) {
-			return;
-		}
+        if (errorRepsponsed.get()) {
+            return;
+        }
 
-		final ServerConnection source = session.getSource();
-		if (clearIfSessionClosed(session)) {
-			return;
-		}
+        final ServerConnection source = session.getSource();
+        if (clearIfSessionClosed(session)) {
+            return;
+        }
 
-		lock.lock();
-		try {
-			if (this.isFail() || session.closed()) {
-				tryErrorFinished(true);
-				return;
-			}
+        lock.lock();
+        try {
+            if (this.isFail() || session.closed()) {
+                tryErrorFinished(true);
+                return;
+            }
 
-			if (--nodeCount > 0)
-				return;
+            if (--nodeCount > 0)
+                return;
 
-			if (errConnection == null) {
-				try {
-					if (session.isPrepared()) {
-						handler.setPrepared(true);
-					}
-					handler.execute();
-				} catch (Exception e) {
-					LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
-					source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-				}
-				if (session.isPrepared()) {
-					session.setPrepared(false);
-				}
-			} else {
-				handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
+            if (errConnection == null) {
+                try {
+                    if (session.isPrepared()) {
+                        handler.setPrepared(true);
+                    }
+                    handler.execute();
+                } catch (Exception e) {
+                    LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
+                    source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+                }
+                if (session.isPrepared()) {
+                    session.setPrepared(false);
+                }
+            } else {
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
-				     boolean isLeft, BackendConnection conn) {
-	}
-	@Override
-	public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
-	    	/* It is impossible arriving here, because we set limit to 0 */
-		if (errorRepsponsed.get()) {
-			return true;
-		}
-		return false;
-	}
+    @Override
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+                                 boolean isLeft, BackendConnection conn) {
+    }
 
-	@Override
-	public void clearResources() {
-	}
+    @Override
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
+            /* It is impossible arriving here, because we set limit to 0 */
+        if (errorRepsponsed.get()) {
+            return true;
+        }
+        return false;
+    }
 
-	@Override
-	public void writeQueueAvailable() {
-	}
+    @Override
+    public void clearResources() {
+    }
 
-    	
-	protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
-		ServerConnection source = session.getSource();
-		boolean inTransaction = !source.isAutocommit() || source.isTxstart();
-		if (!inTransaction) {
-			// 普通查询
-			session.releaseConnection(conn);
-		}
-		// 显示分布式事务
-		if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
-			source.setTxInterrupt("ROLLBACK");
-		}
-		if (nodeCount == 0) {
-			session.getSource().write(data);
-		}
-	}
+    @Override
+    public void writeQueueAvailable() {
+    }
+
+
+    protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
+        ServerConnection source = session.getSource();
+        boolean inTransaction = !source.isAutocommit() || source.isTxstart();
+        if (!inTransaction) {
+            // 普通查询
+            session.releaseConnection(conn);
+        }
+        // 显示分布式事务
+        if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
+            source.setTxInterrupt("ROLLBACK");
+        }
+        if (nodeCount == 0) {
+            session.getSource().write(data);
+        }
+    }
 }

@@ -22,40 +22,40 @@ import org.junit.Test;
 
 public class PlatformUtilSuite {
 
-  @Test
-  public void overlappingCopyMemory() {
-    byte[] data = new byte[3 * 1024 * 1024];
-    int size = 2 * 1024 * 1024;
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = (byte)i;
-    }
+    @Test
+    public void overlappingCopyMemory() {
+        byte[] data = new byte[3 * 1024 * 1024];
+        int size = 2 * 1024 * 1024;
+        for (int i = 0; i < data.length; ++i) {
+            data[i] = (byte) i;
+        }
 
-    Platform.copyMemory(data, Platform.BYTE_ARRAY_OFFSET, data, Platform.BYTE_ARRAY_OFFSET, size);
-    for (int i = 0; i < data.length; ++i) {
-      Assert.assertEquals((byte)i, data[i]);
-    }
+        Platform.copyMemory(data, Platform.BYTE_ARRAY_OFFSET, data, Platform.BYTE_ARRAY_OFFSET, size);
+        for (int i = 0; i < data.length; ++i) {
+            Assert.assertEquals((byte) i, data[i]);
+        }
 
-    Platform.copyMemory(
-        data,
-        Platform.BYTE_ARRAY_OFFSET + 1,
-        data,
-        Platform.BYTE_ARRAY_OFFSET,
-        size);
-    for (int i = 0; i < size; ++i) {
-      Assert.assertEquals((byte)(i + 1), data[i]);
-    }
+        Platform.copyMemory(
+                data,
+                Platform.BYTE_ARRAY_OFFSET + 1,
+                data,
+                Platform.BYTE_ARRAY_OFFSET,
+                size);
+        for (int i = 0; i < size; ++i) {
+            Assert.assertEquals((byte) (i + 1), data[i]);
+        }
 
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = (byte)i;
+        for (int i = 0; i < data.length; ++i) {
+            data[i] = (byte) i;
+        }
+        Platform.copyMemory(
+                data,
+                Platform.BYTE_ARRAY_OFFSET,
+                data,
+                Platform.BYTE_ARRAY_OFFSET + 1,
+                size);
+        for (int i = 0; i < size; ++i) {
+            Assert.assertEquals((byte) i, data[i + 1]);
+        }
     }
-    Platform.copyMemory(
-        data,
-        Platform.BYTE_ARRAY_OFFSET,
-        data,
-        Platform.BYTE_ARRAY_OFFSET + 1,
-        size);
-    for (int i = 0; i < size; ++i) {
-      Assert.assertEquals((byte)i, data[i + 1]);
-    }
-  }
 }

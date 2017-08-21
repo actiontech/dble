@@ -4,10 +4,10 @@ import io.mycat.plan.common.item.ItemBasicConstant;
 
 public abstract class ItemNum extends ItemBasicConstant {
 
-	public ItemNum() {
-		// my_charset_numeric
-		charsetIndex = 8;
-	}
+    public ItemNum() {
+        // my_charset_numeric
+        charsetIndex = 8;
+    }
 
-	public abstract ItemNum neg();
+    public abstract ItemNum neg();
 }

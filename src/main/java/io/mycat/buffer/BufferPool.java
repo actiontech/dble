@@ -11,12 +11,19 @@ import java.util.concurrent.ConcurrentMap;
  * @time 12:19 2016/5/23
  */
 public interface BufferPool {
-	ByteBuffer allocate();
+    ByteBuffer allocate();
+
     public ByteBuffer allocate(int size);
+
     public void recycle(ByteBuffer theBuf);
+
     public long capacity();
+
     public long size();
-    public  int getSharedOptsCount();
+
+    public int getSharedOptsCount();
+
     public int getChunkSize();
-    public ConcurrentMap<Long,Long> getNetDirectMemoryUsage();
+
+    public ConcurrentMap<Long, Long> getNetDirectMemoryUsage();
 }

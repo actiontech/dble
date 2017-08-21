@@ -34,32 +34,32 @@ import io.mycat.util.StringUtil;
  */
 public final class ShowHandler {
 
-	public static void handle(String stmt, ServerConnection c, int offset) {
+    public static void handle(String stmt, ServerConnection c, int offset) {
 
-		// 排除 “ ` ” 符号
-		stmt = StringUtil.replaceChars(stmt, "`", null);
+        // 排除 “ ` ” 符号
+        stmt = StringUtil.replaceChars(stmt, "`", null);
 
-		int type = ServerParseShow.parse(stmt, offset);
-		switch (type) {
-			case ServerParseShow.DATABASES:
-				ShowDatabases.response(c);
-				break;
-			case ServerParseShow.TABLES:
-				ShowTables.response(c, stmt);
-				break;
-			case ServerParseShow.COLUMNS:
-				ShowColumns.response(c, stmt);
-				break;
-			case ServerParseShow.INDEX:
-				ShowIndex.response(c, stmt);
-				break;
-			case ServerParseShow.CREATE_TABLE:
-				ShowCreateTable.response(c, stmt);
-				break;
-			case ServerParseShow.CHARSET:
-				stmt = stmt.toLowerCase().replaceFirst("charset","character set");
-			default:
-				c.execute(stmt, ServerParse.SHOW);
-		}
-	}
+        int type = ServerParseShow.parse(stmt, offset);
+        switch (type) {
+            case ServerParseShow.DATABASES:
+                ShowDatabases.response(c);
+                break;
+            case ServerParseShow.TABLES:
+                ShowTables.response(c, stmt);
+                break;
+            case ServerParseShow.COLUMNS:
+                ShowColumns.response(c, stmt);
+                break;
+            case ServerParseShow.INDEX:
+                ShowIndex.response(c, stmt);
+                break;
+            case ServerParseShow.CREATE_TABLE:
+                ShowCreateTable.response(c, stmt);
+                break;
+            case ServerParseShow.CHARSET:
+                stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
+            default:
+                c.execute(stmt, ServerParse.SHOW);
+        }
+    }
 }

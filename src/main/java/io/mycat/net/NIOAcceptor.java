@@ -23,6 +23,11 @@
  */
 package io.mycat.net;
 
+import io.mycat.MycatServer;
+import io.mycat.net.factory.FrontendConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -33,127 +38,122 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.MycatServer;
-import io.mycat.net.factory.FrontendConnectionFactory;
-
 /**
  * @author mycat
  */
-public final class NIOAcceptor extends Thread  implements SocketAcceptor{
-	private static final Logger LOGGER = LoggerFactory.getLogger(NIOAcceptor.class);
-	private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
+public final class NIOAcceptor extends Thread implements SocketAcceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NIOAcceptor.class);
+    private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
 
-	private final int port;
-	private final Selector selector;
-	private final ServerSocketChannel serverChannel;
-	private final FrontendConnectionFactory factory;
-	private final NIOReactorPool reactorPool;
+    private final int port;
+    private final Selector selector;
+    private final ServerSocketChannel serverChannel;
+    private final FrontendConnectionFactory factory;
+    private final NIOReactorPool reactorPool;
 
-	public NIOAcceptor(String name, String bindIp, int port, int backlog, FrontendConnectionFactory factory,
-			NIOReactorPool reactorPool) throws IOException {
-		super.setName(name);
-		this.port = port;
-		this.selector = Selector.open();
-		this.serverChannel = ServerSocketChannel.open();
-		this.serverChannel.configureBlocking(false);
-		//设置TCP属性
-		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
-		serverChannel.bind(new InetSocketAddress(bindIp, port), backlog);
-		this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-		this.factory = factory;
-		this.reactorPool = reactorPool;
-	}
+    public NIOAcceptor(String name, String bindIp, int port, int backlog, FrontendConnectionFactory factory,
+                       NIOReactorPool reactorPool) throws IOException {
+        super.setName(name);
+        this.port = port;
+        this.selector = Selector.open();
+        this.serverChannel = ServerSocketChannel.open();
+        this.serverChannel.configureBlocking(false);
+        //设置TCP属性
+        serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
+        serverChannel.bind(new InetSocketAddress(bindIp, port), backlog);
+        this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+        this.factory = factory;
+        this.reactorPool = reactorPool;
+    }
 
-	public int getPort() {
-		return port;
-	}
-	@Override
-	public void run() {
-		final Selector tSelector = this.selector;
-		for (;;) {
-			try {
-			    tSelector.select(1000L);
-				Set<SelectionKey> keys = tSelector.selectedKeys();
-				try {
-					for (SelectionKey key : keys) {
-						if (key.isValid() && key.isAcceptable()) {
-							accept();
-						} else {
-							key.cancel();
-						}
-					}
-				} finally {
-					keys.clear();
-				}
-			} catch (Exception e) {
-				LOGGER.warn(getName(), e);
-			}
-		}
-	}
+    public int getPort() {
+        return port;
+    }
 
-	private void accept() {
-		SocketChannel channel = null;
-		try {
-			channel = serverChannel.accept();
-			channel.configureBlocking(false);
-			FrontendConnection c = factory.make(channel);
-			c.setAccepted(true);
-			c.setId(ID_GENERATOR.getId());
-			NIOProcessor processor = MycatServer.getInstance().nextProcessor();
-			c.setProcessor(processor);
-			
-			NIOReactor reactor = reactorPool.getNextReactor();
-			reactor.postRegister(c);
+    @Override
+    public void run() {
+        final Selector tSelector = this.selector;
+        for (; ; ) {
+            try {
+                tSelector.select(1000L);
+                Set<SelectionKey> keys = tSelector.selectedKeys();
+                try {
+                    for (SelectionKey key : keys) {
+                        if (key.isValid() && key.isAcceptable()) {
+                            accept();
+                        } else {
+                            key.cancel();
+                        }
+                    }
+                } finally {
+                    keys.clear();
+                }
+            } catch (Exception e) {
+                LOGGER.warn(getName(), e);
+            }
+        }
+    }
 
-		} catch (Exception e) {
-	        LOGGER.warn(getName(), e);
-			closeChannel(channel);
-		}
-	}
+    private void accept() {
+        SocketChannel channel = null;
+        try {
+            channel = serverChannel.accept();
+            channel.configureBlocking(false);
+            FrontendConnection c = factory.make(channel);
+            c.setAccepted(true);
+            c.setId(ID_GENERATOR.getId());
+            NIOProcessor processor = MycatServer.getInstance().nextProcessor();
+            c.setProcessor(processor);
 
-	private static void closeChannel(SocketChannel channel) {
-		if (channel == null) {
-			return;
-		}
-		Socket socket = channel.socket();
-		if (socket != null) {
-			try {
-				socket.close();
-			} catch (IOException e) {
-		       LOGGER.error("closeChannelError", e);
-			}
-		}
-		try {
-			channel.close();
-		} catch (IOException e) {
+            NIOReactor reactor = reactorPool.getNextReactor();
+            reactor.postRegister(c);
+
+        } catch (Exception e) {
+            LOGGER.warn(getName(), e);
+            closeChannel(channel);
+        }
+    }
+
+    private static void closeChannel(SocketChannel channel) {
+        if (channel == null) {
+            return;
+        }
+        Socket socket = channel.socket();
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                LOGGER.error("closeChannelError", e);
+            }
+        }
+        try {
+            channel.close();
+        } catch (IOException e) {
             LOGGER.error("closeChannelError", e);
-		}
-	}
+        }
+    }
 
-	/**
-	 * 前端连接ID生成器
-	 * 
-	 * @author mycat
-	 */
-	private static class AcceptIdGenerator {
+    /**
+     * 前端连接ID生成器
+     *
+     * @author mycat
+     */
+    private static class AcceptIdGenerator {
 
-		private static final long MAX_VALUE = 0xffffffffL;
+        private static final long MAX_VALUE = 0xffffffffL;
 
-		private long acceptId = 0L;
-		private final Object lock = new Object();
+        private long acceptId = 0L;
+        private final Object lock = new Object();
 
-		private long getId() {
-			synchronized (lock) {
-				if (acceptId >= MAX_VALUE) {
-					acceptId = 0L;
-				}
-				return ++acceptId;
-			}
-		}
-	}
+        private long getId() {
+            synchronized (lock) {
+                if (acceptId >= MAX_VALUE) {
+                    acceptId = 0L;
+                }
+                return ++acceptId;
+            }
+        }
+    }
 
 }

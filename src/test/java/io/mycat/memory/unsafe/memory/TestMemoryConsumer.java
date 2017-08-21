@@ -23,32 +23,32 @@ import io.mycat.memory.unsafe.memory.mm.MemoryConsumer;
 import java.io.IOException;
 
 public class TestMemoryConsumer extends MemoryConsumer {
-  public TestMemoryConsumer(DataNodeMemoryManager memoryManager) {
-    super(memoryManager);
-  }
+    public TestMemoryConsumer(DataNodeMemoryManager memoryManager) {
+        super(memoryManager);
+    }
 
-  @Override
-  public long spill(long size, MemoryConsumer trigger) throws IOException {
-    long used = getUsed();
-    free(used);
-    return used;
-  }
+    @Override
+    public long spill(long size, MemoryConsumer trigger) throws IOException {
+        long used = getUsed();
+        free(used);
+        return used;
+    }
 
-  void use(long size) throws InterruptedException {
-    long got = dataNodeMemoryManager.acquireExecutionMemory(
-      size,
-      dataNodeMemoryManager.tungstenMemoryMode,
-      this);
-    used += got;
-  }
+    void use(long size) throws InterruptedException {
+        long got = dataNodeMemoryManager.acquireExecutionMemory(
+                size,
+                dataNodeMemoryManager.tungstenMemoryMode,
+                this);
+        used += got;
+    }
 
-  void free(long size) {
-    used -= size;
-    dataNodeMemoryManager.releaseExecutionMemory(
-      size,
-      dataNodeMemoryManager.tungstenMemoryMode,
-      this);
-  }
+    void free(long size) {
+        used -= size;
+        dataNodeMemoryManager.releaseExecutionMemory(
+                size,
+                dataNodeMemoryManager.tungstenMemoryMode,
+                this);
+    }
 }
 
 

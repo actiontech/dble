@@ -23,8 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.buffer.BufferPool;
@@ -38,9 +36,11 @@ import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.util.IntegerUtil;
 import io.mycat.util.LongUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * 查看处理器状态
- * 
+ *
  * @author mycat
  * @author mycat
  */
@@ -50,6 +50,7 @@ public final class ShowProcessor {
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
+
     static {
         int i = 0;
         byte packetId = 0;
@@ -78,13 +79,13 @@ public final class ShowProcessor {
 
         fields[i] = PacketUtil.getField("TOTAL_BUFFER", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("BU_PERCENT", Fields.FIELD_TYPE_TINY);
         fields[i++].packetId = ++packetId;
 
         fields[i] = PacketUtil.getField("BU_WARNS", Fields.FIELD_TYPE_LONG);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("FC_COUNT", Fields.FIELD_TYPE_LONG);
         fields[i++].packetId = ++packetId;
 
@@ -98,39 +99,39 @@ public final class ShowProcessor {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
         byte packetId = eof.packetId;
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
             RowDataPacket row = getRow(p);
             row.packetId = ++packetId;
-            buffer = row.write(buffer, c,true);
+            buffer = row.write(buffer, c, true);
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
     }
 
     private static RowDataPacket getRow(NIOProcessor processor) {
-    	BufferPool bufferPool=processor.getBufferPool();
-    	long bufferSize=bufferPool.size();
-    	long bufferCapacity=bufferPool.capacity();
-    	long bufferSharedOpts=bufferPool.getSharedOptsCount();
-    	long bufferUsagePercent=(bufferCapacity-bufferSize)*100/bufferCapacity;
+        BufferPool bufferPool = processor.getBufferPool();
+        long bufferSize = bufferPool.size();
+        long bufferCapacity = bufferPool.capacity();
+        long bufferSharedOpts = bufferPool.getSharedOptsCount();
+        long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(processor.getName().getBytes());
         row.add(LongUtil.toBytes(processor.getNetInBytes()));

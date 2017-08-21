@@ -32,45 +32,45 @@ import java.util.List;
 
 /**
  * 进行rule的文件从zk中加载
-* 源文件名：RuleszkToxmlLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：RuleszkToxmlLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleszkToxmlLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * 写入本地的文件路径
-    */
+     */
     private static final String WRITEPATH = "rule.xml";
 
     /**
      * Rules的xml的转换信息
-    */
+     */
     private ParseXmlServiceInf<Rules> parseRulesXMl;
 
     /**
      * 表的路由信息
-    */
+     */
     private ParseJsonServiceInf<List<TableRule>> parseJsonTableRuleService = new TableRuleJsonParse();
 
     /**
      * 表对应的字段信息
-    */
+     */
     private ParseJsonServiceInf<List<Function>> parseJsonFunctionService = new FunctionJsonParse();
 
     public RuleszkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
@@ -78,7 +78,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfRulePath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addToInit( this);
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         parseRulesXMl = new RuleParseXmlImpl(xmlParseBase);
         confListener.addChild(this);
@@ -105,8 +105,8 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         // 数配制信息写入文件
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-        path=new File(path).getPath()+File.separator;
-        path  =path+WRITEPATH;
+        path = new File(path).getPath() + File.separator;
+        path = path + WRITEPATH;
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object writePath :" + path);
 
@@ -119,11 +119,12 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 将zk上面的信息转换为javabean对象
-    * 方法描述
-    * @param zkDirectory
-    * @return
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param zkDirectory
+     * @return
+     * @创建日期 2016年9月17日
+     */
     private Rules zktoRulesBean(DiretoryInf zkDirectory) {
         Rules Rules = new Rules();
 
@@ -141,11 +142,12 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     }
 
     /**
-     *  读取序列配制文件便利店  
-    * 方法描述
-    * @param functionList
-    * @创建日期 2016年9月18日
-    */
+     * 读取序列配制文件便利店
+     * 方法描述
+     *
+     * @param functionList
+     * @创建日期 2016年9月18日
+     */
     private void writeMapFileAddFunction(List<Function> functionList) {
 
         List<Property> tempData = new ArrayList<>();
@@ -178,10 +180,9 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
                 // 将对应的数据信息写入到磁盘中
                 if (!writeData.isEmpty()) {
                     for (Property writeMsg : writeData) {
-                        try{
+                        try {
                             ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
-                        }
-                        catch (IOException e) {
+                        } catch (IOException e) {
                             LOGGER.error("RuleszkToxmlLoader write File IOException", e);
                         }
                     }

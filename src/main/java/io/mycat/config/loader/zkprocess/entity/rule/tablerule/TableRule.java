@@ -1,12 +1,8 @@
 package io.mycat.config.loader.zkprocess.entity.rule.tablerule;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlType;
-
 import io.mycat.config.loader.zkprocess.entity.Named;
+
+import javax.xml.bind.annotation.*;
 
 /**
  * * <tableRule name="rule1">
@@ -15,22 +11,22 @@ import io.mycat.config.loader.zkprocess.entity.Named;
  * * * *<algorithm>func1</algorithm>
  * * </rule>
  * </tableRule>
-* 源文件名：TableRule.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月18日
-* 修改作者：liujun
-* 修改日期：2016年9月18日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：TableRule.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月18日
+ * 修改作者：liujun
+ * 修改日期：2016年9月18日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "tableRule")
 public class TableRule implements Named {
 
     @XmlElement(required = true, name = "rule")
     protected Rule rule;
-    
+
     @XmlAttribute(required = true)
     protected String name;
 
@@ -62,5 +58,5 @@ public class TableRule implements Named {
         builder.append("]");
         return builder.toString();
     }
-    
+
 }

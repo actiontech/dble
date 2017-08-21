@@ -269,9 +269,8 @@ public class SplitUtil {
     }
 
     public static String[] splitByByteSize(String string, int size) {
-        if (size < 2)
-        {
-         return    new String[]{string};
+        if (size < 2) {
+            return new String[]{string};
         }
         byte[] bytes = string.getBytes();
         if (bytes.length <= size) {
@@ -291,7 +290,7 @@ public class SplitUtil {
                 break;
             }
             if (bytes[position - 1] > 0
-                    || (bytes[position - 1] < 0 && bytes[position - 2] < 0)){
+                    || (bytes[position - 1] < 0 && bytes[position - 2] < 0)) {
                 // 截断点是字母,或者是汉字
                 length = size;
             } else {

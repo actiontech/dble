@@ -34,65 +34,67 @@ import java.util.Map;
 
 /**
  * 防火墙配置定义
- * 
+ *
  * @author songwie
  * @author zhuam
  */
 public final class FirewallConfig {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(FirewallConfig.class);
-	
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FirewallConfig.class);
+
     private Map<String, List<UserConfig>> whitehost;
     private boolean check = false;
-    
+
     private WallConfig wallConfig = new WallConfig();
-     
-    private WallProvider provider ;
-    
-    public FirewallConfig() { }
-    
-    public void init(){
-    	if(check){
-    		provider = new MySqlWallProvider(wallConfig);
-    		provider.setBlackListEnable(true);
-    	}
+
+    private WallProvider provider;
+
+    public FirewallConfig() {
     }
 
-	public Map<String, List<UserConfig>> getWhitehost() {
-		return this.whitehost;
-	}
-	public void setWhitehost(Map<String, List<UserConfig>> whitehost) {
-		this.whitehost = whitehost;
-	}
+    public void init() {
+        if (check) {
+            provider = new MySqlWallProvider(wallConfig);
+            provider.setBlackListEnable(true);
+        }
+    }
 
-	public boolean addWhitehost(String host, List<UserConfig> Users) {
-		if (existsHost(host)) {
-			return false;
-		} else {
-			this.whitehost.put(host, Users);
-			return true;
-		}
-	}
+    public Map<String, List<UserConfig>> getWhitehost() {
+        return this.whitehost;
+    }
 
-	public WallProvider getProvider() {
-		return provider;
-	}
+    public void setWhitehost(Map<String, List<UserConfig>> whitehost) {
+        this.whitehost = whitehost;
+    }
 
-	public boolean existsHost(String host) {
-		return this.whitehost!=null && whitehost.get(host)!=null ;
-	}
+    public boolean addWhitehost(String host, List<UserConfig> Users) {
+        if (existsHost(host)) {
+            return false;
+        } else {
+            this.whitehost.put(host, Users);
+            return true;
+        }
+    }
 
-	public void setWallConfig(WallConfig wallConfig) {
-		this.wallConfig = wallConfig;
-		
-	}
+    public WallProvider getProvider() {
+        return provider;
+    }
 
-	public boolean isCheck() {
-		return this.check;
-	}
+    public boolean existsHost(String host) {
+        return this.whitehost != null && whitehost.get(host) != null;
+    }
 
-	public void setCheck(boolean check) {
-		this.check = check;
-	}
+    public void setWallConfig(WallConfig wallConfig) {
+        this.wallConfig = wallConfig;
+
+    }
+
+    public boolean isCheck() {
+        return this.check;
+    }
+
+    public void setCheck(boolean check) {
+        this.check = check;
+    }
 
 }

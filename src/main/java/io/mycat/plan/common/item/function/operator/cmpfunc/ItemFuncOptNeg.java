@@ -1,9 +1,9 @@
 package io.mycat.plan.common.item.function.operator.cmpfunc;
 
-import java.util.List;
-
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.primary.ItemIntFunc;
+
+import java.util.List;
 
 
 /*
@@ -16,20 +16,20 @@ Item_func_notbetween and Item_func_in, Item_func_notin.
 */
 public abstract class ItemFuncOptNeg extends ItemIntFunc {
 
-	public boolean negated = false; /* <=> the item represents NOT <func> */
+    public boolean negated = false; /* <=> the item represents NOT <func> */
 //	public boolean pred_level = false; /*
 //										 * <=> [NOT] <func> is used on a
 //										 * predicate level
 //										 */
 
-	public ItemFuncOptNeg(List<Item> args, boolean isNegation) {
-		super(args);
-		if (isNegation)
-			negate();
-	}
+    public ItemFuncOptNeg(List<Item> args, boolean isNegation) {
+        super(args);
+        if (isNegation)
+            negate();
+    }
 
-	public void negate() {
-		negated = !negated;
-	}
+    public void negate() {
+        negated = !negated;
+    }
 
 }

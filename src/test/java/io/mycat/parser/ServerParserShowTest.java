@@ -132,16 +132,16 @@ public class ServerParserShowTest {
                 ServerParseShow.OTHER
         };
 
-        for(int i = 0;i< testSql.length;i++){
+        for (int i = 0; i < testSql.length; i++) {
             int reslut = ServerParseShow.showTableType(testSql[i]);
-            Assert.assertEquals(testResult[i],reslut);
+            Assert.assertEquals(testResult[i], reslut);
         }
 
     }
 
 
     @Test
-    public void fullTableCheckTest(){
+    public void fullTableCheckTest() {
         String[] testSql = {
                 "SHOW FULL TABLES",
                 "SHOW FULL TABLES FROM TESTDB",
@@ -260,9 +260,9 @@ public class ServerParserShowTest {
                 ServerParseShow.OTHER
         };
 
-        for(int i = 0;i< testSql.length;i++){
+        for (int i = 0; i < testSql.length; i++) {
             int reslut = ServerParseShow.showTableType(testSql[i]);
-            Assert.assertEquals(testResult[i],reslut);
+            Assert.assertEquals(testResult[i], reslut);
         }
     }
 }

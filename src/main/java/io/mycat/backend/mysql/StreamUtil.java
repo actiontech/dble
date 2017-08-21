@@ -36,7 +36,7 @@ public class StreamUtil {
     private static final byte[] EMPTY_BYTES = new byte[0];
 
     public static final void read(InputStream in, byte[] b, int offset, int length) throws IOException {
-        for (int got = 0; length > 0;) {
+        for (int got = 0; length > 0; ) {
             got = in.read(b, offset, length);
             if (got < 0) {
                 throw new EOFException();
@@ -187,16 +187,16 @@ public class StreamUtil {
             throw new EOFException();
         }
         switch (length) {
-        case 251:
-            return NULL_LENGTH;
-        case 252:
-            return readUB2(in);
-        case 253:
-            return readUB3(in);
-        case 254:
-            return readLong(in);
-        default:
-            return length;
+            case 251:
+                return NULL_LENGTH;
+            case 252:
+                return readUB2(in);
+            case 253:
+                return readUB3(in);
+            case 254:
+                return readLong(in);
+            default:
+                return length;
         }
     }
 

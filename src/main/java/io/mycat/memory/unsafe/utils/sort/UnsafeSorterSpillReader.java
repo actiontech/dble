@@ -23,7 +23,6 @@ import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.storage.ConnectionId;
 import io.mycat.memory.unsafe.storage.SerializerManager;
 
-
 import java.io.*;
 
 /**
@@ -32,89 +31,89 @@ import java.io.*;
  */
 public final class UnsafeSorterSpillReader extends UnsafeSorterIterator implements Closeable {
 
-  private InputStream in;
-  private DataInputStream din;
+    private InputStream in;
+    private DataInputStream din;
 
-  // Variables that change with every record read:
-  private int recordLength;
-  private long keyPrefix;
-  private int numRecords;
-  private int numRecordsRemaining;
+    // Variables that change with every record read:
+    private int recordLength;
+    private long keyPrefix;
+    private int numRecords;
+    private int numRecordsRemaining;
 
-  private byte[] arr = new byte[1024 * 1024];
-  private Object baseObject = arr;
-  private final long baseOffset = Platform.BYTE_ARRAY_OFFSET;
+    private byte[] arr = new byte[1024 * 1024];
+    private Object baseObject = arr;
+    private final long baseOffset = Platform.BYTE_ARRAY_OFFSET;
 
-  public UnsafeSorterSpillReader(
-      SerializerManager serializerManager,
-      File file,
-      ConnectionId blockId) throws IOException {
-    assert (file.length() > 0);
-    final BufferedInputStream bs = new BufferedInputStream(new FileInputStream(file));
-    try {
-      this.in = serializerManager.wrapForCompression(blockId,bs);
-      this.din = new DataInputStream(this.in);
-      numRecords = numRecordsRemaining = din.readInt();
-    } catch (IOException e) {
-      Closeables.close(bs, /* swallowIOException = */ true);
-      throw e;
+    public UnsafeSorterSpillReader(
+            SerializerManager serializerManager,
+            File file,
+            ConnectionId blockId) throws IOException {
+        assert (file.length() > 0);
+        final BufferedInputStream bs = new BufferedInputStream(new FileInputStream(file));
+        try {
+            this.in = serializerManager.wrapForCompression(blockId, bs);
+            this.din = new DataInputStream(this.in);
+            numRecords = numRecordsRemaining = din.readInt();
+        } catch (IOException e) {
+            Closeables.close(bs, /* swallowIOException = */ true);
+            throw e;
+        }
     }
-  }
 
-  @Override
-  public int getNumRecords() {
-    return numRecords;
-  }
-
-  @Override
-  public boolean hasNext() {
-    return (numRecordsRemaining > 0);
-  }
-
-  @Override
-  public void loadNext() throws IOException {
-    recordLength = din.readInt();
-    keyPrefix = din.readLong();
-    if (recordLength > arr.length) {
-      arr = new byte[recordLength];
-      baseObject = arr;
+    @Override
+    public int getNumRecords() {
+        return numRecords;
     }
-    ByteStreams.readFully(in, arr, 0, recordLength);
-    numRecordsRemaining--;
-    if (numRecordsRemaining == 0) {
-      close();
+
+    @Override
+    public boolean hasNext() {
+        return (numRecordsRemaining > 0);
     }
-  }
 
-  @Override
-  public Object getBaseObject() {
-    return baseObject;
-  }
+    @Override
+    public void loadNext() throws IOException {
+        recordLength = din.readInt();
+        keyPrefix = din.readLong();
+        if (recordLength > arr.length) {
+            arr = new byte[recordLength];
+            baseObject = arr;
+        }
+        ByteStreams.readFully(in, arr, 0, recordLength);
+        numRecordsRemaining--;
+        if (numRecordsRemaining == 0) {
+            close();
+        }
+    }
 
-  @Override
-  public long getBaseOffset() {
-    return baseOffset;
-  }
+    @Override
+    public Object getBaseObject() {
+        return baseObject;
+    }
 
-  @Override
-  public int getRecordLength() {
-    return recordLength;
-  }
+    @Override
+    public long getBaseOffset() {
+        return baseOffset;
+    }
 
-  @Override
-  public long getKeyPrefix() {
-    return keyPrefix;
-  }
+    @Override
+    public int getRecordLength() {
+        return recordLength;
+    }
 
-  @Override
-  public void close() throws IOException {
-   if (in != null) {
-     try {
-       in.close();
-     } finally {
-       in = null;
-       din = null;
-     }
-   }
-  }
+    @Override
+    public long getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (in != null) {
+            try {
+                in.close();
+            } finally {
+                in = null;
+                din = null;
+            }
+        }
+    }
 }

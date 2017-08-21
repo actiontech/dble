@@ -104,7 +104,7 @@ public class Shard<S> { // S类封装了机器节点的信息 ，如name、passw
         stringList.add("host5");
         Shard<String> stringShard = new Shard<>(stringList);
         for (int i = 0; i < 10; i++) {
-            System.out.println(i+":"+stringShard.getShardInfo(""+i));
+            System.out.println(i + ":" + stringShard.getShardInfo("" + i));
         }
         stringList = new ArrayList<>();
         stringList.add("host1");
@@ -113,7 +113,7 @@ public class Shard<S> { // S类封装了机器节点的信息 ，如name、passw
         stringList.add("host4");
         stringShard = new Shard<>(stringList);
         for (int i = 0; i < 10; i++) {
-            System.out.println(i+":"+stringShard.getShardInfo(""+i));
+            System.out.println(i + ":" + stringShard.getShardInfo("" + i));
         }
     }
 }

@@ -24,41 +24,41 @@ import java.util.List;
 
 /**
  * 进行从server.xml加载到zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerxmlTozkLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * server文件的路径信息
-    */
+     */
     private static final String SERVER_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "server.xml";
 
 
     /**
      * server的xml的转换信息
-    */
+     */
     private ParseXmlServiceInf<Server> parseServerXMl;
 
     /**
      * system信息
-    */
+     */
     private ParseJsonServiceInf<System> parseJsonSystem = new SystemJsonParse();
 
     /**
@@ -69,7 +69,7 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     private ParseJsonServiceInf<FireWall> parseJsonFireWall = new FireWallJsonParse();
 
     public ServerxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
+                               XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfServerPath();
         // 将当前自己注册为事件接收对象
@@ -93,12 +93,13 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 将xml文件的信息写入到zk中
-    * 方法描述
-    * @param basePath 基本路径
-    * @param server server文件的信息
-    * @throws Exception 异常信息
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param basePath 基本路径
+     * @param server   server文件的信息
+     * @throws Exception 异常信息
+     * @创建日期 2016年9月17日
+     */
     private void xmlTozkServerJson(String basePath, Server server) throws Exception {
         // 设置默认的节点信息
         String defaultSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
@@ -106,8 +107,8 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
         // 设置firewall信息
         String firewallValueStr = this.parseJsonFireWall.parseBeanToJson(server.getFirewall());
-        if(firewallValueStr ==null){
-            firewallValueStr="{}";
+        if (firewallValueStr == null) {
+            firewallValueStr = "{}";
         }
         this.checkAndwriteString(basePath, KVPathUtil.FIREWALL, firewallValueStr);
         // 设置用户信息

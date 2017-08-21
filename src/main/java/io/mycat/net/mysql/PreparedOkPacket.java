@@ -23,25 +23,25 @@
  */
 package io.mycat.net.mysql;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.net.FrontendConnection;
 
+import java.nio.ByteBuffer;
+
 /**
  * <pre>
- * From server to client, in response to prepared statement initialization packet. 
- * It is made up of: 
+ * From server to client, in response to prepared statement initialization packet.
+ * It is made up of:
  *   1.a PREPARE_OK packet
- *   2.if "number of parameters" > 0 
- *       (field packets) as in a Result Set Header Packet 
+ *   2.if "number of parameters" > 0
+ *       (field packets) as in a Result Set Header Packet
  *       (EOF packet)
- *   3.if "number of columns" > 0 
- *       (field packets) as in a Result Set Header Packet 
+ *   3.if "number of columns" > 0
+ *       (field packets) as in a Result Set Header Packet
  *       (EOF packet)
- *   
+ *
  * -----------------------------------------------------------------------------------------
- * 
+ *
  *  Bytes              Name
  *  -----              ----
  *  1                  0 - marker for OK packet
@@ -50,10 +50,10 @@ import io.mycat.net.FrontendConnection;
  *  2                  number of parameters in query
  *  1                  filler (always 0)
  *  2                  warning count
- *  
+ *
  *  @see http://dev.mysql.com/doc/internals/en/prepared-statement-initialization-packet.html
  * </pre>
- * 
+ *
  * @author mycat
  */
 public class PreparedOkPacket extends MySQLPacket {
@@ -71,9 +71,9 @@ public class PreparedOkPacket extends MySQLPacket {
     }
 
     @Override
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,writeSocketIfFull);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(flag);

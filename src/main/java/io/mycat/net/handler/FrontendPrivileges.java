@@ -27,7 +27,7 @@ import java.util.Set;
 
 /**
  * 权限提供者
- * 
+ *
  * @author mycat
  */
 public interface FrontendPrivileges {
@@ -51,34 +51,38 @@ public interface FrontendPrivileges {
      * 提供有效的用户schema集合
      */
     Set<String> getUserSchemas(String user);
-    
+
     /**
      * 检查用户是否为只读权限
+     *
      * @param user
      * @return
      */
     Boolean isReadOnly(String user);
-    
+
     /**
      * 获取设定的系统最大连接数的降级阀值
+     *
      * @param user
      * @return
      */
     int getBenchmark(String user);
-    
-    
+
+
     /**
      * 检查防火墙策略
      * （白名单策略）
+     *
      * @param user
      * @param host
      * @return
      */
     boolean checkFirewallWhiteHostPolicy(String user, String host);
-    
+
     /**
      * 检查防火墙策略
      * (SQL黑名单及注入策略)
+     *
      * @param sql
      * @return
      */

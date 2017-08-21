@@ -1,49 +1,45 @@
 package io.mycat.config.loader.zkprocess.entity.cache;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 
 /**
  * ehcache配制信息
-* 源文件名：Ehcache.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月19日
-* 修改作者：liujun
-* 修改日期：2016年9月19日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：Ehcache.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月19日
+ * 修改作者：liujun
+ * 修改日期：2016年9月19日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name = "ehcache")
 public class Ehcache {
 
     /**
-     * 
-    * @字段说明 maxEntriesLocalHeap
-    */
+     * @字段说明 maxEntriesLocalHeap
+     */
     @XmlAttribute
     private int maxEntriesLocalHeap;
 
     /**
-    * @字段说明 maxBytesLocalDisk
-    */
+     * @字段说明 maxBytesLocalDisk
+     */
     @XmlAttribute
     private String maxBytesLocalDisk;
 
     /**
-    * @字段说明 updateCheck
-    */
+     * @字段说明 updateCheck
+     */
     @XmlAttribute
     private boolean updateCheck;
 
     /**
      * 缓存信息
-    * @字段说明 defaultCache
-    */
+     *
+     * @字段说明 defaultCache
+     */
     @XmlElement
     private CacheInfo defaultCache;
 

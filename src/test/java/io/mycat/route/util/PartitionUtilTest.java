@@ -26,8 +26,6 @@ package io.mycat.route.util;
 import org.junit.Assert;
 import org.junit.Test;
 
-import io.mycat.route.util.PartitionUtil;
-
 /**
  * @author mycat()
  */
@@ -40,8 +38,8 @@ public class PartitionUtilTest {
         // |<----256--->|<----256--->|<----------512---------->|
         // | partition0 | partition1 | partition2 |
         // | 共2份,故count[0]=2 | 共1份，故count[1]=1 |
-        int[] count = new int[] { 2, 1 };
-        int[] length = new int[] { 256, 512 };
+        int[] count = new int[]{2, 1};
+        int[] length = new int[]{256, 512};
         PartitionUtil pu = new PartitionUtil(count, length);
 
         // 下面代码演示分别以offerId字段或memberId字段根据上述分区策略拆分的分配结果

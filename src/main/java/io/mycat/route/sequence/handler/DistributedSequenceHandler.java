@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Deprecated:
- *
+ * <p>
  * 基于ZK与本地配置的分布式ID生成器(可以通过ZK获取集群（机房）唯一InstanceID，也可以通过配置文件配置InstanceID)
  * ID结构：long 64位，ID最大可占63位
  * |current time millis(微秒时间戳38位,可以使用17年)|clusterId（机房或者ZKid，通过配置文件配置5位）|instanceId（实例ID，可以通过ZK或者配置文件获取，5位）|threadId（线程ID，9位）|increment(自增,6位)
@@ -39,17 +39,18 @@ import java.util.concurrent.TimeUnit;
  * @author Hash Zhang
  * @version 1.0
  * @time 00:08:03 2016/5/3
- *
+ * <p>
  * Now:
- *
+ * <p>
  * clusterId 4bits
- *
+ * <p>
  * |threadId(线程ID)|instanceId(实例ID)|clusterId(机房ID)|increment(自增)|current time millis(时间戳39位,可以使用17年)|
  */
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
-    private static DistributedSequenceHandler instance = new DistributedSequenceHandler();;
+    private static DistributedSequenceHandler instance = new DistributedSequenceHandler();
+    ;
 
     private final long threadIdBits = 9L;
     private final long instanceIdBits = 5L;
@@ -96,6 +97,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     public static DistributedSequenceHandler getInstance() {
         return DistributedSequenceHandler.instance;
     }
+
     public LeaderSelector getLeaderSelector() {
         return leaderSelector;
     }
@@ -115,15 +117,15 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         }
         this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
         if (clusterId > maxclusterId || clusterId < 0) {
-            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0",clusterId));
+            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", clusterId));
         }
         if (instanceId > maxinstanceId || instanceId < 0) {
-            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0",instanceId));
+            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", instanceId));
         }
     }
 
     public void initializeZK(String zkAddress) {
-        if(zkAddress==null){
+        if (zkAddress == null) {
             throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
         }
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
@@ -197,8 +199,8 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             threadInc.set(a + 1L);
         }
         threadLastTime.set(time);
-        return  (((threadID.get() % maxThreadId) << threadIdShift))
-	    | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | (a << incrementShift)|(time & timestampMask);
+        return (((threadID.get() % maxThreadId) << threadIdShift))
+                | (instanceId << instanceIdShift) | (clusterId << clusterIdShift) | (a << incrementShift) | (time & timestampMask);
     }
 
     private synchronized Long getNextThreadID() {
@@ -274,7 +276,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         }, 0L, 3L, TimeUnit.SECONDS);
-	
+
         while (true) {
             Thread.currentThread().yield();
         }
@@ -283,7 +285,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private int nextFree() {
         for (int i = 0; i < mark.length; i++) {
             if (i == 1) {
-		/* myself, please check in takeLeadership(): this.instanceId = 1; */
+        /* myself, please check in takeLeadership(): this.instanceId = 1; */
                 continue;
             }
             if (mark[i] != 1) {

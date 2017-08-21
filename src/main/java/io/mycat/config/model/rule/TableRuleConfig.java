@@ -39,8 +39,9 @@ public class TableRuleConfig implements Serializable {
         if (rule == null) {
             throw new IllegalArgumentException("no rule is found");
         }
-        this.rule =rule;
+        this.rule = rule;
     }
+
     /**
      * @return unmodifiable
      */

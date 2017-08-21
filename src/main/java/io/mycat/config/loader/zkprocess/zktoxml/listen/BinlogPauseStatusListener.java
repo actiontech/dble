@@ -35,6 +35,7 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
         currZkPath = KVPathUtil.getBinlogPauseStatus();
         zookeeperListen.addWatch(currZkPath, this);
     }
+
     @Override
     public boolean notifyProcess() throws Exception {
         // 通过组合模式进行zk目录树的加载
@@ -46,8 +47,8 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
         String strPauseInfo = zkDdata.getDataValue();
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
-        BinlogPause pauseInfo  = new BinlogPause(strPauseInfo);
-        if(pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        BinlogPause pauseInfo = new BinlogPause(strPauseInfo);
+        if (pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
             return true; //self node
         }
         String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
@@ -74,9 +75,10 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
 
         return true;
     }
-    private synchronized void cleanResource(String instancePath){
-        LOGGER.info("BinlogPauseStatusListener cleanResource" );
-        while(ShowBinlogStatus.isWaiting()){
+
+    private synchronized void cleanResource(String instancePath) {
+        LOGGER.info("BinlogPauseStatusListener cleanResource");
+        while (ShowBinlogStatus.isWaiting()) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
         try {

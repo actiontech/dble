@@ -14,35 +14,35 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 进行从sequence加载到zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTopropertiesLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * 后缀名
-    */
+     */
     private static final String PROPERTIES_SUFFIX = ".properties";
 
     /**
      * 序列配制信息
-    */
+     */
     private static final String PROPERTIES_SEQUENCE_CONF = "sequence_conf";
 
     /**
@@ -58,7 +58,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
     /**
      * 监控路径信息
-    */
+     */
     private ZookeeperProcessListen zookeeperListen;
 
     public SequenceTopropertiesLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
@@ -66,7 +66,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
         this.zookeeperListen = zookeeperListen;
         currZkPath = KVPathUtil.getSequencesPath();
         // 将当前自己注册为事件接收对象
-        this.zookeeperListen.addToInit( this);
+        this.zookeeperListen.addToInit(this);
     }
 
     @Override
@@ -94,10 +94,11 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
     /**
      * 将xml文件的信息写入到zk中
-    * 方法描述
-    * @param name schema文件的信息
-    * @throws Exception 异常信息
-    */
+     * 方法描述
+     *
+     * @param name schema文件的信息
+     * @throws Exception 异常信息
+     */
     private void sequenceZkToProperties(String name, DiretoryInf seqDirectory) throws Exception {
         // 读取当前节的信息
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory, KVPathUtil.SEQUENCE_COMMON);
@@ -112,8 +113,8 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
                 ConfFileRWUtils.writeFile(commData.getName(), commData.getValue());
             }
             String sequenceWatchPath = KVPathUtil.getSequencesCommonPath() + writeFile;
-            this.zookeeperListen.addWatch(sequenceWatchPath,this);
-            LOGGER.info("SequenceTozkLoader notifyProcess "+name+" to local properties success");
+            this.zookeeperListen.addWatch(sequenceWatchPath, this);
+            LOGGER.info("SequenceTozkLoader notifyProcess " + name + " to local properties success");
         }
     }
 

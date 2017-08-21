@@ -23,22 +23,21 @@
  */
 package io.mycat.server.response;
 
-import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_CLIENT;
-import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_CONNECTION;
-import static io.mycat.server.parser.ServerParseSet.CHARACTER_SET_RESULTS;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
 import io.mycat.config.ErrorCode;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParseSet;
 import io.mycat.util.SetIgnoreUtil;
 import io.mycat.util.SplitUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static io.mycat.server.parser.ServerParseSet.*;
 
 /**
  * 字符集属性设置
  */
+
 /**
  * @author mycat
  */
@@ -47,8 +46,8 @@ public class CharacterSet {
     private static final Logger logger = LoggerFactory.getLogger(CharacterSet.class);
 
     public static void response(String stmt, ServerConnection c, int rs) {
-	/* TODO: completely charsets support
-	   
+    /* TODO: completely charsets support
+
 	   Currently, we don't support setting single nature of the character set.
 	   When these statements are used, we justly give a caution.
 	   Maybe, we implement completely charsets in future. By then, regain here.
@@ -95,12 +94,12 @@ public class CharacterSet {
 
         // check first
         switch (rs & 0xff) {
-        case CHARACTER_SET_RESULTS:
-            charResult = sqlList[0].substring(rs >>> 8).trim();
-            break;
-        case CHARACTER_SET_CONNECTION:
-            charConnection = sqlList[0].substring(rs >>> 8).trim();
-            break;
+            case CHARACTER_SET_RESULTS:
+                charResult = sqlList[0].substring(rs >>> 8).trim();
+                break;
+            case CHARACTER_SET_CONNECTION:
+                charConnection = sqlList[0].substring(rs >>> 8).trim();
+                break;
         }
 
         // check remaining
@@ -112,20 +111,20 @@ public class CharacterSet {
             }
             int rs2 = ServerParseSet.parse(sql, "set".length());
             switch (rs2 & 0xff) {
-            case CHARACTER_SET_RESULTS:
-                charResult = sql.substring(rs2 >>> 8).trim();
-                break;
-            case CHARACTER_SET_CONNECTION:
-                charConnection = sql.substring(rs2 >>> 8).trim();
-                break;
-            case CHARACTER_SET_CLIENT:
-                break;
-            default:
-            	boolean ignore = SetIgnoreUtil.isIgnoreStmt( sql );
-            	if ( !ignore ) {
-	                StringBuilder s = new StringBuilder();
-	                logger.warn(s.append(c).append(sql).append(" is not executed").toString());
-            	}
+                case CHARACTER_SET_RESULTS:
+                    charResult = sql.substring(rs2 >>> 8).trim();
+                    break;
+                case CHARACTER_SET_CONNECTION:
+                    charConnection = sql.substring(rs2 >>> 8).trim();
+                    break;
+                case CHARACTER_SET_CLIENT:
+                    break;
+                default:
+                    boolean ignore = SetIgnoreUtil.isIgnoreStmt(sql);
+                    if (!ignore) {
+                        StringBuilder s = new StringBuilder();
+                        logger.warn(s.append(c).append(sql).append(" is not executed").toString());
+                    }
             }
         }
 

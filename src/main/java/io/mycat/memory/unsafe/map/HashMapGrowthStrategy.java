@@ -22,20 +22,20 @@ package io.mycat.memory.unsafe.map;
  */
 public interface HashMapGrowthStrategy {
 
-  int nextCapacity(int currentCapacity);
+    int nextCapacity(int currentCapacity);
 
-  /**
-   * Double the size of the hash map every time.
-   */
-  HashMapGrowthStrategy DOUBLING = new Doubling();
+    /**
+     * Double the size of the hash map every time.
+     */
+    HashMapGrowthStrategy DOUBLING = new Doubling();
 
-  class Doubling implements HashMapGrowthStrategy {
-    @Override
-    public int nextCapacity(int currentCapacity) {
-      assert (currentCapacity > 0);
-      // Guard against overflow
-      return (currentCapacity * 2 > 0) ? (currentCapacity * 2) : Integer.MAX_VALUE;
+    class Doubling implements HashMapGrowthStrategy {
+        @Override
+        public int nextCapacity(int currentCapacity) {
+            assert (currentCapacity > 0);
+            // Guard against overflow
+            return (currentCapacity * 2 > 0) ? (currentCapacity * 2) : Integer.MAX_VALUE;
+        }
     }
-  }
 
 }

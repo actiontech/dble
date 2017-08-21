@@ -29,40 +29,40 @@ import java.util.List;
 
 /**
  * 进行schema的文件从zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaszkToxmlLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * 写入本地的文件路径
-    */
+     */
     private static final String WRITEPATH = "schema.xml";
 
     /**
      * schema类与xml转换服务
-    */
+     */
     private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
 
     /**
      * 进行将schema
-    */
+     */
     private ParseJsonServiceInf<List<Schema>> parseJsonSchema = new SchemaJsonParse();
 
     /**
@@ -81,7 +81,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfSchemaPath();
         // 将当前自己注册为事件接收对象
-        zookeeperListen.addToInit( this);
+        zookeeperListen.addToInit(this);
         // 生成xml与类的转换信息
         this.parseSchemaXmlService = new SchemasParseXmlImpl(xmlParseBase);
         confListener.addChild(this);
@@ -103,7 +103,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
         LOGGER.info("SchemasLoader notifyProcess zk to object  zk schema Object  :" + schema);
 
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-        path=new File(path).getPath()+File.separator;
+        path = new File(path).getPath() + File.separator;
         path += WRITEPATH;
 
         LOGGER.info("SchemasLoader notifyProcess zk to object writePath :" + path);
@@ -117,7 +117,7 @@ public class SchemaszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
     /**
      * 将zk上面的信息转换为javabean对象
-    */
+     */
     private Schemas zktoSchemasBean(ZkDirectoryImpl zkDirectory) {
         Schemas schema = new Schemas();
 

@@ -19,8 +19,8 @@ package io.mycat.memory.unsafe.map;
 
 public class BytesToBytesMapOnHeapSuite extends AbstractBytesToBytesMapSuite {
 
-  @Override
-  protected boolean useOffHeapMemoryAllocator() {
-    return false;
-  }
+    @Override
+    protected boolean useOffHeapMemoryAllocator() {
+        return false;
+    }
 }

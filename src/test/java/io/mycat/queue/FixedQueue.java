@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 固定容量的阻塞队列
- * 
+ *
  * @author mycat
  */
 public final class FixedQueue<E> {

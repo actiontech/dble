@@ -18,6 +18,9 @@
 
 package io.mycat.memory.environment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,246 +28,238 @@ import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Convenience class to extract hardware specifics of the computer executing this class
  */
 public class Hardware {
 
-	private static final Logger LOG = LoggerFactory.getLogger(Hardware.class);
-	
-	private static final String LINUX_MEMORY_INFO_PATH = "/proc/meminfo";
+    private static final Logger LOG = LoggerFactory.getLogger(Hardware.class);
 
-	private static final Pattern LINUX_MEMORY_REGEX = Pattern.compile("^MemTotal:\\s*(\\d+)\\s+kB$");
-	private static final Pattern LINUX__FREE_MEMORY_REGEX = Pattern.compile("^MemFree:\\s*(\\d+)\\s+kB$");
-	
+    private static final String LINUX_MEMORY_INFO_PATH = "/proc/meminfo";
 
-	
-	/**
-	 * Gets the number of CPU cores (hardware contexts) that the JVM has access to.
-	 * 
-	 * @return The number of CPU cores.
-	 */
-	public static int getNumberCPUCores() {
-		return Runtime.getRuntime().availableProcessors();
-	}
-	
-	/**
-	 * Returns the size of the physical memory in bytes.
-	 * 
-	 * @return the size of the physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	public static long getSizeOfPhysicalMemory() {
-		if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.LINUX) {
-			return getSizeOfPhysicalMemoryForLinux();
-		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.WINDOWS) {
-			return getSizeOfPhysicalMemoryForWindows();
-		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.MAC_OS) {
-			return getSizeOfPhysicalMemoryForMac();
-		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.FREE_BSD) {
-			return getSizeOfPhysicalMemoryForFreeBSD();
-		} else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.UNKNOWN) {
-			LOG.error("Cannot determine size of physical memory for unknown operating system");
-			return -1;
-		} else {
-			LOG.error("Unrecognized OS: " + OperatingSystem.getCurrentOperatingSystem());
-			return -1;
-		}
-	}
+    private static final Pattern LINUX_MEMORY_REGEX = Pattern.compile("^MemTotal:\\s*(\\d+)\\s+kB$");
+    private static final Pattern LINUX__FREE_MEMORY_REGEX = Pattern.compile("^MemFree:\\s*(\\d+)\\s+kB$");
 
-	/**
-	 * Returns the size of the physical memory in bytes on a Linux-based
-	 * operating system.
-	 * 
-	 * @return the size of the physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	private static long getSizeOfPhysicalMemoryForLinux() {
-		try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
-			String line;
-			while ((line = lineReader.readLine()) != null) {
-				Matcher matcher = LINUX_MEMORY_REGEX.matcher(line);
-				if (matcher.matches()) {
-					String totalMemory = matcher.group(1);
-					return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte
-				}
-			}
-			// expected line did not come
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
-			return -1;
-		}
-		catch (NumberFormatException e) {
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
-			return -1;
-		}
-		catch (Throwable t) {
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'): " + t.getMessage(), t);
-			return -1;
-		}
-	}
-	
-	/**
-	 * Returns the size of the free physical memory in bytes on a Linux-based
-	 * operating system.
-	 * 
-	 * @return the size of the free physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	public static long getFreeSizeOfPhysicalMemoryForLinux() {
-		try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
-			String line;
-			while ((line = lineReader.readLine()) != null) {
-				Matcher matcher = LINUX__FREE_MEMORY_REGEX.matcher(line);
-				if (matcher.matches()) {
-					String totalMemory = matcher.group(1);
-					return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte
-				}
-			}
-			// expected line did not come
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
-			return -1;
-		}
-		catch (NumberFormatException e) {
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
-			return -1;
-		}
-		catch (Throwable t) {
-			LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'): " + t.getMessage(), t);
-			return -1;
-		}
-	}
 
-	/**
-	 * Returns the size of the physical memory in bytes on a Mac OS-based
-	 * operating system
-	 * 
-	 * @return the size of the physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	private static long getSizeOfPhysicalMemoryForMac() {
+    /**
+     * Gets the number of CPU cores (hardware contexts) that the JVM has access to.
+     *
+     * @return The number of CPU cores.
+     */
+    public static int getNumberCPUCores() {
+        return Runtime.getRuntime().availableProcessors();
+    }
 
-		BufferedReader bi = null;
+    /**
+     * Returns the size of the physical memory in bytes.
+     *
+     * @return the size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    public static long getSizeOfPhysicalMemory() {
+        if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.LINUX) {
+            return getSizeOfPhysicalMemoryForLinux();
+        } else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.WINDOWS) {
+            return getSizeOfPhysicalMemoryForWindows();
+        } else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.MAC_OS) {
+            return getSizeOfPhysicalMemoryForMac();
+        } else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.FREE_BSD) {
+            return getSizeOfPhysicalMemoryForFreeBSD();
+        } else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.UNKNOWN) {
+            LOG.error("Cannot determine size of physical memory for unknown operating system");
+            return -1;
+        } else {
+            LOG.error("Unrecognized OS: " + OperatingSystem.getCurrentOperatingSystem());
+            return -1;
+        }
+    }
 
-		try {
-			Process proc = Runtime.getRuntime().exec("sysctl hw.memsize");
+    /**
+     * Returns the size of the physical memory in bytes on a Linux-based
+     * operating system.
+     *
+     * @return the size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    private static long getSizeOfPhysicalMemoryForLinux() {
+        try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
+            String line;
+            while ((line = lineReader.readLine()) != null) {
+                Matcher matcher = LINUX_MEMORY_REGEX.matcher(line);
+                if (matcher.matches()) {
+                    String totalMemory = matcher.group(1);
+                    return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte
+                }
+            }
+            // expected line did not come
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+            return -1;
+        } catch (NumberFormatException e) {
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+            return -1;
+        } catch (Throwable t) {
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'): " + t.getMessage(), t);
+            return -1;
+        }
+    }
 
-			bi = new BufferedReader(
-					new InputStreamReader(proc.getInputStream()));
+    /**
+     * Returns the size of the free physical memory in bytes on a Linux-based
+     * operating system.
+     *
+     * @return the size of the free physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    public static long getFreeSizeOfPhysicalMemoryForLinux() {
+        try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
+            String line;
+            while ((line = lineReader.readLine()) != null) {
+                Matcher matcher = LINUX__FREE_MEMORY_REGEX.matcher(line);
+                if (matcher.matches()) {
+                    String totalMemory = matcher.group(1);
+                    return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte
+                }
+            }
+            // expected line did not come
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+            return -1;
+        } catch (NumberFormatException e) {
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'). Unexpected format.");
+            return -1;
+        } catch (Throwable t) {
+            LOG.error("Cannot determine the size of the physical memory for Linux host (using '/proc/meminfo'): " + t.getMessage(), t);
+            return -1;
+        }
+    }
 
-			String line;
+    /**
+     * Returns the size of the physical memory in bytes on a Mac OS-based
+     * operating system
+     *
+     * @return the size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    private static long getSizeOfPhysicalMemoryForMac() {
 
-			while ((line = bi.readLine()) != null) {
-				if (line.startsWith("hw.memsize")) {
-					long memsize = Long.parseLong(line.split(":")[1].trim());
-					bi.close();
-					proc.destroy();
-					return memsize;
-				}
-			}
+        BufferedReader bi = null;
 
-		} catch (Throwable t) {
-			LOG.error("Cannot determine physical memory of machine for MacOS host: " + t.getMessage(), t);
-			return -1;
-		} finally {
-			if (bi != null) {
-				try {
-					bi.close();
-				} catch (IOException ignored) {}
-			}
-		}
-		return -1;
-	}
+        try {
+            Process proc = Runtime.getRuntime().exec("sysctl hw.memsize");
 
-	/**
-	 * Returns the size of the physical memory in bytes on FreeBSD.
-	 * 
-	 * @return the size of the physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	private static long getSizeOfPhysicalMemoryForFreeBSD() {
-		BufferedReader bi = null;
-		try {
-			Process proc = Runtime.getRuntime().exec("sysctl hw.physmem");
+            bi = new BufferedReader(
+                    new InputStreamReader(proc.getInputStream()));
 
-			bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+            String line;
 
-			String line;
+            while ((line = bi.readLine()) != null) {
+                if (line.startsWith("hw.memsize")) {
+                    long memsize = Long.parseLong(line.split(":")[1].trim());
+                    bi.close();
+                    proc.destroy();
+                    return memsize;
+                }
+            }
 
-			while ((line = bi.readLine()) != null) {
-				if (line.startsWith("hw.physmem")) {
-					long memsize = Long.parseLong(line.split(":")[1].trim());
-					bi.close();
-					proc.destroy();
-					return memsize;
-				}
-			}
-			
-			LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem').");
-			return -1;
-		}
-		catch (Throwable t) {
-			LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem'): " + t.getMessage(), t);
-			return -1;
-		}
-		finally {
-			if (bi != null) {
-				try {
-					bi.close();
-				} catch (IOException ignored) {}
-			}
-		}
-	}
+        } catch (Throwable t) {
+            LOG.error("Cannot determine physical memory of machine for MacOS host: " + t.getMessage(), t);
+            return -1;
+        } finally {
+            if (bi != null) {
+                try {
+                    bi.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
+        return -1;
+    }
 
-	/**
-	 * Returns the size of the physical memory in bytes on Windows.
-	 * 
-	 * @return the size of the physical memory in bytes or <code>-1</code> if
-	 *         the size could not be determined
-	 */
-	private static long getSizeOfPhysicalMemoryForWindows() {
-		BufferedReader bi = null;
-		try {
-			Process proc = Runtime.getRuntime().exec("wmic memorychip get capacity");
+    /**
+     * Returns the size of the physical memory in bytes on FreeBSD.
+     *
+     * @return the size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    private static long getSizeOfPhysicalMemoryForFreeBSD() {
+        BufferedReader bi = null;
+        try {
+            Process proc = Runtime.getRuntime().exec("sysctl hw.physmem");
 
-			bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+            bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
-			String line = bi.readLine();
-			if (line == null) {
-				return -1L;
-			}
+            String line;
 
-			if (!line.startsWith("Capacity")) {
-				return -1L;
-			}
+            while ((line = bi.readLine()) != null) {
+                if (line.startsWith("hw.physmem")) {
+                    long memsize = Long.parseLong(line.split(":")[1].trim());
+                    bi.close();
+                    proc.destroy();
+                    return memsize;
+                }
+            }
 
-			long sizeOfPhyiscalMemory = 0L;
-			while ((line = bi.readLine()) != null) {
-				if (line.isEmpty()) {
-					continue;
-				}
+            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem').");
+            return -1;
+        } catch (Throwable t) {
+            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem'): " + t.getMessage(), t);
+            return -1;
+        } finally {
+            if (bi != null) {
+                try {
+                    bi.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
+    }
 
-				line = line.replaceAll(" ", "");
-				sizeOfPhyiscalMemory += Long.parseLong(line);
-			}
-			return sizeOfPhyiscalMemory;
-		}
-		catch (Throwable t) {
-			LOG.error("Cannot determine the size of the physical memory for Windows host (using 'wmic memorychip'): " + t.getMessage(), t);
-			return -1L;
-		}
-		finally {
-			if (bi != null) {
-				try {
-					bi.close();
-				} catch (Throwable ignored) {}
-			}
-		}
-	}
-	
-	// --------------------------------------------------------------------------------------------
-	
-	private Hardware() {}
+    /**
+     * Returns the size of the physical memory in bytes on Windows.
+     *
+     * @return the size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    private static long getSizeOfPhysicalMemoryForWindows() {
+        BufferedReader bi = null;
+        try {
+            Process proc = Runtime.getRuntime().exec("wmic memorychip get capacity");
+
+            bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+            String line = bi.readLine();
+            if (line == null) {
+                return -1L;
+            }
+
+            if (!line.startsWith("Capacity")) {
+                return -1L;
+            }
+
+            long sizeOfPhyiscalMemory = 0L;
+            while ((line = bi.readLine()) != null) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                line = line.replaceAll(" ", "");
+                sizeOfPhyiscalMemory += Long.parseLong(line);
+            }
+            return sizeOfPhyiscalMemory;
+        } catch (Throwable t) {
+            LOG.error("Cannot determine the size of the physical memory for Windows host (using 'wmic memorychip'): " + t.getMessage(), t);
+            return -1L;
+        } finally {
+            if (bi != null) {
+                try {
+                    bi.close();
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
+
+    private Hardware() {
+    }
 }

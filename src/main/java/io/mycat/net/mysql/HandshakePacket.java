@@ -23,15 +23,15 @@
  */
 package io.mycat.net.mysql;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.net.FrontendConnection;
 
+import java.nio.ByteBuffer;
+
 /**
  * From server to client during initial handshake.
- * 
+ * <p>
  * <pre>
  * Bytes                        Name
  * -----                        ----
@@ -45,14 +45,14 @@ import io.mycat.net.FrontendConnection;
  * 2                            server_status
  * 13                           (filler) always 0x00 ...
  * 13                           rest of scramble_buff (4.1)
- * 
+ *
  * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Handshake_Initialization_Packet
  * </pre>
- * 
+ *
  * @author mycat
  */
 public class HandshakePacket extends MySQLPacket {
-    private static final byte[] FILLER_13 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    private static final byte[] FILLER_13 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     public byte protocolVersion;
     public byte[] serverVersion;

@@ -24,15 +24,11 @@
 package io.mycat.util;
 
 import java.io.Serializable;
-import java.util.AbstractSet;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * usually one element
- * 
+ *
  * @author mycat
  */
 public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, Serializable {
@@ -55,29 +51,29 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
     @Override
     public boolean add(E e) {
         switch (size) {
-        case 0:
-            ++size;
-            single = e;
-            return true;
-        case 1:
-            if (isEquals(e, single)) {
-                return false;
-            }
-            list = new ArrayList<E>(initSize);
-            list.add(single);
-            list.add(e);
-            ++size;
-            return true;
-        default:
-            for (int i = 0; i < list.size(); ++i) {
-                E e1 = list.get(i);
-                if (isEquals(e1, e)) {
+            case 0:
+                ++size;
+                single = e;
+                return true;
+            case 1:
+                if (isEquals(e, single)) {
                     return false;
                 }
-            }
-            list.add(e);
-            ++size;
-            return true;
+                list = new ArrayList<E>(initSize);
+                list.add(single);
+                list.add(e);
+                ++size;
+                return true;
+            default:
+                for (int i = 0; i < list.size(); ++i) {
+                    E e1 = list.get(i);
+                    if (isEquals(e1, e)) {
+                        return false;
+                    }
+                }
+                list.add(e);
+                ++size;
+                return true;
         }
     }
 
@@ -108,24 +104,24 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
             public E next() {
                 next = true;
                 switch (size) {
-                case 0:
-                    throw new NoSuchElementException();
-                case 1:
-                    switch (i) {
                     case 0:
-                        ++i;
-                        return single;
-                    default:
                         throw new NoSuchElementException();
-                    }
-                default:
-                    try {
-                        E e = list.get(i);
-                        ++i;
-                        return e;
-                    } catch (IndexOutOfBoundsException e) {
-                        throw new NoSuchElementException(e.getMessage());
-                    }
+                    case 1:
+                        switch (i) {
+                            case 0:
+                                ++i;
+                                return single;
+                            default:
+                                throw new NoSuchElementException();
+                        }
+                    default:
+                        try {
+                            E e = list.get(i);
+                            ++i;
+                            return e;
+                        } catch (IndexOutOfBoundsException e) {
+                            throw new NoSuchElementException(e.getMessage());
+                        }
                 }
             }
 
@@ -135,21 +131,21 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
                     throw new IllegalStateException();
                 }
                 switch (size) {
-                case 0:
-                    throw new IllegalStateException();
-                case 1:
-                    size = i = 0;
-                    single = null;
-                    if (list != null && !list.isEmpty()) {
-                        list.remove(0);
-                    }
-                    break;
-                default:
-                    list.remove(--i);
-                    if (--size == 1) {
-                        single = list.get(0);
-                    }
-                    break;
+                    case 0:
+                        throw new IllegalStateException();
+                    case 1:
+                        size = i = 0;
+                        single = null;
+                        if (list != null && !list.isEmpty()) {
+                            list.remove(0);
+                        }
+                        break;
+                    default:
+                        list.remove(--i);
+                        if (--size == 1) {
+                            single = list.get(0);
+                        }
+                        break;
                 }
                 next = false;
             }

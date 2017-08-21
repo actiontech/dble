@@ -18,7 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -27,12 +30,13 @@ import java.util.concurrent.CountDownLatch;
 public class TestSorter implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(TestSorter.class);
 
-    private static  final  int TEST_SIZE = 1000000;
-    private static  int TASK_SIZE = 100;
-    private static  CountDownLatch countDownLatch = new CountDownLatch(100);
-    public  void  runSorter( MyCatMemory myCatMemory,
-                             MemoryManager memoryManager,
-                             MycatPropertyConf conf) throws NoSuchFieldException, IllegalAccessException, IOException {
+    private static final int TEST_SIZE = 1000000;
+    private static int TASK_SIZE = 100;
+    private static CountDownLatch countDownLatch = new CountDownLatch(100);
+
+    public void runSorter(MyCatMemory myCatMemory,
+                          MemoryManager memoryManager,
+                          MycatPropertyConf conf) throws NoSuchFieldException, IllegalAccessException, IOException {
         DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
                 Thread.currentThread().getId());
         /**
@@ -74,7 +78,7 @@ public class TestSorter implements Runnable {
                         schema,
                         prefixComparator,
                         prefixComputer,
-                        conf.getSizeAsBytes("mycat.buffer.pageSize","1m"),
+                        conf.getSizeAsBytes("mycat.buffer.pageSize", "1m"),
                         true, /**使用基数排序？true or false*/
                         true);
         UnsafeRow unsafeRow;
@@ -85,12 +89,12 @@ public class TestSorter implements Runnable {
         for (int i = 0; i < TEST_SIZE; i++) {
             unsafeRow = new UnsafeRow(3);
             bufferHolder = new BufferHolder(unsafeRow);
-            unsafeRowWriter = new UnsafeRowWriter(bufferHolder,3);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 3);
             bufferHolder.reset();
 
-            String key = getRandomString(rand.nextInt(300)+100);
+            String key = getRandomString(rand.nextInt(300) + 100);
 
-            unsafeRowWriter.write(0,key.getBytes());
+            unsafeRowWriter.write(0, key.getBytes());
             unsafeRowWriter.write(1, line.getBytes());
             unsafeRowWriter.write(2, ("35" + 1).getBytes());
 
@@ -122,33 +126,34 @@ public class TestSorter implements Runnable {
         }
         return sb.toString();
     }
-    final  MyCatMemory myCatMemory ;
-    final  MemoryManager memoryManager;
-    final  MycatPropertyConf conf;
+
+    final MyCatMemory myCatMemory;
+    final MemoryManager memoryManager;
+    final MycatPropertyConf conf;
 
 
-        public TestSorter( MyCatMemory myCatMemory, MemoryManager memoryManager,MycatPropertyConf conf) throws NoSuchFieldException, IllegalAccessException {
-            this.myCatMemory = myCatMemory;
-            this.memoryManager = memoryManager;
-            this.conf = conf;
+    public TestSorter(MyCatMemory myCatMemory, MemoryManager memoryManager, MycatPropertyConf conf) throws NoSuchFieldException, IllegalAccessException {
+        this.myCatMemory = myCatMemory;
+        this.memoryManager = memoryManager;
+        this.conf = conf;
+    }
+
+    @Override
+    public void run() {
+        try {
+            runSorter(myCatMemory, memoryManager, conf);
+        } catch (NoSuchFieldException e) {
+            logger.error(e.getMessage());
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage());
+        } catch (IOException e) {
+            logger.error(e.getMessage());
         }
-
-        @Override
-        public void run() {
-            try {
-                runSorter(myCatMemory,memoryManager,conf);
-            } catch (NoSuchFieldException e) {
-                logger.error(e.getMessage());
-            } catch (IllegalAccessException e) {
-                logger.error(e.getMessage());
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
+    }
 
     public static void main(String[] args) throws Exception {
 
-        MyCatMemory myCatMemory ;
+        MyCatMemory myCatMemory;
         MemoryManager memoryManager;
         MycatPropertyConf conf;
 
@@ -157,11 +162,11 @@ public class TestSorter implements Runnable {
         conf = myCatMemory.getConf();
 
         for (int i = 0; i < TASK_SIZE; i++) {
-            Thread thread = new Thread(new TestSorter(myCatMemory,memoryManager,conf));
+            Thread thread = new Thread(new TestSorter(myCatMemory, memoryManager, conf));
             thread.start();
         }
 
-        while (countDownLatch.getCount() != 0){
+        while (countDownLatch.getCount() != 0) {
             System.err.println("count ========================>" + countDownLatch.getCount());
             Thread.sleep(1000);
         }

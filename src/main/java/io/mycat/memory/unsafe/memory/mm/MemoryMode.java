@@ -18,6 +18,6 @@
 package io.mycat.memory.unsafe.memory.mm;
 
 public enum MemoryMode {
-  ON_HEAP,
-  OFF_HEAP
+    ON_HEAP,
+    OFF_HEAP
 }

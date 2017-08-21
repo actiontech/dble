@@ -23,51 +23,51 @@
  */
 package io.mycat.route.sequence.handler;
 
-import java.util.Map;
-
 import io.mycat.config.util.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * 递增序列号处理器
- * 
+ *
  * @author <a href="http://www.micmiu.com">Michael</a>
- * @time Create on 2013-12-29 下午10:42:39
  * @version 1.0
+ * @time Create on 2013-12-29 下午10:42:39
  */
 public abstract class IncrSequenceHandler implements SequenceHandler {
 
-	public static final Logger logger = LoggerFactory.getLogger(IncrSequenceHandler.class);
+    public static final Logger logger = LoggerFactory.getLogger(IncrSequenceHandler.class);
 
-	public static final String FILE_NAME = "sequence_conf.properties";
+    public static final String FILE_NAME = "sequence_conf.properties";
 
-	public static final String KEY_MIN_NAME = ".MINID";// 1
-	public static final String KEY_MAX_NAME = ".MAXID";// 10000
-	public static final String KEY_CUR_NAME = ".CURID";// 888
+    public static final String KEY_MIN_NAME = ".MINID";// 1
+    public static final String KEY_MAX_NAME = ".MAXID";// 10000
+    public static final String KEY_CUR_NAME = ".CURID";// 888
 
-	public abstract Map<String, String> getParaValMap(String prefixName);
+    public abstract Map<String, String> getParaValMap(String prefixName);
 
-	public abstract Boolean updateCURIDVal(String prefixName, Long val);
+    public abstract Boolean updateCURIDVal(String prefixName, Long val);
 
-	public abstract Boolean fetchNextPeriod(String prefixName);
+    public abstract Boolean fetchNextPeriod(String prefixName);
 
-	@Override
-	public synchronized long nextId(String prefixName) {
-		Map<String, String> paraMap = this.getParaValMap(prefixName);
-		if (null == paraMap) {
-			String msg ="can't find definition for sequence :" + prefixName;
-			logger.warn(msg);
-			throw new ConfigException(msg);
-		}
-		Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
-		Long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
-		if (nextId > maxId) {
-			fetchNextPeriod(prefixName);
-			return nextId(prefixName);
-		}
-		updateCURIDVal(prefixName, nextId);
-		return nextId.longValue();
+    @Override
+    public synchronized long nextId(String prefixName) {
+        Map<String, String> paraMap = this.getParaValMap(prefixName);
+        if (null == paraMap) {
+            String msg = "can't find definition for sequence :" + prefixName;
+            logger.warn(msg);
+            throw new ConfigException(msg);
+        }
+        Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
+        Long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
+        if (nextId > maxId) {
+            fetchNextPeriod(prefixName);
+            return nextId(prefixName);
+        }
+        updateCURIDVal(prefixName, nextId);
+        return nextId.longValue();
 
-	}
+    }
 }

@@ -23,18 +23,14 @@
  */
 package io.mycat.server.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
-import io.mycat.net.mysql.EOFPacket;
-import io.mycat.net.mysql.ErrorPacket;
-import io.mycat.net.mysql.FieldPacket;
-import io.mycat.net.mysql.ResultSetHeaderPacket;
-import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.net.mysql.*;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author mycat
@@ -46,6 +42,7 @@ public class SelectUser {
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
     private static final ErrorPacket error = PacketUtil.getShutdown();
+
     static {
         int i = 0;
         byte packetId = 0;
@@ -58,19 +55,19 @@ public class SelectUser {
     public static void response(ServerConnection c) {
         if (MycatServer.getInstance().isOnline()) {
             ByteBuffer buffer = c.allocate();
-            buffer = header.write(buffer, c,true);
+            buffer = header.write(buffer, c, true);
             for (FieldPacket field : fields) {
-                buffer = field.write(buffer, c,true);
+                buffer = field.write(buffer, c, true);
             }
-            buffer = eof.write(buffer, c,true);
+            buffer = eof.write(buffer, c, true);
             byte packetId = eof.packetId;
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(getUser(c));
             row.packetId = ++packetId;
-            buffer = row.write(buffer, c,true);
+            buffer = row.write(buffer, c, true);
             EOFPacket lastEof = new EOFPacket();
             lastEof.packetId = ++packetId;
-            buffer = lastEof.write(buffer, c,true);
+            buffer = lastEof.write(buffer, c, true);
             c.write(buffer);
         } else {
             error.write(c);

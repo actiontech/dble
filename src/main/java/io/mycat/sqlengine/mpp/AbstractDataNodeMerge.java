@@ -17,12 +17,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Created by zagnix on 2016/7/6.
  */
-public abstract class AbstractDataNodeMerge implements Runnable{
+public abstract class AbstractDataNodeMerge implements Runnable {
 
 
     private static Logger LOGGER = Logger.getLogger(AbstractDataNodeMerge.class);
     /**
-     *row 有多少col
+     * row 有多少col
      */
     protected int fieldCount;
 
@@ -40,7 +40,6 @@ public abstract class AbstractDataNodeMerge implements Runnable{
     public PackWraper END_FLAG_PACK = new PackWraper();
 
 
-
     /**
      * rowData缓存队列
      */
@@ -51,7 +50,7 @@ public abstract class AbstractDataNodeMerge implements Runnable{
      */
     protected final AtomicBoolean running = new AtomicBoolean(false);
 
-    public AbstractDataNodeMerge(MultiNodeQueryHandler handler,RouteResultset rrs){
+    public AbstractDataNodeMerge(MultiNodeQueryHandler handler, RouteResultset rrs) {
         this.rrs = rrs;
         this.multiQueryHandler = handler;
     }
@@ -59,15 +58,15 @@ public abstract class AbstractDataNodeMerge implements Runnable{
 
     /**
      * Add a row pack, and may be wake up a business thread to work if not running.
+     *
      * @param pack row pack
      * @return true wake up a business thread, otherwise false
-     *
      * @author Uncle-pan
      * @since 2016-03-23
      */
-    protected final boolean addPack(final PackWraper pack){
+    protected final boolean addPack(final PackWraper pack) {
         packs.add(pack);
-        if(running.get()){
+        if (running.get()) {
             return false;
         }
         final MycatServer server = MycatServer.getInstance();
@@ -81,10 +80,8 @@ public abstract class AbstractDataNodeMerge implements Runnable{
      * process new record (mysql binary data),if data can output to client
      * ,return true
      *
-     * @param dataNode
-     *            DN's name (data from this dataNode)
-     * @param rowData
-     *            raw data
+     * @param dataNode DN's name (data from this dataNode)
+     * @param rowData  raw data
      */
     public boolean onNewRecord(String dataNode, byte[] rowData) {
         final PackWraper data = new PackWraper();
@@ -98,6 +95,7 @@ public abstract class AbstractDataNodeMerge implements Runnable{
 
     /**
      * 将Map对应的col字段集，返回row中对应的index数组
+     *
      * @param columns
      * @param toIndexMap
      * @return
@@ -132,9 +130,11 @@ public abstract class AbstractDataNodeMerge implements Runnable{
 
     /**
      * 做最后的结果集输出
+     *
      * @return (最多i*(offset+size)行数据)
      */
     public abstract List<RowDataPacket> getResults(byte[] eof);
+
     public abstract void clear();
 
 }

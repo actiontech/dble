@@ -4,9 +4,9 @@ import java.util.List;
 
 public interface SQLJobHandler {
 
-	void onHeader(List<byte[]> fields);
+    void onHeader(List<byte[]> fields);
 
-	boolean onRowData(String dataNode, byte[] rowData);
+    boolean onRowData(String dataNode, byte[] rowData);
 
-	void finished(String dataNode, boolean failed);
+    void finished(String dataNode, boolean failed);
 }

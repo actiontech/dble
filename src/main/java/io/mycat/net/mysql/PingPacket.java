@@ -27,7 +27,7 @@ package io.mycat.net.mysql;
  * @author mycat
  */
 public class PingPacket extends MySQLPacket {
-    public static final byte[] PING = new byte[] { 1, 0, 0, 0, 14 };
+    public static final byte[] PING = new byte[]{1, 0, 0, 0, 14};
 
     @Override
     public int calcPacketSize() {

@@ -1,29 +1,29 @@
 package io.mycat.manager.response;
 
-import java.util.Map;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
 import io.mycat.manager.ManagerConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.statistic.stat.UserStat;
 import io.mycat.statistic.stat.UserStatAnalyzer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 public class ReloadSqlSlowTime {
-	private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
-    public static void execute(ManagerConnection c,long time) {
-    	
-    	Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+    public static void execute(ManagerConnection c, long time) {
+
+        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
-        	userStat.setSlowTime(time);
+            userStat.setSlowTime(time);
         }
-    	
+
         StringBuilder s = new StringBuilder();
-        s.append(c).append("Reset show  @@sql.slow="+time+" time success by manager");
-        
+        s.append(c).append("Reset show  @@sql.slow=" + time + " time success by manager");
+
         logger.warn(s.toString());
-        
+
         OkPacket ok = new OkPacket();
         ok.packetId = 1;
         ok.affectedRows = 1;

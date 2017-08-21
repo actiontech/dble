@@ -18,6 +18,8 @@
 package io.mycat.memory.unsafe.sort;
 
 public class UnsafeInMemorySorterRadixSortSuite extends UnsafeInMemorySorterSuite {
-  @Override
-  protected boolean shouldUseRadixSort() { return true; }
+    @Override
+    protected boolean shouldUseRadixSort() {
+        return true;
+    }
 }

@@ -25,12 +25,12 @@ package io.mycat.net.handler;
 
 /**
  * 查询处理器
- * 
+ *
  * @author mycat
  */
 public interface FrontendQueryHandler {
 
-	void query(String sql);
+    void query(String sql);
 
-	void setReadOnly(Boolean readOnly);
+    void setReadOnly(Boolean readOnly);
 }

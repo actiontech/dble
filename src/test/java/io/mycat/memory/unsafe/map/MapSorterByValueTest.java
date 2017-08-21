@@ -9,26 +9,26 @@ import java.util.*;
  */
 public class MapSorterByValueTest {
     @Test
-    public void testMapSorterByValue(){
+    public void testMapSorterByValue() {
         Map<String, Integer> map = new HashMap<String, Integer>();
-        map.put("q",23);
-        map.put("b",4);
-        map.put("c",5);
-        map.put("d",6);
+        map.put("q", 23);
+        map.put("b", 4);
+        map.put("c", 5);
+        map.put("d", 6);
 
         Map<String, Integer> resultMap = mapSorterByValue(map); //按Value进行排序
 
-        for (Map.Entry<String,Integer> entry : resultMap.entrySet()) {
+        for (Map.Entry<String, Integer> entry : resultMap.entrySet()) {
             System.out.println(entry.getKey() + " " + entry.getValue());
         }
     }
 
-    private Map<String,Integer> mapSorterByValue(Map<String,Integer> map) {
+    private Map<String, Integer> mapSorterByValue(Map<String, Integer> map) {
         if (map == null || map.isEmpty()) {
             return null;
         }
 
-        Map<String,Integer> sortedMap = new LinkedHashMap<String, Integer>();
+        Map<String, Integer> sortedMap = new LinkedHashMap<String, Integer>();
 
         List<Map.Entry<String, Integer>> entryList = new ArrayList<
                 Map.Entry<String, Integer>>(

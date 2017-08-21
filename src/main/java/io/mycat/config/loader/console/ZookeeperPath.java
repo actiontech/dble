@@ -13,22 +13,22 @@ package io.mycat.config.loader.console;
  */
 public enum ZookeeperPath {
 
-	/**
-	 * zk写入本地的路径信息
-	 */
-	ZK_LOCAL_WRITE_PATH("./"),
-	;
-	/**
-	 * 配制的key的信息
-	 */
-	private String key;
-	ZookeeperPath(String key) {
-		this.key = key;
-	}
+    /**
+     * zk写入本地的路径信息
+     */
+    ZK_LOCAL_WRITE_PATH("./"),;
+    /**
+     * 配制的key的信息
+     */
+    private String key;
 
-	public String getKey() {
-		return key;
-	}
+    ZookeeperPath(String key) {
+        this.key = key;
+    }
+
+    public String getKey() {
+        return key;
+    }
 
 
 }

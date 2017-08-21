@@ -8,9 +8,9 @@ package io.mycat.memory.unsafe.utils;
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package io.mycat.memory.unsafe.utils;
 
 
 import com.google.common.annotations.VisibleForTesting;
-
 import io.mycat.memory.unsafe.Platform;
 import sun.misc.Unsafe;
 
@@ -35,11 +34,15 @@ import java.nio.charset.Charset;
 public class BytesTools {
 
     //HConstants.UTF8_ENCODING should be updated if this changed
-    /** When we encode strings, we always specify UTF8 encoding */
+    /**
+     * When we encode strings, we always specify UTF8 encoding
+     */
     private static final String UTF8_ENCODING = "UTF-8";
 
     //HConstants.UTF8_CHARSET should be updated if this changed
-     /** When we encode strings, we always specify UTF8 encoding */
+    /**
+     * When we encode strings, we always specify UTF8 encoding
+     */
     private static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
 
     /**
@@ -84,6 +87,7 @@ public class BytesTools {
 
     /**
      * Convert a byte array  to a int value
+     *
      * @param buf
      * @return int
      * @throws NumberFormatException
@@ -97,47 +101,47 @@ public class BytesTools {
         byte base = 10;
 
         int s;
-        for(s = offset; s < endPos && Character.isWhitespace((char)buf[s]); ++s) {
+        for (s = offset; s < endPos && Character.isWhitespace((char) buf[s]); ++s) {
             ;
         }
-        if(s == endPos) {
+        if (s == endPos) {
             throw new NumberFormatException(toString(buf));
         } else {
             boolean negative = false;
-            if((char)buf[s] == 45) {
+            if ((char) buf[s] == 45) {
                 negative = true;
                 ++s;
-            } else if((char)buf[s] == 43) {
+            } else if ((char) buf[s] == 43) {
                 ++s;
             }
 
             int save = s;
             int cutoff = 2147483647 / base;
             int cutlim = 2147483647 % base;
-            if(negative) {
+            if (negative) {
                 ++cutlim;
             }
 
             boolean overflow = false;
 
             int i;
-            for(i = 0; s < endPos; ++s) {
-                char c = (char)buf[s];
-                if(Character.isDigit(c)) {
-                    c = (char)(c - 48);
+            for (i = 0; s < endPos; ++s) {
+                char c = (char) buf[s];
+                if (Character.isDigit(c)) {
+                    c = (char) (c - 48);
                 } else {
-                    if(!Character.isLetter(c)) {
+                    if (!Character.isLetter(c)) {
                         break;
                     }
 
-                    c = (char)(Character.toUpperCase(c) - 65 + 10);
+                    c = (char) (Character.toUpperCase(c) - 65 + 10);
                 }
 
-                if(c >= base) {
+                if (c >= base) {
                     break;
                 }
 
-                if(i <= cutoff && (i != cutoff || c <= cutlim)) {
+                if (i <= cutoff && (i != cutoff || c <= cutlim)) {
                     i *= base;
                     i += c;
                 } else {
@@ -145,18 +149,19 @@ public class BytesTools {
                 }
             }
 
-            if(s == save) {
+            if (s == save) {
                 throw new NumberFormatException(toString(buf));
-            } else if(overflow) {
+            } else if (overflow) {
                 throw new NumberFormatException(toString(buf));
             } else {
-                return negative?-i:i;
+                return negative ? -i : i;
             }
         }
     }
 
     /**
      * Convert a byte array to a long value
+     *
      * @param buf
      * @return
      * @throws NumberFormatException
@@ -169,66 +174,67 @@ public class BytesTools {
         byte base = 10;
 
         int s;
-        for(s = offset; s < endpos && Character.isWhitespace((char)buf[s]); ++s) {
+        for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
             ;
         }
 
-        if(s == endpos) {
+        if (s == endpos) {
             throw new NumberFormatException(toString(buf));
         } else {
             boolean negative = false;
-            if((char)buf[s] == 45) {
+            if ((char) buf[s] == 45) {
                 negative = true;
                 ++s;
-            } else if((char)buf[s] == 43) {
+            } else if ((char) buf[s] == 43) {
                 ++s;
             }
 
             int save = s;
-            long cutoff = 9223372036854775807L / (long)base;
-            long cutlim = (long)((int)(9223372036854775807L % (long)base));
-            if(negative) {
+            long cutoff = 9223372036854775807L / (long) base;
+            long cutlim = (long) ((int) (9223372036854775807L % (long) base));
+            if (negative) {
                 ++cutlim;
             }
 
             boolean overflow = false;
 
             long i;
-            for(i = 0L; s < endpos; ++s) {
-                char c = (char)buf[s];
-                if(Character.isDigit(c)) {
-                    c = (char)(c - 48);
+            for (i = 0L; s < endpos; ++s) {
+                char c = (char) buf[s];
+                if (Character.isDigit(c)) {
+                    c = (char) (c - 48);
                 } else {
-                    if(!Character.isLetter(c)) {
+                    if (!Character.isLetter(c)) {
                         break;
                     }
-                    c = (char)(Character.toUpperCase(c) - 65 + 10);
+                    c = (char) (Character.toUpperCase(c) - 65 + 10);
                 }
 
-                if(c >= base) {
+                if (c >= base) {
                     break;
                 }
 
-                if(i <= cutoff && (i != cutoff || (long)c <= cutlim)) {
-                    i *= (long)base;
-                    i += (long)c;
+                if (i <= cutoff && (i != cutoff || (long) c <= cutlim)) {
+                    i *= (long) base;
+                    i += (long) c;
                 } else {
                     overflow = true;
                 }
             }
 
-            if(s == save) {
+            if (s == save) {
                 throw new NumberFormatException(toString(buf));
-            } else if(overflow) {
+            } else if (overflow) {
                 throw new NumberFormatException(toString(buf));
             } else {
-                return negative?-i:i;
+                return negative ? -i : i;
             }
         }
     }
 
     /**
      * Convert a byte array  to a short value
+     *
      * @param buf
      * @return
      * @throws NumberFormatException
@@ -241,88 +247,91 @@ public class BytesTools {
         byte base = 10;
 
         int s;
-        for(s = offset; s < endpos && Character.isWhitespace((char)buf[s]); ++s) {
+        for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
             ;
         }
 
-        if(s == endpos) {
+        if (s == endpos) {
             throw new NumberFormatException(toString(buf));
         } else {
             boolean negative = false;
-            if((char)buf[s] == 45) {
+            if ((char) buf[s] == 45) {
                 negative = true;
                 ++s;
-            } else if((char)buf[s] == 43) {
+            } else if ((char) buf[s] == 43) {
                 ++s;
             }
 
             int save = s;
-            short cutoff = (short)(32767 / base);
-            short cutlim = (short)(32767 % base);
-            if(negative) {
+            short cutoff = (short) (32767 / base);
+            short cutlim = (short) (32767 % base);
+            if (negative) {
                 ++cutlim;
             }
 
             boolean overflow = false;
 
             short i;
-            for(i = 0; s < endpos; ++s) {
-                char c = (char)buf[s];
-                if(Character.isDigit(c)) {
-                    c = (char)(c - 48);
+            for (i = 0; s < endpos; ++s) {
+                char c = (char) buf[s];
+                if (Character.isDigit(c)) {
+                    c = (char) (c - 48);
                 } else {
-                    if(!Character.isLetter(c)) {
+                    if (!Character.isLetter(c)) {
                         break;
                     }
 
-                    c = (char)(Character.toUpperCase(c) - 65 + 10);
+                    c = (char) (Character.toUpperCase(c) - 65 + 10);
                 }
 
-                if(c >= base) {
+                if (c >= base) {
                     break;
                 }
 
-                if(i <= cutoff && (i != cutoff || c <= cutlim)) {
-                    i = (short)(i * base);
-                    i = (short)(i + c);
+                if (i <= cutoff && (i != cutoff || c <= cutlim)) {
+                    i = (short) (i * base);
+                    i = (short) (i + c);
                 } else {
                     overflow = true;
                 }
             }
 
-            if(s == save) {
+            if (s == save) {
                 throw new NumberFormatException(toString(buf));
-            } else if(overflow) {
+            } else if (overflow) {
                 throw new NumberFormatException(toString(buf));
             } else {
-                return negative?(short)(-i):i;
+                return negative ? (short) (-i) : i;
             }
         }
     }
 
     /**
-     *  Convert a byte array  to a float value
+     * Convert a byte array  to a float value
+     *
      * @param src
      * @return
      * @throws UnsupportedEncodingException
      */
-    public static float getFloat(byte [] src) throws UnsupportedEncodingException {
-        return Float.parseFloat(new String(src,"US-ASCII"));
+    public static float getFloat(byte[] src) throws UnsupportedEncodingException {
+        return Float.parseFloat(new String(src, "US-ASCII"));
     }
 
     /**
      * Convert a byte array  to a double value
+     *
      * @param src
      * @return
      * @throws UnsupportedEncodingException
      */
 
-    public static double getDouble(byte [] src) throws UnsupportedEncodingException {
-        return  Double.parseDouble(new String(src,"US-ASCII"));
+    public static double getDouble(byte[] src) throws UnsupportedEncodingException {
+        return Double.parseDouble(new String(src, "US-ASCII"));
     }
 
     /**
      * Convert a long value to a byte array
+     *
      * @param l
      * @return
      * @throws UnsupportedEncodingException
@@ -336,6 +345,7 @@ public class BytesTools {
 
     /**
      * Convert a int value to a byte array
+     *
      * @param i
      * @return
      * @throws UnsupportedEncodingException
@@ -348,6 +358,7 @@ public class BytesTools {
 
     /**
      * Convert a short value to a byte array
+     *
      * @param i
      * @return
      * @throws UnsupportedEncodingException
@@ -360,6 +371,7 @@ public class BytesTools {
 
     /**
      * Convert a float value to a byte array
+     *
      * @param f
      * @return
      * @throws UnsupportedEncodingException
@@ -371,6 +383,7 @@ public class BytesTools {
 
     /**
      * Convert a double value to a byte array
+     *
      * @param d
      * @return
      * @throws UnsupportedEncodingException
@@ -396,7 +409,7 @@ public class BytesTools {
     }
 
     private static byte[] readBytes(ByteBuffer buf) {
-        byte [] result = new byte[buf.remaining()];
+        byte[] result = new byte[buf.remaining()];
         buf.get(result);
         return result;
     }
@@ -405,7 +418,7 @@ public class BytesTools {
      * @param b Presumed UTF-8 encoded byte array.
      * @return String made from <code>b</code>
      */
-    public static String toString(final byte [] b) {
+    public static String toString(final byte[] b) {
         if (b == null) {
             return null;
         }
@@ -414,13 +427,14 @@ public class BytesTools {
 
     /**
      * Joins two byte arrays together using a separator.
-     * @param b1 The first byte array.
+     *
+     * @param b1  The first byte array.
      * @param sep The separator to use.
-     * @param b2 The second byte array.
+     * @param b2  The second byte array.
      */
-    public static String toString(final byte [] b1,
+    public static String toString(final byte[] b1,
                                   String sep,
-                                  final byte [] b2) {
+                                  final byte[] b2) {
         return toString(b1, 0, b1.length) + sep + toString(b2, 0, b2.length);
     }
 
@@ -428,11 +442,11 @@ public class BytesTools {
      * This method will convert utf8 encoded bytes into a string. If
      * the given byte array is null, this method will return null.
      *
-     * @param b Presumed UTF-8 encoded byte array.
+     * @param b   Presumed UTF-8 encoded byte array.
      * @param off offset into array
      * @return String made from <code>b</code> or null
      */
-    public static String toString(final byte [] b, int off) {
+    public static String toString(final byte[] b, int off) {
         if (b == null) {
             return null;
         }
@@ -447,12 +461,12 @@ public class BytesTools {
      * This method will convert utf8 encoded bytes into a string. If
      * the given byte array is null, this method will return null.
      *
-     * @param b Presumed UTF-8 encoded byte array.
+     * @param b   Presumed UTF-8 encoded byte array.
      * @param off offset into array
      * @param len length of utf-8 sequence
      * @return String made from <code>b</code> or null
      */
-    public static String toString(final byte [] b, int off, int len) {
+    public static String toString(final byte[] b, int off, int len) {
         if (b == null) {
             return null;
         }
@@ -469,7 +483,7 @@ public class BytesTools {
      * @return string
      * @see #toStringBinary(byte[], int, int)
      */
-    public static String toStringBinary(final byte [] b) {
+    public static String toStringBinary(final byte[] b) {
         if (b == null)
             return "null";
         return toStringBinary(b, 0, b.length);
@@ -503,20 +517,20 @@ public class BytesTools {
      * characters are hex escaped in the format \\x%02X, eg:
      * \x00 \x05 etc
      *
-     * @param b array to write out
+     * @param b   array to write out
      * @param off offset to start at
      * @param len length to write
      * @return string output
      */
-    public static String toStringBinary(final byte [] b, int off, int len) {
+    public static String toStringBinary(final byte[] b, int off, int len) {
         StringBuilder result = new StringBuilder();
         // Just in case we are passed a 'len' that is > buffer length...
         if (off >= b.length) return result.toString();
         if (off + len > b.length) len = b.length - off;
-        for (int i = off; i < off + len ; ++i) {
+        for (int i = off; i < off + len; ++i) {
             int ch = b[i] & 0xFF;
             if (ch >= ' ' && ch <= '~' && ch != '\\') {
-                result.append((char)ch);
+                result.append((char) ch);
             } else {
                 result.append("\\x");
                 result.append(HEX_CHARS_UPPER[ch / 0x10]);
@@ -535,26 +549,27 @@ public class BytesTools {
     /**
      * Takes a ASCII digit in the range A-F0-9 and returns
      * the corresponding integer/ordinal value.
-     * @param ch  The hex digit.
+     *
+     * @param ch The hex digit.
      * @return The converted hex value as a byte.
      */
     public static byte toBinaryFromHex(byte ch) {
         if (ch >= 'A' && ch <= 'F')
-            return (byte) ((byte)10 + (byte) (ch - 'A'));
+            return (byte) ((byte) 10 + (byte) (ch - 'A'));
         // else
         return (byte) (ch - '0');
     }
 
-    public static byte [] toBytesBinary(String in) {
+    public static byte[] toBytesBinary(String in) {
         // this may be bigger than we need, but let's be safe.
-        byte [] b = new byte[in.length()];
+        byte[] b = new byte[in.length()];
         int size = 0;
         for (int i = 0; i < in.length(); ++i) {
             char ch = in.charAt(i);
-            if (ch == '\\' && in.length() > i+1 && in.charAt(i+1) == 'x') {
+            if (ch == '\\' && in.length() > i + 1 && in.charAt(i + 1) == 'x') {
                 // ok, take next 2 hex digits.
-                char hd1 = in.charAt(i+2);
-                char hd2 = in.charAt(i+3);
+                char hd1 = in.charAt(i + 2);
+                char hd2 = in.charAt(i + 3);
 
                 // they need to be A-F0-9:
                 if (!isHexDigit(hd1) ||
@@ -563,7 +578,7 @@ public class BytesTools {
                     continue;
                 }
                 // turn hex ASCII digit -> number
-                byte d = (byte) ((toBinaryFromHex((byte)hd1) << 4) + toBinaryFromHex((byte)hd2));
+                byte d = (byte) ((toBinaryFromHex((byte) hd1) << 4) + toBinaryFromHex((byte) hd2));
 
                 b[size++] = d;
                 i += 3; // skip 3
@@ -572,13 +587,14 @@ public class BytesTools {
             }
         }
         // resize:
-        byte [] b2 = new byte[size];
+        byte[] b2 = new byte[size];
         System.arraycopy(b, 0, b2, 0, size);
         return b2;
     }
 
     /**
      * Converts a string to a UTF-8 byte array.
+     *
      * @param s string
      * @return the byte array
      */
@@ -593,16 +609,17 @@ public class BytesTools {
      * @param b value
      * @return <code>b</code> encoded in a byte array.
      */
-    public static byte [] toBytes(final boolean b) {
-        return new byte[] { b ? (byte) -1 : (byte) 0 };
+    public static byte[] toBytes(final boolean b) {
+        return new byte[]{b ? (byte) -1 : (byte) 0};
     }
 
     /**
      * Reverses {@link #toBytes(boolean)}
+     *
      * @param b array
      * @return True or false.
      */
-    public static boolean toBoolean(final byte [] b) {
+    public static boolean toBoolean(final byte[] b) {
         if (b.length != 1) {
             throw new IllegalArgumentException("Array has wrong size: " + b.length);
         }
@@ -616,7 +633,7 @@ public class BytesTools {
      * @return the byte array
      */
     public static byte[] toBytes(long val) {
-        byte [] b = new byte[8];
+        byte[] b = new byte[8];
         for (int i = 7; i > 0; i--) {
             b[i] = (byte) val;
             val >>>= 8;
@@ -626,11 +643,11 @@ public class BytesTools {
     }
 
     /**
-     * @param left left operand
+     * @param left  left operand
      * @param right right operand
      * @return 0 if equal, &lt; 0 if left is less than right, etc.
      */
-    public static int compareTo(final byte [] left, final byte [] right) {
+    public static int compareTo(final byte[] left, final byte[] right) {
         return LexicographicalComparerHolder.BEST_COMPARER.
                 compareTo(left, 0, left.length, right, 0, right.length);
     }
@@ -666,7 +683,7 @@ public class BytesTools {
     /**
      * Provides a lexicographical comparer implementation; either a Java
      * implementation or a faster implementation based on {@link Unsafe}.
-     *
+     * <p>
      * <p>Uses reflection to gracefully fall back to the Java implementation if
      * {@code Unsafe} isn't available.
      */
@@ -676,6 +693,7 @@ public class BytesTools {
                 LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
 
         static final Comparer<byte[]> BEST_COMPARER = getBestComparer();
+
         /**
          * Returns the Unsafe-using Comparer, or falls back to the pure-Java
          * implementation if unable to do so.
@@ -722,11 +740,11 @@ public class BytesTools {
     }
 
     /**
-     * @param left left operand
+     * @param left  left operand
      * @param right right operand
      * @return True if equal
      */
-    public static boolean equals(final byte [] left, final byte [] right) {
+    public static boolean equals(final byte[] left, final byte[] right) {
         // Could use Arrays.equals?
         //noinspection SimplifiableConditionalExpression
         if (left == right) return true;
@@ -769,7 +787,7 @@ public class BytesTools {
 
 
     /**
-     * @param a left operand
+     * @param a   left operand
      * @param buf right operand
      * @return True if equal
      */
@@ -807,8 +825,8 @@ public class BytesTools {
      * @param c third third
      * @return New array made from a, b and c
      */
-    public static byte [] add(final byte [] a, final byte [] b, final byte [] c) {
-        byte [] result = new byte[a.length + b.length + c.length];
+    public static byte[] add(final byte[] a, final byte[] b, final byte[] c) {
+        byte[] result = new byte[a.length + b.length + c.length];
         System.arraycopy(a, 0, result, 0, a.length);
         System.arraycopy(b, 0, result, a.length, b.length);
         System.arraycopy(c, 0, result, a.length + b.length, c.length);
@@ -819,12 +837,12 @@ public class BytesTools {
      * @param arrays all the arrays to concatenate together.
      * @return New array made from the concatenation of the given arrays.
      */
-    public static byte [] add(final byte [][] arrays) {
+    public static byte[] add(final byte[][] arrays) {
         int length = 0;
         for (int i = 0; i < arrays.length; i++) {
             length += arrays[i].length;
         }
-        byte [] result = new byte[length];
+        byte[] result = new byte[length];
         int index = 0;
         for (int i = 0; i < arrays.length; i++) {
             System.arraycopy(arrays[i], 0, result, index, arrays[i].length);
@@ -844,13 +862,12 @@ public class BytesTools {
      */
 
 
-
     /**
      * @param t operands
      * @return Array of byte arrays made from passed array of Text
      */
-    public static byte [][] toByteArrays(final String [] t) {
-        byte [][] result = new byte[t.length][];
+    public static byte[][] toByteArrays(final String[] t) {
+        byte[][] result = new byte[t.length][];
         for (int i = 0; i < t.length; i++) {
             result[i] = BytesTools.toBytes(t[i]);
         }
@@ -874,7 +891,7 @@ public class BytesTools {
      * @return A byte array of a byte array where first and only entry is
      * <code>column</code>
      */
-    public static byte [][] toByteArrays(final String column) {
+    public static byte[][] toByteArrays(final String column) {
         return toByteArrays(toBytes(column));
     }
 
@@ -883,54 +900,54 @@ public class BytesTools {
      * @return A byte array of a byte array where first and only entry is
      * <code>column</code>
      */
-    public static byte [][] toByteArrays(final byte [] column) {
-        byte [][] result = new byte[1][];
+    public static byte[][] toByteArrays(final byte[] column) {
+        byte[][] result = new byte[1][];
         result[0] = column;
         return result;
     }
 
 
-    public static byte [] paddingInt(byte [] a){
+    public static byte[] paddingInt(byte[] a) {
 
-        if(a == null){
+        if (a == null) {
             return null;
         }
 
-        if (a.length==SIZEOF_INT){
-            return  a;
+        if (a.length == SIZEOF_INT) {
+            return a;
         }
 
-        byte [] b = new byte[SIZEOF_INT];
-        if (Platform.littleEndian){
-            for (int i = 0; i < SIZEOF_INT-a.length; i++) {
+        byte[] b = new byte[SIZEOF_INT];
+        if (Platform.littleEndian) {
+            for (int i = 0; i < SIZEOF_INT - a.length; i++) {
                 b[i] = 0x00;
             }
-            System.arraycopy(a, 0, b,SIZEOF_INT-a.length, a.length);
-        }else {
+            System.arraycopy(a, 0, b, SIZEOF_INT - a.length, a.length);
+        } else {
             System.arraycopy(a, 0, b, 0, a.length);
             for (int i = a.length; i < SIZEOF_INT; i++) {
                 b[i] = 0x00;
             }
         }
-        return  b;
+        return b;
     }
 
-    public static byte [] paddingLong(byte [] a){
-        if(a == null){
+    public static byte[] paddingLong(byte[] a) {
+        if (a == null) {
             return null;
         }
 
-        if (a.length==SIZEOF_LONG){
-            return  a;
+        if (a.length == SIZEOF_LONG) {
+            return a;
         }
 
-        byte [] b = new byte[SIZEOF_LONG];
-        if (Platform.littleEndian){
-            for (int i = 0; i < SIZEOF_LONG-a.length; i++) {
+        byte[] b = new byte[SIZEOF_LONG];
+        if (Platform.littleEndian) {
+            for (int i = 0; i < SIZEOF_LONG - a.length; i++) {
                 b[i] = 0x00;
             }
-            System.arraycopy(a, 0, b,SIZEOF_LONG-a.length, a.length);
-        }else {
+            System.arraycopy(a, 0, b, SIZEOF_LONG - a.length, a.length);
+        } else {
             System.arraycopy(a, 0, b, 0, a.length);
             for (int i = a.length; i < SIZEOF_LONG; i++) {
                 b[i] = 0x00;
@@ -939,22 +956,22 @@ public class BytesTools {
         return b;
     }
 
-    public static byte [] paddingShort(byte [] a){
+    public static byte[] paddingShort(byte[] a) {
 
-        if(a == null){
+        if (a == null) {
             return null;
         }
 
-        if (a.length==SIZEOF_SHORT){
-            return  a;
+        if (a.length == SIZEOF_SHORT) {
+            return a;
         }
-        byte [] b = new byte[SIZEOF_SHORT];
-        if (Platform.littleEndian){
-            for (int i = 0; i < SIZEOF_SHORT-a.length; i++) {
+        byte[] b = new byte[SIZEOF_SHORT];
+        if (Platform.littleEndian) {
+            for (int i = 0; i < SIZEOF_SHORT - a.length; i++) {
                 b[i] = 0x00;
             }
-            System.arraycopy(a, 0, b, SIZEOF_SHORT-a.length, a.length);
-        }else {
+            System.arraycopy(a, 0, b, SIZEOF_SHORT - a.length, a.length);
+        } else {
             System.arraycopy(a, 0, b, 0, a.length);
             for (int i = a.length; i < SIZEOF_SHORT; i++) {
                 b[i] = 0x00;

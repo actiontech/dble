@@ -1,15 +1,14 @@
 package io.mycat.buffer;
 
+import junit.framework.Assert;
+import org.junit.Test;
+import sun.nio.ch.DirectBuffer;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import junit.framework.Assert;
-import org.junit.Test;
-
-import sun.nio.ch.DirectBuffer;
 
 public class TestDirectByteBufferPool {
 
@@ -22,7 +21,7 @@ public class TestDirectByteBufferPool {
         for (int i = 0; i < allocTimes; i++) {
             //System.out.println("allocate "+i);
             //long start=System.nanoTime();
-            int size = (i % 1024) + 1 ;
+            int size = (i % 1024) + 1;
             ByteBuffer byteBufer = pool.allocate(size);
             ByteBuffer byteBufer2 = pool.allocate(size);
             ByteBuffer byteBufer3 = pool.allocate(size);
@@ -86,7 +85,7 @@ public class TestDirectByteBufferPool {
         int i = 0;
         for (; i < allocTimes; i++) {
             byteBuffer = pool.allocate(size);
-            if (byteBuffer == null||!(byteBuffer instanceof DirectBuffer) ) {
+            if (byteBuffer == null || !(byteBuffer instanceof DirectBuffer)) {
                 break;
             }
             buffs.add(byteBuffer);
@@ -110,7 +109,7 @@ public class TestDirectByteBufferPool {
         int i = 0;
         for (; i < allocTimes; i++) {
             byteBuffer = pool.allocate(size);
-            if (byteBuffer == null||!(byteBuffer instanceof DirectBuffer) ) {
+            if (byteBuffer == null || !(byteBuffer instanceof DirectBuffer)) {
                 break;
             }
             buffs.add(byteBuffer);
@@ -123,30 +122,30 @@ public class TestDirectByteBufferPool {
     }
 
     @Test
-    public  void testExpandBuffer(){
+    public void testExpandBuffer() {
         int size = 512;
-        int pageSize = 1024*1024;
+        int pageSize = 1024 * 1024;
         int allocTimes = 9;
         DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 512, (short) 64);
         ByteBuffer byteBuffer = pool.allocate(1024);
         String str = "DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8)";
         ByteBuffer newByteBuffer = null;
         int i = 0;
-        while (i<10){
-            if(byteBuffer.remaining()<str.length()){
+        while (i < 10) {
+            if (byteBuffer.remaining() < str.length()) {
                 newByteBuffer = pool.expandBuffer(byteBuffer);
                 byteBuffer = newByteBuffer;
                 i++;
-            }else {
+            } else {
                 byteBuffer.put(str.getBytes());
             }
-            System.out.println("remaining: " +  byteBuffer.remaining() + "capacity: " + byteBuffer.capacity());
+            System.out.println("remaining: " + byteBuffer.remaining() + "capacity: " + byteBuffer.capacity());
         }
 
         System.out.println("capacity : " + byteBuffer.capacity());
         System.out.println("capacity : " + byteBuffer.position());
 
-        byte [] bytes = new byte[byteBuffer.position()];
+        byte[] bytes = new byte[byteBuffer.position()];
         byteBuffer.flip();
         byteBuffer.get(bytes);
         String body = new String(bytes);
@@ -158,7 +157,6 @@ public class TestDirectByteBufferPool {
         System.out.println("size :" + body.length());
         pool.recycle(byteBuffer);
     }
-
 
 
 }

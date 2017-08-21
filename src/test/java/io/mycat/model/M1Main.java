@@ -35,7 +35,7 @@ public class M1Main {
         new Thread() {
             @Override
             public void run() {
-                for (;;) {
+                for (; ; ) {
                     long c = m1.getCount();
                     try {
                         Thread.sleep(2000L);

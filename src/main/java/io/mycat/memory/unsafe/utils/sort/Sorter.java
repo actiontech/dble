@@ -21,22 +21,22 @@ import java.util.Comparator;
 
 /**
  * A simple wrapper over the Java implementation [[TimSort]].
- *
+ * <p>
  * The Java implementation is package private, and hence it cannot be called outside package
  * org.opencloudb.memory.unsafe.utils.sort. This is a simple wrapper of it that is available to mycat.
  */
-public class Sorter<K,Buffer> {
+public class Sorter<K, Buffer> {
 
-  private TimSort timSort = null;
+    private TimSort timSort = null;
 
-  public  Sorter(SortDataFormat<K,Buffer> s){
-    timSort = new TimSort(s);
-  }
+    public Sorter(SortDataFormat<K, Buffer> s) {
+        timSort = new TimSort(s);
+    }
 
-  /**
-   * Sorts the input buffer within range [lo, hi).
-   */
-  public void sort(Buffer a, int lo, int hi,  Comparator<K> c) {
-    timSort.sort(a, lo, hi, c);
-  }
+    /**
+     * Sorts the input buffer within range [lo, hi).
+     */
+    public void sort(Buffer a, int lo, int hi, Comparator<K> c) {
+        timSort.sort(a, lo, hi, c);
+    }
 }

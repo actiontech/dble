@@ -1,4 +1,4 @@
-@XmlSchema(xmlns = @XmlNs(prefix = Versions.ROOT_PREFIX, namespaceURI = "http://io."+ Versions.ROOT_PREFIX+"/") , elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
+@XmlSchema(xmlns = @XmlNs(prefix = Versions.ROOT_PREFIX, namespaceURI = "http://io." + Versions.ROOT_PREFIX + "/"), elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
 
 package io.mycat.config.loader.zkprocess.entity;
 

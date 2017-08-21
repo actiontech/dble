@@ -10,18 +10,20 @@ public class MycatPropertyConf {
 
     private ConcurrentMap settings = new ConcurrentHashMap<String, String>();
 
-    public MycatPropertyConf(){
+    public MycatPropertyConf() {
 
     }
 
-    /** Set a configuration variable. */
+    /**
+     * Set a configuration variable.
+     */
     public MycatPropertyConf set(String key, String value) {
         set(key, value, false);
-        return  this;
+        return this;
     }
 
 
-    public MycatPropertyConf set(String key, String value, boolean silent){
+    public MycatPropertyConf set(String key, String value, boolean silent) {
 
         if (key == null) {
             throw new NullPointerException("null key");
@@ -39,7 +41,7 @@ public class MycatPropertyConf {
 
     public long getSizeAsBytes(String s, long i) {
         String value = (String) settings.get(s);
-        if(value !=null){
+        if (value != null) {
             return byteStringAsBytes(value);
         }
         return i;
@@ -47,7 +49,7 @@ public class MycatPropertyConf {
 
     public long getSizeAsBytes(String s, String defaultValue) {
         String value = (String) settings.get(s);
-        if(value !=null){
+        if (value != null) {
             return byteStringAsBytes(value);
         }
         return byteStringAsBytes(defaultValue);
@@ -60,11 +62,11 @@ public class MycatPropertyConf {
 
     public boolean getBoolean(String s, boolean b) {
         String value = (String) settings.get(s);
-        if(value !=null){
+        if (value != null) {
 
-            if(value.equals("true")){
+            if (value.equals("true")) {
                 return true;
-            }else{
+            } else {
                 return false;
             }
         }
@@ -77,62 +79,62 @@ public class MycatPropertyConf {
     }
 
     public boolean contains(String s) {
-        return  true;
+        return true;
     }
 
     public int getInt(String s, int i) {
-        return  i;
+        return i;
     }
 
     /**
      * Convert a passed byte string (e.g. 50b, 100k, or 250m) to bytes for internal use.
-     *
+     * <p>
      * If no suffix is provided, the passed number is assumed to be in bytes.
      */
     public Long byteStringAsBytes(String str) {
-       return JavaUtils.byteStringAsBytes(str);
+        return JavaUtils.byteStringAsBytes(str);
     }
 
     /**
      * Convert a passed byte string (e.g. 50b, 100k, or 250m) to kibibytes for internal use.
-     *
+     * <p>
      * If no suffix is provided, the passed number is assumed to be in kibibytes.
      */
-    public Long byteStringAsKb(String str){
-       return JavaUtils.byteStringAsKb(str);
+    public Long byteStringAsKb(String str) {
+        return JavaUtils.byteStringAsKb(str);
     }
 
     /**
      * Convert a passed byte string (e.g. 50b, 100k, or 250m) to mebibytes for internal use.
-     *
+     * <p>
      * If no suffix is provided, the passed number is assumed to be in mebibytes.
      */
     public Long byteStringAsMb(String str) {
-       return JavaUtils.byteStringAsMb(str);
+        return JavaUtils.byteStringAsMb(str);
     }
 
     /**
      * Convert a passed byte string (e.g. 50b, 100k, or 250m, 500g) to gibibytes for internal use.
-     *
+     * <p>
      * If no suffix is provided, the passed number is assumed to be in gibibytes.
      */
     public Long byteStringAsGb(String str) {
-        return  JavaUtils.byteStringAsGb(str);
+        return JavaUtils.byteStringAsGb(str);
     }
 
     /**
      * Convert a Java memory parameter passed to -Xmx (such as 300m or 1g) to a number of mebibytes.
      */
-    public int memoryStringToMb(String str){
+    public int memoryStringToMb(String str) {
         // Convert to bytes, rather than directly to MB, because when no units are specified the unit
         // is assumed to be bytes
-       return (int) (JavaUtils.byteStringAsBytes(str) / 1024 / 1024);
+        return (int) (JavaUtils.byteStringAsBytes(str) / 1024 / 1024);
     }
 
     public String getString(String s, String defaultValue) {
 
         String value = (String) settings.get(s);
-        if(value !=null){
+        if (value != null) {
             return value;
         }
         return defaultValue;

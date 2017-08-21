@@ -13,26 +13,26 @@ public abstract class ItemIdent extends Item {
 //	protected String origTableName;
 //	protected String origFieldName;
 
-	public String dbName;
-	public String tableName;
+    public String dbName;
+    public String tableName;
 
-	public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
-		this.dbName = dbNameArg;
-		this.tableName = tableNameArg;
-		this.itemName = fieldNameArg;
-		this.withUnValAble=true;
-	}
+    public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
+        this.dbName = dbNameArg;
+        this.tableName = tableNameArg;
+        this.itemName = fieldNameArg;
+        this.withUnValAble = true;
+    }
 
-	@Override
-	public boolean isWild() {
-		if (StringUtils.equalsIgnoreCase(itemName, "*"))
-			return true;
-		return false;
-	}
+    @Override
+    public boolean isWild() {
+        if (StringUtils.equalsIgnoreCase(itemName, "*"))
+            return true;
+        return false;
+    }
 
-	@Override
-	public String toString() {
-		return toExpression().toString();
-	}
+    @Override
+    public String toString() {
+        return toExpression().toString();
+    }
 
 }

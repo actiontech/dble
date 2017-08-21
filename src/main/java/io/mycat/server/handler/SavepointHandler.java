@@ -32,7 +32,7 @@ import io.mycat.server.ServerConnection;
 public final class SavepointHandler {
 
     public static void handle(String stmt, ServerConnection c) {
-        c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported statement "+stmt);
+        c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported statement " + stmt);
     }
 
 }

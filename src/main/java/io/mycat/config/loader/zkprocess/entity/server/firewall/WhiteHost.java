@@ -14,21 +14,21 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "whitehost")
 public class WhiteHost {
-	protected List<Host> host;
+    protected List<Host> host;
 
-	public List<Host> getHost() {
-		if (this.host == null) {
-			host = new ArrayList<>();
-		}
-		return host;
-	}
+    public List<Host> getHost() {
+        if (this.host == null) {
+            host = new ArrayList<>();
+        }
+        return host;
+    }
 
-	public void setHost(List<Host> host) {
-		this.host = host;
-	}
+    public void setHost(List<Host> host) {
+        this.host = host;
+    }
 
-	@Override
-	public String toString() {
-		return "WhiteHost{" + "host=" + host + '}';
-	}
+    @Override
+    public String toString() {
+        return "WhiteHost{" + "host=" + host + '}';
+    }
 }

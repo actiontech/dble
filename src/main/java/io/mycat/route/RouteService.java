@@ -47,178 +47,168 @@ public class RouteService {
             .getLogger(RouteService.class);
     public static final String HINT_TYPE = "_serverHintType";
     private final CachePool sqlRouteCache;
-	private final LayerCachePool tableId2DataNodeCache;	
+    private final LayerCachePool tableId2DataNodeCache;
 
     private final String HINT_SPLIT = "=";
 
 
-	public RouteService(CacheService cachService) {
-		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
-		tableId2DataNodeCache = (LayerCachePool)cachService.getCachePool("TableID2DataNodeCache");
-	}
+    public RouteService(CacheService cachService) {
+        sqlRouteCache = cachService.getCachePool("SQLRouteCache");
+        tableId2DataNodeCache = (LayerCachePool) cachService.getCachePool("TableID2DataNodeCache");
+    }
 
-	public LayerCachePool getTableId2DataNodeCache() {
-		return tableId2DataNodeCache;
-	}
+    public LayerCachePool getTableId2DataNodeCache() {
+        return tableId2DataNodeCache;
+    }
 
-	public RouteResultset route(SchemaConfig schema,
-								int sqlType, String stmt, String charset, ServerConnection sc)
-			throws SQLException {
-		RouteResultset rrs = null;
-		String cacheKey = null;
+    public RouteResultset route(SchemaConfig schema,
+                                int sqlType, String stmt, String charset, ServerConnection sc)
+            throws SQLException {
+        RouteResultset rrs = null;
+        String cacheKey = null;
 
-		/**
-		 *  SELECT 类型的SQL, 检测,debug 模式下不缓存
-		 */
-		if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
-			cacheKey = (schema == null ? "NULL" : schema.getName())+"_"+sc.getUser()+"_" + stmt;
-			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
-			if (rrs != null) {
-				return rrs;
-			}
-		}
+        /**
+         *  SELECT 类型的SQL, 检测,debug 模式下不缓存
+         */
+        if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
+            cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + sc.getUser() + "_" + stmt;
+            rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
+            if (rrs != null) {
+                return rrs;
+            }
+        }
         
 		/*!mycat: sql = select name from aa */
         /*!mycat: schema = test */
 //      boolean isMatchOldHint = stmt.startsWith(OLD_MYCAT_HINT);
 //      boolean isMatchNewHint = stmt.startsWith(NEW_MYCAT_HINT);
 //		if (isMatchOldHint || isMatchNewHint ) {
-		int hintLength = RouteService.isHintSql(stmt);
-		if(hintLength != -1){
-			int endPos = stmt.indexOf("*/");
-			if (endPos > 0) {				
-				// 用!mycat:内部的语句来做路由分析
+        int hintLength = RouteService.isHintSql(stmt);
+        if (hintLength != -1) {
+            int endPos = stmt.indexOf("*/");
+            if (endPos > 0) {
+                // 用!mycat:内部的语句来做路由分析
 //				int hintLength = isMatchOldHint ? OLD_MYCAT_HINT.length() : NEW_MYCAT_HINT.length();
-				String hint = stmt.substring(hintLength, endPos).trim();	
-				
-                int firstSplitPos = hint.indexOf(HINT_SPLIT);                
-                if(firstSplitPos > 0 ){
-                    Map hintMap=    parseHint(hint);
-                	String hintType = (String) hintMap.get(HINT_TYPE);
+                String hint = stmt.substring(hintLength, endPos).trim();
+
+                int firstSplitPos = hint.indexOf(HINT_SPLIT);
+                if (firstSplitPos > 0) {
+                    Map hintMap = parseHint(hint);
+                    String hintType = (String) hintMap.get(HINT_TYPE);
                     String hintSql = (String) hintMap.get(hintType);
-                    if( hintSql.length() == 0 ) {
-                    	String msg = "comment in sql must meet :/*!"+ Versions.ANNOTATION_NAME+"type=value*/ or /*#"+ Versions.ANNOTATION_NAME+"type=value*/ or /*"+ Versions.ANNOTATION_NAME+"type=value*/: "+stmt;
-                    	LOGGER.warn(msg);
-                    	throw new SQLSyntaxErrorException(msg);
+                    if (hintSql.length() == 0) {
+                        String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
+                        LOGGER.warn(msg);
+                        throw new SQLSyntaxErrorException(msg);
                     }
                     String realSQL = stmt.substring(endPos + "*/".length()).trim();
 
                     HintHandler hintHandler = HintHandlerFactory.getHintHandler(hintType);
-                    if( hintHandler != null ) {    
+                    if (hintHandler != null) {
 
-                    	if ( hintHandler instanceof  HintSQLHandler) {                    		
-                          	/**
-                        	 * 修复 注解SQL的 sqlType 与 实际SQL的 sqlType 不一致问题， 如： hint=SELECT，real=INSERT
-                        	 * fixed by zhuam
-                        	 */
-                    		int hintSqlType = ServerParse.parse( hintSql ) & 0xff;     
-                    		rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,hintSqlType,hintMap);
-                    		
-                    	} else {                    		
-                    		rrs = hintHandler.route( schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql,sqlType,hintMap);
-                    	}
- 
-                    }else{
+                        if (hintHandler instanceof HintSQLHandler) {
+                            /**
+                             * 修复 注解SQL的 sqlType 与 实际SQL的 sqlType 不一致问题， 如： hint=SELECT，real=INSERT
+                             * fixed by zhuam
+                             */
+                            int hintSqlType = ServerParse.parse(hintSql) & 0xff;
+                            rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
+
+                        } else {
+                            rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
+                        }
+
+                    } else {
                         LOGGER.warn("TODO , support hint sql type : " + hintType);
                     }
-                    
-                }else{//fixed by runfriends@126.com
-					String msg = "comment in sql must meet :/*!"+ Versions.ANNOTATION_NAME+"type=value*/ or /*#"+ Versions.ANNOTATION_NAME+"type=value*/ or /*"+ Versions.ANNOTATION_NAME+"type=value*/: "+stmt;
-                	LOGGER.warn(msg);
-                	throw new SQLSyntaxErrorException(msg);
+
+                } else {//fixed by runfriends@126.com
+                    String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
+                    LOGGER.warn(msg);
+                    throw new SQLSyntaxErrorException(msg);
                 }
-			}
-		} else {
-			stmt = stmt.trim();
-			rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt,
-					charset, sc, tableId2DataNodeCache);
-		}
+            }
+        } else {
+            stmt = stmt.trim();
+            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt,
+                    charset, sc, tableId2DataNodeCache);
+        }
 
-		if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble()&&!LOGGER.isDebugEnabled() && sqlRouteCache != null) {
-			sqlRouteCache.putIfAbsent(cacheKey, rrs);
-		}
-		return rrs;
-	}
+        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
+            sqlRouteCache.putIfAbsent(cacheKey, rrs);
+        }
+        return rrs;
+    }
 
-	public static int isHintSql(String sql){
+    public static int isHintSql(String sql) {
         char[] annotation = Versions.ANNOTATION_NAME.toCharArray();
-		int j = 0;
-		int len = sql.length();
-		if(sql.charAt(j++) == '/' && sql.charAt(j++) == '*'){
-			char c = sql.charAt(j);
-			// 过滤掉 空格 和 * 两种字符, 支持： "/** !mycat: */" 和 "/** #mycat: */" 形式的注解
-			while(j < len && c != '!' && c != '#' && (c == ' ' || c == '*')){
-				c = sql.charAt(++j);
-			}
-			//注解支持的'!'不被mysql单库兼容，
-			//注解支持的'#'不被mybatis兼容
-			//考虑用mycat字符前缀标志Hintsql:"/** mycat: */"
-			if(sql.charAt(j)==annotation[0]){
-				j--;
-			}
-			if(j + 6 >= len)	{// prevent the following sql.charAt overflow
-				return -1;        // false
-			}
+        int j = 0;
+        int len = sql.length();
+        if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
+            char c = sql.charAt(j);
+            // 过滤掉 空格 和 * 两种字符, 支持： "/** !mycat: */" 和 "/** #mycat: */" 形式的注解
+            while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
+                c = sql.charAt(++j);
+            }
+            //注解支持的'!'不被mysql单库兼容，
+            //注解支持的'#'不被mybatis兼容
+            //考虑用mycat字符前缀标志Hintsql:"/** mycat: */"
+            if (sql.charAt(j) == annotation[0]) {
+                j--;
+            }
+            if (j + 6 >= len) {// prevent the following sql.charAt overflow
+                return -1;        // false
+            }
 
-            for(int i = 0;i < annotation.length;i++){
-                if(sql.charAt(++j) !=  annotation[i]){
+            for (int i = 0; i < annotation.length; i++) {
+                if (sql.charAt(++j) != annotation[i]) {
                     break;
                 }
-                if(i == annotation.length-1){
+                if (i == annotation.length - 1) {
                     return j + 1;
                 }
             }
-		}
-		return -1;	// false
-	}
-	
-	 private   Map parseHint( String sql)
-    {
-        Map map=new HashMap();
-        int y=0;
-        int begin=0;
-        for(int i=0;i<sql.length();i++)
-        {
-            char cur=sql.charAt(i);
-            if(cur==','&& y%2==0)
-            {
+        }
+        return -1;    // false
+    }
+
+    private Map parseHint(String sql) {
+        Map map = new HashMap();
+        int y = 0;
+        int begin = 0;
+        for (int i = 0; i < sql.length(); i++) {
+            char cur = sql.charAt(i);
+            if (cur == ',' && y % 2 == 0) {
                 String substring = sql.substring(begin, i);
 
                 parseKeyValue(map, substring);
-                begin=i+1;
-            }
-            else
-            if(cur=='\'')
-            {
+                begin = i + 1;
+            } else if (cur == '\'') {
                 y++;
-            } if(i==sql.length()-1)
-        {
-            parseKeyValue(map, sql.substring(begin));
+            }
+            if (i == sql.length() - 1) {
+                parseKeyValue(map, sql.substring(begin));
 
-        }
+            }
 
 
         }
         return map;
     }
 
-    private  void parseKeyValue(Map map, String substring)
-    {
+    private void parseKeyValue(Map map, String substring) {
         int indexOf = substring.indexOf('=');
-        if(indexOf!=-1)
-        {
+        if (indexOf != -1) {
 
-            String key=substring.substring(0,indexOf).trim().toLowerCase();
-            String value=substring.substring(indexOf+1,substring.length());
-            if(value.endsWith("'")&&value.startsWith("'"))
-            {
-                value=value.substring(1,value.length()-1);
+            String key = substring.substring(0, indexOf).trim().toLowerCase();
+            String value = substring.substring(indexOf + 1, substring.length());
+            if (value.endsWith("'") && value.startsWith("'")) {
+                value = value.substring(1, value.length() - 1);
             }
-            if(map.isEmpty())
-            {
-              map.put(HINT_TYPE,key)  ;
+            if (map.isEmpty()) {
+                map.put(HINT_TYPE, key);
             }
-            map.put(key,value.trim());
+            map.put(key, value.trim());
 
         }
     }

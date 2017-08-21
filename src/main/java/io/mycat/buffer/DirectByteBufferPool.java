@@ -1,34 +1,34 @@
 package io.mycat.buffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.nio.ch.DirectBuffer;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sun.nio.ch.DirectBuffer;
-
 /**
  * DirectByteBuffer池，可以分配任意指定大小的DirectByteBuffer，用完需要归还
+ *
  * @author wuzhih
  * @author zagnix
  */
 @SuppressWarnings("restriction")
-public class DirectByteBufferPool implements BufferPool{
+public class DirectByteBufferPool implements BufferPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectByteBufferPool.class);
     public static final String LOCAL_BUF_THREAD_PREX = "$_";
     private ByteBufferPage[] allPages;
     private final int chunkSize;
-   // private int prevAllocatedPage = 0;
+    // private int prevAllocatedPage = 0;
     private AtomicInteger prevAllocatedPage;
-    private final  int pageSize;
+    private final int pageSize;
     private final short pageCount;
     /**
      * 记录对线程ID->该线程的所使用Direct Buffer的size
      */
-    private final ConcurrentMap<Long,Long> memoryUsage;
+    private final ConcurrentMap<Long, Long> memoryUsage;
 
     public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];
@@ -44,10 +44,11 @@ public class DirectByteBufferPool implements BufferPool{
 
     /**
      * TODO 当页不够时，考虑扩展内存池的页的数量...........
+     *
      * @param buffer
      * @return
      */
-    public  ByteBuffer expandBuffer(ByteBuffer buffer){
+    public ByteBuffer expandBuffer(ByteBuffer buffer) {
         int oldCapacity = buffer.capacity();
         int newCapacity = oldCapacity << 1;
         ByteBuffer newBuffer = allocate(newCapacity);
@@ -58,39 +59,41 @@ public class DirectByteBufferPool implements BufferPool{
         recycle(buffer);
         return newBuffer;
     }
+
     public ByteBuffer allocate() {
-    	return allocate(chunkSize);
+        return allocate(chunkSize);
     }
+
     public ByteBuffer allocate(int size) {
-       final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
-        int selectedPage =  prevAllocatedPage.incrementAndGet() % allPages.length;
+        final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
+        int selectedPage = prevAllocatedPage.incrementAndGet() % allPages.length;
         ByteBuffer byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         if (byteBuf == null) {
             byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
         }
         final long threadId = Thread.currentThread().getId();
 
-        if(byteBuf !=null){
-            if (memoryUsage.containsKey(threadId)){
-                memoryUsage.put(threadId,memoryUsage.get(threadId)+byteBuf.capacity());
-            }else {
-                memoryUsage.put(threadId,(long)byteBuf.capacity());
+        if (byteBuf != null) {
+            if (memoryUsage.containsKey(threadId)) {
+                memoryUsage.put(threadId, memoryUsage.get(threadId) + byteBuf.capacity());
+            } else {
+                memoryUsage.put(threadId, (long) byteBuf.capacity());
             }
         }
 
-        if(byteBuf==null){
-            return  ByteBuffer.allocate(size);
+        if (byteBuf == null) {
+            return ByteBuffer.allocate(size);
         }
         return byteBuf;
     }
 
     public void recycle(ByteBuffer theBuf) {
-    	if(!(theBuf instanceof DirectBuffer)){
-    		theBuf.clear();
-    		return;
-    	}
+        if (!(theBuf instanceof DirectBuffer)) {
+            theBuf.clear();
+            return;
+        }
 
-    	final long size = theBuf.capacity();
+        final long size = theBuf.capacity();
 
         boolean recycled = false;
         DirectBuffer thisNavBuf = (DirectBuffer) theBuf;
@@ -104,8 +107,8 @@ public class DirectByteBufferPool implements BufferPool{
         }
         final long threadId = Thread.currentThread().getId();
 
-        if (memoryUsage.containsKey(threadId)){
-            memoryUsage.put(threadId,memoryUsage.get(threadId)-size);
+        if (memoryUsage.containsKey(threadId)) {
+            memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
         }
         if (recycled == false) {
             LOGGER.warn("warning ,not recycled buffer " + theBuf);
@@ -126,23 +129,23 @@ public class DirectByteBufferPool implements BufferPool{
     public int getChunkSize() {
         return chunkSize;
     }
-	
-	 @Override
-    public ConcurrentMap<Long,Long> getNetDirectMemoryUsage() {
+
+    @Override
+    public ConcurrentMap<Long, Long> getNetDirectMemoryUsage() {
         return memoryUsage;
     }
 
     //TODO   should  fix it
-    public long capacity(){
+    public long capacity() {
         return size();
     }
 
-    public long size(){
-        return  (long) pageSize * chunkSize * pageCount;
+    public long size() {
+        return (long) pageSize * chunkSize * pageCount;
     }
 
     //TODO
-    public  int getSharedOptsCount(){
+    public int getSharedOptsCount() {
         return 0;
     }
 

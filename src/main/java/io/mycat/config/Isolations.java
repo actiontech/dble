@@ -25,7 +25,7 @@ package io.mycat.config;
 
 /**
  * 事务隔离级别定义
- * 
+ *
  * @author mycat
  */
 public interface Isolations {

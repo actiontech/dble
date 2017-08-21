@@ -23,29 +23,28 @@
  */
 package io.mycat.route;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
+import io.mycat.sqlengine.mpp.HavingCols;
+import io.mycat.util.FormatUtil;
+
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.alibaba.druid.sql.ast.SQLStatement;
-
-import io.mycat.sqlengine.mpp.HavingCols;
-import io.mycat.util.FormatUtil;
 
 /**
  * @author mycat
  */
 public final class RouteResultset implements Serializable {
-	private static final long serialVersionUID = 3906972758236875720L;
+    private static final long serialVersionUID = 3906972758236875720L;
 
-	private String srcStatement;// 原始语句
-	private String statement;
-	private String schema;
-	private String table;
+    private String srcStatement;// 原始语句
+    private String statement;
+    private String schema;
+    private String table;
     private final int sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
     private transient SQLStatement sqlStatement;
-    
+
     private boolean needOptimizer;
     private int limitStart;
     private boolean cacheAble;
@@ -61,68 +60,66 @@ public final class RouteResultset implements Serializable {
     // 是否为全局表，只有在insert、update、delete、ddl里会判断并修改。默认不是全局表，用于修正全局表修改数据的反馈。
     private boolean globalTableFlag = false;
 
-	// 是否完成了路由
-	private boolean isFinishedRoute = false;
+    // 是否完成了路由
+    private boolean isFinishedRoute = false;
 
-	// 是否完成了执行
-	private boolean isFinishedExecute = false;
+    // 是否完成了执行
+    private boolean isFinishedExecute = false;
 
 
-    private boolean isLoadData=false;
+    private boolean isLoadData = false;
 
     //是否可以在从库运行,此属性主要供RouteResultsetNode获取
     private Boolean canRunInReadDB;
 
     // 强制走 master，可以通过 RouteResultset的属性canRunInReadDB=false
     // 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
-    private Boolean runOnSlave = null;	// 默认null表示不施加影响
+    private Boolean runOnSlave = null;    // 默认null表示不施加影响
 
-	public boolean isNeedOptimizer() {
-		return needOptimizer;
-	}
+    public boolean isNeedOptimizer() {
+        return needOptimizer;
+    }
 
-	public void setNeedOptimizer(boolean needOptimizer) {
-		this.needOptimizer = needOptimizer;
-	}
+    public void setNeedOptimizer(boolean needOptimizer) {
+        this.needOptimizer = needOptimizer;
+    }
 
-	public Boolean getRunOnSlave() {
-		return runOnSlave;
-	}
+    public Boolean getRunOnSlave() {
+        return runOnSlave;
+    }
 
-	public void setRunOnSlave(Boolean runOnSlave) {
-		this.runOnSlave = runOnSlave;
-	}
-	  private Procedure procedure;
+    public void setRunOnSlave(Boolean runOnSlave) {
+        this.runOnSlave = runOnSlave;
+    }
 
-    public Procedure getProcedure()
-    {
+    private Procedure procedure;
+
+    public Procedure getProcedure() {
         return procedure;
     }
 
-    public void setProcedure(Procedure procedure)
-    {
+    public void setProcedure(Procedure procedure) {
         this.procedure = procedure;
     }
 
-	public boolean isLoadData()
-    {
+    public boolean isLoadData() {
         return isLoadData;
     }
 
-    public void setLoadData(boolean isLoadData)
-    {
+    public void setLoadData(boolean isLoadData) {
         this.isLoadData = isLoadData;
     }
 
-	public boolean isFinishedExecute() {
-		return isFinishedExecute;
-	}
+    public boolean isFinishedExecute() {
+        return isFinishedExecute;
+    }
 
-	public void setFinishedExecute(boolean isFinishedExecute) {
-		this.isFinishedExecute = isFinishedExecute;
-	}
+    public void setFinishedExecute(boolean isFinishedExecute) {
+        this.isFinishedExecute = isFinishedExecute;
+    }
+
     public boolean isFinishedRoute() {
-		return isFinishedRoute || needOptimizer;
+        return isFinishedRoute || needOptimizer;
     }
 
     public void setFinishedRoute(boolean isFinishedRoute) {
@@ -139,19 +136,16 @@ public final class RouteResultset implements Serializable {
 
     public RouteResultset(String stmt, int sqlType) {
         this.statement = stmt;
-		this.srcStatement = stmt;
+        this.srcStatement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
     }
 
     public void copyLimitToNodes() {
 
-        if(nodes!=null)
-        {
-            for (RouteResultsetNode node : nodes)
-            {
-                if(node.getLimitSize()==-1&&node.getLimitStart()==0)
-                {
+        if (nodes != null) {
+            for (RouteResultsetNode node : nodes) {
+                if (node.getLimitSize() == -1 && node.getLimitStart() == 0) {
                     node.setLimitStart(limitStart);
                     node.setLimitSize(limitSize);
                 }
@@ -262,12 +256,13 @@ public final class RouteResultset implements Serializable {
     }
 
 
-	public void setSrcStatement(String srcStatement) {
-		this.srcStatement = srcStatement;
-	}
-	public String getSrcStatement() {
-		return srcStatement;
-	}
+    public void setSrcStatement(String srcStatement) {
+        this.srcStatement = srcStatement;
+    }
+
+    public String getSrcStatement() {
+        return srcStatement;
+    }
 
     public String getStatement() {
         return statement;
@@ -296,23 +291,23 @@ public final class RouteResultset implements Serializable {
         this.statement = statement;
     }
 
-	public String getSchema() {
-		return schema;
-	}
+    public String getSchema() {
+        return schema;
+    }
 
-	public void setSchema(String schema) {
-		this.schema = schema;
-	}
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
 
-	public String getTable() {
-		return table;
-	}
+    public String getTable() {
+        return table;
+    }
 
-	public void setTable(String table) {
-		this.table = table;
-	}
+    public void setTable(String table) {
+        this.table = table;
+    }
 
-	public boolean isCallStatement() {
+    public boolean isCallStatement() {
         return callStatement;
     }
 
@@ -320,16 +315,17 @@ public final class RouteResultset implements Serializable {
         this.callStatement = callStatement;
     }
 
-	public void changeNodeSqlAfterAddLimit(String sql, int offset, int count) {
-		this.setStatement(sql);
-		if (nodes != null) {
-			for (RouteResultsetNode node : nodes) {
-				node.setStatement(sql);
-				node.setLimitStart(offset);
-				node.setLimitSize(count);
-			}
-		}
-	}
+    public void changeNodeSqlAfterAddLimit(String sql, int offset, int count) {
+        this.setStatement(sql);
+        if (nodes != null) {
+            for (RouteResultsetNode node : nodes) {
+                node.setStatement(sql);
+                node.setLimitStart(offset);
+                node.setLimitSize(count);
+            }
+        }
+    }
+
     public Boolean getCanRunInReadDB() {
         return canRunInReadDB;
     }
@@ -338,27 +334,27 @@ public final class RouteResultset implements Serializable {
         this.canRunInReadDB = canRunInReadDB;
     }
 
-	public HavingCols getHavingCols() {
-		return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
-	}
+    public HavingCols getHavingCols() {
+        return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
+    }
 
-	
-	public void setHavings(HavingCols havings) {
-		if (havings != null) {
-			createSQLMergeIfNull().setHavingCols(havings);
-		}
-	}
+
+    public void setHavings(HavingCols havings) {
+        if (havings != null) {
+            createSQLMergeIfNull().setHavingCols(havings);
+        }
+    }
 
     public SQLStatement getSqlStatement() {
-		return this.sqlStatement;
-	}
+        return this.sqlStatement;
+    }
 
-	public void setSqlStatement(SQLStatement sqlStatement) {
-		this.sqlStatement = sqlStatement;
-	}
+    public void setSqlStatement(SQLStatement sqlStatement) {
+        this.sqlStatement = sqlStatement;
+    }
 
 
-	@Override
+    @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append(srcStatement).append(", route={");

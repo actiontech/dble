@@ -23,15 +23,9 @@
  */
 package io.mycat.parser;
 
+import io.mycat.route.parser.*;
 import org.junit.Assert;
 import org.junit.Test;
-
-import io.mycat.route.parser.ManagerParse;
-import io.mycat.route.parser.ManagerParseClear;
-import io.mycat.route.parser.ManagerParseReload;
-import io.mycat.route.parser.ManagerParseRollback;
-import io.mycat.route.parser.ManagerParseShow;
-import io.mycat.route.parser.ManagerParseStop;
 
 /**
  * @author mycat
@@ -95,7 +89,7 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                 ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));
+                ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
                 ManagerParseShow.parse("show @@DATANODE WHERESCHEMA=1", 5));
 
@@ -116,7 +110,7 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
                 0xff & ManagerParseShow.parse(" show  @@DATASOURCE where DATAnode= 1 ", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                 ManagerParseShow.parse(" show  @@DATASOURCEwhere DATAnode= 1 ", 5));
+                ManagerParseShow.parse(" show  @@DATASOURCEwhere DATAnode= 1 ", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
                 ManagerParseShow.parse(" show  @@DATASOURCE whereDATAnode= 1 ", 5));
     }
@@ -296,28 +290,31 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseClear.SLOW_DATANODE,
                 0xff & ManagerParseClear.parse("clear @@SLOW where  DATANODE= d", 5));
     }
+
     @Test
     public void testHeartBearDetail() {
         Assert.assertEquals(ManagerParseShow.HEARTBEAT_DETAIL,
-                0xff & ManagerParseShow.parse("show @@heartbeat.detail where name=master",5)); 
+                0xff & ManagerParseShow.parse("show @@heartbeat.detail where name=master", 5));
     }
+
     @Test
     public void testSynStatus() {
         Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC,
-                0xff & ManagerParseShow.parse("show @@datasource.synstatus",5)); 
+                0xff & ManagerParseShow.parse("show @@datasource.synstatus", 5));
     }
+
     @Test
     public void testSynDetail() {
         Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
-                 ManagerParseShow.parse("show @@datasource.syndetail where name=slave",5));
+                ManagerParseShow.parse("show @@datasource.syndetail where name=slave", 5));
         Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
-                ManagerParseShow.parse("show @@datasource.syndetail       where    name =   slave",5));
+                ManagerParseShow.parse("show @@datasource.syndetail       where    name =   slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetailwhere    name =   slave",5));
+                ManagerParseShow.parse("show @@datasource.syndetailwhere    name =   slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetail wherename=slave",5));
+                ManagerParseShow.parse("show @@datasource.syndetail wherename=slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetail where name=slave ASDFASDF",5));
+                ManagerParseShow.parse("show @@datasource.syndetail where name=slave ASDFASDF", 5));
     }
 
 }

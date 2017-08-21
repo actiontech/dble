@@ -53,9 +53,8 @@ public class JVMInfo {
     /**
      * Parses the java version system property to determine the major java
      * version, ie 1.x
-     * 
-     * @param javaVersion
-     *            the system property 'java.specification.version'
+     *
+     * @param javaVersion the system property 'java.specification.version'
      * @return A float of the form 1.x
      */
     public static final float getMajorJavaVersion(String javaVersion) {

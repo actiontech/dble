@@ -23,211 +23,210 @@
  */
 package io.mycat.backend.heartbeat;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.backend.mysql.nio.MySQLDataSource;
 import io.mycat.config.model.DataHostConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
  */
 public class MySQLHeartbeat extends DBHeartbeat {
 
-	private static final int MAX_RETRY_COUNT = 5;
-	public static final Logger LOGGER = LoggerFactory.getLogger(MySQLHeartbeat.class);
+    private static final int MAX_RETRY_COUNT = 5;
+    public static final Logger LOGGER = LoggerFactory.getLogger(MySQLHeartbeat.class);
 
-	private final MySQLDataSource source;
+    private final MySQLDataSource source;
 
-	private final ReentrantLock lock;
-	private final int maxRetryCount;
+    private final ReentrantLock lock;
+    private final int maxRetryCount;
 
-	private MySQLDetector detector;
+    private MySQLDetector detector;
 
-	public MySQLHeartbeat(MySQLDataSource source) {
-		this.source = source;
-		this.lock = new ReentrantLock(false);
-		this.maxRetryCount = MAX_RETRY_COUNT;
-		this.status = INIT_STATUS;
-		this.heartbeatSQL = source.getHostConfig().getHearbeatSQL();
-	}
+    public MySQLHeartbeat(MySQLDataSource source) {
+        this.source = source;
+        this.lock = new ReentrantLock(false);
+        this.maxRetryCount = MAX_RETRY_COUNT;
+        this.status = INIT_STATUS;
+        this.heartbeatSQL = source.getHostConfig().getHearbeatSQL();
+    }
 
-	public MySQLDataSource getSource() {
-		return source;
-	}
+    public MySQLDataSource getSource() {
+        return source;
+    }
 
-	public MySQLDetector getDetector() {
-		return detector;
-	}
+    public MySQLDetector getDetector() {
+        return detector;
+    }
 
-	public long getTimeout() {
-		MySQLDetector detector = this.detector;
-		if (detector == null) {
-			return -1L;
-		}
-		return detector.getHeartbeatTimeout();
-	}
+    public long getTimeout() {
+        MySQLDetector detector = this.detector;
+        if (detector == null) {
+            return -1L;
+        }
+        return detector.getHeartbeatTimeout();
+    }
 
-	public String getLastActiveTime() {
-		MySQLDetector detector = this.detector;
-		if (detector == null) {
-			return null;
-		}
-		long t = detector.getLasstReveivedQryTime();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		return sdf.format(new Date(t));
-	}
+    public String getLastActiveTime() {
+        MySQLDetector detector = this.detector;
+        if (detector == null) {
+            return null;
+        }
+        long t = detector.getLasstReveivedQryTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(new Date(t));
+    }
 
-	public void start() {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			isStop.compareAndSet(true, false);
-			super.status = DBHeartbeat.OK_STATUS;
-		} finally {
-			lock.unlock();
-		}
-	}
+    public void start() {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            isStop.compareAndSet(true, false);
+            super.status = DBHeartbeat.OK_STATUS;
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	public void stop() {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			if (isStop.compareAndSet(false, true)) {
-				if (isChecking.get()) {
-					// nothing
-				} else {
-					MySQLDetector detector = this.detector;
-					if (detector != null) {
-						detector.quit();
-						isChecking.set(false);
-					}
-				}
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
+    public void stop() {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            if (isStop.compareAndSet(false, true)) {
+                if (isChecking.get()) {
+                    // nothing
+                } else {
+                    MySQLDetector detector = this.detector;
+                    if (detector != null) {
+                        detector.quit();
+                        isChecking.set(false);
+                    }
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	/**
-	 * execute heart beat
-	 */
-	public void heartbeat() {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			if (isChecking.compareAndSet(false, true)) {
-				MySQLDetector detector = this.detector;
-				if (detector == null || detector.isQuit()) {
-					try {
-						detector = new MySQLDetector(this);
-						detector.heartbeat();
-					} catch (Exception e) {
-						LOGGER.warn(source.getConfig().toString(), e);
-						setResult(ERROR_STATUS, detector, null);
-						return;
-					}
-					this.detector = detector;
-				} else {
-					detector.heartbeat();
-				}
-			} else {
-				MySQLDetector detector = this.detector;
-				if (detector != null) {
-					if (detector.isQuit()) {
-						isChecking.compareAndSet(true, false);
-					} else if (detector.isHeartbeatTimeout()) {
-						setResult(TIMEOUT_STATUS, detector, null);
-					}
-				}
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
+    /**
+     * execute heart beat
+     */
+    public void heartbeat() {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            if (isChecking.compareAndSet(false, true)) {
+                MySQLDetector detector = this.detector;
+                if (detector == null || detector.isQuit()) {
+                    try {
+                        detector = new MySQLDetector(this);
+                        detector.heartbeat();
+                    } catch (Exception e) {
+                        LOGGER.warn(source.getConfig().toString(), e);
+                        setResult(ERROR_STATUS, detector, null);
+                        return;
+                    }
+                    this.detector = detector;
+                } else {
+                    detector.heartbeat();
+                }
+            } else {
+                MySQLDetector detector = this.detector;
+                if (detector != null) {
+                    if (detector.isQuit()) {
+                        isChecking.compareAndSet(true, false);
+                    } else if (detector.isHeartbeatTimeout()) {
+                        setResult(TIMEOUT_STATUS, detector, null);
+                    }
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	public void setResult(int result, MySQLDetector detector, String msg) {
-		this.isChecking.set(false);
-		switch (result) {
-		case OK_STATUS:
-			setOk(detector);
-			break;
-		case ERROR_STATUS:
-			setError(detector);
-			break;
-		case TIMEOUT_STATUS:
-			setTimeout(detector);
-			break;
-		}
-		if (this.status != OK_STATUS) {
-			switchSourceIfNeed("heartbeat error");
-		}
-	}
+    public void setResult(int result, MySQLDetector detector, String msg) {
+        this.isChecking.set(false);
+        switch (result) {
+            case OK_STATUS:
+                setOk(detector);
+                break;
+            case ERROR_STATUS:
+                setError(detector);
+                break;
+            case TIMEOUT_STATUS:
+                setTimeout(detector);
+                break;
+        }
+        if (this.status != OK_STATUS) {
+            switchSourceIfNeed("heartbeat error");
+        }
+    }
 
-	private void setOk(MySQLDetector detector) {
-		switch (status) {
-		case DBHeartbeat.TIMEOUT_STATUS:
-			this.status = DBHeartbeat.INIT_STATUS;
-			this.errorCount = 0;
-			if (isStop.get()) {
-				detector.quit();
-			} else {
-				heartbeat();// timeout, heart beat again
-			}
-			break;
-		case DBHeartbeat.OK_STATUS:
-			break;
-		default:
-			this.status = OK_STATUS;
-			this.errorCount = 0;
-		}
-		if (isStop.get()) {
-			detector.quit();
-		}
-	}
+    private void setOk(MySQLDetector detector) {
+        switch (status) {
+            case DBHeartbeat.TIMEOUT_STATUS:
+                this.status = DBHeartbeat.INIT_STATUS;
+                this.errorCount = 0;
+                if (isStop.get()) {
+                    detector.quit();
+                } else {
+                    heartbeat();// timeout, heart beat again
+                }
+                break;
+            case DBHeartbeat.OK_STATUS:
+                break;
+            default:
+                this.status = OK_STATUS;
+                this.errorCount = 0;
+        }
+        if (isStop.get()) {
+            detector.quit();
+        }
+    }
 
-	private void setError(MySQLDetector detector) {
-		// should continues check error status
-		if (++errorCount < maxRetryCount) {
-			if (detector != null && !detector.isQuit()) {
-				heartbeat(); // error count not enough, heart beat again
-			}
-		} else {
-			if (detector != null) {
-				detector.quit();
-			}
-			this.status = ERROR_STATUS;
-			this.errorCount = 0;
-		}
-	}
+    private void setError(MySQLDetector detector) {
+        // should continues check error status
+        if (++errorCount < maxRetryCount) {
+            if (detector != null && !detector.isQuit()) {
+                heartbeat(); // error count not enough, heart beat again
+            }
+        } else {
+            if (detector != null) {
+                detector.quit();
+            }
+            this.status = ERROR_STATUS;
+            this.errorCount = 0;
+        }
+    }
 
-	private void setTimeout(MySQLDetector detector) {
-		this.isChecking.set(false);
-		status = DBHeartbeat.TIMEOUT_STATUS;
-	}
+    private void setTimeout(MySQLDetector detector) {
+        this.isChecking.set(false);
+        status = DBHeartbeat.TIMEOUT_STATUS;
+    }
 
-	/**
-	 * switch data source
-	 */
-	private void switchSourceIfNeed(String reason) {
-		int switchType = source.getHostConfig().getSwitchType();
-		if (switchType == DataHostConfig.NOT_SWITCH_DS) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("not switch datasource, for switchType is " + DataHostConfig.NOT_SWITCH_DS);
-				return;
-			}
-			return;
-		}
-		
-		PhysicalDBPool pool = this.source.getDbPool();
-		pool.switchSourceIfNeed(this.source, reason);
-		/*
-		int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
+    /**
+     * switch data source
+     */
+    private void switchSourceIfNeed(String reason) {
+        int switchType = source.getHostConfig().getSwitchType();
+        if (switchType == DataHostConfig.NOT_SWITCH_DS) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("not switch datasource, for switchType is " + DataHostConfig.NOT_SWITCH_DS);
+                return;
+            }
+            return;
+        }
+
+        PhysicalDBPool pool = this.source.getDbPool();
+        pool.switchSourceIfNeed(this.source, reason);
+        /*
+        int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
 		// read node can't switch, only write node can switch
 		if (pool.getWriteType() == PhysicalDBPool.WRITE_ONLYONE_NODE && !source.isReadNode()
 		    && curDatasourceHB != DBHeartbeat.OK_STATUS && pool.getSources().length > 1) {
@@ -270,5 +269,5 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				}
 			}
 			} */
-	}
+    }
 }

@@ -23,8 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -40,6 +38,8 @@ import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 import io.mycat.util.TimeUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author mycat
  */
@@ -49,6 +49,7 @@ public final class ShowConnectionSQL {
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
+
     static {
         int i = 0;
         byte packetId = 0;
@@ -59,7 +60,7 @@ public final class ShowConnectionSQL {
 
         fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
-        
+
         fields[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
 
@@ -82,15 +83,15 @@ public final class ShowConnectionSQL {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
         byte packetId = eof.packetId;
@@ -100,7 +101,7 @@ public final class ShowConnectionSQL {
                 if (!fc.isClosed()) {
                     RowDataPacket row = getRow(fc, charset);
                     row.packetId = ++packetId;
-                    buffer = row.write(buffer, c,true);
+                    buffer = row.write(buffer, c, true);
                 }
             }
         }
@@ -108,7 +109,7 @@ public final class ShowConnectionSQL {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
@@ -124,7 +125,7 @@ public final class ShowConnectionSQL {
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
         row.add(LongUtil.toBytes((wt > rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
-        row.add( StringUtil.encode(c.getExecuteSql(), charset) );
+        row.add(StringUtil.encode(c.getExecuteSql(), charset));
         return row;
     }
 

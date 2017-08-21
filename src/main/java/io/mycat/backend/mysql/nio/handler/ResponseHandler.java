@@ -23,11 +23,11 @@
  */
 package io.mycat.backend.mysql.nio.handler;
 
-import java.util.List;
-
 import io.mycat.backend.BackendConnection;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.RowDataPacket;
+
+import java.util.List;
 
 /**
  * @author mycat
@@ -35,63 +35,64 @@ import io.mycat.net.mysql.RowDataPacket;
  */
 public interface ResponseHandler {
 
-	/**
-	 * 无法获取连接
-	 * 
-	 * @param e
-	 * @param conn
-	 */
-	public void connectionError(Throwable e, BackendConnection conn);
+    /**
+     * 无法获取连接
+     *
+     * @param e
+     * @param conn
+     */
+    public void connectionError(Throwable e, BackendConnection conn);
 
-	/**
-	 * 已获得有效连接的响应处理
-	 */
-	void connectionAcquired(BackendConnection conn);
+    /**
+     * 已获得有效连接的响应处理
+     */
+    void connectionAcquired(BackendConnection conn);
 
-	/**
-	 * 收到错误数据包的响应处理
-	 */
-	void errorResponse(byte[] err, BackendConnection conn);
+    /**
+     * 收到错误数据包的响应处理
+     */
+    void errorResponse(byte[] err, BackendConnection conn);
 
-	/**
-	 * 收到OK数据包的响应处理
-	 */
-	void okResponse(byte[] ok, BackendConnection conn);
+    /**
+     * 收到OK数据包的响应处理
+     */
+    void okResponse(byte[] ok, BackendConnection conn);
 
-	/**
-	 * 收到字段数据包结束的响应处理
-	 */
+    /**
+     * 收到字段数据包结束的响应处理
+     */
 
-	void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-			boolean isLeft, BackendConnection conn);
-	/**
-	 * 收到行数据包的响应处理
-	 */
-	boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
+    void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
+                          boolean isLeft, BackendConnection conn);
 
-	/**
-	 * 收到行数据包结束的响应处理
-	 */
-	void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
-	
-	/**
-	 * 收到中继数据包的响应处理
-	 */
-	void relayPacketResponse(byte[] relayPacket, BackendConnection conn);
+    /**
+     * 收到行数据包的响应处理
+     */
+    boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
 
-	/**
-	 * 收到结束数据包的响应处理
-	 */
-	void endPacketResponse(byte[] endPacket, BackendConnection conn);
-	/**
-	 * 写队列为空，可以写数据了
-	 * 
-	 */
-	void writeQueueAvailable();
+    /**
+     * 收到行数据包结束的响应处理
+     */
+    void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
 
-	/**
-	 * on connetion close event
-	 */
-	void connectionClose(BackendConnection conn, String reason);
+    /**
+     * 收到中继数据包的响应处理
+     */
+    void relayPacketResponse(byte[] relayPacket, BackendConnection conn);
+
+    /**
+     * 收到结束数据包的响应处理
+     */
+    void endPacketResponse(byte[] endPacket, BackendConnection conn);
+
+    /**
+     * 写队列为空，可以写数据了
+     */
+    void writeQueueAvailable();
+
+    /**
+     * on connetion close event
+     */
+    void connectionClose(BackendConnection conn, String reason);
 
 }

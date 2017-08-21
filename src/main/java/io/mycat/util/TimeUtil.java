@@ -25,7 +25,7 @@ package io.mycat.util;
 
 /**
  * 弱精度的计时器，考虑性能不使用同步策略。
- * 
+ *
  * @author mycat
  */
 public class TimeUtil {
@@ -34,6 +34,7 @@ public class TimeUtil {
     public static final long currentTimeMillis() {
         return CURRENT_TIME;
     }
+
     public static final long currentTimeNanos() {
         return System.nanoTime();
     }

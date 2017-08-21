@@ -14,10 +14,10 @@ public class StructType {
     private final Map<String, ColMeta> columToIndx;
     private final int fieldCount;
 
-    private  OrderCol[] orderCols = null;
+    private OrderCol[] orderCols = null;
 
-    public StructType(@Nonnull Map<String,ColMeta> columToIndx,int fieldCount){
-        assert fieldCount >=0;
+    public StructType(@Nonnull Map<String, ColMeta> columToIndx, int fieldCount) {
+        assert fieldCount >= 0;
         this.columToIndx = columToIndx;
         this.fieldCount = fieldCount;
     }

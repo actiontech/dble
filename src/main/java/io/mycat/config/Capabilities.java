@@ -25,19 +25,19 @@ package io.mycat.config;
 
 /**
  * 处理能力标识定义
- * 
+ *
  * @author mycat
  */
 public interface Capabilities {
 
     /**
      * server capabilities
-     * 
+     * <p>
      * <pre>
      * server:        11110111 11111111
      * client_cmd: 11 10100110 10000101
      * client_jdbc:10 10100010 10001111
-     *  
+     *
      * @see http://dev.mysql.com/doc/refman/5.1/en/mysql-real-connect.html
      * </pre>
      */
@@ -108,7 +108,7 @@ public interface Capabilities {
     // 通知服务器客户端可以处理由多语句或者存储过程执行生成的多结果集。
     // 当打开CLIENT_MULTI_STATEMENTS时，这个标志自动的被打开。
     public static final int CLIENT_MULTI_RESULTS = 131072;
-    
+
     public static final int CLIENT_PLUGIN_AUTH = 0x00080000; // 524288
 
 }

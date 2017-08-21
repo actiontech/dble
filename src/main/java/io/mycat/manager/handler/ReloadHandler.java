@@ -35,30 +35,27 @@ import io.mycat.route.parser.util.ParseUtil;
 /**
  * @author mycat
  */
-public final class ReloadHandler
-{
+public final class ReloadHandler {
 
-    public static void handle(String stmt, ManagerConnection c, int offset)
-    {
+    public static void handle(String stmt, ManagerConnection c, int offset) {
         int rs = ManagerParseReload.parse(stmt, offset);
-        switch (rs)
-        {
+        switch (rs) {
             case ManagerParseReload.CONFIG:
-                ReloadConfig.execute(c,false);
+                ReloadConfig.execute(c, false);
                 break;
             case ManagerParseReload.CONFIG_ALL:
-                ReloadConfig.execute(c,true);
+                ReloadConfig.execute(c, true);
                 break;
             case ManagerParseReload.USER_STAT:
                 ReloadUserStat.execute(c);
                 break;
             case ManagerParseReload.SQL_SLOW:
-            	ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt));
-                break;           
-            case ManagerParseReload.QUERY_CF:            	
-            	String filted = ParseUtil.parseString(stmt) ;
-            	ReloadQueryCf.execute(c, filted);
-            	break;                
+                ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt));
+                break;
+            case ManagerParseReload.QUERY_CF:
+                String filted = ParseUtil.parseString(stmt);
+                ReloadQueryCf.execute(c, filted);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

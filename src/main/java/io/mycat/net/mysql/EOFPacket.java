@@ -23,28 +23,28 @@
  */
 package io.mycat.net.mysql;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.net.FrontendConnection;
 
+import java.nio.ByteBuffer;
+
 /**
  * From Server To Client, at the end of a series of Field Packets, and at the
  * end of a series of Data Packets.With prepared statements, EOF Packet can also
  * end parameter information, which we'll describe later.
- * 
+ * <p>
  * <pre>
  * Bytes                 Name
  * -----                 ----
  * 1                     field_count, always = 0xfe
  * 2                     warning_count
  * 2                     Status Flags
- * 
+ *
  * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
  * </pre>
- * 
+ *
  * @author mycat
  */
 public class EOFPacket extends MySQLPacket {
@@ -64,9 +64,9 @@ public class EOFPacket extends MySQLPacket {
     }
 
     @Override
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,writeSocketIfFull);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);
@@ -85,18 +85,18 @@ public class EOFPacket extends MySQLPacket {
         return "MySQL EOF Packet";
     }
 
-	public byte[] toBytes() {
-		int size = calcPacketSize();
-		ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
-		BufferUtil.writeUB3(buffer, size);
-		buffer.put(packetId);
-		buffer.put(fieldCount);
-		BufferUtil.writeUB2(buffer, warningCount);
-		BufferUtil.writeUB2(buffer, status);
-		buffer.flip();
-		byte[] data = new byte[buffer.limit()];
-		buffer.get(data);
-		MycatServer.getInstance().getBufferPool().recycle(buffer);
-		return data;
-	}
+    public byte[] toBytes() {
+        int size = calcPacketSize();
+        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
+        BufferUtil.writeUB3(buffer, size);
+        buffer.put(packetId);
+        buffer.put(fieldCount);
+        BufferUtil.writeUB2(buffer, warningCount);
+        BufferUtil.writeUB2(buffer, status);
+        buffer.flip();
+        byte[] data = new byte[buffer.limit()];
+        buffer.get(data);
+        MycatServer.getInstance().getBufferPool().recycle(buffer);
+        return data;
+    }
 }

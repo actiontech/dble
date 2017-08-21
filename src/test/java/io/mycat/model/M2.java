@@ -23,11 +23,11 @@
  */
 package io.mycat.model;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-
 import io.mycat.util.ExecutorUtil;
 import jsr166y.LinkedTransferQueue;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author mycat
@@ -62,7 +62,7 @@ public class M2 {
     private final class A implements Runnable {
         @Override
         public void run() {
-            for (;;) {
+            for (; ; ) {
                 try {
                     Thread.sleep(200L);
                 } catch (InterruptedException e) {
@@ -85,7 +85,7 @@ public class M2 {
         @Override
         public void run() {
             TransferObject t = null;
-            for (;;) {
+            for (; ; ) {
                 try {
                     t = y.take();
                 } catch (InterruptedException e) {

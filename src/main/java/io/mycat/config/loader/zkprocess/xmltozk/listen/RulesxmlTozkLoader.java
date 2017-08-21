@@ -28,49 +28,49 @@ import java.util.List;
 
 /**
  * 进行从rule.xml加载到zk中加载
-* 源文件名：SchemasLoader.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月15日
-* 修改作者：liujun
-* 修改日期：2016年9月15日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：SchemasLoader.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月15日
+ * 修改作者：liujun
+ * 修改日期：2016年9月15日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 日志
-    */
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(RulesxmlTozkLoader.class);
 
     /**
      * 当前文件中的zkpath信息
-    */
+     */
     private final String currZkPath;
 
     /**
      * Rules文件的路径信息
-    */
+     */
     private static final String RULE_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "rule.xml";
 
     /**
      * Rules的xml的转换信息
-    */
+     */
     private ParseXmlServiceInf<Rules> parseRulesXMl;
 
     /**
      * 表的路由信息
-    */
+     */
     private ParseJsonServiceInf<List<TableRule>> parseJsonTableRuleService = new TableRuleJsonParse();
 
     /**
      * 表对应的字段信息
-    */
+     */
     private ParseJsonServiceInf<List<Function>> parseJsonFunctionService = new FunctionJsonParse();
 
     public RulesxmlTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
-            XmlProcessBase xmlParseBase) {
+                              XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfRulePath();
         // 将当前自己注册为事件接收对象
@@ -94,12 +94,13 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     /**
      * 将xml文件的信息写入到zk中
-    * 方法描述
-    * @param basePath 基本路径
-    * @param rules 件的信息
-    * @throws Exception 异常信息
-    * @创建日期 2016年9月17日
-    */
+     * 方法描述
+     *
+     * @param basePath 基本路径
+     * @param rules    件的信息
+     * @throws Exception 异常信息
+     * @创建日期 2016年9月17日
+     */
     private void xmlTozkRulesJson(String basePath, Rules rules) throws Exception {
         // tablerune节点信息
         String tableRuleJson = this.parseJsonTableRuleService.parseBeanToJson(rules.getTableRule());
@@ -114,11 +115,12 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
     }
 
     /**
-     *  读取序列配制文件便利店  
-    * 方法描述
-    * @param functionList
-    * @创建日期 2016年9月18日
-    */
+     * 读取序列配制文件便利店
+     * 方法描述
+     *
+     * @param functionList
+     * @创建日期 2016年9月18日
+     */
     private void readMapFileAddFunction(List<Function> functionList) {
 
         List<Property> tempData = new ArrayList<>();
@@ -136,7 +138,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
                         try {
                             mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
                             tempData.add(mapFilePro);
-                        }catch(IOException e){
+                        } catch (IOException e) {
                             LOGGER.error("RulesxmlTozkLoader readMapFile IOException", e);
                         }
                     }

@@ -35,99 +35,104 @@ import io.mycat.util.StringUtil;
 /**
  * @author mycat
  */
-public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler{
-	protected byte[] sendData;
-	@Override
-	public void clearResources() {
-		sendData = null;
-	}
-	public NormalRollbackNodesHandler(NonBlockingSession session) {
-		super(session);
-	}
-	public void rollback() {
-		final int initCount = session.getTargetCount();
-		lock.lock();
-		try {
-			reset(initCount);
-		} finally {
-			lock.unlock();
-		}
-		// 执行
-		int position = 0;
-		for (final RouteResultsetNode node : session.getTargetKeys()) {
-			final BackendConnection conn = session.getTarget(node);
-			if(conn.isClosed()){
-				lock.lock();
-				try {
-					nodeCount--;
-				} finally {
-					lock.unlock();
-				}
-				continue;
-			}
-			position++;
-			conn.setResponseHandler(this);
-			conn.rollback();
-		}
-		if(position == 0){
-			if (sendData == null) {
-				sendData = OkPacket.OK;
-			}
-			cleanAndFeedback();
-		}
-	}
+public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
+    protected byte[] sendData;
 
-	@Override
-	public void okResponse(byte[] ok, BackendConnection conn) {
-		if (decrementCountBy(1)) {
-			if (sendData == null) {
-				sendData = ok;
-			}
-			cleanAndFeedback();
-		}
-	}
+    @Override
+    public void clearResources() {
+        sendData = null;
+    }
 
-	@Override
-	public void errorResponse(byte[] err, BackendConnection conn){
-		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.read(err);
-		String errmsg = new String(errPacket.message);
-		this.setFail(errmsg);
-		conn.quit();//quit to rollback
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
-	@Override
-	public void connectionError(Throwable e, BackendConnection conn){
-		LOGGER.warn("backend connect", e);
-		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
-		this.setFail(errmsg);
-		conn.quit();//quit if not rollback
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
-	@Override
-	public void connectionClose(BackendConnection conn, String reason){
-		// quitted
-		this.setFail(reason);
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
+    public NormalRollbackNodesHandler(NonBlockingSession session) {
+        super(session);
+    }
 
-	private void cleanAndFeedback() {
-		byte[] send = sendData;
-		// clear all resources
-		session.clearResources(false);
-		if (session.closed()) {
-			return;
-		}
-		if (this.isFail()) {
-			createErrPkg(error).write(session.getSource());
-		} else {
-			session.getSource().write(send);
-		}
-	}
+    public void rollback() {
+        final int initCount = session.getTargetCount();
+        lock.lock();
+        try {
+            reset(initCount);
+        } finally {
+            lock.unlock();
+        }
+        // 执行
+        int position = 0;
+        for (final RouteResultsetNode node : session.getTargetKeys()) {
+            final BackendConnection conn = session.getTarget(node);
+            if (conn.isClosed()) {
+                lock.lock();
+                try {
+                    nodeCount--;
+                } finally {
+                    lock.unlock();
+                }
+                continue;
+            }
+            position++;
+            conn.setResponseHandler(this);
+            conn.rollback();
+        }
+        if (position == 0) {
+            if (sendData == null) {
+                sendData = OkPacket.OK;
+            }
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void okResponse(byte[] ok, BackendConnection conn) {
+        if (decrementCountBy(1)) {
+            if (sendData == null) {
+                sendData = ok;
+            }
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void errorResponse(byte[] err, BackendConnection conn) {
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.read(err);
+        String errmsg = new String(errPacket.message);
+        this.setFail(errmsg);
+        conn.quit();//quit to rollback
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void connectionError(Throwable e, BackendConnection conn) {
+        LOGGER.warn("backend connect", e);
+        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
+        this.setFail(errmsg);
+        conn.quit();//quit if not rollback
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        // quitted
+        this.setFail(reason);
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
+
+    private void cleanAndFeedback() {
+        byte[] send = sendData;
+        // clear all resources
+        session.clearResources(false);
+        if (session.closed()) {
+            return;
+        }
+        if (this.isFail()) {
+            createErrPkg(error).write(session.getSource());
+        } else {
+            session.getSource().write(send);
+        }
+    }
 }

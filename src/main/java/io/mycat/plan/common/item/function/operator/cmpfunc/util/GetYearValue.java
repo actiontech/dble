@@ -31,31 +31,31 @@ import io.mycat.plan.common.time.MyTime;
  */
 public class GetYearValue implements GetValueFunc {
 
-	@Override
-	public long get(Item item, Item warnitem, BoolPtr is_null) {
-		long value = 0;
+    @Override
+    public long get(Item item, Item warnitem, BoolPtr is_null) {
+        long value = 0;
 
-		value = item.valInt().longValue();
-		is_null.set(item.nullValue);
-		if (is_null.get())
-			return 0;
+        value = item.valInt().longValue();
+        is_null.set(item.nullValue);
+        if (is_null.get())
+            return 0;
 
 		/*
-		 * Coerce value to the 19XX form in order to correctly compare YEAR(2) &
+         * Coerce value to the 19XX form in order to correctly compare YEAR(2) &
 		 * YEAR(4) types. Here we are converting all item values but YEAR(4)
 		 * fields since 1) YEAR(4) already has a regular YYYY form and 2) we
 		 * don't want to convert zero/bad YEAR(4) values to the value of 2000.
 		 */
-		if (item.type() == ItemType.FIELD_ITEM) {
-			Field field = ((ItemField) item).field;
-			if (field.fieldType() == FieldTypes.MYSQL_TYPE_YEAR && field.fieldLength == 4) {
-				if (value < 70)
-					value += 100;
-				if (value <= 1900)
-					value += 1900;
-			}
-		}
-		/* Convert year to DATETIME packed format */
-		return MyTime.year_to_longlong_datetime_packed(value);
-	}
+        if (item.type() == ItemType.FIELD_ITEM) {
+            Field field = ((ItemField) item).field;
+            if (field.fieldType() == FieldTypes.MYSQL_TYPE_YEAR && field.fieldLength == 4) {
+                if (value < 70)
+                    value += 100;
+                if (value <= 1900)
+                    value += 1900;
+            }
+        }
+        /* Convert year to DATETIME packed format */
+        return MyTime.year_to_longlong_datetime_packed(value);
+    }
 }

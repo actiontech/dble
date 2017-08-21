@@ -16,37 +16,37 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "blacklist")
 public class BlackList implements Propertied {
-	@XmlAttribute(required = true)
-	protected Boolean check;
-	protected List<Property> property;
+    @XmlAttribute(required = true)
+    protected Boolean check;
+    protected List<Property> property;
 
-	public Boolean getCheck() {
-		return check;
-	}
+    public Boolean getCheck() {
+        return check;
+    }
 
-	public void setCheck(Boolean check) {
-		this.check = check;
-	}
+    public void setCheck(Boolean check) {
+        this.check = check;
+    }
 
-	public List<Property> getProperty() {
-		if (this.property == null) {
-			property = new ArrayList<>();
-		}
-		return property;
-	}
+    public List<Property> getProperty() {
+        if (this.property == null) {
+            property = new ArrayList<>();
+        }
+        return property;
+    }
 
-	public void setProperty(List<Property> property) {
-		this.property = property;
-	}
+    public void setProperty(List<Property> property) {
+        this.property = property;
+    }
 
-	@Override
-	public void addProperty(Property property) {
-		this.getProperty().add(property);
-	}
+    @Override
+    public void addProperty(Property property) {
+        this.getProperty().add(property);
+    }
 
 
-	@Override
-	public String toString() {
-		return "BlackList {check="+check+",property=["+property+"]}";
-	}
+    @Override
+    public String toString() {
+        return "BlackList {check=" + check + ",property=[" + property + "]}";
+    }
 }

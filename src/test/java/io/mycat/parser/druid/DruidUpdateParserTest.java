@@ -1,7 +1,17 @@
 package io.mycat.parser.druid;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.config.model.TableConfig;
+import io.mycat.route.RouteResultset;
+import io.mycat.route.parser.druid.impl.DruidUpdateParser;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.sql.SQLNonTransientException;
@@ -9,20 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.config.model.TableConfig;
-import io.mycat.route.RouteResultset;
-import io.mycat.route.parser.druid.impl.DruidUpdateParser;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Hash Zhang
@@ -33,10 +31,11 @@ import io.mycat.route.parser.druid.impl.DruidUpdateParser;
 public class DruidUpdateParserTest {
     /**
      * 测试单表更新分片字段
+     *
      * @throws NoSuchMethodException
      */
     @Test
-    public void testUpdateShardColumn() throws NoSuchMethodException{
+    public void testUpdateShardColumn() throws NoSuchMethodException {
         throwExceptionParse("update hotnews set id = 1 where name = 234;", true);
         throwExceptionParse("update hotnews set id = 1 where id = 3;", true);
         throwExceptionParse("update hotnews set id = 1, name = '123' where id = 1 and name = '234'", false);
@@ -60,10 +59,11 @@ public class DruidUpdateParserTest {
 
     /**
      * 测试单表别名更新分片字段
+     *
      * @throws NoSuchMethodException
      */
     @Test
-    public void testAliasUpdateShardColumn() throws NoSuchMethodException{
+    public void testAliasUpdateShardColumn() throws NoSuchMethodException {
         throwExceptionParse("update hotnews h set h.id = 1 where h.name = 234;", true);
         throwExceptionParse("update hotnews h set h.id = 1 where h.id = 3;", true);
         throwExceptionParse("update hotnews h set h.id = 1, h.name = '123' where h.id = 1 and h.name = '234'", false);

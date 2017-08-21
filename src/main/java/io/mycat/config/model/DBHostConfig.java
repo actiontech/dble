@@ -24,86 +24,88 @@
 package io.mycat.config.model;
 
 public class DBHostConfig {
-	
-	private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT; // 连接池中连接空闲超时时间
-	private final String hostName;
-	private final String ip;
-	private final int port;
-	private final String url;
-	private final String user;
-	private final String password;
-	private int maxCon ;
-	private int minCon ;
-	private int weight;				
 
-	public DBHostConfig(String hostName, String ip, int port, String url,
-			String user, String password) {
-		super();
-		this.hostName = hostName;
-		this.ip = ip;
-		this.port = port;
-		this.url = url;
-		this.user = user;
-		this.password = password;
-	}
+    private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT; // 连接池中连接空闲超时时间
+    private final String hostName;
+    private final String ip;
+    private final int port;
+    private final String url;
+    private final String user;
+    private final String password;
+    private int maxCon;
+    private int minCon;
+    private int weight;
 
-	public long getIdleTimeout() {
-		return idleTimeout;
-	}
+    public DBHostConfig(String hostName, String ip, int port, String url,
+                        String user, String password) {
+        super();
+        this.hostName = hostName;
+        this.ip = ip;
+        this.port = port;
+        this.url = url;
+        this.user = user;
+        this.password = password;
+    }
 
-	public void setIdleTimeout(long idleTimeout) {
-		this.idleTimeout = idleTimeout;
-	}
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
 
-	public int getMaxCon() {
-		return maxCon;
-	}
+    public void setIdleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
+    }
 
-	public void setMaxCon(int maxCon) {
-		this.maxCon = maxCon;
-	}
+    public int getMaxCon() {
+        return maxCon;
+    }
 
-	public int getMinCon() {
-		return minCon;
-	}
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
+    }
 
-	public void setMinCon(int minCon) {
-		this.minCon = minCon;
-	}
+    public int getMinCon() {
+        return minCon;
+    }
 
-	public String getHostName() {
-		return hostName;
-	}
+    public void setMinCon(int minCon) {
+        this.minCon = minCon;
+    }
 
-	public String getIp() {
-		return ip;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public int getPort() {
-		return port;
-	}
+    public String getIp() {
+        return ip;
+    }
 
-	public String getUrl() {
-		return url;
-	}
+    public int getPort() {
+        return port;
+    }
 
-	public String getUser() {
-		return user;
-	}
-	public String getPassword() {
-		return password;
-	}
-	public int getWeight() {
-		return weight;
-	}
+    public String getUrl() {
+        return url;
+    }
 
-	public void setWeight(int weight) {
-		this.weight = weight;
-	}
+    public String getUser() {
+        return user;
+    }
 
-	@Override
-	public String toString() {
-		return "DBHostConfig [hostName=" + hostName + ", url=" + url + "]";
-	}
+    public String getPassword() {
+        return password;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    @Override
+    public String toString() {
+        return "DBHostConfig [hostName=" + hostName + ", url=" + url + "]";
+    }
 
 }

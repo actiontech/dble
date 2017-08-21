@@ -35,12 +35,12 @@ public final class ManagerParseRollback {
         int i = offset;
         for (; i < stmt.length(); i++) {
             switch (stmt.charAt(i)) {
-            case ' ':
-                continue;
-            case '@':
-                return rollback2Check(stmt, i);
-            default:
-                return OTHER;
+                case ' ':
+                    continue;
+                case '@':
+                    return rollback2Check(stmt, i);
+                default:
+                    return OTHER;
             }
         }
         return OTHER;
@@ -49,13 +49,13 @@ public final class ManagerParseRollback {
     private static int rollback2Check(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
                 && stmt.length() > ++offset) {
-                switch (stmt.charAt(offset)) {
+            switch (stmt.charAt(offset)) {
                 case 'C':
                 case 'c':
                     return rollback2CCheck(stmt, offset);
                 default:
                     return OTHER;
-                }
+            }
         }
         return OTHER;
     }
@@ -78,7 +78,6 @@ public final class ManagerParseRollback {
         }
         return OTHER;
     }
-
 
 
 }

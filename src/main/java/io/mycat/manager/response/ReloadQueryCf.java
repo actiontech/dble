@@ -1,29 +1,29 @@
 package io.mycat.manager.response;
 
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
 import io.mycat.manager.ManagerConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.statistic.stat.QueryConditionAnalyzer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReloadQueryCf {
-	
-	private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+
+    private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c, String cf) {
-    	
-    	if ( cf == null ) {
+
+        if (cf == null) {
             cf = "NULL";
         }
-    	
-    	QueryConditionAnalyzer.getInstance().setCf(cf);
-    	
+
+        QueryConditionAnalyzer.getInstance().setCf(cf);
+
         StringBuilder s = new StringBuilder();
-        s.append(c).append("Reset show  @@sql.condition="+ cf +" success by manager");
-        
+        s.append(c).append("Reset show  @@sql.condition=" + cf + " success by manager");
+
         logger.warn(s.toString());
-        
+
         OkPacket ok = new OkPacket();
         ok.packetId = 1;
         ok.affectedRows = 1;

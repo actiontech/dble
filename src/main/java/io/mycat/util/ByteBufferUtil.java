@@ -35,64 +35,58 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 
-
 /**
  * Utility methods to make ByteBuffers less painful
  * The following should illustrate the different ways byte buffers can be used
- *
- *        public void testArrayOffet()
- *        {
- *
- *            byte[] b = "test_slice_array".getBytes();
- *            ByteBuffer bb = ByteBuffer.allocate(1024);
- *
- *            assert bb.position() == 0;
- *            assert bb.limit()    == 1024;
- *            assert bb.capacity() == 1024;
- *
- *            bb.put(b);
- *
- *            assert bb.position()  == b.length;
- *            assert bb.remaining() == bb.limit() - bb.position();
- *
- *            ByteBuffer bb2 = bb.slice();
- *
- *            assert bb2.position()    == 0;
- *
- *            //slice should begin at other buffers current position
- *            assert bb2.arrayOffset() == bb.position();
- *
- *            //to match the position in the underlying array one needs to
- *            //track arrayOffset
- *            assert bb2.limit()+bb2.arrayOffset() == bb.limit();
- *
- *
- *            assert bb2.remaining() == bb.remaining();
- *
- *        }
- *
+ * <p>
+ * public void testArrayOffet()
+ * {
+ * <p>
+ * byte[] b = "test_slice_array".getBytes();
+ * ByteBuffer bb = ByteBuffer.allocate(1024);
+ * <p>
+ * assert bb.position() == 0;
+ * assert bb.limit()    == 1024;
+ * assert bb.capacity() == 1024;
+ * <p>
+ * bb.put(b);
+ * <p>
+ * assert bb.position()  == b.length;
+ * assert bb.remaining() == bb.limit() - bb.position();
+ * <p>
+ * ByteBuffer bb2 = bb.slice();
+ * <p>
+ * assert bb2.position()    == 0;
+ * <p>
+ * //slice should begin at other buffers current position
+ * assert bb2.arrayOffset() == bb.position();
+ * <p>
+ * //to match the position in the underlying array one needs to
+ * //track arrayOffset
+ * assert bb2.limit()+bb2.arrayOffset() == bb.limit();
+ * <p>
+ * <p>
+ * assert bb2.remaining() == bb.remaining();
+ * <p>
  * }
- *
+ * <p>
+ * }
  */
-public class ByteBufferUtil
-{
+public class ByteBufferUtil {
     public static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new byte[0]);
 
 
-    public static int compareUnsigned(ByteBuffer o1, ByteBuffer o2)
-    {
+    public static int compareUnsigned(ByteBuffer o1, ByteBuffer o2) {
         return FastByteOperations.compareUnsigned(o1, o2);
     }
 
 
-    public static int compare(byte[] o1, ByteBuffer o2)
-    {
+    public static int compare(byte[] o1, ByteBuffer o2) {
         return FastByteOperations.compareUnsigned(o1, 0, o1.length, o2);
     }
 
 
-    public static int compare(ByteBuffer o1, byte[] o2)
-    {
+    public static int compare(ByteBuffer o1, byte[] o2) {
         return FastByteOperations.compareUnsigned(o1, o2, 0, o2.length);
     }
 
@@ -103,8 +97,7 @@ public class ByteBufferUtil
      * @param buffer a byte buffer holding the string representation
      * @return the decoded string
      */
-    public static String string(ByteBuffer buffer) throws CharacterCodingException
-    {
+    public static String string(ByteBuffer buffer) throws CharacterCodingException {
         return string(buffer, StandardCharsets.UTF_8);
     }
 
@@ -112,27 +105,25 @@ public class ByteBufferUtil
      * Decode a String representation.
      * This method assumes that the encoding charset is UTF_8.
      *
-     * @param buffer a byte buffer holding the string representation
+     * @param buffer   a byte buffer holding the string representation
      * @param position the starting position in {@code buffer} to start decoding from
-     * @param length the number of bytes from {@code buffer} to use
+     * @param length   the number of bytes from {@code buffer} to use
      * @return the decoded string
      */
-    public static String string(ByteBuffer buffer, int position, int length) throws CharacterCodingException
-    {
+    public static String string(ByteBuffer buffer, int position, int length) throws CharacterCodingException {
         return string(buffer, position, length, StandardCharsets.UTF_8);
     }
 
     /**
      * Decode a String representation.
      *
-     * @param buffer a byte buffer holding the string representation
+     * @param buffer   a byte buffer holding the string representation
      * @param position the starting position in {@code buffer} to start decoding from
-     * @param length the number of bytes from {@code buffer} to use
-     * @param charset the String encoding charset
+     * @param length   the number of bytes from {@code buffer} to use
+     * @param charset  the String encoding charset
      * @return the decoded string
      */
-    public static String string(ByteBuffer buffer, int position, int length, Charset charset) throws CharacterCodingException
-    {
+    public static String string(ByteBuffer buffer, int position, int length, Charset charset) throws CharacterCodingException {
         ByteBuffer copy = buffer.duplicate();
         copy.position(position);
         copy.limit(copy.position() + length);
@@ -142,24 +133,21 @@ public class ByteBufferUtil
     /**
      * Decode a String representation.
      *
-     * @param buffer a byte buffer holding the string representation
+     * @param buffer  a byte buffer holding the string representation
      * @param charset the String encoding charset
      * @return the decoded string
      */
-    public static String string(ByteBuffer buffer, Charset charset) throws CharacterCodingException
-    {
+    public static String string(ByteBuffer buffer, Charset charset) throws CharacterCodingException {
         return charset.newDecoder().decode(buffer.duplicate()).toString();
     }
 
     /**
      * You should almost never use this.  Instead, use the write* methods to avoid copies.
      */
-    public static byte[] getArray(ByteBuffer buffer)
-    {
+    public static byte[] getArray(ByteBuffer buffer) {
         int length = buffer.remaining();
 
-        if (buffer.hasArray())
-        {
+        if (buffer.hasArray()) {
             int boff = buffer.arrayOffset() + buffer.position();
             return Arrays.copyOfRange(buffer.array(), boff, boff + length);
         }
@@ -173,27 +161,22 @@ public class ByteBufferUtil
     /**
      * ByteBuffer adaptation of org.apache.commons.lang3.ArrayUtils.lastIndexOf method
      *
-     * @param buffer the array to traverse for looking for the object, may be <code>null</code>
+     * @param buffer      the array to traverse for looking for the object, may be <code>null</code>
      * @param valueToFind the value to find
-     * @param startIndex the start index (i.e. BB position) to travers backwards from
+     * @param startIndex  the start index (i.e. BB position) to travers backwards from
      * @return the last index (i.e. BB position) of the value within the array
      * [between buffer.position() and buffer.limit()]; <code>-1</code> if not found.
      */
-    public static int lastIndexOf(ByteBuffer buffer, byte valueToFind, int startIndex)
-    {
+    public static int lastIndexOf(ByteBuffer buffer, byte valueToFind, int startIndex) {
         assert buffer != null;
 
-        if (startIndex < buffer.position())
-        {
+        if (startIndex < buffer.position()) {
             return -1;
-        }
-        else if (startIndex >= buffer.limit())
-        {
+        } else if (startIndex >= buffer.limit()) {
             startIndex = buffer.limit() - 1;
         }
 
-        for (int i = startIndex; i >= buffer.position(); i--)
-        {
+        for (int i = startIndex; i >= buffer.position(); i--) {
             if (valueToFind == buffer.get(i)) {
                 return i;
             }
@@ -208,20 +191,18 @@ public class ByteBufferUtil
      * @param s the string to encode
      * @return the encoded string
      */
-    public static ByteBuffer bytes(String s)
-    {
+    public static ByteBuffer bytes(String s) {
         return ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
      * Encode a String in a ByteBuffer using the provided charset.
      *
-     * @param s the string to encode
+     * @param s       the string to encode
      * @param charset the String encoding charset to use
      * @return the encoded string
      */
-    public static ByteBuffer bytes(String s, Charset charset)
-    {
+    public static ByteBuffer bytes(String s, Charset charset) {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
 
@@ -230,8 +211,7 @@ public class ByteBufferUtil
      * USUALLY YOU SHOULD USE ByteBuffer.duplicate() INSTEAD, which creates a new Buffer
      * (so you can mutate its position without affecting the original) without copying the underlying array.
      */
-    public static ByteBuffer clone(ByteBuffer buffer)
-    {
+    public static ByteBuffer clone(ByteBuffer buffer) {
         assert buffer != null;
 
         if (buffer.remaining() == 0) {
@@ -240,12 +220,9 @@ public class ByteBufferUtil
 
         ByteBuffer clone = ByteBuffer.allocate(buffer.remaining());
 
-        if (buffer.hasArray())
-        {
+        if (buffer.hasArray()) {
             System.arraycopy(buffer.array(), buffer.arrayOffset() + buffer.position(), clone.array(), 0, buffer.remaining());
-        }
-        else
-        {
+        } else {
             clone.put(buffer.duplicate());
             clone.flip();
         }
@@ -253,8 +230,7 @@ public class ByteBufferUtil
         return clone;
     }
 
-    public static void arrayCopy(ByteBuffer src, int srcPos, byte[] dst, int dstPos, int length)
-    {
+    public static void arrayCopy(ByteBuffer src, int srcPos, byte[] dst, int dstPos, int length) {
         FastByteOperations.copy(src, srcPos, dst, dstPos, length);
     }
 
@@ -262,42 +238,30 @@ public class ByteBufferUtil
      * Transfer bytes from one ByteBuffer to another.
      * This function acts as System.arrayCopy() but for ByteBuffers.
      *
-     * @param src the source ByteBuffer
+     * @param src    the source ByteBuffer
      * @param srcPos starting position in the source ByteBuffer
-     * @param dst the destination ByteBuffer
+     * @param dst    the destination ByteBuffer
      * @param dstPos starting position in the destination ByteBuffer
      * @param length the number of bytes to copy
      */
-    public static void arrayCopy(ByteBuffer src, int srcPos, ByteBuffer dst, int dstPos, int length)
-    {
+    public static void arrayCopy(ByteBuffer src, int srcPos, ByteBuffer dst, int dstPos, int length) {
         FastByteOperations.copy(src, srcPos, dst, dstPos, length);
     }
 
 
-
-    public static void writeWithLength(byte[] bytes, DataOutput out) throws IOException
-    {
+    public static void writeWithLength(byte[] bytes, DataOutput out) throws IOException {
         out.writeInt(bytes.length);
         out.write(bytes);
     }
 
 
-
-
-
     /* @return An unsigned short in an integer. */
-    public static int readShortLength(DataInput in) throws IOException
-    {
+    public static int readShortLength(DataInput in) throws IOException {
         return in.readUnsignedShort();
     }
 
 
-
-
-
-
-    public static byte[] readBytes(DataInput in, int length) throws IOException
-    {
+    public static byte[] readBytes(DataInput in, int length) throws IOException {
         assert length > 0 : "length is not > 0: " + length;
         byte[] bytes = new byte[length];
         in.readFully(bytes);
@@ -311,54 +275,43 @@ public class ByteBufferUtil
      * @param bytes byte buffer to convert to integer
      * @return int representation of the byte buffer
      */
-    public static int toInt(ByteBuffer bytes)
-    {
+    public static int toInt(ByteBuffer bytes) {
         return bytes.getInt(bytes.position());
     }
 
-    public static long toLong(ByteBuffer bytes)
-    {
+    public static long toLong(ByteBuffer bytes) {
         return bytes.getLong(bytes.position());
     }
 
-    public static float toFloat(ByteBuffer bytes)
-    {
+    public static float toFloat(ByteBuffer bytes) {
         return bytes.getFloat(bytes.position());
     }
 
-    public static double toDouble(ByteBuffer bytes)
-    {
+    public static double toDouble(ByteBuffer bytes) {
         return bytes.getDouble(bytes.position());
     }
 
-    public static ByteBuffer bytes(int i)
-    {
+    public static ByteBuffer bytes(int i) {
         return ByteBuffer.allocate(4).putInt(0, i);
     }
 
-    public static ByteBuffer bytes(long n)
-    {
+    public static ByteBuffer bytes(long n) {
         return ByteBuffer.allocate(8).putLong(0, n);
     }
 
-    public static ByteBuffer bytes(float f)
-    {
+    public static ByteBuffer bytes(float f) {
         return ByteBuffer.allocate(4).putFloat(0, f);
     }
 
-    public static ByteBuffer bytes(double d)
-    {
+    public static ByteBuffer bytes(double d) {
         return ByteBuffer.allocate(8).putDouble(0, d);
     }
 
-    public static InputStream inputStream(ByteBuffer bytes)
-    {
+    public static InputStream inputStream(ByteBuffer bytes) {
         final ByteBuffer copy = bytes.duplicate();
 
-        return new InputStream()
-        {
-            public int read()
-            {
+        return new InputStream() {
+            public int read() {
                 if (!copy.hasRemaining()) {
                     return -1;
                 }
@@ -367,8 +320,7 @@ public class ByteBufferUtil
             }
 
             @Override
-            public int read(byte[] bytes, int off, int len)
-            {
+            public int read(byte[] bytes, int off, int len) {
                 if (!copy.hasRemaining()) {
                     return -1;
                 }
@@ -379,29 +331,25 @@ public class ByteBufferUtil
             }
 
             @Override
-            public int available()
-            {
+            public int available() {
                 return copy.remaining();
             }
         };
     }
 
 
-
-
-
     /**
      * Compare two ByteBuffer at specified offsets for length.
      * Compares the non equal bytes as unsigned.
-     * @param bytes1 First byte buffer to compare.
+     *
+     * @param bytes1  First byte buffer to compare.
      * @param offset1 Position to start the comparison at in the first array.
-     * @param bytes2 Second byte buffer to compare.
+     * @param bytes2  Second byte buffer to compare.
      * @param offset2 Position to start the comparison at in the second array.
-     * @param length How many bytes to compare?
+     * @param length  How many bytes to compare?
      * @return -1 if byte1 is less than byte2, 1 if byte2 is less than byte1 or 0 if equal.
      */
-    public static int compareSubArrays(ByteBuffer bytes1, int offset1, ByteBuffer bytes2, int offset2, int length)
-    {
+    public static int compareSubArrays(ByteBuffer bytes1, int offset1, ByteBuffer bytes2, int offset2, int length) {
         if (bytes1 == null) {
             return bytes2 == null ? 0 : -1;
         }
@@ -411,30 +359,26 @@ public class ByteBufferUtil
 
         assert bytes1.limit() >= offset1 + length : "The first byte array isn't long enough for the specified offset and length.";
         assert bytes2.limit() >= offset2 + length : "The second byte array isn't long enough for the specified offset and length.";
-        for (int i = 0; i < length; i++)
-        {
+        for (int i = 0; i < length; i++) {
             byte byte1 = bytes1.get(offset1 + i);
             byte byte2 = bytes2.get(offset2 + i);
 //            if (byte1 == byte2)
 //                continue;
             // compare non-equal bytes as unsigned
-            if( byte1 != byte2 ) {
+            if (byte1 != byte2) {
                 return (byte1 & 0xFF) < (byte2 & 0xFF) ? -1 : 1;
             }
         }
         return 0;
     }
 
-    public static ByteBuffer bytes(InetAddress address)
-    {
+    public static ByteBuffer bytes(InetAddress address) {
         return ByteBuffer.wrap(address.getAddress());
     }
 
 
-
     // Returns whether {@code prefix} is a prefix of {@code value}.
-    public static boolean isPrefix(ByteBuffer prefix, ByteBuffer value)
-    {
+    public static boolean isPrefix(ByteBuffer prefix, ByteBuffer value) {
         if (prefix.remaining() > value.remaining()) {
             return false;
         }
@@ -443,36 +387,33 @@ public class ByteBufferUtil
         return prefix.equals(value.duplicate().limit(value.remaining() - diff));
     }
 
-    /** trims size of bytebuffer to exactly number of bytes in it, to do not hold too much memory */
-    public static ByteBuffer minimalBufferFor(ByteBuffer buf)
-    {
+    /**
+     * trims size of bytebuffer to exactly number of bytes in it, to do not hold too much memory
+     */
+    public static ByteBuffer minimalBufferFor(ByteBuffer buf) {
         return buf.capacity() > buf.remaining() || !buf.hasArray() ? ByteBuffer.wrap(getArray(buf)) : buf;
     }
 
     // Doesn't change bb position
-    public static int getShortLength(ByteBuffer bb, int position)
-    {
+    public static int getShortLength(ByteBuffer bb, int position) {
         int length = (bb.get(position) & 0xFF) << 8;
         return length | (bb.get(position + 1) & 0xFF);
     }
 
     // changes bb position
-    public static int readShortLength(ByteBuffer bb)
-    {
+    public static int readShortLength(ByteBuffer bb) {
         int length = (bb.get() & 0xFF) << 8;
         return length | (bb.get() & 0xFF);
     }
 
     // changes bb position
-    public static void writeShortLength(ByteBuffer bb, int length)
-    {
+    public static void writeShortLength(ByteBuffer bb, int length) {
         bb.put((byte) ((length >> 8) & 0xFF));
         bb.put((byte) (length & 0xFF));
     }
 
     // changes bb position
-    public static ByteBuffer readBytes(ByteBuffer bb, int length)
-    {
+    public static ByteBuffer readBytes(ByteBuffer bb, int length) {
         ByteBuffer copy = bb.duplicate();
         copy.limit(copy.position() + length);
         bb.position(bb.position() + length);
@@ -480,8 +421,7 @@ public class ByteBufferUtil
     }
 
     // changes bb position
-    public static ByteBuffer readBytesWithShortLength(ByteBuffer bb)
-    {
+    public static ByteBuffer readBytesWithShortLength(ByteBuffer bb) {
         int length = readShortLength(bb);
         return readBytes(bb, length);
     }

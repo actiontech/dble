@@ -23,72 +23,72 @@
  */
 package io.mycat.statistic;
 
+import io.mycat.config.model.DataHostConfig;
+import io.mycat.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
-import io.mycat.config.model.DataHostConfig;
-import io.mycat.util.TimeUtil;
-
 /**
  * 记录最近3个时段的平均响应时间，默认1，10，30分钟。
- * 
+ *
  * @author songwie
  */
-public class                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          DataSourceSyncRecorder {
+public class DataSourceSyncRecorder {
 
     private Map<String, String> records;
     private final List<Record> asynRecords;//value,time
-	private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
+    private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
 
-    
+
     private static final long SWAP_TIME = 24 * 60 * 60 * 1000L;
-    
+
     //日期处理
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private int switchType = 2;
 
     public DataSourceSyncRecorder() {
-        this.records = new HashMap<String, String>()  ;
+        this.records = new HashMap<String, String>();
         this.asynRecords = new LinkedList<Record>();
     }
 
     public String get() {
-         return records.toString();
+        return records.toString();
     }
 
-    public void set(Map<String, String> resultResult,int switchType) {
-    	try{
-    		long time = TimeUtil.currentTimeMillis();
+    public void set(Map<String, String> resultResult, int switchType) {
+        try {
+            long time = TimeUtil.currentTimeMillis();
             this.switchType = switchType;
 
             remove(time);
 
-            if (resultResult!=null && !resultResult.isEmpty()) {
-            	this.records = resultResult;
-            	if(switchType==DataHostConfig.SYN_STATUS_SWITCH_DS){  //slave
-            		String sencords = resultResult.get("Seconds_Behind_Master");
-            		long Seconds_Behind_Master = -1;
-            		if(sencords!=null){
-                		Seconds_Behind_Master = Long.parseLong(sencords);
-            		} 
-            		this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(),Seconds_Behind_Master));
-            	}
-                if(switchType==DataHostConfig.CLUSTER_STATUS_SWITCH_DS){//cluster
-                	double wsrep_local_recv_queue_avg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
-            		this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(),wsrep_local_recv_queue_avg));
-            	}
-            	
+            if (resultResult != null && !resultResult.isEmpty()) {
+                this.records = resultResult;
+                if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
+                    String sencords = resultResult.get("Seconds_Behind_Master");
+                    long Seconds_Behind_Master = -1;
+                    if (sencords != null) {
+                        Seconds_Behind_Master = Long.parseLong(sencords);
+                    }
+                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), Seconds_Behind_Master));
+                }
+                if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) {//cluster
+                    double wsrep_local_recv_queue_avg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
+                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrep_local_recv_queue_avg));
+                }
+
                 return;
             }
-    	}catch(Exception e){ 
-    		LOGGER.error("record DataSourceSyncRecorder error " + e.getMessage());
-    	}
-        
+        } catch (Exception e) {
+            LOGGER.error("record DataSourceSyncRecorder error " + e.getMessage());
+        }
+
     }
 
     /**
@@ -99,7 +99,7 @@ public class                                                                    
         while (recordsAll.size() > 0) {
             Record record = recordsAll.get(0);
             if (time >= record.time + SWAP_TIME) {
-            	recordsAll.remove(0);
+                recordsAll.remove(0);
             } else {
                 break;
             }
@@ -107,45 +107,53 @@ public class                                                                    
     }
 
     public int getSwitchType() {
-		return this.switchType;
-	}
-	public void setSwitchType(int switchType) {
-		this.switchType = switchType;
-	}
-	public Map<String, String> getRecords() {
-		return this.records;
-	}
-	public List<Record> getAsynRecords() {
-		return this.asynRecords;
-	}
-	public static SimpleDateFormat getSdf() {
-		return sdf;
-	}
+        return this.switchType;
+    }
 
-	/**
+    public void setSwitchType(int switchType) {
+        this.switchType = switchType;
+    }
+
+    public Map<String, String> getRecords() {
+        return this.records;
+    }
+
+    public List<Record> getAsynRecords() {
+        return this.asynRecords;
+    }
+
+    public static SimpleDateFormat getSdf() {
+        return sdf;
+    }
+
+    /**
      * @author mycat
      */
     public static class Record {
-    	private Object value;
-    	private long time;
+        private Object value;
+        private long time;
 
         Record(long time, Object value) {
             this.time = time;
             this.value = value;
         }
-		public Object getValue() {
-			return this.value;
-		}
-		public void setValue(Object value) {
-			this.value = value;
-		}
-		public long getTime() {
-			return this.time;
-		}
-		public void setTime(long time) {
-			this.time = time;
-		}
-        
-        
+
+        public Object getValue() {
+            return this.value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
+
+        public long getTime() {
+            return this.time;
+        }
+
+        public void setTime(long time) {
+            this.time = time;
+        }
+
+
     }
 }

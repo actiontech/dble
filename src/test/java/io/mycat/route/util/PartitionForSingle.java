@@ -25,7 +25,7 @@ package io.mycat.route.util;
 
 /**
  * 数据分区工具单独版本，请使用singleton的模式调用。
- * 
+ *
  * @author mycat
  */
 public final class PartitionForSingle {
@@ -42,13 +42,11 @@ public final class PartitionForSingle {
     private final int[] segment = new int[PARTITION_LENGTH];
 
     /**
-     * @param count
-     *            表示定义的分区数
-     * @param length
-     *            表示对应每个分区的取值长度
-     *            <p>
-     *            注意：其中count,length两个数组的长度必须是一致的。
-     *            </p>
+     * @param count  表示定义的分区数
+     * @param length 表示对应每个分区的取值长度
+     *               <p>
+     *               注意：其中count,length两个数组的长度必须是一致的。
+     *               </p>
      */
     public PartitionForSingle(int[] count, int[] length) {
         if (count == null || length == null || (count.length != length.length)) {
@@ -106,7 +104,7 @@ public final class PartitionForSingle {
         // // 拆分为128份，每份长度均为：8。
         // Scope scope = new Scope(new int[] { 128 }, new int[] { 8 });
 
-        PartitionForSingle p = new PartitionForSingle(new int[] { 8, 15 }, new int[] { 8, 64 });
+        PartitionForSingle p = new PartitionForSingle(new int[]{8, 15}, new int[]{8, 64});
 
         String memberId = "xianmao.hexm";
 

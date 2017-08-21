@@ -34,7 +34,7 @@ public class ResultSetPacketParse {
     public static String parse(String src) {
         String[] sa = SplitUtil.split(src, ',', true);
         StringBuilder s = new StringBuilder();
-        for (int i = 0; i < sa.length;) {
+        for (int i = 0; i < sa.length; ) {
             int length = Byte.parseByte(sa[i++]) & 0xff;
             length |= (Byte.parseByte(sa[i++]) & 0xff) << 8;
             length |= (Byte.parseByte(sa[i++]) & 0xff) << 16;

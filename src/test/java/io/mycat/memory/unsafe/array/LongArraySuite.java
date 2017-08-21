@@ -24,19 +24,19 @@ import org.junit.Test;
 
 public class LongArraySuite {
 
-  @Test
-  public void basicTest() {
-    long[] bytes = new long[2];
-    LongArray arr = new LongArray(MemoryBlock.fromLongArray(bytes));
-    arr.set(0, 1L);
-    arr.set(1, 2L);
-    arr.set(1, 3L);
-    Assert.assertEquals(2, arr.size());
-    Assert.assertEquals(1L, arr.get(0));
-    Assert.assertEquals(3L, arr.get(1));
+    @Test
+    public void basicTest() {
+        long[] bytes = new long[2];
+        LongArray arr = new LongArray(MemoryBlock.fromLongArray(bytes));
+        arr.set(0, 1L);
+        arr.set(1, 2L);
+        arr.set(1, 3L);
+        Assert.assertEquals(2, arr.size());
+        Assert.assertEquals(1L, arr.get(0));
+        Assert.assertEquals(3L, arr.get(1));
 
-    arr.zeroOut();
-    Assert.assertEquals(0L, arr.get(0));
-    Assert.assertEquals(0L, arr.get(1));
-  }
+        arr.zeroOut();
+        Assert.assertEquals(0L, arr.get(0));
+        Assert.assertEquals(0L, arr.get(1));
+    }
 }

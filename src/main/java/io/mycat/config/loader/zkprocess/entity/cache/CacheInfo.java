@@ -7,74 +7,82 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * 缓存配制信息
-* 源文件名：CacheInfo.java
-* 文件版本：1.0.0
-* 创建作者：liujun
-* 创建日期：2016年9月19日
-* 修改作者：liujun
-* 修改日期：2016年9月19日
-* 文件描述：TODO
-* 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
-*/
+ * 源文件名：CacheInfo.java
+ * 文件版本：1.0.0
+ * 创建作者：liujun
+ * 创建日期：2016年9月19日
+ * 修改作者：liujun
+ * 修改日期：2016年9月19日
+ * 文件描述：TODO
+ * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "defaultCache")
 public class CacheInfo {
 
     /**
-     * maxElementsInMemory:在内存中最大的对象数量 
-    * @字段说明 maxEntriesLocalHeap
-    */
+     * maxElementsInMemory:在内存中最大的对象数量
+     *
+     * @字段说明 maxEntriesLocalHeap
+     */
     @XmlAttribute
     private int maxElementsInMemory;
 
     /**
-     *   eternal：设置元素是否永久的，如果为永久，则timeout忽略 
-    * @字段说明 maxBytesLocalDisk
-    */
+     * eternal：设置元素是否永久的，如果为永久，则timeout忽略
+     *
+     * @字段说明 maxBytesLocalDisk
+     */
     @XmlAttribute
     private boolean eternal;
 
     /**
-     *   overflowToDisk：是否当memory中的数量达到限制后，保存到Disk 
-    * @字段说明 updateCheck
-    */
+     * overflowToDisk：是否当memory中的数量达到限制后，保存到Disk
+     *
+     * @字段说明 updateCheck
+     */
     @XmlAttribute
     private boolean overflowToDisk;
 
     /**
-     * diskSpoolBufferSizeMB：这个参数设置DiskStore（磁盘缓存）的缓存区大小。默认是30MB。每个Cache都应该有自己的一个缓冲区。 
-    * @字段说明 diskSpoolBufferSizeMB
-    */
+     * diskSpoolBufferSizeMB：这个参数设置DiskStore（磁盘缓存）的缓存区大小。默认是30MB。每个Cache都应该有自己的一个缓冲区。
+     *
+     * @字段说明 diskSpoolBufferSizeMB
+     */
     @XmlAttribute
     private int diskSpoolBufferSizeMB;
 
     /**
-     *  maxElementsOnDisk：硬盘最大缓存个数。
-    * @字段说明 maxElementsOnDisk
-    */
+     * maxElementsOnDisk：硬盘最大缓存个数。
+     *
+     * @字段说明 maxElementsOnDisk
+     */
     @XmlAttribute
     private int maxElementsOnDisk;
 
     /**
-     *  diskPersistent：是否缓存虚拟机重启期数据 
-    * @字段说明 diskPersistent
-    */
+     * diskPersistent：是否缓存虚拟机重启期数据
+     *
+     * @字段说明 diskPersistent
+     */
     @XmlAttribute
     private boolean diskPersistent;
 
     /**
-     * diskExpiryThreadIntervalSeconds：磁盘失效线程运行时间间隔，默认是120秒。 
-    * @字段说明 diskExpiryThreadIntervalSeconds
-    */
+     * diskExpiryThreadIntervalSeconds：磁盘失效线程运行时间间隔，默认是120秒。
+     *
+     * @字段说明 diskExpiryThreadIntervalSeconds
+     */
     @XmlAttribute
     private int diskExpiryThreadIntervalSeconds;
 
     /**
-     *  memoryStoreEvictionPolicy：当达到maxElementsInMemory限制时，
-     *  Ehcache将会根据指定的策略去清理内存。默认策略是LRU（最近最少使用）。
-     *  你可以设置为FIFO（先进先出）或是LFU（较少使用）。    
-    * @字段说明 memoryStoreEvictionPolicy
-    */
+     * memoryStoreEvictionPolicy：当达到maxElementsInMemory限制时，
+     * Ehcache将会根据指定的策略去清理内存。默认策略是LRU（最近最少使用）。
+     * 你可以设置为FIFO（先进先出）或是LFU（较少使用）。
+     *
+     * @字段说明 memoryStoreEvictionPolicy
+     */
     @XmlAttribute
     private String memoryStoreEvictionPolicy;
 

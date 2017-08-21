@@ -64,16 +64,16 @@ public class ByteUtil {
     public static long readLength(byte[] data, int offset) {
         int length = data[offset++] & 0xff;
         switch (length) {
-        case 251:
-            return MySQLMessage.NULL_LENGTH;
-        case 252:
-            return readUB2(data, offset);
-        case 253:
-            return readUB3(data, offset);
-        case 254:
-            return readLong(data, offset);
-        default:
-            return length;
+            case 251:
+                return MySQLMessage.NULL_LENGTH;
+            case 252:
+                return readUB2(data, offset);
+            case 253:
+                return readUB3(data, offset);
+            case 254:
+                return readLong(data, offset);
+            default:
+                return length;
         }
     }
 

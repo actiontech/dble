@@ -59,7 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceHandler.class);
-    private final static String PATH = KVPathUtil.getSequencesIncrPath()+ "/";
+    private final static String PATH = KVPathUtil.getSequencesIncrPath() + "/";
     private final static String LOCK = "/lock";
     private final static String SEQ = "/seq";
     private final static IncrSequenceZKHandler instance = new IncrSequenceZKHandler();
@@ -77,7 +77,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     public void load(boolean isLowerCaseTableNames) {
         props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ZkConfig.getInstance().getZkURL();
-        if(zkAddress==null){
+        if (zkAddress == null) {
             throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
         }
         try {
@@ -170,7 +170,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             if (paraValMap == null) {
                 throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
             }
-            
+
             if (paraValMap.get(prefixName + KEY_MAX_NAME) == null) {
                 paraValMap.put(prefixName + KEY_MAX_NAME, props.getProperty(prefixName + KEY_MAX_NAME));
             }
@@ -180,7 +180,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             if (paraValMap.get(prefixName + KEY_CUR_NAME) == null) {
                 paraValMap.put(prefixName + KEY_CUR_NAME, props.getProperty(prefixName + KEY_CUR_NAME));
             }
-            
+
             long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME)) - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
             long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
             client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
@@ -190,7 +190,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
 
         } catch (Exception e) {
-            	LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
+            LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
         } finally {
             try {
                 interProcessSemaphoreMutex.release();

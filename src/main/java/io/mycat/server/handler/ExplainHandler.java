@@ -299,14 +299,14 @@ public class ExplainHandler {
             return MycatServer.getInstance().getRouterService()
                     .route(schema, sqlType, stmt, c.getCharset(), c);
         } catch (Exception e) {
-            if(e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
-                SQLException sqle = (SQLException)e;
+            if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
+                SQLException sqle = (SQLException) e;
                 StringBuilder s = new StringBuilder();
                 logger.warn(s.append(c).append(stmt).toString() + " error:" + sqle);
                 String msg = sqle.getMessage();
                 c.writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
                 return null;
-            }else {
+            } else {
                 StringBuilder s = new StringBuilder();
                 logger.warn(s.append(c).append(stmt).toString() + " error:" + e);
                 String msg = e.getMessage();
@@ -316,7 +316,7 @@ public class ExplainHandler {
         }
     }
 
-    private static boolean isInsertSeq(ServerConnection c,String stmt, SchemaConfig schema) throws SQLException {
+    private static boolean isInsertSeq(ServerConnection c, String stmt, SchemaConfig schema) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         MySqlInsertStatement statement = (MySqlInsertStatement) parser.parseStatement();
         String schemaName = schema == null ? null : schema.getName();

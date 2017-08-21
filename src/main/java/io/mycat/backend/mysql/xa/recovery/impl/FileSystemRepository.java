@@ -1,24 +1,5 @@
 package io.mycat.backend.mysql.xa.recovery.impl;
 
-import java.io.BufferedReader;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectStreamException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.xa.CoordinatorLogEntry;
 import io.mycat.backend.mysql.xa.Deserializer;
@@ -28,11 +9,21 @@ import io.mycat.backend.mysql.xa.recovery.DeserialisationException;
 import io.mycat.backend.mysql.xa.recovery.Repository;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SystemConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by zhangchao on 2016/10/13.
  */
-public class FileSystemRepository implements Repository{
+public class FileSystemRepository implements Repository {
     public static final Logger logger = LoggerFactory.getLogger(FileSystemRepository.class);
     private VersionedFile file;
     private FileChannel rwChannel = null;
@@ -42,11 +33,11 @@ public class FileSystemRepository implements Repository{
     }
 
     @Override
-    public void init(){
+    public void init() {
         MycatConfig mycatconfig = MycatServer.getInstance().getConfig();
         SystemConfig systemConfig = mycatconfig.getSystem();
 
-        String baseDir =systemConfig.getXARecoveryLogBaseDir();
+        String baseDir = systemConfig.getXARecoveryLogBaseDir();
         String baseName = systemConfig.getXARecoveryLogBaseName();
 
         logger.debug("baseDir " + baseDir);
@@ -66,7 +57,7 @@ public class FileSystemRepository implements Repository{
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
-            logger.error(e.getMessage(),e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -192,37 +183,37 @@ public class FileSystemRepository implements Repository{
         }
     }
 
-	@Override
-	public boolean writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) {
-		try {
-			closeOutput();
-			file.rotateFileVersion();
-			rwChannel = file.openNewVersionForNioWriting();
-			for (CoordinatorLogEntry coordinatorLogEntry : checkpointContent) {
-				write(coordinatorLogEntry, false);
-			}
-			rwChannel.force(false);
-			file.discardBackupVersion();
-			return true;
-		}catch (Exception e) {
-			logger.warn("Failed to write checkpoint", e);
-			return false;
-		}
-	}
+    @Override
+    public boolean writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent) {
+        try {
+            closeOutput();
+            file.rotateFileVersion();
+            rwChannel = file.openNewVersionForNioWriting();
+            for (CoordinatorLogEntry coordinatorLogEntry : checkpointContent) {
+                write(coordinatorLogEntry, false);
+            }
+            rwChannel.force(false);
+            file.discardBackupVersion();
+            return true;
+        } catch (Exception e) {
+            logger.warn("Failed to write checkpoint", e);
+            return false;
+        }
+    }
 
     /**
      * create the log base dir
      */
-    private void createBaseDir(String baseDir){
+    private void createBaseDir(String baseDir) {
         File baseDirFolder = new File(baseDir);
         if (!baseDirFolder.exists()) {
             baseDirFolder.mkdirs();
         }
     }
 
-	@Override
-	public void remove(String id) {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public void remove(String id) {
+        throw new UnsupportedOperationException();
+    }
 
 }

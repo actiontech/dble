@@ -23,17 +23,6 @@
  */
 package io.mycat.net;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.backend.mysql.nio.MySQLConnection;
@@ -43,216 +32,226 @@ import io.mycat.server.ServerConnection;
 import io.mycat.statistic.CommandCount;
 import io.mycat.util.NameableExecutor;
 import io.mycat.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author mycat
  */
 public final class NIOProcessor {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger("NIOProcessor");
-	
-	private final String name;
-	private final BufferPool bufferPool;
-	private final NameableExecutor executor;
-	private final ConcurrentMap<Long, FrontendConnection> frontends;
-	private final ConcurrentMap<Long, BackendConnection> backends;
-	private final CommandCount commands;
-	private long netInBytes;
-	private long netOutBytes;
-	
-	// TODO: add by zhuam
-	// reload @@config_all 后, 老的backends  全部移往 backends_old, 待检测任务进行销毁
-	public final static ConcurrentLinkedQueue<BackendConnection> backends_old = new ConcurrentLinkedQueue<BackendConnection>();
 
-	//前端已连接数
-	private AtomicInteger frontendsLength = new AtomicInteger(0);
+    private static final Logger LOGGER = LoggerFactory.getLogger("NIOProcessor");
 
-	public NIOProcessor(String name, BufferPool bufferPool,
-			NameableExecutor executor) throws IOException {
-		this.name = name;
-		this.bufferPool = bufferPool;
-		this.executor = executor;
-		this.frontends = new ConcurrentHashMap<Long, FrontendConnection>();
-		this.backends = new ConcurrentHashMap<Long, BackendConnection>();
-		this.commands = new CommandCount();
-	}
+    private final String name;
+    private final BufferPool bufferPool;
+    private final NameableExecutor executor;
+    private final ConcurrentMap<Long, FrontendConnection> frontends;
+    private final ConcurrentMap<Long, BackendConnection> backends;
+    private final CommandCount commands;
+    private long netInBytes;
+    private long netOutBytes;
 
-	public String getName() {
-		return name;
-	}
+    // TODO: add by zhuam
+    // reload @@config_all 后, 老的backends  全部移往 backends_old, 待检测任务进行销毁
+    public final static ConcurrentLinkedQueue<BackendConnection> backends_old = new ConcurrentLinkedQueue<BackendConnection>();
 
-	public BufferPool getBufferPool() {
-		return bufferPool;
-	}
+    //前端已连接数
+    private AtomicInteger frontendsLength = new AtomicInteger(0);
 
-	public int getWriteQueueSize() {
-		int total = 0;
-		for (FrontendConnection fron : frontends.values()) {
-			total += fron.getWriteQueue().size();
-		}
-		for (BackendConnection back : backends.values()) {
-			if (back instanceof BackendAIOConnection) {
-				total += ((BackendAIOConnection) back).getWriteQueue().size();
-			}
-		}
-		return total;
+    public NIOProcessor(String name, BufferPool bufferPool,
+                        NameableExecutor executor) throws IOException {
+        this.name = name;
+        this.bufferPool = bufferPool;
+        this.executor = executor;
+        this.frontends = new ConcurrentHashMap<Long, FrontendConnection>();
+        this.backends = new ConcurrentHashMap<Long, BackendConnection>();
+        this.commands = new CommandCount();
+    }
 
-	}
+    public String getName() {
+        return name;
+    }
 
-	public NameableExecutor getExecutor() {
-		return this.executor;
-	}
+    public BufferPool getBufferPool() {
+        return bufferPool;
+    }
 
-	public CommandCount getCommands() {
-		return this.commands;
-	}
+    public int getWriteQueueSize() {
+        int total = 0;
+        for (FrontendConnection fron : frontends.values()) {
+            total += fron.getWriteQueue().size();
+        }
+        for (BackendConnection back : backends.values()) {
+            if (back instanceof BackendAIOConnection) {
+                total += ((BackendAIOConnection) back).getWriteQueue().size();
+            }
+        }
+        return total;
 
-	public long getNetInBytes() {
-		return this.netInBytes;
-	}
+    }
 
-	public void addNetInBytes(long bytes) {
-		this.netInBytes += bytes;
-	}
+    public NameableExecutor getExecutor() {
+        return this.executor;
+    }
 
-	public long getNetOutBytes() {
-		return this.netOutBytes;
-	}
+    public CommandCount getCommands() {
+        return this.commands;
+    }
 
-	public void addNetOutBytes(long bytes) {
-		this.netOutBytes += bytes;
-	}
+    public long getNetInBytes() {
+        return this.netInBytes;
+    }
 
-	public void addFrontend(FrontendConnection c) {
-		this.frontends.put(c.getId(), c);
-		this.frontendsLength.incrementAndGet();
-	}
+    public void addNetInBytes(long bytes) {
+        this.netInBytes += bytes;
+    }
 
-	public ConcurrentMap<Long, FrontendConnection> getFrontends() {
-		return this.frontends;
-	}
-	
-	public int getForntedsLength(){
-		return this.frontendsLength.get();
-	}
+    public long getNetOutBytes() {
+        return this.netOutBytes;
+    }
 
-	public void addBackend(BackendConnection c) {
-		this.backends.put(c.getId(), c);
-	}
+    public void addNetOutBytes(long bytes) {
+        this.netOutBytes += bytes;
+    }
 
-	public ConcurrentMap<Long, BackendConnection> getBackends() {
-		return this.backends;
-	}
+    public void addFrontend(FrontendConnection c) {
+        this.frontends.put(c.getId(), c);
+        this.frontendsLength.incrementAndGet();
+    }
 
-	/**
-	 * 定时执行该方法，回收部分资源。
-	 */
-	public void checkBackendCons() {
-		backendCheck();
-	}
+    public ConcurrentMap<Long, FrontendConnection> getFrontends() {
+        return this.frontends;
+    }
 
-	/**
-	 * 定时执行该方法，回收部分资源。
-	 */
-	public void checkFrontCons() {
-		frontendCheck();
-	}
+    public int getForntedsLength() {
+        return this.frontendsLength.get();
+    }
 
-	// 前端连接检查
-	private void frontendCheck() {
-		Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet()
-				.iterator();
-		while (it.hasNext()) {
-			FrontendConnection c = it.next().getValue();
+    public void addBackend(BackendConnection c) {
+        this.backends.put(c.getId(), c);
+    }
 
-			// 删除空连接
-			if (c == null) {
-				it.remove();
-				this.frontendsLength.decrementAndGet();
-				continue;
-			}
-			// 清理已关闭连接，否则空闲检查。
-			if (c.isClosed()) {
-				c.cleanup();
-				it.remove();
-				this.frontendsLength.decrementAndGet();
-			} else {
-				// very important ,for some data maybe not sent
-				checkConSendQueue(c);
-				if (c instanceof ServerConnection && c.isIdleTimeout()) {
-					ServerConnection s = (ServerConnection) c;
-					TxState state = s.getSession2().getXaState();
-					if (state != null && state != TxState.TX_INITIALIZE_STATE) {
-						if (state != TxState.TX_COMMIT_FAILED_STATE && state != TxState.TX_ROLLBACK_FAILED_STATE) {
-							// Active/IDLE/PREPARED XA FrontendS will be rollbacked
-							s.close("Idle Timeout");
-							MycatServer.getInstance().getXaSessionCheck().addRollbackSession(s.getSession2());
-						}
-						continue;
-					}
-				}
-				c.idleCheck();
-			}
-		}
-	}
+    public ConcurrentMap<Long, BackendConnection> getBackends() {
+        return this.backends;
+    }
 
-	private void checkConSendQueue(AbstractConnection c) {
-		// very important ,for some data maybe not sent
-		if (!c.writeQueue.isEmpty()) {
-			c.getSocketWR().doNextWriteCheck();
-		}
-	}
+    /**
+     * 定时执行该方法，回收部分资源。
+     */
+    public void checkBackendCons() {
+        backendCheck();
+    }
 
-	// 后端连接检查
-	private void backendCheck() {
-		long sqlTimeout = MycatServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
-		Iterator<Entry<Long, BackendConnection>> it = backends.entrySet().iterator();
-		while (it.hasNext()) {
-			BackendConnection c = it.next().getValue();
+    /**
+     * 定时执行该方法，回收部分资源。
+     */
+    public void checkFrontCons() {
+        frontendCheck();
+    }
 
-			// 删除空连接
-			if (c == null) {
-				it.remove();
-				continue;
-			}
-			//Active/IDLE/PREPARED XA backends will not be checked
-			if (c instanceof MySQLConnection) {
-				MySQLConnection m = (MySQLConnection) c;
-				if (m.isClosedOrQuit()) {
-					it.remove();
-					continue;
-				}
-				if (m.getXaStatus() != null && m.getXaStatus() != TxState.TX_INITIALIZE_STATE) {
-					continue;
-				}
-			}
-			// SQL执行超时的连接关闭
-			if (!c.isDDL() && c.isBorrowed() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
-				LOGGER.warn("found backend connection SQL timeout ,close it " + c);
-				c.close("sql timeout");
-			}
+    // 前端连接检查
+    private void frontendCheck() {
+        Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet()
+                .iterator();
+        while (it.hasNext()) {
+            FrontendConnection c = it.next().getValue();
 
-			// 清理已关闭连接，否则空闲检查。
-			if (c.isClosed()) {
-				it.remove();
-			} else {
-				// very important ,for some data maybe not sent
-				if (c instanceof AbstractConnection) {
-					checkConSendQueue((AbstractConnection) c);
-				}
-				c.idleCheck();
-			}
-		}
-	}
+            // 删除空连接
+            if (c == null) {
+                it.remove();
+                this.frontendsLength.decrementAndGet();
+                continue;
+            }
+            // 清理已关闭连接，否则空闲检查。
+            if (c.isClosed()) {
+                c.cleanup();
+                it.remove();
+                this.frontendsLength.decrementAndGet();
+            } else {
+                // very important ,for some data maybe not sent
+                checkConSendQueue(c);
+                if (c instanceof ServerConnection && c.isIdleTimeout()) {
+                    ServerConnection s = (ServerConnection) c;
+                    TxState state = s.getSession2().getXaState();
+                    if (state != null && state != TxState.TX_INITIALIZE_STATE) {
+                        if (state != TxState.TX_COMMIT_FAILED_STATE && state != TxState.TX_ROLLBACK_FAILED_STATE) {
+                            // Active/IDLE/PREPARED XA FrontendS will be rollbacked
+                            s.close("Idle Timeout");
+                            MycatServer.getInstance().getXaSessionCheck().addRollbackSession(s.getSession2());
+                        }
+                        continue;
+                    }
+                }
+                c.idleCheck();
+            }
+        }
+    }
 
-	public void removeConnection(AbstractConnection con) {
-		if (con instanceof BackendConnection) {
-			this.backends.remove(con.getId());
-		} else {
-			this.frontends.remove(con.getId());
-			this.frontendsLength.decrementAndGet();
-		}
+    private void checkConSendQueue(AbstractConnection c) {
+        // very important ,for some data maybe not sent
+        if (!c.writeQueue.isEmpty()) {
+            c.getSocketWR().doNextWriteCheck();
+        }
+    }
 
-	}
-	
+    // 后端连接检查
+    private void backendCheck() {
+        long sqlTimeout = MycatServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
+        Iterator<Entry<Long, BackendConnection>> it = backends.entrySet().iterator();
+        while (it.hasNext()) {
+            BackendConnection c = it.next().getValue();
+
+            // 删除空连接
+            if (c == null) {
+                it.remove();
+                continue;
+            }
+            //Active/IDLE/PREPARED XA backends will not be checked
+            if (c instanceof MySQLConnection) {
+                MySQLConnection m = (MySQLConnection) c;
+                if (m.isClosedOrQuit()) {
+                    it.remove();
+                    continue;
+                }
+                if (m.getXaStatus() != null && m.getXaStatus() != TxState.TX_INITIALIZE_STATE) {
+                    continue;
+                }
+            }
+            // SQL执行超时的连接关闭
+            if (!c.isDDL() && c.isBorrowed() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
+                LOGGER.warn("found backend connection SQL timeout ,close it " + c);
+                c.close("sql timeout");
+            }
+
+            // 清理已关闭连接，否则空闲检查。
+            if (c.isClosed()) {
+                it.remove();
+            } else {
+                // very important ,for some data maybe not sent
+                if (c instanceof AbstractConnection) {
+                    checkConSendQueue((AbstractConnection) c);
+                }
+                c.idleCheck();
+            }
+        }
+    }
+
+    public void removeConnection(AbstractConnection con) {
+        if (con instanceof BackendConnection) {
+            this.backends.remove(con.getId());
+        } else {
+            this.frontends.remove(con.getId());
+            this.frontendsLength.decrementAndGet();
+        }
+
+    }
+
 }

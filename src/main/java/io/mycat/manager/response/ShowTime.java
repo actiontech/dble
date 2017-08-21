@@ -23,8 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -38,6 +36,8 @@ import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author mycat
  */
@@ -47,6 +47,7 @@ public final class ShowTime {
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
+
     static {
         int i = 0;
         byte packetId = 0;
@@ -62,42 +63,42 @@ public final class ShowTime {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c,true);
+        buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c,true);
+            buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c,true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
         byte packetId = eof.packetId;
-        RowDataPacket row = getRow(type,c.getCharset());
+        RowDataPacket row = getRow(type, c.getCharset());
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c,true);
+        buffer = row.write(buffer, c, true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c,true);
+        buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int type,String charset) {
+    private static RowDataPacket getRow(int type, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         switch (type) {
-        case ManagerParseShow.TIME_CURRENT:
-            row.add(StringUtil.encode(FormatUtil.formatDate(System.currentTimeMillis()), charset));
-            break;
-        case ManagerParseShow.TIME_STARTUP:
-            row.add(StringUtil.encode(FormatUtil.formatDate(MycatServer.getInstance().getStartupTime()), charset));
-            break;
-        default:
-            row.add(LongUtil.toBytes(0L));
+            case ManagerParseShow.TIME_CURRENT:
+                row.add(StringUtil.encode(FormatUtil.formatDate(System.currentTimeMillis()), charset));
+                break;
+            case ManagerParseShow.TIME_STARTUP:
+                row.add(StringUtil.encode(FormatUtil.formatDate(MycatServer.getInstance().getStartupTime()), charset));
+                break;
+            default:
+                row.add(LongUtil.toBytes(0L));
         }
         return row;
     }

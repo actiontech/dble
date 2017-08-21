@@ -23,29 +23,28 @@
  */
 package io.mycat.net.factory;
 
+import io.mycat.MycatServer;
+import io.mycat.net.FrontendConnection;
+
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
-
-import io.mycat.MycatServer;
-import io.mycat.net.FrontendConnection;
 
 /**
  * @author mycat
  */
 public abstract class FrontendConnectionFactory {
-	protected abstract FrontendConnection getConnection(NetworkChannel channel)
-			throws IOException;
+    protected abstract FrontendConnection getConnection(NetworkChannel channel)
+            throws IOException;
 
-	public FrontendConnection make(NetworkChannel channel) throws IOException {
-		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+    public FrontendConnection make(NetworkChannel channel) throws IOException {
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
-		FrontendConnection c = getConnection(channel);
-		MycatServer.getInstance().getConfig().setSocketParams(c, true);
-		return c;
-	}
+        FrontendConnection c = getConnection(channel);
+        MycatServer.getInstance().getConfig().setSocketParams(c, true);
+        return c;
+    }
 
-	
 
 }

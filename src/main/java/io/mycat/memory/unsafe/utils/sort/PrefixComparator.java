@@ -23,5 +23,5 @@ package io.mycat.memory.unsafe.utils.sort;
  */
 
 public abstract class PrefixComparator {
-  public abstract int compare(long prefix1, long prefix2);
+    public abstract int compare(long prefix1, long prefix2);
 }

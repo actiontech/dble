@@ -36,7 +36,9 @@ public class BindValue {
     public int type; /* data type */
     public byte scale;
 
-    /** 数据值 **/
+    /**
+     * 数据值
+     **/
     public byte byteBinding;
     public short shortBinding;
     public int intBinding;

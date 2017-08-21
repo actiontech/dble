@@ -23,19 +23,8 @@
  */
 package io.mycat.config.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectStreamClass;
-import java.io.ObjectStreamConstants;
-import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.io.*;
+import java.lang.reflect.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -84,7 +73,7 @@ public class ReflectionProvider {
     }
 
     public void visitSerializableFields(Object object, Visitor visitor) {
-        for (Iterator<Field> iterator = fieldDictionary.serializableFieldsFor(object.getClass()); iterator.hasNext();) {
+        for (Iterator<Field> iterator = fieldDictionary.serializableFieldsFor(object.getClass()); iterator.hasNext(); ) {
             Field field = iterator.next();
             if (!fieldModifiersSupported(field)) {
                 continue;
@@ -115,8 +104,8 @@ public class ReflectionProvider {
 
     public void invokeMethod(Object object, String methodName, Object value, Class<?> definedIn) {
         try {
-            Method method = object.getClass().getMethod(methodName, new Class[] { value.getClass() });
-            method.invoke(object, new Object[] { value });
+            Method method = object.getClass().getMethod(methodName, new Class[]{value.getClass()});
+            method.invoke(object, new Object[]{value});
         } catch (Exception e) {
             throw new ObjectAccessException("Could not invoke " + object.getClass() + "." + methodName, e);
         }

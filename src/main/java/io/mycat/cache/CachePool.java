@@ -25,19 +25,18 @@ package io.mycat.cache;
 
 /**
  * simple cache pool for implement
- * 
+ *
  * @author wuzhih
- * 
  */
 public interface CachePool {
 
-	public void putIfAbsent(Object key, Object value);
+    public void putIfAbsent(Object key, Object value);
 
-	public Object get(Object key);
+    public Object get(Object key);
 
-	public void clearCache();
+    public void clearCache();
 
-	public CacheStatic getCacheStatic();
+    public CacheStatic getCacheStatic();
 
-	public long getMaxSize();
+    public long getMaxSize();
 }

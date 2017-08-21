@@ -1,28 +1,28 @@
 package io.mycat.backend.mysql.nio.handler.query;
 
-import java.util.Set;
-
 import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 
+import java.util.Set;
+
 public interface DMLResponseHandler extends ResponseHandler {
-	public enum HandlerType {
-		DIRECT, TEMPTABLE, BASESEL, REFRESHFP, MERGE, JOIN, WHERE, GROUPBY, HAVING, ORDERBY, LIMIT, UNION, DISTINCT, SENDMAKER, FINAL
-	}
+    public enum HandlerType {
+        DIRECT, TEMPTABLE, BASESEL, REFRESHFP, MERGE, JOIN, WHERE, GROUPBY, HAVING, ORDERBY, LIMIT, UNION, DISTINCT, SENDMAKER, FINAL
+    }
 
-	HandlerType type();
+    HandlerType type();
 
-	DMLResponseHandler getNextHandler();
+    DMLResponseHandler getNextHandler();
 
-	void setNextHandler(DMLResponseHandler next);
+    void setNextHandler(DMLResponseHandler next);
 
-	Set<DMLResponseHandler> getMerges();
+    Set<DMLResponseHandler> getMerges();
 
-	boolean isAllPushDown();
+    boolean isAllPushDown();
 
-	void setAllPushDown(boolean allPushDown);
+    void setAllPushDown(boolean allPushDown);
 
-	void setLeft(boolean isLeft);
+    void setLeft(boolean isLeft);
 
-	void terminate();
+    void terminate();
 
 }

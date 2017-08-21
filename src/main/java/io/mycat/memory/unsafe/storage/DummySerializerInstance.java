@@ -18,7 +18,6 @@
 package io.mycat.memory.unsafe.storage;
 
 
-
 import io.mycat.memory.unsafe.Platform;
 
 import java.io.IOException;
@@ -35,59 +34,60 @@ import java.nio.ByteBuffer;
 
 public final class DummySerializerInstance extends SerializerInstance {
 
-  public static final DummySerializerInstance INSTANCE = new DummySerializerInstance();
+    public static final DummySerializerInstance INSTANCE = new DummySerializerInstance();
 
-  private DummySerializerInstance() { }
+    private DummySerializerInstance() {
+    }
 
-  @Override
-  public SerializationStream serializeStream(final OutputStream s) {
-    return new SerializationStream() {
-      @Override
-      public SerializationStream writeObject(Object o) {
-        return null;
-      }
+    @Override
+    public SerializationStream serializeStream(final OutputStream s) {
+        return new SerializationStream() {
+            @Override
+            public SerializationStream writeObject(Object o) {
+                return null;
+            }
 
-      @Override
-      public void flush() {
-        // Need to implement this because DiskObjectWriter uses it to flush the compression stream
-        try {
-          s.flush();
-        } catch (IOException e) {
-          Platform.throwException(e);
-        }
-      }
+            @Override
+            public void flush() {
+                // Need to implement this because DiskObjectWriter uses it to flush the compression stream
+                try {
+                    s.flush();
+                } catch (IOException e) {
+                    Platform.throwException(e);
+                }
+            }
 //      public <T> SerializationStream writeObject(T t, T ev1) {
 //        throw new UnsupportedOperationException();
 //      }
 
-      @Override
-      public void close() {
-        // Need to implement this because DiskObjectWriter uses it to close the compression stream
-        try {
-          s.close();
-        } catch (IOException e) {
-          Platform.throwException(e);
-        }
-      }
-    };
-  }
+            @Override
+            public void close() {
+                // Need to implement this because DiskObjectWriter uses it to close the compression stream
+                try {
+                    s.close();
+                } catch (IOException e) {
+                    Platform.throwException(e);
+                }
+            }
+        };
+    }
 
 
-  public <T> ByteBuffer serialize(T t, T ev1) {
-    throw new UnsupportedOperationException();
-  }
+    public <T> ByteBuffer serialize(T t, T ev1) {
+        throw new UnsupportedOperationException();
+    }
 
 
-  public DeserializationStream deserializeStream(InputStream s) {
-    throw new UnsupportedOperationException();
-  }
+    public DeserializationStream deserializeStream(InputStream s) {
+        throw new UnsupportedOperationException();
+    }
 
 
-  public <T> T deserialize(ByteBuffer bytes, ClassLoader loader, T ev1) {
-    throw new UnsupportedOperationException();
-  }
+    public <T> T deserialize(ByteBuffer bytes, ClassLoader loader, T ev1) {
+        throw new UnsupportedOperationException();
+    }
 
-  public <T> T deserialize(ByteBuffer bytes, T ev1) {
-    throw new UnsupportedOperationException();
-  }
+    public <T> T deserialize(ByteBuffer bytes, T ev1) {
+        throw new UnsupportedOperationException();
+    }
 }

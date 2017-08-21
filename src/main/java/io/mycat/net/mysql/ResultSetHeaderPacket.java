@@ -23,33 +23,33 @@
  */
 package io.mycat.net.mysql;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
 import io.mycat.net.FrontendConnection;
+
+import java.nio.ByteBuffer;
 
 /**
  * From server to client after command, if no error and result set -- that is,
  * if the command was a query which returned a result set. The Result Set Header
  * Packet is the first of several, possibly many, packets that the server sends
  * for result sets. The order of packets for a result set is:
- * 
+ * <p>
  * <pre>
  * (Result Set Header Packet)   the number of columns
  * (Field Packets)              column descriptors
  * (EOF Packet)                 marker: end of Field Packets
  * (Row Data Packets)           row contents
  * (EOF Packet)                 marker: end of Data Packets
- * 
+ *
  * Bytes                        Name
  * -----                        ----
  * 1-9   (Length-Coded-Binary)  field_count
  * 1-9   (Length-Coded-Binary)  extra
- * 
+ *
  * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Result_Set_Header_Packet
  * </pre>
- * 
+ *
  * @author mycat
  */
 public class ResultSetHeaderPacket extends MySQLPacket {
@@ -68,9 +68,9 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     }
 
     @Override
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,writeSocketIfFull);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         BufferUtil.writeLength(buffer, fieldCount);
@@ -95,6 +95,5 @@ public class ResultSetHeaderPacket extends MySQLPacket {
         return "MySQL ResultSetHeader Packet";
     }
 
-	
 
 }

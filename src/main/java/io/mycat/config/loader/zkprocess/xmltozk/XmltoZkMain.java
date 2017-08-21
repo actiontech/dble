@@ -24,6 +24,7 @@ public class XmltoZkMain {
         ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ConfStatus.Status.ROLLBACK);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
+
     public static void writeConfFileToZK(boolean isAll) throws Exception {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
@@ -52,6 +53,7 @@ public class XmltoZkMain {
         ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), isAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
+
     public static void initFileToZK() throws Exception {
         // 加载zk总服务
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();

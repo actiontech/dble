@@ -12,18 +12,18 @@ import java.io.OutputStream;
  */
 public class SerializerManagerTest {
     @Test
-    public  void testNewSerializerManager() throws IOException {
+    public void testNewSerializerManager() throws IOException {
         SerializerManager serializerManager = new SerializerManager();
         final int[] value = new int[1];
         OutputStream s = serializerManager.wrapForCompression(null, new OutputStream() {
             @Override
             public void write(int b) throws IOException {
-                     value[0] = b;
+                value[0] = b;
             }
         });
 
         s.write(10);
-        Assert.assertEquals(10,value[0]);
+        Assert.assertEquals(10, value[0]);
 
         InputStream in = serializerManager.wrapForCompression(null, new InputStream() {
             @Override
@@ -31,6 +31,6 @@ public class SerializerManagerTest {
                 return 10;
             }
         });
-        Assert.assertEquals(10,in.read());
+        Assert.assertEquals(10, in.read());
     }
 }

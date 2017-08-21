@@ -23,19 +23,21 @@
  */
 package io.mycat.config.loader.xml;
 
-import java.util.Map;
-
 import io.mycat.config.model.FirewallConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.config.model.UserConfig;
 
+import java.util.Map;
+
 /**
  * @author mycat
  */
-public class XMLConfigLoader{
+public class XMLConfigLoader {
 
     private final SystemConfig system;
-    /** unmodifiable */
+    /**
+     * unmodifiable
+     */
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 

@@ -8,61 +8,64 @@ import io.mycat.server.NonBlockingSession;
 import io.mycat.util.StringUtil;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
-	protected byte[] sendData;
-	@Override
-	public void clearResources() {
-		sendData = null;
-	}
-	public NormalCommitNodesHandler(NonBlockingSession session) {
-		super(session);
-	}
+    protected byte[] sendData;
 
-	@Override
-	protected boolean executeCommit(MySQLConnection mysqlCon, int position) {
-		mysqlCon.commit();
-		return true;
-	}
-	@Override
-	public void okResponse(byte[] ok, BackendConnection conn) {
-		if (decrementCountBy(1)) {
-			if (sendData == null) {
-				sendData = ok;
-			}
-			cleanAndFeedback();
-		}
-	}
+    @Override
+    public void clearResources() {
+        sendData = null;
+    }
 
-	@Override
-	public void errorResponse(byte[] err, BackendConnection conn) {
-		ErrorPacket errPacket = new ErrorPacket();
-		errPacket.read(err);
-		String errmsg = new String(errPacket.message);
-		this.setFail(errmsg);
-		conn.quit();
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
+    public NormalCommitNodesHandler(NonBlockingSession session) {
+        super(session);
+    }
 
-	@Override
-	public void connectionError(Throwable e, BackendConnection conn) {
-		LOGGER.warn("backend connect", e);
-		String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
-		this.setFail(errmsg);
-		conn.quit();
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
+    @Override
+    protected boolean executeCommit(MySQLConnection mysqlCon, int position) {
+        mysqlCon.commit();
+        return true;
+    }
 
-	@Override
-	public void connectionClose(BackendConnection conn, String reason) {
-		this.setFail(reason);
-		conn.quit();
-		if (decrementCountBy(1)) {
-			cleanAndFeedback();
-		}
-	}
+    @Override
+    public void okResponse(byte[] ok, BackendConnection conn) {
+        if (decrementCountBy(1)) {
+            if (sendData == null) {
+                sendData = ok;
+            }
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void errorResponse(byte[] err, BackendConnection conn) {
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.read(err);
+        String errmsg = new String(errPacket.message);
+        this.setFail(errmsg);
+        conn.quit();
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void connectionError(Throwable e, BackendConnection conn) {
+        LOGGER.warn("backend connect", e);
+        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
+        this.setFail(errmsg);
+        conn.quit();
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        this.setFail(reason);
+        conn.quit();
+        if (decrementCountBy(1)) {
+            cleanAndFeedback();
+        }
+    }
 
 //	@Override
 //	protected void cleanAndFeedback() {
@@ -80,17 +83,17 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 //		}
 //	}
 
-	private void cleanAndFeedback() {
-		byte[] send = sendData;
-		// clear all resources
-		session.clearResources(false);
-		if (session.closed()) {
-			return;
-		}
-		if (this.isFail()) {
-			createErrPkg(error).write(session.getSource());
-		} else {
-			session.getSource().write(send);
-		}
-	}
+    private void cleanAndFeedback() {
+        byte[] send = sendData;
+        // clear all resources
+        session.clearResources(false);
+        if (session.closed()) {
+            return;
+        }
+        if (this.isFail()) {
+            createErrPkg(error).write(session.getSource());
+        } else {
+            session.getSource().write(send);
+        }
+    }
 }

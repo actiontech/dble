@@ -32,7 +32,7 @@ import java.util.Map;
 public class HashMapMain {
 
     public void t() {
-        String[] keys = new String[] { "a", "b", "c", "d", "e" };
+        String[] keys = new String[]{"a", "b", "c", "d", "e"};
         long t = System.currentTimeMillis();
         int count = 1000000;
         Map<String, String> m = new HashMap<String, String>();

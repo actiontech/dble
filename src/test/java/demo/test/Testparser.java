@@ -4,41 +4,8 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCaseExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
-import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNotExpr;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLUnaryExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddColumn;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableAddIndex;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropColumnItem;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropIndex;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropKey;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableDropPrimaryKey;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableItem;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTruncateStatement;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.MysqlForeignKey;
@@ -48,15 +15,15 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 public class Testparser {
-	public static void main(String args[]) {
-		Testparser obj = new Testparser();
+    public static void main(String args[]) {
+        Testparser obj = new Testparser();
 //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 //		obj.test("drop table char_columns_test;");
 //		obj.test("truncate table char_columns_test;");
-		String strShowSql ="";
-		strShowSql ="show create table a;";
-		obj.test(strShowSql);
+        String strShowSql = "";
+        strShowSql = "show create table a;";
+        obj.test(strShowSql);
 //		strShowSql ="show full columns from char_columns2 from ares_test like 'i%';";
 //		obj.test(strShowSql);
 //		strShowSql ="show full columns from char_columns2 from ares_test where Field='id';";
@@ -89,10 +56,10 @@ public class Testparser {
 //
 //		strULSql ="explain select * from a;";
 //		obj.test(strULSql);
-		
+
 //		obj.test("create index idx_test on char_columns_test(id) ;");
 //		obj.test("drop index  idx_test on char_columns_test;");
-		String strAlterSql ="";
+        String strAlterSql = "";
 //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x;";
 //		obj.test(strAlterSql);
 //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL,id3 int(11) NOT NULL;";
@@ -131,8 +98,8 @@ public class Testparser {
 //		obj.test(strAlterSql);
 //		strAlterSql = "ALTER TABLE test_yhq.char_columns1 RENAME  AS  test_yhq2.char_columns1_1;";
 //		obj.test(strAlterSql);
-		
-		String strDeleteSql ="";
+
+        String strDeleteSql = "";
 //		strDeleteSql = "delete a from  test_yhq.char_columns1 a where 1=1;";
 //		obj.test(strDeleteSql);
 //		strDeleteSql = "delete from  test_yhq.char_columns1 where 1=1;";
@@ -147,9 +114,8 @@ public class Testparser {
 //		obj.test(strDeleteSql);
 //		strDeleteSql = "DELETE t1, t2 FROM t1 ,t2 using(id)  where 1=1;";
 //		obj.test(strDeleteSql);
-		
-		
-		
+
+
 //	    String strUpdateSql = "";
 //		strUpdateSql = "UPDATE t1 SET col1 = col1 + 1,col2 = col1 ;";
 //		obj.test(strUpdateSql);
@@ -166,17 +132,17 @@ public class Testparser {
 //		obj.test(strCreateIndex);
 //		strCreateIndex = "CREATE UNIQUE INDEX part_of_name ON customer (name(10));";
 //		obj.test(strCreateIndex);
-		String selectSQl = "select avg(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),"
-				+ "COUNT(char_columns.ID),MAX(distinct char_columns.ID),MIN(distinct char_columns.ID),"
-				+ "STD(char_columns.ID),STDDEV(char_columns.ID),STDDEV_POP(char_columns.ID),STDDEV_SAMP(char_columns.ID), "
-				+ "sum(id),VAR_POP(char_columns.ID),VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID)"
-				+ " from char_columns where id =1  and name = 'x';";
+        String selectSQl = "select avg(char_columns.id), BIT_AND(char_columns.ID),BIT_OR(char_columns.ID),bit_xor(char_columns.ID),"
+                + "COUNT(char_columns.ID),MAX(distinct char_columns.ID),MIN(distinct char_columns.ID),"
+                + "STD(char_columns.ID),STDDEV(char_columns.ID),STDDEV_POP(char_columns.ID),STDDEV_SAMP(char_columns.ID), "
+                + "sum(id),VAR_POP(char_columns.ID),VAR_SAMP(char_columns.ID),VARIANCE(char_columns.ID)"
+                + " from char_columns where id =1  and name = 'x';";
 
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT BINARY 'a' = 'A';";
 //		obj.test(selectSQl);
-		selectSQl = "SELECT b'1000001';";
-		obj.test(selectSQl);
+        selectSQl = "SELECT b'1000001';";
+        obj.test(selectSQl);
 //		selectSQl = "SELECT GET_FORMAT(DATE);";
 //		obj.test(selectSQl);
 //		selectSQl = "select CURRENT_DATE;";//not support
@@ -223,7 +189,7 @@ public class Testparser {
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT  * FROM t1 inner join t2 on t1.id =t2.id WHERE t1.f1 > 30;";
 //		obj.test(selectSQl);
-		
+
 //		selectSQl = "SELECT  id,sum(x),(select * from id) FROM t1 group by id desc having count(*)<3 limit 1;";
 //		obj.test(selectSQl);
 //		selectSQl = "SELECT  id  FROM (select id,name from tb) x   where id =1;";
@@ -298,282 +264,275 @@ public class Testparser {
 //		//not support
 //		selectSQl = "select sql_big_result distinct pad from sbtest1;";
 //		obj.test(selectSQl);
-		
-	}
-	public void test(String sql){
-		System.out.println("-----------------------------------------------------------");
-		System.out.println("-----------------------------------------------------------");
-		System.out.println(sql);
-		SQLStatementParser parser = new MySqlStatementParser(sql);
-		SQLStatement statement = parser.parseStatement();
-		if(statement instanceof MySqlExplainStatement){
-			System.out.println("MySqlExplainStatement"+statement.toString());
-		} else if(statement instanceof MySqlCreateTableStatement){
-			MySqlCreateTableStatement createStment = (MySqlCreateTableStatement)statement;
-			SQLExpr expr = createStment.getTableSource().getExpr();
-			if (expr instanceof SQLPropertyExpr) {
-				SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-				System.out.println((propertyExpr.getOwner().toString()));
-				System.out.println(propertyExpr.getName());
-			} else if (expr instanceof SQLIdentifierExpr) {
-				SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
-				System.out.println(identifierExpr.getName());
-			} else {
-				System.out.println(expr.getClass() + "\n");
-			}
-			
-		}
-		else if (statement instanceof SQLAlterTableStatement) {
-			SQLAlterTableStatement alterStatement = (SQLAlterTableStatement) statement;
-			SQLExprTableSource tableSource = alterStatement.getTableSource();
-			for (SQLAlterTableItem alterItem : alterStatement.getItems()) {
-				if (alterItem instanceof SQLAlterTableAddColumn) {
-					SQLAlterTableAddColumn addColumn = (SQLAlterTableAddColumn) alterItem;
-					boolean isFirst = addColumn.isFirst();
-					SQLName afterColumn = addColumn.getAfterColumn();
-					if (afterColumn != null) {
-						System.out.println(sql + ": afterColumns:\n" + afterColumn.getClass().toString() + "\n");
-					}
-					for (SQLColumnDefinition columnDef : addColumn.getColumns()) {
 
-					}
-				} else if (alterItem instanceof SQLAlterTableAddIndex) {
-					SQLAlterTableAddIndex addIndex = (SQLAlterTableAddIndex) alterItem;
-					SQLName name = addIndex.getName();
-					System.out.println(sql + ":indexname:\n" + name.getClass().toString() + "\n");
-					String type = addIndex.getType();
-					addIndex.isUnique();// ??
-					for(SQLSelectOrderByItem item: addIndex.getItems()){
-						System.out.println(sql + ": item.getExpr():\n" + item.getExpr().getClass().toString() + "\n");
-					}
-				} else if (alterItem instanceof SQLAlterTableAddConstraint) {
-					SQLAlterTableAddConstraint addConstraint = (SQLAlterTableAddConstraint) alterItem;
-					SQLConstraint constraint = addConstraint.getConstraint();
-					if(constraint instanceof MySqlUnique){
-						MySqlUnique unique = (MySqlUnique)constraint;
-						unique.getName();
-					}else if(constraint instanceof MySqlPrimaryKey){
-						
-					}else if(constraint instanceof MysqlForeignKey){
-						System.out.println("NOT SUPPORT\n");
-					}
-					
-					System.out.println(sql + ": constraint:\n" + constraint.getClass().toString() + "\n");
-				} else if (alterItem instanceof SQLAlterTableDropIndex) {
-					SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;
-					SQLIdentifierExpr indexName = (SQLIdentifierExpr)dropIndex.getIndexName();
-					String strIndexName = indexName.getName();
-				} else if (alterItem instanceof SQLAlterTableDropKey) {
-					SQLAlterTableDropKey dropIndex = (SQLAlterTableDropKey) alterItem;
-					SQLIdentifierExpr indexName = (SQLIdentifierExpr)dropIndex.getKeyName();
-					String strIndexName = indexName.getName();
-				} else if (alterItem instanceof MySqlAlterTableChangeColumn) {
-					MySqlAlterTableChangeColumn changeColumn = (MySqlAlterTableChangeColumn) alterItem;
-					boolean isFirst = changeColumn.isFirst();
-					SQLIdentifierExpr afterColumn = (SQLIdentifierExpr)changeColumn.getAfterColumn();
+    }
+
+    public void test(String sql) {
+        System.out.println("-----------------------------------------------------------");
+        System.out.println("-----------------------------------------------------------");
+        System.out.println(sql);
+        SQLStatementParser parser = new MySqlStatementParser(sql);
+        SQLStatement statement = parser.parseStatement();
+        if (statement instanceof MySqlExplainStatement) {
+            System.out.println("MySqlExplainStatement" + statement.toString());
+        } else if (statement instanceof MySqlCreateTableStatement) {
+            MySqlCreateTableStatement createStment = (MySqlCreateTableStatement) statement;
+            SQLExpr expr = createStment.getTableSource().getExpr();
+            if (expr instanceof SQLPropertyExpr) {
+                SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
+                System.out.println((propertyExpr.getOwner().toString()));
+                System.out.println(propertyExpr.getName());
+            } else if (expr instanceof SQLIdentifierExpr) {
+                SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
+                System.out.println(identifierExpr.getName());
+            } else {
+                System.out.println(expr.getClass() + "\n");
+            }
+
+        } else if (statement instanceof SQLAlterTableStatement) {
+            SQLAlterTableStatement alterStatement = (SQLAlterTableStatement) statement;
+            SQLExprTableSource tableSource = alterStatement.getTableSource();
+            for (SQLAlterTableItem alterItem : alterStatement.getItems()) {
+                if (alterItem instanceof SQLAlterTableAddColumn) {
+                    SQLAlterTableAddColumn addColumn = (SQLAlterTableAddColumn) alterItem;
+                    boolean isFirst = addColumn.isFirst();
+                    SQLName afterColumn = addColumn.getAfterColumn();
+                    if (afterColumn != null) {
+                        System.out.println(sql + ": afterColumns:\n" + afterColumn.getClass().toString() + "\n");
+                    }
+                    for (SQLColumnDefinition columnDef : addColumn.getColumns()) {
+
+                    }
+                } else if (alterItem instanceof SQLAlterTableAddIndex) {
+                    SQLAlterTableAddIndex addIndex = (SQLAlterTableAddIndex) alterItem;
+                    SQLName name = addIndex.getName();
+                    System.out.println(sql + ":indexname:\n" + name.getClass().toString() + "\n");
+                    String type = addIndex.getType();
+                    addIndex.isUnique();// ??
+                    for (SQLSelectOrderByItem item : addIndex.getItems()) {
+                        System.out.println(sql + ": item.getExpr():\n" + item.getExpr().getClass().toString() + "\n");
+                    }
+                } else if (alterItem instanceof SQLAlterTableAddConstraint) {
+                    SQLAlterTableAddConstraint addConstraint = (SQLAlterTableAddConstraint) alterItem;
+                    SQLConstraint constraint = addConstraint.getConstraint();
+                    if (constraint instanceof MySqlUnique) {
+                        MySqlUnique unique = (MySqlUnique) constraint;
+                        unique.getName();
+                    } else if (constraint instanceof MySqlPrimaryKey) {
+
+                    } else if (constraint instanceof MysqlForeignKey) {
+                        System.out.println("NOT SUPPORT\n");
+                    }
+
+                    System.out.println(sql + ": constraint:\n" + constraint.getClass().toString() + "\n");
+                } else if (alterItem instanceof SQLAlterTableDropIndex) {
+                    SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;
+                    SQLIdentifierExpr indexName = (SQLIdentifierExpr) dropIndex.getIndexName();
+                    String strIndexName = indexName.getName();
+                } else if (alterItem instanceof SQLAlterTableDropKey) {
+                    SQLAlterTableDropKey dropIndex = (SQLAlterTableDropKey) alterItem;
+                    SQLIdentifierExpr indexName = (SQLIdentifierExpr) dropIndex.getKeyName();
+                    String strIndexName = indexName.getName();
+                } else if (alterItem instanceof MySqlAlterTableChangeColumn) {
+                    MySqlAlterTableChangeColumn changeColumn = (MySqlAlterTableChangeColumn) alterItem;
+                    boolean isFirst = changeColumn.isFirst();
+                    SQLIdentifierExpr afterColumn = (SQLIdentifierExpr) changeColumn.getAfterColumn();
 //					SQLExpr afterColumn = changeColumn.getAfterColumn();
-					if (afterColumn != null) { 
-						String strAfterColumn = afterColumn.getName();
-					}
-					SQLColumnDefinition columnDef = changeColumn.getNewColumnDefinition();
-				} else if (alterItem instanceof MySqlAlterTableModifyColumn) {
-					MySqlAlterTableModifyColumn modifyColumn = (MySqlAlterTableModifyColumn) alterItem;
-					boolean isFirst = modifyColumn.isFirst();
-					SQLExpr afterColumn = modifyColumn.getAfterColumn();
-					if (afterColumn != null) {
-						System.out.println(sql + ": afterColumns:\n" + afterColumn.getClass().toString() + "\n");
-					}
-					SQLColumnDefinition columnDef = modifyColumn.getNewColumnDefinition();
-				} else if (alterItem instanceof SQLAlterTableDropColumnItem) {
-					SQLAlterTableDropColumnItem dropColumn = (SQLAlterTableDropColumnItem) alterItem;
-					for (SQLName dropName : dropColumn.getColumns()) {
-						System.out.println(sql + ":dropName:\n" + dropName.getClass().toString() + "\n");
-					}
-				} else if (alterItem instanceof SQLAlterTableDropPrimaryKey) {
-					SQLAlterTableDropPrimaryKey dropPrimary = (SQLAlterTableDropPrimaryKey) alterItem;
-				} else {
-					System.out.println(sql + ":\n" + alterItem.getClass().toString() + "\n");
-				}
-				System.out.println("\n"+statement.toString());
-			}
-		} else if (statement instanceof SQLDropTableStatement) { 
-		}  else if (statement instanceof SQLTruncateStatement) {
-			//TODO:Sequence?
-		} else if(statement instanceof SQLDropIndexStatement){
-			//TODO
-		}else if(statement instanceof MySqlDeleteStatement){
-			MySqlDeleteStatement deleteStatement = (MySqlDeleteStatement)statement;
-			SQLTableSource tableSource = deleteStatement.getTableSource();
-			
-			System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
-			if(deleteStatement.getFrom()!= null){
-				System.out.println(sql + ":getSchema:" + deleteStatement.getFrom().getClass().toString() + "\n");
-			}
-			System.out.println("\n");
-		} else if(statement instanceof MySqlUpdateStatement){
-			MySqlUpdateStatement updateStatement = (MySqlUpdateStatement)statement;
-			SQLTableSource tableSource = updateStatement.getTableSource();
-			
-			System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
-			System.out.println("\n"+statement.toString());
-			
-		} else if(statement instanceof SQLCreateIndexStatement){
-			SQLCreateIndexStatement stament = (SQLCreateIndexStatement)statement;
-			SQLTableSource tableSource = stament.getTable();
-			System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
-			System.out.println(sql + stament.getType());
-		}else if(statement instanceof SQLSelectStatement){
-			SQLSelectStatement stament = (SQLSelectStatement)statement;
-			SQLSelectQuery sqlSelectQuery  = stament.getSelect().getQuery();
-			if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
-				MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock)sqlSelectQuery;
-				SQLTableSource fromSource = selectQueryBlock.getFrom();
-				if(fromSource instanceof SQLJoinTableSource){
-					SQLJoinTableSource fromJoinSource = (SQLJoinTableSource)fromSource;
-					System.out.println("SQLJoinTableSource:");
-					System.out.println("all:" + fromJoinSource.toString());
-					System.out.println("left:" + fromJoinSource.getLeft().toString() + ",class" + fromJoinSource.getLeft().getClass());
-					System.out.println("right:" + fromJoinSource.getRight().toString() + ",class" + fromJoinSource.getRight().getClass());
-					System.out.println(   "---------------------------" );
-				}
-				for(SQLSelectItem item :selectQueryBlock.getSelectList()){
-					if(item.getExpr()!=null){
-						SQLExpr func = item.getExpr();
-						if(func instanceof SQLAggregateExpr){
-							System.out.println(   "SQLAggregateExpr:" );
-							SQLAggregateExpr agg = (SQLAggregateExpr)func;
-							System.out.println(   "MethodName:" +agg.getMethodName()+",getArguments size ="+agg.getArguments().size()+",Option:"+agg.getOption());
-							System.out.println(   "---------------------------" );
-						}
-						else if(func instanceof SQLMethodInvokeExpr){
-							System.out.println(   "SQLMethodInvokeExpr:" );
-							SQLMethodInvokeExpr method = (SQLMethodInvokeExpr)func;
-							System.out.println(   "MethodName:" +method.getMethodName()+",getArguments size ="+method.getParameters().size()+",OWNER:"+method.getOwner());
-							System.out.println(   "---------------------------" );
-						}else if(func instanceof SQLCastExpr){
-							SQLCastExpr cast = (SQLCastExpr)func;
-							System.out.println(   "SQLCastExpr:" ); 
-							System.out.println(   "Expr:" +cast.getExpr().getClass()+",getDataType:"+cast.getDataType()  );
-							System.out.println(   "---------------------------" ); 
-						}
-						else if(func instanceof SQLBinaryOpExpr){
-							SQLBinaryOpExpr Op = (SQLBinaryOpExpr)func;
-							System.out.println(   "SQLBinaryOpExpr:" ); 
-							System.out.println(   "left:" +Op.getLeft().getClass() );
-							System.out.println(   "right:"+Op.getRight().getClass());
-							System.out.println(   "operator:"+Op.getOperator().getClass() );
-							System.out.println(   "dbtype:"+Op.getDbType()  );
-							System.out.println(   "---------------------------" ); 
-						}else if(func instanceof SQLUnaryExpr){
-							SQLUnaryExpr Op = (SQLUnaryExpr)func;
-							System.out.println(   "SQLUnaryExpr:" ); 
-							System.out.println(   "EXPR:" +Op.getExpr().getClass() );
-							System.out.println(   "operator:"+Op.getOperator().getClass() );
-							System.out.println(   "---------------------------" ); 
-						}
-						else if(func instanceof SQLBetweenExpr){
-							SQLBetweenExpr between = (SQLBetweenExpr)func;
-							System.out.println(   "SQLBetweenExpr:" ); 
-							System.out.println(   "begin EXPR:" +between.getBeginExpr() );
-							System.out.println(   "end EXPR:" +between.getEndExpr());
-							System.out.println(   "isnot :"+between.isNot() );
-							System.out.println(   "test :"+between.getTestExpr() );
-							System.out.println(   "---------------------------" ); 
-						}else if(func instanceof SQLInListExpr){
-							SQLInListExpr in = (SQLInListExpr)func;
-							System.out.println(   "SQLInListExpr:" ); 
-							System.out.println(   "EXPR:" +in.getExpr());
-							System.out.println(   "isnot :"+in.isNot() );
-							System.out.println(   "getTargetList size :"+in.getTargetList().size());
-							System.out.println(   "---------------------------" ); 
-						}else if(func instanceof SQLNotExpr){
-							SQLNotExpr not = (SQLNotExpr)func;
-							System.out.println(   "SQLNotExpr:" ); 
-							System.out.println(   "EXPR:" +not.getExpr());
-							System.out.println(   "---------------------------" ); 
-						}
-						else if(func instanceof MySqlExtractExpr){
-							MySqlExtractExpr extract = (MySqlExtractExpr)func;
-							System.out.println(   "MySqlExtractExpr:" ); 
-							System.out.println(   "value:" +extract.getValue());
-							System.out.println(   "unit:" +extract.getUnit());
-							System.out.println(   "---------------------------" ); 
-						}
-						else if(func instanceof SQLCaseExpr){
-							SQLCaseExpr Case = (SQLCaseExpr)func;
-							System.out.println(   "SQLCaseExpr:" ); 
-							System.out.println(   "value:" +Case.getValueExpr());
-							System.out.println(   "else:" +Case.getElseExpr());
-							System.out.println(   "items size:" +Case.getItems().size());
-							System.out.println(   "---------------------------" ); 
-						}
-						else if(func instanceof SQLVariantRefExpr){
-							SQLVariantRefExpr variant = (SQLVariantRefExpr)func;
-							System.out.println(   "SQLVariantRefExpr:" ); 
-							System.out.println(   "name:" +variant.getName());
-							System.out.println(   "Global:" +variant.isGlobal());
-							System.out.println(   "index:" +variant.getIndex());
-							System.out.println(   "---------------------------" ); 
-						}
+                    if (afterColumn != null) {
+                        String strAfterColumn = afterColumn.getName();
+                    }
+                    SQLColumnDefinition columnDef = changeColumn.getNewColumnDefinition();
+                } else if (alterItem instanceof MySqlAlterTableModifyColumn) {
+                    MySqlAlterTableModifyColumn modifyColumn = (MySqlAlterTableModifyColumn) alterItem;
+                    boolean isFirst = modifyColumn.isFirst();
+                    SQLExpr afterColumn = modifyColumn.getAfterColumn();
+                    if (afterColumn != null) {
+                        System.out.println(sql + ": afterColumns:\n" + afterColumn.getClass().toString() + "\n");
+                    }
+                    SQLColumnDefinition columnDef = modifyColumn.getNewColumnDefinition();
+                } else if (alterItem instanceof SQLAlterTableDropColumnItem) {
+                    SQLAlterTableDropColumnItem dropColumn = (SQLAlterTableDropColumnItem) alterItem;
+                    for (SQLName dropName : dropColumn.getColumns()) {
+                        System.out.println(sql + ":dropName:\n" + dropName.getClass().toString() + "\n");
+                    }
+                } else if (alterItem instanceof SQLAlterTableDropPrimaryKey) {
+                    SQLAlterTableDropPrimaryKey dropPrimary = (SQLAlterTableDropPrimaryKey) alterItem;
+                } else {
+                    System.out.println(sql + ":\n" + alterItem.getClass().toString() + "\n");
+                }
+                System.out.println("\n" + statement.toString());
+            }
+        } else if (statement instanceof SQLDropTableStatement) {
+        } else if (statement instanceof SQLTruncateStatement) {
+            //TODO:Sequence?
+        } else if (statement instanceof SQLDropIndexStatement) {
+            //TODO
+        } else if (statement instanceof MySqlDeleteStatement) {
+            MySqlDeleteStatement deleteStatement = (MySqlDeleteStatement) statement;
+            SQLTableSource tableSource = deleteStatement.getTableSource();
+
+            System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
+            if (deleteStatement.getFrom() != null) {
+                System.out.println(sql + ":getSchema:" + deleteStatement.getFrom().getClass().toString() + "\n");
+            }
+            System.out.println("\n");
+        } else if (statement instanceof MySqlUpdateStatement) {
+            MySqlUpdateStatement updateStatement = (MySqlUpdateStatement) statement;
+            SQLTableSource tableSource = updateStatement.getTableSource();
+
+            System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
+            System.out.println("\n" + statement.toString());
+
+        } else if (statement instanceof SQLCreateIndexStatement) {
+            SQLCreateIndexStatement stament = (SQLCreateIndexStatement) statement;
+            SQLTableSource tableSource = stament.getTable();
+            System.out.println(sql + ":getTableSource:" + tableSource.getClass().toString() + "\n");
+            System.out.println(sql + stament.getType());
+        } else if (statement instanceof SQLSelectStatement) {
+            SQLSelectStatement stament = (SQLSelectStatement) statement;
+            SQLSelectQuery sqlSelectQuery = stament.getSelect().getQuery();
+            if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+                MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
+                SQLTableSource fromSource = selectQueryBlock.getFrom();
+                if (fromSource instanceof SQLJoinTableSource) {
+                    SQLJoinTableSource fromJoinSource = (SQLJoinTableSource) fromSource;
+                    System.out.println("SQLJoinTableSource:");
+                    System.out.println("all:" + fromJoinSource.toString());
+                    System.out.println("left:" + fromJoinSource.getLeft().toString() + ",class" + fromJoinSource.getLeft().getClass());
+                    System.out.println("right:" + fromJoinSource.getRight().toString() + ",class" + fromJoinSource.getRight().getClass());
+                    System.out.println("---------------------------");
+                }
+                for (SQLSelectItem item : selectQueryBlock.getSelectList()) {
+                    if (item.getExpr() != null) {
+                        SQLExpr func = item.getExpr();
+                        if (func instanceof SQLAggregateExpr) {
+                            System.out.println("SQLAggregateExpr:");
+                            SQLAggregateExpr agg = (SQLAggregateExpr) func;
+                            System.out.println("MethodName:" + agg.getMethodName() + ",getArguments size =" + agg.getArguments().size() + ",Option:" + agg.getOption());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLMethodInvokeExpr) {
+                            System.out.println("SQLMethodInvokeExpr:");
+                            SQLMethodInvokeExpr method = (SQLMethodInvokeExpr) func;
+                            System.out.println("MethodName:" + method.getMethodName() + ",getArguments size =" + method.getParameters().size() + ",OWNER:" + method.getOwner());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLCastExpr) {
+                            SQLCastExpr cast = (SQLCastExpr) func;
+                            System.out.println("SQLCastExpr:");
+                            System.out.println("Expr:" + cast.getExpr().getClass() + ",getDataType:" + cast.getDataType());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLBinaryOpExpr) {
+                            SQLBinaryOpExpr Op = (SQLBinaryOpExpr) func;
+                            System.out.println("SQLBinaryOpExpr:");
+                            System.out.println("left:" + Op.getLeft().getClass());
+                            System.out.println("right:" + Op.getRight().getClass());
+                            System.out.println("operator:" + Op.getOperator().getClass());
+                            System.out.println("dbtype:" + Op.getDbType());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLUnaryExpr) {
+                            SQLUnaryExpr Op = (SQLUnaryExpr) func;
+                            System.out.println("SQLUnaryExpr:");
+                            System.out.println("EXPR:" + Op.getExpr().getClass());
+                            System.out.println("operator:" + Op.getOperator().getClass());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLBetweenExpr) {
+                            SQLBetweenExpr between = (SQLBetweenExpr) func;
+                            System.out.println("SQLBetweenExpr:");
+                            System.out.println("begin EXPR:" + between.getBeginExpr());
+                            System.out.println("end EXPR:" + between.getEndExpr());
+                            System.out.println("isnot :" + between.isNot());
+                            System.out.println("test :" + between.getTestExpr());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLInListExpr) {
+                            SQLInListExpr in = (SQLInListExpr) func;
+                            System.out.println("SQLInListExpr:");
+                            System.out.println("EXPR:" + in.getExpr());
+                            System.out.println("isnot :" + in.isNot());
+                            System.out.println("getTargetList size :" + in.getTargetList().size());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLNotExpr) {
+                            SQLNotExpr not = (SQLNotExpr) func;
+                            System.out.println("SQLNotExpr:");
+                            System.out.println("EXPR:" + not.getExpr());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof MySqlExtractExpr) {
+                            MySqlExtractExpr extract = (MySqlExtractExpr) func;
+                            System.out.println("MySqlExtractExpr:");
+                            System.out.println("value:" + extract.getValue());
+                            System.out.println("unit:" + extract.getUnit());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLCaseExpr) {
+                            SQLCaseExpr Case = (SQLCaseExpr) func;
+                            System.out.println("SQLCaseExpr:");
+                            System.out.println("value:" + Case.getValueExpr());
+                            System.out.println("else:" + Case.getElseExpr());
+                            System.out.println("items size:" + Case.getItems().size());
+                            System.out.println("---------------------------");
+                        } else if (func instanceof SQLVariantRefExpr) {
+                            SQLVariantRefExpr variant = (SQLVariantRefExpr) func;
+                            System.out.println("SQLVariantRefExpr:");
+                            System.out.println("name:" + variant.getName());
+                            System.out.println("Global:" + variant.isGlobal());
+                            System.out.println("index:" + variant.getIndex());
+                            System.out.println("---------------------------");
+                        }
 //						SQLAllColumnExpr
-						else{
+                        else {
 //							MySqlOutputVisitor
-							System.out.println(   "item.getExpr():   :"+item.getExpr().getClass().toString() + "\n");
-						}
-					}
-				}
+                            System.out.println("item.getExpr():   :" + item.getExpr().getClass().toString() + "\n");
+                        }
+                    }
+                }
 //				SQLBinaryOpExpr
 //				MySqlIntervalUnit
 //				SQLIntegerExpr
 //				SQLOrderBy
 //				SQLSelect
 //				SQLInSubQueryExpr
-				if (selectQueryBlock.getGroupBy() != null) {
-					SQLSelectGroupByClause groupBy = selectQueryBlock.getGroupBy();
-					for(SQLExpr groupByItem:groupBy.getItems()){
-						System.out.println(   "groupByItem:" ); 
-						System.out.println(   "class :" +groupByItem.getClass());
-						System.out.println(   "---------------------------" ); 
-					}
-					
-					if(groupBy.getHaving()!=null){
-						SQLExpr having = groupBy.getHaving();
-						System.out.println(   "having:" ); 
-						System.out.println(   "class :" +having.getClass());
-						System.out.println(   "---------------------------" ); 
-					}
-					//with rollup...
-				}
-				if (selectQueryBlock.getOrderBy() != null) {
-					for(SQLSelectOrderByItem orderItem :selectQueryBlock.getOrderBy().getItems()){ 
-						System.out.println(   "OrderBy:" ); 
-						System.out.println(   "class :" +orderItem.getExpr().getClass());
-						System.out.println(   "---------------------------" ); 
-					}
-				}
-			} else if (sqlSelectQuery instanceof MySqlUnionQuery) { 
-			}
-			
-		}else if(statement instanceof MySqlShowColumnsStatement){
-			MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
-			showColumnsStatement.setDatabase(null);
-			showColumnsStatement.toString();
-			System.out.println("change to->"+showColumnsStatement.toString());
-		}else if(statement instanceof MySqlShowIndexesStatement){
-			MySqlShowIndexesStatement mySqlShowIndexesStatement = (MySqlShowIndexesStatement) statement;
-			mySqlShowIndexesStatement.setDatabase(null);
-			mySqlShowIndexesStatement.toString();
-			System.out.println("change to 1->"+mySqlShowIndexesStatement.toString());
-			System.out.println("change to 2->"+SQLUtils.toMySqlString(mySqlShowIndexesStatement));
-		}else if(statement instanceof MySqlShowKeysStatement){
-			MySqlShowKeysStatement mySqlShowKeysStatement = (MySqlShowKeysStatement) statement;
-			mySqlShowKeysStatement.setDatabase(null);
-			mySqlShowKeysStatement.toString();
-			System.out.println("change to 1->"+mySqlShowKeysStatement.toString());
-			System.out.println("change to 2->"+SQLUtils.toMySqlString(mySqlShowKeysStatement));
-		}
-		else{
-			System.out.println("statement:"+statement+","+statement.getClass().toString());
-		}
-	}
+                if (selectQueryBlock.getGroupBy() != null) {
+                    SQLSelectGroupByClause groupBy = selectQueryBlock.getGroupBy();
+                    for (SQLExpr groupByItem : groupBy.getItems()) {
+                        System.out.println("groupByItem:");
+                        System.out.println("class :" + groupByItem.getClass());
+                        System.out.println("---------------------------");
+                    }
+
+                    if (groupBy.getHaving() != null) {
+                        SQLExpr having = groupBy.getHaving();
+                        System.out.println("having:");
+                        System.out.println("class :" + having.getClass());
+                        System.out.println("---------------------------");
+                    }
+                    //with rollup...
+                }
+                if (selectQueryBlock.getOrderBy() != null) {
+                    for (SQLSelectOrderByItem orderItem : selectQueryBlock.getOrderBy().getItems()) {
+                        System.out.println("OrderBy:");
+                        System.out.println("class :" + orderItem.getExpr().getClass());
+                        System.out.println("---------------------------");
+                    }
+                }
+            } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+            }
+
+        } else if (statement instanceof MySqlShowColumnsStatement) {
+            MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
+            showColumnsStatement.setDatabase(null);
+            showColumnsStatement.toString();
+            System.out.println("change to->" + showColumnsStatement.toString());
+        } else if (statement instanceof MySqlShowIndexesStatement) {
+            MySqlShowIndexesStatement mySqlShowIndexesStatement = (MySqlShowIndexesStatement) statement;
+            mySqlShowIndexesStatement.setDatabase(null);
+            mySqlShowIndexesStatement.toString();
+            System.out.println("change to 1->" + mySqlShowIndexesStatement.toString());
+            System.out.println("change to 2->" + SQLUtils.toMySqlString(mySqlShowIndexesStatement));
+        } else if (statement instanceof MySqlShowKeysStatement) {
+            MySqlShowKeysStatement mySqlShowKeysStatement = (MySqlShowKeysStatement) statement;
+            mySqlShowKeysStatement.setDatabase(null);
+            mySqlShowKeysStatement.toString();
+            System.out.println("change to 1->" + mySqlShowKeysStatement.toString());
+            System.out.println("change to 2->" + SQLUtils.toMySqlString(mySqlShowKeysStatement));
+        } else {
+            System.out.println("statement:" + statement + "," + statement.getClass().toString());
+        }
+    }
 }

@@ -8,20 +8,22 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 /**
  * Created by huqing.yan on 2017/7/13.
  */
-public class SubQueryTableVisitor  extends MySqlASTVisitorAdapter {
-	private SQLSelect sqlSelect = null;
-	public SQLSelect getSQLSelect() {
-		return sqlSelect;
-	}
+public class SubQueryTableVisitor extends MySqlASTVisitorAdapter {
+    private SQLSelect sqlSelect = null;
 
-	@Override
-	public void endVisit(SQLInSubQueryExpr x){
-		SQLSelect sqlSelect = x.getSubQuery();
-		this.sqlSelect = sqlSelect;
-	}
-	@Override
-	public void endVisit(SQLQueryExpr x) {
-		SQLSelect sqlSelect = x.getSubQuery();
-		this.sqlSelect = sqlSelect;
-	}
+    public SQLSelect getSQLSelect() {
+        return sqlSelect;
+    }
+
+    @Override
+    public void endVisit(SQLInSubQueryExpr x) {
+        SQLSelect sqlSelect = x.getSubQuery();
+        this.sqlSelect = sqlSelect;
+    }
+
+    @Override
+    public void endVisit(SQLQueryExpr x) {
+        SQLSelect sqlSelect = x.getSubQuery();
+        this.sqlSelect = sqlSelect;
+    }
 }

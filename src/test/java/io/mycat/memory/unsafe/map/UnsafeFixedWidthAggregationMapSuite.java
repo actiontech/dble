@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 import java.io.IOException;
 import java.util.*;
 
@@ -40,275 +39,275 @@ import java.util.*;
  * Created by zagnix on 2016/6/4.
  */
 public class UnsafeFixedWidthAggregationMapSuite {
-  private StructType groupKeySchema ;
-  private StructType aggBufferSchema;
-  private UnsafeRow emptyAggregationBuffer;
-  private long PAGE_SIZE_BYTES  = 1L << 20;
+    private StructType groupKeySchema;
+    private StructType aggBufferSchema;
+    private UnsafeRow emptyAggregationBuffer;
+    private long PAGE_SIZE_BYTES = 1L << 20;
 
-  private final Random rand = new Random(42);
+    private final Random rand = new Random(42);
 
-  private static Logger LOGGER = Logger.getLogger(UnsafeFixedWidthAggregationMapSuite.class);
-  @Test
-  public void testAggregateMap() throws NoSuchFieldException, IllegalAccessException, IOException {
-    /**
-     * 创造上文环境
-     */
-    MyCatMemory myCatMemory = new MyCatMemory();
-    MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
-    DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
+    private static Logger LOGGER = Logger.getLogger(UnsafeFixedWidthAggregationMapSuite.class);
 
-      /**
-       * 构造数据字段group key
-       */
+    @Test
+    public void testAggregateMap() throws NoSuchFieldException, IllegalAccessException, IOException {
+        /**
+         * 创造上文环境
+         */
+        MyCatMemory myCatMemory = new MyCatMemory();
+        MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
+        DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
 
-    int fieldCount = 2;
-    ColMeta colMeta = null;
-    Map<String,ColMeta> colMetaMap = new HashMap<String,ColMeta>(fieldCount);
-    colMeta = new ColMeta(0,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("id",colMeta);
-    colMeta = new ColMeta(1,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("name",colMeta);
+        /**
+         * 构造数据字段group key
+         */
 
-    OrderCol[] orderCols = new OrderCol[1];
-    OrderCol orderCol = new OrderCol(colMetaMap.get("id"),OrderCol.COL_ORDER_TYPE_DESC);
-    orderCols[0] = orderCol;
+        int fieldCount = 2;
+        ColMeta colMeta = null;
+        Map<String, ColMeta> colMetaMap = new HashMap<String, ColMeta>(fieldCount);
+        colMeta = new ColMeta(0, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("id", colMeta);
+        colMeta = new ColMeta(1, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("name", colMeta);
 
-    groupKeySchema = new StructType(colMetaMap,fieldCount);
-    groupKeySchema.setOrderCols(orderCols);
+        OrderCol[] orderCols = new OrderCol[1];
+        OrderCol orderCol = new OrderCol(colMetaMap.get("id"), OrderCol.COL_ORDER_TYPE_DESC);
+        orderCols[0] = orderCol;
 
-
-  /**
-   * 构造数据字段value key
-   */
-    fieldCount = 4;
-    colMeta = null;
-    colMetaMap = new HashMap<String,ColMeta>(fieldCount);
-    colMeta = new ColMeta(0,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("id",colMeta);
-    colMeta = new ColMeta(1,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("name",colMeta);
-    colMeta = new ColMeta(2,ColMeta.COL_TYPE_INT);
-    colMetaMap.put("age",colMeta);
-
-    colMeta = new ColMeta(3,ColMeta.COL_TYPE_LONGLONG);
-    colMetaMap.put("score",colMeta);
+        groupKeySchema = new StructType(colMetaMap, fieldCount);
+        groupKeySchema.setOrderCols(orderCols);
 
 
-    orderCols = new OrderCol[1];
-    orderCol = new OrderCol(colMetaMap.get("id"),OrderCol.COL_ORDER_TYPE_DESC);
-    orderCols[0] = orderCol;
+        /**
+         * 构造数据字段value key
+         */
+        fieldCount = 4;
+        colMeta = null;
+        colMetaMap = new HashMap<String, ColMeta>(fieldCount);
+        colMeta = new ColMeta(0, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("id", colMeta);
+        colMeta = new ColMeta(1, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("name", colMeta);
+        colMeta = new ColMeta(2, ColMeta.COL_TYPE_INT);
+        colMetaMap.put("age", colMeta);
 
-    aggBufferSchema = new StructType(colMetaMap,fieldCount);
-    aggBufferSchema.setOrderCols(orderCols);
-
-    /**
-     *emtpy Row value
-     */
-    BufferHolder bufferHolder ;
-    emptyAggregationBuffer = new UnsafeRow(4);
-    bufferHolder = new BufferHolder(emptyAggregationBuffer,0);
-    UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder,4);
-    bufferHolder.reset();
-    String value = "o";
-    unsafeRowWriter.write(0,value.getBytes());
-    unsafeRowWriter.write(1,value.getBytes());
-    emptyAggregationBuffer.setInt(2,0);
-    emptyAggregationBuffer.setLong(3,0);
-    emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
+        colMeta = new ColMeta(3, ColMeta.COL_TYPE_LONGLONG);
+        colMetaMap.put("score", colMeta);
 
 
-    UnsafeFixedWidthAggregationMap map = new UnsafeFixedWidthAggregationMap(
-            emptyAggregationBuffer,
-            aggBufferSchema,
-            groupKeySchema,
-            dataNodeMemoryManager,
-            2*1024,
-            PAGE_SIZE_BYTES,
-            true);
+        orderCols = new OrderCol[1];
+        orderCol = new OrderCol(colMetaMap.get("id"), OrderCol.COL_ORDER_TYPE_DESC);
+        orderCols[0] = orderCol;
+
+        aggBufferSchema = new StructType(colMetaMap, fieldCount);
+        aggBufferSchema.setOrderCols(orderCols);
+
+        /**
+         *emtpy Row value
+         */
+        BufferHolder bufferHolder;
+        emptyAggregationBuffer = new UnsafeRow(4);
+        bufferHolder = new BufferHolder(emptyAggregationBuffer, 0);
+        UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 4);
+        bufferHolder.reset();
+        String value = "o";
+        unsafeRowWriter.write(0, value.getBytes());
+        unsafeRowWriter.write(1, value.getBytes());
+        emptyAggregationBuffer.setInt(2, 0);
+        emptyAggregationBuffer.setLong(3, 0);
+        emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
 
 
-      /**
-       * 造数据
-       */
+        UnsafeFixedWidthAggregationMap map = new UnsafeFixedWidthAggregationMap(
+                emptyAggregationBuffer,
+                aggBufferSchema,
+                groupKeySchema,
+                dataNodeMemoryManager,
+                2 * 1024,
+                PAGE_SIZE_BYTES,
+                true);
 
-    int i;
 
-    List<UnsafeRow> rows = new  ArrayList<UnsafeRow>();
-    for ( i = 0; i < 100000; i++) {
-      /**
-       * key
-       */
-      UnsafeRow groupKey = new UnsafeRow(2);
-      bufferHolder = new BufferHolder(groupKey,0);
-      unsafeRowWriter = new UnsafeRowWriter(bufferHolder,2);
-      bufferHolder.reset();
+        /**
+         * 造数据
+         */
 
-      unsafeRowWriter.write(0, BytesTools.toBytes(rand.nextInt(10000000)));
-      unsafeRowWriter.write(1,BytesTools.toBytes(rand.nextInt(10000000)));
+        int i;
 
-      groupKey.setTotalSize(bufferHolder.totalSize());
+        List<UnsafeRow> rows = new ArrayList<UnsafeRow>();
+        for (i = 0; i < 100000; i++) {
+            /**
+             * key
+             */
+            UnsafeRow groupKey = new UnsafeRow(2);
+            bufferHolder = new BufferHolder(groupKey, 0);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 2);
+            bufferHolder.reset();
 
-      UnsafeRow valueKey = new UnsafeRow(4);
-      bufferHolder = new BufferHolder(valueKey,0);
-      unsafeRowWriter = new UnsafeRowWriter(bufferHolder,4);
-      bufferHolder.reset();
+            unsafeRowWriter.write(0, BytesTools.toBytes(rand.nextInt(10000000)));
+            unsafeRowWriter.write(1, BytesTools.toBytes(rand.nextInt(10000000)));
 
-      unsafeRowWriter.write(0, BytesTools.toBytes(rand.nextInt(10)));
-      unsafeRowWriter.write(1,BytesTools.toBytes(rand.nextInt(10)));
-      valueKey.setInt(2,i);
-      valueKey.setLong(3,1);
-      valueKey.setTotalSize(bufferHolder.totalSize());
+            groupKey.setTotalSize(bufferHolder.totalSize());
 
-      if(map.find(groupKey)){
-          UnsafeRow rs = map.getAggregationBuffer(groupKey);
-          rs.setLong(3,i+valueKey.getLong(3));
-          rs.setInt(2,100+valueKey.getInt(2));
-      }else {
-        map.put(groupKey,valueKey);
-      }
-      rows.add(valueKey);
+            UnsafeRow valueKey = new UnsafeRow(4);
+            bufferHolder = new BufferHolder(valueKey, 0);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 4);
+            bufferHolder.reset();
+
+            unsafeRowWriter.write(0, BytesTools.toBytes(rand.nextInt(10)));
+            unsafeRowWriter.write(1, BytesTools.toBytes(rand.nextInt(10)));
+            valueKey.setInt(2, i);
+            valueKey.setLong(3, 1);
+            valueKey.setTotalSize(bufferHolder.totalSize());
+
+            if (map.find(groupKey)) {
+                UnsafeRow rs = map.getAggregationBuffer(groupKey);
+                rs.setLong(3, i + valueKey.getLong(3));
+                rs.setInt(2, 100 + valueKey.getInt(2));
+            } else {
+                map.put(groupKey, valueKey);
+            }
+            rows.add(valueKey);
+        }
+
+
+        KVIterator<UnsafeRow, UnsafeRow> iter = map.iterator();
+        int j = 0;
+        while (iter.next()) {
+            Assert.assertEquals(j, iter.getValue().getInt(2));
+            j++;
+            iter.getValue().setInt(2, 5000000);
+            iter.getValue().setLong(3, 600000);
+        }
+
+        Assert.assertEquals(rows.size(), j);
+        int k = 0;
+        KVIterator<UnsafeRow, UnsafeRow> iter1 = map.iterator();
+        while (iter1.next()) {
+            k++;
+            // LOGGER.error("(" + BytesTools.toInt(iter1.getKey().getBinary(0)) + "," +
+            //       iter1.getValue().getInt(2) +"," +iter1.getValue().getLong(3)+")");
+
+            Assert.assertEquals(5000000, iter1.getValue().getInt(2));
+            Assert.assertEquals(600000, iter1.getValue().getLong(3));
+        }
+
+        Assert.assertEquals(j, k);
+
+        map.free();
+
     }
 
+    @Test
+    public void testWithMemoryLeakDetection() throws IOException, NoSuchFieldException, IllegalAccessException {
+        MyCatMemory myCatMemory = new MyCatMemory();
+        MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
+        DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
+                Thread.currentThread().getId());
+        int fieldCount = 3;
+        ColMeta colMeta = null;
+        Map<String, ColMeta> colMetaMap = new HashMap<String, ColMeta>(fieldCount);
+        colMeta = new ColMeta(0, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("id", colMeta);
+        colMeta = new ColMeta(1, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("name", colMeta);
+        colMeta = new ColMeta(2, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("age", colMeta);
 
-    KVIterator<UnsafeRow,UnsafeRow> iter = map.iterator();
-    int j = 0;
-    while (iter.next()){
-      Assert.assertEquals(j,iter.getValue().getInt(2));
-      j++;
-      iter.getValue().setInt(2,5000000);
-      iter.getValue().setLong(3,600000);
+
+        OrderCol[] orderCols = new OrderCol[1];
+        OrderCol orderCol = new OrderCol(colMetaMap.get("id"), OrderCol.COL_ORDER_TYPE_DESC);
+        orderCols[0] = orderCol;
+
+        groupKeySchema = new StructType(colMetaMap, fieldCount);
+        groupKeySchema.setOrderCols(orderCols);
+
+
+        fieldCount = 3;
+        colMeta = null;
+        colMetaMap = new HashMap<String, ColMeta>(fieldCount);
+        colMeta = new ColMeta(0, ColMeta.COL_TYPE_LONGLONG);
+        colMetaMap.put("age", colMeta);
+        colMeta = new ColMeta(1, ColMeta.COL_TYPE_LONGLONG);
+        colMetaMap.put("age1", colMeta);
+        colMeta = new ColMeta(2, ColMeta.COL_TYPE_STRING);
+        colMetaMap.put("name", colMeta);
+
+        orderCols = new OrderCol[1];
+        orderCol = new OrderCol(colMetaMap.get("id"), OrderCol.COL_ORDER_TYPE_DESC);
+        orderCols[0] = orderCol;
+
+        aggBufferSchema = new StructType(colMetaMap, fieldCount);
+        aggBufferSchema.setOrderCols(orderCols);
+
+        /**
+         * value
+         */
+        BufferHolder bufferHolder;
+        emptyAggregationBuffer = new UnsafeRow(3);
+        bufferHolder = new BufferHolder(emptyAggregationBuffer, 0);
+        UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 3);
+        bufferHolder.reset();
+        String value = "ok,hello";
+        emptyAggregationBuffer.setLong(0, 0);
+        emptyAggregationBuffer.setLong(1, 0);
+        unsafeRowWriter.write(2, value.getBytes());
+        emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
+
+        UnsafeFixedWidthAggregationMap map = new UnsafeFixedWidthAggregationMap(
+                emptyAggregationBuffer,
+                aggBufferSchema,
+                groupKeySchema,
+                dataNodeMemoryManager,
+                2 * 1024,
+                PAGE_SIZE_BYTES,
+                false
+        );
+
+
+        int i;
+
+        List<UnsafeRow> rows = new ArrayList<UnsafeRow>();
+        for (i = 0; i < 1000; i++) {
+            String line = "testUnsafeRow" + i;
+            /**
+             * key
+             */
+            UnsafeRow groupKey = new UnsafeRow(3);
+            bufferHolder = new BufferHolder(groupKey, 0);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 3);
+            bufferHolder.reset();
+
+            final byte[] key = getRandomByteArray(rand.nextInt(8));
+            String age = "5" + i;
+            unsafeRowWriter.write(0, key);
+            unsafeRowWriter.write(1, line.getBytes());
+            unsafeRowWriter.write(2, age.getBytes());
+            groupKey.setTotalSize(bufferHolder.totalSize());
+
+            map.getAggregationBuffer(groupKey);
+
+            rows.add(groupKey);
+        }
+
+        Assert.assertEquals(i, rows.size());
+
+
+        UnsafeRow row = rows.get(12);
+        UnsafeRow rs = map.getAggregationBuffer(row);
+        rs.setLong(0, 12);
+        rs = map.getAggregationBuffer(row);
+        Assert.assertEquals(12, rs.getLong(0));
+
+        map.free();
+
     }
 
-    Assert.assertEquals(rows.size(),j);
-    int k = 0;
-    KVIterator<UnsafeRow,UnsafeRow> iter1 = map.iterator();
-    while (iter1.next()){
-      k++;
-     // LOGGER.error("(" + BytesTools.toInt(iter1.getKey().getBinary(0)) + "," +
-      //       iter1.getValue().getInt(2) +"," +iter1.getValue().getLong(3)+")");
-
-      Assert.assertEquals(5000000,iter1.getValue().getInt(2));
-      Assert.assertEquals(600000,iter1.getValue().getLong(3));
+    private byte[] getRandomByteArray(int numWords) {
+        Assert.assertTrue(numWords >= 0);
+        final int lengthInBytes = numWords * 8;
+        final byte[] bytes = new byte[lengthInBytes];
+        rand.nextBytes(bytes);
+        return bytes;
     }
-
-    Assert.assertEquals(j,k);
-
-    map.free();
-
-  }
-@Test
-public void  testWithMemoryLeakDetection() throws IOException, NoSuchFieldException, IllegalAccessException {
-  MyCatMemory myCatMemory = new MyCatMemory();
-  MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
-  DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
-          Thread.currentThread().getId());
-    int fieldCount = 3;
-    ColMeta colMeta = null;
-    Map<String,ColMeta> colMetaMap = new HashMap<String,ColMeta>(fieldCount);
-    colMeta = new ColMeta(0,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("id",colMeta);
-    colMeta = new ColMeta(1,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("name",colMeta);
-    colMeta = new ColMeta(2,ColMeta.COL_TYPE_STRING);
-    colMetaMap.put("age",colMeta);
-
-
-    OrderCol[] orderCols = new OrderCol[1];
-    OrderCol orderCol = new OrderCol(colMetaMap.get("id"),OrderCol.COL_ORDER_TYPE_DESC);
-    orderCols[0] = orderCol;
-
-    groupKeySchema = new StructType(colMetaMap,fieldCount);
-    groupKeySchema.setOrderCols(orderCols);
-
-
-
-   fieldCount = 3;
-   colMeta = null;
-   colMetaMap = new HashMap<String,ColMeta>(fieldCount);
-   colMeta = new ColMeta(0,ColMeta.COL_TYPE_LONGLONG);
-   colMetaMap.put("age",colMeta);
-   colMeta = new ColMeta(1,ColMeta.COL_TYPE_LONGLONG);
-   colMetaMap.put("age1",colMeta);
-   colMeta = new ColMeta(2,ColMeta.COL_TYPE_STRING);
-   colMetaMap.put("name",colMeta);
-
-   orderCols = new OrderCol[1];
-   orderCol = new OrderCol(colMetaMap.get("id"),OrderCol.COL_ORDER_TYPE_DESC);
-   orderCols[0] = orderCol;
-
-  aggBufferSchema = new StructType(colMetaMap,fieldCount);
-  aggBufferSchema.setOrderCols(orderCols);
-
-  /**
-   * value
-   */
-  BufferHolder bufferHolder ;
-  emptyAggregationBuffer = new UnsafeRow(3);
-  bufferHolder = new BufferHolder(emptyAggregationBuffer,0);
-  UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder,3);
-  bufferHolder.reset();
-  String value = "ok,hello";
-  emptyAggregationBuffer.setLong(0,0);
-  emptyAggregationBuffer.setLong(1,0);
-  unsafeRowWriter.write(2,value.getBytes());
-  emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
-
-  UnsafeFixedWidthAggregationMap map = new UnsafeFixedWidthAggregationMap(
-          emptyAggregationBuffer,
-          aggBufferSchema,
-          groupKeySchema,
-          dataNodeMemoryManager,
-          2*1024,
-          PAGE_SIZE_BYTES,
-          false
-  );
-
-
-  int i;
-
-  List<UnsafeRow> rows = new  ArrayList<UnsafeRow>();
-  for ( i = 0; i < 1000; i++) {
-    String line = "testUnsafeRow" + i;
-    /**
-     * key
-     */
-    UnsafeRow groupKey = new UnsafeRow(3);
-    bufferHolder = new BufferHolder(groupKey,0);
-    unsafeRowWriter = new UnsafeRowWriter(bufferHolder,3);
-    bufferHolder.reset();
-
-    final byte[] key = getRandomByteArray(rand.nextInt(8));
-    String age = "5"+i;
-    unsafeRowWriter.write(0,key);
-    unsafeRowWriter.write(1,line.getBytes());
-    unsafeRowWriter.write(2,age.getBytes());
-    groupKey.setTotalSize(bufferHolder.totalSize());
-
-    map.getAggregationBuffer(groupKey);
-
-    rows.add(groupKey);
-  }
-
-  Assert.assertEquals(i ,rows.size() );
-
-
-
-  UnsafeRow row = rows.get(12);
-  UnsafeRow rs = map.getAggregationBuffer(row);
-  rs.setLong(0,12);
-  rs = map.getAggregationBuffer(row);
-  Assert.assertEquals(12,rs.getLong(0));
-
-  map.free();
-
-  }
-
-  private byte[] getRandomByteArray(int numWords) {
-    Assert.assertTrue(numWords >= 0);
-    final int lengthInBytes = numWords * 8;
-    final byte[] bytes = new byte[lengthInBytes];
-    rand.nextBytes(bytes);
-    return bytes;
-  }
 
 }

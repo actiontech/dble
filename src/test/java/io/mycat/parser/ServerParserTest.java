@@ -23,15 +23,10 @@
  */
 package io.mycat.parser;
 
+import io.mycat.server.parser.*;
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.Ignore;
-
-import io.mycat.server.parser.ServerParse;
-import io.mycat.server.parser.ServerParseSelect;
-import io.mycat.server.parser.ServerParseSet;
-import io.mycat.server.parser.ServerParseShow;
-import io.mycat.server.parser.ServerParseStart;
+import org.junit.Test;
 
 /**
  * @author mycat
@@ -51,14 +46,14 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.COMMIT, ServerParse.parse("COMMIT"));
         Assert.assertEquals(ServerParse.COMMIT, ServerParse.parse("cOmmiT "));
     }
-    
+
 
     @Test
     public void testComment() {
         Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
         Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
         Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40101 SET @saved_cs_client     = @@character_set_client */"));
-   
+
         Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
         Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
         Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @saved_cs_client     = @@character_set_client */"));
@@ -193,11 +188,13 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("SET @@SESSION.AUTOCOMMIT=off", 3));
         Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@session.autoCOMMIT = OFF", 3));
     }
+
     @Test
-    public void testIsSetDouble() { 
-    	//not supported
-        Assert.assertEquals(ServerParseSet.OTHER, ServerParseSet.parse("set @@autocommit=0,@@session.TX_ISOLATION = 'READ-UNCOMMITTED'", 3)); 
+    public void testIsSetDouble() {
+        //not supported
+        Assert.assertEquals(ServerParseSet.OTHER, ServerParseSet.parse("set @@autocommit=0,@@session.TX_ISOLATION = 'READ-UNCOMMITTED'", 3));
     }
+
     @Test
     public void testIsSetNames() {
         Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("set names utf8", 3));
@@ -513,18 +510,18 @@ public class ServerParserTest {
         stmt = "select last_insert_id(#\n\r) as 'a";
         Assert.assertEquals(ServerParseSelect.OTHER, ServerParseSelect.parse(stmt, 6));
     }
-    
+
     @Test
     public void testLockTable() {
-    	Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables ttt write;"));
-    	Assert.assertEquals(ServerParse.LOCK, ServerParse.parse(" lock tables ttt read;"));
-    	Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables"));
+        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables ttt write;"));
+        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse(" lock tables ttt read;"));
+        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables"));
     }
 
     @Test
     public void testUnlockTable() {
-    	Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse("unlock tables"));
-    	Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse(" unlock	 tables"));
+        Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse("unlock tables"));
+        Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse(" unlock	 tables"));
     }
 
 }

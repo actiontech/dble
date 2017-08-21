@@ -33,6 +33,7 @@ import io.mycat.net.mysql.OkPacket;
 public class Offline {
 
     private static final OkPacket ok = new OkPacket();
+
     static {
         ok.packetId = 1;
         ok.affectedRows = 1;

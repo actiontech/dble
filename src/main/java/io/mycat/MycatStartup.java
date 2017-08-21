@@ -24,16 +24,14 @@
 package io.mycat;
 
 
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import io.mycat.config.model.SystemConfig;
 import io.mycat.manager.handler.ShowServerLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
-import io.mycat.config.model.SystemConfig;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * @author mycat
@@ -41,6 +39,7 @@ import io.mycat.config.model.SystemConfig;
 public final class MycatStartup {
     private static final String dateFormat = "yyyy-MM-dd HH:mm:ss";
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatStartup.class);
+
     public static void main(String[] args) {
         //use zk ?
         ZkConfig.getInstance().initZk();
@@ -56,7 +55,7 @@ public final class MycatStartup {
 
             // startup
             server.startup();
-            System.out.println("Server startup successfully. see logs in logs/"+ ShowServerLog.DEFAULT_LOGFILE);
+            System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
 
         } catch (Exception e) {
             SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);

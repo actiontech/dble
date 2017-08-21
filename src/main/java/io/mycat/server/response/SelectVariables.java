@@ -23,17 +23,7 @@
  */
 package io.mycat.server.response;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Splitter;
-
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.net.mysql.EOFPacket;
@@ -41,12 +31,19 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.server.ServerConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author mycat
  */
-public final class SelectVariables
-{
+public final class SelectVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectVariables.class);
 
 
@@ -108,32 +105,26 @@ public final class SelectVariables
         c.write(buffer);
     }
 
-    private static List<String> convert(List<String> in)
-    {
-        List<String> out=new ArrayList<>();
-        for (String s : in)
-        {
-          int asIndex=s.toUpperCase().indexOf(" AS ");
-            if(asIndex!=-1)
-            {
-                out.add(s.substring(asIndex+4)) ;
+    private static List<String> convert(List<String> in) {
+        List<String> out = new ArrayList<>();
+        for (String s : in) {
+            int asIndex = s.toUpperCase().indexOf(" AS ");
+            if (asIndex != -1) {
+                out.add(s.substring(asIndex + 4));
             }
         }
-         if(out.isEmpty())
-         {
-             return in;
-         }  else
-         {
-             return out;
-         }
+        if (out.isEmpty()) {
+            return in;
+        } else {
+            return out;
+        }
 
 
     }
 
 
-
-
     private static final Map<String, String> variables = new HashMap<String, String>();
+
     static {
         variables.put("@@character_set_client", "utf8");
         variables.put("@@character_set_connection", "utf8");
@@ -175,6 +166,6 @@ public final class SelectVariables
         variables.put("wait_timeout", "172800");
         variables.put("auto_increment_increment", "1");
     }
-    
+
 
 }

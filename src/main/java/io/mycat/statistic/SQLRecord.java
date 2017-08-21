@@ -35,9 +35,9 @@ public final class SQLRecord implements Comparable<SQLRecord> {
     @Override
     public int compareTo(SQLRecord o) {
         //执行时间从大到小
-        long para =  o.executeTime - executeTime;
+        long para = o.executeTime - executeTime;
         //开始时间从大到小
-        return (int) (para == 0 ? (o.startTime - startTime) : para );
+        return (int) (para == 0 ? (o.startTime - startTime) : para);
     }
 
     @Override
@@ -51,7 +51,6 @@ public final class SQLRecord implements Comparable<SQLRecord> {
         hash = hash * 31 + startTime;
         return (int) hash;
     }
-    
-    
+
 
 }

@@ -36,20 +36,20 @@ import io.mycat.server.parser.ServerParseStart;
 public final class StartHandler {
     public static void handle(String stmt, ServerConnection c, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
-        case ServerParseStart.TRANSACTION:
-			if (c.isTxstart() || !c.isAutocommit()) {
-				c.beginInTx(stmt);
-			} else {
-				c.setTxstart(true);
-				TxnLogHelper.putTxnLog(c, stmt);
-				c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-			}
-			break;
-	case ServerParseStart.READCHARCS:
-	    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-	    break;
-        default:
-            c.execute(stmt, ServerParse.START);
+            case ServerParseStart.TRANSACTION:
+                if (c.isTxstart() || !c.isAutocommit()) {
+                    c.beginInTx(stmt);
+                } else {
+                    c.setTxstart(true);
+                    TxnLogHelper.putTxnLog(c, stmt);
+                    c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                }
+                break;
+            case ServerParseStart.READCHARCS:
+                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                break;
+            default:
+                c.execute(stmt, ServerParse.START);
         }
     }
 

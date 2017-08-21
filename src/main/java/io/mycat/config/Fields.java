@@ -25,12 +25,14 @@ package io.mycat.config;
 
 /**
  * 字段类型及标识定义
- * 
+ *
  * @author mycat
  */
 public interface Fields {
 
-    /** field data type */
+    /**
+     * field data type
+     */
     public static final int FIELD_TYPE_DECIMAL = 0;
     public static final int FIELD_TYPE_TINY = 1;
     public static final int FIELD_TYPE_SHORT = 2;
@@ -59,7 +61,9 @@ public interface Fields {
     public static final int FIELD_TYPE_STRING = 254;
     public static final int FIELD_TYPE_GEOMETRY = 255;
 
-    /** field flag */
+    /**
+     * field flag
+     */
     public static final int NOT_NULL_FLAG = 0x0001;
     public static final int PRI_KEY_FLAG = 0x0002;
     public static final int UNIQUE_KEY_FLAG = 0x0004;

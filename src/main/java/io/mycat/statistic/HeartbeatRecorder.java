@@ -24,14 +24,15 @@
 package io.mycat.statistic;
 
 import io.mycat.util.TimeUtil;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * 记录最近3个时段的平均响应时间，默认1，10，30分钟。
- * 
+ *
  * @author mycat
  */
 public class HeartbeatRecorder {
@@ -47,8 +48,8 @@ public class HeartbeatRecorder {
     private long avg3;
     private final Queue<Record> records;
     private final Queue<Record> recordsAll;
-    
-	private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
 
     public HeartbeatRecorder() {
         this.records = new ConcurrentLinkedQueue<Record>();
@@ -60,8 +61,8 @@ public class HeartbeatRecorder {
     }
 
     public void set(long value) {
-    	try{
-    		long time = TimeUtil.currentTimeMillis();
+        try {
+            long time = TimeUtil.currentTimeMillis();
             if (value < 0) {
                 recordsAll.offer(new Record(0, time));
                 return;
@@ -79,9 +80,9 @@ public class HeartbeatRecorder {
             records.offer(new Record(value, time));
             recordsAll.offer(new Record(value, time));
             calculate(time);
-    	}catch(Exception e){ 
-    		LOGGER.error("record HeartbeatRecorder error " ,e);
-    	}
+        } catch (Exception e) {
+            LOGGER.error("record HeartbeatRecorder error ", e);
+        }
     }
 
     /**
@@ -97,12 +98,12 @@ public class HeartbeatRecorder {
                 break;
             }
         }
-        
+
         final Queue<Record> recordsAll = this.recordsAll;
         while (recordsAll.size() > 0) {
             Record record = recordsAll.peek();
             if (time >= record.time + SWAP_TIME) {
-            	recordsAll.poll();
+                recordsAll.poll();
             } else {
                 break;
             }
@@ -136,33 +137,37 @@ public class HeartbeatRecorder {
     }
 
     public Queue<Record> getRecordsAll() {
-		return this.recordsAll;
-	}
+        return this.recordsAll;
+    }
 
-	/**
+    /**
      * @author mycat
      */
     public static class Record {
-    	private long value;
-    	private long time;
+        private long value;
+        private long time;
 
         Record(long value, long time) {
             this.value = value;
             this.time = time;
         }
-		public long getValue() {
-			return this.value;
-		}
-		public void setValue(long value) {
-			this.value = value;
-		}
-		public long getTime() {
-			return this.time;
-		}
-		public void setTime(long time) {
-			this.time = time;
-		}
-        
-        
+
+        public long getValue() {
+            return this.value;
+        }
+
+        public void setValue(long value) {
+            this.value = value;
+        }
+
+        public long getTime() {
+            return this.time;
+        }
+
+        public void setTime(long time) {
+            this.time = time;
+        }
+
+
     }
 }

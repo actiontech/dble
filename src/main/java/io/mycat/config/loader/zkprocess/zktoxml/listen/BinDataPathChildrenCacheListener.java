@@ -15,14 +15,15 @@ import java.io.IOException;
  * Created by magicdoom on 2016/10/27.
  */
 public class BinDataPathChildrenCacheListener implements PathChildrenCacheListener {
-    @Override public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+    @Override
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
         ChildData data = event.getData();
         switch (event.getType()) {
             case CHILD_ADDED:
                 add(data, false);
                 break;
             case CHILD_UPDATED:
-                add(data,true);
+                add(data, true);
                 break;
             case CHILD_REMOVED:
                 delete(data);
@@ -46,9 +47,9 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
     }
 
     private void delete(ChildData childData) throws IOException {
-        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/")+1);
+        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
         File file = new File(
-                SystemConfig.getHomePath() + File.separator + "conf" ,
+                SystemConfig.getHomePath() + File.separator + "conf",
                 name);
         if (file.exists())
             file.delete();

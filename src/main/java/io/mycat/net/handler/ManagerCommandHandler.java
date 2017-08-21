@@ -33,28 +33,28 @@ import io.mycat.net.mysql.MySQLPacket;
  * @author mycat
  */
 public class ManagerCommandHandler extends FrontendCommandHandler {
-	public ManagerCommandHandler(FrontendConnection source) {
-		super(source);
-	}
+    public ManagerCommandHandler(FrontendConnection source) {
+        super(source);
+    }
 
     @Override
-	protected void handleData(byte[] data) {
-		switch (data[4]) {
-		case MySQLPacket.COM_QUERY:
-			commands.doQuery();
-			source.query(data);
-			break;
-		case MySQLPacket.COM_PING:
-			commands.doPing();
-			source.ping();
-			break;
-		case MySQLPacket.COM_QUIT:
-			commands.doQuit();
-			source.close("quit cmd");
-			break;
-		default:
-			commands.doOther();
-			source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-		}
+    protected void handleData(byte[] data) {
+        switch (data[4]) {
+            case MySQLPacket.COM_QUERY:
+                commands.doQuery();
+                source.query(data);
+                break;
+            case MySQLPacket.COM_PING:
+                commands.doPing();
+                source.ping();
+                break;
+            case MySQLPacket.COM_QUIT:
+                commands.doQuit();
+                source.close("quit cmd");
+                break;
+            default:
+                commands.doOther();
+                source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+        }
     }
 }

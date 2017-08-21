@@ -23,10 +23,6 @@
  */
 package io.mycat.net.mysql;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.backend.mysql.MySQLMessage;
@@ -34,9 +30,13 @@ import io.mycat.backend.mysql.StreamUtil;
 import io.mycat.config.Capabilities;
 import io.mycat.net.BackendAIOConnection;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+
 /**
  * From client to server during initial handshake.
- * 
+ * <p>
  * <pre>
  * Bytes                        Name
  * -----                        ----
@@ -47,10 +47,10 @@ import io.mycat.net.BackendAIOConnection;
  * n (Null-Terminated String)   user
  * n (Length Coded Binary)      scramble_buff (1 + x bytes)
  * n (Null-Terminated String)   databasename (optional)
- * 
+ *
  * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Client_Authentication_Packet
  * </pre>
- * 
+ *
  * @author mycat
  */
 public class AuthPacket extends MySQLPacket {
@@ -84,9 +84,9 @@ public class AuthPacket extends MySQLPacket {
         password = mm.readBytesWithLength();
         if (((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0) && mm.hasRemaining()) {
             database = mm.readStringWithNull();
-			if (database != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-				database = database.toLowerCase();
-			}
+            if (database != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+                database = database.toLowerCase();
+            }
         }
     }
 
@@ -124,26 +124,26 @@ public class AuthPacket extends MySQLPacket {
         buffer.put((byte) charsetIndex);
         buffer = c.writeToBuffer(FILLER, buffer);
         if (user == null) {
-            buffer = c.checkWriteBuffer(buffer, 1,true);
+            buffer = c.checkWriteBuffer(buffer, 1, true);
             buffer.put((byte) 0);
         } else {
             byte[] userData = user.getBytes();
-            buffer = c.checkWriteBuffer(buffer, userData.length + 1,true);
+            buffer = c.checkWriteBuffer(buffer, userData.length + 1, true);
             BufferUtil.writeWithNull(buffer, userData);
         }
         if (password == null) {
-            buffer = c.checkWriteBuffer(buffer, 1,true);
+            buffer = c.checkWriteBuffer(buffer, 1, true);
             buffer.put((byte) 0);
         } else {
-            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password),true);
+            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password), true);
             BufferUtil.writeWithLength(buffer, password);
         }
         if (database == null) {
-            buffer = c.checkWriteBuffer(buffer, 1,true);
+            buffer = c.checkWriteBuffer(buffer, 1, true);
             buffer.put((byte) 0);
         } else {
             byte[] databaseData = database.getBytes();
-            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1,true);
+            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1, true);
             BufferUtil.writeWithNull(buffer, databaseData);
         }
         c.write(buffer);

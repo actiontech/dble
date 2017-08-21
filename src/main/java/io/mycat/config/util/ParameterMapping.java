@@ -23,6 +23,10 @@
  */
 package io.mycat.config.util;
 
+import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -34,22 +38,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.util.StringUtil;
-
 /**
  * @author mycat
  */
 public class ParameterMapping {
-    private static final Logger                              LOGGER      = LoggerFactory
-                                                                             .getLogger(ParameterMapping.class);
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> descriptors = new HashMap<Class<?>, PropertyDescriptor[]>();
 
     /**
      * 将property键值对赋值组装到object中
-     * @param object 目标反射对象
+     *
+     * @param object    目标反射对象
      * @param parameter property的键值对
      * @throws IllegalAccessException
      * @throws InvocationTargetException
@@ -84,10 +84,10 @@ public class ParameterMapping {
             //赋值
             if (cls != null
                     && value != null) {
-                    Method method = pd.getWriteMethod();
-                    if (method != null) {
-                        method.invoke(object, new Object[] { value });
-                    }
+                Method method = pd.getWriteMethod();
+                if (method != null) {
+                    method.invoke(object, new Object[]{value});
+                }
             }
         }
     }
@@ -116,6 +116,7 @@ public class ParameterMapping {
 
     /**
      * 用于导出clazz这个JavaBean的所有属性的PropertyDescriptor
+     *
      * @param clazz
      * @return
      */
@@ -170,8 +171,8 @@ public class ParameterMapping {
                 || (cls.equals(Integer.class)) || (cls.equals(Long.class)) || (cls.equals(Float.class))
                 || (cls.equals(Double.class))) {
             try {
-                method = cls.getMethod("valueOf", new Class[] { String.class });
-                value = method.invoke(null, new Object[] { string });
+                method = cls.getMethod("valueOf", new Class[]{String.class});
+                value = method.invoke(null, new Object[]{string});
             } catch (Exception t) {
                 LOGGER.error("valueofError", t);
                 value = null;

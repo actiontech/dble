@@ -1,9 +1,9 @@
 package io.mycat.plan.common.item.function.operator.cmpfunc;
 
-import java.util.List;
-
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.ItemFunc;
+
+import java.util.List;
 
 
 /*
@@ -15,17 +15,17 @@ import io.mycat.plan.common.item.function.ItemFunc;
  */
 public class ItemFuncGreatest extends ItemFuncMinMax {
 
-	public ItemFuncGreatest(List<Item> args) {
-		super(args, -1);
-	}
-	
-	@Override
-	public final String funcName() {
-		return "greatest";
-	}
+    public ItemFuncGreatest(List<Item> args) {
+        super(args, -1);
+    }
 
-	@Override
-	public ItemFunc nativeConstruct(List<Item> realArgs) {
-		return new ItemFuncGreatest(realArgs);
-	}
+    @Override
+    public final String funcName() {
+        return "greatest";
+    }
+
+    @Override
+    public ItemFunc nativeConstruct(List<Item> realArgs) {
+        return new ItemFuncGreatest(realArgs);
+    }
 }

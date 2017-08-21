@@ -11,7 +11,7 @@ import org.junit.Test;
 public class ShowHeartBeatDetailTest {
 
     @Test
-    public void parseTest(){
+    public void parseTest() {
         String[] testlist = {"show @@heartbeat.detail where name = hostM1",
                 "show @@heartbeat.detail where name = hostM1",
                 "show        @@heartbeat.detail         where           name          =       hostM1       ",
@@ -36,22 +36,22 @@ public class ShowHeartBeatDetailTest {
                 null,
                 null
         };
-        for(int i = 0;i < testlist.length;i++){
+        for (int i = 0; i < testlist.length; i++) {
             System.out.println(i);
-            Assert.assertTrue(mapEquals(ManagerParseHeartbeat.getPair(testlist[i]),resultlist[i]));
+            Assert.assertTrue(mapEquals(ManagerParseHeartbeat.getPair(testlist[i]), resultlist[i]));
         }
     }
 
-    public boolean mapEquals(Pair<String, String> pair, String s){
-        if(s == null){
-            if(pair == null || pair.getValue().length() == 0){
+    public boolean mapEquals(Pair<String, String> pair, String s) {
+        if (s == null) {
+            if (pair == null || pair.getValue().length() == 0) {
                 return true;
             }
             return false;
         }
 
-        if(pair.getKey().equals(s.split(",")[0])
-                && pair.getValue().equals(s.split(",")[1])){
+        if (pair.getKey().equals(s.split(",")[0])
+                && pair.getValue().equals(s.split(",")[1])) {
             return true;
         }
         return false;

@@ -19,15 +19,15 @@ package io.mycat.memory.unsafe.memory;
 
 public interface MemoryAllocator {
 
-  /**
-   * Allocates a contiguous block of memory. Note that the allocated memory is not guaranteed
-   * to be zeroed out (call `zero()` on the result if this is necessary).
-   */
-  MemoryBlock allocate(long size) throws OutOfMemoryError;
+    /**
+     * Allocates a contiguous block of memory. Note that the allocated memory is not guaranteed
+     * to be zeroed out (call `zero()` on the result if this is necessary).
+     */
+    MemoryBlock allocate(long size) throws OutOfMemoryError;
 
-  void free(MemoryBlock memory);
+    void free(MemoryBlock memory);
 
-  MemoryAllocator UNSAFE = new UnsafeMemoryAllocator();
+    MemoryAllocator UNSAFE = new UnsafeMemoryAllocator();
 
-  MemoryAllocator HEAP = new HeapMemoryAllocator();
+    MemoryAllocator HEAP = new HeapMemoryAllocator();
 }

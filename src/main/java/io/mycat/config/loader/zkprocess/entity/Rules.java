@@ -1,30 +1,31 @@
 package io.mycat.config.loader.zkprocess.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-
 import io.mycat.config.Versions;
 import io.mycat.config.loader.zkprocess.entity.rule.function.Function;
 import io.mycat.config.loader.zkprocess.entity.rule.tablerule.TableRule;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
+import java.util.List;
+
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io."+ Versions.ROOT_PREFIX+"/", name = "rule")
+@XmlRootElement(namespace = "http://io." + Versions.ROOT_PREFIX + "/", name = "rule")
 public class Rules {
 
     /**
      * 表的路由配制信息
-    * @字段说明 tableRule
-    */
+     *
+     * @字段说明 tableRule
+     */
     protected List<TableRule> tableRule;
 
     /**
      * 指定的方法信息
-    * @字段说明 function
-    */
+     *
+     * @字段说明 function
+     */
     protected List<Function> function;
 
     public List<TableRule> getTableRule() {

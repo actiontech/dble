@@ -15,23 +15,23 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 public class DruidDropTableParser extends DefaultDruidParser {
-	@Override
-	public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
-			throws SQLException {
-		SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
-		if(dropTable.getTableSources().size()>1){
-			String msg = "dropping multi-tables is not supported, sql:" + stmt;
-			throw new SQLNonTransientException(msg);
-		}
-		String schemaName = schema == null ? null : schema.getName();
-		SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropTable.getTableSources().get(0));
-		String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
-		rrs.setStatement(statement);
-		if(RouterUtil.isNoSharding(schemaInfo.schemaConfig,schemaInfo.table)){
-			RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
-			return schemaInfo.schemaConfig;
-		}
-		RouterUtil.routeToDDLNode(schemaInfo, rrs);
-		return schemaInfo.schemaConfig;
-	}
+    @Override
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
+            throws SQLException {
+        SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
+        if (dropTable.getTableSources().size() > 1) {
+            String msg = "dropping multi-tables is not supported, sql:" + stmt;
+            throw new SQLNonTransientException(msg);
+        }
+        String schemaName = schema == null ? null : schema.getName();
+        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropTable.getTableSources().get(0));
+        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+        rrs.setStatement(statement);
+        if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+            return schemaInfo.schemaConfig;
+        }
+        RouterUtil.routeToDDLNode(schemaInfo, rrs);
+        return schemaInfo.schemaConfig;
+    }
 }

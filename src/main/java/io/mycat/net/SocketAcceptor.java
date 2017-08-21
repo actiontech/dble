@@ -2,10 +2,10 @@ package io.mycat.net;
 
 public interface SocketAcceptor {
 
-	void start();
+    void start();
 
-	String getName();
+    String getName();
 
-	int getPort();
+    int getPort();
 
 }

@@ -23,10 +23,6 @@
  */
 package io.mycat.manager.response;
 
-import java.util.Map;
-
-import org.slf4j.Logger; import org.slf4j.LoggerFactory;
-
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBPool;
 import io.mycat.manager.ManagerConnection;
@@ -35,10 +31,14 @@ import io.mycat.route.parser.ManagerParseStop;
 import io.mycat.route.parser.util.Pair;
 import io.mycat.util.FormatUtil;
 import io.mycat.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * 暂停数据节点心跳检测
- * 
+ *
  * @author mycat
  */
 public final class StopHeartbeat {
@@ -52,7 +52,7 @@ public final class StopHeartbeat {
             long time = keys.getValue().intValue() * 1000L;
             Map<String, PhysicalDBPool> dns = MycatServer.getInstance().getConfig().getDataHosts();
             for (String key : keys.getKey()) {
-            	PhysicalDBPool dn = dns.get(key);
+                PhysicalDBPool dn = dns.get(key);
                 if (dn != null) {
                     dn.getSource().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
                     ++count;

@@ -53,117 +53,118 @@ import java.util.*;
  */
 public class ShowHeartbeatDetail {
 
-	private static final int FIELD_COUNT = 5;
-	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-	private static final EOFPacket eof = new EOFPacket();
-	
-	static {
-		int i = 0;
-		byte packetId = 0;
-		header.packetId = ++packetId;
+    private static final int FIELD_COUNT = 5;
+    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket eof = new EOFPacket();
 
-		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+    static {
+        int i = 0;
+        byte packetId = 0;
+        header.packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
-		fields[i++].packetId = ++packetId;
+        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
+        fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_VAR_STRING);
-		fields[i++].packetId = ++packetId;
-		
-		eof.packetId = ++packetId;
-	}
+        fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
+        fields[i++].packetId = ++packetId;
 
-	public static void response(ManagerConnection c,String stmt) {
+        fields[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
+
+        eof.packetId = ++packetId;
+    }
+
+    public static void response(ManagerConnection c, String stmt) {
 
 
-		Pair<String,String> pair = ManagerParseHeartbeat.getPair(stmt);
-		String name = pair.getValue();
-		if(name.length() == 0){
-			c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
-			return;
-		}
+        Pair<String, String> pair = ManagerParseHeartbeat.getPair(stmt);
+        String name = pair.getValue();
+        if (name.length() == 0) {
+            c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+            return;
+        }
 
-		ByteBuffer buffer = c.allocate();
+        ByteBuffer buffer = c.allocate();
 
-		// write header
-		buffer = header.write(buffer, c,true);
+        // write header
+        buffer = header.write(buffer, c, true);
 
-		// write fields
-		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c,true);
-		}
+        // write fields
+        for (FieldPacket field : fields) {
+            buffer = field.write(buffer, c, true);
+        }
 
-		// write eof
-		buffer = eof.write(buffer, c,true);
+        // write eof
+        buffer = eof.write(buffer, c, true);
 
-		// write rows
-		byte packetId = eof.packetId;
+        // write rows
+        byte packetId = eof.packetId;
 
-		for (RowDataPacket row : getRows(name,c.getCharset())) {
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c,true);
-		}
+        for (RowDataPacket row : getRows(name, c.getCharset())) {
+            row.packetId = ++packetId;
+            buffer = row.write(buffer, c, true);
+        }
 
-		// write last eof
-		EOFPacket lastEof = new EOFPacket();
-		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c,true);
+        // write last eof
+        EOFPacket lastEof = new EOFPacket();
+        lastEof.packetId = ++packetId;
+        buffer = lastEof.write(buffer, c, true);
 
-		// post write
-		c.write(buffer);
-	}
-	private static List<RowDataPacket> getRows(String name,String charset) {
-		List<RowDataPacket> list = new LinkedList<RowDataPacket>();
-		MycatConfig conf = MycatServer.getInstance().getConfig();
-		String ip = "";
-		int port = 0;
-		DBHeartbeat hb = null;
+        // post write
+        c.write(buffer);
+    }
 
-		Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-		for (PhysicalDBPool pool : dataHosts.values()) {
-			for (PhysicalDatasource ds : pool.getAllDataSources()) {
-				if(name.equals(ds.getName())){
-					hb = ds.getHeartbeat();
-					ip = ds.getConfig().getIp();
-					port = ds.getConfig().getPort();
-					break;
-				}
-			}
-		}
-		if(hb!=null){
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Queue<HeartbeatRecorder.Record> heatbeartRecorders = hb.getRecorder().getRecordsAll();
-			for(HeartbeatRecorder.Record record : heatbeartRecorders){
-				RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-				row.add(StringUtil.encode(name,charset));
-				row.add(StringUtil.encode(ip,charset));
-				row.add(IntegerUtil.toBytes(port));
-				long time = record.getTime();
-				String timeStr = sdf.format(new Date(time));
-				row.add(StringUtil.encode(timeStr,charset));
-				row.add(LongUtil.toBytes(record.getValue()));
+    private static List<RowDataPacket> getRows(String name, String charset) {
+        List<RowDataPacket> list = new LinkedList<RowDataPacket>();
+        MycatConfig conf = MycatServer.getInstance().getConfig();
+        String ip = "";
+        int port = 0;
+        DBHeartbeat hb = null;
 
-				list.add(row);
-			}
-		}else{
-			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-			row.add(null);
-			row.add(null);
-			row.add(null);
-			row.add(null);
-			row.add(null);
-			list.add(row);
-		}
-		
-		return list;
-	}
+        Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
+        for (PhysicalDBPool pool : dataHosts.values()) {
+            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                if (name.equals(ds.getName())) {
+                    hb = ds.getHeartbeat();
+                    ip = ds.getConfig().getIp();
+                    port = ds.getConfig().getPort();
+                    break;
+                }
+            }
+        }
+        if (hb != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Queue<HeartbeatRecorder.Record> heatbeartRecorders = hb.getRecorder().getRecordsAll();
+            for (HeartbeatRecorder.Record record : heatbeartRecorders) {
+                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                row.add(StringUtil.encode(name, charset));
+                row.add(StringUtil.encode(ip, charset));
+                row.add(IntegerUtil.toBytes(port));
+                long time = record.getTime();
+                String timeStr = sdf.format(new Date(time));
+                row.add(StringUtil.encode(timeStr, charset));
+                row.add(LongUtil.toBytes(record.getValue()));
+
+                list.add(row);
+            }
+        } else {
+            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+            row.add(null);
+            row.add(null);
+            row.add(null);
+            row.add(null);
+            row.add(null);
+            list.add(row);
+        }
+
+        return list;
+    }
 
 }

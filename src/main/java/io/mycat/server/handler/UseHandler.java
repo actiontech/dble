@@ -23,15 +23,15 @@
  */
 package io.mycat.server.handler;
 
-import java.nio.ByteBuffer;
-import java.util.Set;
-
 import io.mycat.MycatServer;
 import io.mycat.config.ErrorCode;
 import io.mycat.net.handler.FrontendPrivileges;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 import io.mycat.util.StringUtil;
+
+import java.nio.ByteBuffer;
+import java.util.Set;
 
 /**
  * @author mycat
@@ -42,17 +42,17 @@ public final class UseHandler {
         String schema = sql.substring(offset).trim();
         int length = schema.length();
         if (length > 0) {
-        	if(schema.endsWith(";")) {
+            if (schema.endsWith(";")) {
                 schema = schema.substring(0, schema.length() - 1);
             }
-        	schema = StringUtil.replaceChars(schema, "`", null);
-        	length=schema.length();
+            schema = StringUtil.replaceChars(schema, "`", null);
+            length = schema.length();
             if (schema.charAt(0) == '\'' && schema.charAt(length - 1) == '\'') {
                 schema = schema.substring(1, length - 1);
             }
-			if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
-				schema = schema.toLowerCase();
-			}
+            if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+                schema = schema.toLowerCase();
+            }
         }
         // 检查schema的有效性
         FrontendPrivileges privileges = c.getPrivileges();

@@ -13,14 +13,14 @@ import io.mycat.server.util.SchemaUtil;
  * Created by huqing.yan on 2017/7/19.
  */
 public class ShowCreateTable {
-	public static void response(ServerConnection c, String stmt){
-		try {
-			SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-			MySqlShowCreateTableStatement showCreateTableStatement = (MySqlShowCreateTableStatement) statement;
-			SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), showCreateTableStatement.getName());
-			c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.SHOW);
-		} catch (Exception e) {
-			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
-		}
-	}
+    public static void response(ServerConnection c, String stmt) {
+        try {
+            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            MySqlShowCreateTableStatement showCreateTableStatement = (MySqlShowCreateTableStatement) statement;
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), showCreateTableStatement.getName());
+            c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.SHOW);
+        } catch (Exception e) {
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+        }
+    }
 }

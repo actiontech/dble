@@ -25,7 +25,7 @@ import java.util.Map;
 public class DDLRouteTest {
     protected Map<String, SchemaConfig> schemaMap;
     protected LayerCachePool cachePool = new SimpleCachePool();
-    protected RouteStrategy routeStrategy ;
+    protected RouteStrategy routeStrategy;
 
     public DDLRouteTest() {
         String schemaFile = "/route/schema.xml";
@@ -44,16 +44,16 @@ public class DDLRouteTest {
         RouteService routerService = new RouteService(cacheService);
 
         // alter table test
-        String  sql = " ALTER TABLE COMPANY\r\nADD COLUMN TEST  VARCHAR(255) NULL AFTER CREATE_DATE,\r\n CHARACTER SET = UTF8";
+        String sql = " ALTER TABLE COMPANY\r\nADD COLUMN TEST  VARCHAR(255) NULL AFTER CREATE_DATE,\r\n CHARACTER SET = UTF8";
         sql = RouterUtil.getFixedSql(sql);
         List<String> dataNodes = new ArrayList<>();
-        String  tablename =  RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(sql, 0));
-        Map<String, TableConfig>  tables = schema.getTables();
+        String tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(sql, 0));
+        Map<String, TableConfig> tables = schema.getTables();
         TableConfig tc;
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
         }
-        int nodeSize  = dataNodes.size();
+        int nodeSize = dataNodes.size();
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
@@ -81,7 +81,7 @@ public class DDLRouteTest {
 
         //TODO : modify by zhuam
         // 小写表名，需要额外转为 大写 做比较
-        String tablename =  RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
+        String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 
         List<String> dataNodes = new ArrayList<>();
@@ -103,7 +103,7 @@ public class DDLRouteTest {
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
 
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -120,7 +120,7 @@ public class DDLRouteTest {
         sql = "   alter table COMPANY add COLUMN name int ;";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -136,7 +136,7 @@ public class DDLRouteTest {
         sql = " truncate table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -147,8 +147,6 @@ public class DDLRouteTest {
         rrs = routerService.route(schema, sqlType, sql, "UTF-8", null);
         Assert.assertTrue("COMPANY".equals(tablename));
         Assert.assertTrue(rrs.getNodes().length == nodeSize);
-
-
 
 
     }
@@ -188,15 +186,15 @@ public class DDLRouteTest {
 
         };
         //测试分片的状态
-        for(int i = 0;i < createSqls.length;i++){
+        for (int i = 0; i < createSqls.length; i++) {
             SQLStatementParser parser = new MySqlStatementParser(createSqls[i]);
             testSQLStatement[i] = (SQLCreateTableStatement) parser.parseStatement();
         }
 
-        for(Method f :fa){
-            if(f.getName().equals("sharingTableCheck")){
+        for (Method f : fa) {
+            if (f.getName().equals("sharingTableCheck")) {
                 f.setAccessible(true);
-                for(int i = 0;i < createSqls.length;i++) {
+                for (int i = 0; i < createSqls.length; i++) {
                     try {
                         DruidCreateTableParser createTableParser = new DruidCreateTableParser();
                         Object[] prams = {testSQLStatement[i]};
@@ -207,8 +205,8 @@ public class DDLRouteTest {
                             continue;
                         }
                         result[i] = null;
-                    }catch(Exception e){
-                        System.out.print("there is something wrong with the Parser"+e.getMessage());
+                    } catch (Exception e) {
+                        System.out.print("there is something wrong with the Parser" + e.getMessage());
                     }
                 }
             }
@@ -243,7 +241,6 @@ public class DDLRouteTest {
     }
 
 
-
     @Test
     public void testDDLDefaultNode() throws Exception {
         SchemaConfig schema = schemaMap.get("solo1");
@@ -256,7 +253,7 @@ public class DDLRouteTest {
         String upsql = sql.toUpperCase();
 
         //TODO：modify by zhuam 小写表名，转为大写比较
-        String tablename =  RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
+        String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 
         List<String> dataNodes = new ArrayList<>();
@@ -266,7 +263,7 @@ public class DDLRouteTest {
             dataNodes = tc.getDataNodes();
         }
         int nodeSize = dataNodes.size();
-        if (nodeSize==0&& schema.getDataNode()!=null){
+        if (nodeSize == 0 && schema.getDataNode() != null) {
             nodeSize = 1;
         }
 
@@ -280,13 +277,13 @@ public class DDLRouteTest {
         sql = " drop table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
         }
         nodeSize = dataNodes.size();
-        if (nodeSize==0&& schema.getDataNode()!=null){
+        if (nodeSize == 0 && schema.getDataNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -299,13 +296,13 @@ public class DDLRouteTest {
         sql = " drop table if exists COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
         }
         nodeSize = dataNodes.size();
-        if (nodeSize==0&& schema.getDataNode()!=null){
+        if (nodeSize == 0 && schema.getDataNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -318,14 +315,14 @@ public class DDLRouteTest {
         sql = "   alter table COMPANY add COLUMN name int ;";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
         }
         nodeSize = dataNodes.size();
 
-        if (nodeSize==0&& schema.getDataNode()!=null){
+        if (nodeSize == 0 && schema.getDataNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -338,14 +335,14 @@ public class DDLRouteTest {
         sql = " truncate table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename =  RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
+        tablename = RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
         }
         nodeSize = dataNodes.size();
 
-        if (nodeSize==0&& schema.getDataNode()!=null){
+        if (nodeSize == 0 && schema.getDataNode() != null) {
             nodeSize = 1;
         }
 
@@ -357,7 +354,6 @@ public class DDLRouteTest {
 
 
     }
-
 
 
     @Test

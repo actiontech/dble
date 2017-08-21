@@ -77,7 +77,7 @@ public class RouteService {
                 return rrs;
             }
         }
-       
+
         /*!mycat: sql = select name from aa */
         /*!mycat: schema = test */
 //      boolean isMatchOldHint = stmt.startsWith(OLD_MYCAT_HINT);

@@ -27,7 +27,6 @@ public abstract class Field {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("parser error ,charset :" + charset.toString());
         }
-//        
     }
 
     public static Field getFieldItem(String name, String table, int type, int charsetIndex, int field_length,

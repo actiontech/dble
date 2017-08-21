@@ -72,8 +72,8 @@ public class ShowSQLSumTable {
         buffer = eof.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;         
-       
+        byte packetId = eof.packetId;
+
         /*
         int i=0;
         Map<String, TableStat> statMap = TableStatAnalyzer.getInstance().getTableStatMap();

@@ -191,7 +191,7 @@ public class QueryConditionAnalyzer implements QueryResultListener {
 
    /* -----------------------------------------------------------------
     public static void main(String arg[]) {
-        
+
         String sql = "SELECT `fnum`, `forg`, `fdst`, `airline`, `ftype` , `ports_of_call`, "
                     "`scheduled_deptime`, `scheduled_arrtime`, `actual_deptime`, `actual_arrtime`, "
                     "`flight_status_code` FROM dynamic "
@@ -199,13 +199,13 @@ public class QueryConditionAnalyzer implements QueryResultListener {
                     "AND `scheduled_deptime` BETWEEN 1212121 AND 232323233 "
                     "AND `fservice` = 'J' AND `fcategory` = 1 "
                     "AND `share_execute_flag` = 1 ORDER BY scheduled_deptime";
-        
+
         QueryResult qr = new QueryResult("zhuam", ServerParse.SELECT, sql, 0);
-        
+
         QueryConditionAnalyzer analyzer = QueryConditionAnalyzer.getInstance();
         analyzer.setTableColumnFilter("dynamic&fnum");
         analyzer.onQuery(qr);
-        
+
         List<Map.Entry<Object, Long>> list = analyzer.getValues();
         System.out.println( list );
      }

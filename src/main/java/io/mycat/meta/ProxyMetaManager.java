@@ -579,7 +579,7 @@ public class ProxyMetaManager {
 //
 
 
-//    
+//
 //    public void renameTable(String schema, DDLRenameTableStatement ast) {
 //        for (Pair<Identifier, Identifier> pair : ast.getList()) {
 //            String orgSchema = schema;

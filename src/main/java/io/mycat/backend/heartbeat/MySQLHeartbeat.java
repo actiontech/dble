@@ -242,7 +242,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                         if (nextId == curIndex) {
                             break;
                         }
-                        
+
                         PhysicalDatasource theSource = allWriteNodes[nextId];
                         DBHeartbeat theSourceHB = theSource.getHeartbeat();
                         int theSourceHBStatus = theSourceHB.getStatus();

@@ -1355,7 +1355,7 @@ public final class ManagerParseShow {
 
                     /*
                      *  兼容之前指令
-                     *  在保留 SHOW @@SQL.SUM 指令的同时， 扩展支持  SHOW @@SQL.SUM.TABLE 、 SHOW @@SQL.SUM.USER  
+                     *  在保留 SHOW @@SQL.SUM 指令的同时， 扩展支持  SHOW @@SQL.SUM.TABLE 、 SHOW @@SQL.SUM.USER
                      */
                     if (stmt.length() > (offset + 4)) {
                         char c2 = stmt.charAt(++offset);

@@ -303,7 +303,7 @@ public final class ReloadConfig {
         Map<String, PhysicalDBPool> dataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
         FirewallConfig firewall = loader.getFirewall();
-       
+
     /* 2、在老的配置上， 应用新的配置 */
         MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, false);
     /* 3、清理缓存 */

@@ -71,8 +71,8 @@ public class MySQLConsistencyChecker {
         this.tableName = tableName;
         this.countSQL = " select count(*) as " + GlobalTableUtil.COUNT_COLUMN + " from "
                 + this.tableName;
-        this.maxSQL = " select max(" + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + ") as "
-        GlobalTableUtil.MAX_COLUMN + " from " + this.tableName;
+        this.maxSQL = " select max(" + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + ") as " +
+                GlobalTableUtil.MAX_COLUMN + " from " + this.tableName;
         this.columnExistSQL += this.tableName + "' ";
     }
 

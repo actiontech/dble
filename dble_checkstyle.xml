@@ -3,7 +3,7 @@
         "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
         "http://checkstyle.sourceforge.net/dtds/configuration_1_3.dtd">
 
-<module name = "Checker">
+<module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
     <property name="fileExtensions" value="java, properties, xml"/>
@@ -25,9 +25,70 @@
     </module>
 
     <module name="TreeWalker">
+        <!-- Checks for Naming Conventions. -->
         <!--<module name="ConstantName"/>-->
         <module name="LocalFinalVariableName"/>
         <!--<module name="LocalVariableName"/>-->
         <!--<module name="MemberName"/>-->
+        <!--<module name="MethodName"/>-->
+        <module name="PackageName"/>
+        <!--<module name="ParameterName"/>-->
+        <!--<module name="StaticVariableName"/>-->
+        <!--<module name="TypeName"/>-->
+        <!--<module name="AbbreviationAsWordInName"/>-->
+
+        <!-- Checks for Annotation. -->
+        <module name="AnnotationLocation"/>
+        <module name="AnnotationUseStyle"/>
+
+        <!-- Checks for imports. -->
+        <!--<module name="AvoidStarImport"/>-->
+        <module name="RedundantImport"/>
+        <!--<module name="UnusedImports"/>-->
+
+        <!-- Checks for whitespace. -->
+        <!--<module name="EmptyForIteratorPad"/>-->
+        <module name="GenericWhitespace"/>
+        <module name="MethodParamPad"/>
+        <module name="NoWhitespaceAfter"/>
+        <!--<module name="NoWhitespaceBefore"/>-->
+        <!--<module name="OperatorWrap"/>-->
+        <!--<module name="ParenPad"/>-->
+        <module name="TypecastParenPad"/>
+        <!--<module name="WhitespaceAfter"/>-->
+        <!--<module name="WhitespaceAround"/>-->
+
+        <!-- Modifier Checks. -->
+        <!--<module name="ModifierOrder"/>-->
+        <!--<module name="RedundantModifier"/>-->
+
+        <!-- Checks for blocks. -->
+        <!--<module name="EmptyBlock">-->
+        <!--<property name="option" value="text"/>-->
+        <!--</module>-->
+        <!--<module name="LeftCurly"/>-->
+        <!--<module name="RightCurly"/>-->
+
+        <!-- Checks for common coding problems. -->
+        <!--<module name="EmptyStatement"/>-->
+        <module name="EqualsHashCode"/>
+        <module name="IllegalInstantiation"/>
+        <!--<module name="InnerAssignment"/>-->
+        <!--<module name="MagicNumber"/>-->
+        <!--<module name="MissingSwitchDefault"/>-->
+        <!--<module name="SimplifyBooleanExpression"/>-->
+        <!--<module name="SimplifyBooleanReturn"/>-->
+        <!--<module name="ArrayTrailingComma"/>-->
+
+        <!-- Checks for class design. -->
+        <!--<module name="FinalClass"/>-->
+        <!--<module name="HideUtilityClassConstructor"/>-->
+        <!--<module name="InterfaceIsType"/>-->
+
+        <!-- Miscellaneous other checks. -->
+        <!--<module name="ArrayTypeStyle"/>-->
+        <module name="UpperEll"/>
+        <module name="AvoidEscapedUnicodeCharacters"/>
+
     </module>
 </module>

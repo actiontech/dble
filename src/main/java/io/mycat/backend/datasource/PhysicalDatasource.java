@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +59,6 @@ public abstract class PhysicalDatasource {
     private final boolean readNode;
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
-    private final ConnectionHeartBeatHandler conHeartBeatHanler = new ConnectionHeartBeatHandler();
     private PhysicalDBPool dbPool;
     private AtomicBoolean dying = new AtomicBoolean(false);
 
@@ -177,38 +174,6 @@ public abstract class PhysicalDatasource {
         return total;
     }
 
-    private boolean validSchema(String schema) {
-        String theSchema = schema;
-        return theSchema != null && !"".equals(theSchema) && !"snyn...".equals(theSchema);
-    }
-
-    private void checkIfNeedHeartBeat(LinkedList<BackendConnection> heartBeatCons, ConQueue queue,
-                                      ConcurrentLinkedQueue<BackendConnection> checkLis, long hearBeatTime,
-                                      long hearBeatTime2) {
-        int maxConsInOneCheck = 10;
-        Iterator<BackendConnection> checkListItor = checkLis.iterator();
-        while (checkListItor.hasNext()) {
-            BackendConnection con = checkListItor.next();
-            if (con.isClosedOrQuit()) {
-                checkListItor.remove();
-                continue;
-            }
-
-            if (validSchema(con.getSchema())) {
-                if (con.getLastTime() < hearBeatTime && heartBeatCons.size() < maxConsInOneCheck) {
-                    checkListItor.remove();
-                    // Heart beat check
-                    con.setBorrowed(true);
-                    heartBeatCons.add(con);
-                }
-            } else if (con.getLastTime() < hearBeatTime2) {
-                // not valid schema conntion should close for idle exceed 2*conHeartBeatPeriod
-                checkListItor.remove();
-                con.close(" heart beate idle ");
-            }
-        }
-    }
-
     public boolean isSalveOrRead() {
         if (dbPool.isSlave(this) || this.readNode) {
             return true;
@@ -216,38 +181,21 @@ public abstract class PhysicalDatasource {
         return false;
     }
 
-    public void heatBeatCheck(long timeout, long conHeartBeatPeriod) {
+    public void connectionHeatBeatCheck(long conHeartBeatPeriod) {
         // to die
         if (dying.get()) {
             closeByDyingAll();
             return;
         }
 
-        int maxConsInOneCheck = 5;
-        LinkedList<BackendConnection> heartBeatCons = new LinkedList<BackendConnection>();
-
         long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
-        long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2 * conHeartBeatPeriod;
+
         for (ConQueue queue : conMap.getAllConQueue()) {
-            checkIfNeedHeartBeat(heartBeatCons, queue, queue.getAutoCommitCons(),
-                    hearBeatTime, hearBeatTime2);
-            if (heartBeatCons.size() < maxConsInOneCheck) {
-                checkIfNeedHeartBeat(heartBeatCons, queue, queue.getManCommitCons(),
-                        hearBeatTime, hearBeatTime2);
-            } else if (heartBeatCons.size() >= maxConsInOneCheck) {
-                break;
-            }
+            longIdleHeartBeat(queue.getAutoCommitCons(), hearBeatTime);
+            longIdleHeartBeat(queue.getManCommitCons(), hearBeatTime);
         }
 
-        if (!heartBeatCons.isEmpty()) {
-            for (BackendConnection con : heartBeatCons) {
-                conHeartBeatHanler.doHeartBeat(con, hostConfig.getHearbeatSQL());
-            }
-        }
-
-        // check if there has timeouted heatbeat cons
-        conHeartBeatHanler.abandTimeOuttedConns();
-
+        //the following is about the idle connection number control
         int idleCons = getIdleCount();
         int activeCons = this.getActiveCount();
         int createCount = (hostConfig.getMinCon() - idleCons) / 3;
@@ -268,6 +216,30 @@ public abstract class PhysicalDatasource {
             }
         }
     }
+
+
+    /**
+     * check if the connection is not be used for a while & do connection heart beat
+     *
+     * @param linkedQueue
+     * @param hearBeatTime
+     */
+    private void longIdleHeartBeat(ConcurrentLinkedQueue<BackendConnection> linkedQueue, long hearBeatTime) {
+        long length = linkedQueue.size();
+        for (int i = 0; i < length; i++) {
+            BackendConnection con = linkedQueue.poll();
+            if (con.isClosedOrQuit()) {
+                continue;
+            } else if (con.getLastTime() < hearBeatTime) {//if the connection is idle for a long time
+                con.setBorrowed(true);
+                new ConnectionHeartBeatHandler().doHeartBeat(con);
+            } else {
+                linkedQueue.offer(con);
+                break;
+            }
+        }
+    }
+
 
     private void closeByDyingAll() {
         List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(this.getIdleCount());

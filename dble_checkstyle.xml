@@ -36,6 +36,9 @@
         <!--<module name="StaticVariableName"/>-->
         <!--<module name="TypeName"/>-->
         <!--<module name="AbbreviationAsWordInName"/>-->
+        <!--<module name="ClassTypeParameterName"/>-->
+        <module name="MethodTypeParameterName"/>
+        <module name="InterfaceTypeParameterName"/>
 
         <!-- Checks for Annotation. -->
         <module name="AnnotationLocation"/>
@@ -57,6 +60,9 @@
         <module name="TypecastParenPad"/>
         <!--<module name="WhitespaceAfter"/>-->
         <!--<module name="WhitespaceAround"/>-->
+        <!--<module name="SeparatorWrap"/>-->
+        <module name="NoLineWrap"/>
+        <!--<module name="EmptyForInitializerPad"/>-->
 
         <!-- Modifier Checks. -->
         <!--<module name="ModifierOrder"/>-->
@@ -79,16 +85,42 @@
         <!--<module name="SimplifyBooleanExpression"/>-->
         <!--<module name="SimplifyBooleanReturn"/>-->
         <!--<module name="ArrayTrailingComma"/>-->
+        <!--<module name="VariableDeclarationUsageDistance"/>-->
+        <module name="SuperFinalize"/>
+        <!--<module name="SuperClone"/>-->
+        <module name="StringLiteralEquality"/>
+        <!--<module name="OuterTypeNumber"/>-->
+        <module name="PackageDeclaration"/>
+        <!--<module name="DefaultComesLast"/>-->
+        <!--<module name="FallThrough"/>-->
+        <module name="CovariantEquals"/>
 
         <!-- Checks for class design. -->
         <!--<module name="FinalClass"/>-->
         <!--<module name="HideUtilityClassConstructor"/>-->
         <!--<module name="InterfaceIsType"/>-->
+        <module name="ThrowsCount"/>
+        <!--<module name="MutableException"/>-->
+        <!--<module name="OverloadMethodsDeclarationOrder"/>-->
+        <!--<module name="OneTopLevelClass"/>-->
+        <!--<module name="OneStatementPerLine"/>-->
+        <!--<module name="NoClone"/>-->
+        <module name="NoFinalizer"/>
+        <!--<module name="InnerTypeLast"/>-->
+
+        <!-- Checks for metrics. -->
 
         <!-- Miscellaneous other checks. -->
         <!--<module name="ArrayTypeStyle"/>-->
         <module name="UpperEll"/>
         <module name="AvoidEscapedUnicodeCharacters"/>
-
+        <!--<module name="UncommentedMain"/>-->
+        <!--<module name="Indentation">-->
+            <!--<property name="arrayInitIndent" value="8"/>-->
+        <!--</module>-->
+        <module name="OuterTypeFilename"/>
+        <!--<module name="CommentsIndentation"/>-->
     </module>
+
+    <module name="UniqueProperties"/>
 </module>

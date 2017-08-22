@@ -449,8 +449,7 @@ public class PhysicalDBPool {
             // and current write node will check
             if (ds != null && (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS)
                     && (ds.isReadNode() || ds == this.getSource())) {
-
-                ds.heatBeatCheck(ds.getConfig().getIdleTimeout(), ildCheckPeriod);
+                ds.connectionHeatBeatCheck(ildCheckPeriod);
             }
         }
     }

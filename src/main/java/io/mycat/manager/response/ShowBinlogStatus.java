@@ -117,17 +117,23 @@ public class ShowBinlogStatus {
                             if (isAllPaused) {
                                 getQueryResult(c.getCharset());
                             }
-                        }
-                        writeResponse(c);
-                        BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
-                        zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                        zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
-                        List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
-                        while (releaseList.size() != 0) {
-                            releaseList = zkConn.getChildren().forPath(binlogPause);
-                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                            writeResponse(c);
+                            BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
+                            zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
+                            zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
+                            List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
+                            while (releaseList.size() != 0) {
+                                releaseList = zkConn.getChildren().forPath(binlogPause);
+                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                            }
+                        } else {
+                            writeResponse(c);
+                            BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
+                            zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
                         }
                     }
+                } catch (Exception e) {
+                    logger.warn("catch Exception", e);
                 } finally {
                     MycatServer.getInstance().getBackupLocked().compareAndSet(true, false);
                     distributeLock.release();

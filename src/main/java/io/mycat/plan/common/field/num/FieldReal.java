@@ -59,7 +59,7 @@ public abstract class FieldReal extends FieldNum {
         try {
             res = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            logger.warn("parse string exception!", ue);
+            LOGGER.warn("parse string exception!", ue);
         }
         if (res == null)
             decValue = BigDecimal.ZERO;
@@ -67,7 +67,7 @@ public abstract class FieldReal extends FieldNum {
             try {
                 decValue = new BigDecimal(res);
             } catch (Exception e) {
-                logger.info("String:" + res + " to BigDecimal exception!", e);
+                LOGGER.info("String:" + res + " to BigDecimal exception!", e);
                 decValue = BigDecimal.ZERO;
             }
     }
@@ -106,7 +106,7 @@ public abstract class FieldReal extends FieldNum {
                 BigDecimal b2 = new BigDecimal(sval2);
                 return b1.compareTo(b2);
             } catch (Exception e) {
-                logger.info("String to biginteger exception!", e);
+                LOGGER.info("String to biginteger exception!", e);
                 return -1;
             }
     }

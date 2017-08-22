@@ -44,7 +44,7 @@ public class XmlProcessBase {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger lOG = LoggerFactory.getLogger(XmlProcessBase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(XmlProcessBase.class);
 
     /**
      * 转换对象
@@ -97,7 +97,7 @@ public class XmlProcessBase {
         try {
             this.jaxContext = JAXBContext.newInstance(classArray, Collections.<String, Object>emptyMap());
         } catch (JAXBException e) {
-            lOG.error("ZookeeperProcessListen initJaxbClass  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen initJaxbClass  error:Exception info:", e);
             throw e;
         }
 
@@ -133,9 +133,9 @@ public class XmlProcessBase {
             marshaller.marshal(user, out);
 
         } catch (JAXBException e) {
-            lOG.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         } catch (IOException e) {
-            lOG.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         }
     }
 
@@ -175,9 +175,9 @@ public class XmlProcessBase {
             marshaller.marshal(user, out);
 
         } catch (JAXBException e) {
-            lOG.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         } catch (IOException e) {
-            lOG.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         }
     }
 

@@ -17,7 +17,7 @@ public class PrefixComparators {
     public static final PrefixComparator DOUBLE = new UnsignedPrefixComparator();
     public static final PrefixComparator DOUBLE_DESC = new UnsignedPrefixComparatorDesc();
 
-    public static final PrefixComparator RadixSortDemo = new RadixSortDemo();
+    public static final PrefixComparator RADIX_SORT_DEMO = new RadixSortDemo();
 
 
     public static final class BinaryPrefixComparator {

@@ -48,7 +48,7 @@ public final class SystemConfig {
      * 注意！！！ 目前mycat支持的MySQL版本，如果后续有新的MySQL版本,请添加到此数组， 对于MySQL的其他分支，
      * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
      */
-    public static final String[] MySQLVersions = {"5.5", "5.6", "5.7"};
+    public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7"};
 
     private static final int DEFAULT_PORT = 8066;
     private static final int DEFAULT_MANAGER_PORT = 9066;

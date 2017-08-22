@@ -46,64 +46,64 @@ import java.nio.ByteBuffer;
 public final class ShowCommand {
 
     private static final int FIELD_COUNT = 10;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("PROCESSOR", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PROCESSOR", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("INIT_DB", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("INIT_DB", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("QUERY", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("QUERY", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("STMT_PREPARE", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("STMT_PREPARE", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("STMT_EXECUTE", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("STMT_EXECUTE", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("STMT_CLOSE", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("STMT_CLOSE", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("PING", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PING", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("KILL", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("KILL", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("QUIT", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("QUIT", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("OTHER", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("OTHER", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
             RowDataPacket row = getRow(p);
             row.packetId = ++packetId;

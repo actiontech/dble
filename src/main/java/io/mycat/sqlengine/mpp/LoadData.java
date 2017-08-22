@@ -7,7 +7,7 @@ import java.util.List;
  * Created by magicdoom on 2015/3/30.
  */
 public class LoadData implements Serializable {
-    public static final String loadDataHint = "/*loaddata*/";
+    public static final String LOAD_DATA_HINT = "/*loaddata*/";
     private boolean isLocal;
     private List<String> data;
     private String fileName;

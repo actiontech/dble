@@ -50,65 +50,65 @@ import java.nio.ByteBuffer;
 public class ShowBackend {
 
     private static final int FIELD_COUNT = 16;
-    private static final ResultSetHeaderPacket header = PacketUtil
+    private static final ResultSetHeaderPacket HEADER = PacketUtil
             .getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
-        fields[i] = PacketUtil.getField("processor",
+        HEADER.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("processor",
                 Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("CLOSED", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("CLOSED", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
         // fields[i] = PacketUtil.getField("run", Fields.FIELD_TYPE_VAR_STRING);
         // fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("BORROWED",
+        FIELDS[i] = PacketUtil.getField("BORROWED",
                 Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil
                 .getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil
                 .getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("AUTOCOMMIT",
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("AUTOCOMMIT",
                 Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = header.write(buffer, c, true);
-        for (FieldPacket field : fields) {
+        buffer = HEADER.write(buffer, c, true);
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
-        buffer = eof.write(buffer, c, true);
-        byte packetId = eof.packetId;
+        buffer = EOF.write(buffer, c, true);
+        byte packetId = EOF.packetId;
         String charset = c.getCharset();
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {

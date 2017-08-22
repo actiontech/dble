@@ -24,7 +24,7 @@ public abstract class AbstractTableMetaHandler {
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLMS = new String[]{
             "Table",
             "Create Table"};
-    private static final String sqlPrefix = "show create table ";
+    private static final String SQL_PREFIX = "show create table ";
 
 
     private TableConfig tbConfig;
@@ -54,7 +54,7 @@ public abstract class AbstractTableMetaHandler {
             }
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLMS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
             PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            SQLJob sqlJob = new SQLJob(sqlPrefix + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
             sqlJob.run();
         }
     }

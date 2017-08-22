@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class GetConnectionHandler implements ResponseHandler {
     private final CopyOnWriteArrayList<BackendConnection> successCons;
-    private static final Logger logger = LoggerFactory
+    private static final Logger LOGGER = LoggerFactory
             .getLogger(GetConnectionHandler.class);
     private final AtomicInteger finishedCount = new AtomicInteger(0);
     private final int total;
@@ -65,26 +65,26 @@ public class GetConnectionHandler implements ResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         successCons.add(conn);
         finishedCount.addAndGet(1);
-        logger.info("connected successfuly " + conn);
+        LOGGER.info("connected successfuly " + conn);
         conn.release();
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         finishedCount.addAndGet(1);
-        logger.warn("connect error " + conn + e);
+        LOGGER.warn("connect error " + conn + e);
         conn.release();
     }
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
-        logger.warn("caught error resp: " + conn + " " + new String(err));
+        LOGGER.warn("caught error resp: " + conn + " " + new String(err));
         conn.release();
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        logger.info("received ok resp: " + conn + " " + new String(ok));
+        LOGGER.info("received ok resp: " + conn + " " + new String(ok));
 
     }
 

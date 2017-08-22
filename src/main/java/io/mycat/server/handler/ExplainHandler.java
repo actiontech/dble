@@ -67,14 +67,14 @@ import java.util.*;
  */
 public class ExplainHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExplainHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExplainHandler.class);
     private static final int FIELD_COUNT = 3;
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
 
     static {
-        fields[0] = PacketUtil.getField("DATA_NODE", Fields.FIELD_TYPE_VAR_STRING);
-        fields[1] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
-        fields[2] = PacketUtil.getField("SQL/REF", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0] = PacketUtil.getField("DATA_NODE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[1] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[2] = PacketUtil.getField("SQL/REF", Fields.FIELD_TYPE_VAR_STRING);
     }
 
     public static void handle(String stmt, ServerConnection c, int offset) {
@@ -93,7 +93,7 @@ public class ExplainHandler {
         buffer = header.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             field.packetId = ++packetId;
             buffer = field.write(buffer, c, true);
         }
@@ -302,13 +302,13 @@ public class ExplainHandler {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqle = (SQLException) e;
                 StringBuilder s = new StringBuilder();
-                logger.warn(s.append(c).append(stmt).toString() + " error:" + sqle);
+                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + sqle);
                 String msg = sqle.getMessage();
                 c.writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                logger.warn(s.append(c).append(stmt).toString() + " error:" + e);
+                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + e);
                 String msg = e.getMessage();
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;

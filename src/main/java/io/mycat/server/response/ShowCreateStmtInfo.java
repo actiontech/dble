@@ -19,7 +19,7 @@ public class ShowCreateStmtInfo {
             "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
             "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
             "\\s*$";
-    public static final Pattern pattern = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
     private final boolean isFull;
     private final String schema;
     private final String cond;
@@ -28,7 +28,7 @@ public class ShowCreateStmtInfo {
     private final SQLExpr whereExpr;
 
     public ShowCreateStmtInfo(String sql) throws SQLSyntaxErrorException {
-        Matcher ma = pattern.matcher(sql);
+        Matcher ma = PATTERN.matcher(sql);
         ma.matches();//always RETURN TRUE
         if (ma.group(2) != null) {
             isFull = true;

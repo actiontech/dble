@@ -36,7 +36,7 @@ public class DefaultLayedCachePool implements LayerCachePool {
     protected final ReentrantLock lock = new ReentrantLock();
     protected int defaultCacheSize;
     protected int defaulExpiredSeconds;
-    protected static final String defaultCache = "default";
+    protected static final String DEFAULT_CACHE = "default";
     private final CachePoolFactory poolFactory;
     private final String name;
     private final boolean hasDefaultCache;
@@ -83,13 +83,13 @@ public class DefaultLayedCachePool implements LayerCachePool {
     /* obsoleted, to be clean */
     @Override
     public void putIfAbsent(Object key, Object value) {
-        putIfAbsent(defaultCache, key, value);
+        putIfAbsent(DEFAULT_CACHE, key, value);
     }
 
     /* obsoleted, to be clean */
     @Override
     public Object get(Object key) {
-        return get(defaultCache, key);
+        return get(DEFAULT_CACHE, key);
     }
 
     @Override

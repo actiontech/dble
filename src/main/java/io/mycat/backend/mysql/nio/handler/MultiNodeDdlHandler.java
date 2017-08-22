@@ -53,7 +53,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MultiNodeDdlHandler extends MultiNodeHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
-    private static final String stmt = "select 1";
+    private static final String STMT = "select 1";
     private final RouteResultset rrs;
     private final RouteResultset orirrs;
     private final NonBlockingSession session;
@@ -77,7 +77,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             LOGGER.debug("execute mutinode query " + rrs.getStatement());
         }
 
-        this.rrs = RouteResultCopy.RRCopy(rrs, ServerParse.SELECT, stmt);
+        this.rrs = RouteResultCopy.RRCopy(rrs, ServerParse.SELECT, STMT);
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
 

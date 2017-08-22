@@ -43,23 +43,23 @@ import static io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause.Bin
 
 public class ShowBinlogStatus {
     private static final int FIELD_COUNT = 6;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS_PACKET = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
     private static final String[] FIELDS = new String[]{"File", "Position", "Binlog_Do_DB", "Binlog_Ignore_DB", "Executed_Gtid_Set"};
     private static volatile boolean waiting = false;
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
-        fields[i] = PacketUtil.getField("Url", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        HEADER.packetId = ++packetId;
+        FIELDS_PACKET[i] = PacketUtil.getField("Url", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS_PACKET[i++].packetId = ++packetId;
         for (String field : FIELDS) {
-            fields[i] = PacketUtil.getField(field, Fields.FIELD_TYPE_VAR_STRING);
-            fields[i++].packetId = ++packetId;
+            FIELDS_PACKET[i] = PacketUtil.getField(field, Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS_PACKET[i++].packetId = ++packetId;
         }
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     private static final String SHOW_BINLOG_QUERY = "SHOW MASTER STATUS";
@@ -161,12 +161,12 @@ public class ShowBinlogStatus {
     private static void writeResponse(ManagerConnection c) {
         if (errMsg == null) {
             ByteBuffer buffer = c.allocate();
-            buffer = header.write(buffer, c, true);
-            for (FieldPacket field : fields) {
+            buffer = HEADER.write(buffer, c, true);
+            for (FieldPacket field : FIELDS_PACKET) {
                 buffer = field.write(buffer, c, true);
             }
-            buffer = eof.write(buffer, c, true);
-            byte packetId = eof.packetId;
+            buffer = EOF.write(buffer, c, true);
+            byte packetId = EOF.packetId;
             for (RowDataPacket row : rows) {
                 row.packetId = ++packetId;
                 buffer = row.write(buffer, c, true);

@@ -14,13 +14,13 @@ public class UserStatAnalyzer implements QueryResultListener {
 
     private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<String, UserStat>();
 
-    private final static UserStatAnalyzer instance = new UserStatAnalyzer();
+    private final static UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
 
     private UserStatAnalyzer() {
     }
 
     public static UserStatAnalyzer getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override

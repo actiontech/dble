@@ -24,7 +24,7 @@ import java.util.Map;
  * Created by zhangchao on 2016/10/13.
  */
 public class FileSystemRepository implements Repository {
-    public static final Logger logger = LoggerFactory.getLogger(FileSystemRepository.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(FileSystemRepository.class);
     private VersionedFile file;
     private FileChannel rwChannel = null;
 
@@ -40,8 +40,8 @@ public class FileSystemRepository implements Repository {
         String baseDir = systemConfig.getXARecoveryLogBaseDir();
         String baseName = systemConfig.getXARecoveryLogBaseName();
 
-        logger.debug("baseDir " + baseDir);
-        logger.debug("baseName " + baseName);
+        LOGGER.debug("baseDir " + baseDir);
+        LOGGER.debug("baseName " + baseName);
 
         //Judge whether exist the basedir
         createBaseDir(baseDir);
@@ -57,7 +57,7 @@ public class FileSystemRepository implements Repository {
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -95,7 +95,7 @@ public class FileSystemRepository implements Repository {
         } catch (FileNotFoundException firstStart) {
             // the file could not be opened for reading;
             // merely return the default empty vector
-            logger.warn("FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            LOGGER.warn("FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
         }
         if (fis != null) {
             return readFromInputStream(fis);
@@ -113,7 +113,7 @@ public class FileSystemRepository implements Repository {
             br = new BufferedReader(isr);
             coordinatorLogEntries = readContent(br);
         } catch (Exception e) {
-            logger.error("Error in recover", e);
+            LOGGER.error("Error in recover", e);
         } finally {
             closeSilently(br);
         }
@@ -133,17 +133,17 @@ public class FileSystemRepository implements Repository {
             }
 
         } catch (EOFException unexpectedEOF) {
-            logger.info(
+            LOGGER.info(
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (ObjectStreamException unexpectedEOF) {
-            logger.warn(
+            LOGGER.warn(
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (DeserialisationException unexpectedEOF) {
-            logger.warn("Unexpected EOF - logfile not closed properly last time? "
+            LOGGER.warn("Unexpected EOF - logfile not closed properly last time? "
                     + unexpectedEOF);
         }
         return coordinatorLogEntries;
@@ -154,7 +154,7 @@ public class FileSystemRepository implements Repository {
             if (fis != null)
                 fis.close();
         } catch (IOException io) {
-            logger.warn("Fail to close logfile after reading - ignoring");
+            LOGGER.warn("Fail to close logfile after reading - ignoring");
         }
     }
 
@@ -168,7 +168,7 @@ public class FileSystemRepository implements Repository {
         try {
             closeOutput();
         } catch (Exception e) {
-            logger.warn("Error closing file - ignoring", e);
+            LOGGER.warn("Error closing file - ignoring", e);
         }
 
     }
@@ -196,7 +196,7 @@ public class FileSystemRepository implements Repository {
             file.discardBackupVersion();
             return true;
         } catch (Exception e) {
-            logger.warn("Failed to write checkpoint", e);
+            LOGGER.warn("Failed to write checkpoint", e);
             return false;
         }
     }

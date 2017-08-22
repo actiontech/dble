@@ -41,7 +41,7 @@ public class ItemFuncConvCharset extends ItemStrFunc {
         try {
             return new String(argVal.getBytes(), javaCharset);
         } catch (UnsupportedEncodingException e) {
-            logger.warn("convert using charset exception", e);
+            LOGGER.warn("convert using charset exception", e);
             nullValue = true;
             return null;
         }

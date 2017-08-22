@@ -49,7 +49,7 @@ public class BinaryPacket extends MySQLPacket {
 
     @Override
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize, writeSocketIfFull);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer = c.writeToBuffer(data, buffer);
@@ -59,7 +59,7 @@ public class BinaryPacket extends MySQLPacket {
     @Override
     public void write(BackendAIOConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + calcPacketSize(), false);
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE + calcPacketSize(), false);
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer.put(data);

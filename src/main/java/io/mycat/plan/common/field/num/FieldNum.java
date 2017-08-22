@@ -78,7 +78,7 @@ public abstract class FieldNum extends Field {
         try {
             res = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            logger.warn("parse string exception!", ue);
+            LOGGER.warn("parse string exception!", ue);
         }
         if (res != null)
             if (zerofill && res.length() < fieldLength) {
@@ -96,7 +96,7 @@ public abstract class FieldNum extends Field {
             try {
                 intValue = new BigInteger(res);
             } catch (Exception e) {
-                logger.info("String:" + res + " to BigInteger exception!", e);
+                LOGGER.info("String:" + res + " to BigInteger exception!", e);
                 intValue = BigInteger.ZERO;
             }
     }

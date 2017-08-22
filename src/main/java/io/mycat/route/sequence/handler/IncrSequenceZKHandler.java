@@ -62,10 +62,10 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private final static String PATH = KVPathUtil.getSequencesIncrPath() + "/";
     private final static String LOCK = "/lock";
     private final static String SEQ = "/seq";
-    private final static IncrSequenceZKHandler instance = new IncrSequenceZKHandler();
+    private final static IncrSequenceZKHandler INSTANCE = new IncrSequenceZKHandler();
 
     public static IncrSequenceZKHandler getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     private ThreadLocal<Map<String, Map<String, String>>> tableParaValMapThreadLocal = new ThreadLocal<>();

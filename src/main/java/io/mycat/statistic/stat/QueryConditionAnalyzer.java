@@ -49,13 +49,13 @@ public class QueryConditionAnalyzer implements QueryResultListener {
 
     private SQLParser sqlParser = new SQLParser();
 
-    private final static QueryConditionAnalyzer instance = new QueryConditionAnalyzer();
+    private final static QueryConditionAnalyzer INSTANCE = new QueryConditionAnalyzer();
 
     private QueryConditionAnalyzer() {
     }
 
     public static QueryConditionAnalyzer getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
 

@@ -20,7 +20,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class OrderByHandler extends OwnThreadDMLHandler {
-    private static final Logger logger = Logger.getLogger(OrderByHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(OrderByHandler.class);
 
     private List<Order> orders;
     private RowDataComparator cmp = null;
@@ -72,7 +72,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("roweof");
+        LOGGER.debug("roweof");
         if (terminate.get())
             return;
         try {
@@ -118,14 +118,14 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
-            logger.warn(msg, e);
+            LOGGER.warn(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }
 
     private void recordElapsedTime(String prefix) {
-        if (logger.isInfoEnabled()) {
-            logger.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
         }
     }
 

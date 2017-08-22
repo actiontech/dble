@@ -44,7 +44,7 @@ import static io.mycat.server.parser.ServerParseSet.*;
  */
 public final class SetHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(SetHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SetHandler.class);
 
     private static final byte[] AC_OFF = new byte[]{7, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
 
@@ -165,7 +165,7 @@ public final class SetHandler {
                 if (!ignore) {
                     StringBuilder s = new StringBuilder();
                     String warn = stmt + " is not recoginized and ignored";
-                    logger.warn(s.append(c).append(warn).toString());
+                    LOGGER.warn(s.append(c).append(warn).toString());
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, warn);
                 } else {
                     c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));

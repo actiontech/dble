@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class ReloadSqlSlowTime {
-    private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c, long time) {
 
@@ -22,7 +22,7 @@ public class ReloadSqlSlowTime {
         StringBuilder s = new StringBuilder();
         s.append(c).append("Reset show  @@sql.slow=" + time + " time success by manager");
 
-        logger.warn(s.toString());
+        LOGGER.warn(s.toString());
 
         OkPacket ok = new OkPacket();
         ok.packetId = 1;

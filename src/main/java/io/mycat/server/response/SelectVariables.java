@@ -87,7 +87,7 @@ public final class SelectVariables {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
             String s = splitVar.get(i1);
-            String value = variables.get(s) == null ? "" : variables.get(s);
+            String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
             row.add(value.getBytes());
 
         }
@@ -123,48 +123,48 @@ public final class SelectVariables {
     }
 
 
-    private static final Map<String, String> variables = new HashMap<String, String>();
+    private static final Map<String, String> VARIABLES = new HashMap<String, String>();
 
     static {
-        variables.put("@@character_set_client", "utf8");
-        variables.put("@@character_set_connection", "utf8");
-        variables.put("@@character_set_results", "utf8");
-        variables.put("@@character_set_server", "utf8");
-        variables.put("@@init_connect", "");
-        variables.put("@@interactive_timeout", "172800");
-        variables.put("@@license", "GPL");
-        variables.put("@@lower_case_table_names", "1");
-        variables.put("@@max_allowed_packet", "16777216");
-        variables.put("@@net_buffer_length", "16384");
-        variables.put("@@net_write_timeout", "60");
-        variables.put("@@query_cache_size", "0");
-        variables.put("@@query_cache_type", "OFF");
-        variables.put("@@sql_mode", "STRICT_TRANS_TABLES");
-        variables.put("@@system_time_zone", "CST");
-        variables.put("@@time_zone", "SYSTEM");
-        variables.put("@@tx_isolation", "REPEATABLE-READ");
-        variables.put("@@wait_timeout", "172800");
-        variables.put("@@session.auto_increment_increment", "1");
+        VARIABLES.put("@@character_set_client", "utf8");
+        VARIABLES.put("@@character_set_connection", "utf8");
+        VARIABLES.put("@@character_set_results", "utf8");
+        VARIABLES.put("@@character_set_server", "utf8");
+        VARIABLES.put("@@init_connect", "");
+        VARIABLES.put("@@interactive_timeout", "172800");
+        VARIABLES.put("@@license", "GPL");
+        VARIABLES.put("@@lower_case_table_names", "1");
+        VARIABLES.put("@@max_allowed_packet", "16777216");
+        VARIABLES.put("@@net_buffer_length", "16384");
+        VARIABLES.put("@@net_write_timeout", "60");
+        VARIABLES.put("@@query_cache_size", "0");
+        VARIABLES.put("@@query_cache_type", "OFF");
+        VARIABLES.put("@@sql_mode", "STRICT_TRANS_TABLES");
+        VARIABLES.put("@@system_time_zone", "CST");
+        VARIABLES.put("@@time_zone", "SYSTEM");
+        VARIABLES.put("@@tx_isolation", "REPEATABLE-READ");
+        VARIABLES.put("@@wait_timeout", "172800");
+        VARIABLES.put("@@session.auto_increment_increment", "1");
 
-        variables.put("character_set_client", "utf8");
-        variables.put("character_set_connection", "utf8");
-        variables.put("character_set_results", "utf8");
-        variables.put("character_set_server", "utf8");
-        variables.put("init_connect", "");
-        variables.put("interactive_timeout", "172800");
-        variables.put("license", "GPL");
-        variables.put("lower_case_table_names", "1");
-        variables.put("max_allowed_packet", "16777216");
-        variables.put("net_buffer_length", "16384");
-        variables.put("net_write_timeout", "60");
-        variables.put("query_cache_size", "0");
-        variables.put("query_cache_type", "OFF");
-        variables.put("sql_mode", "STRICT_TRANS_TABLES");
-        variables.put("system_time_zone", "CST");
-        variables.put("time_zone", "SYSTEM");
-        variables.put("tx_isolation", "REPEATABLE-READ");
-        variables.put("wait_timeout", "172800");
-        variables.put("auto_increment_increment", "1");
+        VARIABLES.put("character_set_client", "utf8");
+        VARIABLES.put("character_set_connection", "utf8");
+        VARIABLES.put("character_set_results", "utf8");
+        VARIABLES.put("character_set_server", "utf8");
+        VARIABLES.put("init_connect", "");
+        VARIABLES.put("interactive_timeout", "172800");
+        VARIABLES.put("license", "GPL");
+        VARIABLES.put("lower_case_table_names", "1");
+        VARIABLES.put("max_allowed_packet", "16777216");
+        VARIABLES.put("net_buffer_length", "16384");
+        VARIABLES.put("net_write_timeout", "60");
+        VARIABLES.put("query_cache_size", "0");
+        VARIABLES.put("query_cache_type", "OFF");
+        VARIABLES.put("sql_mode", "STRICT_TRANS_TABLES");
+        VARIABLES.put("system_time_zone", "CST");
+        VARIABLES.put("time_zone", "SYSTEM");
+        VARIABLES.put("tx_isolation", "REPEATABLE-READ");
+        VARIABLES.put("wait_timeout", "172800");
+        VARIABLES.put("auto_increment_increment", "1");
     }
 
 

@@ -22,18 +22,18 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class XAStateLog {
-    public static final Logger logger = LoggerFactory.getLogger(XAStateLog.class);
-    private static final Repository fileRepository;
+    public static final Logger LOGGER = LoggerFactory.getLogger(XAStateLog.class);
+    private static final Repository FILE_REPOSITORY;
 
     static {
         if (MycatServer.getInstance().isUseZK()) {
-            fileRepository = new KVStoreRepository();
+            FILE_REPOSITORY = new KVStoreRepository();
         } else {
-            fileRepository = new FileSystemRepository();
+            FILE_REPOSITORY = new FileSystemRepository();
         }
     }
 
-    private static final Repository inMemoryRepository = new InMemoryRepository();
+    private static final Repository IN_MEMORY_REPOSITORY = new InMemoryRepository();
     private static ReentrantLock lock = new ReentrantLock();
     private static AtomicBoolean hasLeader = new AtomicBoolean(false);
     private static volatile boolean isWriting = false;
@@ -44,7 +44,7 @@ public class XAStateLog {
     private static ConcurrentMap<Long, Boolean> mapResult = new ConcurrentHashMap<>();
 
     public static boolean saveXARecoverylog(String xaTXID, TxState sessionState) {
-        CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTXID, coordinatorLogEntry);
         //will preparing, may success send but failed received,should be rollback
@@ -74,7 +74,7 @@ public class XAStateLog {
                 waitWriting.await();
             }
         } catch (InterruptedException e) {
-            logger.warn("writeCheckpoint error, waiter XID is " + xaTXID, e);
+            LOGGER.warn("writeCheckpoint error, waiter XID is " + xaTXID, e);
         } finally {
             lock.unlock();
         }
@@ -97,10 +97,10 @@ public class XAStateLog {
                 boolean writeResult = false;
                 // copy memoryRepository
                 List<CoordinatorLogEntry> logs = new ArrayList<>();
-                ReentrantLock lockmap = ((InMemoryRepository) inMemoryRepository).getLock();
+                ReentrantLock lockmap = ((InMemoryRepository) IN_MEMORY_REPOSITORY).getLock();
                 lockmap.lock();
                 try {
-                    Collection<CoordinatorLogEntry> logCollection = inMemoryRepository.getAllCoordinatorLogEntries();
+                    Collection<CoordinatorLogEntry> logCollection = IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries();
                     for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
                         CoordinatorLogEntry log = coordinatorLogEntry.getDeepCopy();
                         if (log != null) {
@@ -108,13 +108,13 @@ public class XAStateLog {
                         }
                     }
                 } catch (Exception e) {
-                    logger.warn("logCollection deep copy error, leader Xid is:" + xaTXID, e);
+                    LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTXID, e);
                     logs.clear();
                 } finally {
                     lockmap.unlock();
                 }
                 if (!logs.isEmpty()) {
-                    writeResult = fileRepository.writeCheckpoint(logs);
+                    writeResult = FILE_REPOSITORY.writeCheckpoint(logs);
                 }
                 while (batchNum.get() != 1) {
                     Thread.yield();
@@ -150,7 +150,7 @@ public class XAStateLog {
                 mapResult.remove(Thread.currentThread().getId());
                 return result;
             } catch (InterruptedException e) {
-                logger.warn("writeCheckpoint error, follower Xid is:" + xaTXID, e);
+                LOGGER.warn("writeCheckpoint error, follower Xid is:" + xaTXID, e);
                 return false;
             } finally {
                 lock.unlock();
@@ -159,7 +159,7 @@ public class XAStateLog {
     }
 
     public static void updateXARecoverylog(String xaTXID, String host, int port, String schema, TxState txState) {
-        CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
         for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
             if (coordinatorLogEntry.getParticipants()[i] != null
                     && coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema)
@@ -172,20 +172,20 @@ public class XAStateLog {
     }
 
     public static void flushMemoryRepository(String xaTXID, CoordinatorLogEntry coordinatorLogEntry) {
-        inMemoryRepository.put(xaTXID, coordinatorLogEntry);
+        IN_MEMORY_REPOSITORY.put(xaTXID, coordinatorLogEntry);
     }
 
     public static void initRecoverylog(String xaTXID, int position, MySQLConnection conn) {
-        CoordinatorLogEntry coordinatorLogEntry = inMemoryRepository.get(xaTXID);
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
         coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTXID, conn.getHost(), conn.getPort(), 0,
                 conn.getSchema(), conn.getXaStatus());
         flushMemoryRepository(xaTXID, coordinatorLogEntry);
     }
 
     public static void cleanCompleteRecoverylog() {
-        for (CoordinatorLogEntry entry : inMemoryRepository.getAllCoordinatorLogEntries()) {
+        for (CoordinatorLogEntry entry : IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries()) {
             if (entry.getTxState() == TxState.TX_COMMITED_STATE || entry.getTxState() == TxState.TX_ROLLBACKED_STATE) {
-                inMemoryRepository.remove(entry.getId());
+                IN_MEMORY_REPOSITORY.remove(entry.getId());
             }
         }
     }

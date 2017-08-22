@@ -32,13 +32,13 @@ public class TableStatAnalyzer implements QueryResultListener {
     //解析SQL 提取表名
     private SQLParser sqlParser = new SQLParser();
 
-    private final static TableStatAnalyzer instance = new TableStatAnalyzer();
+    private final static TableStatAnalyzer INSTANCE = new TableStatAnalyzer();
 
     private TableStatAnalyzer() {
     }
 
     public static TableStatAnalyzer getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override

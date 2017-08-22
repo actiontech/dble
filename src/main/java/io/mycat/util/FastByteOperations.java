@@ -116,7 +116,7 @@ public class FastByteOperations {
 
     @SuppressWarnings("unused") // used via reflection
     public static final class UnsafeOperations implements ByteOperations {
-        static final Unsafe theUnsafe;
+        static final Unsafe THE_UNSAFE;
         /**
          * The offset to the first element in a byte array.
          */
@@ -124,7 +124,7 @@ public class FastByteOperations {
         static final long DIRECT_BUFFER_ADDRESS_OFFSET;
 
         static {
-            theUnsafe = (Unsafe) AccessController.doPrivileged(
+            THE_UNSAFE = (Unsafe) AccessController.doPrivileged(
                     new PrivilegedAction<Object>() {
                         @Override
                         public Object run() {
@@ -143,14 +143,14 @@ public class FastByteOperations {
                     });
 
             try {
-                BYTE_ARRAY_BASE_OFFSET = theUnsafe.arrayBaseOffset(byte[].class);
-                DIRECT_BUFFER_ADDRESS_OFFSET = theUnsafe.objectFieldOffset(Buffer.class.getDeclaredField("address"));
+                BYTE_ARRAY_BASE_OFFSET = THE_UNSAFE.arrayBaseOffset(byte[].class);
+                DIRECT_BUFFER_ADDRESS_OFFSET = THE_UNSAFE.objectFieldOffset(Buffer.class.getDeclaredField("address"));
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
 
             // sanity check - this should never fail
-            if (theUnsafe.arrayIndexScale(byte[].class) != 1) {
+            if (THE_UNSAFE.arrayIndexScale(byte[].class) != 1) {
                 throw new AssertionError();
             }
         }
@@ -170,7 +170,7 @@ public class FastByteOperations {
                 offset1 = BYTE_ARRAY_BASE_OFFSET + buffer1.arrayOffset();
             } else {
                 obj1 = null;
-                offset1 = theUnsafe.getLong(buffer1, DIRECT_BUFFER_ADDRESS_OFFSET);
+                offset1 = THE_UNSAFE.getLong(buffer1, DIRECT_BUFFER_ADDRESS_OFFSET);
             }
             int length1;
             {
@@ -190,7 +190,7 @@ public class FastByteOperations {
             if (src.hasArray()) {
                 System.arraycopy(src.array(), src.arrayOffset() + srcPosition, trg, trgPosition, length);
             } else {
-                copy(null, srcPosition + theUnsafe.getLong(src, DIRECT_BUFFER_ADDRESS_OFFSET), trg, trgPosition, length);
+                copy(null, srcPosition + THE_UNSAFE.getLong(src, DIRECT_BUFFER_ADDRESS_OFFSET), trg, trgPosition, length);
             }
         }
 
@@ -202,7 +202,7 @@ public class FastByteOperations {
                 srcOffset = BYTE_ARRAY_BASE_OFFSET + srcBuf.arrayOffset();
             } else {
                 src = null;
-                srcOffset = theUnsafe.getLong(srcBuf, DIRECT_BUFFER_ADDRESS_OFFSET);
+                srcOffset = THE_UNSAFE.getLong(srcBuf, DIRECT_BUFFER_ADDRESS_OFFSET);
             }
             copy(src, srcOffset + srcPosition, trgBuf, trgPosition, length);
         }
@@ -211,14 +211,14 @@ public class FastByteOperations {
             if (trgBuf.hasArray()) {
                 copy(src, srcOffset, trgBuf.array(), trgBuf.arrayOffset() + trgPosition, length);
             } else {
-                copy(src, srcOffset, null, trgPosition + theUnsafe.getLong(trgBuf, DIRECT_BUFFER_ADDRESS_OFFSET), length);
+                copy(src, srcOffset, null, trgPosition + THE_UNSAFE.getLong(trgBuf, DIRECT_BUFFER_ADDRESS_OFFSET), length);
             }
         }
 
         public static void copy(Object src, long srcOffset, byte[] trg, int trgPosition, int length) {
             if (length <= MIN_COPY_THRESHOLD) {
                 for (int i = 0; i < length; i++) {
-                    trg[trgPosition + i] = theUnsafe.getByte(src, srcOffset + i);
+                    trg[trgPosition + i] = THE_UNSAFE.getByte(src, srcOffset + i);
                 }
             } else {
                 copy(src, srcOffset, trg, BYTE_ARRAY_BASE_OFFSET + trgPosition, length);
@@ -233,7 +233,7 @@ public class FastByteOperations {
             while (length > 0) {
                 long size = (length > UNSAFE_COPY_THRESHOLD) ? UNSAFE_COPY_THRESHOLD : length;
                 // if src or dst are null, the offsets are absolute base addresses:
-                theUnsafe.copyMemory(src, srcOffset, dst, dstOffset, size);
+                THE_UNSAFE.copyMemory(src, srcOffset, dst, dstOffset, size);
                 length -= size;
                 srcOffset += size;
                 dstOffset += size;
@@ -250,7 +250,7 @@ public class FastByteOperations {
                 offset1 = BYTE_ARRAY_BASE_OFFSET + buffer1.arrayOffset();
             } else {
                 obj1 = null;
-                offset1 = theUnsafe.getLong(buffer1, DIRECT_BUFFER_ADDRESS_OFFSET);
+                offset1 = THE_UNSAFE.getLong(buffer1, DIRECT_BUFFER_ADDRESS_OFFSET);
             }
             offset1 += buffer1.position();
             length1 = buffer1.remaining();
@@ -269,7 +269,7 @@ public class FastByteOperations {
                 offset2 = BYTE_ARRAY_BASE_OFFSET + buffer.arrayOffset();
             } else {
                 obj2 = null;
-                offset2 = theUnsafe.getLong(buffer, DIRECT_BUFFER_ADDRESS_OFFSET);
+                offset2 = THE_UNSAFE.getLong(buffer, DIRECT_BUFFER_ADDRESS_OFFSET);
             }
             int length2 = limit - position;
             offset2 += position;
@@ -300,8 +300,8 @@ public class FastByteOperations {
              */
             int wordComparisons = minLength & ~7;
             for (int i = 0; i < wordComparisons; i += Longs.BYTES) {
-                long lw = theUnsafe.getLong(buffer1, memoryOffset1 + (long) i);
-                long rw = theUnsafe.getLong(buffer2, memoryOffset2 + (long) i);
+                long lw = THE_UNSAFE.getLong(buffer1, memoryOffset1 + (long) i);
+                long rw = THE_UNSAFE.getLong(buffer2, memoryOffset2 + (long) i);
 
                 if (lw != rw) {
                     if (BIG_ENDIAN) {
@@ -313,8 +313,8 @@ public class FastByteOperations {
             }
 
             for (int i = wordComparisons; i < minLength; i++) {
-                int b1 = theUnsafe.getByte(buffer1, memoryOffset1 + i) & 0xFF;
-                int b2 = theUnsafe.getByte(buffer2, memoryOffset2 + i) & 0xFF;
+                int b1 = THE_UNSAFE.getByte(buffer1, memoryOffset1 + i) & 0xFF;
+                int b2 = THE_UNSAFE.getByte(buffer2, memoryOffset2 + i) & 0xFF;
                 if (b1 != b2) {
                     return b1 - b2;
                 }

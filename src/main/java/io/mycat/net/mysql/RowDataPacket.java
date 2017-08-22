@@ -101,7 +101,7 @@ public class RowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
                             boolean writeSocketIfFull) {
-        bb = c.checkWriteBuffer(bb, MySQLPacket.packetHeaderSize, writeSocketIfFull);
+        bb = c.checkWriteBuffer(bb, MySQLPacket.PACKET_HEADER_SIZE, writeSocketIfFull);
         BufferUtil.writeUB3(bb, calcPacketSize());
         bb.put(packetId);
         for (int i = 0; i < fieldCount; i++) {
@@ -139,7 +139,7 @@ public class RowDataPacket extends MySQLPacket {
 
     public byte[] toBytes() {
         int size = calcPacketSize();
-        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
+        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < fieldCount; i++) {

@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
 public class InformationSchemaProfiling {
 
     private static final int FIELD_COUNT = 3;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
 
     /**
@@ -28,30 +28,30 @@ public class InformationSchemaProfiling {
 
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
-        fields[i] = PacketUtil.getField("State", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i].packetId = ++packetId;
-        fields[i + 1] = PacketUtil.getField("Duration", Fields.FIELD_TYPE_DECIMAL);
-        fields[i + 1].packetId = ++packetId;
+        HEADER.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("State", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i].packetId = ++packetId;
+        FIELDS[i + 1] = PacketUtil.getField("Duration", Fields.FIELD_TYPE_DECIMAL);
+        FIELDS[i + 1].packetId = ++packetId;
 
-        fields[i + 2] = PacketUtil.getField("Percentage", Fields.FIELD_TYPE_DECIMAL);
-        fields[i + 2].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        FIELDS[i + 2] = PacketUtil.getField("Percentage", Fields.FIELD_TYPE_DECIMAL);
+        FIELDS[i + 2].packetId = ++packetId;
+        EOF.packetId = ++packetId;
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        packetId = eof.packetId;
+        packetId = EOF.packetId;
 
 
         // write last eof

@@ -25,48 +25,48 @@ import java.nio.ByteBuffer;
 public class ShowBackendOld {
 
     private static final int FIELD_COUNT = 10;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
-        fields[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("LASTTIME", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        fields[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LASTTIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = header.write(buffer, c, true);
-        for (FieldPacket field : fields) {
+        buffer = HEADER.write(buffer, c, true);
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
-        buffer = eof.write(buffer, c, true);
-        byte packetId = eof.packetId;
+        buffer = EOF.write(buffer, c, true);
+        byte packetId = EOF.packetId;
         String charset = c.getCharset();
 
-        for (BackendConnection bc : NIOProcessor.backends_old) {
+        for (BackendConnection bc : NIOProcessor.BACKENDS_OLD) {
             if (bc != null) {
                 RowDataPacket row = getRow(bc, charset);
                 row.packetId = ++packetId;

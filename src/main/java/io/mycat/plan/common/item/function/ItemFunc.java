@@ -107,7 +107,7 @@ public abstract class ItemFunc extends Item {
     }
 
     public void signalDivideByNull() {
-        logger.warn("divide by zero");
+        LOGGER.warn("divide by zero");
         nullValue = true;
     }
 

@@ -25,7 +25,7 @@ public class FieldTime extends FieldTemporal {
         try {
             ptr_str = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            logger.warn("parse string exception!", ue);
+            LOGGER.warn("parse string exception!", ue);
         }
         if (ptr_str != null) {
             MyTime.str_to_time_with_warn(ptr_str, ltime);
@@ -63,7 +63,7 @@ public class FieldTime extends FieldTemporal {
             MyTime.str_to_time_with_warn(sval2, ltime2);
             return ltime1.getCompareResult(ltime2);
         } catch (Exception e) {
-            logger.info("String to biginteger exception!", e);
+            LOGGER.info("String to biginteger exception!", e);
             return -1;
         }
     }

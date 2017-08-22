@@ -42,7 +42,7 @@ import java.util.Properties;
  * @author wuzhih
  */
 public class CacheService {
-    private static final Logger logger = LoggerFactory.getLogger(CacheService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
 
     private final Map<String, CachePoolFactory> poolFactorys = new HashMap<String, CachePoolFactory>();
     private final Map<String, CachePool> allPools = new HashMap<String, CachePool>();
@@ -67,7 +67,7 @@ public class CacheService {
     private void init(boolean isLowerCaseTableNames) throws Exception {
         InputStream stream = ResourceUtil.getResourceAsStream("/cacheservice.properties");
         if (stream == null) {
-            logger.info("cache don't be used currently! if use, please configure cacheservice.properties");
+            LOGGER.info("cache don't be used currently! if use, please configure cacheservice.properties");
             return;
         }
 
@@ -79,7 +79,7 @@ public class CacheService {
             createRootlayedCachePool(props);
             createSpecificPool(props, isLowerCaseTableNames);
         } else {
-            logger.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
+            LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
         }
     }
 
@@ -213,7 +213,7 @@ public class CacheService {
 
     private void createLayeredPool(String cacheName, String type, int size, int expireSeconds) {
         checkExists(cacheName);
-        logger.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " + size
+        LOGGER.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " + size
                 + " ,default expire seconds" + expireSeconds);
         DefaultLayedCachePool layerdPool = new DefaultLayedCachePool(cacheName, this.getCacheFact(type), size, expireSeconds);
         this.allPools.put(cacheName, layerdPool);
@@ -230,7 +230,7 @@ public class CacheService {
     }
 
     public void clearCache() {
-        logger.info("clear all cache pool ");
+        LOGGER.info("clear all cache pool ");
         for (CachePool pool : allPools.values()) {
             pool.clearCache();
         }

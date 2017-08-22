@@ -25,43 +25,43 @@ import java.util.Collection;
  */
 public class ShowSession {
     private static final int FIELD_COUNT = 3;
-    private static final ResultSetHeaderPacket header = PacketUtil
+    private static final ResultSetHeaderPacket HEADER = PacketUtil
             .getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SESSION", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SESSION", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("DN_COUNT", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("DN_COUNT", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("DN_LIST", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("DN_LIST", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         for (NIOProcessor process : MycatServer.getInstance().getProcessors()) {
             for (FrontendConnection front : process.getFrontends().values()) {
 

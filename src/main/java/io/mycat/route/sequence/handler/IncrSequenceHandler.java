@@ -38,7 +38,7 @@ import java.util.Map;
  */
 public abstract class IncrSequenceHandler implements SequenceHandler {
 
-    public static final Logger logger = LoggerFactory.getLogger(IncrSequenceHandler.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceHandler.class);
 
     public static final String FILE_NAME = "sequence_conf.properties";
 
@@ -57,7 +57,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
         Map<String, String> paraMap = this.getParaValMap(prefixName);
         if (null == paraMap) {
             String msg = "can't find definition for sequence :" + prefixName;
-            logger.warn(msg);
+            LOGGER.warn(msg);
             throw new ConfigException(msg);
         }
         Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;

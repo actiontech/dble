@@ -23,7 +23,7 @@ import java.util.List;
 
 public abstract class Item {
 
-    protected static final Logger logger = Logger.getLogger(Item.class);
+    protected static final Logger LOGGER = Logger.getLogger(Item.class);
 
     public static final int NOT_FIXED_DEC = 31;
     public static final int DECIMAL_MAX_SCALE = 30;
@@ -217,7 +217,7 @@ public abstract class Item {
                 try {
                     result = res.getBytes(charset());
                 } catch (UnsupportedEncodingException e) {
-                    logger.error(e);
+                    LOGGER.error(e);
                 }
             else {
                 assert (nullValue);
@@ -744,7 +744,7 @@ public abstract class Item {
         try {
             tmp_field.name = (getAlias() == null ? getItemName() : getAlias()).getBytes(charset());
         } catch (UnsupportedEncodingException e) {
-            logger.warn("parse string exception!", e);
+            LOGGER.warn("parse string exception!", e);
         }
         tmp_field.flags = (maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG);
         tmp_field.type = field_type.numberValue();

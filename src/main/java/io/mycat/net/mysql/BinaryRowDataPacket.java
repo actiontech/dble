@@ -251,7 +251,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     public void write(FrontendConnection conn) {
 
         int size = calcPacketSize();
-        int totalSize = size + MySQLPacket.packetHeaderSize;
+        int totalSize = size + MySQLPacket.PACKET_HEADER_SIZE;
         ByteBuffer bb = null;
 
         bb = conn.getProcessor().getBufferPool().allocate(totalSize);
@@ -298,7 +298,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        int totalSize = size + MySQLPacket.packetHeaderSize;
+        int totalSize = size + MySQLPacket.PACKET_HEADER_SIZE;
         bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
         BufferUtil.writeUB3(bb, size);
         bb.put(packetId);

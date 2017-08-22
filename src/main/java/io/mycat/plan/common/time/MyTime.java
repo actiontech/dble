@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class MyTime {
-    private static final DateTimeFormat time_ampm_format = new DateTimeFormat("%I:%i:%S %p");
-    private static final DateTimeFormat time_24hrs_format = new DateTimeFormat("%H:%i:%S");
+    private static final DateTimeFormat TIME_AMPM_FORMAT = new DateTimeFormat("%I:%i:%S %p");
+    private static final DateTimeFormat TIME_24_HRS_FORMAT = new DateTimeFormat("%H:%i:%S");
 
     /* Flags to str_to_datetime and number_to_datetime */
     public final static int TIME_FUZZY_DATE = 1;
@@ -71,7 +71,7 @@ public class MyTime {
 
     public final static int YY_PART_YEAR = 70;
 
-    public final static long long_MAX = MySQLcom.getUnsignedLong(Integer.MAX_VALUE).longValue();
+    public final static long LONG_MAX = MySQLcom.getUnsignedLong(Integer.MAX_VALUE).longValue();
 
     static char time_separator = ':';
 
@@ -81,15 +81,15 @@ public class MyTime {
 
     public static int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
 
-    public static final String[] month_names = {"January", "February", "March", "April", "May", "June", "July",
+    public static final String[] MONTH_NAMES = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December"};
 
-    public static final String[] ab_month_names = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+    public static final String[] AB_MONTH_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
             "Oct", "Nov", "Dec"};
 
-    public static final String[] day_names = {"Monday", "Tuesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    public static final String[] DAY_NAMES = {"Monday", "Tuesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
-    public static final String[] ab_day_names = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    public static final String[] AB_DAY_NAMES = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
     /* Flags for calc_week() function. */
     public static final int WEEK_MONDAY_FIRST = 1;
@@ -528,7 +528,7 @@ public class MyTime {
         for (value = 0; pos != end && Ctype.isDigit(chars[pos]); pos++)
             value = value * 10L + (long) (chars[pos] - '0');
 
-        if (value > long_MAX)
+        if (value > LONG_MAX)
             return true;
 
     /* Skip all space after 'days' */
@@ -631,7 +631,7 @@ public class MyTime {
         }
 
     /* Integer overflow checks */
-        if (date[0] > long_MAX || date[1] > long_MAX || date[2] > long_MAX || date[3] > long_MAX || date[4] > long_MAX)
+        if (date[0] > LONG_MAX || date[1] > LONG_MAX || date[2] > LONG_MAX || date[3] > LONG_MAX || date[4] > LONG_MAX)
             return true;
 
         l_time.year = 0; /* For protocol::store_time */
@@ -2331,14 +2331,14 @@ public class MyTime {
                         val = tmp;
                         break;
                     case 'M':
-                        if ((l_time.month = MySQLcom.check_word(month_names, valcs, val, val_end)) <= 0)
+                        if ((l_time.month = MySQLcom.check_word(MONTH_NAMES, valcs, val, val_end)) <= 0)
                             err:{
                                 // logger.warn
                                 return true;
                             }
                         break;
                     case 'b':
-                        if ((l_time.month = MySQLcom.check_word(ab_month_names, valcs, val, val_end)) <= 0)
+                        if ((l_time.month = MySQLcom.check_word(AB_MONTH_NAMES, valcs, val, val_end)) <= 0)
                             err:{
                                 // logger.warn
                                 return true;
@@ -2419,7 +2419,7 @@ public class MyTime {
 
     /* Exotic things */
                     case 'W':
-                        if ((weekday = MySQLcom.check_word(day_names, valcs, val, val_end)) <= 0) {
+                        if ((weekday = MySQLcom.check_word(DAY_NAMES, valcs, val, val_end)) <= 0) {
                             err:
                             {
                                 // logger.warn
@@ -2428,7 +2428,7 @@ public class MyTime {
                         }
                         break;
                     case 'a':
-                        if ((weekday = MySQLcom.check_word(ab_day_names, valcs, val, val_end)) <= 0) {
+                        if ((weekday = MySQLcom.check_word(AB_DAY_NAMES, valcs, val, val_end)) <= 0) {
                             err:
                             {
                                 // logger.warn
@@ -2490,14 +2490,14 @@ public class MyTime {
      * We can't just set error here, as we don't want to
      * generate two warnings in case of errors
      */
-                        if (extract_date_time(time_ampm_format, new String(valcs, val, val_end - val), l_time,
+                        if (extract_date_time(TIME_AMPM_FORMAT, new String(valcs, val, val_end - val), l_time,
                                 cached_timestamp_type, "time"))
                             return true;
                         break;
 
     /* Time in 24-hour notation */
                     case 'T':
-                        if (extract_date_time(time_24hrs_format, new String(valcs, val, val_end - val), l_time,
+                        if (extract_date_time(TIME_24_HRS_FORMAT, new String(valcs, val, val_end - val), l_time,
                                 cached_timestamp_type, "time"))
                             return true;
                         break;
@@ -2639,7 +2639,7 @@ public class MyTime {
         int ptr = 0, end;
         char[] formatChars = format.format.toCharArray();
         StringBuilder str = new StringBuilder();
-        MYLOCALE locale = MYLOCALES.my_locale_en_US;
+        MYLOCALE locale = MYLOCALES.MY_LOCALE_EN_US;
 
         if (l_time.neg)
             str.append('-');

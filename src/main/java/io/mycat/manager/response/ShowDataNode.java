@@ -56,65 +56,65 @@ import java.util.*;
  */
 public final class ShowDataNode {
 
-    private static final NumberFormat nf = DecimalFormat.getInstance();
+    private static final NumberFormat NF = DecimalFormat.getInstance();
     private static final int FIELD_COUNT = 8;
-    private static final ResultSetHeaderPacket header = PacketUtil
+    private static final ResultSetHeaderPacket HEADER = PacketUtil
             .getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
-        nf.setMaximumFractionDigits(3);
+        NF.setMaximumFractionDigits(3);
 
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil
+        FIELDS[i] = PacketUtil
                 .getField("DATHOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("RECOVERY_TIME",
+        FIELDS[i] = PacketUtil.getField("RECOVERY_TIME",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c, String name) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         MycatConfig conf = MycatServer.getInstance().getConfig();
         Map<String, PhysicalDBNode> dataNodes = conf.getDataNodes();
         List<String> keys = new ArrayList<String>();

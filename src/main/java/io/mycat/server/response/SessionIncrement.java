@@ -40,27 +40,27 @@ import java.nio.ByteBuffer;
 public class SessionIncrement {
 
     private static final int FIELD_COUNT = 1;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
-        fields[i] = PacketUtil.getField("@@session.auto_increment_increment", Fields.FIELD_TYPE_LONG);
-        fields[i].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("@@session.auto_increment_increment", Fields.FIELD_TYPE_LONG);
+        FIELDS[i].packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void response(ServerConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = header.write(buffer, c, true);
-        for (FieldPacket field : fields) {
+        buffer = HEADER.write(buffer, c, true);
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
-        buffer = eof.write(buffer, c, true);
-        byte packetId = eof.packetId;
+        buffer = EOF.write(buffer, c, true);
+        byte packetId = EOF.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(1));
         row.packetId = ++packetId;

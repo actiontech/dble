@@ -27,7 +27,7 @@ public class ItemFuncDayname extends ItemStrFunc {
             return null;
 
         long weekday = MyTime.calc_weekday(MyTime.calc_daynr(ltime.year, ltime.month, ltime.day), false);
-        return MyTime.day_names[(int) weekday];
+        return MyTime.DAY_NAMES[(int) weekday];
     }
 
     @Override

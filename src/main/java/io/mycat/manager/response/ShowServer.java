@@ -47,65 +47,65 @@ import java.nio.ByteBuffer;
 public final class ShowServer {
 
     private static final int FIELD_COUNT = 8;
-    private static final ResultSetHeaderPacket header = PacketUtil
+    private static final ResultSetHeaderPacket HEADER = PacketUtil
             .getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("UPTIME", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("UPTIME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("USED_MEMORY",
+        FIELDS[i] = PacketUtil.getField("USED_MEMORY",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("TOTAL_MEMORY",
+        FIELDS[i] = PacketUtil.getField("TOTAL_MEMORY",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("MAX_MEMORY",
+        FIELDS[i] = PacketUtil.getField("MAX_MEMORY",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("RELOAD_TIME",
+        FIELDS[i] = PacketUtil.getField("RELOAD_TIME",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("ROLLBACK_TIME",
+        FIELDS[i] = PacketUtil.getField("ROLLBACK_TIME",
                 Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil
+        FIELDS[i] = PacketUtil
                 .getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         RowDataPacket row = getRow(c.getCharset());
         row.packetId = ++packetId;
         buffer = row.write(buffer, c, true);

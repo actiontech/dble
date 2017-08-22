@@ -365,7 +365,7 @@ public class MySQLcom {
         return (long) Math.pow(10, index);
     }
 
-    public static final String Nulls = null;
+    public static final String NULLS = null;
 
     public static int check_word(String[] nameArray, char[] cs, int offset, int count) {
         String val = new String(cs, offset, count);

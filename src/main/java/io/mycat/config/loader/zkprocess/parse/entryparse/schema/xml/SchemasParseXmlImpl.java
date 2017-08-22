@@ -28,7 +28,7 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger lOG = LoggerFactory.getLogger(SchemasParseXmlImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchemasParseXmlImpl.class);
 
     /**
      * 基本的转换类的信息
@@ -59,10 +59,10 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
             schema = (Schemas) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
             e.printStackTrace();
-            lOG.error("SchemasParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.error("SchemasParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
             e.printStackTrace();
-            lOG.error("SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.error("SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -74,7 +74,7 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
             e.printStackTrace();
-            lOG.error("SchemasParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.error("SchemasParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

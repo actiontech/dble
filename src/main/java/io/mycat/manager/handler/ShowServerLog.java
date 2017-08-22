@@ -49,21 +49,21 @@ import java.util.regex.Pattern;
 
 public final class ShowServerLog {
     private static final int FIELD_COUNT = 1;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
     public static final String DEFAULT_LOGFILE = "mycat.log";
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowServerLog.class);
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("LOG", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LOG", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     private static File getLogFile(String logFile) {
@@ -84,19 +84,19 @@ public final class ShowServerLog {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
 
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         PackageBufINf bufInf = null;
 
         if (condPairMap.isEmpty()) {

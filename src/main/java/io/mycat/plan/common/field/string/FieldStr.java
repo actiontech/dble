@@ -33,13 +33,13 @@ public abstract class FieldStr extends Field {
             try {
                 ptr_str = MySQLcom.getFullString(charsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
-                logger.warn("parse string exception!", ue);
+                LOGGER.warn("parse string exception!", ue);
                 return BigDecimal.ZERO;
             }
             try {
                 return new BigDecimal(ptr_str);
             } catch (Exception e) {
-                logger.info("String:" + ptr_str + " to BigDecimal exception!", e);
+                LOGGER.info("String:" + ptr_str + " to BigDecimal exception!", e);
                 return BigDecimal.ZERO;
             }
         }
@@ -54,13 +54,13 @@ public abstract class FieldStr extends Field {
             try {
                 ptr_str = MySQLcom.getFullString(charsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
-                logger.warn("parse string exception!", ue);
+                LOGGER.warn("parse string exception!", ue);
                 return null;
             }
             try {
                 return new BigDecimal(ptr_str);
             } catch (Exception e) {
-                logger.info("String:" + ptr_str + " to BigDecimal exception!", e);
+                LOGGER.info("String:" + ptr_str + " to BigDecimal exception!", e);
                 return null;
             }
         }
@@ -111,7 +111,7 @@ public abstract class FieldStr extends Field {
             String sval2 = MySQLcom.getFullString(charsetName, v2).toUpperCase();
             return sval1.compareTo(sval2);
         } catch (Exception e) {
-            logger.info("String to biginteger exception!", e);
+            LOGGER.info("String to biginteger exception!", e);
             return -1;
         }
     }

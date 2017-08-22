@@ -119,7 +119,7 @@ public class ItemRef extends Item {
             try {
                 tmpFp.name = field_alias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
             } catch (UnsupportedEncodingException e) {
-                logger.warn("parse string exception!", e);
+                LOGGER.warn("parse string exception!", e);
             }
         }
         if (table_alias != null) {
@@ -127,7 +127,7 @@ public class ItemRef extends Item {
             try {
                 tmpFp.table = table_alias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
             } catch (UnsupportedEncodingException e) {
-                logger.warn("parse string exception!", e);
+                LOGGER.warn("parse string exception!", e);
             }
         }
     }

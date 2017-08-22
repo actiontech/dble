@@ -14,7 +14,7 @@ import java.io.IOException;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
 public class LevelDBCachePooFactory extends CachePoolFactory {
-    private static final Logger logger = LoggerFactory.getLogger(LevelDBCachePooFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LevelDBCachePooFactory.class);
 
     @Override
     public CachePool createCachePool(String poolName, int cacheSize,
@@ -28,7 +28,7 @@ public class LevelDBCachePooFactory extends CachePoolFactory {
             db = factory.open(new File(filePath), options);
             // Use the db in here....
         } catch (IOException e) {
-            logger.info("factory try to open file " + filePath + " failed ");
+            LOGGER.info("factory try to open file " + filePath + " failed ");
             // Make sure you close the db to shutdown the
             // database and avoid resource leaks.
             // db.close();

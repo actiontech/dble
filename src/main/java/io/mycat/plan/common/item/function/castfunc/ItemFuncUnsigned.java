@@ -59,7 +59,7 @@ public class ItemFuncUnsigned extends ItemIntFunc {
             value = val_int_from_str();
         } catch (Exception e) {
             value = new BigInteger("-1");
-            logger.error("Cast to unsigned converted negative integer to it's " + "positive complement", e);
+            LOGGER.error("Cast to unsigned converted negative integer to it's " + "positive complement", e);
         }
         return value;
     }

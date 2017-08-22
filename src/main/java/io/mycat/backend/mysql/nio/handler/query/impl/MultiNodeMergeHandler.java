@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
-    private static final Logger logger = Logger.getLogger(MultiNodeMergeHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(MultiNodeMergeHandler.class);
 
     private final int queueSize;
     private final ReentrantLock lock;
@@ -125,8 +125,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        if (logger.isInfoEnabled()) {
-            logger.info(conn.toString() + "'s field is reached.");
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(conn.toString() + "'s field is reached.");
         }
         // 保证连接及时中断
         if (terminate.get()) {
@@ -171,8 +171,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        if (logger.isInfoEnabled()) {
-            logger.info(conn.toString() + " 's rowEof is reached.");
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(conn.toString() + " 's rowEof is reached.");
         }
         ((MySQLConnection) conn).setRunning(false);
         if (this.terminate.get())
@@ -239,14 +239,14 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                     }
                 }
             }
-            if (logger.isInfoEnabled()) {
+            if (LOGGER.isInfoEnabled()) {
                 String executeSqls = getRoutesSql(route);
-                logger.info(executeSqls + " heap send eof: ");
+                LOGGER.info(executeSqls + " heap send eof: ");
             }
             nextHandler.rowEofResponse(null, this.isLeft, queues.keySet().iterator().next());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
-            logger.warn(msg, e);
+            LOGGER.warn(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }

@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
  * implement group function select a,count(*),sum(*) from A group by a
  */
 public class UnsafeRowGrouper {
-    private static final Logger logger = LoggerFactory.getLogger(UnsafeRowGrouper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnsafeRowGrouper.class);
 
     private UnsafeFixedWidthAggregationMap aggregationMap = null;
     private final Map<String, ColMeta> columToIndx;
@@ -94,7 +94,7 @@ public class UnsafeRowGrouper {
         this.memoryManager = serverMemory.getResultMergeMemoryManager();
         this.conf = serverMemory.getConf();
 
-        logger.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
+        LOGGER.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
 
         initGroupKey();
         initEmptyValueKey();
@@ -271,7 +271,7 @@ public class UnsafeRowGrouper {
                     mergAvg(iter.getValue());
                 }
             } catch (IOException e) {
-                logger.error(e.getMessage());
+                LOGGER.error(e.getMessage());
             }
             isMergAvg = true;
             processAvgFieldPrecision();
@@ -380,7 +380,7 @@ public class UnsafeRowGrouper {
                 sorter.insertRow(row);
             }
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
     }
 
@@ -429,7 +429,7 @@ public class UnsafeRowGrouper {
                 }
             }
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
 
     }

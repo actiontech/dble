@@ -97,7 +97,7 @@ public class FieldPacket extends MySQLPacket {
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE + size,
                 writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);

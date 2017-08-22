@@ -45,13 +45,13 @@ public final class ServerParseSelect {
 
     public static final int SESSION_TX_READ_ONLY = 10;
 
-    private static final char[] _VERSION_COMMENT = "VERSION_COMMENT"
+    private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT"
             .toCharArray();
-    private static final char[] _IDENTITY = "IDENTITY".toCharArray();
-    private static final char[] _LAST_INSERT_ID = "LAST_INSERT_ID"
+    private static final char[] IDENTITY_STR = "IDENTITY".toCharArray();
+    private static final char[] LAST_INSERT_ID_STR = "LAST_INSERT_ID"
             .toCharArray();
-    private static final char[] _DATABASE = "DATABASE()".toCharArray();
-    private static final char[] _CURRENT_USER = "CURRENT_USER()".toCharArray();
+    private static final char[] DATABASE_STR = "DATABASE()".toCharArray();
+    private static final char[] CURRENT_USER_STR = "CURRENT_USER()".toCharArray();
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -329,8 +329,8 @@ public final class ServerParseSelect {
      */
     public static int indexAfterLastInsertIdFunc(String stmt, int offset) {
         if (stmt.length() >= offset + "LAST_INSERT_ID()".length()
-                && ParseUtil.compare(stmt, offset, _LAST_INSERT_ID)) {
-            offset = ParseUtil.move(stmt, offset + _LAST_INSERT_ID.length,
+                && ParseUtil.compare(stmt, offset, LAST_INSERT_ID_STR)) {
+            offset = ParseUtil.move(stmt, offset + LAST_INSERT_ID_STR.length,
                     0);
             if (offset + 1 < stmt.length() && stmt.charAt(offset) == '(') {
                 offset = ParseUtil.move(stmt, offset + 1, 0);
@@ -371,8 +371,8 @@ public final class ServerParseSelect {
             default:
                 return -1;
         }
-        if (ParseUtil.compare(stmt, offset, _IDENTITY)) {
-            offset += _IDENTITY.length;
+        if (ParseUtil.compare(stmt, offset, IDENTITY_STR)) {
+            offset += IDENTITY_STR.length;
             switch (first) {
                 case '`':
                 case '\'':
@@ -449,9 +449,9 @@ public final class ServerParseSelect {
      * SELECT DATABASE()
      */
     static int databaseCheck(String stmt, int offset) {
-        int length = offset + _DATABASE.length;
+        int length = offset + DATABASE_STR.length;
         if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, _DATABASE)) {
+                && ParseUtil.compare(stmt, offset, DATABASE_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             } else {
@@ -488,9 +488,9 @@ public final class ServerParseSelect {
      * SELECT USER()
      */
     static int currentUserCheck(String stmt, int offset) {
-        int length = offset + _CURRENT_USER.length;
+        int length = offset + CURRENT_USER_STR.length;
         if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, _CURRENT_USER)) {
+                && ParseUtil.compare(stmt, offset, CURRENT_USER_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             }
@@ -503,9 +503,9 @@ public final class ServerParseSelect {
      * SELECT @@VERSION_COMMENT
      */
     static int versionCommentCheck(String stmt, int offset) {
-        int length = offset + _VERSION_COMMENT.length;
+        int length = offset + VERSION_COMMENT_STR.length;
         if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, _VERSION_COMMENT)) {
+                && ParseUtil.compare(stmt, offset, VERSION_COMMENT_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             } else {

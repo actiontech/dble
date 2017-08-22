@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  */
 
 public class JavaUtils {
-    private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaUtils.class);
 
     /**
      * Define a default value for driver memory here since this value is referenced across the code
@@ -54,7 +54,7 @@ public class JavaUtils {
                 closeable.close();
             }
         } catch (IOException e) {
-            logger.error("IOException should not have been thrown.", e);
+            LOGGER.error("IOException should not have been thrown.", e);
         }
     }
 
@@ -114,7 +114,7 @@ public class JavaUtils {
         return !fileInCanonicalDir.getCanonicalFile().equals(fileInCanonicalDir.getAbsoluteFile());
     }
 
-    private static final ImmutableMap<String, TimeUnit> timeSuffixes =
+    private static final ImmutableMap<String, TimeUnit> TIME_SUFFIXES =
             ImmutableMap.<String, TimeUnit>builder()
                     .put("us", TimeUnit.MICROSECONDS)
                     .put("ms", TimeUnit.MILLISECONDS)
@@ -125,7 +125,7 @@ public class JavaUtils {
                     .put("d", TimeUnit.DAYS)
                     .build();
 
-    private static final ImmutableMap<String, ByteUnit> byteSuffixes =
+    private static final ImmutableMap<String, ByteUnit> BYTE_SUFFIXES =
             ImmutableMap.<String, ByteUnit>builder()
                     .put("b", ByteUnit.BYTE)
                     .put("k", ByteUnit.KiB)
@@ -157,12 +157,12 @@ public class JavaUtils {
             String suffix = m.group(2);
 
             // Check for invalid suffixes
-            if (suffix != null && !timeSuffixes.containsKey(suffix)) {
+            if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
                 throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
             }
 
             // If suffix is valid use that, otherwise none was provided and use the default passed
-            return unit.convert(val, suffix != null ? timeSuffixes.get(suffix) : unit);
+            return unit.convert(val, suffix != null ? TIME_SUFFIXES.get(suffix) : unit);
         } catch (NumberFormatException e) {
             String timeError = "Time must be specified as seconds (s), " +
                     "milliseconds (ms), microseconds (us), minutes (m or min), hour (h), or day (d). " +
@@ -204,12 +204,12 @@ public class JavaUtils {
                 String suffix = m.group(2);
 
                 // Check for invalid suffixes
-                if (suffix != null && !byteSuffixes.containsKey(suffix)) {
+                if (suffix != null && !BYTE_SUFFIXES.containsKey(suffix)) {
                     throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
                 }
 
                 // If suffix is valid use that, otherwise none was provided and use the default passed
-                return unit.convertFrom(val, suffix != null ? byteSuffixes.get(suffix) : unit);
+                return unit.convertFrom(val, suffix != null ? BYTE_SUFFIXES.get(suffix) : unit);
             } else if (fractionMatcher.matches()) {
                 throw new NumberFormatException("Fractional values are not supported. Input was: "
                         + fractionMatcher.group(1));
@@ -342,7 +342,7 @@ public class JavaUtils {
                     dir = null;
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LOGGER.error(e.getMessage());
             }
         }
 

@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FileCounter {
-    private static final Logger logger = Logger.getLogger(FileCounter.class);
+    private static final Logger LOGGER = Logger.getLogger(FileCounter.class);
     private static FileCounter fileCounter = new FileCounter();
 
     private final Lock lock;
@@ -21,7 +21,7 @@ public class FileCounter {
         long freeMem = Hardware.getFreeSizeOfPhysicalMemoryForLinux();
         long currentMem = Math.min(totalMem / 2, freeMem);
         this.maxFileSize = (int) (currentMem / (MycatServer.getInstance().getConfig().getSystem().getMappedFileSize() / 1024));
-        logger.info("current mem is " + currentMem + "kb. max file size is " + maxFileSize);
+        LOGGER.info("current mem is " + currentMem + "kb. max file size is " + maxFileSize);
         this.currentNum = 0;
     }
 

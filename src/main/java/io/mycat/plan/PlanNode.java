@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public abstract class PlanNode {
-    private static final Logger logger = Logger.getLogger(PlanNode.class);
+    private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
 
     public enum PlanNodeType {
         NONAME, TABLE, JOIN, MERGE, QUERY, VIEW
@@ -522,7 +522,7 @@ public abstract class PlanNode {
         try {
             return this.columnsReferedCache.get(tn);
         } catch (ExecutionException e) {
-            logger.warn("columnsReferedCache error", e);
+            LOGGER.warn("columnsReferedCache error", e);
         }
         return null;
     }
@@ -532,7 +532,7 @@ public abstract class PlanNode {
         try {
             this.columnsReferedCache.get(tn).add(sel);
         } catch (ExecutionException e) {
-            logger.warn("columnsReferedCache error", e);
+            LOGGER.warn("columnsReferedCache error", e);
         }
     }
 

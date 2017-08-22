@@ -11,7 +11,7 @@ import java.util.Map;
 
 public final class ReloadUserStat {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReloadUserStat.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadUserStat.class);
 
     public static void execute(ManagerConnection c) {
 
@@ -23,7 +23,7 @@ public final class ReloadUserStat {
         StringBuilder s = new StringBuilder();
         s.append(c).append("Reset show @@sql  @@sql.sum  @@sql.slow  @@sql.high  @@sql.large  @@sql.resultset success by manager");
 
-        logger.warn(s.toString());
+        LOGGER.warn(s.toString());
 
         OkPacket ok = new OkPacket();
         ok.packetId = 1;

@@ -64,8 +64,8 @@ public final class ServerParse {
 
 
     public static final int MIGRATE = 203;
-    private static final Pattern pattern = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
-    private static final Pattern callPattern = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
 
     public static int parse(String stmt) {
         int length = stmt.length();
@@ -204,7 +204,7 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'A' || c2 == 'a')
                     && (c3 == 'D' || c3 == 'd')) {
-                Matcher matcher = pattern.matcher(stmt);
+                Matcher matcher = PATTERN.matcher(stmt);
                 return matcher.find() ? LOAD_DATA_INFILE_SQL : OTHER;
             } else if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c')
                     && (c3 == 'K' || c3 == 'k')) {
@@ -705,7 +705,7 @@ public final class ServerParse {
 //                    call p_test(@pin,@pout);
 //                    select @pout;
                         if (stmt.startsWith("/*!" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*#" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*" + Versions.ANNOTATION_NAME)) {
-                            Matcher matcher = callPattern.matcher(stmt);
+                            Matcher matcher = CALL_PATTERN.matcher(stmt);
                             if (matcher.find()) {
                                 return CALL;
                             }

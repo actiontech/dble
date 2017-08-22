@@ -51,7 +51,7 @@ public class ItemFuncSigned extends ItemIntFunc {
             value = val_int_from_str();
         } catch (Exception e) {
             value = new BigInteger("-1");
-            logger.error("Cast to signed converted positive out-of-range integer to " + "it's negative complement", e);
+            LOGGER.error("Cast to signed converted positive out-of-range integer to " + "it's negative complement", e);
         }
         return value;
     }

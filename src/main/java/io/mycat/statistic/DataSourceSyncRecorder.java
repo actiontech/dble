@@ -49,7 +49,7 @@ public class DataSourceSyncRecorder {
     private static final long SWAP_TIME = 24 * 60 * 60 * 1000L;
 
     //日期处理
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private int switchType = 2;
 
     public DataSourceSyncRecorder() {
@@ -123,7 +123,7 @@ public class DataSourceSyncRecorder {
     }
 
     public static SimpleDateFormat getSdf() {
-        return sdf;
+        return SDF;
     }
 
     /**

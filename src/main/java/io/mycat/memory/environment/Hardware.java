@@ -38,7 +38,7 @@ public class Hardware {
     private static final String LINUX_MEMORY_INFO_PATH = "/proc/meminfo";
 
     private static final Pattern LINUX_MEMORY_REGEX = Pattern.compile("^MemTotal:\\s*(\\d+)\\s+kB$");
-    private static final Pattern LINUX__FREE_MEMORY_REGEX = Pattern.compile("^MemFree:\\s*(\\d+)\\s+kB$");
+    private static final Pattern LINUX_FREE_MEMORY_REGEX = Pattern.compile("^MemFree:\\s*(\\d+)\\s+kB$");
 
 
     /**
@@ -114,7 +114,7 @@ public class Hardware {
         try (BufferedReader lineReader = new BufferedReader(new FileReader(LINUX_MEMORY_INFO_PATH))) {
             String line;
             while ((line = lineReader.readLine()) != null) {
-                Matcher matcher = LINUX__FREE_MEMORY_REGEX.matcher(line);
+                Matcher matcher = LINUX_FREE_MEMORY_REGEX.matcher(line);
                 if (matcher.matches()) {
                     String totalMemory = matcher.group(1);
                     return Long.parseLong(totalMemory) * 1024L; // Convert from kilobyte to byte

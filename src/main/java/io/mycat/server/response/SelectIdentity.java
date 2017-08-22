@@ -41,11 +41,11 @@ import java.nio.ByteBuffer;
 public class SelectIdentity {
 
     private static final int FIELD_COUNT = 1;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
 
     static {
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
     }
 
     public static void response(ServerConnection c, String stmt, int aliasIndex, final String orgName) {
@@ -57,10 +57,10 @@ public class SelectIdentity {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        byte packetId = header.packetId;
+        byte packetId = HEADER.packetId;
         FieldPacket field = PacketUtil.getField(alias, orgName, Fields.FIELD_TYPE_LONGLONG);
         field.packetId = ++packetId;
         buffer = field.write(buffer, c, true);

@@ -37,7 +37,7 @@ import java.util.Date;
  * @author mycat
  */
 public final class MycatStartup {
-    private static final String dateFormat = "yyyy-MM-dd HH:mm:ss";
+    private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatStartup.class);
 
     public static void main(String[] args) {
@@ -58,7 +58,7 @@ public final class MycatStartup {
             System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
 
         } catch (Exception e) {
-            SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
             LOGGER.error(sdf.format(new Date()) + " startup error", e);
             System.exit(-1);
         }

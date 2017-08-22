@@ -40,7 +40,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
     }
 
     public String getLastestError(String seqName) {
-        return IncrSequenceMySQLHandler.latestErrors.get(seqName);
+        return IncrSequenceMySQLHandler.LATEST_ERRORS.get(seqName);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         err.read(data);
         String errMsg = new String(err.message);
         LOGGER.warn("errorResponse " + err.errno + " " + errMsg);
-        IncrSequenceMySQLHandler.latestErrors.put(seqVal.seqName, errMsg);
+        IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
         conn.release();
 
     }
@@ -92,8 +92,8 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         byte[] columnData = rowDataPkg.fieldValues.get(0);
         String columnVal = new String(columnData);
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
-        if (IncrSequenceMySQLHandler.errSeqResult.equals(columnVal)) {
-            seqVal.dbretVal = IncrSequenceMySQLHandler.errSeqResult;
+        if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
+            seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
             LOGGER.warn(" sequnce sql returned err value ,sequence:"
                     + seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
@@ -122,7 +122,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         SequenceVal seqVal = ((SequenceVal) c.getAttachment());
         seqVal.dbfinished = true;
         String errMgs = e.toString();
-        IncrSequenceMySQLHandler.latestErrors.put(seqVal.seqName, errMgs);
+        IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMgs);
         LOGGER.warn("executeException   " + errMgs);
         c.close("exception:" + errMgs);
 

@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author ActionTech
  */
 public class LimitHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(LimitHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(LimitHandler.class);
     private long limitIndex;
     private final long limitCount;
     // current index
@@ -30,7 +30,7 @@ public class LimitHandler extends BaseDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("row eof");
+        LOGGER.debug("row eof");
         if (!terminate.get()) {
             nextHandler.rowEofResponse(data, this.isLeft, conn);
         }

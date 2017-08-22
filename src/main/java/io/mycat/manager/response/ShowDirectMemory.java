@@ -26,53 +26,53 @@ import java.util.concurrent.ConcurrentMap;
  */
 
 public class ShowDirectMemory {
-    private static final int DETAILl_FIELD_COUNT = 3;
-    private static final ResultSetHeaderPacket detailHeader = PacketUtil.getHeader(DETAILl_FIELD_COUNT);
-    private static final FieldPacket[] detailFields = new FieldPacket[DETAILl_FIELD_COUNT];
-    private static final EOFPacket detailEof = new EOFPacket();
+    private static final int DETAIL_FIELD_COUNT = 3;
+    private static final ResultSetHeaderPacket DETAIL_HEADER = PacketUtil.getHeader(DETAIL_FIELD_COUNT);
+    private static final FieldPacket[] DETAIL_FIELDS = new FieldPacket[DETAIL_FIELD_COUNT];
+    private static final EOFPacket DETAIL_EOF = new EOFPacket();
 
 
     private static final int TOTAL_FIELD_COUNT = 5;
-    private static final ResultSetHeaderPacket totalHeader = PacketUtil.getHeader(TOTAL_FIELD_COUNT);
-    private static final FieldPacket[] totalFields = new FieldPacket[TOTAL_FIELD_COUNT];
-    private static final EOFPacket totalEof = new EOFPacket();
+    private static final ResultSetHeaderPacket TOTAL_HEADER = PacketUtil.getHeader(TOTAL_FIELD_COUNT);
+    private static final FieldPacket[] TOTAL_FIELDS = new FieldPacket[TOTAL_FIELD_COUNT];
+    private static final EOFPacket TOTAL_EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        detailHeader.packetId = ++packetId;
+        DETAIL_HEADER.packetId = ++packetId;
 
-        detailFields[i] = PacketUtil.getField("THREAD_ID", Fields.FIELD_TYPE_VAR_STRING);
-        detailFields[i++].packetId = ++packetId;
+        DETAIL_FIELDS[i] = PacketUtil.getField("THREAD_ID", Fields.FIELD_TYPE_VAR_STRING);
+        DETAIL_FIELDS[i++].packetId = ++packetId;
 
-        detailFields[i] = PacketUtil.getField("MEM_USE_TYPE", Fields.FIELD_TYPE_VAR_STRING);
-        detailFields[i++].packetId = ++packetId;
+        DETAIL_FIELDS[i] = PacketUtil.getField("MEM_USE_TYPE", Fields.FIELD_TYPE_VAR_STRING);
+        DETAIL_FIELDS[i++].packetId = ++packetId;
 
-        detailFields[i] = PacketUtil.getField("  SIZE  ", Fields.FIELD_TYPE_VAR_STRING);
-        detailFields[i++].packetId = ++packetId;
-        detailEof.packetId = ++packetId;
+        DETAIL_FIELDS[i] = PacketUtil.getField("  SIZE  ", Fields.FIELD_TYPE_VAR_STRING);
+        DETAIL_FIELDS[i++].packetId = ++packetId;
+        DETAIL_EOF.packetId = ++packetId;
 
 
         i = 0;
         packetId = 0;
 
-        totalHeader.packetId = ++packetId;
+        TOTAL_HEADER.packetId = ++packetId;
 
-        totalFields[i] = PacketUtil.getField("MDIRECT_MEMORY_MAXED", Fields.FIELD_TYPE_VAR_STRING);
-        totalFields[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i] = PacketUtil.getField("MDIRECT_MEMORY_MAXED", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i++].packetId = ++packetId;
 
-        totalFields[i] = PacketUtil.getField("DIRECT_MEMORY_USED", Fields.FIELD_TYPE_VAR_STRING);
-        totalFields[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_USED", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i++].packetId = ++packetId;
 
-        totalFields[i] = PacketUtil.getField("DIRECT_MEMORY_AVAILABLE", Fields.FIELD_TYPE_VAR_STRING);
-        totalFields[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_AVAILABLE", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i++].packetId = ++packetId;
 
-        totalFields[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
-        totalFields[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i++].packetId = ++packetId;
 
-        totalFields[i] = PacketUtil.getField("DIRECT_MEMORY_RESERVED", Fields.FIELD_TYPE_VAR_STRING);
-        totalFields[i++].packetId = ++packetId;
-        totalEof.packetId = ++packetId;
+        TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_RESERVED", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i++].packetId = ++packetId;
+        TOTAL_EOF.packetId = ++packetId;
 
 
     }
@@ -93,18 +93,18 @@ public class ShowDirectMemory {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = detailHeader.write(buffer, c, true);
+        buffer = DETAIL_HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : detailFields) {
+        for (FieldPacket field : DETAIL_FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = detailEof.write(buffer, c, true);
+        buffer = DETAIL_EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = detailEof.packetId;
+        byte packetId = DETAIL_EOF.packetId;
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
 
@@ -118,7 +118,7 @@ public class ShowDirectMemory {
                         getServerMemory().
                         getResultMergeMemoryManager().getDirectMemorUsage();
                 for (Map.Entry<Long, Long> entry : map.entrySet()) {
-                    RowDataPacket row = new RowDataPacket(DETAILl_FIELD_COUNT);
+                    RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
                     long value = entry.getValue();
                     row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                     /**
@@ -133,7 +133,7 @@ public class ShowDirectMemory {
             }
 
             for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
-                RowDataPacket row = new RowDataPacket(DETAILl_FIELD_COUNT);
+                RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
                 long value = entry.getValue();
                 row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                 /**
@@ -167,16 +167,16 @@ public class ShowDirectMemory {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = totalHeader.write(buffer, c, true);
+        buffer = TOTAL_HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : totalFields) {
+        for (FieldPacket field : TOTAL_FIELDS) {
             buffer = field.write(buffer, c, true);
         }
         // write eof
-        buffer = totalEof.write(buffer, c, true);
+        buffer = TOTAL_EOF.write(buffer, c, true);
         // write rows
-        byte packetId = totalEof.packetId;
+        byte packetId = TOTAL_EOF.packetId;
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();

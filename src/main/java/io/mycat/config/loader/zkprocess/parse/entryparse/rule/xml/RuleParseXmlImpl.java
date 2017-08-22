@@ -28,7 +28,7 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger lOG = LoggerFactory.getLogger(RuleParseXmlImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleParseXmlImpl.class);
 
     /**
      * 基本的转换类的信息
@@ -59,10 +59,10 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
             schema = (Rules) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
             e.printStackTrace();
-            lOG.error("RulesParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.error("RulesParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
             e.printStackTrace();
-            lOG.error("RulesParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.error("RulesParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -74,7 +74,7 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
             e.printStackTrace();
-            lOG.error("RulesParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.error("RulesParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NotInHandler extends OwnThreadDMLHandler {
-    private static final Logger logger = Logger.getLogger(NotInHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(NotInHandler.class);
 
     private FairLinkedBlockingDeque<LocalResult> leftQueue;
     private FairLinkedBlockingDeque<LocalResult> rightQueue;
@@ -81,7 +81,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
 
     @Override
     public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        logger.debug("rowresponse");
+        LOGGER.debug("rowresponse");
         if (terminate.get()) {
             return true;
         }
@@ -92,7 +92,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightCmptor);
             }
         } catch (InterruptedException e) {
-            logger.warn("not in row exception", e);
+            LOGGER.warn("not in row exception", e);
             return true;
         }
         return false;
@@ -100,7 +100,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.info("roweof");
+        LOGGER.info("roweof");
         if (terminate.get()) {
             return;
         }
@@ -114,7 +114,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 addRowToDeque(eofRow, rightFieldPackets.size(), rightQueue, rightCmptor);
             }
         } catch (Exception e) {
-            logger.warn("not in rowEof exception", e);
+            LOGGER.warn("not in rowEof exception", e);
         }
     }
 
@@ -161,7 +161,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {
             String msg = "notIn thread error, " + e.getLocalizedMessage();
-            logger.warn(msg, e);
+            LOGGER.warn(msg, e);
             session.onQueryError(msg.getBytes());
         } finally {
             if (leftLocal != null)

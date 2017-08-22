@@ -91,7 +91,7 @@ public class OkPacket extends MySQLPacket {
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
 
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE + size,
                 true);
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
@@ -132,7 +132,7 @@ public class OkPacket extends MySQLPacket {
 
     public byte[] toBytes() {
         int size = calcPacketSize();
-        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
+        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);

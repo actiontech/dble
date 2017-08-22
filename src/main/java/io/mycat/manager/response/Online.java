@@ -32,17 +32,17 @@ import io.mycat.net.mysql.OkPacket;
  */
 public class Online {
 
-    private static final OkPacket ok = new OkPacket();
+    private static final OkPacket OK = new OkPacket();
 
     static {
-        ok.packetId = 1;
-        ok.affectedRows = 1;
-        ok.serverStatus = 2;
+        OK.packetId = 1;
+        OK.affectedRows = 1;
+        OK.serverStatus = 2;
     }
 
     public static void execute(ManagerConnection mc) {
         MycatServer.getInstance().online();
-        ok.write(mc);
+        OK.write(mc);
     }
 
 }

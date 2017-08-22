@@ -484,7 +484,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table) {
         StringBuilder sb = new StringBuilder();
-        sb.append(LoadData.loadDataHint).append("insert into ").append(table.toUpperCase());
+        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table.toUpperCase());
         if (columns != null && columns.size() > 0) {
             sb.append("(");
             for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {

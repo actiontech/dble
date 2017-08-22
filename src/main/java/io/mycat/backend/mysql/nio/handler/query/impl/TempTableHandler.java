@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 将结果集生成到临时表中
  */
 public class TempTableHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(TempTableHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(TempTableHandler.class);
 
     private final ReentrantLock lock;
     private final TempTable tempTable;
@@ -91,7 +91,7 @@ public class TempTableHandler extends BaseDMLHandler {
             }
             if (++rowCount > maxPartSize * maxConnSize) {
                 String errMessage = "temptable of [" + conn.toString() + "] too much rows,[rows=" + rowCount + "]!";
-                logger.warn(errMessage);
+                LOGGER.warn(errMessage);
                 throw new TempTableException(errMessage);
             }
             RowDataPacket row = rowPacket;
@@ -125,7 +125,7 @@ public class TempTableHandler extends BaseDMLHandler {
             }
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } catch (Exception e) {
-            logger.warn("rowEof exception!", e);
+            LOGGER.warn("rowEof exception!", e);
             throw new TempTableException("rowEof exception!", e);
         } finally {
             lock.unlock();

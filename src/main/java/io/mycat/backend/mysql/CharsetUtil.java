@@ -33,7 +33,7 @@ import java.util.Map;
  * @author mycat
  */
 public class CharsetUtil {
-    public static final Logger logger = LoggerFactory
+    public static final Logger LOGGER = LoggerFactory
             .getLogger(CharsetUtil.class);
     private static final String[] INDEX_TO_CHARSET = new String[251];
     private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();

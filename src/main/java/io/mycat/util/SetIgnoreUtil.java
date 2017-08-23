@@ -24,7 +24,7 @@ public class SetIgnoreUtil {
                 "(?i)set (interactive_timeout|wait_timeout|net_read_timeout|net_write_timeout|lock_wait_timeout|slave_net_timeout)",
                 "(?i)set (connect_timeout|delayed_insert_timeout|innodb_lock_wait_timeout|innodb_rollback_on_timeout)",
                 "(?i)set (profiling|profiling_history_size)",
-                "(?i)set (sql_safe_updates)"
+                "(?i)set (sql_safe_updates)",
         };
 
         for (int i = 0; i < ignores.length; ++i) {

@@ -545,7 +545,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                             tableConf.getName(),
                             tableConf.getRule().getFunctionName(),
                             String.valueOf(tableConf.getRule().getRuleAlgorithm().getPartitionNum()),
-                            String.valueOf(tableConf.getDataNodes().size())
+                            String.valueOf(tableConf.getDataNodes().size()),
                     });
 
         } else {

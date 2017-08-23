@@ -5324,7 +5324,7 @@ public final class StructureMeta {
                         "\0223\n\010uniIndex\030\n \003(\0132!.io.mycat.meta.proto" +
                         "col.IndexMeta\0220\n\005index\030\013 \003(\0132!.io.mycat." +
                         "meta.protocol.IndexMetaB)\n\026io.mycat.meta" +
-                        ".protocolB\rStructureMetaH\001"
+                        ".protocolB\rStructureMetaH\001",
         };
         com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
                 new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

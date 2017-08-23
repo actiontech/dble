@@ -1343,5 +1343,7 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_BLOB, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
-                    FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_GEOMETRY}};
+                    FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_GEOMETRY,
+            },
+    };
 }

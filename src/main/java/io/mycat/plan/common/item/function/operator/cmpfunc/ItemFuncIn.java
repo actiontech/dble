@@ -34,7 +34,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
     @Override
     public void fixLengthAndDec() {
         for (int i = 1; i < args.size(); i++) {
-            args.get(i).cmpContext = MySQLcom.item_cmp_type(leftResultType, args.get(i).resultType());
+            args.get(i).cmpContext = MySQLcom.itemCmpType(leftResultType, args.get(i).resultType());
         }
         maxLength = 1;
     }

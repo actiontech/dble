@@ -67,16 +67,16 @@ public abstract class Aggregator {
     /**
      * Decimal value of being-aggregated argument
      */
-    public abstract BigDecimal arg_val_decimal();
+    public abstract BigDecimal argValDecimal();
 
     /**
      * Floating point value of being-aggregated argument
      */
-    public abstract BigDecimal arg_val_real();
+    public abstract BigDecimal argValReal();
 
     /**
      * NULLness of being-aggregated argument; can be called only after
-     * arg_val_decimal() or arg_val_real().
+     * argValDecimal() or argValReal().
      */
-    public abstract boolean arg_is_null();
+    public abstract boolean argIsNull();
 }

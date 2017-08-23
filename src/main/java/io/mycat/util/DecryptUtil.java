@@ -69,7 +69,7 @@ public class DecryptUtil {
         return passwrod;
     }
 
-    public static String DBHostDecrypt(String usingDecrypt, String host, String user, String passwrod) {
+    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String passwrod) {
         if ("1".equals(usingDecrypt)) {
             //type:host:user:password
             //1:myhost1:test:test

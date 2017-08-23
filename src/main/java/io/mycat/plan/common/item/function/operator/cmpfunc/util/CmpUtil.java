@@ -37,11 +37,11 @@ public class CmpUtil {
      * @retval True Indicates failure.
      */
 
-    public static boolean get_mysql_time_from_str(String str, MySQLTimestampType warn_type,
-                                                  final String warn_name, MySQLTime l_time) {
+    public static boolean getMysqlTimeFromStr(String str, MySQLTimestampType warn_type,
+                                              final String warn_name, MySQLTime l_time) {
         boolean value;
         MySQLTimeStatus status = new MySQLTimeStatus();
-        if (!MyTime.str_to_datetime(str, str.length(), l_time, MyTime.TIME_FUZZY_DATE, status)
+        if (!MyTime.strToDatetime(str, str.length(), l_time, MyTime.TIME_FUZZY_DATE, status)
                 && (l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME
                 || l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
             /*
@@ -79,25 +79,25 @@ public class CmpUtil {
      * the warn_name arguments are used as the name and the type of the
      * field when issuing the warning.
      */
-    public static long get_date_from_str(String str, MySQLTimestampType warn_type, String warn_name,
-                                         BoolPtr error_arg) {
+    public static long getDateFromStr(String str, MySQLTimestampType warn_type, String warn_name,
+                                      BoolPtr error_arg) {
         MySQLTime lTime = new MySQLTime();
-        error_arg.set(get_mysql_time_from_str(str, warn_type, warn_name, lTime));
+        error_arg.set(getMysqlTimeFromStr(str, warn_type, warn_name, lTime));
 
         if (error_arg.get())
             return 0;
-        return MyTime.TIME_to_longlong_datetime_packed(lTime);
+        return MyTime.timeToLonglongDatetimePacked(lTime);
     }
 
     /**
      * Aggregates result types from the array of items.
      * <p>
-     * SYNOPSIS: agg_cmp_type() type [out] the aggregated type items array of
+     * SYNOPSIS: aggCmpType() type [out] the aggregated type items array of
      * items to aggregate the type from nitems number of items in the array
      * <p>
      * DESCRIPTION This function aggregates result types from the array of
      * items. Found type supposed to be used later for comparison of values of
-     * these items. Aggregation itself is performed by the item_cmp_type()
+     * these items. Aggregation itself is performed by the itemCmpType()
      * function.
      *
      * @param items  array of items to aggregate the type from
@@ -106,11 +106,11 @@ public class CmpUtil {
      * @retval 1 type incompatibility has been detected
      * @retval 0 otherwise
      */
-    public static int agg_cmp_type(ItemResultPtr type, List<Item> items, int nitems) {
+    public static int aggCmpType(ItemResultPtr type, List<Item> items, int nitems) {
         int i;
         type.set(items.get(0).resultType());
         for (i = 1; i < nitems; i++) {
-            type.set(MySQLcom.item_cmp_type(type.get(), items.get(i).resultType()));
+            type.set(MySQLcom.itemCmpType(type.get(), items.get(i).resultType()));
             /*
              * When aggregating types of two row expressions we have to check
              * that they have the same cardinality and that each component of

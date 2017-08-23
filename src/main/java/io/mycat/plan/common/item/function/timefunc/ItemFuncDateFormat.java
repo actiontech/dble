@@ -42,13 +42,13 @@ public class ItemFuncDateFormat extends ItemStrFunc {
             nullValue = true;
             return null;
         }
-        size = format_length(format);
+        size = formatLength(format);
         if (size < MyTime.MAX_DATE_STRING_REP_LENGTH)
             size = MyTime.MAX_DATE_STRING_REP_LENGTH;
         DateTimeFormat dateTimeFormat = new DateTimeFormat();
         dateTimeFormat.format = format;
         StringPtr strPtr = new StringPtr("");
-        if (!MyTime.make_date_time(dateTimeFormat, lTime,
+        if (!MyTime.makeDateTime(dateTimeFormat, lTime,
                 isTimeFormat ? MySQLTimestampType.MYSQL_TIMESTAMP_TIME : MySQLTimestampType.MYSQL_TIMESTAMP_DATE,
                 strPtr)) {
             return strPtr.get();
@@ -58,7 +58,7 @@ public class ItemFuncDateFormat extends ItemStrFunc {
 
     }
 
-    private int format_length(final String sformat) {
+    private int formatLength(final String sformat) {
         char[] format = sformat.toCharArray();
         int size = 0;
         int ptr = 0;

@@ -28,7 +28,7 @@ public class ItemFuncToSeconds extends ItemIntFunc {
             return BigInteger.ZERO;
         seconds = ltime.hour * 3600L + ltime.minute * 60 + ltime.second;
         seconds = ltime.neg ? -seconds : seconds;
-        days = MyTime.calc_daynr(ltime.year, ltime.month, ltime.day);
+        days = MyTime.calcDaynr(ltime.year, ltime.month, ltime.day);
         return BigInteger.valueOf(seconds + days * 24L * 3600L);
     }
 

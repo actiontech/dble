@@ -36,10 +36,10 @@ public class ItemFuncUnhex extends ItemStrFunc {
         for (int index = 0; index < hexString.length(); index += 2) {
             int hexChar = 0;
             int bValue = 0;
-            bValue = ((hexChar = hexchar_to_int(hexString.charAt(index))) << 4);
+            bValue = ((hexChar = hexcharToInt(hexString.charAt(index))) << 4);
             if (hexChar == -1)
                 return null;
-            bValue |= (hexChar = hexchar_to_int(hexString.charAt(index + 1)));
+            bValue |= (hexChar = hexcharToInt(hexString.charAt(index + 1)));
             if (hexChar == -1)
                 return null;
             baos.write(bValue);
@@ -63,7 +63,7 @@ public class ItemFuncUnhex extends ItemStrFunc {
      * convert a hex digit into number.
      */
 
-    public static int hexchar_to_int(char c) {
+    public static int hexcharToInt(char c) {
         if (c <= '9' && c >= '0')
             return c - '0';
         c |= 32;

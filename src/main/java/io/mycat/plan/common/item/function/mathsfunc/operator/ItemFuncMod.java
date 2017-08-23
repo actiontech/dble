@@ -73,7 +73,7 @@ public class ItemFuncMod extends ItemNumOp {
     }
 
     @Override
-    public void result_precision() {
+    public void resultPrecision() {
         decimals = Math.max(args.get(0).decimals, args.get(1).decimals);
         maxLength = Math.max(args.get(0).maxLength, args.get(1).maxLength);
     }

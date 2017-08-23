@@ -22,11 +22,11 @@ public abstract class ItemCond extends ItemBoolFunc {
         list.add(item);
     }
 
-    public void add_at_head(Item item) {
+    public void addAtHead(Item item) {
         list.add(0, item);
     }
 
-    public void add_at_head(List<Item> itemList) {
+    public void addAtHead(List<Item> itemList) {
         list.addAll(0, itemList);
     }
 

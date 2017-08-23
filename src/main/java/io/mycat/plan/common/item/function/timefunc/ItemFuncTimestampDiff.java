@@ -51,7 +51,7 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
         LongPtr lpseconds = new LongPtr(0);
         LongPtr lpmicroseconds = new LongPtr(0);
 
-        if (MyTime.calc_time_diff(ltime2, ltime1, 1, lpseconds, lpmicroseconds))
+        if (MyTime.calcTimeDiff(ltime2, ltime1, 1, lpseconds, lpmicroseconds))
             neg = -1;
 
         long seconds = lpseconds.get(), microseconds = lpmicroseconds.get();

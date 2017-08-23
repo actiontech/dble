@@ -71,11 +71,11 @@ public class FieldUtil {
         System.out.println(compareIntUsingStringBytes(b1, b2));
     }
 
-    public int get_enum_pack_length(int elements) {
+    public int getEnumPackLength(int elements) {
         return elements < 256 ? 1 : 2;
     }
 
-    public int get_set_pack_length(int elements) {
+    public int getSetPackLength(int elements) {
         int len = (elements + 7) / 8;
         return len > 4 ? 8 : len;
     }
@@ -87,7 +87,7 @@ public class FieldUtil {
         }
     }
 
-    public static boolean is_temporal_type(FieldTypes valuetype) {
+    public static boolean isTemporalType(FieldTypes valuetype) {
         if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP || valuetype == FieldTypes.MYSQL_TYPE_TIME || valuetype == FieldTypes.MYSQL_TYPE_NEWDATE) {
             return true;
         } else {
@@ -103,15 +103,15 @@ public class FieldUtil {
      * @retval true If field real type is temporal
      * @retval false If field real type is not temporal
      */
-    public static boolean is_temporal_real_type(FieldTypes type) {
+    public static boolean isTemporalRealType(FieldTypes type) {
         if (type == FieldTypes.MYSQL_TYPE_TIME2 || type == FieldTypes.MYSQL_TYPE_TIMESTAMP2 || type == FieldTypes.MYSQL_TYPE_DATETIME2) {
             return true;
         } else {
-            return FieldUtil.is_temporal_type(type);
+            return FieldUtil.isTemporalType(type);
         }
     }
 
-    public static boolean is_temporal_type_with_time(FieldTypes type) {
+    public static boolean isTemporalTypeWithTime(FieldTypes type) {
         if (type == FieldTypes.MYSQL_TYPE_TIME || type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
             return true;
         } else {
@@ -119,7 +119,7 @@ public class FieldUtil {
         }
     }
 
-    public static boolean is_temporal_type_with_date(FieldTypes valuetype) {
+    public static boolean isTemporalTypeWithDate(FieldTypes valuetype) {
         if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
             return true;
         } else {
@@ -136,7 +136,7 @@ public class FieldUtil {
      * @retval false If field type is not temporal type with date and time
      * parts.
      */
-    public static boolean is_temporal_type_with_date_and_time(FieldTypes type) {
+    public static boolean isTemporalTypeWithDateAndTime(FieldTypes type) {
         if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
             return true;
         } else {
@@ -148,7 +148,7 @@ public class FieldUtil {
      * Recognizer for concrete data type (called real_type for some reason),
      * returning true if it is one of the TIMESTAMP types.
      */
-    public static boolean is_timestamp_type(FieldTypes type) {
+    public static boolean isTimestampType(FieldTypes type) {
         return type == FieldTypes.MYSQL_TYPE_TIMESTAMP || type == FieldTypes.MYSQL_TYPE_TIMESTAMP2;
     }
 
@@ -159,7 +159,7 @@ public class FieldUtil {
      * @param real_type Real type.
      * @retval Field type.
      */
-    public static FieldTypes real_type_to_type(FieldTypes real_type) {
+    public static FieldTypes realTypeToType(FieldTypes real_type) {
         if (real_type == FieldTypes.MYSQL_TYPE_TIME2) {
             return FieldTypes.MYSQL_TYPE_TIME;
         } else if (real_type == FieldTypes.MYSQL_TYPE_DATETIME2) {
@@ -187,15 +187,15 @@ public class FieldUtil {
     // private static int FIELDTYPE_NUM = (FIELDTYPE_TEAR_FROM + (255 -
     // FIELDTYPE_TEAR_TO));
 
-    public static int field_type2index(FieldTypes field_type) {
-        field_type = real_type_to_type(field_type);
+    public static int fieldType2Index(FieldTypes field_type) {
+        field_type = realTypeToType(field_type);
         assert (field_type.numberValue() < FIELDTYPE_TEAR_FROM || field_type.numberValue() > FIELDTYPE_TEAR_TO);
         return (field_type.numberValue() < FIELDTYPE_TEAR_FROM ? field_type.numberValue()
                 : ((int) FIELDTYPE_TEAR_FROM) + (field_type.numberValue() - FIELDTYPE_TEAR_TO) - 1);
     }
 
-    public static FieldTypes field_type_merge(FieldTypes a, FieldTypes b) {
-        return field_types_merge_rules[field_type2index(a)][field_type2index(b)];
+    public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {
+        return field_types_merge_rules[fieldType2Index(a)][fieldType2Index(b)];
     }
 
     private static FieldTypes[][] field_types_merge_rules = new FieldTypes[][]{

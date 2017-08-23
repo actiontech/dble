@@ -35,8 +35,8 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
     @Override
     public void fixLengthAndDec() {
-        cachedFieldType = MySQLcom.agg_field_type(args, 0, args.size());
-        hybridType = MySQLcom.agg_result_type(args, 0, args.size());
+        cachedFieldType = MySQLcom.aggFieldType(args, 0, args.size());
+        hybridType = MySQLcom.aggResultType(args, 0, args.size());
         if (hybridType == ItemResult.STRING_RESULT) {
         } else if (hybridType == ItemResult.DECIMAL_RESULT) {
             countDecimalLength();

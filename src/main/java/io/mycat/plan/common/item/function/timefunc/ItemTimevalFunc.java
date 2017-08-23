@@ -25,33 +25,33 @@ public abstract class ItemTimevalFunc extends ItemFunc {
      * @retval false On success
      * @retval true On error
      */
-    public abstract boolean val_timeval(Timeval tm);
+    public abstract boolean valTimeval(Timeval tm);
 
     @Override
     public BigDecimal valReal() {
         Timeval tm = new Timeval();
-        return val_timeval(tm) ? BigDecimal.ZERO
+        return valTimeval(tm) ? BigDecimal.ZERO
                 : BigDecimal.valueOf((double) tm.tvSec + (double) tm.tvUsec / (double) 1000000);
     }
 
     @Override
     public BigInteger valInt() {
         Timeval tm = new Timeval();
-        return val_timeval(tm) ? BigInteger.ZERO : BigInteger.valueOf(tm.tvSec);
+        return valTimeval(tm) ? BigInteger.ZERO : BigInteger.valueOf(tm.tvSec);
     }
 
     @Override
     public BigDecimal valDecimal() {
         Timeval tm = new Timeval();
-        return val_timeval(tm) ? null : tm.timeval2my_decimal();
+        return valTimeval(tm) ? null : tm.timeval2MyDecimal();
     }
 
     @Override
     public String valStr() {
         Timeval tm = new Timeval();
-        if (val_timeval(tm))
+        if (valTimeval(tm))
             return null;
-        return tm.my_timeval_to_str();
+        return tm.myTimevalToStr();
     }
 
     @Override

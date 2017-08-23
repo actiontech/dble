@@ -190,7 +190,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             if (queue == null)
                 return;
             try {
-                queue.put(HeapItem.NULLITEM());
+                queue.put(HeapItem.nullItem());
             } catch (InterruptedException e) {
             }
         }

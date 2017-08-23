@@ -152,7 +152,7 @@ public class ExplainHandler {
                 result.add(new String[]{dateNode, "BASE SQL", rrss.getStatement()});
                 refInfo.addChild(dateNode);
             }
-            String mergeRootName = DFSHandler(mergeHandler, handlerMap, refMap, nameMap);
+            String mergeRootName = dfsHandler(mergeHandler, handlerMap, refMap, nameMap);
             if (mergeCnt == 1) {
                 if (mergeRootName == null) {
                     rootName = mergeNode;
@@ -184,7 +184,7 @@ public class ExplainHandler {
         return result;
     }
 
-    private static String DFSHandler(DMLResponseHandler handler, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, RefHandlerInfo> refMap, Map<String, Integer> nameMap) {
+    private static String dfsHandler(DMLResponseHandler handler, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, RefHandlerInfo> refMap, Map<String, Integer> nameMap) {
         DMLResponseHandler nextHandler = skipSendMake(handler.getNextHandler());
         String rootName = null;
         while (nextHandler != null) {

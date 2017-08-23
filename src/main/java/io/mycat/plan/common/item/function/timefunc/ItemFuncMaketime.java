@@ -45,7 +45,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
             return true;
         }
 
-        ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+        ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
 
         /* Check for integer overflows */
         if (hour < 0) {

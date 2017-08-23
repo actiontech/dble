@@ -13,7 +13,7 @@ public class MySQLTime implements Serializable {
     public boolean neg;
     public MySQLTimestampType timeType;
 
-    public void set_zero_time(MySQLTimestampType type) {
+    public void setZeroTime(MySQLTimestampType type) {
         year = month = day = hour = minute = second = secondPart = 0;
         neg = false;
         timeType = type;
@@ -34,7 +34,7 @@ public class MySQLTime implements Serializable {
         return cal;
     }
 
-    public void set_max_hhmmss() {
+    public void setMaxHhmmss() {
         hour = MyTime.TIME_MAX_HOUR;
         minute = MyTime.TIME_MAX_MINUTE;
         second = MyTime.TIME_MAX_SECOND;
@@ -53,8 +53,8 @@ public class MySQLTime implements Serializable {
     public int getCompareResult(MySQLTime other) {
         if (other == null)
             return 1;
-        long lt1 = MyTime.TIME_to_longlong_datetime_packed(this);
-        long lt2 = MyTime.TIME_to_longlong_datetime_packed(other);
+        long lt1 = MyTime.timeToLonglongDatetimePacked(this);
+        long lt2 = MyTime.timeToLonglongDatetimePacked(other);
         long cmp = lt1 - lt2;
         return cmp == 0 ? 0 : (lt1 > lt2 ? 1 : -1);
     }

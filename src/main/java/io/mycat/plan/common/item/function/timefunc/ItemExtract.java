@@ -148,7 +148,7 @@ public class ItemExtract extends ItemIntFunc {
                 return BigInteger.valueOf(ltime.month);
             case WEEK: {
                 weekFormat = MyTime.WEEK_MONDAY_FIRST;
-                long ret = MyTime.calc_week(ltime, MyTime.week_mode(weekFormat), new LongPtr(0));
+                long ret = MyTime.calcWeek(ltime, MyTime.weekMode(weekFormat), new LongPtr(0));
                 return BigInteger.valueOf(ret);
 
             }

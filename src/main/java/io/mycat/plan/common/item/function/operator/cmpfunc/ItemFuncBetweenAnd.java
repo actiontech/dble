@@ -165,7 +165,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
          */
         if (args.get(0) == null || args.get(1) == null || args.get(2) == null)
             return;
-        if (CmpUtil.agg_cmp_type(cmpType, args, 3) != 0)
+        if (CmpUtil.aggCmpType(cmpType, args, 3) != 0)
             return;
         /*
          * Detect the comparison of DATE/DATETIME items. At least one of items

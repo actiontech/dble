@@ -26,7 +26,7 @@ public class ItemFuncWeek extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
             return BigInteger.ZERO;
-        return BigInteger.valueOf(MyTime.calc_week(ltime, MyTime.week_mode(args.size() > 1 ? args.get(1).valInt().intValue() : 0), new LongPtr(0)));
+        return BigInteger.valueOf(MyTime.calcWeek(ltime, MyTime.weekMode(args.size() > 1 ? args.get(1).valInt().intValue() : 0), new LongPtr(0)));
     }
 
     @Override

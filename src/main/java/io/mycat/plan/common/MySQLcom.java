@@ -102,7 +102,7 @@ public class MySQLcom {
      * @param error
      * @return
      */
-    public static BigInteger my_strtoll10(char[] cs, int start, int end, BoolPtr error) {
+    public static BigInteger myStrtoll10(char[] cs, int start, int end, BoolPtr error) {
         String tmp = new String(cs, start, end - start + 1);
         error.set(false);
         try {
@@ -156,13 +156,13 @@ public class MySQLcom {
      * the warn_name arguments are used as the name and the type of the
      * field when issuing the warning.
      */
-    public static long get_date_from_str(String str, MySQLTimestampType warntype, BoolPtr error) {
+    public static long getDateFromStr(String str, MySQLTimestampType warntype, BoolPtr error) {
         MySQLTime ltime = new MySQLTime();
         MySQLTimeStatus status = new MySQLTimeStatus();
-        error.set(MyTime.str_to_datetime(str, str.length(), ltime, MyTime.TIME_FUZZY_DATE, status));
+        error.set(MyTime.strToDatetime(str, str.length(), ltime, MyTime.TIME_FUZZY_DATE, status));
         if (error.get())
             return 0;
-        return MyTime.TIME_to_longlong_datetime_packed(ltime);
+        return MyTime.timeToLonglongDatetimePacked(ltime);
 
     }
 
@@ -170,7 +170,7 @@ public class MySQLcom {
      * Collects different types for comparison of first item with each other
      * items
      *
-     * SYNOPSIS collect_cmp_types() items Array of items to collect types from
+     * SYNOPSIS collectCmpTypes() items Array of items to collect types from
      * nitems Number of items in the array skip_nulls Don't collect types of
      * NULL items if TRUE
      *
@@ -181,7 +181,7 @@ public class MySQLcom {
      * RETURN 0 - if row type incompatibility has been detected (see
      * cmp_row_type) Bitmap of collected types - otherwise 可以表示出一共有几种type
      */
-    public static int collect_cmp_types(List<Item> items, boolean skipnulls) {
+    public static int collectCmpTypes(List<Item> items, boolean skipnulls) {
         int foundtypes = 0;
         ItemResult leftResult = items.get(0).resultType();
         for (int i = 1; i < items.size(); i++) {
@@ -190,7 +190,7 @@ public class MySQLcom {
             if (leftResult == ItemResult.ROW_RESULT || items.get(i).resultType() == ItemResult.ROW_RESULT
                     && cmpRowType(items.get(0), items.get(i)) != 0)
                 return 0;
-            foundtypes |= 1 << MySQLcom.item_cmp_type(leftResult, items.get(i).resultType()).ordinal();
+            foundtypes |= 1 << MySQLcom.itemCmpType(leftResult, items.get(i).resultType()).ordinal();
         }
         /*
          * Even if all right-hand items are NULLs and we are skipping them all,
@@ -206,7 +206,7 @@ public class MySQLcom {
         return 0;
     }
 
-    public static ItemResult item_cmp_type(ItemResult a, ItemResult b) {
+    public static ItemResult itemCmpType(ItemResult a, ItemResult b) {
 
         if (a == ItemResult.STRING_RESULT && b == ItemResult.STRING_RESULT)
             return ItemResult.STRING_RESULT;
@@ -218,16 +218,16 @@ public class MySQLcom {
         return ItemResult.REAL_RESULT;
     }
 
-    public static FieldTypes agg_field_type(List<Item> items, int startIndex, int nitems) {
+    public static FieldTypes aggFieldType(List<Item> items, int startIndex, int nitems) {
         if (nitems == 0 || items.get(startIndex).resultType() == ItemResult.ROW_RESULT)
             return FieldTypes.valueOf("-1");
         FieldTypes res = items.get(startIndex).fieldType();
         for (int i = 1; i < nitems; i++)
-            res = FieldUtil.field_type_merge(res, items.get(startIndex + i).fieldType());
+            res = FieldUtil.fieldTypeMerge(res, items.get(startIndex + i).fieldType());
         return res;
     }
 
-    public static ItemResult agg_result_type(List<Item> items, int startIndex, int size) {
+    public static ItemResult aggResultType(List<Item> items, int startIndex, int size) {
         ItemResult type = ItemResult.STRING_RESULT;
         /* Skip beginning NULL items */
         int index = 0, indexEnd;
@@ -244,12 +244,12 @@ public class MySQLcom {
         for (; index < indexEnd; index++) {
             item = items.get(index);
             if (item.type() != ItemType.NULL_ITEM)
-                type = item_store_type(type, item);
+                type = itemStoreType(type, item);
         }
         return type;
     }
 
-    public static ItemResult item_store_type(ItemResult a, Item item) {
+    public static ItemResult itemStoreType(ItemResult a, Item item) {
         ItemResult b = item.resultType();
 
         if (a == ItemResult.STRING_RESULT || b == ItemResult.STRING_RESULT)
@@ -367,7 +367,7 @@ public class MySQLcom {
 
     public static final String NULLS = null;
 
-    public static int check_word(String[] nameArray, char[] cs, int offset, int count) {
+    public static int checkWord(String[] nameArray, char[] cs, int offset, int count) {
         String val = new String(cs, offset, count);
         for (int index = 0; index < nameArray.length; index++) {
             if (val.equalsIgnoreCase(nameArray[index]))

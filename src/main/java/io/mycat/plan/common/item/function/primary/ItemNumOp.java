@@ -19,7 +19,7 @@ public abstract class ItemNumOp extends ItemFuncNumhybrid {
     /**
      * 计算结果总长度
      */
-    public abstract void result_precision();
+    public abstract void resultPrecision();
 
     @Override
     public void findNumType() {
@@ -40,12 +40,12 @@ public abstract class ItemNumOp extends ItemFuncNumhybrid {
             hybridType = ItemResult.REAL_RESULT;
         } else if (r0 == ItemResult.DECIMAL_RESULT || r1 == ItemResult.DECIMAL_RESULT) {
             hybridType = ItemResult.DECIMAL_RESULT;
-            result_precision();
+            resultPrecision();
         } else {
             assert (r0 == ItemResult.INT_RESULT && r1 == ItemResult.INT_RESULT);
             decimals = 0;
             hybridType = ItemResult.INT_RESULT;
-            result_precision();
+            resultPrecision();
         }
     }
 

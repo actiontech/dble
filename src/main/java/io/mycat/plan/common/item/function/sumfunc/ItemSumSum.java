@@ -41,7 +41,7 @@ public class ItemSumSum extends ItemSumNum {
     }
 
     public Sumfunctype sumType() {
-        return has_with_distinct() ? Sumfunctype.SUM_DISTINCT_FUNC : Sumfunctype.SUM_FUNC;
+        return hasWithDistinct() ? Sumfunctype.SUM_DISTINCT_FUNC : Sumfunctype.SUM_FUNC;
     }
 
     @Override
@@ -92,14 +92,14 @@ public class ItemSumSum extends ItemSumNum {
             }
         } else {
             if (hybridType == ItemResult.DECIMAL_RESULT) {
-                final BigDecimal val = aggr.arg_val_decimal();
-                if (!aggr.arg_is_null()) {
+                final BigDecimal val = aggr.argValDecimal();
+                if (!aggr.argIsNull()) {
                     sum = sum.add(val);
                     nullValue = false;
                 }
             } else {
-                sum = sum.add(aggr.arg_val_real());
-                if (!aggr.arg_is_null())
+                sum = sum.add(aggr.argValReal());
+                if (!aggr.argIsNull())
                     nullValue = false;
             }
         }
@@ -112,14 +112,14 @@ public class ItemSumSum extends ItemSumNum {
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
         if (hybridType == ItemResult.DECIMAL_RESULT) {
-            final BigDecimal val = aggr.arg_val_decimal();
-            if (!aggr.arg_is_null()) {
+            final BigDecimal val = aggr.argValDecimal();
+            if (!aggr.argIsNull()) {
                 sum = sum.add(val);
                 nullValue = false;
             }
         } else {
-            sum = sum.add(aggr.arg_val_real());
-            if (!aggr.arg_is_null())
+            sum = sum.add(aggr.argValReal());
+            if (!aggr.argIsNull())
                 nullValue = false;
         }
         return false;
@@ -148,7 +148,7 @@ public class ItemSumSum extends ItemSumNum {
         Item arg0 = getArg(0);
         SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
         aggregate.addArgument(arg0.toExpression());
-        if (has_with_distinct()) {
+        if (hasWithDistinct()) {
             aggregate.setOption(SQLAggregateOption.DISTINCT);
         }
         return aggregate;
@@ -158,9 +158,9 @@ public class ItemSumSum extends ItemSumNum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumSum(newArgs, has_with_distinct(), false, null);
+            return new ItemSumSum(newArgs, hasWithDistinct(), false, null);
         } else {
-            return new ItemSumSum(calArgs, has_with_distinct(), isPushDown, fields);
+            return new ItemSumSum(calArgs, hasWithDistinct(), isPushDown, fields);
         }
     }
 }

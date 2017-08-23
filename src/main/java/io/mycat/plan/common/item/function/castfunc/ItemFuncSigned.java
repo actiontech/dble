@@ -48,7 +48,7 @@ public class ItemFuncSigned extends ItemIntFunc {
         }
 
         try {
-            value = val_int_from_str();
+            value = valIntFromStr();
         } catch (Exception e) {
             value = new BigInteger("-1");
             LOGGER.error("Cast to signed converted positive out-of-range integer to " + "it's negative complement", e);
@@ -56,7 +56,7 @@ public class ItemFuncSigned extends ItemIntFunc {
         return value;
     }
 
-    protected BigInteger val_int_from_str() throws Exception {
+    protected BigInteger valIntFromStr() throws Exception {
         /*
          * For a string result, we must first get the string and then convert it
          * to a longlong

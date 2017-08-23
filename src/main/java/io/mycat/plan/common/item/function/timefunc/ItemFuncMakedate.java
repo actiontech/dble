@@ -40,16 +40,16 @@ public class ItemFuncMakedate extends ItemDateFunc {
         }
 
         if (year < 100)
-            year = MyTime.year_2000_handling(year);
+            year = MyTime.year2000Handling(year);
 
-        days = MyTime.calc_daynr(year, 1, 1) + daynr - 1;
+        days = MyTime.calcDaynr(year, 1, 1) + daynr - 1;
         /* Day number from year 0 to 9999-12-31 */
         if (days >= 0 && days <= MyTime.MAX_DAY_NUMBER) {
             nullValue = false;
             LongPtr lpyear = new LongPtr(0);
             LongPtr lpmonth = new LongPtr(0);
             LongPtr lpday = new LongPtr(0);
-            MyTime.get_date_from_daynr(days, lpyear, lpmonth, lpday);
+            MyTime.getDateFromDaynr(days, lpyear, lpmonth, lpday);
             ltime.year = lpyear.get();
             ltime.month = lpmonth.get();
             ltime.day = lpday.get();

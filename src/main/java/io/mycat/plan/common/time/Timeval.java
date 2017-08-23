@@ -20,7 +20,7 @@ public class Timeval {
      *
      * @return
      */
-    public BigDecimal timeval2my_decimal() {
+    public BigDecimal timeval2MyDecimal() {
         BigDecimal intpart = BigDecimal.valueOf(tvSec);
         BigDecimal frac = BigDecimal.valueOf(tvUsec / 1000000.0);
         return intpart.add(frac);
@@ -34,7 +34,7 @@ public class Timeval {
      * @param dec Precision, in the range 0..6.
      * @return The length of the result string.
      */
-    public String my_timeval_to_str() {
+    public String myTimevalToStr() {
         return tvSec + "." + tvUsec;
     }
 };

@@ -22,7 +22,7 @@ public class ItemFuncUnixTimestamp extends ItemTimevalFunc {
     }
 
     @Override
-    public boolean val_timeval(Timeval tm) {
+    public boolean valTimeval(Timeval tm) {
         if (getArgCount() == 0) {
             tm.tvSec = java.util.Calendar.getInstance().getTimeInMillis() / 1000;
             tm.tvUsec = 0;

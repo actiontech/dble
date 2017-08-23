@@ -56,6 +56,6 @@ public class GetYearValue implements GetValueFunc {
             }
         }
         /* Convert year to DATETIME packed format */
-        return MyTime.year_to_longlong_datetime_packed(value);
+        return MyTime.yearToLonglongDatetimePacked(value);
     }
 }

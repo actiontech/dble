@@ -62,13 +62,13 @@ public abstract class FieldNum extends Field {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         internalJob();
-        return isNull() ? true : MyTime.my_longlong_to_datetime_with_warn(intValue.longValue(), ltime, fuzzydate);
+        return isNull() ? true : MyTime.myLonglongToDatetimeWithWarn(intValue.longValue(), ltime, fuzzydate);
     }
 
     @Override
     public boolean getTime(MySQLTime ltime) {
         internalJob();
-        return isNull() ? true : MyTime.my_longlong_to_time_with_warn(intValue.longValue(), ltime);
+        return isNull() ? true : MyTime.myLonglongToTimeWithWarn(intValue.longValue(), ltime);
     }
 
     @Override

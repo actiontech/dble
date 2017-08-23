@@ -163,7 +163,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
                 node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
                 LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-                _execute(conn, node);
+                innerExecute(conn, node);
             } else {
                 // create new connection
                 LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
@@ -180,7 +180,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
-    private void _execute(BackendConnection conn, RouteResultsetNode node) {
+    private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
             return;
         }
@@ -268,7 +268,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         final RouteResultsetNode node = (RouteResultsetNode) conn
                 .getAttachment();
         session.bindConnection(node, conn);
-        _execute(conn, node);
+        innerExecute(conn, node);
     }
 
 

@@ -171,7 +171,7 @@ public abstract class ItemSumHybrid extends ItemSum {
         wasValues = true;
     }
 
-    public boolean any_value() {
+    public boolean anyValue() {
         return wasValues;
     }
 

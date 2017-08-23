@@ -23,8 +23,8 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
 
     @Override
     public void fixLengthAndDec() {
-        hybridType = MySQLcom.agg_result_type(args, 0, 2);
-        cachedFieldType = MySQLcom.agg_field_type(args, 0, 2);
+        hybridType = MySQLcom.aggResultType(args, 0, 2);
+        cachedFieldType = MySQLcom.aggFieldType(args, 0, 2);
         maybeNull = args.get(1).maybeNull;
         decimals = Math.max(args.get(0).decimals, args.get(1).decimals);
     }

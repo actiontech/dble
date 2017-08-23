@@ -47,7 +47,7 @@ public class ItemDatetimeTypecast extends ItemDatetimeFunc {
         // it
         // was
         // DATE
-        return (nullValue = MyTime.my_datetime_round(ltime, decimals));
+        return (nullValue = MyTime.myDatetimeRound(ltime, decimals));
     }
 
     @Override

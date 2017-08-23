@@ -366,7 +366,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             }
         } else {
             CastType castType = getCastType((SQLDataTypeImpl) datetype);
-            item = ItemCreate.getInstance().create_func_cast(a, castType);
+            item = ItemCreate.getInstance().createFuncCast(a, castType);
         }
         initName(x);
     }

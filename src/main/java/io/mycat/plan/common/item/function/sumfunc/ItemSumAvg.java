@@ -29,7 +29,7 @@ public class ItemSumAvg extends ItemSumSum {
 
     @Override
     public Sumfunctype sumType() {
-        return has_with_distinct() ? Sumfunctype.AVG_DISTINCT_FUNC : Sumfunctype.AVG_FUNC;
+        return hasWithDistinct() ? Sumfunctype.AVG_DISTINCT_FUNC : Sumfunctype.AVG_FUNC;
     }
 
     @Override
@@ -72,7 +72,7 @@ public class ItemSumAvg extends ItemSumSum {
         } else {
             if (super.add(row, null))
                 return true;
-            if (!aggr.arg_is_null())
+            if (!aggr.argIsNull())
                 count++;
         }
         return false;
@@ -143,7 +143,7 @@ public class ItemSumAvg extends ItemSumSum {
         Item arg0 = args.get(0);
         SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
         aggregate.addArgument(arg0.toExpression());
-        if (has_with_distinct()) {
+        if (hasWithDistinct()) {
             aggregate.setOption(SQLAggregateOption.DISTINCT);
         }
         return aggregate;
@@ -153,9 +153,9 @@ public class ItemSumAvg extends ItemSumSum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumAvg(newArgs, has_with_distinct(), false, null);
+            return new ItemSumAvg(newArgs, hasWithDistinct(), false, null);
         } else {
-            return new ItemSumAvg(calArgs, has_with_distinct(), isPushDown, fields);
+            return new ItemSumAvg(calArgs, hasWithDistinct(), isPushDown, fields);
         }
     }
 }

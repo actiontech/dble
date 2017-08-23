@@ -44,13 +44,13 @@ public abstract class FieldReal extends FieldNum {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         internalJob();
-        return isNull() ? true : MyTime.my_double_to_datetime_with_warn(decValue.doubleValue(), ltime, fuzzydate);
+        return isNull() ? true : MyTime.myDoubleToDatetimeWithWarn(decValue.doubleValue(), ltime, fuzzydate);
     }
 
     @Override
     public boolean getTime(MySQLTime ltime) {
         internalJob();
-        return isNull() ? true : MyTime.my_double_to_time_with_warn(decValue.doubleValue(), ltime);
+        return isNull() ? true : MyTime.myDoubleToTimeWithWarn(decValue.doubleValue(), ltime);
     }
 
     @Override

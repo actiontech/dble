@@ -71,7 +71,7 @@ public class ItemFuncTimediff extends ItemTimeFunc {
 
         MySQLTime lTime3 = new MySQLTime();
 
-        lTime3.neg = MyTime.calc_time_diff(lTime1, lTime2, lSign, seconds, microseconds);
+        lTime3.neg = MyTime.calcTimeDiff(lTime1, lTime2, lSign, seconds, microseconds);
 
         /*
          * For MYSQL_TIMESTAMP_TIME only: If first argument was negative and
@@ -81,7 +81,7 @@ public class ItemFuncTimediff extends ItemTimeFunc {
         if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
             lTime3.neg = lTime3.neg ? false : true; // Swap sign of result
 
-        MyTime.calc_time_from_sec(lTime3, seconds.get(), microseconds.get());
+        MyTime.calcTimeFromSec(lTime3, seconds.get(), microseconds.get());
         return false;
     }
 

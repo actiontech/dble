@@ -99,7 +99,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
 
         if (session.tryExistsCon(conn, node)) {
-            _execute(conn);
+            execute(conn);
         } else {
             // create new connection
             MycatConfig conf = MycatServer.getInstance().getConfig();
@@ -117,11 +117,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         session.bindConnection(node, conn);
-        _execute(conn);
+        execute(conn);
 
     }
 
-    private void _execute(BackendConnection conn) {
+    private void execute(BackendConnection conn) {
         if (session.closed()) {
             waitingResponse = false;
             session.clearResources(true);

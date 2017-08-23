@@ -147,7 +147,7 @@ public abstract class Item {
         MySQLTime ltime = new MySQLTime();
         if (nullValue = getDate(ltime, 1))
             return 0;
-        return MyTime.TIME_to_longlong_datetime_packed(ltime);
+        return MyTime.timeToLonglongDatetimePacked(ltime);
     }
 
     /**
@@ -157,7 +157,7 @@ public abstract class Item {
         MySQLTime ltime = new MySQLTime();
         if (nullValue = getTime(ltime))
             return 0;
-        return MyTime.TIME_to_longlong_time_packed(ltime);
+        return MyTime.timeToLonglongTimePacked(ltime);
     }
 
     public long valTemporalByFieldType() {
@@ -201,16 +201,16 @@ public abstract class Item {
             getDate(tm, MyTime.TIME_FUZZY_DATE);
             if (!nullValue) {
                 if (fType == FieldTypes.MYSQL_TYPE_DATE) {
-                    result = MyTime.my_date_to_str(tm).getBytes();
+                    result = MyTime.myDateToStr(tm).getBytes();
                 } else {
-                    result = MyTime.my_datetime_to_str(tm, decimals).getBytes();
+                    result = MyTime.myDatetimeToStr(tm, decimals).getBytes();
                 }
             }
         } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
             MySQLTime tm = new MySQLTime();
             getTime(tm);
             if (!nullValue)
-                result = MyTime.my_time_to_str(tm, decimals).getBytes();
+                result = MyTime.myTimeToStrL(tm, decimals).getBytes();
         } else {
             String res = null;
             if ((res = valStr()) != null)
@@ -290,19 +290,19 @@ public abstract class Item {
     }
 
     public boolean isTemporalWithDate() {
-        return FieldUtil.is_temporal_type_with_date(fieldType());
+        return FieldUtil.isTemporalTypeWithDate(fieldType());
     }
 
     public boolean isTemporalWithDateAndTime() {
-        return FieldUtil.is_temporal_type_with_date_and_time(fieldType());
+        return FieldUtil.isTemporalTypeWithDateAndTime(fieldType());
     }
 
     public boolean isTemporalWithTime() {
-        return FieldUtil.is_temporal_type_with_time(fieldType());
+        return FieldUtil.isTemporalTypeWithTime(fieldType());
     }
 
     public boolean isTemporal() {
-        return FieldUtil.is_temporal_type(fieldType());
+        return FieldUtil.isTemporalType(fieldType());
     }
 
     public abstract boolean getDate(MySQLTime ltime, long fuzzydate);
@@ -414,21 +414,21 @@ public abstract class Item {
         MySQLTime ltime = new MySQLTime();
         if (getDate(ltime, 1))
             return null;
-        return MyTime.my_date_to_str(ltime);
+        return MyTime.myDateToStr(ltime);
     }
 
     protected String valStringFromTime() {
         MySQLTime ltime = new MySQLTime();
         if (getTime(ltime))
             return null;
-        return MyTime.my_time_to_str(ltime, this.decimals);
+        return MyTime.myTimeToStrL(ltime, this.decimals);
     }
 
     protected String valStringFromDatetime() {
         MySQLTime ltime = new MySQLTime();
         if (getDate(ltime, 1))
             return null;
-        return MyTime.my_datetime_to_str(ltime, this.decimals);
+        return MyTime.myDatetimeToStr(ltime, this.decimals);
     }
 
     protected BigDecimal valDecimalFromReal() {
@@ -456,12 +456,12 @@ public abstract class Item {
 
     protected BigDecimal valDecimalFromDate() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, 1) ? null : MyTime.date2my_decimal(ltime);
+        return getDate(ltime, 1) ? null : MyTime.date2MyDecimal(ltime);
     }
 
     protected BigDecimal valDecimalFromTime() {
         MySQLTime ltime = new MySQLTime();
-        return getTime(ltime) ? null : MyTime.time2my_decimal(ltime);
+        return getTime(ltime) ? null : MyTime.time2MyDecimal(ltime);
     }
 
     protected long valIntFromDecimal() {
@@ -473,17 +473,17 @@ public abstract class Item {
 
     protected long valIntFromDate() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, 1) ? 0L : (long) MyTime.TIME_to_ulonglong_date(ltime);
+        return getDate(ltime, 1) ? 0L : (long) MyTime.timeToUlonglongDate(ltime);
     }
 
     protected long valIntFromDatetime() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, 1) ? 0L : (long) MyTime.TIME_to_ulonglong_datetime_round(ltime);
+        return getDate(ltime, 1) ? 0L : (long) MyTime.timeToUlonglongDatetimeRound(ltime);
     }
 
     protected long valIntFromTime() {
         MySQLTime ltime = new MySQLTime();
-        return getTime(ltime) ? 0L : (long) MyTime.TIME_to_ulonglong_time_round(ltime);
+        return getTime(ltime) ? 0L : (long) MyTime.timeToUlonglongTimeRound(ltime);
     }
 
     protected BigDecimal valRealFromDecimal() {
@@ -497,38 +497,38 @@ public abstract class Item {
     protected boolean getDateFromString(MySQLTime ltime, long flags) {
         String res = null;
         if ((res = valStr()) == null) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
             return true;
         }
         MySQLTimeStatus status = new MySQLTimeStatus();
-        return MyTime.str_to_datetime(res, res.length(), ltime, flags, status);
+        return MyTime.strToDatetime(res, res.length(), ltime, flags, status);
     }
 
     protected boolean getDateFromReal(MySQLTime ltime, long flags) {
         double value = valReal().doubleValue();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
             return true;
         }
-        return MyTime.my_double_to_datetime_with_warn(value, ltime, flags);
+        return MyTime.myDoubleToDatetimeWithWarn(value, ltime, flags);
     }
 
     protected boolean getDateFromDecimal(MySQLTime ltime, long flags) {
         BigDecimal value = valDecimal();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
             return true;
         }
-        return MyTime.my_decimal_to_datetime_with_warn(value, ltime, flags);
+        return MyTime.myDecimalToDatetimeWithWarn(value, ltime, flags);
     }
 
     protected boolean getDateFromInt(MySQLTime ltime, long flags) {
         long value = valInt().longValue();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
             return true;
         }
-        MyTime.TIME_from_longlong_datetime_packed(ltime, value);
+        MyTime.timeFromLonglongDatetimePacked(ltime, value);
         return false;
     }
 
@@ -538,7 +538,7 @@ public abstract class Item {
             assert (nullValue);
             return true;
         }
-        MyTime.time_to_datetime(tmp, ltime);
+        MyTime.timeToDatetime(tmp, ltime);
         return false;
     }
 
@@ -585,10 +585,10 @@ public abstract class Item {
     protected boolean getTimeFromString(MySQLTime ltime) {
         String res = valStr();
         if (res == null) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
             return true;
         }
-        return MyTime.str_to_time(res, res.length(), ltime, new MySQLTimeStatus());
+        return MyTime.strToTime(res, res.length(), ltime, new MySQLTimeStatus());
     }
 
     /**
@@ -597,10 +597,10 @@ public abstract class Item {
     protected boolean getTimeFromReal(MySQLTime ltime) {
         double value = valReal().doubleValue();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
             return true;
         }
-        return MyTime.my_double_to_time_with_warn(value, ltime);
+        return MyTime.myDoubleToTimeWithWarn(value, ltime);
     }
 
     /**
@@ -609,10 +609,10 @@ public abstract class Item {
     protected boolean getTimeFromDecimal(MySQLTime ltime) {
         BigDecimal decimal = valDecimal();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
             return true;
         }
-        return MyTime.my_decimal_to_time_with_warn(decimal, ltime);
+        return MyTime.myDecimalToTimeWithWarn(decimal, ltime);
     }
 
     /**
@@ -621,10 +621,10 @@ public abstract class Item {
     protected boolean getTimeFromInt(MySQLTime ltime) {
         long value = valInt().longValue();
         if (nullValue) {
-            ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
             return true;
         }
-        MyTime.TIME_from_longlong_time_packed(ltime, value);
+        MyTime.timeFromLonglongTimePacked(ltime, value);
         return false;
     }
 
@@ -634,7 +634,7 @@ public abstract class Item {
     protected boolean getTimeFromDate(MySQLTime ltime) {
         if (getDate(ltime, 1)) // Need this check if NULL value
             return true;
-        ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+        ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
         return false;
     }
 
@@ -644,7 +644,7 @@ public abstract class Item {
     protected boolean getTimeFromDatetime(MySQLTime ltime) {
         if (getDate(ltime, 1))
             return true;
-        MyTime.datetime_to_time(ltime);
+        MyTime.datetimeToTime(ltime);
         return false;
     }
 
@@ -702,7 +702,7 @@ public abstract class Item {
             String tmp = valStr();
             MySQLTimeStatus status = new MySQLTimeStatus();
             // Nanosecond rounding is not needed, for performance purposes
-            if ((tmp != null) && !MyTime.str_to_datetime(tmp, tmp.length(), ltime,
+            if ((tmp != null) && !MyTime.strToDatetime(tmp, tmp.length(), ltime,
                     MyTime.TIME_NO_NSEC_ROUNDING | MyTime.TIME_FUZZY_DATE, status))
                 return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
         }
@@ -725,7 +725,7 @@ public abstract class Item {
                 return false;
             }
         }
-        if (MyTime.datetime_to_timeval(ltime,
+        if (MyTime.datetimeToTimeval(ltime,
                 tm)) { /*
                          * Value is out of the supported range
                          */
@@ -765,7 +765,7 @@ public abstract class Item {
             String tmp = valStr();
             MySQLTimeStatus status = new MySQLTimeStatus();
             // Nanosecond rounding is not needed, for performance purposes
-            if (tmp != null && MyTime.str_to_time(tmp, tmp.length(), ltime, status) == false)
+            if (tmp != null && MyTime.strToTime(tmp, tmp.length(), ltime, status) == false)
                 return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);

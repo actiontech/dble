@@ -265,7 +265,7 @@ public class ItemCreate {
         return nf.nativeConstruct(args);
     }
 
-    public ItemFunc create_func_cast(Item a, CastType type) {
+    public ItemFunc createFuncCast(Item a, CastType type) {
         CastTarget castType = type.target;
         ItemFunc res = null;
         if (castType == CastTarget.ITEM_CAST_BINARY) {

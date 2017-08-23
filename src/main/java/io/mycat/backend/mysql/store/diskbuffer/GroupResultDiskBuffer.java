@@ -52,7 +52,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
             this.sums.add(sum);
         }
         logger.info("prepare_sum_aggregators");
-        prepare_sum_aggregators(this.sums, true);
+        prepareSumAggregators(this.sums, true);
     }
 
     @Override
@@ -63,8 +63,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
     @Override
     protected void onFoundRow(RowDataPacket oldRow, RowDataPacket row) {
         // we need to calculate group by
-        init_sum_functions(this.sums, oldRow);
-        update_sum_func(this.sums, row);
+        initSumFunctions(this.sums, oldRow);
+        updateSumFunc(this.sums, row);
         for (int i = 0; i < this.sums.size(); i++) {
             ItemSum sum = this.sums.get(i);
             Object b = sum.getTransAggObj();
@@ -78,15 +78,15 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
      *
      * @return
      */
-    protected void prepare_sum_aggregators(List<ItemSum> funcs, boolean need_distinct) {
+    protected void prepareSumAggregators(List<ItemSum> funcs, boolean need_distinct) {
         for (ItemSum func : funcs) {
-            func.setAggregator(need_distinct && func.has_with_distinct()
+            func.setAggregator(need_distinct && func.hasWithDistinct()
                             ? AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     null);
         }
     }
 
-    protected void init_sum_functions(List<ItemSum> funcs, RowDataPacket row) {
+    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
         for (int i = 0; i < funcs.size(); i++) {
             ItemSum sum = funcs.get(i);
             Object transObj = ((DGRowPacket) row).getSumTran(i);
@@ -94,7 +94,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
         }
     }
 
-    protected void update_sum_func(List<ItemSum> funcs, RowDataPacket row) {
+    protected void updateSumFunc(List<ItemSum> funcs, RowDataPacket row) {
         for (int index = 0; index < funcs.size(); index++) {
             ItemSum sum = funcs.get(index);
             Object transObj = ((DGRowPacket) row).getSumTran(index);

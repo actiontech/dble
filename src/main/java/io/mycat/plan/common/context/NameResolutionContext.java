@@ -16,11 +16,11 @@ public class NameResolutionContext {
 
     private boolean selectFirst = false;
 
-    public NameResolutionContext getOuter_context() {
+    public NameResolutionContext getOuterContext() {
         return outerContext;
     }
 
-    public void setOuter_context(NameResolutionContext outer_context) {
+    public void setOuterContext(NameResolutionContext outer_context) {
         this.outerContext = outer_context;
     }
 

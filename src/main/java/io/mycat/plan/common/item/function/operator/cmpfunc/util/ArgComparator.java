@@ -27,7 +27,7 @@ public class ArgComparator {
     GetValueFunc getValueAFunc; // get_value_a_func name
     GetValueFunc getValueBFunc; // get_value_b_func name
 
-    boolean try_year_cmp_func(ItemResult type) {
+    boolean tryYearCmpFunc(ItemResult type) {
         if (type == ItemResult.ROW_RESULT)
             return false;
         boolean aisyear = a.fieldType() == FieldTypes.MYSQL_TYPE_YEAR;
@@ -78,7 +78,7 @@ public class ArgComparator {
             if (strArg.nullValue) {
                 return true;
             }
-            value = MySQLcom.get_date_from_str(strVal, ttype, error);
+            value = MySQLcom.getDateFromStr(strVal, ttype, error);
             if (error.get())
                 return true;
         }
@@ -129,7 +129,7 @@ public class ArgComparator {
     }
 
     public int setCompareFunc(ItemFunc ownerarg) {
-        return setCompareFunc(ownerarg, MySQLcom.item_cmp_type(a.resultType(), b.resultType()));
+        return setCompareFunc(ownerarg, MySQLcom.itemCmpType(a.resultType(), b.resultType()));
     }
 
     public int setCmpFunc(ItemFunc ownerarg, Item a1, Item a2, ItemResult type) {
@@ -158,7 +158,7 @@ public class ArgComparator {
         } else if (type == ItemResult.STRING_RESULT && a.resultType() == ItemResult.STRING_RESULT
                 && b.resultType() == ItemResult.STRING_RESULT) {
             // see item_cmpfunc.cc line1054
-        } else if (try_year_cmp_func(type)) {
+        } else if (tryYearCmpFunc(type)) {
             return 0;
         }
         return setCompareFunc(ownerarg, type);
@@ -166,7 +166,7 @@ public class ArgComparator {
 
     public int setCmpFunc(ItemFunc ownerarg, Item a1, Item a2, boolean setnullarg) {
         setNull = setnullarg;
-        return setCmpFunc(ownerarg, a1, a2, MySQLcom.item_cmp_type(a1.resultType(), a2.resultType()));
+        return setCmpFunc(ownerarg, a1, a2, MySQLcom.itemCmpType(a1.resultType(), a2.resultType()));
     }
 
     public int compare() {

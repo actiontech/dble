@@ -87,11 +87,11 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
     }
 
     /* Here arg[1] is a Item_interval object */
-    private boolean get_date_internal(MySQLTime ltime, long fuzzy_date) {
+    private boolean getDateInternal(MySQLTime ltime, long fuzzy_date) {
         INTERVAL interval = new INTERVAL();
 
         if (args.get(0).getDate(ltime, MyTime.TIME_NO_ZERO_DATE)
-                || MyTime.get_interval_value(args.get(1), intType, strValue, interval))
+                || MyTime.getIntervalValue(args.get(1), intType, strValue, interval))
             return (nullValue = true);
 
         if (dateSubInterval)
@@ -102,20 +102,20 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
          */
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATE
                 && ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME)
-            MyTime.datetime_to_date(ltime);
+            MyTime.datetimeToDate(ltime);
         else if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME
                 && ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE)
-            MyTime.date_to_datetime(ltime);
+            MyTime.dateToDatetime(ltime);
 
-        if ((nullValue = MyTime.date_add_interval(ltime, intType, interval)))
+        if ((nullValue = MyTime.dateAddInterval(ltime, intType, interval)))
             return true;
         return false;
     }
 
-    private boolean get_time_internal(MySQLTime ltime) {
+    private boolean getTimeInternal(MySQLTime ltime) {
         INTERVAL interval = new INTERVAL();
         if ((nullValue = args.get(0).getTime(ltime)
-                || MyTime.get_interval_value(args.get(1), intType, strValue, interval)))
+                || MyTime.getIntervalValue(args.get(1), intType, strValue, interval)))
             return true;
 
         if (dateSubInterval)
@@ -130,7 +130,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
         seconds.quot = diff / 1000000;
         seconds.rem = diff % 1000000
                 * 1000; /* time.second_part= lldiv.rem / 1000 */
-        if ((nullValue = (interval.year != 0 || interval.month != 0 || MyTime.sec_to_time(seconds, ltime)))) {
+        if ((nullValue = (interval.year != 0 || interval.month != 0 || MyTime.secToTime(seconds, ltime)))) {
             LOGGER.warn("datetime function overflow!");
             return true;
         }
@@ -138,10 +138,10 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
     }
 
     @Override
-    protected boolean val_datetime(MySQLTime ltime, long fuzzy_date) {
+    protected boolean valDatetime(MySQLTime ltime, long fuzzy_date) {
         if (cachedFieldType != FieldTypes.MYSQL_TYPE_TIME)
-            return get_date_internal(ltime, fuzzy_date | MyTime.TIME_NO_ZERO_DATE);
-        return get_time_internal(ltime);
+            return getDateInternal(ltime, fuzzy_date | MyTime.TIME_NO_ZERO_DATE);
+        return getTimeInternal(ltime);
     }
 
     @Override

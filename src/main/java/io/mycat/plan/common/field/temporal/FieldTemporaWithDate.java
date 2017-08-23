@@ -20,13 +20,13 @@ public abstract class FieldTemporaWithDate extends FieldTemporal {
     @Override
     public long valTimeTemporal() {
         internalJob();
-        return isNull() ? 0 : MyTime.TIME_to_longlong_time_packed(ltime);
+        return isNull() ? 0 : MyTime.timeToLonglongTimePacked(ltime);
     }
 
     @Override
     public long valDateTemporal() {
         internalJob();
-        return isNull() ? 0 : MyTime.TIME_to_longlong_datetime_packed(ltime);
+        return isNull() ? 0 : MyTime.timeToLonglongDatetimePacked(ltime);
     }
 
     @Override
@@ -49,8 +49,8 @@ public abstract class FieldTemporaWithDate extends FieldTemporal {
                 String sval2 = MySQLcom.getFullString(charsetName, v2);
                 MySQLTime ltime1 = new MySQLTime();
                 MySQLTime ltime2 = new MySQLTime();
-                MyTime.str_to_datetime_with_warn(sval1, ltime1, MyTime.TIME_FUZZY_DATE);
-                MyTime.str_to_datetime_with_warn(sval2, ltime2, MyTime.TIME_FUZZY_DATE);
+                MyTime.strToDatetimeWithWarn(sval1, ltime1, MyTime.TIME_FUZZY_DATE);
+                MyTime.strToDatetimeWithWarn(sval2, ltime2, MyTime.TIME_FUZZY_DATE);
                 return ltime1.getCompareResult(ltime2);
             } catch (Exception e) {
                 LOGGER.info("String to biginteger exception!", e);

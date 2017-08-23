@@ -101,8 +101,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
                     this.type(), conn.getCharset()));
             sums.add(sum);
         }
-        prepare_sum_aggregators(sums, true);
-        setup_sum_funcs(sums);
+        prepareSumAggregators(sums, true);
+        setupSumFuncs(sums);
         /* group fieldpackets are front of the origin */
         sendGroupFieldPackets((MySQLConnection) conn);
         // localresult中的row为DGRowPacket，比原始的rowdatapacket增加了聚合结果对象
@@ -224,7 +224,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
                     conn.getCharset());
             sendSums.add(sum);
         }
-        prepare_sum_aggregators(sendSums, true);
+        prepareSumAggregators(sendSums, true);
         while ((row = groupLocalResult.next()) != null)// group函数已经在row中被计算过了
         {
             if (sendGroupRowPacket(conn, row, sendSums))
@@ -236,7 +236,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      * 将一组group好的数据发送出去
      */
     private boolean sendGroupRowPacket(MySQLConnection conn, RowDataPacket row, List<ItemSum> sendSums) {
-        init_sum_functions(sendSums, row);
+        initSumFunctions(sendSums, row);
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + sendSums.size());
         /**
          * 将自己生成的聚合函数的值放在前面，这样在tablenode时，如果用户语句如select count(*) from t
@@ -277,10 +277,10 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      *
      * @return
      */
-    protected void prepare_sum_aggregators(List<ItemSum> funcs, boolean need_distinct) {
+    protected void prepareSumAggregators(List<ItemSum> funcs, boolean need_distinct) {
         LOGGER.info("prepare_sum_aggregators");
         for (ItemSum func : funcs) {
-            func.setAggregator(need_distinct && func.has_with_distinct()
+            func.setAggregator(need_distinct && func.hasWithDistinct()
                             ? Aggregator.AggregatorType.DISTINCT_AGGREGATOR : Aggregator.AggregatorType.SIMPLE_AGGREGATOR,
                     null);
         }
@@ -295,7 +295,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      * @retval TRUE error
      */
 
-    protected boolean setup_sum_funcs(List<ItemSum> funcs) {
+    protected boolean setupSumFuncs(List<ItemSum> funcs) {
         LOGGER.info("setup_sum_funcs");
         for (ItemSum func : funcs) {
             if (func.aggregatorSetup())
@@ -304,7 +304,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         return false;
     }
 
-    protected void init_sum_functions(List<ItemSum> funcs, RowDataPacket row) {
+    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
         for (int index = 0; index < funcs.size(); index++) {
             ItemSum sum = funcs.get(index);
             Object transObj = ((DGRowPacket) row).getSumTran(index);

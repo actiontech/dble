@@ -51,7 +51,7 @@ public class ZkConfig {
     private static Properties ZKPROPERTIES = null;
 
     static {
-        ZKPROPERTIES = LoadMyidPropersites();
+        ZKPROPERTIES = loadMyidPropersites();
     }
 
 
@@ -104,7 +104,7 @@ public class ZkConfig {
      * @return
      * @创建日期 2016年9月15日
      */
-    private static Properties LoadMyidPropersites() {
+    private static Properties loadMyidPropersites() {
         Properties pros = new Properties();
 
         try (InputStream configIS = ResourceUtil.getResourceAsStream(ZK_CONFIG_FILE_NAME)) {

@@ -77,7 +77,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             LOGGER.debug("execute mutinode query " + rrs.getStatement());
         }
 
-        this.rrs = RouteResultCopy.RRCopy(rrs, ServerParse.SELECT, STMT);
+        this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.SELECT, STMT);
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
 
@@ -123,7 +123,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
                 node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
                 LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-                _execute(conn, node);
+                innerExecute(conn, node);
             } else {
                 // create new connection
                 LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
@@ -135,7 +135,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
     }
 
-    private void _execute(BackendConnection conn, RouteResultsetNode node) {
+    private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
             return;
         }
@@ -205,7 +205,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
-        _execute(conn, node);
+        innerExecute(conn, node);
     }
 
 

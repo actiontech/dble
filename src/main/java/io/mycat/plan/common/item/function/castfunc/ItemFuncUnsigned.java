@@ -56,7 +56,7 @@ public class ItemFuncUnsigned extends ItemIntFunc {
         }
 
         try {
-            value = val_int_from_str();
+            value = valIntFromStr();
         } catch (Exception e) {
             value = new BigInteger("-1");
             LOGGER.error("Cast to unsigned converted negative integer to it's " + "positive complement", e);
@@ -64,7 +64,7 @@ public class ItemFuncUnsigned extends ItemIntFunc {
         return value;
     }
 
-    protected BigInteger val_int_from_str() throws Exception {
+    protected BigInteger valIntFromStr() throws Exception {
         /*
          * For a string result, we must first get the string and then convert it
          * to a longlong

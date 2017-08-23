@@ -41,17 +41,17 @@ public class AggregatorSimple extends Aggregator {
     }
 
     @Override
-    public BigDecimal arg_val_decimal() {
+    public BigDecimal argValDecimal() {
         return itemSum.args.get(0).valDecimal();
     }
 
     @Override
-    public BigDecimal arg_val_real() {
+    public BigDecimal argValReal() {
         return itemSum.args.get(0).valReal();
     }
 
     @Override
-    public boolean arg_is_null() {
+    public boolean argIsNull() {
         return itemSum.args.get(0).nullValue;
     }
 

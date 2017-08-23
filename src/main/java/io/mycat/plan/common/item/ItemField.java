@@ -36,7 +36,7 @@ public class ItemField extends ItemIdent {
 
     public ItemField(Field field) {
         super(null, field.table, field.name);
-        set_field(field);
+        setField(field);
     }
 
     /**
@@ -51,7 +51,7 @@ public class ItemField extends ItemIdent {
 
     public void setField(List<Field> fields) {
         assert (fields != null);
-        set_field(fields.get(index));
+        setField(fields.get(index));
     }
 
     @Override
@@ -79,7 +79,7 @@ public class ItemField extends ItemIdent {
         return field.ptr;
     }
 
-    public ItemResult cmp_type() {
+    public ItemResult cmpType() {
         return field.cmpType();
     }
 
@@ -150,7 +150,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         if ((nullValue = field.isNull()) || field.getDate(ltime, fuzzydate)) {
-            ltime.set_zero_time(ltime.timeType);
+            ltime.setZeroTime(ltime.timeType);
             return true;
         }
         return false;
@@ -159,7 +159,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getTime(MySQLTime ltime) {
         if ((nullValue = field.isNull()) || field.getTime(ltime)) {
-            ltime.set_zero_time(ltime.timeType);
+            ltime.setZeroTime(ltime.timeType);
             return true;
         }
         return false;
@@ -188,7 +188,7 @@ public class ItemField extends ItemIdent {
         }
     }
 
-    protected void set_field(Field field) {
+    protected void setField(Field field) {
         this.field = field;
         maybeNull = field.maybeNull(); // 有可能为null
         decimals = field.decimals;

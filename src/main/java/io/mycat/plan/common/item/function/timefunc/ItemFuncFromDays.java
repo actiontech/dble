@@ -26,11 +26,11 @@ public class ItemFuncFromDays extends ItemDateFunc {
         long value = args.get(0).valInt().longValue();
         if ((nullValue = args.get(0).nullValue))
             return true;
-        ltime.set_zero_time(ltime.timeType);
+        ltime.setZeroTime(ltime.timeType);
         LongPtr lpyear = new LongPtr(0);
         LongPtr lpmonth = new LongPtr(0);
         LongPtr lpday = new LongPtr(0);
-        MyTime.get_date_from_daynr((long) value, lpyear, lpmonth, lpday);
+        MyTime.getDateFromDaynr((long) value, lpyear, lpmonth, lpday);
         ltime.year = lpyear.get();
         ltime.month = lpmonth.get();
         ltime.day = lpday.get();

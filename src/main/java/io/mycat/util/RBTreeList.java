@@ -196,7 +196,7 @@ public class RBTreeList<E> extends AbstractList<E> {
 
     @Override
     public E set(int index, E element) {
-        RangeCheck(index);
+        rangeCheck(index);
         E oldValue = (E) elementData[index];
         elementData[index] = element;
         RBTNode<E> oldNode = find(oldValue);
@@ -221,7 +221,7 @@ public class RBTreeList<E> extends AbstractList<E> {
 
     @Override
     public E remove(int index) {
-        RangeCheck(index);
+        rangeCheck(index);
 
         modCount++;
         E oldValue = (E) elementData[index];
@@ -497,7 +497,7 @@ public class RBTreeList<E> extends AbstractList<E> {
 
     @Override
     public E get(int index) {
-        RangeCheck(index);
+        rangeCheck(index);
         return (E) elementData[index];
     }
 
@@ -538,7 +538,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         return list.toArray();
     }
 
-    private void RangeCheck(int index) {
+    private void rangeCheck(int index) {
         if (index >= size)
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
     }

@@ -33,7 +33,7 @@ import io.mycat.route.RouteResultsetNode;
  * So here.
  */
 public final class RouteResultCopy {
-    public static RouteResultsetNode RRNCopy(RouteResultsetNode node, int sqlType, String stmt) {
+    public static RouteResultsetNode rrnCopy(RouteResultsetNode node, int sqlType, String stmt) {
         RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
         nn.setRunOnSlave(node.getRunOnSlave());
         nn.setCanRunInReadDB(true);
@@ -41,7 +41,7 @@ public final class RouteResultCopy {
         return nn;
     }
 
-    public static RouteResultset RRCopy(RouteResultset rrs, int sqlType, String stmt) {
+    public static RouteResultset rrCopy(RouteResultset rrs, int sqlType, String stmt) {
         RouteResultset rr = new RouteResultset(stmt, sqlType);
         rr.setRunOnSlave(rrs.getRunOnSlave());
         rr.setFinishedRoute(rrs.isFinishedRoute());
@@ -51,7 +51,7 @@ public final class RouteResultCopy {
         RouteResultsetNode[] ns = rrs.getNodes();
         RouteResultsetNode[] nodes = new RouteResultsetNode[ns.length];
         for (int i = 0; i < ns.length; i++) {
-            nodes[i] = RRNCopy(ns[i], sqlType, stmt);
+            nodes[i] = rrnCopy(ns[i], sqlType, stmt);
         }
         rr.setNodes(nodes);
 

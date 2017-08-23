@@ -21,7 +21,7 @@ public class FieldTimestamp extends FieldTemporalWithDateAndTime {
     @Override
     public BigInteger valInt() {
         internalJob();
-        return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.TIME_to_ulonglong_datetime(ltime));
+        return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.timeToUlonglongDatetime(ltime));
     }
 
     @Override
@@ -33,7 +33,7 @@ public class FieldTimestamp extends FieldTemporalWithDateAndTime {
             LOGGER.warn("parse string exception!", ue);
         }
         if (ptrStr != null)
-            MyTime.str_to_datetime_with_warn(ptrStr, ltime, MyTime.TIME_FUZZY_DATE);
+            MyTime.strToDatetimeWithWarn(ptrStr, ltime, MyTime.TIME_FUZZY_DATE);
     }
 
 

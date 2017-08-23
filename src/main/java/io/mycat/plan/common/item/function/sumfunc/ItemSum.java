@@ -47,7 +47,7 @@ public abstract class ItemSum extends ItemResultField {
         return this.args;
     }
 
-    public final boolean has_with_distinct() {
+    public final boolean hasWithDistinct() {
         return withDistinct;
     }
 

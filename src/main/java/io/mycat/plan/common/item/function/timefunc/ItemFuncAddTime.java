@@ -55,7 +55,7 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
     }
 
     @Override
-    protected boolean val_datetime(MySQLTime time, long fuzzy_date) {
+    protected boolean valDatetime(MySQLTime time, long fuzzy_date) {
         MySQLTime lTime1 = new MySQLTime();
         MySQLTime lTime2 = new MySQLTime();
         boolean isTime = false;
@@ -86,9 +86,9 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         if (lTime1.neg != lTime2.neg)
             lSign = -lSign;
 
-        time.set_zero_time(time.timeType);
+        time.setZeroTime(time.timeType);
 
-        time.neg = MyTime.calc_time_diff(lTime1, lTime2, -lSign, seconds, microseconds);
+        time.neg = MyTime.calcTimeDiff(lTime1, lTime2, -lSign, seconds, microseconds);
 
         /*
          * If first argument was negative and diff between arguments is non-zero
@@ -104,13 +104,13 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
         days = (long) (seconds.get() / MyTime.SECONDS_IN_24H);
 
-        MyTime.calc_time_from_sec(time, seconds.get() % MyTime.SECONDS_IN_24H, microseconds.get());
+        MyTime.calcTimeFromSec(time, seconds.get() % MyTime.SECONDS_IN_24H, microseconds.get());
 
         if (!isTime) {
             LongPtr lpyear = new LongPtr(0);
             LongPtr lpmonth = new LongPtr(0);
             LongPtr lpday = new LongPtr(0);
-            MyTime.get_date_from_daynr(days, lpyear, lpmonth, lpday);
+            MyTime.getDateFromDaynr(days, lpyear, lpmonth, lpday);
             time.year = lpyear.get();
             time.month = lpmonth.get();
             time.day = lpday.get();

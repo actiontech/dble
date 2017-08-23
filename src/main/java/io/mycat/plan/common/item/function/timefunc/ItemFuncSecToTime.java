@@ -34,7 +34,7 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
         long seconds = val.longValue();
         long microseconds = (long) ((val.doubleValue() - val.longValue()) * 1000000);
         if (seconds > MyTime.TIME_MAX_SECOND) {
-            ltime.set_max_hhmmss();
+            ltime.setMaxHhmmss();
             return true;
         }
         ltime.hour = (seconds / 3600);

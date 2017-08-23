@@ -27,7 +27,7 @@ public class GetDatetimeValue implements GetValueFunc {
             MySQLTimestampType tType = fType == FieldTypes.MYSQL_TYPE_DATE
                     ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
                     : MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
-            value = MySQLcom.get_date_from_str(str, tType, error);
+            value = MySQLcom.getDateFromStr(str, tType, error);
         }
         return value;
     }

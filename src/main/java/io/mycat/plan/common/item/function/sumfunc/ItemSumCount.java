@@ -22,7 +22,7 @@ public class ItemSumCount extends ItemSumInt {
 
     @Override
     public Sumfunctype sumType() {
-        return has_with_distinct() ? Sumfunctype.COUNT_DISTINCT_FUNC : Sumfunctype.COUNT_FUNC;
+        return hasWithDistinct() ? Sumfunctype.COUNT_DISTINCT_FUNC : Sumfunctype.COUNT_FUNC;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class ItemSumCount extends ItemSumInt {
     @Override
     public SQLExpr toExpression() {
         SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
-        if (has_with_distinct()) {
+        if (hasWithDistinct()) {
             for (Item arg : args)
                 aggregate.addArgument(arg.toExpression());
             aggregate.setOption(SQLAggregateOption.DISTINCT);
@@ -92,9 +92,9 @@ public class ItemSumCount extends ItemSumInt {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumCount(newArgs, has_with_distinct(), false, null);
+            return new ItemSumCount(newArgs, hasWithDistinct(), false, null);
         } else {
-            return new ItemSumCount(calArgs, has_with_distinct(), isPushDown, fields);
+            return new ItemSumCount(calArgs, hasWithDistinct(), isPushDown, fields);
         }
     }
 

@@ -16,7 +16,7 @@ public abstract class ItemBoolFunc2 extends ItemBoolFunc {
         cmp = new ArgComparator(a, b);
     }
 
-    public int set_cmp_func() {
+    public int setCmpFunc() {
         return cmp.setCmpFunc(this, args.get(0), args.get(1), true);
     }
 
@@ -36,12 +36,12 @@ public abstract class ItemBoolFunc2 extends ItemBoolFunc {
          * collation aggregation.
          */
 
-        args.get(0).cmpContext = args.get(1).cmpContext = MySQLcom.item_cmp_type(args.get(0).resultType(),
+        args.get(0).cmpContext = args.get(1).cmpContext = MySQLcom.itemCmpType(args.get(0).resultType(),
                 args.get(1).resultType());
         // Make a special case of compare with fields to get nicer DATE
         // comparisons
 
-        set_cmp_func();
+        setCmpFunc();
         return;
     }
 

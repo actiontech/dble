@@ -169,18 +169,18 @@ public class SubQueryPreProcessor {
                 Item joinFilter = null;
                 if (((filter instanceof ItemFuncGt) && !neeEexchange)
                         || ((filter instanceof ItemFuncLt) && neeEexchange)) {
-                    joinFilter = FilterUtils.GreaterThan(leftColumn, rightJoinColumn);
+                    joinFilter = FilterUtils.greaterThan(leftColumn, rightJoinColumn);
                 } else if (((filter instanceof ItemFuncLt) && !neeEexchange)
                         || ((filter instanceof ItemFuncGt) && neeEexchange)) {
-                    joinFilter = FilterUtils.LessThan(leftColumn, rightJoinColumn);
+                    joinFilter = FilterUtils.lessThan(leftColumn, rightJoinColumn);
                 } else if (((filter instanceof ItemFuncGe) && !neeEexchange)
                         || ((filter instanceof ItemFuncLe) && neeEexchange)) {
-                    joinFilter = FilterUtils.GreaterEqual(leftColumn, rightJoinColumn);
+                    joinFilter = FilterUtils.greaterEqual(leftColumn, rightJoinColumn);
                 } else if (((filter instanceof ItemFuncLe) && !neeEexchange)
                         || ((filter instanceof ItemFuncGe) && neeEexchange)) {
-                    joinFilter = FilterUtils.LessEqual(leftColumn, rightJoinColumn);
+                    joinFilter = FilterUtils.lessEqual(leftColumn, rightJoinColumn);
                 } else if (filter instanceof ItemFuncNe) {
-                    joinFilter = FilterUtils.NotEqual(leftColumn, rightJoinColumn);
+                    joinFilter = FilterUtils.notEqual(leftColumn, rightJoinColumn);
                 } else {
                     //equal or in
                     joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);

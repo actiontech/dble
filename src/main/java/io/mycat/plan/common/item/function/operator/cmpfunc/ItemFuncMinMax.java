@@ -27,7 +27,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
     /*
      * Compare item arguments in the DATETIME context.
      *
-     * SYNOPSIS cmp_datetimes() value [out] found least/greatest DATE/DATETIME
+     * SYNOPSIS cmpDatetimes() value [out] found least/greatest DATE/DATETIME
      * value
      *
      * DESCRIPTION Compare item arguments as DATETIME values and return the
@@ -38,7 +38,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
      * RETURN 0 If one of arguments is NULL or there was a execution error #
      * index of the least/greatest argument
      */
-    protected long cmp_datetimes(LongPtr value) {
+    protected long cmpDatetimes(LongPtr value) {
         long minMax = -1;
         int minMaxIdx = 0;
 
@@ -56,7 +56,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         return minMaxIdx;
     }
 
-    protected long cmp_times(LongPtr value) {
+    protected long cmpTimes(LongPtr value) {
         long minMax = -1;
         int minMaxIdx = 0;
 
@@ -87,8 +87,8 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         double value = 0.0;
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
-            cmp_datetimes(result);
-            return new BigDecimal(MyTime.double_from_datetime_packed(datetimeItem.fieldType(), result.get()));
+            cmpDatetimes(result);
+            return new BigDecimal(MyTime.doubleFromDatetimePacked(datetimeItem.fieldType(), result.get()));
         }
         for (int i = 0; i < args.size(); i++) {
             if (i == 0)
@@ -109,8 +109,8 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         long value = 0;
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
-            cmp_datetimes(result);
-            return BigInteger.valueOf(MyTime.longlong_from_datetime_packed(datetimeItem.fieldType(), result.get()));
+            cmpDatetimes(result);
+            return BigInteger.valueOf(MyTime.longlongFromDatetimePacked(datetimeItem.fieldType(), result.get()));
         }
         /*
          * TS-TODO: val_str decides which type to use using cmp_type. val_int,
@@ -156,19 +156,19 @@ public abstract class ItemFuncMinMax extends ItemFunc {
                  * in this case).
                  */
                 LongPtr result = new LongPtr(0);
-                cmp_datetimes(result);
+                cmpDatetimes(result);
                 if (nullValue)
                     return null;
                 MySQLTime ltime = new MySQLTime();
-                MyTime.TIME_from_longlong_packed(ltime, fieldType(), result.get());
-                return MyTime.my_time_to_str(ltime, decimals);
+                MyTime.timeFromLonglongPacked(ltime, fieldType(), result.get());
+                return MyTime.myTimeToStrL(ltime, decimals);
 
             } else {
                 /*
                  * In case of VARCHAR result type we just return val_str() value
                  * of the winning item AS IS, without conversion.
                  */
-                long minMaxIdx = cmp_datetimes(new LongPtr(0));
+                long minMaxIdx = cmpDatetimes(new LongPtr(0));
                 if (nullValue)
                     return null;
                 String strRes = args.get((int) minMaxIdx).valStr();
@@ -224,8 +224,8 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 
         if (compareAsDates) {
             LongPtr value = new LongPtr(0);
-            cmp_datetimes(value);
-            return MyTime.my_decimal_from_datetime_packed(datetimeItem.fieldType(), value.get());
+            cmpDatetimes(value);
+            return MyTime.myDecimalFromDatetimePacked(datetimeItem.fieldType(), value.get());
         }
         for (int i = 0; i < args.size(); i++) {
             if (i == 0)
@@ -249,12 +249,12 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         assert (fixed == true);
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
-            cmp_datetimes(result);
+            cmpDatetimes(result);
             if (nullValue)
                 return true;
-            MyTime.TIME_from_longlong_packed(ltime, datetimeItem.fieldType(), result.get());
+            MyTime.timeFromLonglongPacked(ltime, datetimeItem.fieldType(), result.get());
             LongPtr warnings = new LongPtr(0);
-            return MyTime.check_date(ltime, ltime.isNonZeroDate(), fuzzydate, warnings);
+            return MyTime.checkDate(ltime, ltime.isNonZeroDate(), fuzzydate, warnings);
         }
 
         FieldTypes i = fieldType();
@@ -275,21 +275,21 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         assert (fixed == true);
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
-            cmp_datetimes(result);
+            cmpDatetimes(result);
             if (nullValue)
                 return true;
-            MyTime.TIME_from_longlong_packed(ltime, datetimeItem.fieldType(), result.get());
-            MyTime.datetime_to_time(ltime);
+            MyTime.timeFromLonglongPacked(ltime, datetimeItem.fieldType(), result.get());
+            MyTime.datetimeToTime(ltime);
             return false;
         }
 
         FieldTypes i = fieldType();
         if (i == FieldTypes.MYSQL_TYPE_TIME) {
             LongPtr result = new LongPtr(0);
-            cmp_times(result);
+            cmpTimes(result);
             if (nullValue)
                 return true;
-            MyTime.TIME_from_longlong_time_packed(ltime, result.get());
+            MyTime.timeFromLonglongTimePacked(ltime, result.get());
             return false;
         } else if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_TIMESTAMP || i == FieldTypes.MYSQL_TYPE_DATETIME) {
             assert (false); // Should have been processed in "compare_as_dates"
@@ -312,7 +312,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         for (int i = 0; i < args.size(); i++) {
             maxLength = Math.max(maxLength, args.get(i).maxLength);
             decimals = Math.max(decimals, args.get(i).decimals);
-            cmpType = MySQLcom.item_cmp_type(cmpType, args.get(i).temporalWithDateAsNumberResultType());
+            cmpType = MySQLcom.itemCmpType(cmpType, args.get(i).temporalWithDateAsNumberResultType());
             if (args.get(i).resultType() == ItemResult.STRING_RESULT)
                 stringArgCount++;
             if (args.get(i).resultType() != ItemResult.ROW_RESULT && args.get(i).isTemporalWithDate()) {
@@ -333,7 +333,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
                  */
             }
         }
-        cachedFieldType = MySQLcom.agg_field_type(args, 0, args.size());
+        cachedFieldType = MySQLcom.aggFieldType(args, 0, args.size());
     }
 
     @Override

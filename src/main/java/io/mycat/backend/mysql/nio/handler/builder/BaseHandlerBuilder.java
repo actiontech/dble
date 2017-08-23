@@ -162,7 +162,7 @@ abstract class BaseHandlerBuilder {
             boolean canDirectGroupBy = true;
             List<ItemSum> sumRefs = new ArrayList<ItemSum>();
             for (ItemSum funRef : node.sumFuncs) {
-                if (funRef.has_with_distinct() || funRef.sumType().equals(Sumfunctype.GROUP_CONCAT_FUNC))
+                if (funRef.hasWithDistinct() || funRef.sumType().equals(Sumfunctype.GROUP_CONCAT_FUNC))
                     canDirectGroupBy = false;
                 sumRefs.add(funRef);
             }

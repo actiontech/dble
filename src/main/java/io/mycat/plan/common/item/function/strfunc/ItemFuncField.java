@@ -68,7 +68,7 @@ public class ItemFuncField extends ItemIntFunc {
         maxLength = 3;
         cmpType = args.get(0).resultType();
         for (int i = 1; i < args.size(); i++)
-            cmpType = MySQLcom.item_cmp_type(cmpType, args.get(i).resultType());
+            cmpType = MySQLcom.itemCmpType(cmpType, args.get(i).resultType());
     }
 
     @Override

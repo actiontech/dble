@@ -643,7 +643,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         String user = node.getAttribute("user");
         String password = node.getAttribute("password");
         String usingDecrypt = node.getAttribute("usingDecrypt");
-        String passwordEncryty = DecryptUtil.DBHostDecrypt(usingDecrypt, nodeHost, user, password);
+        String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
 
         String weightStr = node.getAttribute("weight");
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);

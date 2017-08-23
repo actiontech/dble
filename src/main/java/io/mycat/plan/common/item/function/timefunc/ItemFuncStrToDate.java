@@ -34,7 +34,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         if (args.get(1).basicConstItem()) {
             String format = args.get(1).valStr();
             if (!args.get(1).nullValue)
-                fix_from_format(format);
+                fixFromFormat(format);
         }
     }
 
@@ -48,7 +48,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
      * @note Format specifiers supported by this function should be in sync with
      * specifiers supported by extract_date_time() function.
      */
-    private void fix_from_format(String format) {
+    private void fixFromFormat(String format) {
         String timePartFrms = "HISThiklrs";
         String datePartFrms = "MVUXYWabcjmvuxyw";
         boolean datePartUsed = false, timePartUsed = false, fracSecondUsed = false;
@@ -102,7 +102,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
     }
 
     @Override
-    protected boolean val_datetime(MySQLTime ltime, long fuzzy_date) {
+    protected boolean valDatetime(MySQLTime ltime, long fuzzy_date) {
         DateTimeFormat dateTimeFormat = new DateTimeFormat();
         String val = args.get(0).valStr();
         String format = args.get(1).valStr();
@@ -112,7 +112,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         if (!nullDate) {
             nullValue = false;
             dateTimeFormat.format = format;
-            if (MyTime.extract_date_time(dateTimeFormat, val, ltime, cachedTimestampType, "datetime")
+            if (MyTime.extractDateTime(dateTimeFormat, val, ltime, cachedTimestampType, "datetime")
                     || ((fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0
                     && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
                 nullDate = true;

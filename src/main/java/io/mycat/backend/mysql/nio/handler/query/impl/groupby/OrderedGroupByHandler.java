@@ -89,8 +89,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         }
         cmptor = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type(),
                 conn.getCharset());
-        prepare_sum_aggregators(sums, this.referedSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
-        setup_sum_funcs(sums);
+        prepareSumAggregators(sums, this.referedSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
+        setupSumFuncs(sums);
         sendGroupFieldPackets(conn);
     }
 
@@ -119,16 +119,16 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             if (!hasFirstRow) {
                 hasFirstRow = true;
                 originRp = rowPacket;
-                init_sum_functions(sums, rowPacket);
+                initSumFunctions(sums, rowPacket);
             } else {
                 boolean sameGroupRow = this.groupBys.size() == 0 ? true : (cmptor.compare(originRp, rowPacket) == 0);
                 if (!sameGroupRow) {
                     // 需要将这一组数据发送出去
                     sendGroupRowPacket((MySQLConnection) conn);
                     originRp = rowPacket;
-                    init_sum_functions(sums, rowPacket);
+                    initSumFunctions(sums, rowPacket);
                 } else {
-                    update_sum_func(sums, rowPacket);
+                    updateSumFunc(sums, rowPacket);
                 }
             }
             return false;
@@ -196,13 +196,13 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      *
      * @return
      */
-    protected void prepare_sum_aggregators(List<ItemSum> funcs, List<ItemSum> sumfuncs, List<FieldPacket> packets,
-                                           boolean isAllPushDown, boolean need_distinct, MySQLConnection conn) {
+    protected void prepareSumAggregators(List<ItemSum> funcs, List<ItemSum> sumfuncs, List<FieldPacket> packets,
+                                         boolean isAllPushDown, boolean need_distinct, MySQLConnection conn) {
         LOGGER.info("prepare_sum_aggregators");
         for (int i = 0; i < funcs.size(); i++) {
             ItemSum func = funcs.get(i);
             ResultStore store = null;
-            if (func.has_with_distinct()) {
+            if (func.hasWithDistinct()) {
                 ItemSum selFunc = sumfuncs.get(i);
                 List<Order> orders = HandlerTool.makeOrder(selFunc.arguments());
                 RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type(),
@@ -211,7 +211,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                         .setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
             }
-            func.setAggregator(need_distinct && func.has_with_distinct()
+            func.setAggregator(need_distinct && func.hasWithDistinct()
                             ? AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     store);
         }
@@ -226,7 +226,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      * @retval TRUE error
      */
 
-    protected boolean setup_sum_funcs(List<ItemSum> funcs) {
+    protected boolean setupSumFuncs(List<ItemSum> funcs) {
         LOGGER.info("setup_sum_funcs");
         for (ItemSum func : funcs) {
             if (func.aggregatorSetup())
@@ -235,13 +235,13 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         return false;
     }
 
-    protected void init_sum_functions(List<ItemSum> funcs, RowDataPacket row) {
+    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
         for (ItemSum func : funcs) {
             func.resetAndAdd(row, null);
         }
     }
 
-    protected void update_sum_func(List<ItemSum> funcs, RowDataPacket row) {
+    protected void updateSumFunc(List<ItemSum> funcs, RowDataPacket row) {
         for (ItemSum func : funcs) {
             func.aggregatorAdd(row, null);
         }

@@ -44,10 +44,10 @@ public class ItemFuncDiv extends ItemNumOp {
             }
         } else if (hybridType == ItemResult.INT_RESULT) {
             hybridType = ItemResult.DECIMAL_RESULT;
-            result_precision();
+            resultPrecision();
 
         } else if (hybridType == ItemResult.DECIMAL_RESULT) {
-            result_precision();
+            resultPrecision();
 
 
         }
@@ -89,7 +89,7 @@ public class ItemFuncDiv extends ItemNumOp {
     }
 
     @Override
-    public void result_precision() {
+    public void resultPrecision() {
         decimals = Math.min(args.get(0).decimals + precIncrement, DECIMAL_MAX_SCALE);
     }
 

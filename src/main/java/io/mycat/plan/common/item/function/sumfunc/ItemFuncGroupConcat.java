@@ -178,7 +178,7 @@ public class ItemFuncGroupConcat extends ItemSum {
     @Override
     public SQLExpr toExpression() {
         SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
-        if (has_with_distinct()) {
+        if (hasWithDistinct()) {
             aggregate.setOption(SQLAggregateOption.DISTINCT);
         }
         if (orders != null) {
@@ -204,10 +204,10 @@ public class ItemFuncGroupConcat extends ItemSum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> argList = cloneStructList(args);
-            return new ItemFuncGroupConcat(argList, has_with_distinct(), this.orders, this.seperator,
+            return new ItemFuncGroupConcat(argList, hasWithDistinct(), this.orders, this.seperator,
                     false, null);
         } else {
-            return new ItemFuncGroupConcat(calArgs, has_with_distinct(), this.orders, this.seperator, isPushDown,
+            return new ItemFuncGroupConcat(calArgs, hasWithDistinct(), this.orders, this.seperator, isPushDown,
                     fields);
         }
     }

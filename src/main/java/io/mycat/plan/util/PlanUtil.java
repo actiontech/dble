@@ -133,7 +133,7 @@ public class PlanUtil {
     public static boolean isUnPushDownSum(ItemSum sumFunc) {
         if (sumFunc.sumType() == Sumfunctype.GROUP_CONCAT_FUNC)
             return true;
-        if (sumFunc.has_with_distinct())
+        if (sumFunc.hasWithDistinct())
             return true;
         if (sumFunc.sumType() == Sumfunctype.UDF_SUM_FUNC)
             return true;

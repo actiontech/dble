@@ -9,7 +9,7 @@ public class HeapItem {
     private MySQLConnection hashIndex;
     private boolean isNull = false;
 
-    public static HeapItem NULLITEM() {
+    public static HeapItem nullItem() {
         HeapItem nullItem = new HeapItem(null, null, null);
         nullItem.isNull = true;
         return nullItem;

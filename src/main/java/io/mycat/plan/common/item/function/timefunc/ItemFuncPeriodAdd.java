@@ -26,7 +26,7 @@ public class ItemFuncPeriodAdd extends ItemIntFunc {
 
         if ((nullValue = args.get(0).nullValue || args.get(1).nullValue) || period == 0L)
             return BigInteger.ZERO; /* purecov: inspected */
-        return BigInteger.valueOf(MyTime.convert_month_to_period(MyTime.convert_period_to_month(period) + months));
+        return BigInteger.valueOf(MyTime.convertMonthToPeriod(MyTime.convertPeriodToMonth(period) + months));
     }
 
     @Override

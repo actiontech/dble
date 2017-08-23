@@ -172,12 +172,12 @@ public abstract class Field {
 
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         String res = valStr();
-        return res == null || MyTime.str_to_datetime_with_warn(res, ltime, fuzzydate);
+        return res == null || MyTime.strToDatetimeWithWarn(res, ltime, fuzzydate);
     }
 
     public boolean getTime(MySQLTime ltime) {
         String res = valStr();
-        return res == null || MyTime.str_to_time_with_warn(res, ltime);
+        return res == null || MyTime.strToTimeWithWarn(res, ltime);
     }
 
     /**

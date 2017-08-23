@@ -31,7 +31,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
      * @retval false On success.
      * @retval true On error.
      */
-    protected abstract boolean val_datetime(MySQLTime ltime, long fuzzy_date);
+    protected abstract boolean valDatetime(MySQLTime ltime, long fuzzy_date);
 
     @Override
     public ItemResult resultType() {
@@ -61,10 +61,10 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
             return valDecimalFromDate();
         else {
             MySQLTime ltime = new MySQLTime();
-            val_datetime(ltime, MyTime.TIME_FUZZY_DATE);
+            valDatetime(ltime, MyTime.TIME_FUZZY_DATE);
             return nullValue ? BigDecimal.ZERO
-                    : ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2my_decimal(ltime)
-                    : MyTime.date2my_decimal(ltime);
+                    : ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2MyDecimal(ltime)
+                    : MyTime.date2MyDecimal(ltime);
         }
     }
 
@@ -72,9 +72,9 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
     public String valStr() {
         MySQLTime ltime = new MySQLTime();
 
-        if (val_datetime(ltime, MyTime.TIME_FUZZY_DATE))
+        if (valDatetime(ltime, MyTime.TIME_FUZZY_DATE))
             return null;
-        String res = MyTime.my_TIME_to_str(ltime, cachedFieldType == FieldTypes.MYSQL_TYPE_STRING
+        String res = MyTime.myTimeToStr(ltime, cachedFieldType == FieldTypes.MYSQL_TYPE_STRING
                 ? (ltime.secondPart != 0 ? MyTime.DATETIME_MAX_DECIMALS : 0) : decimals);
 
         if (res == null)
@@ -85,13 +85,13 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         MySQLTime tm = new MySQLTime();
-        if (val_datetime(tm, fuzzydate)) {
+        if (valDatetime(tm, fuzzydate)) {
             assert (nullValue == true);
             return true;
         }
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
                 || tm.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
-            MyTime.time_to_datetime(tm, ltime);
+            MyTime.timeToDatetime(tm, ltime);
         else
             ltime = tm;
         return false;
@@ -99,13 +99,13 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
 
     @Override
     public boolean getTime(MySQLTime ltime) {
-        if (val_datetime(ltime, MyTime.TIME_FUZZY_DATE)) {
+        if (valDatetime(ltime, MyTime.TIME_FUZZY_DATE)) {
             assert (nullValue == true);
             return true;
         }
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
                 && ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
-            MyTime.datetime_to_time(ltime);
+            MyTime.datetimeToTime(ltime);
         return false;
     }
 }

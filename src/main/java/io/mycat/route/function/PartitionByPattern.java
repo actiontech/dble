@@ -92,7 +92,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
  * x2 - x1 >= m
  *     L                 type3
  */
-    private void calc_aux(HashSet<Integer> ids, long begin, long end) {
+    private void calcAux(HashSet<Integer> ids, long begin, long end) {
         for (LongRange longRang : this.longRongs) {
             if (longRang.valueEnd < begin) {
                 continue;
@@ -104,24 +104,24 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         }
     }
 
-    private Integer[] calc_type1(long begin, long end) {
+    private Integer[] calcType1(long begin, long end) {
         HashSet<Integer> ids = new HashSet<Integer>();
 
-        calc_aux(ids, begin, end);
+        calcAux(ids, begin, end);
 
         return ids.toArray(new Integer[ids.size()]);
     }
 
-    private Integer[] calc_type2(long begin, long end) {
+    private Integer[] calcType2(long begin, long end) {
         HashSet<Integer> ids = new HashSet<Integer>();
 
-        calc_aux(ids, begin, patternValue);
-        calc_aux(ids, 0, end);
+        calcAux(ids, begin, patternValue);
+        calcAux(ids, 0, end);
 
         return ids.toArray(new Integer[ids.size()]);
     }
 
-    private Integer[] calc_type3() {
+    private Integer[] calcType3() {
         return allNode;
     }
 
@@ -131,7 +131,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
  */
     public Integer[] calculateRange(String beginValue, String endValue) {
         if (!isNumeric(beginValue) || !isNumeric(endValue)) {
-            return calc_type3();
+            return calcType3();
         }
         long bv = Long.parseLong(beginValue);
         long ev = Long.parseLong(endValue);
@@ -139,18 +139,18 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         long hev = ev % patternValue;
 
         if (findNode(hbv) == null || findNode(hev) == null) {
-            return calc_type3();
+            return calcType3();
         }
 
         if (ev >= bv) {
             if (ev - bv >= patternValue) {
-                return calc_type3();
+                return calcType3();
             }
 
             if (hbv < hev) {
-                return calc_type1(hbv, hev);
+                return calcType1(hbv, hev);
             } else {
-                return calc_type2(hbv, hev);
+                return calcType2(hbv, hev);
             }
         } else {
             return new Integer[0];
@@ -167,7 +167,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         return PATTERN.matcher(str).matches();
     }
 
-    private void initialize_aux(LinkedList<LongRange> ll, LongRange lr) {
+    private void initializeAux(LinkedList<LongRange> ll, LongRange lr) {
         if (ll.size() == 0) {
             ll.add(lr);
         } else {
@@ -212,7 +212,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
                 int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
 
                 ids.add(nodeId);
-                initialize_aux(longRangeList, new LongRange(nodeId, longStart, longEnd));
+                initializeAux(longRangeList, new LongRange(nodeId, longStart, longEnd));
             }
 
             allNode = ids.toArray(new Integer[ids.size()]);

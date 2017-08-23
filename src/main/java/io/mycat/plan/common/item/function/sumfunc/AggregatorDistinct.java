@@ -85,7 +85,7 @@ public class AggregatorDistinct extends Aggregator {
                 useDistinctValues = true;
                 RowDataPacket row = null;
                 while ((row = distinctRows.next()) != null) {
-                    // @bug1072 see arg_is_null()
+                    // @bug1072 see argIsNull()
                     FieldUtil.initFields(itemSum.sourceFields, row.fieldValues);
                     field.setPtr(itemSum.getArg(0).getRowPacketByte());
                     if (itemSum.isPushDown)
@@ -100,17 +100,17 @@ public class AggregatorDistinct extends Aggregator {
     }
 
     @Override
-    public BigDecimal arg_val_decimal() {
+    public BigDecimal argValDecimal() {
         return useDistinctValues ? field.valDecimal() : itemSum.getArg(0).valDecimal();
     }
 
     @Override
-    public BigDecimal arg_val_real() {
+    public BigDecimal argValReal() {
         return useDistinctValues ? field.valReal() : itemSum.getArg(0).valReal();
     }
 
     @Override
-    public boolean arg_is_null() {
+    public boolean argIsNull() {
         return useDistinctValues ? field.isNull() : itemSum.getArg(0).nullValue;
     }
 

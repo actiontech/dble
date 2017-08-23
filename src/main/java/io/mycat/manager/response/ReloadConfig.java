@@ -84,7 +84,7 @@ public final class ReloadConfig {
                         lock.lock();
                         try {
                             if (loadAll) {
-                                reload_all();
+                                reloadAll();
                             } else {
                                 reload();
                             }
@@ -136,7 +136,7 @@ public final class ReloadConfig {
             try {
                 try {
                     if (loadAll) {
-                        reload_all();
+                        reloadAll();
                     } else {
                         reload();
                     }
@@ -166,7 +166,7 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static void reload_all() throws Exception {
+    public static void reloadAll() throws Exception {
         /*
          *  1、载入新的配置
          *  1.1、ConfigInitializer 初始化l, 基本自检

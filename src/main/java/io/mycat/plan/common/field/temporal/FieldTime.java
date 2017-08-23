@@ -28,26 +28,26 @@ public class FieldTime extends FieldTemporal {
             LOGGER.warn("parse string exception!", ue);
         }
         if (ptrStr != null) {
-            MyTime.str_to_time_with_warn(ptrStr, ltime);
+            MyTime.strToTimeWithWarn(ptrStr, ltime);
         }
     }
 
     @Override
     public BigInteger valInt() {
         internalJob();
-        return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.TIME_to_ulonglong_time(ltime));
+        return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.timeToUlonglongTime(ltime));
     }
 
     @Override
     public long valTimeTemporal() {
         internalJob();
-        return isNull() ? 0 : MyTime.TIME_to_longlong_time_packed(ltime);
+        return isNull() ? 0 : MyTime.timeToLonglongTimePacked(ltime);
     }
 
     @Override
     public long valDateTemporal() {
         internalJob();
-        return isNull() ? 0 : MyTime.TIME_to_longlong_datetime_packed(ltime);
+        return isNull() ? 0 : MyTime.timeToLonglongDatetimePacked(ltime);
     }
 
     @Override
@@ -59,8 +59,8 @@ public class FieldTime extends FieldTemporal {
             String sval2 = MySQLcom.getFullString(charsetName, v2);
             MySQLTime ltime1 = new MySQLTime();
             MySQLTime ltime2 = new MySQLTime();
-            MyTime.str_to_time_with_warn(sval1, ltime1);
-            MyTime.str_to_time_with_warn(sval2, ltime2);
+            MyTime.strToTimeWithWarn(sval1, ltime1);
+            MyTime.strToTimeWithWarn(sval2, ltime2);
             return ltime1.getCompareResult(ltime2);
         } catch (Exception e) {
             LOGGER.info("String to biginteger exception!", e);

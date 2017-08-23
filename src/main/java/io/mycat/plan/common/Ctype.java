@@ -29,7 +29,7 @@ public class Ctype {
         return (ctype_latin1[index] & MY_NMR) != 0;
     }
 
-    public static boolean my_isalpha(char c) {
+    public static boolean myIsAlpha(char c) {
         int index = (int) c + 1;
         return (ctype_latin1[index] & (MY_U | MY_L)) != 0;
     }
@@ -45,7 +45,7 @@ public class Ctype {
     }
 
 
-    public static int my_strnncoll(char[] css, int sbegin, int slen, char[] cst, int tbegin, int tlen) {
+    public static int myStrnncoll(char[] css, int sbegin, int slen, char[] cst, int tbegin, int tlen) {
         return new String(css, sbegin, slen).compareTo(new String(cst, tbegin, tlen));
     }
 

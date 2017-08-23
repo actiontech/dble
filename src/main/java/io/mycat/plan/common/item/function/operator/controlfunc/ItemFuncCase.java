@@ -54,8 +54,8 @@ public class ItemFuncCase extends ItemFunc {
             agg.add(args.get(nagg * 2 + 1));
         if (elseExprNum != -1)
             agg.add(args.get(elseExprNum));
-        cachedFieldType = MySQLcom.agg_field_type(agg, 0, agg.size());
-        cachedResultType = MySQLcom.agg_result_type(agg, 0, agg.size());
+        cachedFieldType = MySQLcom.aggFieldType(agg, 0, agg.size());
+        cachedResultType = MySQLcom.aggResultType(agg, 0, agg.size());
     }
 
     @Override

@@ -42,7 +42,7 @@ public class LockTablesHandler extends MultiNodeHandler {
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
-                _execute(conn, node);
+                innerExecute(conn, node);
             } else {
                 // create new connection
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
@@ -51,7 +51,7 @@ public class LockTablesHandler extends MultiNodeHandler {
         }
     }
 
-    private void _execute(BackendConnection conn, RouteResultsetNode node) {
+    private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
             return;
         }
@@ -63,7 +63,7 @@ public class LockTablesHandler extends MultiNodeHandler {
     public void connectionAcquired(BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
-        _execute(conn, node);
+        innerExecute(conn, node);
     }
 
     @Override

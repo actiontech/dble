@@ -36,14 +36,14 @@ public class ItemTimeTypecast extends ItemTimeFunc {
         if (getArg0Time(ltime))
             return true;
         if (decimals != NOT_FIXED_DEC) {
-            MyTime.my_time_round(ltime, decimals);
+            MyTime.myTimeRound(ltime, decimals);
         }
         /*
          * For MYSQL_TIMESTAMP_TIME value we can have non-zero day part, which
          * we should not lose.
          */
         if (ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
-            MyTime.datetime_to_time(ltime);
+            MyTime.datetimeToTime(ltime);
         return false;
     }
 

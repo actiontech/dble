@@ -39,7 +39,7 @@ public abstract class ItemDatetimeFunc extends ItemTemporalFunc {
     @Override
     public long valDateTemporal() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, MyTime.TIME_FUZZY_DATE) ? 0L : MyTime.TIME_to_longlong_datetime_packed(ltime);
+        return getDate(ltime, MyTime.TIME_FUZZY_DATE) ? 0L : MyTime.timeToLonglongDatetimePacked(ltime);
     }
 
     @Override

@@ -123,31 +123,31 @@ public class FilterUtils {
         return f;
     }
 
-    public static ItemFuncGt GreaterThan(Item column, Item value) {
+    public static ItemFuncGt greaterThan(Item column, Item value) {
         ItemFuncGt f = new ItemFuncGt(column, value);
         PlanUtil.refreshReferTables(f);
         return f;
     }
 
-    public static ItemFuncLt LessThan(Item column, Item value) {
+    public static ItemFuncLt lessThan(Item column, Item value) {
         ItemFuncLt f = new ItemFuncLt(column, value);
         PlanUtil.refreshReferTables(f);
         return f;
     }
 
-    public static ItemFuncGe GreaterEqual(Item column, Item value) {
+    public static ItemFuncGe greaterEqual(Item column, Item value) {
         ItemFuncGe f = new ItemFuncGe(column, value);
         PlanUtil.refreshReferTables(f);
         return f;
     }
 
-    public static ItemFuncLe LessEqual(Item column, Item value) {
+    public static ItemFuncLe lessEqual(Item column, Item value) {
         ItemFuncLe f = new ItemFuncLe(column, value);
         PlanUtil.refreshReferTables(f);
         return f;
     }
 
-    public static ItemFuncNe NotEqual(Item column, Item value) {
+    public static ItemFuncNe notEqual(Item column, Item value) {
         ItemFuncNe f = new ItemFuncNe(column, value);
         PlanUtil.refreshReferTables(f);
         return f;

@@ -50,7 +50,7 @@ public class ItemFuncIf extends ItemFunc {
         // Let IF(cond, expr, NULL) and IF(cond, NULL, expr) inherit type from
         // expr.
         if (args.get(1).type() == ItemType.NULL_ITEM) {
-            cache_type_info(args.get(2));
+            cacheTypeInfo(args.get(2));
             maybeNull = true;
             // If both arguments are NULL, make resulting type BINARY(0).
             if (args.get(2).type() == ItemType.NULL_ITEM)
@@ -58,12 +58,12 @@ public class ItemFuncIf extends ItemFunc {
             return;
         }
         if (args.get(2).type() == ItemType.NULL_ITEM) {
-            cache_type_info(args.get(1));
+            cacheTypeInfo(args.get(1));
             maybeNull = true;
             return;
         }
-        cachedResultType = MySQLcom.agg_result_type(args, 1, 2);
-        cachedFieldType = MySQLcom.agg_field_type(args, 1, 2);
+        cachedResultType = MySQLcom.aggResultType(args, 1, 2);
+        cachedFieldType = MySQLcom.aggFieldType(args, 1, 2);
         maybeNull = args.get(1).maybeNull || args.get(2).maybeNull;
         decimals = Math.max(args.get(1).decimals, args.get(2).decimals);
     }
@@ -124,7 +124,7 @@ public class ItemFuncIf extends ItemFunc {
         return (nullValue = arg.getTime(ltime));
     }
 
-    private void cache_type_info(Item source) {
+    private void cacheTypeInfo(Item source) {
         cachedFieldType = source.fieldType();
         cachedResultType = source.resultType();
         decimals = source.decimals;

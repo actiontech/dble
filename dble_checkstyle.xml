@@ -130,7 +130,7 @@
         <!-- Checks for metrics. -->
 
         <!-- Miscellaneous other checks. -->
-        <!--<module name="ArrayTypeStyle"/>-->
+        <module name="ArrayTypeStyle"/>
         <!--<module name="UpperEll"/>-->
         <!--<module name="AvoidEscapedUnicodeCharacters"/>-->
 

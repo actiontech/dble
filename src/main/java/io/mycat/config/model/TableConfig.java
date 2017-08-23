@@ -84,7 +84,7 @@ public class TableConfig {
             throw new IllegalArgumentException("ruleRequired but rule is null");
         }
         this.name = name;
-        String theDataNodes[] = SplitUtil.split(dataNode, ',', '$', '-');
+        String[] theDataNodes = SplitUtil.split(dataNode, ',', '$', '-');
         if (theDataNodes == null || theDataNodes.length <= 0) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }

@@ -157,7 +157,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                     System.out.println(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
-                String pairs[] = line.substring(0, ind).trim().split("-");
+                String[] pairs = line.substring(0, ind).trim().split("-");
                 long longStart = NumberParseUtil.parseLong(pairs[0].trim());
                 long longEnd = NumberParseUtil.parseLong(pairs[1].trim());
                 int nodeId = Integer.parseInt(line.substring(ind + 1).trim());

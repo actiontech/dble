@@ -72,7 +72,7 @@ public class KVStoreRepository implements Repository {
             return Collections.emptyList();
         }
         Map<String, CoordinatorLogEntry> coordinatorLogEntries = new HashMap<>();
-        String logs[] = data.split(Serializer.LINE_SEPARATOR);
+        String[] logs = data.split(Serializer.LINE_SEPARATOR);
         for (String log : logs) {
             try {
                 CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJson(log);

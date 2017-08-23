@@ -139,7 +139,7 @@ public class DataNodeFileManager {
 
         String rootDirs = conf.getString("server.local.dirs", "datanode");
 
-        String rdir[] = rootDirs.split(",");
+        String[] rdir = rootDirs.split(",");
         List<File> dirs = new ArrayList<File>();
         for (int i = 0; i < rdir.length; i++) {
             try {

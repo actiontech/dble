@@ -35,7 +35,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
         // 如果命令中存在","，则按多表锁的语句来处理
         if (stmts.length > 1) {
             String tmpStmt = null;
-            String tmpWords[] = null;
+            String[] tmpWords = null;
             for (int i = 1; i < stmts.length; i++) {
                 tmpStmt = stmts[i];
                 tmpWords = SplitUtil.split(tmpStmt, ' ', true);

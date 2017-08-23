@@ -205,7 +205,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
                     continue;
                 }
 
-                String pairs[] = line.substring(0, ind).trim().split("-");
+                String[] pairs = line.substring(0, ind).trim().split("-");
                 long longStart = Long.parseLong(pairs[0].trim());
                 long longEnd = Long.parseLong(pairs[1].trim());
                 int nodeId = Integer.parseInt(line.substring(ind + 1).trim());

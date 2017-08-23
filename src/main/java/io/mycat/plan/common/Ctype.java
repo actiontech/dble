@@ -13,7 +13,7 @@ public final class Ctype {
     public static final int MY_B = 64; /* Blank */
     public static final int MY_X = 128; /* heXadecimal digit */
 
-    private static byte ctypeLatin1[] = {0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 32, 32, 32, 32,
+    private static byte[] ctypeLatin1 = {0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 32, 32, 32, 32,
             32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 72, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
             16, 16, 16, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132,
             (byte) 132, (byte) 132, 16, 16, 16, 16, 16, 16, 16, (byte) 129, (byte) 129, (byte) 129, (byte) 129,

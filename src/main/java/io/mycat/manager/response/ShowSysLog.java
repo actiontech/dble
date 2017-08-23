@@ -96,7 +96,7 @@ public final class ShowSysLog {
     }
 
     private static String[] getLinesByLogFile(String filename, int numLines) {
-        String lines[] = new String[numLines];
+        String[] lines = new String[numLines];
         BufferedReader in = null;
         try {
             //获取长度

@@ -22,7 +22,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         modCount++;
         int oldCapacity = elementData.length;
         if (minCapacity > oldCapacity) {
-            Object oldData[] = elementData;
+            Object[] oldData = elementData;
             int newCapacity = (oldCapacity * 3) / 2 + 1;
             newCapacity = Math.max(newCapacity, minCapacity);
             // minCapacity is usually close to size, so this is a win:

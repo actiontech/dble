@@ -79,9 +79,9 @@ public final class MyTime {
 
     /* Position for YYYY-DD-MM HH-MM-DD.FFFFFF AM in default format */
 
-    private static final int INTERNAL_FORMAT_POSITIONS[] = {0, 1, 2, 3, 4, 5, 6, 255};
+    private static final int[] INTERNAL_FORMAT_POSITIONS = {0, 1, 2, 3, 4, 5, 6, 255};
 
-    public static final int DAYS_IN_MONTH[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
+    public static final int[] DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
 
     public static final String[] MONTH_NAMES = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December"};
@@ -496,7 +496,7 @@ public final class MyTime {
      * RETURN 0 ok 1 error
      */
     public static boolean strToTime(String str, int length, MySQLTime lTime, MySQLTimeStatus status) {
-        long date[] = new long[5];
+        long[] date = new long[5];
         int pos = 0, end = length;
         final char[] chars = str.toCharArray();
         myTimeStatusInit(status);

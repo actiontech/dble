@@ -79,7 +79,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private static final String PATH = KVPathUtil.getSequencesPath();
     private static final String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
 
-    private int mark[];
+    private int[] mark;
     private volatile boolean isLeader = false;
     private volatile String slavePath;
     // 配置是否载入好
@@ -259,7 +259,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                         Thread.currentThread().yield();
                     }
                     List<String> children = client.getChildren().forPath(INSTANCE_PATH);
-                    int mark2[] = new int[(int) maxinstanceId];
+                    int[] mark2 = new int[(int) maxinstanceId];
                     for (String child : children) {
                         String data = new String(client.getData().forPath(PATH.concat("/instance/" + child)));
                         if ("ready".equals(data)) {

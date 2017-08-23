@@ -17,7 +17,7 @@ public final class MyLocales {
 
     ;
 
-    static final MyLocaleErrMsgs GLOBAL_ERRMSGS[] = {new MyLocaleErrMsgs("english", null),
+    static final MyLocaleErrMsgs[] GLOBAL_ERRMSGS = {new MyLocaleErrMsgs("english", null),
             new MyLocaleErrMsgs("czech", null), new MyLocaleErrMsgs("danish", null),
             new MyLocaleErrMsgs("dutch", null), new MyLocaleErrMsgs("estonian", null),
             new MyLocaleErrMsgs("french", null), new MyLocaleErrMsgs("german", null),
@@ -34,13 +34,13 @@ public final class MyLocales {
     public static final String NULL_S = MySQLcom.NULLS;
 
     /***** LOCALE BEGIN en_US: English - United States *****/
-    static final String MY_LOCALE_MONTH_NAMES_EN_US[] = {"January", "February", "March", "April", "May", "June", "July",
+    static final String[] MY_LOCALE_MONTH_NAMES_EN_US = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December", NULL_S};
-    static final String MY_LOCALE_AB_MONTH_NAMES_EN_US[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+    static final String[] MY_LOCALE_AB_MONTH_NAMES_EN_US = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
             "Oct", "Nov", "Dec", NULL_S};
-    static final String MY_LOCALE_DAY_NAMES_EN_US[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+    static final String[] MY_LOCALE_DAY_NAMES_EN_US = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
             "Sunday", NULL_S};
-    static final String MY_LOCALE_AB_DAY_NAMES_EN_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
+    static final String[] MY_LOCALE_AB_DAY_NAMES_EN_US = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
     static final TypeLib MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US = new TypeLib(MY_LOCALE_MONTH_NAMES_EN_US.length - 1, "",
             MY_LOCALE_MONTH_NAMES_EN_US, null);
     static final TypeLib MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US = new TypeLib(MY_LOCALE_AB_MONTH_NAMES_EN_US.length - 1, "",

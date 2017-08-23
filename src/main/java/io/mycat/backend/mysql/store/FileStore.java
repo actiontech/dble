@@ -79,7 +79,7 @@ public class FileStore {
         try {
             close();
         } catch (Exception e) {
-            // ignore
+            //ignore error
         }
     }
 
@@ -302,7 +302,7 @@ public class FileStore {
         try {
             closeFile();
         } catch (IOException e) {
-            // ignore
+            //ignore error
         }
     }
 
@@ -343,7 +343,7 @@ public class FileStore {
                     try {
                         lock.release();
                     } catch (IOException e) {
-                        // ignore
+                        //ignore error
                     }
                 }
             }
@@ -360,7 +360,7 @@ public class FileStore {
                 try {
                     lock.release();
                 } catch (IOException e) {
-                    // ignore
+                    //ignore error
                 }
             }
             locks.clear();

@@ -134,6 +134,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 try {
                     dtd.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
 
@@ -141,6 +142,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 try {
                     xml.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }

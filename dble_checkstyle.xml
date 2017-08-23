@@ -83,9 +83,9 @@
         </module>
         <module name="LeftCurly"/>
         <module name="RightCurly"/>
-        <!--<module name="EmptyCatchBlock">-->
-        <!--<property name="commentFormat" value="do nothing here"/>-->
-        <!--</module>-->
+        <module name="EmptyCatchBlock">
+            <property name="commentFormat" value="ignore error"/>
+        </module>
 
         <!-- Checks for common coding problems. -->
         <!--<module name="EmptyStatement"/>-->

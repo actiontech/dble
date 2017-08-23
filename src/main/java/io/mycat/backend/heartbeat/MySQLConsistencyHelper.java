@@ -86,6 +86,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
                     try {
                         TimeUnit.MICROSECONDS.sleep(10);
                     } catch (InterruptedException e) {
+                        //ignore error
                     }
                     this.retryTime.decrementAndGet();
                     this.sqlJob.run();
@@ -99,6 +100,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
                 try {
                     TimeUnit.MICROSECONDS.sleep(3);
                 } catch (InterruptedException e) {
+                    //ignore error
                 }
                 this.retryTime.decrementAndGet();
                 this.sqlJob.run();

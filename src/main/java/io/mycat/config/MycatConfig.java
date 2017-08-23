@@ -434,7 +434,7 @@ public class MycatConfig {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ignore) {
-                    // do nothing
+                    //ignore error
                 }
 
                 for (int i = 0; i < killed.size(); i++) {

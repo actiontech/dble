@@ -176,6 +176,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                     in.close();
                 }
             } catch (IOException e) {
+                //ignore error
             }
 
             try {
@@ -185,12 +186,14 @@ public class MySQLDataSource extends PhysicalDatasource {
                     out.close();
                 }
             } catch (IOException e) {
+                //ignore error
             }
 
             try {
                 if (socket != null)
                     socket.close();
             } catch (IOException e) {
+                //ignore error
             }
         }
 

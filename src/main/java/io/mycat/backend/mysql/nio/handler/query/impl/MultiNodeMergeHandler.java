@@ -164,6 +164,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             try {
                 queue.put(item);
             } catch (InterruptedException e) {
+                //ignore error
             }
         }
         return false;
@@ -192,6 +193,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             try {
                 queue.put(HeapItem.nullItem());
             } catch (InterruptedException e) {
+                //ignore error
             }
         }
     }

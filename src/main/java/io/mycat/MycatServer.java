@@ -663,6 +663,7 @@ public class MycatServer {
                 try {
                     fileOut.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }

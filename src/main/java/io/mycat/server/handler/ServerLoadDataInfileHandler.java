@@ -269,7 +269,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     }
 
                 } catch (IOException ignored) {
-
+                    //ignore error
                 }
             }
 

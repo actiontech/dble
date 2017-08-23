@@ -417,7 +417,7 @@ public final class SystemConfig {
                     System.setProperty(SystemConfig.SYS_HOME, home);
                 }
             } catch (IOException e) {
-                // 如出错，则忽略。
+                //ignore error
             }
         }
 

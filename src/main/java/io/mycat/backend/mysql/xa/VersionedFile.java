@@ -198,8 +198,7 @@ public class VersionedFile {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                //don't care and won't happen: closing an input stream
-                //does nothing says the JDK javadoc!
+                //ignore error
             } finally {
                 inputStream = null;
             }

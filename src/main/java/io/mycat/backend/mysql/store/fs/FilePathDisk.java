@@ -219,7 +219,7 @@ public class FilePathDisk extends FilePath {
                 try {
                     r.close();
                 } catch (IOException e) {
-                    // ignore
+                    //ignore error
                 }
             }
         }

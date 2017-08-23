@@ -168,6 +168,7 @@ public class Hardware {
                 try {
                     bi.close();
                 } catch (IOException ignored) {
+                    //ignore error
                 }
             }
         }
@@ -208,6 +209,7 @@ public class Hardware {
                 try {
                     bi.close();
                 } catch (IOException ignored) {
+                    //ignore error
                 }
             }
         }
@@ -253,6 +255,7 @@ public class Hardware {
                 try {
                     bi.close();
                 } catch (Throwable ignored) {
+                    //ignore error
                 }
             }
         }

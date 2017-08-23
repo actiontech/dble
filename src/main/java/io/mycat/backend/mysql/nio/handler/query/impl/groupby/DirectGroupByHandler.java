@@ -193,6 +193,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             DGRowPacket row = new DGRowPacket(rowPacket, this.referedSumFunctions.size());
             queue.put(row);
         } catch (InterruptedException e) {
+            //ignore error
         }
         return false;
     }
@@ -207,6 +208,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             for (int i = 0; i < bucketSize; i++)
                 queue.put(new RowDataPacket(0));
         } catch (InterruptedException e) {
+            //ignore error
         }
     }
 

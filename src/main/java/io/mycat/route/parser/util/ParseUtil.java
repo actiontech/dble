@@ -53,6 +53,7 @@ public final class ParseUtil {
             try {
                 return Long.parseLong(id);
             } catch (NumberFormatException e) {
+                //ignore error
             }
         }
         return 0L;

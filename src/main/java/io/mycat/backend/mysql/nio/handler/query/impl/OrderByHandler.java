@@ -78,6 +78,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         try {
             queue.put(new RowDataPacket(0));
         } catch (InterruptedException e) {
+            //ignore error
         }
     }
 
@@ -94,6 +95,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                 try {
                     row = queue.take();
                 } catch (InterruptedException e) {
+                    //ignore error
                 }
                 if (row.fieldCount == 0) {
                     break;

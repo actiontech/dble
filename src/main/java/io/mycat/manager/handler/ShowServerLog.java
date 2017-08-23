@@ -311,7 +311,7 @@ public final class ShowServerLog {
             }
             return map;
         } catch (Exception e) {
-
+            //ignore error
         }
         return null;
     }

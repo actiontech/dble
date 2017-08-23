@@ -143,6 +143,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
                         app2Partition.put(key, pid);
                     }
                 } catch (Exception e) {
+                    //ignore error
                 }
             }
             //设置默认节点
@@ -160,6 +161,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
             try {
                 in.close();
             } catch (Exception e2) {
+                //ignore error
             }
         }
     }

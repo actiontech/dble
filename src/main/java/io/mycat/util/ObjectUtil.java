@@ -52,10 +52,13 @@ public final class ObjectUtil {
                 return field.get(null);
             }
         } catch (ClassNotFoundException e) {
+            //ignore error
             //LOGGER.error("getStaticFieldValue", e);
         } catch (NoSuchFieldException e) {
+            //ignore error
             // LOGGER.error("getStaticFieldValue", e);
         } catch (IllegalAccessException e) {
+            //ignore error
             //  LOGGER.error("getStaticFieldValue", e);
         }
         return null;

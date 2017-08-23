@@ -227,6 +227,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             try {
                 in.close();
             } catch (Exception e2) {
+                //ignore error
             }
         }
     }

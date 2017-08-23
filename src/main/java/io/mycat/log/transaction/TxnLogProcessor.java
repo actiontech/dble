@@ -50,6 +50,7 @@ public class TxnLogProcessor extends Thread {
                 try {
                     log = queue.take();
                 } catch (InterruptedException e) {
+                    //ignore error
                 }
                 writeLog(log);
             }
@@ -90,7 +91,7 @@ public class TxnLogProcessor extends Thread {
         try {
             this.queue.put(log);
         } catch (InterruptedException e) {
-            // ignore
+            //ignore error
         }
     }
 }

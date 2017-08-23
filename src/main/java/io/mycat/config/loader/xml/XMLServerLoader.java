@@ -100,12 +100,14 @@ public class XMLServerLoader {
                 try {
                     dtd.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
             if (xml != null) {
                 try {
                     xml.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }

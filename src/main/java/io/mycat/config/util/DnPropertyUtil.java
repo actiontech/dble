@@ -38,6 +38,7 @@ public class DnPropertyUtil {
                 try {
                     filein.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }

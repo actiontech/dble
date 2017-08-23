@@ -217,6 +217,7 @@ public class CompressUtil {
                 try {
                     out.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }
@@ -261,6 +262,7 @@ public class CompressUtil {
             try {
                 out.close();
             } catch (Exception e) {
+                //ignore error
             }
             compresser.end();
         }
@@ -298,6 +300,7 @@ public class CompressUtil {
             try {
                 out.close();
             } catch (Exception e) {
+                //ignore error
             }
             decompresser.end();
         }

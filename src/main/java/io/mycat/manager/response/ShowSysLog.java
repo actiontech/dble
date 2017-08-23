@@ -125,13 +125,17 @@ public class ShowSysLog {
             }
 
         } catch (FileNotFoundException ex) {
+            //ignore error
         } catch (UnsupportedEncodingException e) {
+            //ignore error
         } catch (IOException e) {
+            //ignore error
         } finally {
             if (in != null) {
                 try {
                     in.close();
                 } catch (IOException e) {
+                    //ignore error
                 }
             }
         }

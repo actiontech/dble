@@ -70,6 +70,7 @@ public class DailyRotateLogStore {
             try {
                 channel.close();
             } catch (IOException e) {
+                //ignore error
             }
         }
     }

@@ -115,8 +115,8 @@
         <module name="ThrowsCount"/>
         <module name="MutableException"/>
         <module name="OverloadMethodsDeclarationOrder"/>
-        <!--<module name="OneTopLevelClass"/>-->
-        <!--<module name="OneStatementPerLine"/>-->
+        <module name="OneTopLevelClass"/>
+        <module name="OneStatementPerLine"/>
         <!--<module name="NoClone"/>-->
         <!--<module name="NoFinalizer"/>-->
         <!--<module name="InnerTypeLast"/>-->

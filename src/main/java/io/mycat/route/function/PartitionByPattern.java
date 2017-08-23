@@ -47,7 +47,6 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     private Integer[] allNode;
     private int defaultNode = -1; // 包含非数值字符，默认存储节点
     private static final Pattern PATTERN = Pattern.compile("[0-9]*");
-    ;
 
     @Override
     public void init() {

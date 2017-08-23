@@ -67,11 +67,11 @@ public final class FirewallConfig {
         this.whitehost = whitehost;
     }
 
-    public boolean addWhitehost(String host, List<UserConfig> Users) {
+    public boolean addWhitehost(String host, List<UserConfig> users) {
         if (existsHost(host)) {
             return false;
         } else {
-            this.whitehost.put(host, Users);
+            this.whitehost.put(host, users);
             return true;
         }
     }

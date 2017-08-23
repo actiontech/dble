@@ -10,10 +10,10 @@ public abstract class ItemFuncUnits extends ItemRealFunc {
 
     BigDecimal mul, add;
 
-    public ItemFuncUnits(List<Item> args, double mul_arg, double add_arg) {
+    public ItemFuncUnits(List<Item> args, double mulArg, double addArg) {
         super(args);
-        mul = new BigDecimal(mul_arg);
-        add = new BigDecimal(add_arg);
+        mul = new BigDecimal(mulArg);
+        add = new BigDecimal(addArg);
     }
 
     @Override

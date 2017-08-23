@@ -12,10 +12,10 @@ public abstract class ItemSumBit extends ItemSumInt {
 
     protected BigInteger resetBits, bits;
 
-    public ItemSumBit(List<Item> item_par, long reset_arg, boolean isPushDown, List<Field> fields) {
-        super(item_par, isPushDown, fields);
-        resetBits = BigInteger.valueOf(reset_arg);
-        bits = BigInteger.valueOf(reset_arg);
+    public ItemSumBit(List<Item> itemPar, long resetArg, boolean isPushDown, List<Field> fields) {
+        super(itemPar, isPushDown, fields);
+        resetBits = BigInteger.valueOf(resetArg);
+        bits = BigInteger.valueOf(resetArg);
     }
 
     public Sumfunctype sumType() {

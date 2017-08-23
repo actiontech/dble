@@ -74,9 +74,9 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         return minMaxIdx;
     }
 
-    public ItemFuncMinMax(List<Item> args, int cmp_sign_arg) {
+    public ItemFuncMinMax(List<Item> args, int cmpSignArg) {
         super(args);
-        this.cmpSign = cmp_sign_arg;
+        this.cmpSign = cmpSignArg;
         cmpType = ItemResult.INT_RESULT;
         compareAsDates = false;
         datetimeItem = null;

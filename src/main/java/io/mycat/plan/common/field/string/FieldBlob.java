@@ -9,8 +9,8 @@ import io.mycat.plan.common.item.FieldTypes;
  */
 public class FieldBlob extends FieldLongstr {
 
-    public FieldBlob(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldBlob(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

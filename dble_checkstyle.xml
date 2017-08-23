@@ -33,8 +33,8 @@
             <property name="format" value="^[a-z][a-zA-Z0-9]*[_]?$"/>
         </module>
         <module name="MethodName"/>
-        <!--<module name="PackageName"/>-->
-        <!--<module name="ParameterName"/>-->
+        <module name="PackageName"/>
+        <module name="ParameterName"/>
         <!--<module name="StaticVariableName"/>-->
         <!--<module name="TypeName"/>-->
         <!--<module name="AbbreviationAsWordInName"/>-->

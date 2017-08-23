@@ -55,6 +55,6 @@ public abstract class ItemDatetimeFunc extends ItemTemporalFunc {
     // All datetime functions must implement get_date()
     // to avoid use of generic Item::get_date()
     // which converts to string and then parses the string as DATETIME.
-    public abstract boolean getDate(MySQLTime res, long fuzzy_date);
+    public abstract boolean getDate(MySQLTime res, long fuzzyDate);
 
 }

@@ -4,8 +4,8 @@ import io.mycat.plan.common.item.FieldTypes;
 
 public class FieldEnum extends FieldStr {
 
-    public FieldEnum(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldEnum(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

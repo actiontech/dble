@@ -332,8 +332,8 @@ public final class SystemConfig {
     }
 
     @SuppressWarnings("unused")
-    public void setXARecoveryLogBaseDir(String XARecoveryLogBaseDir) {
-        this.xaRecoveryLogBaseDir = XARecoveryLogBaseDir;
+    public void setXARecoveryLogBaseDir(String xaRecoveryLogBaseDir) {
+        this.xaRecoveryLogBaseDir = xaRecoveryLogBaseDir;
     }
 
     public String getXARecoveryLogBaseName() {
@@ -341,8 +341,8 @@ public final class SystemConfig {
     }
 
     @SuppressWarnings("unused")
-    public void setXARecoveryLogBaseName(String XARecoveryLogBaseName) {
-        this.xaRecoveryLogBaseName = XARecoveryLogBaseName;
+    public void setXARecoveryLogBaseName(String xaRecoveryLogBaseName) {
+        this.xaRecoveryLogBaseName = xaRecoveryLogBaseName;
     }
 
     public int getUseGlobleTableCheck() {

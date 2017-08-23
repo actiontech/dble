@@ -277,10 +277,10 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      *
      * @return
      */
-    protected void prepareSumAggregators(List<ItemSum> funcs, boolean need_distinct) {
+    protected void prepareSumAggregators(List<ItemSum> funcs, boolean needDistinct) {
         LOGGER.info("prepare_sum_aggregators");
         for (ItemSum func : funcs) {
-            func.setAggregator(need_distinct && func.hasWithDistinct()
+            func.setAggregator(needDistinct && func.hasWithDistinct()
                             ? Aggregator.AggregatorType.DISTINCT_AGGREGATOR : Aggregator.AggregatorType.SIMPLE_AGGREGATOR,
                     null);
         }

@@ -26,8 +26,8 @@ public class ItemDateTypecast extends ItemDateFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
-        boolean res = getArg0Date(ltime, fuzzy_date | MyTime.TIME_NO_DATE_FRAC_WARN);
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        boolean res = getArg0Date(ltime, fuzzyDate | MyTime.TIME_NO_DATE_FRAC_WARN);
         ltime.hour = ltime.minute = ltime.second = ltime.secondPart = 0;
         ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
         return res;

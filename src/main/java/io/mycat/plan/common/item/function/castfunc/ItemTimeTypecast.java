@@ -21,10 +21,10 @@ public class ItemTimeTypecast extends ItemTimeFunc {
         args.add(a);
     }
 
-    public ItemTimeTypecast(Item a, int dec_arg) {
+    public ItemTimeTypecast(Item a, int decArg) {
         super(new ArrayList<Item>());
         args.add(a);
-        decimals = dec_arg;
+        decimals = decArg;
     }
 
     @Override

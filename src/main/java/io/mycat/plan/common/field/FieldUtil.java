@@ -156,21 +156,21 @@ public class FieldUtil {
      * Convert temporal real types as retuned by field->real_type() to field
      * type as returned by field->type().
      *
-     * @param real_type Real type.
+     * @param realType Real type.
      * @retval Field type.
      */
-    public static FieldTypes realTypeToType(FieldTypes real_type) {
-        if (real_type == FieldTypes.MYSQL_TYPE_TIME2) {
+    public static FieldTypes realTypeToType(FieldTypes realType) {
+        if (realType == FieldTypes.MYSQL_TYPE_TIME2) {
             return FieldTypes.MYSQL_TYPE_TIME;
-        } else if (real_type == FieldTypes.MYSQL_TYPE_DATETIME2) {
+        } else if (realType == FieldTypes.MYSQL_TYPE_DATETIME2) {
             return FieldTypes.MYSQL_TYPE_DATETIME;
-        } else if (real_type == FieldTypes.MYSQL_TYPE_TIMESTAMP2) {
+        } else if (realType == FieldTypes.MYSQL_TYPE_TIMESTAMP2) {
             return FieldTypes.MYSQL_TYPE_TIMESTAMP;
-        } else if (real_type == FieldTypes.MYSQL_TYPE_NEWDATE) {
+        } else if (realType == FieldTypes.MYSQL_TYPE_NEWDATE) {
             return FieldTypes.MYSQL_TYPE_DATE;
         /* Note: NEWDECIMAL is a type, not only a real_type */
         } else {
-            return real_type;
+            return realType;
         }
     }
 
@@ -187,11 +187,11 @@ public class FieldUtil {
     // private static int FIELDTYPE_NUM = (FIELDTYPE_TEAR_FROM + (255 -
     // FIELDTYPE_TEAR_TO));
 
-    public static int fieldType2Index(FieldTypes field_type) {
-        field_type = realTypeToType(field_type);
-        assert (field_type.numberValue() < FIELDTYPE_TEAR_FROM || field_type.numberValue() > FIELDTYPE_TEAR_TO);
-        return (field_type.numberValue() < FIELDTYPE_TEAR_FROM ? field_type.numberValue()
-                : ((int) FIELDTYPE_TEAR_FROM) + (field_type.numberValue() - FIELDTYPE_TEAR_TO) - 1);
+    public static int fieldType2Index(FieldTypes fieldType) {
+        fieldType = realTypeToType(fieldType);
+        assert (fieldType.numberValue() < FIELDTYPE_TEAR_FROM || fieldType.numberValue() > FIELDTYPE_TEAR_TO);
+        return (fieldType.numberValue() < FIELDTYPE_TEAR_FROM ? fieldType.numberValue()
+                : ((int) FIELDTYPE_TEAR_FROM) + (fieldType.numberValue() - FIELDTYPE_TEAR_TO) - 1);
     }
 
     public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {

@@ -21,10 +21,10 @@ public class ItemDatetimeTypecast extends ItemDatetimeFunc {
         args.add(a);
     }
 
-    public ItemDatetimeTypecast(Item a, int dec_arg) {
+    public ItemDatetimeTypecast(Item a, int decArg) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.decimals = dec_arg;
+        this.decimals = decArg;
     }
 
     @Override
@@ -38,8 +38,8 @@ public class ItemDatetimeTypecast extends ItemDatetimeFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
-        if ((nullValue = args.get(0).getDate(ltime, fuzzy_date | MyTime.TIME_NO_DATE_FRAC_WARN)))
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        if ((nullValue = args.get(0).getDate(ltime, fuzzyDate | MyTime.TIME_NO_DATE_FRAC_WARN)))
             return true;
         assert (ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
         ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME; // In

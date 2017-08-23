@@ -20,8 +20,8 @@ public class NameResolutionContext {
         return outerContext;
     }
 
-    public void setOuterContext(NameResolutionContext outer_context) {
-        this.outerContext = outer_context;
+    public void setOuterContext(NameResolutionContext outerContext) {
+        this.outerContext = outerContext;
     }
 
     public PlanNode getPlanNode() {

@@ -259,8 +259,8 @@ public abstract class Item {
         return maxLength / 1;
     }
 
-    public int floatLength(int decimals_par) {
-        return decimals != NOT_FIXED_DEC ? (MySQLcom.DBL_DIG + 2 + decimals_par) : MySQLcom.DBL_DIG + 8;
+    public int floatLength(int decimalsPar) {
+        return decimals != NOT_FIXED_DEC ? (MySQLcom.DBL_DIG + 2 + decimalsPar) : MySQLcom.DBL_DIG + 8;
     }
 
     /**
@@ -691,9 +691,9 @@ public abstract class Item {
     /**
      * -- not so important functions --
      **/
-    public void fixLengthAndDecAndCharsetDatetime(int max_char_length_arg, int dec_arg) {
-        decimals = dec_arg;
-        fixCharLength(max_char_length_arg + (dec_arg != 0 ? dec_arg + 1 : 0));
+    public void fixLengthAndDecAndCharsetDatetime(int maxCharLengthArg, int decArg) {
+        decimals = decArg;
+        fixCharLength(maxCharLengthArg + (decArg != 0 ? decArg + 1 : 0));
     }
 
     public int datetimePrecision() {
@@ -735,21 +735,21 @@ public abstract class Item {
         return false; /* Value is a good Unix timestamp */
     }
 
-    private void initMakeField(FieldPacket tmp_field, FieldTypes field_type) {
+    private void initMakeField(FieldPacket tmpField, FieldTypes fieldType) {
         byte[] emptyName = new byte[]{};
-        tmp_field.db = emptyName;
-        tmp_field.orgTable = emptyName;
-        tmp_field.orgName = emptyName;
-        tmp_field.charsetIndex = charsetIndex;
+        tmpField.db = emptyName;
+        tmpField.orgTable = emptyName;
+        tmpField.orgName = emptyName;
+        tmpField.charsetIndex = charsetIndex;
         try {
-            tmp_field.name = (getAlias() == null ? getItemName() : getAlias()).getBytes(charset());
+            tmpField.name = (getAlias() == null ? getItemName() : getAlias()).getBytes(charset());
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("parse string exception!", e);
         }
-        tmp_field.flags = (maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG);
-        tmp_field.type = field_type.numberValue();
-        tmp_field.length = maxLength;
-        tmp_field.decimals = (byte) decimals;
+        tmpField.flags = (maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG);
+        tmpField.type = fieldType.numberValue();
+        tmpField.length = maxLength;
+        tmpField.decimals = (byte) decimals;
     }
 
     private String charset() {

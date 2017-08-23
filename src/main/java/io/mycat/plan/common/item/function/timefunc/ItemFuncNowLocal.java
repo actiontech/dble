@@ -24,7 +24,7 @@ public class ItemFuncNowLocal extends ItemDatetimeFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         java.util.Calendar cal = java.util.Calendar.getInstance();
         ltime.year = cal.get(java.util.Calendar.YEAR);
         ltime.month = cal.get(java.util.Calendar.MONTH) + 1;

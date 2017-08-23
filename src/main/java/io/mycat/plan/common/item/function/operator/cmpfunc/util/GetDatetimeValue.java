@@ -9,21 +9,21 @@ import io.mycat.plan.common.time.MySQLTimestampType;
 public class GetDatetimeValue implements GetValueFunc {
 
     @Override
-    public long get(Item item, Item warn_item, BoolPtr is_null) {
+    public long get(Item item, Item warnItem, BoolPtr isNull) {
         long value = 0;
         String str = null;
         if (item.isTemporal()) {
             value = item.valDateTemporal();
-            is_null.set(item.nullValue);
+            isNull.set(item.nullValue);
         } else {
             str = item.valStr();
-            is_null.set(item.nullValue);
+            isNull.set(item.nullValue);
         }
-        if (is_null.get())
+        if (isNull.get())
             return 0;
         if (str != null) {
             BoolPtr error = new BoolPtr(false);
-            FieldTypes fType = warn_item.fieldType();
+            FieldTypes fType = warnItem.fieldType();
             MySQLTimestampType tType = fType == FieldTypes.MYSQL_TYPE_DATE
                     ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
                     : MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;

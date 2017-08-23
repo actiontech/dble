@@ -17,66 +17,66 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public abstract class Field {
-    public static Field getFieldItem(byte[] name, byte[] table, int type, int charsetIndex, int field_length,
+    public static Field getFieldItem(byte[] name, byte[] table, int type, int charsetIndex, int fieldLength,
                                      int decimals, long flags) {
         String charset = CharsetUtil.getJavaCharset(charsetIndex);
         try {
             return getFieldItem(new String(name, charset),
                     (table == null || table.length == 0) ? null : new String(table, charset), type, charsetIndex,
-                    field_length, decimals, flags);
+                    fieldLength, decimals, flags);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("parser error ,charset :" + charset.toString());
         }
     }
 
-    public static Field getFieldItem(String name, String table, int type, int charsetIndex, int field_length,
+    public static Field getFieldItem(String name, String table, int type, int charsetIndex, int fieldLength,
                                      int decimals, long flags) {
         FieldTypes fieldType = FieldTypes.valueOf(type);
         if (fieldType == FieldTypes.MYSQL_TYPE_NEWDECIMAL) {// mysql use newdecimal after some version
-            return new FieldNewdecimal(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldNewdecimal(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_DECIMAL) {
-            return new FieldDecimal(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldDecimal(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_TINY) {
-            return new FieldTiny(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldTiny(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_SHORT) {
-            return new FieldShort(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldShort(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_LONG) {
-            return new FieldLong(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldLong(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_FLOAT) {
-            return new FieldFloat(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldFloat(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_DOUBLE) {
-            return new FieldDouble(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldDouble(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_NULL) {
             return FieldNull.getInstance();
         } else if (fieldType == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
-            return new FieldTimestamp(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldTimestamp(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_LONGLONG) {
-            return new FieldLonglong(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldLonglong(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_INT24) {
-            return new FieldMedium(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldMedium(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_DATE || fieldType == FieldTypes.MYSQL_TYPE_NEWDATE) {
-            return new FieldDate(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldDate(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_TIME) {
-            return new FieldTime(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldTime(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_DATETIME) {
-            return new FieldDatetime(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldDatetime(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_YEAR) {
-            return new FieldYear(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldYear(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_VARCHAR) {
-            return new FieldVarchar(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldVarchar(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_BIT) {
-            return new FieldBit(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldBit(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_VAR_STRING) {
-            return new FieldVarstring(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldVarstring(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_STRING) {
-            return new FieldString(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldString(name, table, charsetIndex, fieldLength, decimals, flags);
             /** --下列的类型函数目前不支持，因为select *出来的mysql都转化成string了，无法知晓它们在数据库中的type-- **/
         } else if (fieldType == FieldTypes.MYSQL_TYPE_ENUM) {
-            return new FieldEnum(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldEnum(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_SET) {
-            return new FieldSet(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldSet(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_TINY_BLOB || fieldType == FieldTypes.MYSQL_TYPE_MEDIUM_BLOB || fieldType == FieldTypes.MYSQL_TYPE_LONG_BLOB || fieldType == FieldTypes.MYSQL_TYPE_BLOB) {
-            return new FieldBlob(name, table, charsetIndex, field_length, decimals, flags);
+            return new FieldBlob(name, table, charsetIndex, fieldLength, decimals, flags);
         } else {
             throw new RuntimeException("unsupported field type :" + fieldType.toString() + "!");
         }
@@ -97,11 +97,11 @@ public abstract class Field {
     public int fieldLength;
     public int decimals;
 
-    public Field(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
+    public Field(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
         this.name = name;
         this.table = table;
         this.charsetIndex = charsetIndex;
-        this.fieldLength = field_length;
+        this.fieldLength = fieldLength;
         this.flags = flags;
         this.decimals = decimals;
         this.charsetName = CharsetUtil.getJavaCharset(charsetIndex);
@@ -185,7 +185,7 @@ public abstract class Field {
      */
     protected abstract void internalJob();
 
-    public boolean equals(final Field other, boolean binary_cmp) {
+    public boolean equals(final Field other, boolean binaryCmp) {
         if (other == null)
             return false;
         if (this == other)

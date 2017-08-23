@@ -9,8 +9,8 @@ import io.mycat.plan.common.item.FieldTypes;
  */
 public class FieldDouble extends FieldReal {
 
-    public FieldDouble(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldDouble(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

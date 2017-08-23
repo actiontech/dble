@@ -187,8 +187,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         }
     }
 
-    public void writeErrMessage(String SQLState, String msg, int vendorCode) {
-        writeErrMessage((byte) 1, vendorCode, SQLState, msg);
+    public void writeErrMessage(String sqlState, String msg, int vendorCode) {
+        writeErrMessage((byte) 1, vendorCode, sqlState, msg);
     }
 
     public void writeErrMessage(int vendorCode, String msg) {
@@ -199,11 +199,11 @@ public abstract class FrontendConnection extends AbstractConnection {
         writeErrMessage(id, vendorCode, "HY000", msg);
     }
 
-    private void writeErrMessage(byte id, int vendorCode, String SQLState, String msg) {
+    private void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         ErrorPacket err = new ErrorPacket();
         err.packetId = id;
         err.errno = vendorCode;
-        err.sqlState = encodeString(SQLState, charset);
+        err.sqlState = encodeString(sqlState, charset);
         err.message = encodeString(msg, charset);
         err.write(this);
     }

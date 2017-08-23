@@ -37,13 +37,13 @@ public class CmpUtil {
      * @retval True Indicates failure.
      */
 
-    public static boolean getMysqlTimeFromStr(String str, MySQLTimestampType warn_type,
-                                              final String warn_name, MySQLTime l_time) {
+    public static boolean getMysqlTimeFromStr(String str, MySQLTimestampType warnType,
+                                              final String warnName, MySQLTime lTime) {
         boolean value;
         MySQLTimeStatus status = new MySQLTimeStatus();
-        if (!MyTime.strToDatetime(str, str.length(), l_time, MyTime.TIME_FUZZY_DATE, status)
-                && (l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME
-                || l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
+        if (!MyTime.strToDatetime(str, str.length(), lTime, MyTime.TIME_FUZZY_DATE, status)
+                && (lTime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME
+                || lTime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
             /*
              * Do not return yet, we may still want to throw a
              * "trailing garbage" warning.
@@ -79,12 +79,12 @@ public class CmpUtil {
      * the warn_name arguments are used as the name and the type of the
      * field when issuing the warning.
      */
-    public static long getDateFromStr(String str, MySQLTimestampType warn_type, String warn_name,
-                                      BoolPtr error_arg) {
+    public static long getDateFromStr(String str, MySQLTimestampType warnType, String warnName,
+                                      BoolPtr errorArg) {
         MySQLTime lTime = new MySQLTime();
-        error_arg.set(getMysqlTimeFromStr(str, warn_type, warn_name, lTime));
+        errorArg.set(getMysqlTimeFromStr(str, warnType, warnName, lTime));
 
-        if (error_arg.get())
+        if (errorArg.get())
             return 0;
         return MyTime.timeToLonglongDatetimePacked(lTime);
     }

@@ -20,7 +20,7 @@ public class ItemFuncFromUnixtime extends ItemDatetimeFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         long milseconds = args.get(0).valInt().longValue() * 1000;
         if (nullValue = args.get(0).nullValue)
             return true;

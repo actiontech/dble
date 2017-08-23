@@ -24,16 +24,16 @@ public class MysqlInformationSchemaHandler {
     /**
      * 写入数据包
      *
-     * @param field_count
+     * @param fieldCount
      * @param fields
      * @param c
      */
-    public static void doWrite(int field_count, FieldPacket[] fields, ServerConnection c) {
+    public static void doWrite(int fieldCount, FieldPacket[] fields, ServerConnection c) {
 
         ByteBuffer buffer = c.allocate();
 
         // write header
-        ResultSetHeaderPacket header = PacketUtil.getHeader(field_count);
+        ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         byte packetId = header.packetId;
         buffer = header.write(buffer, c, true);
 

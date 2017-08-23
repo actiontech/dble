@@ -6,10 +6,10 @@ public class TYPELIB {
     public String[] typeNames;
     public Integer typeLengths;
 
-    public TYPELIB(int count_par, String name_par, String[] type_names_par, Integer type_lengths_par) {
-        this.count = count_par;
-        this.name = name_par;
-        this.typeNames = type_names_par;
-        this.typeLengths = type_lengths_par;
+    public TYPELIB(int countPar, String namePar, String[] typeNamesPar, Integer typeLengthsPar) {
+        this.count = countPar;
+        this.name = namePar;
+        this.typeNames = typeNamesPar;
+        this.typeLengths = typeLengthsPar;
     }
 }

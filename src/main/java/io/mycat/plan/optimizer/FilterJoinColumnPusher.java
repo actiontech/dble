@@ -26,10 +26,10 @@ public class FilterJoinColumnPusher {
         return qtn;
     }
 
-    private static PlanNode pushFilter(PlanNode qtn, List<Item> DNFNodeToPush) {
+    private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
         // 如果是叶节点，接收filter做为where条件,否则继续合并当前where条件，然后下推
         if (qtn.getChildren().isEmpty()) {
-            Item node = FilterUtils.and(DNFNodeToPush);
+            Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
             }
@@ -45,7 +45,7 @@ public class FilterJoinColumnPusher {
                 if (isPossibleERJoinColumnFilter(qtn, filter) == false) {
                     nonJoinFilter.add(filter);
                 } else {
-                    DNFNodeToPush.add((ItemFuncEqual) filter);
+                    dnfNodeToPush.add((ItemFuncEqual) filter);
                 }
             }
             if (nonJoinFilter.size() != splits.size()) {
@@ -55,24 +55,24 @@ public class FilterJoinColumnPusher {
         }
         PlanNode.PlanNodeType i = qtn.type();
         if (i == PlanNode.PlanNodeType.QUERY) {
-            if (DNFNodeToPush.isEmpty()) {
+            if (dnfNodeToPush.isEmpty()) {
                 return qtn;
             }
-            refreshPdFilters(qtn, DNFNodeToPush);
-            PlanNode child = pushFilter(qtn.getChild(), DNFNodeToPush);
+            refreshPdFilters(qtn, dnfNodeToPush);
+            PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
             ((QueryNode) qtn).setChild(child);
 
         } else if (i == PlanNode.PlanNodeType.JOIN) {
             JoinNode jn = (JoinNode) qtn;
-            PlanUtil.findJoinKeysAndRemoveIt(DNFNodeToPush, jn);
-            if (DNFNodeToPush.isEmpty()) {
+            PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+            if (dnfNodeToPush.isEmpty()) {
                 return qtn;
             }
             // 无法完成下推的filters
             List<Item> dnfNodeToCurrent = new LinkedList<Item>();
             List<Item> dnfNodetoPushToLeft = new LinkedList<Item>();
             List<Item> dnfNodetoPushToRight = new LinkedList<Item>();
-            for (Item filter : DNFNodeToPush) {
+            for (Item filter : dnfNodeToPush) {
                 if (PlanUtil.canPush(filter, jn.getLeftNode(), jn)) {
                     dnfNodetoPushToLeft.add(filter);
                 } else if (PlanUtil.canPush(filter, jn.getRightNode(), jn)) {
@@ -94,18 +94,18 @@ public class FilterJoinColumnPusher {
             } else if (jn.isLeftOuterJoin()) {
                 refreshPdFilters(jn, dnfNodetoPushToLeft);
                 pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft);
-                if (!DNFNodeToPush.isEmpty()) {
+                if (!dnfNodeToPush.isEmpty()) {
                     jn.query(FilterUtils.and(dnfNodetoPushToRight)); // 在父节点完成filter，不能下推
                 }
             } else if (jn.isRightOuterJoin()) {
                 refreshPdFilters(jn, dnfNodetoPushToRight);
                 pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight);
-                if (!DNFNodeToPush.isEmpty()) {
+                if (!dnfNodeToPush.isEmpty()) {
                     jn.query(FilterUtils.and(dnfNodetoPushToLeft));// 在父节点完成filter，不能下推
                 }
             } else {
-                if (!DNFNodeToPush.isEmpty()) {
-                    jn.query(FilterUtils.and(DNFNodeToPush));
+                if (!dnfNodeToPush.isEmpty()) {
+                    jn.query(FilterUtils.and(dnfNodeToPush));
                 }
             }
 

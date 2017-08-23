@@ -31,7 +31,7 @@ public class ItemFuncConvTz extends ItemDatetimeFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unsupported function convert_tz!");
     }
 

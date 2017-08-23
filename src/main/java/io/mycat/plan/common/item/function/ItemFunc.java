@@ -222,8 +222,8 @@ public abstract class ItemFunc extends Item {
         return false;
     }
 
-    public boolean getArg0Date(MySQLTime ltime, long fuzzy_date) {
-        return (nullValue = args.get(0).getDate(ltime, fuzzy_date));
+    public boolean getArg0Date(MySQLTime ltime, long fuzzyDate) {
+        return (nullValue = args.get(0).getDate(ltime, fuzzyDate));
     }
 
     public boolean getArg0Time(MySQLTime ltime) {

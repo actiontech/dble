@@ -79,21 +79,21 @@ public class FilterPusher {
         }
     }
 
-    private static PlanNode pushFilter(PlanNode qtn, List<Item> DNFNodeToPush) {
+    private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
         List<Item> subHavingList = new ArrayList<Item>();
-        for (Item filter : DNFNodeToPush) {
+        for (Item filter : dnfNodeToPush) {
             if (filter.withSumFunc) {
                 subHavingList.add(filter);
             }
         }
         if (!subHavingList.isEmpty()) {
             qtn.having(FilterUtils.and(qtn.getHavingFilter(), FilterUtils.and(subHavingList)));
-            DNFNodeToPush.removeAll(subHavingList);
+            dnfNodeToPush.removeAll(subHavingList);
         }
 
         // 如果是根节点，接收filter做为where条件,否则继续合并当前where条件，然后下推
         if (qtn.getChildren().isEmpty() || PlanUtil.isGlobalOrER(qtn)) {
-            Item node = FilterUtils.and(DNFNodeToPush);
+            Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
             }
@@ -105,12 +105,12 @@ public class FilterPusher {
         if (filterInWhere != null) {
             List<Item> splits = FilterUtils.splitFilter(filterInWhere);
             qtn.query(null);
-            DNFNodeToPush.addAll(splits);
+            dnfNodeToPush.addAll(splits);
         }
 
         if (qtn.type() == PlanNodeType.QUERY) {
-            refreshPdFilters(qtn, DNFNodeToPush);
-            PlanNode child = pushFilter(qtn.getChild(), DNFNodeToPush);
+            refreshPdFilters(qtn, dnfNodeToPush);
+            PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
             ((QueryNode) qtn).setChild(child);
         } else if (qtn.type() == PlanNodeType.JOIN) {
             JoinNode jn = (JoinNode) qtn;
@@ -120,8 +120,8 @@ public class FilterPusher {
             List<Item> rightCopyedPushFilters = new LinkedList<Item>();
             List<Item> dnfNodeToCurrent = new LinkedList<Item>();
 
-            PlanUtil.findJoinKeysAndRemoveIt(DNFNodeToPush, jn);
-            for (Item filter : DNFNodeToPush) {
+            PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+            for (Item filter : dnfNodeToPush) {
                 // ex. 1 = -1
                 if (filter.getReferTables().size() == 0) {
                     dnfNodetoPushToLeft.add(filter);
@@ -170,15 +170,15 @@ public class FilterPusher {
                 jn.setLeftNode(pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft));
                 jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight));
             } else {
-                if (!DNFNodeToPush.isEmpty()) {
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(DNFNodeToPush)));
+                if (!dnfNodeToPush.isEmpty()) {
+                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodeToPush)));
                 }
             }
             return jn;
         } else if (qtn.type() == PlanNodeType.MERGE) {
             // union语句的where条件可以下推，但是要替换成相应的child节点的过滤条件
 
-            Item node = FilterUtils.and(DNFNodeToPush);
+            Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
             }
@@ -257,13 +257,13 @@ public class FilterPusher {
     /**
      * 将连接列上的约束复制到目标节点内
      *
-     * @param DNF          要复制的DNF filter
+     * @param dnf          要复制的DNF filter
      * @param qnColumns    源节点的join字段
      * @param otherColumns
      */
-    private static List<Item> copyFilterToJoinOnColumns(List<Item> DNF, List<Item> qnColumns, List<Item> otherColumns) {
+    private static List<Item> copyFilterToJoinOnColumns(List<Item> dnf, List<Item> qnColumns, List<Item> otherColumns) {
         List<Item> newIFilterToPush = new LinkedList<Item>();
-        for (Item filter : DNF) {
+        for (Item filter : dnf) {
             Item newFilter = copyFilterToJoinOnColumns(filter, qnColumns, otherColumns);
             if (newFilter != null)
                 newIFilterToPush.add(newFilter);

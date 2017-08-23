@@ -10,8 +10,8 @@ import io.mycat.plan.common.item.Item.ItemResult;
  */
 public class FieldShort extends FieldNum {
 
-    public FieldShort(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldShort(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

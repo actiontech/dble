@@ -12,8 +12,8 @@ import java.math.BigDecimal;
  */
 public class FieldLong extends FieldNum {
 
-    public FieldLong(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldLong(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

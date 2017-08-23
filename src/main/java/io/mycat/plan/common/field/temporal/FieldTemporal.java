@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 public abstract class FieldTemporal extends Field {
     protected MySQLTime ltime = new MySQLTime();
 
-    public FieldTemporal(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldTemporal(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

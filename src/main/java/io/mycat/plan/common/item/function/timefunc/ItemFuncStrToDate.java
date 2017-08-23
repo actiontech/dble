@@ -102,7 +102,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
     }
 
     @Override
-    protected boolean valDatetime(MySQLTime ltime, long fuzzy_date) {
+    protected boolean valDatetime(MySQLTime ltime, long fuzzyDate) {
         DateTimeFormat dateTimeFormat = new DateTimeFormat();
         String val = args.get(0).valStr();
         String format = args.get(1).valStr();
@@ -113,7 +113,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
             nullValue = false;
             dateTimeFormat.format = format;
             if (MyTime.extractDateTime(dateTimeFormat, val, ltime, cachedTimestampType, "datetime")
-                    || ((fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0
+                    || ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0
                     && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
                 nullDate = true;
         }
@@ -132,7 +132,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         }
 
         null_date:
-        if (val != null && (fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0 /* warnings */) {
+        if (val != null && (fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0 /* warnings */) {
             LOGGER.warn("str_to_date value:" + val + " is wrong value for format:" + format);
         }
         return (nullValue = true);

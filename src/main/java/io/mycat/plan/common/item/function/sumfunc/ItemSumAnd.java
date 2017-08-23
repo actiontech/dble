@@ -11,8 +11,8 @@ import java.util.List;
 
 
 public class ItemSumAnd extends ItemSumBit {
-    public ItemSumAnd(List<Item> item_par, boolean isPushDown, List<Field> fields) {
-        super(item_par, -1, isPushDown, fields);
+    public ItemSumAnd(List<Item> itemPar, boolean isPushDown, List<Field> fields) {
+        super(itemPar, -1, isPushDown, fields);
     }
 
     @Override

@@ -12,8 +12,8 @@ import java.math.BigInteger;
 public abstract class FieldReal extends FieldNum {
     protected BigDecimal decValue = null;
 
-    public FieldReal(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldReal(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

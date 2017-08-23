@@ -20,9 +20,9 @@ public class ItemExtract extends ItemIntFunc {
     private MySqlIntervalUnit intType;
     private boolean dateValue;
 
-    public ItemExtract(Item a, MySqlIntervalUnit int_type) {
+    public ItemExtract(Item a, MySqlIntervalUnit intType) {
         super(a);
-        this.intType = int_type;
+        this.intType = intType;
     }
 
     @Override

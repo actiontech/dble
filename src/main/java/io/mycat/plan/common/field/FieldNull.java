@@ -13,8 +13,8 @@ public class FieldNull extends FieldStr {
         return _instance;
     }
 
-    FieldNull(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    FieldNull(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
         this.ptr = null;
     }
 

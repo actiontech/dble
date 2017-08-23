@@ -8,8 +8,8 @@ import io.mycat.plan.common.item.FieldTypes;
  */
 public class FieldYear extends FieldTiny {
 
-    public FieldYear(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldYear(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

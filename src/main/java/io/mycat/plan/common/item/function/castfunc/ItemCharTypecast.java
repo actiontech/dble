@@ -18,10 +18,10 @@ public class ItemCharTypecast extends ItemStrFunc {
     private int castLength;
     private String charSetName;
 
-    public ItemCharTypecast(Item a, int length_arg, String charSetName) {
+    public ItemCharTypecast(Item a, int lengthArg, String charSetName) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.castLength = length_arg;
+        this.castLength = lengthArg;
         this.charSetName = charSetName;
     }
 

@@ -25,14 +25,14 @@ public class ItemFuncCase extends ItemFunc {
 
     /**
      * @param args
-     * @param first_expr_num -1 代表没有case表达式,否则代表case表达式在args中的index，case和else exp在队列的最后
-     * @param else_expr_num  else在args中的index
+     * @param firstExprNum -1 代表没有case表达式,否则代表case表达式在args中的index，case和else exp在队列的最后
+     * @param elseExprNum  else在args中的index
      */
-    public ItemFuncCase(List<Item> args, int ncases, int first_expr_num, int else_expr_num) {
+    public ItemFuncCase(List<Item> args, int ncases, int firstExprNum, int elseExprNum) {
         super(args);
         this.ncases = ncases;
-        this.firstExprNum = first_expr_num;
-        this.elseExprNum = else_expr_num;
+        this.firstExprNum = firstExprNum;
+        this.elseExprNum = elseExprNum;
         this.cachedResultType = ItemResult.INT_RESULT;
     }
 

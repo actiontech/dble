@@ -32,12 +32,12 @@ import io.mycat.plan.common.time.MyTime;
 public class GetYearValue implements GetValueFunc {
 
     @Override
-    public long get(Item item, Item warnitem, BoolPtr is_null) {
+    public long get(Item item, Item warnitem, BoolPtr isNull) {
         long value = 0;
 
         value = item.valInt().longValue();
-        is_null.set(item.nullValue);
-        if (is_null.get())
+        isNull.set(item.nullValue);
+        if (isNull.get())
             return 0;
 
         /*

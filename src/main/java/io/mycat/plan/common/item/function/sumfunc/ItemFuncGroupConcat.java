@@ -25,11 +25,11 @@ public class ItemFuncGroupConcat extends ItemSum {
     private List<Order> orders;
     protected boolean alwaysNull;// 如果参数存在null时
 
-    public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String is_separator,
+    public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
                                boolean isPushDown, List<Field> fields) {
         super(selItems, isPushDown, fields);
         this.orders = orders;
-        seperator = is_separator;
+        seperator = isSeparator;
         this.resultSb = new StringBuilder();
         this.alwaysNull = false;
         setDistinct(distinct);

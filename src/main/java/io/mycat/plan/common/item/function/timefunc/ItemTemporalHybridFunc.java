@@ -31,7 +31,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
      * @retval false On success.
      * @retval true On error.
      */
-    protected abstract boolean valDatetime(MySQLTime ltime, long fuzzy_date);
+    protected abstract boolean valDatetime(MySQLTime ltime, long fuzzyDate);
 
     @Override
     public ItemResult resultType() {

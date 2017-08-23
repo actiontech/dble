@@ -15,10 +15,10 @@ import java.util.List;
 public class ItemFuncBinary extends ItemStrFunc {
     private int castLength;
 
-    public ItemFuncBinary(Item a, int length_arg) {
+    public ItemFuncBinary(Item a, int lengthArg) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.castLength = length_arg;
+        this.castLength = lengthArg;
     }
 
     @Override

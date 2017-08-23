@@ -58,7 +58,7 @@ public abstract class ItemTimeFunc extends ItemTemporalFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime res, long fuzzy_date) {
+    public boolean getDate(MySQLTime res, long fuzzyDate) {
         return getDateFromTime(res);
     }
 

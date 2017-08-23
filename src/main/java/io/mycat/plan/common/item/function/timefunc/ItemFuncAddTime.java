@@ -55,7 +55,7 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
     }
 
     @Override
-    protected boolean valDatetime(MySQLTime time, long fuzzy_date) {
+    protected boolean valDatetime(MySQLTime time, long fuzzyDate) {
         MySQLTime lTime1 = new MySQLTime();
         MySQLTime lTime2 = new MySQLTime();
         boolean isTime = false;
@@ -68,7 +68,7 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME) // TIMESTAMP
         // function
         {
-            if (getArg0Date(lTime1, fuzzy_date) || args.get(1).getTime(lTime2)
+            if (getArg0Date(lTime1, fuzzyDate) || args.get(1).getTime(lTime2)
                     || lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
                     || lTime2.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
                 nullValue = true;

@@ -285,11 +285,11 @@ public abstract class ItemSum extends ItemResultField {
         }
     }
 
-    protected static double varianceFpRecurrenceResult(double s, long count, boolean is_sample_variance) {
+    protected static double varianceFpRecurrenceResult(double s, long count, boolean isSampleVariance) {
         if (count == 1)
             return 0.0;
 
-        if (is_sample_variance)
+        if (isSampleVariance)
             return s / (count - 1);
 
         /* else, is a population variance */

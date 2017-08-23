@@ -21,8 +21,8 @@ public abstract class FieldNum extends Field {
     protected BigInteger intValue = null;
     protected String zeroptrStr = null;
 
-    public FieldNum(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+    public FieldNum(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
         zerofill = (FieldUtil.ZEROFILL_FLAG & flags) != 0;
 //        unsigned_flag = (FieldUtil.UNSIGNED_FLAG & flags) != 0;
     }

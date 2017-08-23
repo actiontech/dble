@@ -12,9 +12,9 @@ import io.mycat.plan.common.time.MyTime;
  */
 public abstract class FieldTemporaWithDate extends FieldTemporal {
 
-    public FieldTemporaWithDate(String name, String table, int charsetIndex, int field_length, int decimals,
+    public FieldTemporaWithDate(String name, String table, int charsetIndex, int fieldLength, int decimals,
                                 long flags) {
-        super(name, table, charsetIndex, field_length, decimals, flags);
+        super(name, table, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

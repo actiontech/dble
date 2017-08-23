@@ -6,9 +6,9 @@ import io.mycat.plan.common.ptr.BoolPtr;
 public class GetTimeValue implements GetValueFunc {
 
     @Override
-    public long get(Item item, Item warn, BoolPtr is_null) {
+    public long get(Item item, Item warn, BoolPtr isNull) {
         long value = item.valTimeTemporal();
-        is_null.set(item.nullValue);
+        isNull.set(item.nullValue);
         return value;
     }
 

@@ -29,7 +29,7 @@ public class ItemFuncMakedate extends ItemDateFunc {
      * or 4 digit year. In this case we treat all years < 100 as 2 digit years.
      * Ie, this is not safe for dates between 0000-01-01 and 0099-12-31
      */
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         long daynr = args.get(1).valInt().longValue();
         long year = args.get(0).valInt().longValue();
         long days;

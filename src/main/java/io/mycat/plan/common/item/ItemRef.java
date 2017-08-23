@@ -26,10 +26,10 @@ public class ItemRef extends Item {
     private String tableAlias = null;
     private String fieldAlias = null;
 
-    public ItemRef(Item ref, String table_alias, String field_alias) {
+    public ItemRef(Item ref, String tableAlias, String fieldAlias) {
         this.ref = ref;
-        this.tableAlias = table_alias;
-        this.fieldAlias = field_alias;
+        this.tableAlias = tableAlias;
+        this.fieldAlias = fieldAlias;
     }
 
     @Override

@@ -22,7 +22,7 @@ public class ItemFuncFromDays extends ItemDateFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         long value = args.get(0).valInt().longValue();
         if ((nullValue = args.get(0).nullValue))
             return true;
@@ -35,7 +35,7 @@ public class ItemFuncFromDays extends ItemDateFunc {
         ltime.month = lpmonth.get();
         ltime.day = lpday.get();
 
-        if ((nullValue = ((fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0)
+        if ((nullValue = ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0)
                 && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
             return true;
 

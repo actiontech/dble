@@ -20,8 +20,8 @@ public class ItemFuncLastDay extends ItemDateFunc {
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzy_date) {
-        if ((nullValue = getArg0Date(ltime, fuzzy_date)))
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        if ((nullValue = getArg0Date(ltime, fuzzyDate)))
             return true;
 
         if (ltime.month == 0) {

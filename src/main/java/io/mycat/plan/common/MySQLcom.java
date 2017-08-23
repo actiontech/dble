@@ -298,38 +298,38 @@ public class MySQLcom {
         return Arrays.copyOfRange(bb, bb.length - retLen, bb.length);
     }
 
-    public static int memcmp(byte[] a_ptr, byte[] b_ptr) {
-        int aLen = a_ptr.length, bLen = b_ptr.length;
+    public static int memcmp(byte[] aPtr, byte[] bPtr) {
+        int aLen = aPtr.length, bLen = bPtr.length;
         if (aLen >= bLen)
-            return memcmp0(a_ptr, b_ptr);
+            return memcmp0(aPtr, bPtr);
         else
-            return -memcmp(b_ptr, a_ptr);
+            return -memcmp(bPtr, aPtr);
     }
 
-    public static void memcpy(byte[] a_ptr, int a_start, byte[] b_ptr) {
-        assert (a_ptr.length - a_start + 1 == b_ptr.length);
-        for (int i = 0; i < b_ptr.length; i++) {
-            a_ptr[a_start + i] = b_ptr[i];
+    public static void memcpy(byte[] aPtr, int aStart, byte[] bPtr) {
+        assert (aPtr.length - aStart + 1 == bPtr.length);
+        for (int i = 0; i < bPtr.length; i++) {
+            aPtr[aStart + i] = bPtr[i];
         }
     }
 
     /**
      * 比较两个byte数组的大小，其中a_ptr的长度>=b_ptr的长度
      *
-     * @param a_ptr
-     * @param b_ptr
+     * @param aPtr
+     * @param bPtr
      * @return
      */
-    private static int memcmp0(byte[] a_ptr, byte[] b_ptr) {
-        int aLen = a_ptr.length, bLen = b_ptr.length;
+    private static int memcmp0(byte[] aPtr, byte[] bPtr) {
+        int aLen = aPtr.length, bLen = bPtr.length;
         for (int i = 0; i < aLen - bLen; i++) {
-            if (a_ptr[i] != 0) // a比b多出了值
+            if (aPtr[i] != 0) // a比b多出了值
                 return 1;
         }
         int aStart = aLen - bLen;
         for (int i = 0; i < bLen; i++) {
-            byte aByte = a_ptr[aStart + i];
-            byte bByte = b_ptr[i];
+            byte aByte = aPtr[aStart + i];
+            byte bByte = bPtr[i];
             if (aByte > bByte)
                 return 1;
             else if (aByte < bByte)

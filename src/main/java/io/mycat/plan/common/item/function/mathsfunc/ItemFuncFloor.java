@@ -37,7 +37,6 @@ public class ItemFuncFloor extends ItemFuncIntVal {
         } else {
             result = realOp().toBigInteger();
         }
-        ;
         return result;
     }
 

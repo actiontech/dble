@@ -426,7 +426,6 @@ public class MycatConfig {
                         if (llentry.getValue().get(i).getActiveCount() != 0) {
                             killed.add(llentry.getValue().get(i));
                         }
-                        ;
                     }
                 }
             }

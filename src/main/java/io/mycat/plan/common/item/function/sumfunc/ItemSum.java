@@ -235,7 +235,6 @@ public abstract class ItemSum extends ItemResultField {
             aggr = new AggregatorSimple(this);
 
         }
-        ;
         return aggr != null ? FALSE : TRUE;
     }
 

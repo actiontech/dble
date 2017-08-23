@@ -102,7 +102,7 @@ public class BytesTools {
 
         int s;
         for (s = offset; s < endPos && Character.isWhitespace((char) buf[s]); ++s) {
-            ;
+            //do nothing
         }
         if (s == endPos) {
             throw new NumberFormatException(toString(buf));
@@ -175,7 +175,7 @@ public class BytesTools {
 
         int s;
         for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
-            ;
+            //do nothing
         }
 
         if (s == endpos) {
@@ -248,7 +248,7 @@ public class BytesTools {
 
         int s;
         for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
-            ;
+            //do nothing
         }
 
         if (s == endpos) {

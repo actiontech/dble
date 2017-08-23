@@ -226,8 +226,9 @@ public class MyTime {
      * Calculate number of digits in first part. If length= 8 or >= 14 then
      * year is of format YYYY. (YYYY-MM-DD, YYYYMMDD, YYYYYMMDDHHMMSS)
      */
-        for (pos = 0; pos != end && (Ctype.isDigit(chars[pos]) || chars[pos] == 'T'); pos++)
-            ;
+        for (pos = 0; pos != end && (Ctype.isDigit(chars[pos]) || chars[pos] == 'T'); pos++) {
+            //do nothing
+        }
 
         digits = (long) (pos - 0);
         startLoop = 0; /* Start of scan loop */
@@ -530,8 +531,9 @@ public class MyTime {
 
     /* Skip all space after 'days' */
         endOfDays = pos;
-        for (; pos != end && Ctype.spaceChar(chars[pos]); pos++)
-            ;
+        for (; pos != end && Ctype.spaceChar(chars[pos]); pos++) {
+            //do nothing
+        }
 
         state = 0;
         boolean gotofractional = false;
@@ -1700,9 +1702,9 @@ public class MyTime {
                 }
             }
             retMonth.set(1);
-            ;
-            for (monthPos = 0; dayOfYear > DAYS_IN_MONTH[monthPos]; dayOfYear -= DAYS_IN_MONTH[monthPos++], retMonth.incre())
-                ;
+            for (monthPos = 0; dayOfYear > DAYS_IN_MONTH[monthPos]; dayOfYear -= DAYS_IN_MONTH[monthPos++], retMonth.incre()) {
+                //do nothing
+            }
             retYear.set(year);
             retDay.set(dayOfYear + leapDay);
         }

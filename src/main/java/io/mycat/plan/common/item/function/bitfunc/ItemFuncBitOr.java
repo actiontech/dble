@@ -30,7 +30,6 @@ public class ItemFuncBitOr extends ItemFuncBit {
             return BigInteger.ZERO; /* purecov: inspected */
         }
         BigInteger arg2 = args.get(1).valInt();
-        ;
         if (args.get(1).nullValue) {
             nullValue = true;
             return BigInteger.ZERO;

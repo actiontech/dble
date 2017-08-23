@@ -56,11 +56,6 @@ public class CmpUtil {
                                                                  */
         }
 
-        if (status.warnings > 0)
-            ;
-        // make_truncated_value_warning(thd, Sql_condition::SL_WARNING,
-        // ErrConvString(str), warn_type, warn_name);
-
         return value;
     }
 

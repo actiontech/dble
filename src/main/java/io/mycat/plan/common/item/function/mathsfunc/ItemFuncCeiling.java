@@ -37,7 +37,6 @@ public class ItemFuncCeiling extends ItemFuncIntVal {
         } else {
             result = realOp().toBigInteger();
         }
-        ;
         return result;
     }
 

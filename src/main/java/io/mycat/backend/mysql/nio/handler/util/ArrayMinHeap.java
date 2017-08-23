@@ -323,8 +323,9 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
 
     @Override
     public void clear() {
-        while (poll() != null)
-            ;
+        while (poll() != null) {
+            //do nothing
+        }
     }
 
 }

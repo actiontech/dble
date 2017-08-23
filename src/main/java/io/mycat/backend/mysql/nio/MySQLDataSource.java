@@ -131,7 +131,6 @@ public class MySQLDataSource extends PhysicalDatasource {
             authPacket.maxPacketSize = 1024 * 1024 * 16;
             authPacket.charsetIndex = handshake.serverCharsetIndex & 0xff;
             authPacket.user = this.getConfig().getUser();
-            ;
             try {
                 authPacket.password = passwd(this.getConfig().getPassword(), handshake);
             } catch (NoSuchAlgorithmException e) {

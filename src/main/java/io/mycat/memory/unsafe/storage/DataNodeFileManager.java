@@ -85,13 +85,11 @@ public class DataNodeFileManager {
      * Produces a unique block id and File suitable for storing local intermediate results.
      */
     public TempDataNodeId createTempLocalBlock() throws IOException {
-
         TempDataNodeId blockId = new TempDataNodeId(UUID.randomUUID().toString());
 
         while (getFile(blockId).exists()) {
             blockId = new TempDataNodeId(UUID.randomUUID().toString());
         }
-        ;
 
         return blockId;
     }

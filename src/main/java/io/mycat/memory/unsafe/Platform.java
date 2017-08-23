@@ -98,7 +98,7 @@ public final class Platform {
             Method runtimeClass = t.getDeclaredMethod("maxDirectMemory", new Class[0]);
             maxDirectMemory = ((Number) runtimeClass.invoke((Object) null, new Object[0])).longValue();
         } catch (Throwable var8) {
-            ;
+            //ignore error
         }
 
         if (maxDirectMemory > 0L) {

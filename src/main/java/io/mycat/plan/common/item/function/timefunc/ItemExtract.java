@@ -134,7 +134,6 @@ public class ItemExtract extends ItemIntFunc {
         } else {
             if (getArg0Time(ltime))
                 return BigInteger.ZERO;
-            ;
             neg = ltime.neg ? -1 : 1;
         }
         switch (intType) {

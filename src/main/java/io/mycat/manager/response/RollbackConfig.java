@@ -135,19 +135,13 @@ public final class RollbackConfig {
 
     public static void rollback() throws Exception {
         MycatConfig conf = MycatServer.getInstance().getConfig();
-        Map<String, UserConfig> users = conf.getBackupUsers();
-        Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
-        Map<String, PhysicalDBNode> dataNodes = conf.getBackupDataNodes();
         Map<String, PhysicalDBPool> dataHosts = conf.getBackupDataHosts();
-        FirewallConfig firewall = conf.getBackupFirewall();
-        Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
 
         // 检查可回滚状态
         if (!conf.canRollback()) {
             throw new Exception("Conf can not be rollback because of no old version");
         }
 
-        Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
         // 如果回滚已经存在的pool
         boolean rollbackStatus = true;
         String errorMsg = null;
@@ -168,9 +162,15 @@ public final class RollbackConfig {
             throw new Exception(errorMsg);
         }
         // 应用回滚
+        Map<String, UserConfig> users = conf.getBackupUsers();
+        Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
+        Map<String, PhysicalDBNode> dataNodes = conf.getBackupDataNodes();
+        FirewallConfig firewall = conf.getBackupFirewall();
+        Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
 
         // 处理旧的资源
+        Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
         for (PhysicalDBPool dn : cNodes.values()) {
             dn.clearDataSources("clear old config ");
             dn.stopHeartbeat();

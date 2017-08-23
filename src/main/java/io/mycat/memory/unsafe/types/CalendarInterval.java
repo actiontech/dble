@@ -75,7 +75,6 @@ public final class CalendarInterval implements Serializable {
         if (!m.matches() || s.equals("interval")) {
             return null;
         } else {
-            long months = toLong(m.group(1)) * 12 + toLong(m.group(2));
             long microseconds = toLong(m.group(3)) * MICROS_PER_WEEK;
             microseconds += toLong(m.group(4)) * MICROS_PER_DAY;
             microseconds += toLong(m.group(5)) * MICROS_PER_HOUR;
@@ -83,6 +82,7 @@ public final class CalendarInterval implements Serializable {
             microseconds += toLong(m.group(7)) * MICROS_PER_SECOND;
             microseconds += toLong(m.group(8)) * MICROS_PER_MILLI;
             microseconds += toLong(m.group(9));
+            long months = toLong(m.group(1)) * 12 + toLong(m.group(2));
             return new CalendarInterval((int) months, microseconds);
         }
     }

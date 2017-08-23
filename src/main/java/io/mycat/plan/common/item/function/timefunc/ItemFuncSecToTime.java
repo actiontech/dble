@@ -32,7 +32,6 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
             return true;
         }
         long seconds = val.longValue();
-        long microseconds = (long) ((val.doubleValue() - val.longValue()) * 1000000);
         if (seconds > MyTime.TIME_MAX_SECOND) {
             ltime.setMaxHhmmss();
             return true;
@@ -41,6 +40,8 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
         long sec = (seconds % 3600);
         ltime.minute = sec / 60;
         ltime.second = sec % 60;
+
+        long microseconds = (long) ((val.doubleValue() - val.longValue()) * 1000000);
         ltime.secondPart = microseconds;
         return false;
     }

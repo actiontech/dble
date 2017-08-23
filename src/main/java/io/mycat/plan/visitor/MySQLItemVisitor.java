@@ -315,8 +315,6 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLCaseExpr x) {
-        SQLExpr comparee = x.getValueExpr();
-        SQLExpr elseExpr = x.getElseExpr();
         List<SQLCaseExpr.Item> whenlists = x.getItems();
         ArrayList<Item> args = new ArrayList<Item>();
         int ncases, firstExprNum = -1, elseExprNum = -1;
@@ -326,11 +324,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         }
         ncases = args.size();
         // add comparee
+        SQLExpr comparee = x.getValueExpr();
         if (comparee != null) {
             firstExprNum = args.size();
             args.add(getItem(comparee));
         }
+
         // add else exp
+        SQLExpr elseExpr = x.getElseExpr();
         if (elseExpr != null) {
             elseExprNum = args.size();
             args.add(getItem(elseExpr));

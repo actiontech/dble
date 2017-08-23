@@ -24,17 +24,17 @@ public class ItemFuncBitOr extends ItemFuncBit {
 
     @Override
     public BigInteger valInt() {
-        BigInteger arg1 = args.get(0).valInt();
         if (args.get(0).nullValue) {
             nullValue = true; /* purecov: inspected */
             return BigInteger.ZERO; /* purecov: inspected */
         }
-        BigInteger arg2 = args.get(1).valInt();
         if (args.get(1).nullValue) {
             nullValue = true;
             return BigInteger.ZERO;
         }
         nullValue = false;
+        BigInteger arg1 = args.get(0).valInt();
+        BigInteger arg2 = args.get(1).valInt();
         return arg1.or(arg2);
     }
 

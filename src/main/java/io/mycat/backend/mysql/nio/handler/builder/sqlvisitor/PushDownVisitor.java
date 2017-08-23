@@ -90,7 +90,6 @@ public class PushDownVisitor extends MysqlVisitor {
         }
 
         PlanNode left = join.getLeftNode();
-        PlanNode right = join.getRightNode();
         MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
         leftVisitor.visit();
         replaceableSqlBuilder.append(leftVisitor.getSql());
@@ -104,6 +103,8 @@ public class PushDownVisitor extends MysqlVisitor {
         }
 
         sqlBuilder.append(" join ");
+
+        PlanNode right = join.getRightNode();
         MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
         rightVisitor.visit();
         replaceableSqlBuilder.append(rightVisitor.getSql());

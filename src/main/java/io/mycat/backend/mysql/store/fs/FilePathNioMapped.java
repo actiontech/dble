@@ -222,7 +222,7 @@ class FileNioMapped extends FileBase {
 
     public synchronized void setFileLength(long newLength) throws IOException {
         checkFileSizeLimit(newLength);
-        int oldPos = pos;
+        final int oldPos = pos;
         unMap();
         for (int i = 0; ; i++) {
             try {

@@ -57,7 +57,7 @@ public class HandlerBuilder {
     }
 
     public void build(boolean hasNext) throws Exception {
-        long startTime = System.nanoTime();
+        final long startTime = System.nanoTime();
         DMLResponseHandler endHandler = buildNode(session, node);
         fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
         endHandler.setNextHandler(fh);

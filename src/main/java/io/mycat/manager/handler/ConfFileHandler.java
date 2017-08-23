@@ -228,11 +228,12 @@ public final class ConfFileHandler {
 
     private static PackageBufINf showInfo(ManagerConnection c,
                                           ByteBuffer buffer, byte packetId, String string) {
-        PackageBufINf bufINf = new PackageBufINf();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(string, c.getCharset()));
         row.packetId = ++packetId;
         buffer = row.write(buffer, c, true);
+
+        PackageBufINf bufINf = new PackageBufINf();
         bufINf.packetId = packetId;
         bufINf.buffer = buffer;
         return bufINf;

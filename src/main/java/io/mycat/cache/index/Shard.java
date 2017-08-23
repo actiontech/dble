@@ -57,7 +57,7 @@ public class Shard<S> { // S类封装了机器节点的信息 ，如name、passw
         ByteBuffer buf = ByteBuffer.wrap(key.getBytes());
         int seed = 0x1234ABCD;
 
-        ByteOrder byteOrder = buf.order();
+        final ByteOrder byteOrder = buf.order();
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
         long m = 0xc6a4a7935bd1e995L;

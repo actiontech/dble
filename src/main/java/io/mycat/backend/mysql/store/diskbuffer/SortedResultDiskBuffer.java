@@ -72,7 +72,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
         }
         RowDataPacket[] rowArray = new RowDataPacket[rows.size()];
         rows.toArray(rowArray);
-        long start = file.getFilePointer();
+        final long start = file.getFilePointer();
         for (RowDataPacket row : rowArray) {
             byte[] b = row.toBytes();
             writeBuffer = writeToBuffer(b, writeBuffer);

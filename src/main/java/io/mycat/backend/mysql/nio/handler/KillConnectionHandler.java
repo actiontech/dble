@@ -50,12 +50,12 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        MySQLConnection mysqlCon = (MySQLConnection) conn;
         conn.setResponseHandler(this);
         CommandPacket packet = new CommandPacket();
         packet.packetId = 0;
         packet.command = MySQLPacket.COM_QUERY;
         packet.arg = new StringBuilder("KILL ").append(killee.getThreadId()).toString().getBytes();
+        MySQLConnection mysqlCon = (MySQLConnection) conn;
         packet.write(mysqlCon);
     }
 

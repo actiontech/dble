@@ -23,7 +23,6 @@ public class ItemFuncFormat extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        BigDecimal bd = args.get(0).valDecimal();
         int pl = args.get(1).valInt().intValue();
         if (pl < 0)
             pl = 0;
@@ -36,6 +35,7 @@ public class ItemFuncFormat extends ItemStrFunc {
             this.nullValue = true;
             return EMPTY;
         }
+        BigDecimal bd = args.get(0).valDecimal();
         BigDecimal bdnew = bd.setScale(pl, RoundingMode.HALF_UP);
         return f.format(bdnew);
     }

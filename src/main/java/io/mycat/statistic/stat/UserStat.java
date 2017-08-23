@@ -61,13 +61,13 @@ public class UserStat {
     public UserStat(String user) {
         super();
 
-        int size = MycatServer.getInstance().getConfig().getSystem().getSqlRecordCount();
-
         this.user = user;
         this.sqlRwStat = new UserSqlRWStat();
         this.sqlLastStat = new UserSqlLastStat(50);
         this.sqlLargeStat = new UserSqlLargeStat(10);
         this.sqlHighStat = new UserSqlHighStat();
+
+        int size = MycatServer.getInstance().getConfig().getSystem().getSqlRecordCount();
         this.sqlRecorder = new SQLRecorder(size);
         this.sqlResultSizeRecorder = new SqlResultSizeRecorder();
     }

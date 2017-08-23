@@ -23,7 +23,6 @@ public class ItemFuncRightShift extends ItemFuncBit {
 
     @Override
     public BigInteger valInt() {
-        BigInteger arg1 = args.get(0).valInt();
         if (args.get(0).nullValue) {
             nullValue = true; /* purecov: inspected */
             return BigInteger.ZERO; /* purecov: inspected */
@@ -34,6 +33,8 @@ public class ItemFuncRightShift extends ItemFuncBit {
             return BigInteger.ZERO;
         }
         nullValue = false;
+
+        BigInteger arg1 = args.get(0).valInt();
         return shift < Long.SIZE * 8 ? arg1.shiftRight(shift) : BigInteger.ZERO;
     }
 

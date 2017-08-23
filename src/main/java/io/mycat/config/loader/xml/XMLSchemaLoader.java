@@ -271,13 +271,11 @@ public class XMLSchemaLoader implements SchemaLoader {
         String suffixFormat = params[0];
         if (suffixFormat.equals("YYYYMM")) {
 
-            //读取参数
-            int yyyy = Integer.parseInt(params[1]);
-            int mm = Integer.parseInt(params[2]);
-            int mmEndIdx = Integer.parseInt(params[3]);
-
             //日期处理
             SimpleDateFormat yyyyMMDateFormat = new SimpleDateFormat("yyyyMM");
+
+            int yyyy = Integer.parseInt(params[1]);
+            int mm = Integer.parseInt(params[2]);
 
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, yyyy);
@@ -286,6 +284,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
             //表名改写
             StringBuffer tableNameBuffer = new StringBuffer();
+            int mmEndIdx = Integer.parseInt(params[3]);
             for (int mmIdx = 0; mmIdx <= mmEndIdx; mmIdx++) {
                 tableNameBuffer.append(tableNameElement);
                 tableNameBuffer.append(yyyyMMDateFormat.format(cal.getTime()));
@@ -299,14 +298,12 @@ public class XMLSchemaLoader implements SchemaLoader {
 
         } else if (suffixFormat.equals("YYYYMMDD")) {
 
-            //读取参数
+            //日期处理
+            SimpleDateFormat yyyyMMddSDF = new SimpleDateFormat("yyyyMMdd");
+
             int yyyy = Integer.parseInt(params[1]);
             int mm = Integer.parseInt(params[2]);
             int dd = Integer.parseInt(params[3]);
-            int ddEndIdx = Integer.parseInt(params[4]);
-
-            //日期处理
-            SimpleDateFormat yyyyMMddSDF = new SimpleDateFormat("yyyyMMdd");
 
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, yyyy);
@@ -314,6 +311,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             cal.set(Calendar.DATE, dd);
 
             //表名改写
+            int ddEndIdx = Integer.parseInt(params[4]);
             StringBuffer tableNameBuffer = new StringBuffer();
             for (int ddIdx = 0; ddIdx <= ddEndIdx; ddIdx++) {
                 tableNameBuffer.append(tableNameElement);
@@ -356,7 +354,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 tableNameElement = doTableNameSuffix(tableNameElement, tableNameSuffixElement);
             }
             //记录主键，用于之后路由分析，以及启用自增长主键
-            String[] tableNames = tableNameElement.split(",");
             String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
             //记录是否主键自增，默认不是，（启用全局sequence handler）
             boolean autoIncrement = false;
@@ -375,7 +372,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
             }
             //记录dataNode，就是分布在哪些dataNode上
-            String dataNode = tableElement.getAttribute("dataNode");
             TableRuleConfig tableRule = null;
             if (tableElement.hasAttribute("rule")) {
                 String ruleName = tableElement.getAttribute("rule");
@@ -389,11 +385,14 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableElement.hasAttribute("ruleRequired")) {
                 ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
             }
+
+            String[] tableNames = tableNameElement.split(",");
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
             //distribute函数，重新编排dataNode
             String distPrex = "distribute(";
+            String dataNode = tableElement.getAttribute("dataNode");
             boolean distTableDns = dataNode.startsWith(distPrex);
             if (distTableDns) {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
@@ -643,12 +642,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         String nodeHost = node.getAttribute("host");
         String nodeUrl = node.getAttribute("url");
         String user = node.getAttribute("user");
-        String password = node.getAttribute("password");
-        String usingDecrypt = node.getAttribute("usingDecrypt");
-        String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
-
-        String weightStr = node.getAttribute("weight");
-        int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
 
         String ip = null;
         int port = 0;
@@ -663,9 +656,15 @@ public class XMLSchemaLoader implements SchemaLoader {
         ip = nodeUrl.substring(0, colonIndex).trim();
         port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
 
+        String password = node.getAttribute("password");
+        String usingDecrypt = node.getAttribute("usingDecrypt");
+        String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
+
+        String weightStr = node.getAttribute("weight");
+        int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
         conf.setWeight(weight);    //新增权重
         return conf;
     }
@@ -691,7 +690,7 @@ public class XMLSchemaLoader implements SchemaLoader {
              * 3. balance="2"，所有读操作都随机的在 writeHost、readhost 上分发。
              * 4. balance="3"，所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压力
              */
-            int balance = Integer.parseInt(element.getAttribute("balance"));
+            final int balance = Integer.parseInt(element.getAttribute("balance"));
             /**
              * 读取切换类型
              * -1 表示不自动切换
@@ -711,7 +710,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             boolean tempReadHostAvailable = !tempReadHostAvailableStr.equals("") && Integer.parseInt(tempReadHostAvailableStr) > 0;
 
             //读取心跳语句
-            String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
+            final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 
             //读取writeHost
             NodeList writeNodes = element.getElementsByTagName("writeHost");

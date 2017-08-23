@@ -74,16 +74,17 @@ public class ItemFuncDiv extends ItemNumOp {
 
     @Override
     public BigDecimal decimalOp() {
-        BigDecimal val1 = args.get(0).valDecimal();
         if ((this.nullValue = args.get(0).isNull()))
             return new BigDecimal(0);
-        BigDecimal val2 = args.get(1).valDecimal();
         if ((this.nullValue = args.get(1).isNull()))
             return new BigDecimal(0);
+        
+        final BigDecimal val2 = args.get(1).valDecimal();
         if (val2.compareTo(BigDecimal.ZERO) == 0) {
             signalDivideByNull();
             return BigDecimal.ZERO;
         }
+        final BigDecimal val1 = args.get(0).valDecimal();
         BigDecimal bd = val1.divide(val2, decimals, RoundingMode.HALF_UP);
         return bd;
     }

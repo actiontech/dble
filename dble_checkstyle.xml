@@ -95,7 +95,7 @@
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
         <module name="ArrayTrailingComma"/>
-        <!--<module name="VariableDeclarationUsageDistance"/>-->
+        <module name="VariableDeclarationUsageDistance"/>
         <!--<module name="SuperFinalize"/>-->
         <!--<module name="SuperClone"/>-->
         <!--<module name="StringLiteralEquality"/>-->

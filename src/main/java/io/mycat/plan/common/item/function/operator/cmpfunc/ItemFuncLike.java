@@ -35,7 +35,6 @@ public class ItemFuncLike extends ItemBoolFunc2 {
 
     @Override
     public BigInteger valInt() {
-        String str = args.get(0).valStr();
         if (args.get(0).isNull()) {
             this.nullValue = true;
             return BigInteger.ZERO;
@@ -54,6 +53,8 @@ public class ItemFuncLike extends ItemBoolFunc2 {
             like = new CompareLike(str2);
         else
             like = new CompareLike(str2, escapeStr);
+
+        String str = args.get(0).valStr();
         boolean isLike = like.compare(str);
         return isNot ? (isLike ? BigInteger.ZERO : BigInteger.ONE) : (isLike ? BigInteger.ONE : BigInteger.ZERO);
     }

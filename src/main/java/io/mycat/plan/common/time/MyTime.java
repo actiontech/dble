@@ -192,20 +192,14 @@ public class MyTime {
                                         MySQLTimeStatus status) {
         /* Skip space at start */
         String str = strori.trim();
-        long fieldLength, yearLength = 0, digits, i, numberOfFields;
+        long fieldLength, yearLength = 0;
         long[] date = new long[MAX_DATE_PARTS];
-        int[] dateLen = new int[MAX_DATE_PARTS];
-        long addHours = 0, startLoop;
-        long notZeroDate, allowSpace;
-        boolean isInternalFormat;
+        long addHours = 0;
         final char[] chars = str.toCharArray();
-        int pos, lastFieldPos = 0;
-        int end = str.length();
+        int lastFieldPos = 0;
         int[] formatPosition;
         boolean foundDelimiter = false, foundSpace = false;
         int fracPos, fracLen;
-
-        fieldLength = 0;
 
         myTimeStatusInit(status);
 
@@ -215,7 +209,7 @@ public class MyTime {
             return true;
         }
 
-        isInternalFormat = false;
+        boolean isInternalFormat = false;
         /*
          * This has to be changed if want to activate different timestamp
      * formats
@@ -226,12 +220,16 @@ public class MyTime {
      * Calculate number of digits in first part. If length= 8 or >= 14 then
      * year is of format YYYY. (YYYY-MM-DD, YYYYMMDD, YYYYYMMDDHHMMSS)
      */
+        int pos;
+        int end = str.length();
         for (pos = 0; pos != end && (Ctype.isDigit(chars[pos]) || chars[pos] == 'T'); pos++) {
             //do nothing
         }
 
-        digits = (long) (pos - 0);
-        startLoop = 0; /* Start of scan loop */
+        long digits = (long) pos;
+        long startLoop = 0; /* Start of scan loop */
+
+        int[] dateLen = new int[MAX_DATE_PARTS];
         dateLen[formatPosition[0]] = 0; /* Length of year field */
         if (pos == end || chars[pos] == '.') {
     /* Found date in internal format (only numbers like YYYYMMDD) */
@@ -273,13 +271,13 @@ public class MyTime {
      *
      * 2003-03-03 20:00:20 AM 20:00:20.000000 AM 03-03-2000
      */
-        i = Math.max((long) formatPosition[0], (long) formatPosition[1]);
+        long i = Math.max((long) formatPosition[0], (long) formatPosition[1]);
         if (i < (long) formatPosition[2])
             i = (long) formatPosition[2];
-        allowSpace = ((1 << i) | (1 << formatPosition[6]));
+        long allowSpace = ((1 << i) | (1 << formatPosition[6]));
         allowSpace &= (1 | 2 | 4 | 8 | 64);
 
-        notZeroDate = 0;
+        long notZeroDate = 0;
         int strindex = 0;
         for (i = startLoop; i < MAX_DATE_PARTS - 1 && strindex != end && Ctype.isDigit(chars[strindex]); i++) {
             final int start = strindex;
@@ -369,7 +367,7 @@ public class MyTime {
 
         strindex = lastFieldPos;
 
-        numberOfFields = i - startLoop;
+        final long numberOfFields = i - startLoop;
         while (i < MAX_DATE_PARTS) {
             dateLen[(int) i] = 0;
             date[(int) i++] = 0;
@@ -497,10 +495,7 @@ public class MyTime {
      */
     public static boolean strToTime(String str, int length, MySQLTime lTime, MySQLTimeStatus status) {
         long date[] = new long[5];
-        long value;
         int pos = 0, end = length;
-        int endOfDays;
-        int state;
         final char[] chars = str.toCharArray();
         myTimeStatusInit(status);
         lTime.neg = false;
@@ -523,6 +518,7 @@ public class MyTime {
         }
 
     /* Not a timestamp. Try to get this as a DAYS_TO_SECOND string */
+        long value;
         for (value = 0; pos != end && Ctype.isDigit(chars[pos]); pos++)
             value = value * 10L + (long) (chars[pos] - '0');
 
@@ -530,12 +526,12 @@ public class MyTime {
             return true;
 
     /* Skip all space after 'days' */
-        endOfDays = pos;
+        int endOfDays = pos;
         for (; pos != end && Ctype.spaceChar(chars[pos]); pos++) {
             //do nothing
         }
 
-        state = 0;
+        int state = 0;
         boolean gotofractional = false;
         if ((int) (end - pos) > 1 && pos != endOfDays && Ctype.isDigit(chars[pos])) { /* Found days part */
             date[0] = value;
@@ -754,11 +750,12 @@ public class MyTime {
      */
     private static long numberToDatetimeOk(long nr, MySQLTime timeRes, long flags, LongPtr wasCut) {
         long part1 = (long) (nr / (1000000L));
-        long part2 = (long) (nr - (long) part1 * (1000000L));
         timeRes.year = (int) (part1 / 10000L);
         part1 %= 10000L;
         timeRes.month = (int) part1 / 100;
         timeRes.day = (int) part1 % 100;
+
+        long part2 = (long) (nr - (long) part1 * (1000000L));
         timeRes.hour = (int) (part2 / 10000L);
         part2 %= 10000L;
         timeRes.minute = (int) part2 / 100;
@@ -934,22 +931,20 @@ public class MyTime {
      * @param tmp   The packed numeric datetime value.
      */
     public static void timeFromLonglongDatetimePacked(MySQLTime ltime, long tmp) {
-        long ymd, hms;
-        long ymdhms, ym;
         if ((ltime.neg = (tmp < 0)))
             tmp = -tmp;
 
         ltime.secondPart = myPackedTimeGetFracPart(tmp);
-        ymdhms = myPackedTimeGetIntPart(tmp);
+        long ymdhms = myPackedTimeGetIntPart(tmp);
 
-        ymd = ymdhms >> 17;
-        ym = ymd >> 5;
-        hms = ymdhms % (1 << 17);
+        long ymd = ymdhms >> 17;
+        long ym = ymd >> 5;
 
         ltime.day = ymd % (1 << 5);
         ltime.month = ym % 13;
         ltime.year = ym / 13;
 
+        long hms = ymdhms % (1 << 17);
         ltime.second = hms % (1 << 6);
         ltime.minute = (hms >> 6) % (1 << 6);
         ltime.hour = (hms >> 12);
@@ -1026,7 +1021,6 @@ public class MyTime {
 
     public static long calcDaynr(long year, long month, long day) {
         long delsum;
-        int temp;
         int y = (int) year; /* may be < 0 temporarily */
 
         if (y == 0 && month == 0)
@@ -1037,7 +1031,7 @@ public class MyTime {
             y--;
         else
             delsum -= (long) ((int) month * 4 + 23) / 10;
-        temp = (int) ((y / 100 + 1) * 3) / 4;
+        int temp = (int) ((y / 100 + 1) * 3) / 4;
         assert (delsum + (int) y / 4 - temp >= 0);
         return (delsum + (int) y / 4 - temp);
     } /* calc_daynr */
@@ -1204,7 +1198,7 @@ public class MyTime {
                 intType == MySqlIntervalUnit.DAY_SECOND ||
                 intType == MySqlIntervalUnit.DAY_MINUTE ||
                 intType == MySqlIntervalUnit.DAY_HOUR) {
-            long sec, days, daynr, microseconds, extraSec;
+            long microseconds, extraSec;
             ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME; // Return
             // full
             // date
@@ -1212,14 +1206,14 @@ public class MyTime {
             extraSec = microseconds / 1000000L;
             microseconds = microseconds % 1000000L;
 
-            sec = ((ltime.day - 1) * 3600 * 24L + ltime.hour * 3600 + ltime.minute * 60 + ltime.second +
+            long sec = ((ltime.day - 1) * 3600 * 24L + ltime.hour * 3600 + ltime.minute * 60 + ltime.second +
                     sign * (long) (interval.day * 3600 * 24L + interval.hour * 3600 + interval.minute * (60) + interval.second)) +
                     extraSec;
             if (microseconds < 0) {
                 microseconds += (1000000L);
                 sec--;
             }
-            days = sec / (3600 * (24));
+            long days = sec / (3600 * (24));
             sec -= days * 3600 * (24);
             if (sec < 0) {
                 days--;
@@ -1229,7 +1223,7 @@ public class MyTime {
             ltime.second = (sec % 60);
             ltime.minute = (sec / 60 % 60);
             ltime.hour = (sec / 3600);
-            daynr = calcDaynr(ltime.year, ltime.month, 1) + days;
+            long daynr = calcDaynr(ltime.year, ltime.month, 1) + days;
     /* Day number from year 0 to 9999-12-31 */
             if (daynr > MAX_DAY_NUMBER)
                 return true;
@@ -1743,7 +1737,7 @@ public class MyTime {
     private static int timeToDatetimeStr(StringPtr ptr, final MySQLTime ltime) {
         char[] res = new char[19];
         int index = 0;
-        long temp, temp2;
+        long temp;
     /* Year */
         temp = ltime.year / 100;
         res[index++] = (char) ('0' + temp / 10);
@@ -1754,7 +1748,7 @@ public class MyTime {
         res[index++] = '-';
     /* Month */
         temp = ltime.month;
-        temp2 = temp / 10;
+        long temp2 = temp / 10;
         temp = temp - temp2 * 10;
         res[index++] = (char) ('0' + (char) (temp2));
         res[index++] = (char) ('0' + (char) (temp));
@@ -2006,14 +2000,13 @@ public class MyTime {
     }
 
     public static void calcTimeFromSec(MySQLTime to, long seconds, long microseconds) {
-        long tSeconds;
         // to.neg is not cleared, it may already be set to a useful value
         to.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
         to.year = 0;
         to.month = 0;
         to.day = 0;
         to.hour = (long) (seconds / 3600L);
-        tSeconds = (long) (seconds % 3600L);
+        long tSeconds = (long) (seconds % 3600L);
         to.minute = tSeconds / 60L;
         to.second = tSeconds % 60L;
         to.secondPart = microseconds;
@@ -2229,8 +2222,6 @@ public class MyTime {
     }
 
     public static boolean secToTime(LLDivT seconds, MySQLTime ltime) {
-        boolean warning = false;
-
         ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
 
         if (seconds.quot < 0 || seconds.rem < 0) {
@@ -2248,7 +2239,7 @@ public class MyTime {
         int sec = (int) (seconds.quot % 3600);
         ltime.minute = sec / 60;
         ltime.second = sec % 60;
-        warning = timeAddNanosecondsWithRound(ltime, seconds.rem);
+        boolean warning = timeAddNanosecondsWithRound(ltime, seconds.rem);
         return warning;
     }
 

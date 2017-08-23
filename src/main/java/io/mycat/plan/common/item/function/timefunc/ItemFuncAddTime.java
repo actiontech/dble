@@ -59,9 +59,6 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         MySQLTime lTime1 = new MySQLTime();
         MySQLTime lTime2 = new MySQLTime();
         boolean isTime = false;
-        long days;
-        LongPtr seconds = new LongPtr(0);
-        LongPtr microseconds = new LongPtr(0);
         int lSign = sign;
 
         nullValue = false;
@@ -85,6 +82,8 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
         time.setZeroTime(time.timeType);
 
+        LongPtr seconds = new LongPtr(0);
+        LongPtr microseconds = new LongPtr(0);
         time.neg = MyTime.calcTimeDiff(lTime1, lTime2, -lSign, seconds, microseconds);
 
         /*
@@ -92,14 +91,14 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
          * we need to swap sign to get proper result.
          */
         if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
-            time.neg = time.neg ? false : true; // Swap sign of result
+            time.neg = !time.neg; // Swap sign of result
 
         if (!isTime && time.neg) {
             nullValue = true;
             return true;
         }
 
-        days = (long) (seconds.get() / MyTime.SECONDS_IN_24H);
+        long days = (long) (seconds.get() / MyTime.SECONDS_IN_24H);
 
         MyTime.calcTimeFromSec(time, seconds.get() % MyTime.SECONDS_IN_24H, microseconds.get());
 

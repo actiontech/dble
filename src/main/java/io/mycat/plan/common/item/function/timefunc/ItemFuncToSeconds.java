@@ -23,12 +23,11 @@ public class ItemFuncToSeconds extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         MySQLTime ltime = new MySQLTime();
-        long seconds, days;
         if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
             return BigInteger.ZERO;
-        seconds = ltime.hour * 3600L + ltime.minute * 60 + ltime.second;
+        long seconds = ltime.hour * 3600L + ltime.minute * 60 + ltime.second;
         seconds = ltime.neg ? -seconds : seconds;
-        days = MyTime.calcDaynr(ltime.year, ltime.month, ltime.day);
+        long days = MyTime.calcDaynr(ltime.year, ltime.month, ltime.day);
         return BigInteger.valueOf(seconds + days * 24L * 3600L);
     }
 

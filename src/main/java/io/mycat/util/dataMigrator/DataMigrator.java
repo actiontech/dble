@@ -59,7 +59,7 @@ public class DataMigrator {
     }
 
     public static void main(String[] args) throws SQLException {
-        long start = System.currentTimeMillis();
+        final long start = System.currentTimeMillis();
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
         System.out.println("\n" + format.format(new Date()) + " [1]-> creating migrator schedule and temp files for migrate...");
         //初始化配置

@@ -250,7 +250,6 @@ public class DataMigratorUtil {
      * @return
      */
     public static String printMigrateInfo(String title, Map<String, String> map, String mark) {
-        StringBuilder result = new StringBuilder(" ");
         List<String> mergeList = new ArrayList<>();
 
         Iterator<Entry<String, String>> itor = map.entrySet().iterator();
@@ -300,6 +299,8 @@ public class DataMigratorUtil {
             titleSb.append("-");
         }
         titleSb.append("+\n");
+
+        StringBuilder result = new StringBuilder(" ");
         result.append(titleSb);
 
         List<String> changeList = new ArrayList<>();

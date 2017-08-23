@@ -102,12 +102,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             execute(conn);
         } else {
             // create new connection
-            MycatConfig conf = MycatServer.getInstance().getConfig();
-
             LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
             node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
             LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
 
+            MycatConfig conf = MycatServer.getInstance().getConfig();
             PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), sc.isAutocommit(), node, this, node);
         }
@@ -287,7 +286,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        ServerConnection source = session.getSource();
         this.netOutBytes += header.length;
         for (int i = 0, len = fields.size(); i < len; ++i) {
             byte[] field = fields.get(i);
@@ -302,6 +300,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
 
         header[3] = ++packetId;
+
+        ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(header, allocBuffer());
         for (int i = 0, len = fields.size(); i < len; ++i) {
             byte[] field = fields.get(i);

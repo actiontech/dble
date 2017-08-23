@@ -622,15 +622,15 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         SQLName identName = x.getTableName();
         if (identName != null) {
             String ident = identName.toString();
-            String alias = x.getTableSource().getAlias();
             setCurrentTable(ident);
 
             TableStat stat = getTableStat(ident);
             stat.incrementUpdateCount();
 
             Map<String, String> aliasMap = getAliasMap();
-
             aliasMap.put(ident, ident);
+
+            String alias = x.getTableSource().getAlias();
             if (alias != null) {
                 aliasMap.put(alias, ident);
             }

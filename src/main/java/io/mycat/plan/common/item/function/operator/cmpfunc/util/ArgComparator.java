@@ -133,12 +133,12 @@ public class ArgComparator {
     }
 
     public int setCmpFunc(ItemFunc ownerarg, Item a1, Item a2, ItemResult type) {
-        LongPtr constvalue = new LongPtr(-1);
         owner = ownerarg;
         setNull = setNull && (ownerarg != null);
         a = a1;
         b = a2;
-        if (canCompareAsDates(a, b, constvalue)) {
+        LongPtr constValue = new LongPtr(-1);
+        if (canCompareAsDates(a, b, constValue)) {
 //            atype = a.fieldType();
 //            btype = b.fieldType();
             isNullsEq = isOwnerEqualFunc();

@@ -64,12 +64,11 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
                 nullValue = geRes < 0;
             }
         } else if (cmpType.get() == ItemResult.STRING_RESULT) {
-            String value, a, b;
-            value = args.get(0).valStr();
+            String value = args.get(0).valStr();
             if (nullValue = args.get(0).isNull())
                 return BigInteger.ZERO;
-            a = args.get(1).valStr();
-            b = args.get(2).valStr();
+            String a = args.get(1).valStr();
+            String b = args.get(2).valStr();
             if (!args.get(1).isNull() && !args.get(2).isNull())
                 return (value.compareTo(a) >= 0 && value.compareTo(b) <= 0) != negated ? BigInteger.ONE : BigInteger.ZERO;
             if (args.get(1).isNull() && args.get(2).isNull())

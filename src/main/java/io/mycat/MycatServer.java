@@ -293,7 +293,6 @@ public class MycatServer {
 
     public void startup() throws IOException {
         SystemConfig system = config.getSystem();
-        int processorCount = system.getProcessors();
 
         // server startup
         LOGGER.info("===============================================");
@@ -320,7 +319,7 @@ public class MycatServer {
         aio = (system.getUsingAIO() == 1);
 
         // startup processors
-        int threadPoolSize = system.getProcessorExecutor();
+        int processorCount = system.getProcessors();
         processors = new NIOProcessor[processorCount];
         // a page size
         int bufferPoolPageSize = system.getBufferPoolPageSize();
@@ -348,6 +347,7 @@ public class MycatServer {
                 LOGGER.error("Error", e);
             }
         }
+        int threadPoolSize = system.getProcessorExecutor();
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);

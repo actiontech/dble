@@ -80,7 +80,7 @@ public class SubQueryProcessor {
      * @return
      */
     private static PlanNode mergeNode(PlanNode parent, PlanNode child) {
-        List<Item> newSels = mergeSelect(parent, child);
+        final List<Item> newSels = mergeSelect(parent, child);
         mergeWhere(parent, child);
         mergeGroupBy(parent, child);
         mergeHaving(parent, child);

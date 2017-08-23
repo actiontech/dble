@@ -40,8 +40,6 @@ public class ItemFuncTimediff extends ItemTimeFunc {
      */
     @Override
     public boolean getTime(MySQLTime ltime) {
-        LongPtr seconds = new LongPtr(0);
-        LongPtr microseconds = new LongPtr(0);
         MySQLTime lTime1 = new MySQLTime();
         MySQLTime lTime2 = new MySQLTime();
         int lSign = 1;
@@ -71,6 +69,8 @@ public class ItemFuncTimediff extends ItemTimeFunc {
 
         MySQLTime lTime3 = new MySQLTime();
 
+        LongPtr seconds = new LongPtr(0);
+        LongPtr microseconds = new LongPtr(0);
         lTime3.neg = MyTime.calcTimeDiff(lTime1, lTime2, lSign, seconds, microseconds);
 
         /*
@@ -79,7 +79,7 @@ public class ItemFuncTimediff extends ItemTimeFunc {
          * result.
          */
         if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
-            lTime3.neg = lTime3.neg ? false : true; // Swap sign of result
+            lTime3.neg = !lTime3.neg; // Swap sign of result
 
         MyTime.calcTimeFromSec(lTime3, seconds.get(), microseconds.get());
         return false;

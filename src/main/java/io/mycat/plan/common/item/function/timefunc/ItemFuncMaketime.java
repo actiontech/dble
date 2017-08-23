@@ -32,7 +32,6 @@ public class ItemFuncMaketime extends ItemTimeFunc {
      */
     @Override
     public boolean getTime(MySQLTime ltime) {
-        long hour = args.get(0).valInt().longValue();
         long minute = args.get(1).valInt().longValue();
         BigDecimal sec = args.get(2).valDecimal();
         if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null ||
@@ -47,6 +46,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
 
         ltime.setZeroTime(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
 
+        long hour = args.get(0).valInt().longValue();
         /* Check for integer overflows */
         if (hour < 0) {
             ltime.neg = true;

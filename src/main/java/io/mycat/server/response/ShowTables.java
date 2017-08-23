@@ -125,7 +125,6 @@ public class ShowTables {
         int fieldCount = 2;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
-        EOFPacket eof = new EOFPacket();
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
@@ -135,6 +134,8 @@ public class ShowTables {
         fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
         fields[i + 1].packetId = ++packetId;
         fieldPackets.add(fields[i + 1]);
+
+        EOFPacket eof = new EOFPacket();
         eof.packetId = ++packetId;
         // write header
         buffer = header.write(buffer, c, true);
@@ -170,12 +171,13 @@ public class ShowTables {
         int fieldCount = 1;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
-        EOFPacket eof = new EOFPacket();
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
         fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
         fields[i].packetId = ++packetId;
+
+        EOFPacket eof = new EOFPacket();
         eof.packetId = ++packetId;
         // write header
         buffer = header.write(buffer, c, true);

@@ -148,7 +148,6 @@ public class GlobalVisitor extends MysqlVisitor {
         }
 
         PlanNode left = join.getLeftNode();
-        PlanNode right = join.getRightNode();
         MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
         leftVisitor.visit();
         sqlBuilder.append(leftVisitor.getSql());
@@ -161,6 +160,8 @@ public class GlobalVisitor extends MysqlVisitor {
         }
 
         sqlBuilder.append(" join ");
+
+        PlanNode right = join.getRightNode();
         MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
         rightVisitor.visit();
         sqlBuilder.append(rightVisitor.getSql());

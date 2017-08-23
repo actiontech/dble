@@ -127,7 +127,6 @@ public class DailyRotateLogStore {
     @SuppressWarnings("resource")
     private void indexRollOver() throws IOException {
         currentIndex++;
-        File file;
         File target;
         while (true) {
             target = new File(buildRollFileName(currentIndex));
@@ -139,6 +138,8 @@ public class DailyRotateLogStore {
         }
         force(false);
         close();
+
+        File file;
         file = new File(fileName);
         file.renameTo(target);
         channel = new RandomAccessFile(fileName, mode).getChannel();

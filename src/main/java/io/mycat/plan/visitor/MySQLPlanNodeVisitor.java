@@ -62,7 +62,6 @@ public class MySQLPlanNodeVisitor {
         MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
         mtvright.visit(right);
 
-        SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
         MergeNode mergeNode = new MergeNode();
         if (sqlSelectQuery.getOperator() == SQLUnionOperator.UNION || sqlSelectQuery.getOperator() == SQLUnionOperator.DISTINCT) {
             mergeNode.setUnion(true);
@@ -70,6 +69,8 @@ public class MySQLPlanNodeVisitor {
         mergeNode.addChild(mtvleft.getTableNode());
         mergeNode.addChild(mtvright.getTableNode());
         this.tableNode = mergeNode;
+
+        SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
         if (orderBy != null) {
             handleOrderBy(orderBy);
         }

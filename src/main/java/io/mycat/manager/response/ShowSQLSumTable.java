@@ -114,10 +114,6 @@ public class ShowSQLSumTable {
         }
 
         String table = tableStat.getTable();
-        long r = tableStat.getRCount();
-        long w = tableStat.getWCount();
-        String rStr = decimalFormat.format(1.0D * r / (r + w));
-
 
         StringBuffer relaTableNameBuffer = new StringBuffer();
         StringBuffer relaTableCountBuffer = new StringBuffer();
@@ -135,8 +131,13 @@ public class ShowSQLSumTable {
         }
 
         row.add(StringUtil.encode(table, charset));
+
+        long r = tableStat.getRCount();
+        long w = tableStat.getWCount();
         row.add(LongUtil.toBytes(r));
         row.add(LongUtil.toBytes(w));
+
+        String rStr = decimalFormat.format(1.0D * r / (r + w));
         row.add(StringUtil.encode(String.valueOf(rStr), charset));
         row.add(StringUtil.encode(relaTableNameBuffer.toString(), charset));
         row.add(StringUtil.encode(relaTableCountBuffer.toString(), charset));

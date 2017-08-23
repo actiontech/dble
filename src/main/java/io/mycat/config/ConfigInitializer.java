@@ -157,14 +157,10 @@ public class ConfigInitializer {
     }
 
     private void checkWriteHost() {
-        Iterator<String> dataHost = this.dataHosts.keySet().iterator();
-        while (dataHost.hasNext()) {
-            String dataHostName = dataHost.next();
-            if (dataHosts.get(dataHostName).getSources() == null ||
-                    dataHosts.get(dataHostName).getSources().length == 0) {
-                LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
+        for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
+            if (pool.getValue().getSources() == null || pool.getValue().getSources().length == 0) {
+                LOGGER.warn("dataHost " + pool.getKey() + " has no writeHost ,server will ignore it");
                 this.dataHostWithoutWH = true;
-                dataHost.remove();
             }
         }
     }

@@ -65,6 +65,7 @@ public class MycatConfig {
     private volatile Map<String, PhysicalDBPool> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
+    private volatile boolean dataHostWithoutWR2;
     private long reloadTime;
     private long rollbackTime;
     private int status;
@@ -73,11 +74,6 @@ public class MycatConfig {
     public boolean isDataHostWithoutWR() {
         return dataHostWithoutWR;
     }
-
-    public void setDataHostWithoutWR(boolean dataHostWithoutWR) {
-        this.dataHostWithoutWR = dataHostWithoutWR;
-    }
-
     private volatile boolean dataHostWithoutWR;
 
     public MycatConfig() {
@@ -210,9 +206,9 @@ public class MycatConfig {
     public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                        Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                       boolean reloadAll) {
+                       boolean newDataHostWithoutWR, boolean reloadAll) {
 
-        apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, reloadAll);
+        apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, newDataHostWithoutWR, reloadAll);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = reloadAll ? RELOAD_ALL : RELOAD;
     }
@@ -239,9 +235,9 @@ public class MycatConfig {
 
     public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
                          Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
-                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall) {
+                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) {
 
-        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall, status == RELOAD_ALL);
+        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall, backDataHostWithoutWR, status == RELOAD_ALL);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
     }
@@ -349,7 +345,7 @@ public class MycatConfig {
                        Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall,
-                       boolean isLoadAll) {
+                       boolean newDataHostWithoutWR, boolean isLoadAll) {
         final ReentrantReadWriteLock confLock = MycatServer.getInstance().getConfLock();
         confLock.writeLock().lock();
         try {
@@ -374,11 +370,13 @@ public class MycatConfig {
             this.schemas2 = this.schemas;
             this.firewall2 = this.firewall;
             this.erRelations2 = this.erRelations;
+            this.dataHostWithoutWR2 = this.dataHostWithoutWR;
             // TODO:comment BY huqing.yan and will reopen later
             //if (!isLoadAll) {
             //    DsDiff diff = dsdiff(newDataHosts);
             //    diff.apply();
             //}
+
             // new 处理
             // 1、启动新的数据源心跳
             // 2、执行新的配置
@@ -386,7 +384,7 @@ public class MycatConfig {
             if (isLoadAll) {
                 if (newDataHosts != null) {
                     for (PhysicalDBPool newDbPool : newDataHosts.values()) {
-                        if (newDbPool != null) {
+                        if (newDbPool != null && !newDataHostWithoutWR) {
                             MycatServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
                             newDbPool.startHeartbeat();
                         }
@@ -394,17 +392,23 @@ public class MycatConfig {
                 }
                 this.dataNodes = newDataNodes;
                 this.dataHosts = newDataHosts;
+                this.dataHostWithoutWR = newDataHostWithoutWR;
             }
             this.users = newUsers;
             this.schemas = newSchemas;
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
             MycatServer.getInstance().getCacheService().clearCache();
-            //TODO: check isDataHostWithoutWH
-            MycatServer.getInstance().reloadMetaData(this);
+            if (!newDataHostWithoutWR) {
+                MycatServer.getInstance().reloadMetaData(this);
+            }
         } finally {
             confLock.writeLock().unlock();
         }
+    }
+
+    public boolean backDataHostWithoutWR() {
+        return dataHostWithoutWR2;
     }
 
     private static class DsDiff {

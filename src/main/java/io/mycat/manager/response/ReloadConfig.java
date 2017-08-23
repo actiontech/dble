@@ -237,7 +237,7 @@ public final class ReloadConfig {
          */
         if (isReloadStatusOK) {
             /* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
-            config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
+            config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, loader.isDataHostWithoutWH(), true);
 
             /* 2.4、 处理旧的资源 */
             LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
@@ -269,9 +269,6 @@ public final class ReloadConfig {
             }
             LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
-
-            //set the dataHost ready flag
-            config.setDataHostWithoutWR(loader.isDataHostWithoutWH());
         } else {
             // 如果重载不成功，则清理已初始化的资源。
             LOGGER.info("reload failed, clear previously created datasources ");
@@ -299,7 +296,7 @@ public final class ReloadConfig {
         FirewallConfig firewall = loader.getFirewall();
 
         /* 2、在老的配置上， 应用新的配置 */
-        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, false);
+        MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, loader.isDataHostWithoutWH(), false);
     }
 
 }

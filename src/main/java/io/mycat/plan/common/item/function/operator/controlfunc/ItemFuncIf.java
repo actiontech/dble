@@ -39,9 +39,9 @@ public class ItemFuncIf extends ItemFunc {
 
     @Override
     public int decimalPrecision() {
-        int arg1_prec = args.get(1).decimalIntPart();
-        int arg2_prec = args.get(2).decimalIntPart();
-        int precision = Math.max(arg1_prec, arg2_prec) + decimals;
+        int arg1Prec = args.get(1).decimalIntPart();
+        int arg2Prec = args.get(2).decimalIntPart();
+        int precision = Math.max(arg1Prec, arg2Prec) + decimals;
         return Math.min(precision, MySQLcom.DECIMAL_MAX_PRECISION);
     }
 

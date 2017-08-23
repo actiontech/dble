@@ -266,33 +266,33 @@ public class ItemCreate {
     }
 
     public ItemFunc create_func_cast(Item a, CastType type) {
-        CastTarget cast_type = type.target;
+        CastTarget castType = type.target;
         ItemFunc res = null;
-        if (cast_type == CastTarget.ITEM_CAST_BINARY) {
+        if (castType == CastTarget.ITEM_CAST_BINARY) {
             res = new ItemFuncBinary(a, type.length);
 
-        } else if (cast_type == CastTarget.ITEM_CAST_SIGNED_INT) {
+        } else if (castType == CastTarget.ITEM_CAST_SIGNED_INT) {
             res = new ItemFuncSigned(a);
 
-        } else if (cast_type == CastTarget.ITEM_CAST_UNSIGNED_INT) {
+        } else if (castType == CastTarget.ITEM_CAST_UNSIGNED_INT) {
             res = new ItemFuncUnsigned(a);
 
-        } else if (cast_type == CastTarget.ITEM_CAST_DATE) {
+        } else if (castType == CastTarget.ITEM_CAST_DATE) {
             res = new ItemDateTypecast(a);
 
-        } else if (cast_type == CastTarget.ITEM_CAST_TIME || cast_type == CastTarget.ITEM_CAST_DATETIME) {
+        } else if (castType == CastTarget.ITEM_CAST_TIME || castType == CastTarget.ITEM_CAST_DATETIME) {
             if (type.length > MyTime.DATETIME_MAX_DECIMALS) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "too big precision in cast time/datetime,max 6,current:" + type.length);
             }
             if (type.length == -1) {
-                res = (cast_type == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a)
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a)
                         : new ItemDatetimeTypecast(a);
             } else {
-                res = (cast_type == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length)
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length)
                         : new ItemDatetimeTypecast(a, type.length);
             }
-        } else if (cast_type == CastTarget.ITEM_CAST_DECIMAL) {
+        } else if (castType == CastTarget.ITEM_CAST_DECIMAL) {
             if (type.length < type.dec) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "For float(m,d), double(m,d) or decimal(m,d), M must be >= d");
@@ -306,7 +306,7 @@ public class ItemCreate {
                         "Too big scale " + type.dec + " max is " + MySQLcom.DECIMAL_MAX_SCALE);
             }
             res = new ItemDecimalTypecast(a, type.length, type.dec);
-        } else if (cast_type == CastTarget.ITEM_CAST_NCHAR) {
+        } else if (castType == CastTarget.ITEM_CAST_NCHAR) {
             int len = -1;
             if (type.length > 0)
                 len = type.length;

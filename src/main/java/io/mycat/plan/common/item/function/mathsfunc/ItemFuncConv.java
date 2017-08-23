@@ -21,12 +21,12 @@ public class ItemFuncConv extends ItemStrFunc {
     @Override
     public String valStr() {
         String res = args.get(0).valStr();
-        int from_base = args.get(1).valInt().intValue();
-        int to_base = args.get(2).valInt().intValue();
+        int fromBase = args.get(1).valInt().intValue();
+        int toBase = args.get(2).valInt().intValue();
         long dec = 0;
 
-        if (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || Math.abs(to_base) > 36
-                || Math.abs(to_base) < 2 || Math.abs(from_base) > 36 || Math.abs(from_base) < 2 || res.length() == 0) {
+        if (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || Math.abs(toBase) > 36
+                || Math.abs(toBase) < 2 || Math.abs(fromBase) > 36 || Math.abs(fromBase) < 2 || res.length() == 0) {
             nullValue = true;
             return null;
         }
@@ -39,20 +39,20 @@ public class ItemFuncConv extends ItemStrFunc {
              */
             dec = args.get(0).valInt().longValue();
         } else {
-            if (from_base < 0)
-                from_base = -from_base;
+            if (fromBase < 0)
+                fromBase = -fromBase;
             try {
-                dec = Long.parseLong(res, from_base);
+                dec = Long.parseLong(res, fromBase);
             } catch (NumberFormatException ne) {
-                LOGGER.info("long parse from radix error, string:" + res + ", radix:" + from_base);
+                LOGGER.info("long parse from radix error, string:" + res + ", radix:" + fromBase);
             }
         }
 
         String str = null;
         try {
-            str = Long.toString(dec, to_base);
+            str = Long.toString(dec, toBase);
         } catch (Exception e) {
-            LOGGER.warn("long to string failed ,value:" + dec + ", to_base:" + to_base);
+            LOGGER.warn("long to string failed ,value:" + dec + ", to_base:" + toBase);
             nullValue = true;
         }
         return str;

@@ -49,9 +49,9 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
      * specifiers supported by extract_date_time() function.
      */
     private void fix_from_format(String format) {
-        String time_part_frms = "HISThiklrs";
-        String date_part_frms = "MVUXYWabcjmvuxyw";
-        boolean date_part_used = false, time_part_used = false, frac_second_used = false;
+        String timePartFrms = "HISThiklrs";
+        String datePartFrms = "MVUXYWabcjmvuxyw";
+        boolean datePartUsed = false, timePartUsed = false, fracSecondUsed = false;
         int val = 0;
         int end = format.length();
         char[] cs = format.toCharArray();
@@ -60,12 +60,12 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
             if (cs[val] == '%' && val + 1 != end) {
                 val++;
                 if (cs[val] == 'f')
-                    frac_second_used = time_part_used = true;
-                else if (!time_part_used && time_part_frms.indexOf(cs[val]) >= 0)
-                    time_part_used = true;
-                else if (!date_part_used && date_part_frms.indexOf(cs[val]) >= 0)
-                    date_part_used = true;
-                if (date_part_used && frac_second_used) {
+                    fracSecondUsed = timePartUsed = true;
+                else if (!timePartUsed && timePartFrms.indexOf(cs[val]) >= 0)
+                    timePartUsed = true;
+                else if (!datePartUsed && datePartFrms.indexOf(cs[val]) >= 0)
+                    datePartUsed = true;
+                if (datePartUsed && fracSecondUsed) {
                     /*
                      * frac_second_used implies time_part_used, and thus we
                      * already have all types of date-time components and can
@@ -80,12 +80,12 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         }
 
         /* We don't have all three types of date-time components */
-        if (frac_second_used) /* TIME with microseconds */ {
+        if (fracSecondUsed) /* TIME with microseconds */ {
             cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
             cached_field_type = FieldTypes.MYSQL_TYPE_TIME;
             fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_FULL_WIDTH, MyTime.DATETIME_MAX_DECIMALS);
-        } else if (time_part_used) {
-            if (date_part_used) /* DATETIME, no microseconds */ {
+        } else if (timePartUsed) {
+            if (datePartUsed) /* DATETIME, no microseconds */ {
                 cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
                 cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
                 fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATETIME_WIDTH, 0);
@@ -103,21 +103,21 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 
     @Override
     protected boolean val_datetime(MySQLTime ltime, long fuzzy_date) {
-        DateTimeFormat date_time_format = new DateTimeFormat();
+        DateTimeFormat dateTimeFormat = new DateTimeFormat();
         String val = args.get(0).valStr();
         String format = args.get(1).valStr();
-        boolean null_date = false;
+        boolean nullDate = false;
         if (args.get(0).nullValue || args.get(1).nullValue)
-            null_date = true;
-        if (!null_date) {
+            nullDate = true;
+        if (!nullDate) {
             nullValue = false;
-            date_time_format.format = format;
-            if (MyTime.extract_date_time(date_time_format, val, ltime, cached_timestamp_type, "datetime")
+            dateTimeFormat.format = format;
+            if (MyTime.extract_date_time(dateTimeFormat, val, ltime, cached_timestamp_type, "datetime")
                     || ((fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0
                     && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
-                null_date = true;
+                nullDate = true;
         }
-        if (!null_date) {
+        if (!nullDate) {
             ltime.time_type = cached_timestamp_type;
             if (cached_timestamp_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.day != 0) {
                 /*

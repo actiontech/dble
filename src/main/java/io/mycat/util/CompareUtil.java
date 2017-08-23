@@ -119,16 +119,16 @@ public class CompareUtil {
 
 
     private static int compareStringForChinese(String s1, String s2) {
-        String m_s1 = null, m_s2 = null;
+        String mS1 = null, mS2 = null;
         try {
             //先将两字符串编码成GBK
-            m_s1 = new String(s1.getBytes("GB2312"), "GBK");
-            m_s2 = new String(s2.getBytes("GB2312"), "GBK");
+            mS1 = new String(s1.getBytes("GB2312"), "GBK");
+            mS2 = new String(s2.getBytes("GB2312"), "GBK");
         } catch (Exception ex) {
             LOGGER.error("compareStringForChineseError", ex);
             return s1.compareTo(s2);
         }
-        int res = chineseCompareTo(m_s1, m_s2);
+        int res = chineseCompareTo(mS1, mS2);
 
         //              System.out.println("比较：" + s1 + " | " + s2 + "==== Result: " + res);
         return res;
@@ -160,10 +160,10 @@ public class CompareUtil {
         int n = Math.min(len1, len2);
 
         for (int i = 0; i < n; i++) {
-            int s1_code = getCharCode(s1.charAt(i) + "");
-            int s2_code = getCharCode(s2.charAt(i) + "");
-            if (s1_code != s2_code) {
-                return s1_code - s2_code;
+            int s1Code = getCharCode(s1.charAt(i) + "");
+            int s2Code = getCharCode(s2.charAt(i) + "");
+            if (s1Code != s2Code) {
+                return s1Code - s2Code;
             }
         }
         return len1 - len2;

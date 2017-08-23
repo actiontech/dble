@@ -279,9 +279,9 @@ public abstract class ItemSum extends ItemResultField {
             m.set(nr);
             s.set(0);
         } else {
-            double m_kminusone = m.get();
-            m.set(m_kminusone + (nr - m_kminusone) / (double) count.get());
-            s.set(s.get() + (nr - m_kminusone) * (nr - m.get()));
+            double kMinusOne = m.get();
+            m.set(kMinusOne + (nr - kMinusOne) / (double) count.get());
+            s.set(s.get() + (nr - kMinusOne) * (nr - m.get()));
         }
     }
 

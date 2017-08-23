@@ -42,9 +42,9 @@ public class ItemFuncTimediff extends ItemTimeFunc {
     public boolean getTime(MySQLTime ltime) {
         LongPtr seconds = new LongPtr(0);
         LongPtr microseconds = new LongPtr(0);
-        MySQLTime l_time1 = new MySQLTime();
-        MySQLTime l_time2 = new MySQLTime();
-        int l_sign = 1;
+        MySQLTime lTime1 = new MySQLTime();
+        MySQLTime lTime2 = new MySQLTime();
+        int lSign = 1;
 
         nullValue = false;
 
@@ -55,33 +55,33 @@ public class ItemFuncTimediff extends ItemTimeFunc {
         } // Incompatible types
 
         if (args.get(0).isTemporalWithDate() || args.get(1).isTemporalWithDate()) {
-            if (args.get(0).getDate(l_time1, MyTime.TIME_FUZZY_DATE)
-                    || args.get(1).getDate(l_time2, MyTime.TIME_FUZZY_DATE))
+            if (args.get(0).getDate(lTime1, MyTime.TIME_FUZZY_DATE)
+                    || args.get(1).getDate(lTime2, MyTime.TIME_FUZZY_DATE))
                 return nullValue = true;
         } else {
-            if (args.get(0).getTime(l_time1) || args.get(1).getTime(l_time2))
+            if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2))
                 return nullValue = true;
         }
 
-        if (l_time1.time_type != l_time2.time_type) {
+        if (lTime1.time_type != lTime2.time_type) {
             return nullValue = true;// Incompatible types
         }
-        if (l_time1.neg != l_time2.neg)
-            l_sign = -l_sign;
+        if (lTime1.neg != lTime2.neg)
+            lSign = -lSign;
 
-        MySQLTime l_time3 = new MySQLTime();
+        MySQLTime lTime3 = new MySQLTime();
 
-        l_time3.neg = MyTime.calc_time_diff(l_time1, l_time2, l_sign, seconds, microseconds);
+        lTime3.neg = MyTime.calc_time_diff(lTime1, lTime2, lSign, seconds, microseconds);
 
         /*
          * For MYSQL_TIMESTAMP_TIME only: If first argument was negative and
          * diff between arguments is non-zero we need to swap sign to get proper
          * result.
          */
-        if (l_time1.neg && (seconds.get() != 0 || microseconds.get() != 0))
-            l_time3.neg = l_time3.neg ? false : true; // Swap sign of result
+        if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
+            lTime3.neg = lTime3.neg ? false : true; // Swap sign of result
 
-        MyTime.calc_time_from_sec(l_time3, seconds.get(), microseconds.get());
+        MyTime.calc_time_from_sec(lTime3, seconds.get(), microseconds.get());
         return false;
     }
 

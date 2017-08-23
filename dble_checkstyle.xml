@@ -26,42 +26,42 @@
 
     <module name="TreeWalker">
         <!-- Checks for Naming Conventions. -->
-        <!--<module name="ConstantName"/>-->
+        <module name="ConstantName"/>
         <module name="LocalFinalVariableName"/>
-        <!--<module name="LocalVariableName"/>-->
+        <module name="LocalVariableName"/>
         <!--<module name="MemberName"/>-->
         <!--<module name="MethodName"/>-->
-        <module name="PackageName"/>
+        <!--<module name="PackageName"/>-->
         <!--<module name="ParameterName"/>-->
         <!--<module name="StaticVariableName"/>-->
         <!--<module name="TypeName"/>-->
         <!--<module name="AbbreviationAsWordInName"/>-->
         <!--<module name="ClassTypeParameterName"/>-->
-        <module name="MethodTypeParameterName"/>
-        <module name="InterfaceTypeParameterName"/>
+        <!--<module name="MethodTypeParameterName"/>-->
+        <!--<module name="InterfaceTypeParameterName"/>-->
 
         <!-- Checks for Annotation. -->
-        <module name="AnnotationLocation"/>
-        <module name="AnnotationUseStyle"/>
+        <!--<module name="AnnotationLocation"/>-->
+        <!--<module name="AnnotationUseStyle"/>-->
 
         <!-- Checks for imports. -->
         <!--<module name="AvoidStarImport"/>-->
-        <module name="RedundantImport"/>
+        <!--<module name="RedundantImport"/>-->
         <!--<module name="UnusedImports"/>-->
 
         <!-- Checks for whitespace. -->
         <!--<module name="EmptyForIteratorPad"/>-->
-        <module name="GenericWhitespace"/>
-        <module name="MethodParamPad"/>
-        <module name="NoWhitespaceAfter"/>
+        <!--<module name="GenericWhitespace"/>-->
+        <!--<module name="MethodParamPad"/>-->
+        <!--<module name="NoWhitespaceAfter"/>-->
         <!--<module name="NoWhitespaceBefore"/>-->
         <!--<module name="OperatorWrap"/>-->
         <!--<module name="ParenPad"/>-->
-        <module name="TypecastParenPad"/>
+        <!--<module name="TypecastParenPad"/>-->
         <!--<module name="WhitespaceAfter"/>-->
         <!--<module name="WhitespaceAround"/>-->
         <!--<module name="SeparatorWrap"/>-->
-        <module name="NoLineWrap"/>
+        <!--<module name="NoLineWrap"/>-->
         <!--<module name="EmptyForInitializerPad"/>-->
 
         <!-- Modifier Checks. -->
@@ -74,11 +74,14 @@
         <!--</module>-->
         <!--<module name="LeftCurly"/>-->
         <!--<module name="RightCurly"/>-->
+        <!--<module name="EmptyCatchBlock">-->
+            <!--<property name="commentFormat" value="do nothing here"/>-->
+        <!--</module>-->
 
         <!-- Checks for common coding problems. -->
         <!--<module name="EmptyStatement"/>-->
-        <module name="EqualsHashCode"/>
-        <module name="IllegalInstantiation"/>
+        <!--<module name="EqualsHashCode"/>-->
+        <!--<module name="IllegalInstantiation"/>-->
         <!--<module name="InnerAssignment"/>-->
         <!--<module name="MagicNumber"/>-->
         <!--<module name="MissingSwitchDefault"/>-->
@@ -86,39 +89,51 @@
         <!--<module name="SimplifyBooleanReturn"/>-->
         <!--<module name="ArrayTrailingComma"/>-->
         <!--<module name="VariableDeclarationUsageDistance"/>-->
-        <module name="SuperFinalize"/>
+        <!--<module name="SuperFinalize"/>-->
         <!--<module name="SuperClone"/>-->
-        <module name="StringLiteralEquality"/>
+        <!--<module name="StringLiteralEquality"/>-->
         <!--<module name="OuterTypeNumber"/>-->
-        <module name="PackageDeclaration"/>
+        <!--<module name="PackageDeclaration"/>-->
         <!--<module name="DefaultComesLast"/>-->
         <!--<module name="FallThrough"/>-->
-        <module name="CovariantEquals"/>
+        <!--<module name="CovariantEquals"/>-->
+        <!--<module name="HiddenField">-->
+            <!--<property name="ignoreSetter" value="true"/>-->
+            <!--<property name="ignoreConstructorParameter" value="true"/>-->
+        <!--</module>-->
 
         <!-- Checks for class design. -->
         <!--<module name="FinalClass"/>-->
         <!--<module name="HideUtilityClassConstructor"/>-->
         <!--<module name="InterfaceIsType"/>-->
-        <module name="ThrowsCount"/>
+        <!--<module name="ThrowsCount"/>-->
         <!--<module name="MutableException"/>-->
         <!--<module name="OverloadMethodsDeclarationOrder"/>-->
         <!--<module name="OneTopLevelClass"/>-->
         <!--<module name="OneStatementPerLine"/>-->
         <!--<module name="NoClone"/>-->
-        <module name="NoFinalizer"/>
+        <!--<module name="NoFinalizer"/>-->
         <!--<module name="InnerTypeLast"/>-->
+        <!--<module name="VisibilityModifier">-->
+            <!--<property name="packageAllowed" value="true"/>-->
+            <!--<property name="protectedAllowed" value="true"/>-->
+            <!--<property name="publicMemberPattern" value="^$"/>-->
+            <!--<property name="allowPublicFinalFields" value="true"/>-->
+            <!--<property name="allowPublicImmutableFields" value="true"/>-->
+        <!--</module>-->
 
         <!-- Checks for metrics. -->
 
         <!-- Miscellaneous other checks. -->
         <!--<module name="ArrayTypeStyle"/>-->
-        <module name="UpperEll"/>
-        <module name="AvoidEscapedUnicodeCharacters"/>
+        <!--<module name="UpperEll"/>-->
+        <!--<module name="AvoidEscapedUnicodeCharacters"/>-->
+
         <!--<module name="UncommentedMain"/>-->
         <!--<module name="Indentation">-->
             <!--<property name="arrayInitIndent" value="8"/>-->
         <!--</module>-->
-        <module name="OuterTypeFilename"/>
+        <!--<module name="OuterTypeFilename"/>-->
         <!--<module name="CommentsIndentation"/>-->
     </module>
 

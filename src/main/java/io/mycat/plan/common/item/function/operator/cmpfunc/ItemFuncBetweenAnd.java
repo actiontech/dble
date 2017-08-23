@@ -49,19 +49,19 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
     @Override
     public BigInteger valInt() {
         if (compare_as_dates_with_strings) {
-            int ge_res, le_res;
+            int geRes, leRes;
 
-            ge_res = ge_cmp.compare();
+            geRes = ge_cmp.compare();
             if ((nullValue = args.get(0).isNull()))
                 return BigInteger.ZERO;
-            le_res = le_cmp.compare();
+            leRes = le_cmp.compare();
 
             if (!args.get(1).isNull() && !args.get(2).isNull())
-                return ((ge_res >= 0 && le_res <= 0)) != negated ? BigInteger.ONE : BigInteger.ZERO;
+                return ((geRes >= 0 && leRes <= 0)) != negated ? BigInteger.ONE : BigInteger.ZERO;
             else if (args.get(1).isNull()) {
-                nullValue = le_res > 0; // not null if false range.
+                nullValue = leRes > 0; // not null if false range.
             } else {
-                nullValue = ge_res < 0;
+                nullValue = geRes < 0;
             }
         } else if (cmp_type.get() == ItemResult.STRING_RESULT) {
             String value, a, b;
@@ -109,20 +109,20 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             }
         } else if (cmp_type.get() == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
-            BigDecimal a_dec, b_dec;
+            BigDecimal aDec, bDec;
             if (nullValue = args.get(0).isNull())
                 return BigInteger.ZERO; /* purecov: inspected */
-            a_dec = args.get(1).valDecimal();
-            b_dec = args.get(2).valDecimal();
+            aDec = args.get(1).valDecimal();
+            bDec = args.get(2).valDecimal();
             if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (dec.compareTo(a_dec) >= 0 && dec.compareTo(b_dec) <= 0) != negated ? BigInteger.ONE
+                return (dec.compareTo(aDec) >= 0 && dec.compareTo(bDec) <= 0) != negated ? BigInteger.ONE
                         : BigInteger.ZERO;
             if (args.get(1).isNull() && args.get(2).isNull())
                 nullValue = true;
             else if (args.get(1).isNull())
-                nullValue = dec.compareTo(b_dec) <= 0;
+                nullValue = dec.compareTo(bDec) <= 0;
             else
-                nullValue = dec.compareTo(a_dec) >= 0;
+                nullValue = dec.compareTo(aDec) >= 0;
         } else {
             double value = args.get(0).valReal().doubleValue(), a, b;
             if (nullValue = args.get(0).isNull())
@@ -155,8 +155,8 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
     public void fixLengthAndDec() {
         maxLength = 1;
         int i;
-        int datetime_items_found = 0;
-        int time_items_found = 0;
+        int datetimeItemsFound = 0;
+        int timeItemsFound = 0;
         compare_as_dates_with_strings = false;
         compare_as_temporal_times = compare_as_temporal_dates = false;
         /*
@@ -175,14 +175,14 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
         if (cmp_type.get() == ItemResult.STRING_RESULT) {
             for (i = 0; i < 3; i++) {
                 if (args.get(i).isTemporalWithDate())
-                    datetime_items_found++;
+                    datetimeItemsFound++;
                 else if (args.get(i).fieldType() == FieldTypes.MYSQL_TYPE_TIME)
-                    time_items_found++;
+                    timeItemsFound++;
             }
         }
 
-        if (datetime_items_found + time_items_found == 3) {
-            if (time_items_found == 3) {
+        if (datetimeItemsFound + timeItemsFound == 3) {
+            if (timeItemsFound == 3) {
                 // All items are TIME
                 cmp_type.set(ItemResult.INT_RESULT);
                 compare_as_temporal_times = true;
@@ -194,7 +194,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
                 cmp_type.set(ItemResult.INT_RESULT);
                 compare_as_temporal_dates = true;
             }
-        } else if (datetime_items_found > 0) {
+        } else if (datetimeItemsFound > 0) {
             /*
              * There is at least one DATE or DATETIME item. All other items are
              * DATE, DATETIME or strings.

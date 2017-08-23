@@ -56,48 +56,48 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
     @Override
     protected boolean val_datetime(MySQLTime time, long fuzzy_date) {
-        MySQLTime l_time1 = new MySQLTime();
-        MySQLTime l_time2 = new MySQLTime();
-        boolean is_time = false;
+        MySQLTime lTime1 = new MySQLTime();
+        MySQLTime lTime2 = new MySQLTime();
+        boolean isTime = false;
         long days;
         LongPtr seconds = new LongPtr(0);
         LongPtr microseconds = new LongPtr(0);
-        int l_sign = sign;
+        int lSign = sign;
 
         nullValue = false;
         if (cached_field_type == FieldTypes.MYSQL_TYPE_DATETIME) // TIMESTAMP
         // function
         {
-            if (getArg0Date(l_time1, fuzzy_date) || args.get(1).getTime(l_time2)
-                    || l_time1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
-                    || l_time2.time_type != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
+            if (getArg0Date(lTime1, fuzzy_date) || args.get(1).getTime(lTime2)
+                    || lTime1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
+                    || lTime2.time_type != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
                 nullValue = true;
                 return true;
             }
         } else // ADDTIME function
         {
-            if (args.get(0).getTime(l_time1) || args.get(1).getTime(l_time2)
-                    || l_time2.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
+            if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2)
+                    || lTime2.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
                 nullValue = true;
                 return true;
             }
-            is_time = (l_time1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            isTime = (lTime1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
         }
-        if (l_time1.neg != l_time2.neg)
-            l_sign = -l_sign;
+        if (lTime1.neg != lTime2.neg)
+            lSign = -lSign;
 
         time.set_zero_time(time.time_type);
 
-        time.neg = MyTime.calc_time_diff(l_time1, l_time2, -l_sign, seconds, microseconds);
+        time.neg = MyTime.calc_time_diff(lTime1, lTime2, -lSign, seconds, microseconds);
 
         /*
          * If first argument was negative and diff between arguments is non-zero
          * we need to swap sign to get proper result.
          */
-        if (l_time1.neg && (seconds.get() != 0 || microseconds.get() != 0))
+        if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
             time.neg = time.neg ? false : true; // Swap sign of result
 
-        if (!is_time && time.neg) {
+        if (!isTime && time.neg) {
             nullValue = true;
             return true;
         }
@@ -106,7 +106,7 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
         MyTime.calc_time_from_sec(time, seconds.get() % MyTime.SECONDS_IN_24H, microseconds.get());
 
-        if (!is_time) {
+        if (!isTime) {
             LongPtr lpyear = new LongPtr(0);
             LongPtr lpmonth = new LongPtr(0);
             LongPtr lpday = new LongPtr(0);

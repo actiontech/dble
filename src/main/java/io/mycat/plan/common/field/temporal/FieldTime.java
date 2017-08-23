@@ -21,14 +21,14 @@ public class FieldTime extends FieldTemporal {
 
     @Override
     protected void internalJob() {
-        String ptr_str = null;
+        String ptrStr = null;
         try {
-            ptr_str = MySQLcom.getFullString(charsetName, ptr);
+            ptrStr = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
-        if (ptr_str != null) {
-            MyTime.str_to_time_with_warn(ptr_str, ltime);
+        if (ptrStr != null) {
+            MyTime.str_to_time_with_warn(ptrStr, ltime);
         }
     }
 

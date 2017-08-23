@@ -125,7 +125,7 @@ public class ItemExtract extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         MySQLTime ltime = new MySQLTime();
-        int week_format;
+        int weekFormat;
         long neg;
         if (date_value) {
             if (getArg0Date(ltime, MyTime.TIME_FUZZY_DATE))
@@ -147,8 +147,8 @@ public class ItemExtract extends ItemIntFunc {
             case MONTH:
                 return BigInteger.valueOf(ltime.month);
             case WEEK: {
-                week_format = MyTime.WEEK_MONDAY_FIRST;
-                long ret = MyTime.calc_week(ltime, MyTime.week_mode(week_format), new LongPtr(0));
+                weekFormat = MyTime.WEEK_MONDAY_FIRST;
+                long ret = MyTime.calc_week(ltime, MyTime.week_mode(weekFormat), new LongPtr(0));
                 return BigInteger.valueOf(ret);
 
             }

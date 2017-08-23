@@ -72,15 +72,15 @@ public class DataSourceSyncRecorder {
                 this.records = resultResult;
                 if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
                     String sencords = resultResult.get("Seconds_Behind_Master");
-                    long Seconds_Behind_Master = -1;
+                    long secondsBehindMaster = -1;
                     if (sencords != null) {
-                        Seconds_Behind_Master = Long.parseLong(sencords);
+                        secondsBehindMaster = Long.parseLong(sencords);
                     }
-                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), Seconds_Behind_Master));
+                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
                 }
                 if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) {//cluster
-                    double wsrep_local_recv_queue_avg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
-                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrep_local_recv_queue_avg));
+                    double wsrepLocalRecvQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
+                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecvQueueAvg));
                 }
 
                 return;

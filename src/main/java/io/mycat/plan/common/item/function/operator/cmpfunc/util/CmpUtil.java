@@ -81,12 +81,12 @@ public class CmpUtil {
      */
     public static long get_date_from_str(String str, MySQLTimestampType warn_type, String warn_name,
                                          BoolPtr error_arg) {
-        MySQLTime l_time = new MySQLTime();
-        error_arg.set(get_mysql_time_from_str(str, warn_type, warn_name, l_time));
+        MySQLTime lTime = new MySQLTime();
+        error_arg.set(get_mysql_time_from_str(str, warn_type, warn_name, lTime));
 
         if (error_arg.get())
             return 0;
-        return MyTime.TIME_to_longlong_datetime_packed(l_time);
+        return MyTime.TIME_to_longlong_datetime_packed(lTime);
     }
 
     /**

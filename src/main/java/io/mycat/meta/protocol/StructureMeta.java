@@ -122,7 +122,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutable_bitField0_ = 0;
+            int mutableBitfield0 = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -154,9 +154,9 @@ public final class StructureMeta {
                         }
                         case 26: {
                             com.google.protobuf.ByteString bs = input.readBytes();
-                            if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                            if (!((mutableBitfield0 & 0x00000004) == 0x00000004)) {
                                 columns_ = new com.google.protobuf.LazyStringArrayList();
-                                mutable_bitField0_ |= 0x00000004;
+                                mutableBitfield0 |= 0x00000004;
                             }
                             columns_.add(bs);
                             break;
@@ -169,7 +169,7 @@ public final class StructureMeta {
                 throw new com.google.protobuf.InvalidProtocolBufferException(
                         e.getMessage()).setUnfinishedMessage(this);
             } finally {
-                if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                if (((mutableBitfield0 & 0x00000004) == 0x00000004)) {
                     columns_ = columns_.getUnmodifiableView();
                 }
                 this.unknownFields = unknownFields.build();
@@ -575,14 +575,14 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.IndexMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.IndexMeta result = new io.mycat.meta.protocol.StructureMeta.IndexMeta(this);
-                int from_bitField0_ = bitField0_;
-                int to_bitField0_ = 0;
-                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-                    to_bitField0_ |= 0x00000001;
+                int fromBitField0 = bitField0_;
+                int toBitfield0 = 0;
+                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
+                    toBitfield0 |= 0x00000001;
                 }
                 result.name_ = name_;
-                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-                    to_bitField0_ |= 0x00000002;
+                if (((fromBitField0 & 0x00000002) == 0x00000002)) {
+                    toBitfield0 |= 0x00000002;
                 }
                 result.type_ = type_;
                 if (((bitField0_ & 0x00000004) == 0x00000004)) {
@@ -590,7 +590,7 @@ public final class StructureMeta {
                     bitField0_ = (bitField0_ & ~0x00000004);
                 }
                 result.columns_ = columns_;
-                result.bitField0_ = to_bitField0_;
+                result.bitField0_ = toBitfield0;
                 onBuilt();
                 return result;
             }
@@ -1157,7 +1157,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutable_bitField0_ = 0;
+            int mutableBitfield0 = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -1876,49 +1876,49 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.ColumnMeta result = new io.mycat.meta.protocol.StructureMeta.ColumnMeta(this);
-                int from_bitField0_ = bitField0_;
-                int to_bitField0_ = 0;
-                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-                    to_bitField0_ |= 0x00000001;
+                int fromBitField0 = bitField0_;
+                int toBitfield0 = 0;
+                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
+                    toBitfield0 |= 0x00000001;
                 }
                 result.name_ = name_;
-                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-                    to_bitField0_ |= 0x00000002;
+                if (((fromBitField0 & 0x00000002) == 0x00000002)) {
+                    toBitfield0 |= 0x00000002;
                 }
                 result.dataType_ = dataType_;
-                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-                    to_bitField0_ |= 0x00000004;
+                if (((fromBitField0 & 0x00000004) == 0x00000004)) {
+                    toBitfield0 |= 0x00000004;
                 }
                 result.isUnsigned_ = isUnsigned_;
-                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-                    to_bitField0_ |= 0x00000008;
+                if (((fromBitField0 & 0x00000008) == 0x00000008)) {
+                    toBitfield0 |= 0x00000008;
                 }
                 result.length_ = length_;
-                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-                    to_bitField0_ |= 0x00000010;
+                if (((fromBitField0 & 0x00000010) == 0x00000010)) {
+                    toBitfield0 |= 0x00000010;
                 }
                 result.precision_ = precision_;
-                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-                    to_bitField0_ |= 0x00000020;
+                if (((fromBitField0 & 0x00000020) == 0x00000020)) {
+                    toBitfield0 |= 0x00000020;
                 }
                 result.scale_ = scale_;
-                if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-                    to_bitField0_ |= 0x00000040;
+                if (((fromBitField0 & 0x00000040) == 0x00000040)) {
+                    toBitfield0 |= 0x00000040;
                 }
                 result.canNull_ = canNull_;
-                if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-                    to_bitField0_ |= 0x00000080;
+                if (((fromBitField0 & 0x00000080) == 0x00000080)) {
+                    toBitfield0 |= 0x00000080;
                 }
                 result.sdefault_ = sdefault_;
-                if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
-                    to_bitField0_ |= 0x00000100;
+                if (((fromBitField0 & 0x00000100) == 0x00000100)) {
+                    toBitfield0 |= 0x00000100;
                 }
                 result.autoIncre_ = autoIncre_;
-                if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
-                    to_bitField0_ |= 0x00000200;
+                if (((fromBitField0 & 0x00000200) == 0x00000200)) {
+                    toBitfield0 |= 0x00000200;
                 }
                 result.charsetname_ = charsetname_;
-                result.bitField0_ = to_bitField0_;
+                result.bitField0_ = toBitfield0;
                 onBuilt();
                 return result;
             }
@@ -2869,7 +2869,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutable_bitField0_ = 0;
+            int mutableBitfield0 = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -2894,9 +2894,9 @@ public final class StructureMeta {
                             break;
                         }
                         case 18: {
-                            if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                            if (!((mutableBitfield0 & 0x00000002) == 0x00000002)) {
                                 columns_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.ColumnMeta>();
-                                mutable_bitField0_ |= 0x00000002;
+                                mutableBitfield0 |= 0x00000002;
                             }
                             columns_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.ColumnMeta.PARSER, extensionRegistry));
                             break;
@@ -2946,17 +2946,17 @@ public final class StructureMeta {
                             break;
                         }
                         case 82: {
-                            if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+                            if (!((mutableBitfield0 & 0x00000200) == 0x00000200)) {
                                 uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
-                                mutable_bitField0_ |= 0x00000200;
+                                mutableBitfield0 |= 0x00000200;
                             }
                             uniIndex_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
                             break;
                         }
                         case 90: {
-                            if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                            if (!((mutableBitfield0 & 0x00000400) == 0x00000400)) {
                                 index_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
-                                mutable_bitField0_ |= 0x00000400;
+                                mutableBitfield0 |= 0x00000400;
                             }
                             index_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
                             break;
@@ -2969,13 +2969,13 @@ public final class StructureMeta {
                 throw new com.google.protobuf.InvalidProtocolBufferException(
                         e.getMessage()).setUnfinishedMessage(this);
             } finally {
-                if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                if (((mutableBitfield0 & 0x00000002) == 0x00000002)) {
                     columns_ = java.util.Collections.unmodifiableList(columns_);
                 }
-                if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+                if (((mutableBitfield0 & 0x00000200) == 0x00000200)) {
                     uniIndex_ = java.util.Collections.unmodifiableList(uniIndex_);
                 }
-                if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                if (((mutableBitfield0 & 0x00000400) == 0x00000400)) {
                     index_ = java.util.Collections.unmodifiableList(index_);
                 }
                 this.unknownFields = unknownFields.build();
@@ -3708,10 +3708,10 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.TableMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.TableMeta result = new io.mycat.meta.protocol.StructureMeta.TableMeta(this);
-                int from_bitField0_ = bitField0_;
-                int to_bitField0_ = 0;
-                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-                    to_bitField0_ |= 0x00000001;
+                int fromBitField0 = bitField0_;
+                int toBitfield0 = 0;
+                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
+                    toBitfield0 |= 0x00000001;
                 }
                 result.tableName_ = tableName_;
                 if (columnsBuilder_ == null) {
@@ -3723,32 +3723,32 @@ public final class StructureMeta {
                 } else {
                     result.columns_ = columnsBuilder_.build();
                 }
-                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-                    to_bitField0_ |= 0x00000002;
+                if (((fromBitField0 & 0x00000004) == 0x00000004)) {
+                    toBitfield0 |= 0x00000002;
                 }
                 result.isView_ = isView_;
-                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-                    to_bitField0_ |= 0x00000004;
+                if (((fromBitField0 & 0x00000008) == 0x00000008)) {
+                    toBitfield0 |= 0x00000004;
                 }
                 result.createSql_ = createSql_;
-                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-                    to_bitField0_ |= 0x00000008;
+                if (((fromBitField0 & 0x00000010) == 0x00000010)) {
+                    toBitfield0 |= 0x00000008;
                 }
                 result.version_ = version_;
-                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-                    to_bitField0_ |= 0x00000010;
+                if (((fromBitField0 & 0x00000020) == 0x00000020)) {
+                    toBitfield0 |= 0x00000010;
                 }
                 result.aiOffset_ = aiOffset_;
-                if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-                    to_bitField0_ |= 0x00000020;
+                if (((fromBitField0 & 0x00000040) == 0x00000040)) {
+                    toBitfield0 |= 0x00000020;
                 }
                 result.type_ = type_;
-                if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-                    to_bitField0_ |= 0x00000040;
+                if (((fromBitField0 & 0x00000080) == 0x00000080)) {
+                    toBitfield0 |= 0x00000040;
                 }
                 result.aiColPos_ = aiColPos_;
-                if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
-                    to_bitField0_ |= 0x00000080;
+                if (((fromBitField0 & 0x00000100) == 0x00000100)) {
+                    toBitfield0 |= 0x00000080;
                 }
                 if (primaryBuilder_ == null) {
                     result.primary_ = primary_;
@@ -3773,7 +3773,7 @@ public final class StructureMeta {
                 } else {
                     result.index_ = indexBuilder_.build();
                 }
-                result.bitField0_ = to_bitField0_;
+                result.bitField0_ = toBitfield0;
                 onBuilt();
                 return result;
             }

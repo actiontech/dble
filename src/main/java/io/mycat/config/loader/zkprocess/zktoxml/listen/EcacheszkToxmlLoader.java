@@ -77,12 +77,12 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
     public boolean notifyProcess() throws Exception {
 
         // 通过组合模式进行zk目录树的加载
-        DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DiretoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, KVPathUtil.CACHE, RulesDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.CACHE, rulesDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
-        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) RulesDirectory.getSubordinateInfo().get(0);
+        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) rulesDirectory.getSubordinateInfo().get(0);
 
         // 进行写入操作
         zktoEhcacheWrite(zkDirectory);

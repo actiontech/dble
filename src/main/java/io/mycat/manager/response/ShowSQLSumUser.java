@@ -129,16 +129,16 @@ public class ShowSQLSumUser {
 
         String user = userStat.getUser();
         UserSqlRWStat rwStat = userStat.getRWStat();
-        long R = rwStat.getRCount();
-        long W = rwStat.getWCount();
-        String __R = decimalFormat.format(1.0D * R / (R + W));
-        int MAX = rwStat.getConcurrentMax();
+        long r = rwStat.getRCount();
+        long w = rwStat.getWCount();
+        String rStr = decimalFormat.format(1.0D * r / (r + w));
+        int max = rwStat.getConcurrentMax();
 
         row.add(StringUtil.encode(user, charset));
-        row.add(LongUtil.toBytes(R));
-        row.add(LongUtil.toBytes(W));
-        row.add(StringUtil.encode(String.valueOf(__R), charset));
-        row.add(StringUtil.encode(String.valueOf(MAX), charset));
+        row.add(LongUtil.toBytes(r));
+        row.add(LongUtil.toBytes(w));
+        row.add(StringUtil.encode(String.valueOf(rStr), charset));
+        row.add(StringUtil.encode(String.valueOf(max), charset));
         row.add(LongUtil.toBytes(rwStat.getNetInBytes()));
         row.add(LongUtil.toBytes(rwStat.getNetOutBytes()));
         row.add(StringUtil.encode(rwStat.getExecuteHistogram().toString(), charset));

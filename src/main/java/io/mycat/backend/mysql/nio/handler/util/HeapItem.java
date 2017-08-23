@@ -10,9 +10,9 @@ public class HeapItem {
     private boolean isNull = false;
 
     public static HeapItem NULLITEM() {
-        HeapItem NULLITEM = new HeapItem(null, null, null);
-        NULLITEM.isNull = true;
-        return NULLITEM;
+        HeapItem nullItem = new HeapItem(null, null, null);
+        nullItem.isNull = true;
+        return nullItem;
     }
 
     public boolean isNullItem() {

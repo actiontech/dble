@@ -101,12 +101,12 @@ public abstract class Item {
     }
 
     public FieldTypes stringFieldType() {
-        FieldTypes f_type = FieldTypes.MYSQL_TYPE_VAR_STRING;
+        FieldTypes fType = FieldTypes.MYSQL_TYPE_VAR_STRING;
         if (maxLength >= 16777216)
-            f_type = FieldTypes.MYSQL_TYPE_LONG_BLOB;
+            fType = FieldTypes.MYSQL_TYPE_LONG_BLOB;
         else if (maxLength >= 65536)
-            f_type = FieldTypes.MYSQL_TYPE_MEDIUM_BLOB;
-        return f_type;
+            fType = FieldTypes.MYSQL_TYPE_MEDIUM_BLOB;
+        return fType;
     }
 
     public FieldTypes fieldType() {
@@ -185,9 +185,9 @@ public abstract class Item {
      */
     public byte[] getRowPacketByte() {
         byte[] result = null;
-        FieldTypes f_type;
+        FieldTypes fType;
 
-        FieldTypes i = f_type = fieldType();
+        FieldTypes i = fType = fieldType();
         if (i == FieldTypes.MYSQL_TYPE_TINY || i == FieldTypes.MYSQL_TYPE_SHORT || i == FieldTypes.MYSQL_TYPE_YEAR || i == FieldTypes.MYSQL_TYPE_INT24 || i == FieldTypes.MYSQL_TYPE_LONG || i == FieldTypes.MYSQL_TYPE_LONGLONG) {
             BigInteger bi = valInt();
             if (!nullValue)
@@ -200,7 +200,7 @@ public abstract class Item {
             MySQLTime tm = new MySQLTime();
             getDate(tm, MyTime.TIME_FUZZY_DATE);
             if (!nullValue) {
-                if (f_type == FieldTypes.MYSQL_TYPE_DATE) {
+                if (fType == FieldTypes.MYSQL_TYPE_DATE) {
                     result = MyTime.my_date_to_str(tm).getBytes();
                 } else {
                     result = MyTime.my_datetime_to_str(tm, decimals).getBytes();
@@ -488,10 +488,10 @@ public abstract class Item {
 
     protected BigDecimal valRealFromDecimal() {
         /* Note that fix_fields may not be called for Item_avg_field items */
-        BigDecimal dec_val = valDecimal();
+        BigDecimal decVal = valDecimal();
         if (nullValue)
             return BigDecimal.ZERO;
-        return dec_val;
+        return decVal;
     }
 
     protected boolean getDateFromString(MySQLTime ltime, long flags) {
@@ -736,10 +736,10 @@ public abstract class Item {
     }
 
     private void initMakeField(FieldPacket tmp_field, FieldTypes field_type) {
-        byte[] empty_name = new byte[]{};
-        tmp_field.db = empty_name;
-        tmp_field.orgTable = empty_name;
-        tmp_field.orgName = empty_name;
+        byte[] emptyName = new byte[]{};
+        tmp_field.db = emptyName;
+        tmp_field.orgTable = emptyName;
+        tmp_field.orgName = emptyName;
         tmp_field.charsetIndex = charsetIndex;
         try {
             tmp_field.name = (getAlias() == null ? getItemName() : getAlias()).getBytes(charset());

@@ -900,23 +900,23 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
         int[] d = new int[n + 1];
         int[] swap;
 
-        int i, i_bytes, j, j_bytes, num_bytes_j, cost;
+        int i, iBytes, j, jBytes, numBytesJ, cost;
 
         for (i = 0; i <= n; i++) {
             p[i] = i;
         }
 
-        for (j = 0, j_bytes = 0; j < m; j_bytes += num_bytes_j, j++) {
-            num_bytes_j = numBytesForFirstByte(t.getByte(j_bytes));
+        for (j = 0, jBytes = 0; j < m; jBytes += numBytesJ, j++) {
+            numBytesJ = numBytesForFirstByte(t.getByte(jBytes));
             d[0] = j + 1;
 
-            for (i = 0, i_bytes = 0; i < n; i_bytes += numBytesForFirstByte(s.getByte(i_bytes)), i++) {
-                if (s.getByte(i_bytes) != t.getByte(j_bytes) ||
-                        num_bytes_j != numBytesForFirstByte(s.getByte(i_bytes))) {
+            for (i = 0, iBytes = 0; i < n; iBytes += numBytesForFirstByte(s.getByte(iBytes)), i++) {
+                if (s.getByte(iBytes) != t.getByte(jBytes) ||
+                        numBytesJ != numBytesForFirstByte(s.getByte(iBytes))) {
                     cost = 1;
                 } else {
-                    cost = (ByteArrayMethods.arrayEquals(t.base, t.offset + j_bytes, s.base,
-                            s.offset + i_bytes, num_bytes_j)) ? 0 : 1;
+                    cost = (ByteArrayMethods.arrayEquals(t.base, t.offset + jBytes, s.base,
+                            s.offset + iBytes, numBytesJ)) ? 0 : 1;
                 }
                 d[i + 1] = Math.min(Math.min(d[i] + 1, p[i + 1] + 1), p[i] + cost);
             }

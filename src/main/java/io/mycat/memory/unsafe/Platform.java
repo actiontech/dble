@@ -60,21 +60,21 @@ public final class Platform {
             .equals(ByteOrder.LITTLE_ENDIAN);
 
     static {
-        boolean _unaligned;
+        boolean unaligned;
         // use reflection to access unaligned field
         try {
             Class<?> bitsClass =
                     Class.forName("java.nio.Bits", false, ClassLoader.getSystemClassLoader());
             Method unalignedMethod = bitsClass.getDeclaredMethod("unaligned");
             unalignedMethod.setAccessible(true);
-            _unaligned = Boolean.TRUE.equals(unalignedMethod.invoke(null));
+            unaligned = Boolean.TRUE.equals(unalignedMethod.invoke(null));
         } catch (Throwable t) {
             // We at least know x86 and x64 support unaligned access.
             String arch = System.getProperty("os.arch", "");
             //noinspection DynamicRegexReplaceableByCompiledPattern
-            _unaligned = arch.matches("^(i[3-6]86|x86(_64)?|x64|amd64)$");
+            unaligned = arch.matches("^(i[3-6]86|x86(_64)?|x64|amd64)$");
         }
-        UNALIGNED = _unaligned;
+        UNALIGNED = unaligned;
         MAX_DIRECT_MEMORY = maxDirectMemory();
 
     }

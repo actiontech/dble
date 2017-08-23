@@ -20,14 +20,14 @@ public class FieldDatetime extends FieldTemporalWithDateAndTime {
 
     @Override
     protected void internalJob() {
-        String ptr_str = null;
+        String ptrStr = null;
         try {
-            ptr_str = MySQLcom.getFullString(charsetName, ptr);
+            ptrStr = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
-        if (ptr_str != null) {
-            MyTime.str_to_datetime_with_warn(ptr_str, ltime, MyTime.TIME_FUZZY_DATE);
+        if (ptrStr != null) {
+            MyTime.str_to_datetime_with_warn(ptrStr, ltime, MyTime.TIME_FUZZY_DATE);
         }
     }
 

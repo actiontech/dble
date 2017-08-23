@@ -51,9 +51,9 @@ public final class SelectVariables {
         String subSql = sql.substring(sql.indexOf("SELECT") + 6);
         List<String> splitVar = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql);
         splitVar = convert(splitVar);
-        int FIELD_COUNT = splitVar.size();
-        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+        int fieldCount = splitVar.size();
+        ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
+        FieldPacket[] fields = new FieldPacket[fieldCount];
 
         int i = 0;
         byte packetId = 0;
@@ -84,7 +84,7 @@ public final class SelectVariables {
         // write rows
         //byte packetId = eof.packetId;
 
-        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        RowDataPacket row = new RowDataPacket(fieldCount);
         for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
             String s = splitVar.get(i1);
             String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);

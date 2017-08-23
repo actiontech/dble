@@ -33,9 +33,9 @@ public class ItemFuncLastDay extends ItemDateFunc {
             return (nullValue = true);
         }
 
-        int month_idx = (int) ltime.month - 1;
-        ltime.day = MyTime.days_in_month[month_idx];
-        if (month_idx == 1 && MyTime.calc_days_in_year(ltime.year) == 366)
+        int monthIdx = (int) ltime.month - 1;
+        ltime.day = MyTime.days_in_month[monthIdx];
+        if (monthIdx == 1 && MyTime.calc_days_in_year(ltime.year) == 366)
             ltime.day = 29;
         MyTime.datetime_to_date(ltime);
         return false;

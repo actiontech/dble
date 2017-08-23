@@ -88,18 +88,18 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     public boolean notifyProcess() throws Exception {
         // 1,将集群Rules目录下的所有集群按层次结构加载出来
         // 通过组合模式进行zk目录树的加载
-        DiretoryInf RulesDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DiretoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, KVPathUtil.RULES, RulesDirectory);
+        this.getTreeDirectory(currZkPath, KVPathUtil.RULES, rulesDirectory);
 
         // 从当前的下一级开始进行遍历,获得到
-        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) RulesDirectory.getSubordinateInfo().get(0);
-        Rules Rules = this.zktoRulesBean(zkDirectory);
+        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) rulesDirectory.getSubordinateInfo().get(0);
+        Rules rules = this.zktoRulesBean(zkDirectory);
 
-        LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object  zk Rules Object  :" + Rules);
+        LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object  zk Rules Object  :" + rules);
 
         // 将mapfile信息写入到文件 中
-        writeMapFileAddFunction(Rules.getFunction());
+        writeMapFileAddFunction(rules.getFunction());
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess write mapFile is success ");
 
@@ -110,7 +110,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object writePath :" + path);
 
-        this.parseRulesXMl.parseToXmlWrite(Rules, path, "rule");
+        this.parseRulesXMl.parseToXmlWrite(rules, path, "rule");
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object zk Rules      write :" + path + " is success");
 
@@ -126,19 +126,19 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
      * @创建日期 2016年9月17日
      */
     private Rules zktoRulesBean(DiretoryInf zkDirectory) {
-        Rules Rules = new Rules();
+        Rules rules = new Rules();
 
         // tablerule信息
-        DataInf RulesZkData = this.getZkData(zkDirectory, KVPathUtil.TABLE_RULE);
-        List<TableRule> tableRuleData = parseJsonTableRuleService.parseJsonToBean(RulesZkData.getDataValue());
-        Rules.setTableRule(tableRuleData);
+        DataInf rulesZkData = this.getZkData(zkDirectory, KVPathUtil.TABLE_RULE);
+        List<TableRule> tableRuleData = parseJsonTableRuleService.parseJsonToBean(rulesZkData.getDataValue());
+        rules.setTableRule(tableRuleData);
 
         // 得到function信息
         DataInf functionZkData = this.getZkData(zkDirectory, KVPathUtil.FUNCTION);
         List<Function> functionList = parseJsonFunctionService.parseJsonToBean(functionZkData.getDataValue());
-        Rules.setFunction(functionList);
+        rules.setFunction(functionList);
 
-        return Rules;
+        return rules;
     }
 
     /**

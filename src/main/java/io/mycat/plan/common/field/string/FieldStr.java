@@ -29,17 +29,17 @@ public abstract class FieldStr extends Field {
         if (ptr == null)
             return BigDecimal.ZERO;
         else {
-            String ptr_str = null;
+            String ptrStr = null;
             try {
-                ptr_str = MySQLcom.getFullString(charsetName, ptr);
+                ptrStr = MySQLcom.getFullString(charsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
                 LOGGER.warn("parse string exception!", ue);
                 return BigDecimal.ZERO;
             }
             try {
-                return new BigDecimal(ptr_str);
+                return new BigDecimal(ptrStr);
             } catch (Exception e) {
-                LOGGER.info("String:" + ptr_str + " to BigDecimal exception!", e);
+                LOGGER.info("String:" + ptrStr + " to BigDecimal exception!", e);
                 return BigDecimal.ZERO;
             }
         }
@@ -50,17 +50,17 @@ public abstract class FieldStr extends Field {
         if (ptr == null)
             return null;
         else {
-            String ptr_str = null;
+            String ptrStr = null;
             try {
-                ptr_str = MySQLcom.getFullString(charsetName, ptr);
+                ptrStr = MySQLcom.getFullString(charsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
                 LOGGER.warn("parse string exception!", ue);
                 return null;
             }
             try {
-                return new BigDecimal(ptr_str);
+                return new BigDecimal(ptrStr);
             } catch (Exception e) {
-                LOGGER.info("String:" + ptr_str + " to BigDecimal exception!", e);
+                LOGGER.info("String:" + ptrStr + " to BigDecimal exception!", e);
                 return null;
             }
         }
@@ -84,16 +84,16 @@ public abstract class FieldStr extends Field {
         if (other == null || !(other instanceof FieldStr))
             return 1;
         FieldStr other2 = (FieldStr) other;
-        String ptr_str = this.valStr();
-        String ptr_str2 = other2.valStr();
-        if (ptr_str == null && ptr_str2 == null)
+        String ptrStr = this.valStr();
+        String ptrStr2 = other2.valStr();
+        if (ptrStr == null && ptrStr2 == null)
             return 0;
-        else if (ptr_str2 == null)
+        else if (ptrStr2 == null)
             return 1;
-        else if (ptr_str == null)
+        else if (ptrStr == null)
             return -1;
         else
-            return ptr_str.compareTo(ptr_str2);
+            return ptrStr.compareTo(ptrStr2);
     }
 
     @Override

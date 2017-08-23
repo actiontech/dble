@@ -117,10 +117,10 @@ public class UnionHandler extends BaseDMLHandler {
         union.definition = fp1.definition;
         union.flags = fp1.flags | fp2.flags;
         union.length = Math.max(fp1.length, fp2.length);
-        FieldTypes field_type1 = FieldTypes.valueOf(fp1.type);
-        FieldTypes field_type2 = FieldTypes.valueOf(fp2.type);
-        FieldTypes merge_field_type = FieldUtil.field_type_merge(field_type1, field_type2);
-        union.type = merge_field_type.numberValue();
+        FieldTypes fieldType1 = FieldTypes.valueOf(fp1.type);
+        FieldTypes fieldType2 = FieldTypes.valueOf(fp2.type);
+        FieldTypes mergeFieldType = FieldUtil.field_type_merge(fieldType1, fieldType2);
+        union.type = mergeFieldType.numberValue();
         return union;
     }
 

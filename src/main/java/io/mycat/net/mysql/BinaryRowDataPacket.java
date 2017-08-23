@@ -84,9 +84,9 @@ public class BinaryRowDataPacket extends MySQLPacket {
         this.fieldValues = new ArrayList<byte[]>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
-        List<byte[]> _fieldValues = rowDataPk.fieldValues;
+        List<byte[]> fieldValues = rowDataPk.fieldValues;
         for (int i = 0; i < fieldCount; i++) {
-            byte[] fv = _fieldValues.get(i);
+            byte[] fv = fieldValues.get(i);
             FieldPacket fieldPk = fieldPackets.get(i);
             if (fv == null) { // 字段值为null,根据协议规定存储nullBitMap
                 storeNullBitMap(i);

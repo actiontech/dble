@@ -192,20 +192,20 @@ public class MyTime {
                                           MySQLTimeStatus status) {
         /* Skip space at start */
         String str = strori.trim();
-        long field_length, year_length = 0, digits, i, number_of_fields;
+        long fieldLength, yearLength = 0, digits, i, numberOfFields;
         long[] date = new long[MAX_DATE_PARTS];
-        int[] date_len = new int[MAX_DATE_PARTS];
-        long add_hours = 0, start_loop;
-        long not_zero_date, allow_space;
-        boolean is_internal_format;
+        int[] dateLen = new int[MAX_DATE_PARTS];
+        long addHours = 0, startLoop;
+        long notZeroDate, allowSpace;
+        boolean isInternalFormat;
         final char[] chars = str.toCharArray();
-        int pos, last_field_pos = 0;
+        int pos, lastFieldPos = 0;
         int end = str.length();
-        int[] format_position;
-        boolean found_delimitier = false, found_space = false;
-        int frac_pos, frac_len;
+        int[] formatPosition;
+        boolean foundDelimiter = false, foundSpace = false;
+        int fracPos, fracLen;
 
-        field_length = 0;
+        fieldLength = 0;
 
         my_time_status_init(status);
 
@@ -215,12 +215,12 @@ public class MyTime {
             return true;
         }
 
-        is_internal_format = false;
+        isInternalFormat = false;
         /*
          * This has to be changed if want to activate different timestamp
      * formats
      */
-        format_position = internal_format_positions;
+        formatPosition = internal_format_positions;
 
     /*
      * Calculate number of digits in first part. If length= 8 or >= 14 then
@@ -230,16 +230,16 @@ public class MyTime {
             ;
 
         digits = (long) (pos - 0);
-        start_loop = 0; /* Start of scan loop */
-        date_len[format_position[0]] = 0; /* Length of year field */
+        startLoop = 0; /* Start of scan loop */
+        dateLen[formatPosition[0]] = 0; /* Length of year field */
         if (pos == end || chars[pos] == '.') {
     /* Found date in internal format (only numbers like YYYYMMDD) */
-            year_length = (digits == 4 || digits == 8 || digits >= 14) ? 4 : 2;
-            field_length = year_length;
-            is_internal_format = true;
-            format_position = internal_format_positions;
+            yearLength = (digits == 4 || digits == 8 || digits >= 14) ? 4 : 2;
+            fieldLength = yearLength;
+            isInternalFormat = true;
+            formatPosition = internal_format_positions;
         } else {
-            if (format_position[0] >= 3) /* If year is after HHMMDD */ {
+            if (formatPosition[0] >= 3) /* If year is after HHMMDD */ {
     /*
      * If year is not in first part then we have to determinate if
      * we got a date field or a datetime field. We do this by
@@ -258,11 +258,11 @@ public class MyTime {
                     }
     /* Date field. Set hour, minutes and seconds to 0 */
                     date[0] = date[1] = date[2] = date[3] = date[4] = 0;
-                    start_loop = 5; /* Start with first date part */
+                    startLoop = 5; /* Start with first date part */
                 }
             }
 
-            field_length = format_position[0] == 0 ? 4 : 2;
+            fieldLength = formatPosition[0] == 0 ? 4 : 2;
         }
 
     /*
@@ -272,17 +272,17 @@ public class MyTime {
      *
      * 2003-03-03 20:00:20 AM 20:00:20.000000 AM 03-03-2000
      */
-        i = Math.max((long) format_position[0], (long) format_position[1]);
-        if (i < (long) format_position[2])
-            i = (long) format_position[2];
-        allow_space = ((1 << i) | (1 << format_position[6]));
-        allow_space &= (1 | 2 | 4 | 8 | 64);
+        i = Math.max((long) formatPosition[0], (long) formatPosition[1]);
+        if (i < (long) formatPosition[2])
+            i = (long) formatPosition[2];
+        allowSpace = ((1 << i) | (1 << formatPosition[6]));
+        allowSpace &= (1 | 2 | 4 | 8 | 64);
 
-        not_zero_date = 0;
+        notZeroDate = 0;
         int strindex = 0;
-        for (i = start_loop; i < MAX_DATE_PARTS - 1 && strindex != end && Ctype.isDigit(chars[strindex]); i++) {
+        for (i = startLoop; i < MAX_DATE_PARTS - 1 && strindex != end && Ctype.isDigit(chars[strindex]); i++) {
             final int start = strindex;
-            int tmp_value = chars[strindex++] - '0';
+            int tmpValue = chars[strindex++] - '0';
 
     /*
      * Internal format means no delimiters; every field has a fixed
@@ -291,42 +291,42 @@ public class MyTime {
      * zeroes are significant, and where we never process more than six
      * digits.
      */
-            boolean scan_until_delim = !is_internal_format && ((i != format_position[6]));
+            boolean scanUntilDelim = !isInternalFormat && ((i != formatPosition[6]));
 
-            while (strindex != end && Ctype.isDigit(chars[strindex]) && (scan_until_delim || (--field_length != 0))) {
-                tmp_value = tmp_value * 10 + (chars[strindex] - '0');
+            while (strindex != end && Ctype.isDigit(chars[strindex]) && (scanUntilDelim || (--fieldLength != 0))) {
+                tmpValue = tmpValue * 10 + (chars[strindex] - '0');
                 strindex++;
             }
-            date_len[(int) i] = (strindex - start);
-            if (tmp_value > 999999) /* Impossible date part */ {
+            dateLen[(int) i] = (strindex - start);
+            if (tmpValue > 999999) /* Impossible date part */ {
                 status.warnings = MYSQL_TIME_WARN_TRUNCATED;
                 l_time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_NONE;
                 return true;
             }
-            date[(int) i] = tmp_value;
-            not_zero_date |= tmp_value;
+            date[(int) i] = tmpValue;
+            notZeroDate |= tmpValue;
 
     /* Length of next field */
-            field_length = format_position[(int) i + 1] == 0 ? 4 : 2;
+            fieldLength = formatPosition[(int) i + 1] == 0 ? 4 : 2;
 
-            if ((last_field_pos = strindex) == end) {
+            if ((lastFieldPos = strindex) == end) {
                 i++; /* Register last found part */
                 break;
             }
     /* Allow a 'T' after day to allow CCYYMMDDT type of fields */
-            if (i == format_position[2] && chars[strindex] == 'T') {
+            if (i == formatPosition[2] && chars[strindex] == 'T') {
                 strindex++; /* ISO8601: CCYYMMDDThhmmss */
                 continue;
             }
-            if (i == format_position[5]) /* Seconds */ {
+            if (i == formatPosition[5]) /* Seconds */ {
                 if (chars[strindex] == '.') /* Followed by part seconds */ {
                     strindex++;
     /*
      * Shift last_field_pos, so '2001-01-01 00:00:00.' is
      * treated as a valid value
      */
-                    last_field_pos = strindex;
-                    field_length = 6; /* 6 digits */
+                    lastFieldPos = strindex;
+                    fieldLength = 6; /* 6 digits */
                 }
                 continue;
             }
@@ -335,23 +335,23 @@ public class MyTime {
             // my_isspace(&my_charset_latin1,*str)))
             {
                 if (Ctype.spaceChar(chars[strindex])) {
-                    if ((allow_space & (1 << i)) == 0) {
+                    if ((allowSpace & (1 << i)) == 0) {
                         status.warnings = MYSQL_TIME_WARN_TRUNCATED;
                         l_time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_NONE;
                         return true;
                     }
-                    found_space = true;
+                    foundSpace = true;
                 }
                 strindex++;
-                found_delimitier = true; /* Should be a 'normal' date */
+                foundDelimiter = true; /* Should be a 'normal' date */
             }
     /* Check if next position is AM/PM */
-            if (i == format_position[6]) /* Seconds, time for AM/PM */ {
+            if (i == formatPosition[6]) /* Seconds, time for AM/PM */ {
                 i++; /* Skip AM/PM part */
-                if (format_position[7] != 255) /* If using AM/PM */ {
+                if (formatPosition[7] != 255) /* If using AM/PM */ {
                     if (strindex + 2 <= end && (chars[strindex + 1] == 'M' || chars[strindex + 1] == 'm')) {
                         if (chars[strindex] == 'p' || chars[strindex] == 'P')
-                            add_hours = 12;
+                            addHours = 12;
                         else if (chars[strindex] != 'a' || chars[strindex] != 'A')
                             continue; /* Not AM/PM */
                         strindex += 2; /* Skip AM/PM */
@@ -361,51 +361,51 @@ public class MyTime {
                     }
                 }
             }
-            last_field_pos = strindex;
+            lastFieldPos = strindex;
         }
-        if (found_delimitier && !found_space && (flags & TIME_DATETIME_ONLY) != 0) {
+        if (foundDelimiter && !foundSpace && (flags & TIME_DATETIME_ONLY) != 0) {
             status.warnings = MYSQL_TIME_WARN_TRUNCATED;
             l_time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_NONE;
             return true; /* Can't be a datetime */
         }
 
-        strindex = last_field_pos;
+        strindex = lastFieldPos;
 
-        number_of_fields = i - start_loop;
+        numberOfFields = i - startLoop;
         while (i < MAX_DATE_PARTS) {
-            date_len[(int) i] = 0;
+            dateLen[(int) i] = 0;
             date[(int) i++] = 0;
         }
 
-        if (!is_internal_format) {
-            year_length = date_len[format_position[0]];
-            if (year_length == 0) /* Year must be specified */ {
+        if (!isInternalFormat) {
+            yearLength = dateLen[formatPosition[0]];
+            if (yearLength == 0) /* Year must be specified */ {
                 status.warnings = MYSQL_TIME_WARN_TRUNCATED;
                 l_time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_NONE;
                 return true;
             }
 
-            l_time.year = date[format_position[0]];
-            l_time.month = date[format_position[1]];
-            l_time.day = date[format_position[2]];
-            l_time.hour = date[format_position[3]];
-            l_time.minute = date[format_position[4]];
-            l_time.second = date[format_position[5]];
+            l_time.year = date[formatPosition[0]];
+            l_time.month = date[formatPosition[1]];
+            l_time.day = date[formatPosition[2]];
+            l_time.hour = date[formatPosition[3]];
+            l_time.minute = date[formatPosition[4]];
+            l_time.second = date[formatPosition[5]];
 
-            frac_pos = format_position[6];
-            frac_len = date_len[frac_pos];
-            status.fractional_digits = frac_len;
-            if (frac_len < 6)
-                date[(int) frac_pos] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - frac_len];
-            l_time.second_part = date[frac_pos];
+            fracPos = formatPosition[6];
+            fracLen = dateLen[fracPos];
+            status.fractional_digits = fracLen;
+            if (fracLen < 6)
+                date[(int) fracPos] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - fracLen];
+            l_time.second_part = date[fracPos];
 
-            if (format_position[7] != 255) {
+            if (formatPosition[7] != 255) {
                 if (l_time.hour > 12) {
                     status.warnings = MYSQL_TIME_WARN_TRUNCATED;
                     l_time.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
                     return true;
                 }
-                l_time.hour = l_time.hour % 12 + add_hours;
+                l_time.hour = l_time.hour % 12 + addHours;
             }
         } else {
             l_time.year = date[0];
@@ -414,42 +414,42 @@ public class MyTime {
             l_time.hour = date[3];
             l_time.minute = date[4];
             l_time.second = date[5];
-            if (date_len[6] < 6)
-                date[6] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - date_len[6]];
+            if (dateLen[6] < 6)
+                date[6] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - dateLen[6]];
             l_time.second_part = date[6];
-            status.fractional_digits = date_len[6];
+            status.fractional_digits = dateLen[6];
         }
         l_time.neg = false;
 
-        if (year_length == 2 && not_zero_date != 0)
+        if (yearLength == 2 && notZeroDate != 0)
             l_time.year += (l_time.year < YY_PART_YEAR ? 2000 : 1900);
 
     /*
      * Set time_type before check_datetime_range(), as the latter relies on
      * initialized time_type value.
      */
-        l_time.time_type = (number_of_fields <= 3 ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
+        l_time.time_type = (numberOfFields <= 3 ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
                 : MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
 
-        if (number_of_fields < 3 || check_datetime_range(l_time)) {
+        if (numberOfFields < 3 || check_datetime_range(l_time)) {
     /*
      * Only give warning for a zero date if there is some garbage after
      */
-            if (not_zero_date == 0) /* If zero date */ {
+            if (notZeroDate == 0) /* If zero date */ {
                 for (; strindex != end; strindex++) {
                     if (!Ctype.spaceChar(chars[strindex])) {
-                        not_zero_date = 1; /* Give warning */
+                        notZeroDate = 1; /* Give warning */
                         break;
                     }
                 }
             }
-            status.warnings |= not_zero_date != 0 ? MYSQL_TIME_WARN_TRUNCATED : MYSQL_TIME_WARN_ZERO_DATE;
+            status.warnings |= notZeroDate != 0 ? MYSQL_TIME_WARN_TRUNCATED : MYSQL_TIME_WARN_ZERO_DATE;
             l_time.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
             return true;
         }
 
         LongPtr lptmp = new LongPtr(0);
-        boolean bcheckdate = check_date(l_time, not_zero_date != 0, flags, lptmp);
+        boolean bcheckdate = check_date(l_time, notZeroDate != 0, flags, lptmp);
         status.warnings = (int) lptmp.get();
         if (bcheckdate) {
             l_time.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
@@ -500,8 +500,7 @@ public class MyTime {
         long date[] = new long[5];
         long value;
         int pos = 0, end = length;
-        int end_of_days;
-        boolean found_days, found_hours;
+        int endOfDays;
         int state;
         final char[] chars = str.toCharArray();
         my_time_status_init(status);
@@ -532,23 +531,20 @@ public class MyTime {
             return true;
 
     /* Skip all space after 'days' */
-        end_of_days = pos;
+        endOfDays = pos;
         for (; pos != end && Ctype.spaceChar(chars[pos]); pos++)
             ;
 
         state = 0;
-        found_days = found_hours = false;
         boolean gotofractional = false;
-        if ((int) (end - pos) > 1 && pos != end_of_days
+        if ((int) (end - pos) > 1 && pos != endOfDays
                 && Ctype.isDigit(chars[pos])) { /* Found days part */
             date[0] = value;
             state = 1; /* Assume next is hours */
-            found_days = true;
         } else if ((end - pos) > 1 && chars[pos] == time_separator && Ctype.isDigit(chars[pos + 1])) {
             date[0] = 0; /* Assume we found hours */
             date[1] = value;
             state = 2;
-            found_hours = true;
             pos++; /* skip ':' */
         } else {
     /* String given as one number; assume HHMMSS format */
@@ -585,17 +581,17 @@ public class MyTime {
 
     /* Get fractional second part */
         if ((end - pos) >= 2 && chars[pos] == '.' && Ctype.isDigit(chars[pos + 1])) {
-            int field_length = 5;
+            int fieldLength = 5;
             pos++;
             value = (chars[pos] - '0');
             while (++pos != end && Ctype.isDigit(chars[pos])) {
-                if (field_length-- > 0)
+                if (fieldLength-- > 0)
                     value = value * 10 + (chars[pos] - '0');
             }
-            if (field_length >= 0) {
-                status.fractional_digits = DATETIME_MAX_DECIMALS - field_length;
-                if (field_length > 0)
-                    value *= (long) MySQLcom.log_10_int[field_length];
+            if (fieldLength >= 0) {
+                status.fractional_digits = DATETIME_MAX_DECIMALS - fieldLength;
+                if (fieldLength > 0)
+                    value *= (long) MySQLcom.log_10_int[fieldLength];
             } else {
     /* Scan digits left after microseconds */
                 status.fractional_digits = 6;
@@ -791,10 +787,10 @@ public class MyTime {
         if (nr > TIME_MAX_VALUE) {
     /* For huge numbers try full DATETIME, like str_to_time does. */
             if (nr >= 10000000000L) /* '0001-00-00 00-00-00' */ {
-                long warnings_backup = warnings.get();
+                long warningsBackup = warnings.get();
                 if (number_to_datetime(nr, ltime, 0, warnings) != (-1))
                     return false;
-                warnings.set(warnings_backup);
+                warnings.set(warningsBackup);
             }
             set_max_time(ltime, false);
             warnings.set(warnings.get() | MYSQL_TIME_WARN_OUT_OF_RANGE);
@@ -1053,10 +1049,10 @@ public class MyTime {
     }
 
     public static long week_mode(int mode) {
-        int week_format = (mode & 7);
-        if ((week_format & WEEK_MONDAY_FIRST) == 0)
-            week_format ^= WEEK_FIRST_WEEKDAY;
-        return week_format;
+        int weekFormat = (mode & 7);
+        if ((weekFormat & WEEK_MONDAY_FIRST) == 0)
+            weekFormat ^= WEEK_FIRST_WEEKDAY;
+        return weekFormat;
     }
 
     public static String my_time_to_str(MySQLTime l_time, long dec) {
@@ -1135,11 +1131,11 @@ public class MyTime {
         LongPtr warnings = new LongPtr(0);
         String sbd = decimal.toString();
         String[] sbds = sbd.split("\\.");
-        long int_part = Long.parseLong(sbds[0]);
-        long second_part = 0;
+        long intPart = Long.parseLong(sbds[0]);
+        long secondPart = 0;
         if (sbds.length == 2)
-            second_part = Long.parseLong(sbds[1]);
-        if (number_to_datetime(int_part, ltime, flags, warnings) == -1) {
+            secondPart = Long.parseLong(sbds[1]);
+        if (number_to_datetime(intPart, ltime, flags, warnings) == -1) {
             ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
             return true;
         } else if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE) {
@@ -1148,11 +1144,11 @@ public class MyTime {
              * 20011231.1234 . '2001-12-31' unless the caller does not want the
              * warning: for example, CAST does.
              */
-            if (second_part != 0 && (flags & TIME_NO_DATE_FRAC_WARN) == 0) {
+            if (secondPart != 0 && (flags & TIME_NO_DATE_FRAC_WARN) == 0) {
                 warnings.set(warnings.get() | MYSQL_TIME_WARN_TRUNCATED);
             }
         } else if ((flags & TIME_NO_NSEC_ROUNDING) == 0) {
-            ltime.second_part = second_part;
+            ltime.second_part = secondPart;
         }
         return false;
     }
@@ -1209,18 +1205,18 @@ public class MyTime {
                 || int_type == MySqlIntervalUnit.DAY_SECOND
                 || int_type == MySqlIntervalUnit.DAY_MINUTE
                 || int_type == MySqlIntervalUnit.DAY_HOUR) {
-            long sec, days, daynr, microseconds, extra_sec;
+            long sec, days, daynr, microseconds, extraSec;
             ltime.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME; // Return
             // full
             // date
             microseconds = ltime.second_part + sign * interval.second_part;
-            extra_sec = microseconds / 1000000L;
+            extraSec = microseconds / 1000000L;
             microseconds = microseconds % 1000000L;
 
             sec = ((ltime.day - 1) * 3600 * 24L + ltime.hour * 3600 + ltime.minute * 60 + ltime.second
                     + sign * (long) (interval.day * 3600 * 24L + interval.hour * 3600 + interval.minute * (60)
                     + interval.second))
-                    + extra_sec;
+                    + extraSec;
             if (microseconds < 0) {
                 microseconds += (1000000L);
                 sec--;
@@ -1300,11 +1296,11 @@ public class MyTime {
         LongPtr warnings = new LongPtr(0);
         String sbd = String.valueOf(db);
         String[] sbds = sbd.split("\\.");
-        long int_part = Long.parseLong(sbds[0]);
-        long second_part = 0;
+        long intPart = Long.parseLong(sbds[0]);
+        long secondPart = 0;
         if (sbds.length == 2)
-            second_part = Long.parseLong(sbds[1]);
-        if (number_to_datetime(int_part, ltime, flags, warnings) == -1) {
+            secondPart = Long.parseLong(sbds[1]);
+        if (number_to_datetime(intPart, ltime, flags, warnings) == -1) {
             ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
             return true;
         } else if (ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE) {
@@ -1313,11 +1309,11 @@ public class MyTime {
              * 20011231.1234 . '2001-12-31' unless the caller does not want the
              * warning: for example, CAST does.
              */
-            if (second_part != 0 && (flags & TIME_NO_DATE_FRAC_WARN) == 0) {
+            if (secondPart != 0 && (flags & TIME_NO_DATE_FRAC_WARN) == 0) {
                 warnings.set(warnings.get() | MYSQL_TIME_WARN_TRUNCATED);
             }
         } else if ((flags & TIME_NO_NSEC_ROUNDING) == 0) {
-            ltime.second_part = second_part;
+            ltime.second_part = secondPart;
         }
         return false;
     }
@@ -1342,15 +1338,15 @@ public class MyTime {
         LongPtr warnings = new LongPtr(0);
         String sbd = decimal.toString();
         String[] sbds = sbd.split("\\.");
-        long int_part = Long.parseLong(sbds[0]);
-        long second_part = 0;
+        long intPart = Long.parseLong(sbds[0]);
+        long secondPart = 0;
         if (sbds.length == 2)
-            second_part = Long.parseLong(sbds[1]);
-        if (number_to_time(int_part, ltime, warnings)) {
+            secondPart = Long.parseLong(sbds[1]);
+        if (number_to_time(intPart, ltime, warnings)) {
             ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
             return true;
         }
-        ltime.second_part = second_part;
+        ltime.second_part = secondPart;
         return false;
     }
 
@@ -1358,15 +1354,15 @@ public class MyTime {
         LongPtr warnings = new LongPtr(0);
         String sbd = String.valueOf(db);
         String[] sbds = sbd.split("\\.");
-        long int_part = Long.parseLong(sbds[0]);
-        long second_part = 0;
+        long intPart = Long.parseLong(sbds[0]);
+        long secondPart = 0;
         if (sbds.length == 2)
-            second_part = Long.parseLong(sbds[1]);
-        if (number_to_time(int_part, ltime, warnings)) {
+            secondPart = Long.parseLong(sbds[1]);
+        if (number_to_time(intPart, ltime, warnings)) {
             ltime.set_zero_time(MySQLTimestampType.MYSQL_TIMESTAMP_ERROR);
             return true;
         }
-        ltime.second_part = second_part;
+        ltime.second_part = secondPart;
         return false;
     }
 
@@ -1619,31 +1615,31 @@ public class MyTime {
     public static long calc_week(MySQLTime l_time, long week_behaviour, LongPtr year) {
         long days;
         long daynr = calc_daynr(l_time.year, l_time.month, l_time.day);
-        long first_daynr = calc_daynr(l_time.year, 1, 1);
-        boolean monday_first = (week_behaviour & WEEK_MONDAY_FIRST) != 0;
-        boolean week_year = (week_behaviour & WEEK_YEAR) != 0;
-        boolean first_weekday = (week_behaviour & WEEK_FIRST_WEEKDAY) != 0;
+        long firstDaynr = calc_daynr(l_time.year, 1, 1);
+        boolean mondayFirst = (week_behaviour & WEEK_MONDAY_FIRST) != 0;
+        boolean weekYear = (week_behaviour & WEEK_YEAR) != 0;
+        boolean firstWeekday = (week_behaviour & WEEK_FIRST_WEEKDAY) != 0;
 
-        long weekday = calc_weekday(first_daynr, !monday_first);
+        long weekday = calc_weekday(firstDaynr, !mondayFirst);
         year.set(l_time.year);
 
         if (l_time.month == 1 && l_time.day <= 7 - weekday) {
-            if (!week_year && ((first_weekday && weekday != 0) || (!first_weekday && weekday >= 4)))
+            if (!weekYear && ((firstWeekday && weekday != 0) || (!firstWeekday && weekday >= 4)))
                 return 0;
-            week_year = true;
+            weekYear = true;
             year.decre();
-            first_daynr -= (days = calc_days_in_year(year.get()));
+            firstDaynr -= (days = calc_days_in_year(year.get()));
             weekday = (weekday + 53 * 7 - days) % 7;
         }
 
-        if ((first_weekday && weekday != 0) || (!first_weekday && weekday >= 4))
-            days = daynr - (first_daynr + (7 - weekday));
+        if ((firstWeekday && weekday != 0) || (!firstWeekday && weekday >= 4))
+            days = daynr - (firstDaynr + (7 - weekday));
         else
-            days = daynr - (first_daynr - weekday);
+            days = daynr - (firstDaynr - weekday);
 
-        if (week_year && days >= 52 * 7) {
+        if (weekYear && days >= 52 * 7) {
             weekday = (weekday + calc_days_in_year(year.get())) % 7;
-            if ((!first_weekday && weekday < 4) || (first_weekday && weekday == 0)) {
+            if ((!firstWeekday && weekday < 4) || (firstWeekday && weekday == 0)) {
                 year.incre();
                 return 1;
             }
@@ -1686,8 +1682,8 @@ public class MyTime {
     /* Daynr 0 is returned as date 00.00.00 */
 
     public static void get_date_from_daynr(long daynr, LongPtr ret_year, LongPtr ret_month, LongPtr ret_day) {
-        int year, temp, leap_day, day_of_year, days_in_year;
-        int month_pos;
+        int year, temp, leapDay, dayOfYear, daysInYear;
+        int monthPos;
         if (daynr <= 365L || daynr >= 3652500) { /* Fix if wrong daynr */
             ret_year.set(0);
             ret_month.set(0);
@@ -1695,26 +1691,26 @@ public class MyTime {
         } else {
             year = (int) (daynr * 100 / 36525L);
             temp = (((year - 1) / 100 + 1) * 3) / 4;
-            day_of_year = (int) (daynr - (long) year * 365L) - (year - 1) / 4 + temp;
-            while (day_of_year > (days_in_year = calc_days_in_year(year))) {
-                day_of_year -= days_in_year;
+            dayOfYear = (int) (daynr - (long) year * 365L) - (year - 1) / 4 + temp;
+            while (dayOfYear > (daysInYear = calc_days_in_year(year))) {
+                dayOfYear -= daysInYear;
                 (year)++;
             }
-            leap_day = 0;
-            if (days_in_year == 366) {
-                if (day_of_year > 31 + 28) {
-                    day_of_year--;
-                    if (day_of_year == 31 + 28)
-                        leap_day = 1; /* Handle leapyears leapday */
+            leapDay = 0;
+            if (daysInYear == 366) {
+                if (dayOfYear > 31 + 28) {
+                    dayOfYear--;
+                    if (dayOfYear == 31 + 28)
+                        leapDay = 1; /* Handle leapyears leapday */
                 }
             }
             ret_month.set(1);
             ;
-            for (month_pos = 0; day_of_year > days_in_month[month_pos]; day_of_year -= days_in_month[month_pos++], ret_month
+            for (monthPos = 0; dayOfYear > days_in_month[monthPos]; dayOfYear -= days_in_month[monthPos++], ret_month
                     .incre())
                 ;
             ret_year.set(year);
-            ret_day.set(day_of_year + leap_day);
+            ret_day.set(dayOfYear + leapDay);
         }
     }
 
@@ -2015,16 +2011,16 @@ public class MyTime {
     }
 
     public static void calc_time_from_sec(MySQLTime to, long seconds, long microseconds) {
-        long t_seconds;
+        long tSeconds;
         // to.neg is not cleared, it may already be set to a useful value
         to.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
         to.year = 0;
         to.month = 0;
         to.day = 0;
         to.hour = (long) (seconds / 3600L);
-        t_seconds = (long) (seconds % 3600L);
-        to.minute = t_seconds / 60L;
-        to.second = t_seconds % 60L;
+        tSeconds = (long) (seconds % 3600L);
+        to.minute = tSeconds / 60L;
+        to.second = tSeconds % 60L;
         to.second_part = microseconds;
     }
 
@@ -2041,19 +2037,19 @@ public class MyTime {
         //        int int_type = unit.ordinal();
 
         if (unit == MySqlIntervalUnit.SECOND && arg.decimals != 0) {
-            BigDecimal decimal_value = arg.valDecimal();
-            if (decimal_value == null)
+            BigDecimal decimalValue = arg.valDecimal();
+            if (decimalValue == null)
                 return false;
 
-            boolean neg = decimal_value.compareTo(BigDecimal.ZERO) < 0;
+            boolean neg = decimalValue.compareTo(BigDecimal.ZERO) < 0;
             if (!neg) {
                 interval.neg = false;
-                interval.second = decimal_value.longValue();
-                interval.second_part = (long) ((decimal_value.doubleValue() - interval.second) * 1000000);
+                interval.second = decimalValue.longValue();
+                interval.second_part = (long) ((decimalValue.doubleValue() - interval.second) * 1000000);
             } else {
                 interval.neg = true;
-                interval.second = -decimal_value.longValue();
-                interval.second_part = (long) ((-decimal_value.doubleValue() - interval.second) * 1000000);
+                interval.second = -decimalValue.longValue();
+                interval.second_part = (long) ((-decimalValue.doubleValue() - interval.second) * 1000000);
             }
             return false;
         } else if (unit == MySqlIntervalUnit.YEAR || unit == MySqlIntervalUnit.QUARTER
@@ -2213,13 +2209,13 @@ public class MyTime {
         while (str < end && !Ctype.isDigit(cs[str]))
             str++;
 
-        long msec_length = 0;
+        long msecLength = 0;
         for (int i = 0; i < count; i++) {
             long value;
             int start = str;
             for (value = 0; str != end && Ctype.isDigit(cs[str]); str++)
                 value = value * 10 + (cs[str] - '0');
-            msec_length = 6 - (str - start);
+            msecLength = 6 - (str - start);
             values[i] = value;
             while (str != end && !Ctype.isDigit(cs[str]))
                 str++;
@@ -2231,8 +2227,8 @@ public class MyTime {
             }
         }
 
-        if (transform_msec && msec_length > 0)
-            values[count - 1] *= (long) MySQLcom.pow10((int) msec_length);
+        if (transform_msec && msecLength > 0)
+            values[count - 1] *= (long) MySQLcom.pow10((int) msecLength);
 
         return (str != end);
     }
@@ -2266,7 +2262,7 @@ public class MyTime {
      * to format string.
      *
      * @param format                date/time format specification
-     * @param val_str               String to decode
+     * @param valStr               String to decode
      * @param l_time                Store result here
      * @param cached_timestamp_type It uses to get an appropriate warning in the case when the
      *                              value is truncated.
@@ -2280,44 +2276,44 @@ public class MyTime {
      * @note If one adds new format specifiers to this function he should also
      * consider adding them to Item_func_str_to_date::fix_from_format().
      */
-    public static boolean extract_date_time(DateTimeFormat format, String val_str, MySQLTime l_time,
+    public static boolean extract_date_time(DateTimeFormat format, String valStr, MySQLTime l_time,
                                             MySQLTimestampType cached_timestamp_type, String date_time_type) {
         int weekday = 0, yearday = 0, daypart = 0;
-        int week_number = -1;
+        int weekNumber = -1;
         BoolPtr error = new BoolPtr(false);
-        int strict_week_number_year = -1;
-        int frac_part;
-        boolean usa_time = false;
-        boolean sunday_first_n_first_week_non_iso = false;
-        boolean strict_week_number = false;
-        boolean strict_week_number_year_type = false;
+        int strictWeekNumberYear = -1;
+        int fracPart;
+        boolean usaTime = false;
+        boolean sundayFirstNFirstWeekNonIso = false;
+        boolean strictWeekNumber = false;
+        boolean strictWeekNumberYearType = false;
         int val = 0;
-        int val_end = val_str.length();
-        char[] valcs = val_str.toCharArray();
+        int valEnd = valStr.length();
+        char[] valcs = valStr.toCharArray();
         int ptr = 0;
         int end = format.format.length();
         char[] ptrcs = format.format.toCharArray();
 
-        for (; ptr != end && val != val_end; ptr++) {
+        for (; ptr != end && val != valEnd; ptr++) {
 
             if (ptrcs[ptr] == '%' && ptr + 1 != end) {
-                int val_len;
+                int valLen;
                 int tmp;
 
                 error.set(false);
 
-                val_len = val_end - val;
+                valLen = valEnd - val;
                 switch (ptrcs[++ptr]) {
     /* Year */
                     case 'Y':
-                        tmp = val + Math.min(4, val_len);
+                        tmp = val + Math.min(4, valLen);
                         l_time.year = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         if (tmp - val <= 2)
                             l_time.year = MyTime.year_2000_handling(l_time.year);
                         val = tmp;
                         break;
                     case 'y':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.year = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         l_time.year = MyTime.year_2000_handling(l_time.year);
@@ -2326,19 +2322,19 @@ public class MyTime {
                     /* Month */
                     case 'm':
                     case 'c':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.month = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
                     case 'M':
-                        if ((l_time.month = MySQLcom.check_word(MONTH_NAMES, valcs, val, val_end)) <= 0)
+                        if ((l_time.month = MySQLcom.check_word(MONTH_NAMES, valcs, val, valEnd)) <= 0)
                             err:{
                                 // logger.warn
                                 return true;
                             }
                         break;
                     case 'b':
-                        if ((l_time.month = MySQLcom.check_word(AB_MONTH_NAMES, valcs, val, val_end)) <= 0)
+                        if ((l_time.month = MySQLcom.check_word(AB_MONTH_NAMES, valcs, val, valEnd)) <= 0)
                             err:{
                                 // logger.warn
                                 return true;
@@ -2347,33 +2343,33 @@ public class MyTime {
     /* Day */
                     case 'd':
                     case 'e':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.day = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
                     case 'D':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.day = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
     /* Skip 'st, 'nd, 'th .. */
-                        val = tmp + Math.min((int) (val_end - tmp), 2);
+                        val = tmp + Math.min((int) (valEnd - tmp), 2);
                         break;
 
     /* Hour */
                     case 'h':
                     case 'I':
                     case 'l':
-                        usa_time = true;
+                        usaTime = true;
     /* fall through */
                     case 'k':
                     case 'H':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.hour = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
 
     /* Minute */
                     case 'i':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.minute = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
@@ -2381,26 +2377,26 @@ public class MyTime {
     /* Second */
                     case 's':
                     case 'S':
-                        tmp = val + Math.min(2, val_len);
+                        tmp = val + Math.min(2, valLen);
                         l_time.second = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
 
     /* Second part */
                     case 'f':
-                        tmp = val_end;
+                        tmp = valEnd;
                         if (tmp - val > 6)
                             tmp = val + 6;
                         l_time.second_part = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
-                        frac_part = 6 - (int) (tmp - val);
-                        if (frac_part > 0)
-                            l_time.second_part *= MySQLcom.log_10_int[frac_part];
+                        fracPart = 6 - (int) (tmp - val);
+                        if (fracPart > 0)
+                            l_time.second_part *= MySQLcom.log_10_int[fracPart];
                         val = tmp;
                         break;
 
     /* AM / PM */
                     case 'p':
-                        if (val_len < 2 || !usa_time)
+                        if (valLen < 2 || !usaTime)
                             err:{
                                 // logger.warn
                                 return true;
@@ -2419,7 +2415,7 @@ public class MyTime {
 
     /* Exotic things */
                     case 'W':
-                        if ((weekday = MySQLcom.check_word(DAY_NAMES, valcs, val, val_end)) <= 0) {
+                        if ((weekday = MySQLcom.check_word(DAY_NAMES, valcs, val, valEnd)) <= 0) {
                             err:
                             {
                                 // logger.warn
@@ -2428,7 +2424,7 @@ public class MyTime {
                         }
                         break;
                     case 'a':
-                        if ((weekday = MySQLcom.check_word(AB_DAY_NAMES, valcs, val, val_end)) <= 0) {
+                        if ((weekday = MySQLcom.check_word(AB_DAY_NAMES, valcs, val, valEnd)) <= 0) {
                             err:
                             {
                                 // logger.warn
@@ -2451,7 +2447,7 @@ public class MyTime {
                         val = tmp;
                         break;
                     case 'j':
-                        tmp = val + Math.min(val_len, 3);
+                        tmp = val + Math.min(valLen, 3);
                         yearday = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
@@ -2461,11 +2457,11 @@ public class MyTime {
                     case 'U':
                     case 'v':
                     case 'u':
-                        sunday_first_n_first_week_non_iso = (ptrcs[ptr] == 'U' || ptrcs[ptr] == 'V');
-                        strict_week_number = (ptrcs[ptr] == 'V' || ptrcs[ptr] == 'v');
-                        tmp = val + Math.min(val_len, 2);
-                        if ((week_number = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue()) < 0
-                                || (strict_week_number && week_number == 0) || week_number > 53) {
+                        sundayFirstNFirstWeekNonIso = (ptrcs[ptr] == 'U' || ptrcs[ptr] == 'V');
+                        strictWeekNumber = (ptrcs[ptr] == 'V' || ptrcs[ptr] == 'v');
+                        tmp = val + Math.min(valLen, 2);
+                        if ((weekNumber = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue()) < 0
+                                || (strictWeekNumber && weekNumber == 0) || weekNumber > 53) {
                             err:
                             {
                                 // logger.warn
@@ -2478,9 +2474,9 @@ public class MyTime {
     /* Year used with 'strict' %V and %v week numbers */
                     case 'X':
                     case 'x':
-                        strict_week_number_year_type = (ptrcs[ptr] == 'X');
-                        tmp = val + Math.min(4, val_len);
-                        strict_week_number_year = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
+                        strictWeekNumberYearType = (ptrcs[ptr] == 'X');
+                        tmp = val + Math.min(4, valLen);
+                        strictWeekNumberYear = MySQLcom.my_strtoll10(valcs, val, tmp, error).intValue();
                         val = tmp;
                         break;
 
@@ -2490,29 +2486,29 @@ public class MyTime {
      * We can't just set error here, as we don't want to
      * generate two warnings in case of errors
      */
-                        if (extract_date_time(TIME_AMPM_FORMAT, new String(valcs, val, val_end - val), l_time,
+                        if (extract_date_time(TIME_AMPM_FORMAT, new String(valcs, val, valEnd - val), l_time,
                                 cached_timestamp_type, "time"))
                             return true;
                         break;
 
     /* Time in 24-hour notation */
                     case 'T':
-                        if (extract_date_time(TIME_24_HRS_FORMAT, new String(valcs, val, val_end - val), l_time,
+                        if (extract_date_time(TIME_24_HRS_FORMAT, new String(valcs, val, valEnd - val), l_time,
                                 cached_timestamp_type, "time"))
                             return true;
                         break;
 
     /* Conversion specifiers that match classes of characters */
                     case '.':
-                        while (val < val_end && Ctype.isPunct(valcs[val]))
+                        while (val < valEnd && Ctype.isPunct(valcs[val]))
                             val++;
                         break;
                     case '@':
-                        while (val < val_end && Ctype.my_isalpha(valcs[val]))
+                        while (val < valEnd && Ctype.my_isalpha(valcs[val]))
                             val++;
                         break;
                     case '#':
-                        while (val < val_end && Ctype.isDigit(valcs[val]))
+                        while (val < valEnd && Ctype.isDigit(valcs[val]))
                             val++;
                         break;
                     default:
@@ -2536,7 +2532,7 @@ public class MyTime {
                 val++;
             }
         }
-        if (usa_time) {
+        if (usaTime) {
             if (l_time.hour > 12 || l_time.hour < 1)
                 err:{
                     // logger.warn
@@ -2562,36 +2558,36 @@ public class MyTime {
             l_time.day = dPtr.get();
         }
 
-        if (week_number >= 0 && weekday != 0) {
+        if (weekNumber >= 0 && weekday != 0) {
             int days;
-            long weekday_b;
+            long weekdayB;
 
     /*
      * %V,%v require %X,%x resprectively, %U,%u should be used with %Y
      * and not %X or %x
      */
-            if ((strict_week_number && (strict_week_number_year < 0
-                    || strict_week_number_year_type != sunday_first_n_first_week_non_iso))
-                    || (!strict_week_number && strict_week_number_year >= 0))
+            if ((strictWeekNumber && (strictWeekNumberYear < 0
+                    || strictWeekNumberYearType != sundayFirstNFirstWeekNonIso))
+                    || (!strictWeekNumber && strictWeekNumberYear >= 0))
                 err:{
                     // logger.warn
                     return true;
                 }
 
     /* Number of days since year 0 till 1st Jan of this year */
-            days = (int) calc_daynr((strict_week_number ? strict_week_number_year : l_time.year), 1, 1);
+            days = (int) calc_daynr((strictWeekNumber ? strictWeekNumberYear : l_time.year), 1, 1);
     /* Which day of week is 1st Jan of this year */
-            weekday_b = calc_weekday(days, sunday_first_n_first_week_non_iso);
+            weekdayB = calc_weekday(days, sundayFirstNFirstWeekNonIso);
 
     /*
      * Below we are going to sum: 1) number of days since year 0 till
      * 1st day of 1st week of this year 2) number of days between 1st
      * week and our week 3) and position of our day in the week
      */
-            if (sunday_first_n_first_week_non_iso) {
-                days += ((weekday_b == 0) ? 0 : 7) - weekday_b + (week_number - 1) * 7 + weekday % 7;
+            if (sundayFirstNFirstWeekNonIso) {
+                days += ((weekdayB == 0) ? 0 : 7) - weekdayB + (weekNumber - 1) * 7 + weekday % 7;
             } else {
-                days += ((weekday_b <= 3) ? 0 : 7) - weekday_b + (week_number - 1) * 7 + (weekday - 1);
+                days += ((weekdayB <= 3) ? 0 : 7) - weekdayB + (weekNumber - 1) * 7 + (weekday - 1);
             }
 
             if (days <= 0 || days > MAX_DAY_NUMBER)
@@ -2614,14 +2610,14 @@ public class MyTime {
                 return true;
             }
 
-        if (val != val_end) {
+        if (val != valEnd) {
             do {
                 if (!Ctype.spaceChar(valcs[val])) {
                     // TS-TODO: extract_date_time is not UCS2 safe
                     //
                     break;
                 }
-            } while (++val != val_end);
+            } while (++val != valEnd);
         }
         return false;
 
@@ -2634,7 +2630,7 @@ public class MyTime {
      */
     public static boolean make_date_time(DateTimeFormat format, MySQLTime l_time, MySQLTimestampType type,
                                          StringPtr strPtr) {
-        int hours_i;
+        int hoursI;
         int weekday;
         int ptr = 0, end;
         char[] formatChars = format.format.toCharArray();
@@ -2735,8 +2731,8 @@ public class MyTime {
                         break;
                     case 'h':
                     case 'I':
-                        hours_i = (int) ((l_time.hour % 24 + 11) % 12 + 1);
-                        str.append(String.format("%02d", hours_i));
+                        hoursI = (int) ((l_time.hour % 24 + 11) % 12 + 1);
+                        str.append(String.format("%02d", hoursI));
                         break;
                     case 'i': /* minutes */
                         str.append(String.format("%02d", l_time.minute));
@@ -2753,12 +2749,12 @@ public class MyTime {
                         str.append(String.format("%01d", l_time.hour));
                         break;
                     case 'l':
-                        hours_i = (int) ((l_time.hour % 24 + 11) % 12 + 1);
+                        hoursI = (int) ((l_time.hour % 24 + 11) % 12 + 1);
                         str.append(String.format("%01d", l_time.hour));
                         break;
                     case 'p':
-                        hours_i = (int) (l_time.hour % 24);
-                        str.append(hours_i < 12 ? "AM" : "PM");
+                        hoursI = (int) (l_time.hour % 24);
+                        str.append(hoursI < 12 ? "AM" : "PM");
                         break;
                     case 'r':
                         String tmpFmt = ((l_time.hour % 24) < 12) ? "%02d:%02d:%02d AM" : "%02d:%02d:%02d PM";

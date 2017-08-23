@@ -114,40 +114,40 @@ public class FilterPusher {
             ((QueryNode) qtn).setChild(child);
         } else if (qtn.type() == PlanNodeType.JOIN) {
             JoinNode jn = (JoinNode) qtn;
-            List<Item> DNFNodetoPushToLeft = new LinkedList<Item>();
-            List<Item> DNFNodetoPushToRight = new LinkedList<Item>();
+            List<Item> dnfNodetoPushToLeft = new LinkedList<Item>();
+            List<Item> dnfNodetoPushToRight = new LinkedList<Item>();
             List<Item> leftCopyedPushFilters = new LinkedList<Item>();
             List<Item> rightCopyedPushFilters = new LinkedList<Item>();
-            List<Item> DNFNodeToCurrent = new LinkedList<Item>();
+            List<Item> dnfNodeToCurrent = new LinkedList<Item>();
 
             PlanUtil.findJoinKeysAndRemoveIt(DNFNodeToPush, jn);
             for (Item filter : DNFNodeToPush) {
                 // ex. 1 = -1
                 if (filter.getReferTables().size() == 0) {
-                    DNFNodetoPushToLeft.add(filter);
-                    DNFNodetoPushToRight.add(filter);
+                    dnfNodetoPushToLeft.add(filter);
+                    dnfNodetoPushToRight.add(filter);
                     continue;
                 }
                 if (PlanUtil.canPush(filter, jn.getLeftNode(), jn)) {
-                    DNFNodetoPushToLeft.add(filter);
+                    dnfNodetoPushToLeft.add(filter);
                 } else if (PlanUtil.canPush(filter, jn.getRightNode(), jn)) {
-                    DNFNodetoPushToRight.add(filter);
+                    dnfNodetoPushToRight.add(filter);
                 } else {
-                    DNFNodeToCurrent.add(filter);
+                    dnfNodeToCurrent.add(filter);
                 }
             }
             if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
                 // 将左条件的表达式，推导到join filter的右条件上
                 rightCopyedPushFilters
-                        .addAll(copyFilterToJoinOnColumns(DNFNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
+                        .addAll(copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
 
                 // 将右条件的表达式，推导到join filter的左条件上
                 leftCopyedPushFilters
-                        .addAll(copyFilterToJoinOnColumns(DNFNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
+                        .addAll(copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
             }
 
             // 针对不能下推的，合并到当前的where
-            Item node = FilterUtils.and(DNFNodeToCurrent);
+            Item node = FilterUtils.and(dnfNodeToCurrent);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
             }
@@ -155,20 +155,20 @@ public class FilterPusher {
             if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
                 if (jn.isLeftOuterJoin()) {
                     // left join，把right join下推之后，还得把right join的条件留下来
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(DNFNodetoPushToRight)));
+                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToRight)));
                 }
                 if (jn.isRightOuterJoin()) {
                     // right join，把right join下推之后，还得把left join的条件留下来
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(DNFNodetoPushToLeft)));
+                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToLeft)));
                 }
                 // 合并起来
-                DNFNodetoPushToRight.addAll(rightCopyedPushFilters);
-                DNFNodetoPushToLeft.addAll(leftCopyedPushFilters);
+                dnfNodetoPushToRight.addAll(rightCopyedPushFilters);
+                dnfNodetoPushToLeft.addAll(leftCopyedPushFilters);
 
-                refreshPdFilters(jn, DNFNodetoPushToLeft);
-                refreshPdFilters(jn, DNFNodetoPushToRight);
-                jn.setLeftNode(pushFilter(jn.getLeftNode(), DNFNodetoPushToLeft));
-                jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), DNFNodetoPushToRight));
+                refreshPdFilters(jn, dnfNodetoPushToLeft);
+                refreshPdFilters(jn, dnfNodetoPushToRight);
+                jn.setLeftNode(pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft));
+                jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight));
             } else {
                 if (!DNFNodeToPush.isEmpty()) {
                     jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(DNFNodeToPush)));

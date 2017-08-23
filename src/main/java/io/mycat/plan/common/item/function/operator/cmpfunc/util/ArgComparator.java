@@ -557,10 +557,10 @@ public class ArgComparator {
         public int compare(ArgComparator ac) {
             BoolPtr aIsNull = new BoolPtr(false);
             BoolPtr bIsNull = new BoolPtr(false);
-            long a_value, b_value;
+            long aValue, bValue;
 
             /* Get DATE/DATETIME/TIME value of the 'a' item. */
-            a_value = ac.getValueAFunc.get(ac.a, ac.b, aIsNull);
+            aValue = ac.getValueAFunc.get(ac.a, ac.b, aIsNull);
             if (!ac.is_nulls_eq && aIsNull.get()) {
                 if (ac.setNull && ac.owner != null)
                     ac.owner.nullValue = (true);
@@ -568,7 +568,7 @@ public class ArgComparator {
             }
 
             /* Get DATE/DATETIME/TIME value of the 'b' item. */
-            b_value = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
+            bValue = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
                 if (ac.setNull)
                     ac.owner.nullValue = (ac.is_nulls_eq ? false : true);
@@ -581,8 +581,8 @@ public class ArgComparator {
 
             /* Compare values. */
             if (ac.is_nulls_eq)
-                return a_value == (b_value) ? 1 : 0;
-            return a_value < b_value ? -1 : (a_value > b_value ? 1 : 0);
+                return aValue == (bValue) ? 1 : 0;
+            return aValue < bValue ? -1 : (aValue > bValue ? 1 : 0);
         }
     }
 

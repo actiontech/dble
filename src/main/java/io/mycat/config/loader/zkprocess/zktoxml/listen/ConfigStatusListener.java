@@ -44,11 +44,11 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
     public boolean notifyProcess() throws Exception {
         if (MycatServer.getInstance().getProcessors() != null) {
             // 通过组合模式进行zk目录树的加载
-            DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
+            DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
             // 进行递归的数据获取
-            this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, StatusDirectory);
+            this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
             // 从当前的下一级开始进行遍历,获得到
-            ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) StatusDirectory.getSubordinateInfo().get(0);
+            ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) statusDirectory.getSubordinateInfo().get(0);
             ConfStatus status = new ConfStatus(zkDdata.getValue());
             if (status.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
                 return true; //self node
@@ -59,8 +59,8 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
                     RollbackConfig.rollback();
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
-                    String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));
+                    String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
                 }
 
                 return true;
@@ -80,8 +80,8 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
                 }
                 ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
-                String ErrorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
-                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ErrorInfo.getBytes(StandardCharsets.UTF_8));
+                String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
             }
         }
         return true;

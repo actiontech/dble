@@ -31,10 +31,10 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
 
     @Override
     public int decimalPrecision() {
-        int arg0_int_part = args.get(0).decimalIntPart();
-        int arg1_int_part = args.get(1).decimalIntPart();
-        int max_int_part = Math.max(arg0_int_part, arg1_int_part);
-        int precision = max_int_part + decimals;
+        int arg0IntPart = args.get(0).decimalIntPart();
+        int arg1IntPart = args.get(1).decimalIntPart();
+        int maxIntPart = Math.max(arg0IntPart, arg1IntPart);
+        int precision = maxIntPart + decimals;
         return Math.min(precision, MySQLcom.DECIMAL_MAX_PRECISION);
     }
 

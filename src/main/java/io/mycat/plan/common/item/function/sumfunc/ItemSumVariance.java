@@ -125,12 +125,12 @@ public class ItemSumVariance extends ItemSumNum {
             sumAi2 += nr * nr;
             // end add
             if (!args.get(0).nullValue) {
-                DoublePtr r_m = new DoublePtr(recurrence_m);
-                DoublePtr r_s = new DoublePtr(recurrence_s);
+                DoublePtr rM = new DoublePtr(recurrence_m);
+                DoublePtr rS = new DoublePtr(recurrence_s);
                 LongPtr countPtr = new LongPtr(count);
-                varianceFpRecurrenceNext(r_m, r_s, countPtr, nr);
-                recurrence_m = r_m.get();
-                recurrence_s = r_s.get();
+                varianceFpRecurrenceNext(rM, rS, countPtr, nr);
+                recurrence_m = rM.get();
+                recurrence_s = rS.get();
                 count = countPtr.get();
             }
         }

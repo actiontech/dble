@@ -312,9 +312,9 @@ public class ServerConnection extends FrontendConnection {
             StringBuilder s = new StringBuilder();
             LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
             int vendorCode = sqle.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqle.getErrorCode();
-            String SQLState = StringUtil.isEmpty(sqle.getSQLState()) ? "HY000" : sqle.getSQLState();
+            String sqlState = StringUtil.isEmpty(sqle.getSQLState()) ? "HY000" : sqle.getSQLState();
             String errorMsg = msg == null ? sqle.getClass().getSimpleName() : msg;
-            writeErrMessage(SQLState, errorMsg, vendorCode);
+            writeErrMessage(sqlState, errorMsg, vendorCode);
         } else {
             StringBuilder s = new StringBuilder();
             LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);

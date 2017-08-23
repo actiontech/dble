@@ -29,8 +29,8 @@ public class ItemFuncField extends ItemIntFunc {
             if ((field = args.get(0).valStr()) == null)
                 return BigInteger.ZERO;
             for (int i = 1; i < args.size(); i++) {
-                String tmp_value = args.get(i).valStr();
-                if (tmp_value != null && field.compareTo(tmp_value) == 0)
+                String tmpValue = args.get(i).valStr();
+                if (tmpValue != null && field.compareTo(tmpValue) == 0)
                     return BigInteger.valueOf(i);
             }
         } else if (cmp_type == ItemResult.INT_RESULT) {
@@ -46,8 +46,8 @@ public class ItemFuncField extends ItemIntFunc {
             if (args.get(0).nullValue)
                 return BigInteger.ZERO;
             for (int i = 1; i < getArgCount(); i++) {
-                BigDecimal dec_arg = args.get(i).valDecimal();
-                if (!args.get(i).nullValue && dec_arg.compareTo(dec) == 0)
+                BigDecimal decArg = args.get(i).valDecimal();
+                if (!args.get(i).nullValue && decArg.compareTo(dec) == 0)
                     return BigInteger.valueOf(i);
             }
         } else {

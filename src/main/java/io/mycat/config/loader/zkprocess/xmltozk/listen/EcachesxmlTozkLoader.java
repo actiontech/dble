@@ -67,10 +67,10 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
     @Override
     public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
-        Ehcache Ehcache = this.parseEcacheXMl.parseXmlToBean(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + KVPathUtil.EHCACHE_NAME);
-        LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk Ehcache Object  :" + Ehcache);
+        Ehcache ehcache = this.parseEcacheXMl.parseXmlToBean(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + KVPathUtil.EHCACHE_NAME);
+        LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk Ehcache Object  :" + ehcache);
         // 将实体信息写入至zk中
-        this.xmlTozkEhcacheJson(currZkPath, Ehcache);
+        this.xmlTozkEhcacheJson(currZkPath, ehcache);
 
         LOGGER.info("EhcachexmlTozkLoader notifyProcess xml to zk is success");
 

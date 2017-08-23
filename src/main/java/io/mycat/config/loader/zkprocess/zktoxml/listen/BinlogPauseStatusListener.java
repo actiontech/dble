@@ -39,11 +39,11 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
     @Override
     public boolean notifyProcess() throws Exception {
         // 通过组合模式进行zk目录树的加载
-        DiretoryInf StatusDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
         // 进行递归的数据获取
-        this.getTreeDirectory(currZkPath, BINLOG_PAUSE_STATUS, StatusDirectory);
+        this.getTreeDirectory(currZkPath, BINLOG_PAUSE_STATUS, statusDirectory);
         // 从当前的下一级开始进行遍历,获得到
-        ZkDataImpl zkDdata = (ZkDataImpl) StatusDirectory.getSubordinateInfo().get(0);
+        ZkDataImpl zkDdata = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
         String strPauseInfo = zkDdata.getDataValue();
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 

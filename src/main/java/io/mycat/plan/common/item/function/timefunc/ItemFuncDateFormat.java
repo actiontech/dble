@@ -28,15 +28,15 @@ public class ItemFuncDateFormat extends ItemStrFunc {
     @Override
     public String valStr() {
         String format;
-        MySQLTime l_time = new MySQLTime();
+        MySQLTime lTime = new MySQLTime();
         int size;
         if (!isTimeFormat) {
-            if (getArg0Date(l_time, MyTime.TIME_FUZZY_DATE))
+            if (getArg0Date(lTime, MyTime.TIME_FUZZY_DATE))
                 return null;
         } else {
-            if (getArg0Time(l_time))
+            if (getArg0Time(lTime))
                 return null;
-            l_time.year = l_time.month = l_time.day = 0;
+            lTime.year = lTime.month = lTime.day = 0;
         }
         if ((format = args.get(1).valStr()) == null || format.length() == 0) {
             nullValue = true;
@@ -45,10 +45,10 @@ public class ItemFuncDateFormat extends ItemStrFunc {
         size = format_length(format);
         if (size < MyTime.MAX_DATE_STRING_REP_LENGTH)
             size = MyTime.MAX_DATE_STRING_REP_LENGTH;
-        DateTimeFormat date_time_format = new DateTimeFormat();
-        date_time_format.format = format;
+        DateTimeFormat dateTimeFormat = new DateTimeFormat();
+        dateTimeFormat.format = format;
         StringPtr strPtr = new StringPtr("");
-        if (!MyTime.make_date_time(date_time_format, l_time,
+        if (!MyTime.make_date_time(dateTimeFormat, lTime,
                 isTimeFormat ? MySQLTimestampType.MYSQL_TIMESTAMP_TIME : MySQLTimestampType.MYSQL_TIMESTAMP_DATE,
                 strPtr)) {
             return strPtr.get();

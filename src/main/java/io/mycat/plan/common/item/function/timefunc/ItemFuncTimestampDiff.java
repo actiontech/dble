@@ -57,50 +57,50 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
         long seconds = lpseconds.get(), microseconds = lpmicroseconds.get();
         if (int_type == MySqlIntervalUnit.YEAR || int_type == MySqlIntervalUnit.QUARTER
                 || int_type == MySqlIntervalUnit.MONTH) {
-            long year_beg, year_end, month_beg, month_end, day_beg, day_end;
+            long yearBeg, yearEnd, monthBeg, monthEnd, dayBeg, dayEnd;
             long years = 0;
-            long second_beg, second_end, microsecond_beg, microsecond_end;
+            long secondBeg, secondEnd, microsecondBeg, microsecondEnd;
 
             if (neg == -1) {
-                year_beg = ltime2.year;
-                year_end = ltime1.year;
-                month_beg = ltime2.month;
-                month_end = ltime1.month;
-                day_beg = ltime2.day;
-                day_end = ltime1.day;
-                second_beg = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
-                second_end = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
-                microsecond_beg = ltime2.second_part;
-                microsecond_end = ltime1.second_part;
+                yearBeg = ltime2.year;
+                yearEnd = ltime1.year;
+                monthBeg = ltime2.month;
+                monthEnd = ltime1.month;
+                dayBeg = ltime2.day;
+                dayEnd = ltime1.day;
+                secondBeg = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
+                secondEnd = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
+                microsecondBeg = ltime2.second_part;
+                microsecondEnd = ltime1.second_part;
             } else {
-                year_beg = ltime1.year;
-                year_end = ltime2.year;
-                month_beg = ltime1.month;
-                month_end = ltime2.month;
-                day_beg = ltime1.day;
-                day_end = ltime2.day;
-                second_beg = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
-                second_end = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
-                microsecond_beg = ltime1.second_part;
-                microsecond_end = ltime2.second_part;
+                yearBeg = ltime1.year;
+                yearEnd = ltime2.year;
+                monthBeg = ltime1.month;
+                monthEnd = ltime2.month;
+                dayBeg = ltime1.day;
+                dayEnd = ltime2.day;
+                secondBeg = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
+                secondEnd = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
+                microsecondBeg = ltime1.second_part;
+                microsecondEnd = ltime2.second_part;
             }
 
             /* calc years */
-            years = year_end - year_beg;
-            if (month_end < month_beg || (month_end == month_beg && day_end < day_beg))
+            years = yearEnd - yearBeg;
+            if (monthEnd < monthBeg || (monthEnd == monthBeg && dayEnd < dayBeg))
                 years -= 1;
 
             /* calc months */
             months = 12 * years;
-            if (month_end < month_beg || (month_end == month_beg && day_end < day_beg))
-                months += 12 - (month_beg - month_end);
+            if (monthEnd < monthBeg || (monthEnd == monthBeg && dayEnd < dayBeg))
+                months += 12 - (monthBeg - monthEnd);
             else
-                months += (month_end - month_beg);
+                months += (monthEnd - monthBeg);
 
-            if (day_end < day_beg)
+            if (dayEnd < dayBeg)
                 months -= 1;
-            else if ((day_end == day_beg)
-                    && ((second_end < second_beg) || (second_end == second_beg && microsecond_end < microsecond_beg)))
+            else if ((dayEnd == dayBeg)
+                    && ((secondEnd < secondBeg) || (secondEnd == secondBeg && microsecondEnd < microsecondBeg)))
                 months -= 1;
         }
 

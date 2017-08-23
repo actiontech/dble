@@ -230,9 +230,9 @@ public class MySQLcom {
     public static ItemResult agg_result_type(List<Item> items, int startIndex, int size) {
         ItemResult type = ItemResult.STRING_RESULT;
         /* Skip beginning NULL items */
-        int index = 0, index_end;
+        int index = 0, indexEnd;
         Item item;
-        for (index = startIndex, index_end = startIndex + size; index < index_end; index++) {
+        for (index = startIndex, indexEnd = startIndex + size; index < indexEnd; index++) {
             item = items.get(index);
             if (item.type() != ItemType.NULL_ITEM) {
                 type = item.resultType();
@@ -241,7 +241,7 @@ public class MySQLcom {
             }
         }
         /* Combine result types. Note: NULL items don't affect the result */
-        for (; index < index_end; index++) {
+        for (; index < indexEnd; index++) {
             item = items.get(index);
             if (item.type() != ItemType.NULL_ITEM)
                 type = item_store_type(type, item);
@@ -299,8 +299,8 @@ public class MySQLcom {
     }
 
     public static int memcmp(byte[] a_ptr, byte[] b_ptr) {
-        int a_len = a_ptr.length, b_len = b_ptr.length;
-        if (a_len >= b_len)
+        int aLen = a_ptr.length, bLen = b_ptr.length;
+        if (aLen >= bLen)
             return memcmp0(a_ptr, b_ptr);
         else
             return -memcmp(b_ptr, a_ptr);
@@ -321,18 +321,18 @@ public class MySQLcom {
      * @return
      */
     private static int memcmp0(byte[] a_ptr, byte[] b_ptr) {
-        int a_len = a_ptr.length, b_len = b_ptr.length;
-        for (int i = 0; i < a_len - b_len; i++) {
+        int aLen = a_ptr.length, bLen = b_ptr.length;
+        for (int i = 0; i < aLen - bLen; i++) {
             if (a_ptr[i] != 0) // a比b多出了值
                 return 1;
         }
-        int a_start = a_len - b_len;
-        for (int i = 0; i < b_len; i++) {
-            byte a_byte = a_ptr[a_start + i];
-            byte b_byte = b_ptr[i];
-            if (a_byte > b_byte)
+        int aStart = aLen - bLen;
+        for (int i = 0; i < bLen; i++) {
+            byte aByte = a_ptr[aStart + i];
+            byte bByte = b_ptr[i];
+            if (aByte > bByte)
                 return 1;
-            else if (a_byte < b_byte)
+            else if (aByte < bByte)
                 return -1;
         }
         return 0;

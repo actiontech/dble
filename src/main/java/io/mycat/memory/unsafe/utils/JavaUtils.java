@@ -268,24 +268,24 @@ public class JavaUtils {
 
 
     public static String bytesToString(long size) {
-        long TB = 1L << 40;
-        long GB = 1L << 30;
-        long MB = 1L << 20;
-        long KB = 1L << 10;
+        long cTB = 1L << 40;
+        long cGB = 1L << 30;
+        long cMB = 1L << 20;
+        long cKB = 1L << 10;
         double value = 0;
         String unit = null;
 
-        if (size >= 2 * TB) {
-            value = (double) size / TB;
+        if (size >= 2 * cTB) {
+            value = (double) size / cTB;
             unit = "TB";
-        } else if (size >= 2 * GB) {
-            value = (double) size / GB;
+        } else if (size >= 2 * cGB) {
+            value = (double) size / cGB;
             unit = "GB";
-        } else if (size >= 2 * MB) {
-            value = (double) size / MB;
+        } else if (size >= 2 * cMB) {
+            value = (double) size / cMB;
             unit = "MB";
-        } else if (size >= 2 * KB) {
-            value = (double) size / KB;
+        } else if (size >= 2 * cKB) {
+            value = (double) size / cKB;
             unit = "KB";
         } else {
             value = (double) size;
@@ -297,24 +297,24 @@ public class JavaUtils {
 
 
     public static String bytesToString2(long size) {
-        long TB = 1L << 40;
-        long GB = 1L << 30;
-        long MB = 1L << 20;
-        long KB = 1L << 10;
+        long cTB = 1L << 40;
+        long cGB = 1L << 30;
+        long cMB = 1L << 20;
+        long cKB = 1L << 10;
         int value = 0;
         String unit = null;
 
-        if (size >= 2 * TB) {
-            value = (int) (size / TB);
+        if (size >= 2 * cTB) {
+            value = (int) (size / cTB);
             unit = "TB";
-        } else if (size >= 2 * GB) {
-            value = (int) (size / GB);
+        } else if (size >= 2 * cGB) {
+            value = (int) (size / cGB);
             unit = "GB";
-        } else if (size >= 2 * MB) {
-            value = (int) (size / MB);
+        } else if (size >= 2 * cMB) {
+            value = (int) (size / cMB);
             unit = "MB";
-        } else if (size >= 2 * KB) {
-            value = (int) (size / KB);
+        } else if (size >= 2 * cKB) {
+            value = (int) (size / cKB);
             unit = "KB";
         } else {
             value = (int) size;

@@ -82,10 +82,10 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
     @Override
     public boolean notifyProcess() throws Exception {
         // 1,读取本地的xml文件
-        Rules Rules = this.parseRulesXMl.parseXmlToBean(RULE_PATH);
-        LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk Rules Object  :" + Rules);
+        Rules rules = this.parseRulesXMl.parseXmlToBean(RULE_PATH);
+        LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk Rules Object  :" + rules);
         // 将实体信息写入至zk中
-        this.xmlTozkRulesJson(currZkPath, Rules);
+        this.xmlTozkRulesJson(currZkPath, rules);
 
         LOGGER.info("RulesxmlTozkLoader notifyProcess xml to zk is success");
 

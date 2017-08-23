@@ -39,39 +39,39 @@ public abstract class ItemFuncMinMax extends ItemFunc {
      * index of the least/greatest argument
      */
     protected long cmp_datetimes(LongPtr value) {
-        long min_max = -1;
-        int min_max_idx = 0;
+        long minMax = -1;
+        int minMaxIdx = 0;
 
         for (int i = 0; i < args.size(); i++) {
             long res = args.get(i).valDateTemporal();
 
             if ((nullValue = args.get(i).isNull()))
                 return 0;
-            if (i == 0 || (res < min_max ? cmp_sign : -cmp_sign) > 0) {
-                min_max = res;
-                min_max_idx = i;
+            if (i == 0 || (res < minMax ? cmp_sign : -cmp_sign) > 0) {
+                minMax = res;
+                minMaxIdx = i;
             }
         }
-        value.set(min_max);
-        return min_max_idx;
+        value.set(minMax);
+        return minMaxIdx;
     }
 
     protected long cmp_times(LongPtr value) {
-        long min_max = -1;
-        int min_max_idx = 0;
+        long minMax = -1;
+        int minMaxIdx = 0;
 
         for (int i = 0; i < args.size(); i++) {
             long res = args.get(i).valTimeTemporal();
 
             if ((nullValue = args.get(i).isNull()))
                 return 0;
-            if (i == 0 || (res < min_max ? cmp_sign : -cmp_sign) > 0) {
-                min_max = res;
-                min_max_idx = i;
+            if (i == 0 || (res < minMax ? cmp_sign : -cmp_sign) > 0) {
+                minMax = res;
+                minMaxIdx = i;
             }
         }
-        value.set(min_max);
-        return min_max_idx;
+        value.set(minMax);
+        return minMaxIdx;
     }
 
     public ItemFuncMinMax(List<Item> args, int cmp_sign_arg) {
@@ -168,16 +168,16 @@ public abstract class ItemFuncMinMax extends ItemFunc {
                  * In case of VARCHAR result type we just return val_str() value
                  * of the winning item AS IS, without conversion.
                  */
-                long min_max_idx = cmp_datetimes(new LongPtr(0));
+                long minMaxIdx = cmp_datetimes(new LongPtr(0));
                 if (nullValue)
                     return null;
-                String str_res = args.get((int) min_max_idx).valStr();
-                if (args.get((int) min_max_idx).nullValue) {
+                String strRes = args.get((int) minMaxIdx).valStr();
+                if (args.get((int) minMaxIdx).nullValue) {
                     // check if the call to val_str() above returns a NULL value
                     nullValue = true;
                     return null;
                 }
-                return str_res;
+                return strRes;
             }
         }
 
@@ -303,8 +303,8 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 
     @Override
     public void fixLengthAndDec() {
-        int string_arg_count = 0;
-        boolean datetime_found = false;
+        int stringArgCount = 0;
+        boolean datetimeFound = false;
         decimals = 0;
         maxLength = 0;
         cmp_type = args.get(0).temporalWithDateAsNumberResultType();
@@ -314,16 +314,16 @@ public abstract class ItemFuncMinMax extends ItemFunc {
             decimals = Math.max(decimals, args.get(i).decimals);
             cmp_type = MySQLcom.item_cmp_type(cmp_type, args.get(i).temporalWithDateAsNumberResultType());
             if (args.get(i).resultType() == ItemResult.STRING_RESULT)
-                string_arg_count++;
+                stringArgCount++;
             if (args.get(i).resultType() != ItemResult.ROW_RESULT && args.get(i).isTemporalWithDate()) {
-                datetime_found = true;
+                datetimeFound = true;
                 if (datetime_item == null || args.get(i).fieldType() == FieldTypes.MYSQL_TYPE_DATETIME)
                     datetime_item = args.get(i);
             }
         }
 
-        if (string_arg_count == args.size()) {
-            if (datetime_found) {
+        if (stringArgCount == args.size()) {
+            if (datetimeFound) {
                 compare_as_dates = true;
                 /*
                  * We should not do this: cached_field_type=

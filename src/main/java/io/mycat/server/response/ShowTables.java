@@ -122,9 +122,9 @@ public class ShowTables {
     }
 
     public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
-        int FIELD_COUNT = 2;
-        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+        int fieldCount = 2;
+        ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
+        FieldPacket[] fields = new FieldPacket[fieldCount];
         EOFPacket eof = new EOFPacket();
         int i = 0;
         byte packetId = 0;
@@ -167,9 +167,9 @@ public class ShowTables {
     }
 
     public static byte writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
-        int FIELD_COUNT = 1;
-        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+        int fieldCount = 1;
+        ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
+        FieldPacket[] fields = new FieldPacket[fieldCount];
         EOFPacket eof = new EOFPacket();
         int i = 0;
         byte packetId = 0;
@@ -186,7 +186,7 @@ public class ShowTables {
         // write eof
         eof.write(buffer, c, true);
         for (String name : tableMap.keySet()) {
-            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+            RowDataPacket row = new RowDataPacket(fieldCount);
             row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
             row.packetId = ++packetId;
             buffer = row.write(buffer, c, true);

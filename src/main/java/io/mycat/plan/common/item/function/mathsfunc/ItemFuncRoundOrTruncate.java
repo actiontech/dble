@@ -60,18 +60,18 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
 
     @Override
     public void fixLengthAndDec() {
-        int decimals_to_set;
+        int decimalsToSet;
         long val1 = args.get(1).valInt().longValue();
         if ((nullValue = args.get(1).isNull()))
             return;
 
         if (val1 < 0)
-            decimals_to_set = 0;
+            decimalsToSet = 0;
         else
-            decimals_to_set = (int) val1;
+            decimalsToSet = (int) val1;
 
         if (args.get(0).decimals == NOT_FIXED_DEC) {
-            decimals = Math.min(decimals_to_set, NOT_FIXED_DEC);
+            decimals = Math.min(decimalsToSet, NOT_FIXED_DEC);
             maxLength = floatLength(decimals);
             hybrid_type = ItemResult.REAL_RESULT;
             return;
@@ -80,7 +80,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         ItemResult i = args.get(0).resultType();
         if (i == ItemResult.REAL_RESULT || i == ItemResult.STRING_RESULT) {
             hybrid_type = ItemResult.REAL_RESULT;
-            decimals = Math.min(decimals_to_set, NOT_FIXED_DEC);
+            decimals = Math.min(decimalsToSet, NOT_FIXED_DEC);
             maxLength = floatLength(decimals);
 
         } else if (i == ItemResult.INT_RESULT) {/* Here we can keep INT_RESULT */
@@ -90,8 +90,8 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         /* fall through */
         } else if (i == ItemResult.DECIMAL_RESULT) {
             hybrid_type = ItemResult.DECIMAL_RESULT;
-            decimals_to_set = Math.min(DECIMAL_MAX_SCALE, decimals_to_set);
-            decimals = Math.min(decimals_to_set, DECIMAL_MAX_SCALE);
+            decimalsToSet = Math.min(DECIMAL_MAX_SCALE, decimalsToSet);
+            decimals = Math.min(decimalsToSet, DECIMAL_MAX_SCALE);
         } else {
             assert (false); /* This result type isn't handled */
         }

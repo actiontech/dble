@@ -148,8 +148,8 @@ public class HintSQLHandler implements HintHandler {
 
         }
         if (fields) {
-            String list_fields = (String) hintMap.get("list_fields");
-            List<String> listFields = Splitter.on(",").trimResults().splitToList(list_fields);
+            String listFieldsStr = (String) hintMap.get("list_fields");
+            List<String> listFields = Splitter.on(",").trimResults().splitToList(listFieldsStr);
             for (String field : listFields) {
                 if (!procedure.getParamterMap().containsKey(field)) {
                     ProcedureParameter parameter = new ProcedureParameter();

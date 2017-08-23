@@ -159,8 +159,8 @@ public class ItemExtract extends ItemIntFunc {
             case DAY_MINUTE:
                 return (BigInteger.valueOf((ltime.day * 10000L + ltime.hour * 100L + ltime.minute) * neg));
             case DAY_SECOND:
-                return BigInteger
-                        .valueOf((ltime.day * 1000000L + (ltime.hour * 10000L + ltime.minute * 100 + ltime.second)) * neg);
+                return BigInteger.valueOf(
+                        (ltime.day * 1000000L + (ltime.hour * 10000L + ltime.minute * 100 + ltime.second)) * neg);
             case HOUR:
                 return BigInteger.valueOf(ltime.hour * neg);
             case HOUR_MINUTE:

@@ -38,8 +38,7 @@ public class EnchachePooFactory extends CachePoolFactory {
         Cache enCache = cacheManager.getCache(poolName);
         if (enCache == null) {
 
-            CacheConfiguration cacheConf = cacheManager.getConfiguration()
-                    .getDefaultCacheConfiguration().clone();
+            CacheConfiguration cacheConf = cacheManager.getConfiguration().getDefaultCacheConfiguration().clone();
             cacheConf.setName(poolName);
             if (cacheConf.getMaxEntriesLocalHeap() != 0) {
                 cacheConf.setMaxEntriesLocalHeap(cacheSize);

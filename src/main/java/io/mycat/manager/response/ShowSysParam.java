@@ -22,8 +22,7 @@ import java.util.List;
  */
 public class ShowSysParam {
     private static final int FIELD_COUNT = 3;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 

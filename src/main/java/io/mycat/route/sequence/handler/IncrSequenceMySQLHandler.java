@@ -12,8 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
 
-    protected static final Logger LOGGER = LoggerFactory
-            .getLogger(IncrSequenceMySQLHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceMySQLHandler.class);
 
     private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
     protected static final String ERR_SEQ_RESULT = "-999999999,null";

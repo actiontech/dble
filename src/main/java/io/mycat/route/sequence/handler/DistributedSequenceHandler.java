@@ -152,8 +152,8 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                         if (slavePath != null && client.checkExists().forPath(slavePath) != null) {
                             return;
                         }
-                        slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
-                                .forPath(PATH.concat("/instance/node"), "ready".getBytes());
+                        slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
+                                forPath(PATH.concat("/instance/node"), "ready".getBytes());
                         while ("ready".equals(new String(client.getData().forPath(slavePath)))) {
                             Thread.currentThread().yield();
                         }

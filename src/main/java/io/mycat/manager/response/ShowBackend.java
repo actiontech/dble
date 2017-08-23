@@ -50,8 +50,7 @@ import java.nio.ByteBuffer;
 public class ShowBackend {
 
     private static final int FIELD_COUNT = 16;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
@@ -82,21 +81,17 @@ public class ShowBackend {
         FIELDS[i++].packetId = ++packetId;
         // fields[i] = PacketUtil.getField("run", Fields.FIELD_TYPE_VAR_STRING);
         // fields[i++].packetId = ++packetId;
-        FIELDS[i] = PacketUtil.getField("BORROWED",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].packetId = ++packetId;
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
-        FIELDS[i] = PacketUtil
-                .getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
-        FIELDS[i] = PacketUtil
-                .getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
-        FIELDS[i] = PacketUtil.getField("AUTOCOMMIT",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("AUTOCOMMIT", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
         EOF.packetId = ++packetId;
     }
@@ -128,8 +123,7 @@ public class ShowBackend {
     private static RowDataPacket getRow(BackendConnection c, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         if (c instanceof BackendAIOConnection) {
-            row.add(((BackendAIOConnection) c).getProcessor().getName()
-                    .getBytes());
+            row.add(((BackendAIOConnection) c).getProcessor().getName().getBytes());
         } else {
             row.add("N/A".getBytes());
         }
@@ -144,8 +138,7 @@ public class ShowBackend {
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
         row.add(LongUtil.toBytes(c.getNetInBytes()));
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
-        row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c
-                .getStartupTime()) / 1000L));
+        row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
         row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
         // boolean isRunning = c.isRunning();
         // row.add(isRunning ? "true".getBytes() : "false".getBytes());

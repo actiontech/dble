@@ -159,8 +159,7 @@ public final class NIOProcessor {
 
     // 前端连接检查
     private void frontendCheck() {
-        Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet()
-                .iterator();
+        Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet().iterator();
         while (it.hasNext()) {
             FrontendConnection c = it.next().getValue();
 

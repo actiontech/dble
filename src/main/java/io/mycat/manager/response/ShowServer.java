@@ -47,8 +47,7 @@ import java.nio.ByteBuffer;
 public final class ShowServer {
 
     private static final int FIELD_COUNT = 8;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
@@ -80,8 +79,7 @@ public final class ShowServer {
                 Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].packetId = ++packetId;
 
-        FIELDS[i] = PacketUtil
-                .getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
         FIELDS[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);

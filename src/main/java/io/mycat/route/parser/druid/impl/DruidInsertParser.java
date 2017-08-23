@@ -417,8 +417,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             }
         }
 
-        StringBuilder sb = new StringBuilder(200) // 指定初始容量可以提高性能
-                .append("insert into ").append(tableName);
+        StringBuilder sb = new StringBuilder(200  /* 指定初始容量可以提高性能 */).append("insert into ").append(tableName);
 
         List<SQLExpr> columns = insert.getColumns();
 

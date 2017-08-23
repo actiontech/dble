@@ -35,8 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author mycat
  */
 public class ServerQueryHandler implements FrontendQueryHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ServerQueryHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
 
     private final ServerConnection source;
     protected Boolean readOnly = true;

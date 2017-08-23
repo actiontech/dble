@@ -40,8 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author mycat
  */
 public class MySQLConnectionAuthenticator implements NIOHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MySQLConnectionAuthenticator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionAuthenticator.class);
     private final MySQLConnection source;
     private final ResponseHandler listener;
 
@@ -138,8 +137,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         String pass = source.getPassword();
         if (pass != null && pass.length() > 0) {
             byte[] seed = source.getHandshake().seed;
-            r323.seed = SecurityUtil.scramble323(pass, new String(seed))
-                    .getBytes();
+            r323.seed = SecurityUtil.scramble323(pass, new String(seed)).getBytes();
         }
         r323.write(source);
     }

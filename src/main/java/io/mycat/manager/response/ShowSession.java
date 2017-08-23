@@ -25,8 +25,7 @@ import java.util.Collection;
  */
 public class ShowSession {
     private static final int FIELD_COUNT = 3;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
@@ -89,8 +88,7 @@ public class ShowSession {
     private static RowDataPacket getRow(ServerConnection sc, String charset) {
         StringBuilder sb = new StringBuilder();
         NonBlockingSession ssesion = sc.getSession2();
-        Collection<BackendConnection> backConnections = ssesion.getTargetMap()
-                .values();
+        Collection<BackendConnection> backConnections = ssesion.getTargetMap().values();
         int cncount = backConnections.size();
         if (cncount == 0) {
             return null;

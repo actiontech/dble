@@ -90,8 +90,8 @@ public class MyCatMemory {
         }
 
         conf.set("server.local.dirs", system.getDataNodeSortedTempDir());
-        conf.set("server.pointer.array.len", "8k")
-                .set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
+        conf.set("server.pointer.array.len", "8k").
+                set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
         LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 
@@ -126,10 +126,10 @@ public class MyCatMemory {
          * mycat.direct.output.result
          * mycat.local.dir
          */
-        conf.set("server.memory.offHeap.enabled", "true")
-                .set("server.pointer.array.len", "8K")
-                .set("server.buffer.pageSize", "1m")
-                .set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
+        conf.set("server.memory.offHeap.enabled", "true").
+                set("server.pointer.array.len", "8K").
+                set("server.buffer.pageSize", "1m").
+                set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
         LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));
 

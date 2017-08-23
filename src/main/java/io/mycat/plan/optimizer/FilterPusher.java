@@ -138,12 +138,12 @@ public class FilterPusher {
             }
             if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
                 // 将左条件的表达式，推导到join filter的右条件上
-                rightCopyedPushFilters
-                        .addAll(copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
+                rightCopyedPushFilters.addAll(
+                        copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
 
                 // 将右条件的表达式，推导到join filter的左条件上
-                leftCopyedPushFilters
-                        .addAll(copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
+                leftCopyedPushFilters.addAll(
+                        copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
             }
 
             // 针对不能下推的，合并到当前的where

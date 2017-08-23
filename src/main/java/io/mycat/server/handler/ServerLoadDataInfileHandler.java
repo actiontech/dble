@@ -519,8 +519,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         //if the value is cover by enclose char &  enclose char is not null  clear the  enclose char
         if (encose != null && !"".equals(encose) &&
                 (value.startsWith(encose) && value.endsWith(encose))) {
-            return this.escaped(value.substring(encose.length() - 1, value.length() - encose.length())
-                    .replace("\\", "\\\\").replace(escape, "\\"));
+            return this.escaped(value.substring(encose.length() - 1, value.length() - encose.length()).
+                    replace("\\", "\\\\").replace(escape, "\\"));
         }
         //else replace escape because \is used as escape in insert
         return this.escaped(value.replace("\\", "\\\\").replace(escape, "\\"));

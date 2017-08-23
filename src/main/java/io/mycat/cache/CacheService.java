@@ -104,7 +104,7 @@ public class CacheService {
         if (cacheDefault != null && layedCacheType != null) {
             throw new java.lang.IllegalArgumentException(
                     "invalid cache config, layedpool.TableID2DataNodeCacheType and " +
-                    "layedpool.TableID2DataNodeCache don't coexist");
+                            "layedpool.TableID2DataNodeCache don't coexist");
         }
 
         final String rootlayedCacheName = "TableID2DataNodeCache";

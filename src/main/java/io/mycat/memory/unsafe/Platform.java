@@ -56,8 +56,7 @@ public final class Platform {
 
     private static final boolean UNALIGNED;
 
-    public static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder()
-            .equals(ByteOrder.LITTLE_ENDIAN);
+    public static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
 
     static {
         boolean unaligned;

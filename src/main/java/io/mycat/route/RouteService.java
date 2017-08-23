@@ -43,8 +43,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RouteService {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RouteService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RouteService.class);
     public static final String HINT_TYPE = "_serverHintType";
     private final CachePool sqlRouteCache;
     private final LayerCachePool tableId2DataNodeCache;

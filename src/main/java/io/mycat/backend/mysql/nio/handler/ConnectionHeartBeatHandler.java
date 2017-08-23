@@ -42,8 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author wuzhih
  */
 public class ConnectionHeartBeatHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ConnectionHeartBeatHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionHeartBeatHandler.class);
 
     protected final ReentrantLock lock = new ReentrantLock();
     final Condition condition = lock.newCondition();

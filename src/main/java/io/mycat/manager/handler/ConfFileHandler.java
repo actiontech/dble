@@ -50,11 +50,9 @@ import java.util.Date;
  * @author wuzh
  */
 public final class ConfFileHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ConfFileHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfFileHandler.class);
     private static final int FIELD_COUNT = 1;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
     private static final String UPLOAD_CMD = "FILE @@UPLOAD";

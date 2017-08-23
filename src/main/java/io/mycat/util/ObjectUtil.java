@@ -256,13 +256,11 @@ public final class ObjectUtil {
             BeanInfo toBean = Introspector.getBeanInfo(toClass);
 
             PropertyDescriptor[] toPd = toBean.getPropertyDescriptors();
-            List<PropertyDescriptor> fromPd = Arrays.asList(fromBean
-                    .getPropertyDescriptors());
+            List<PropertyDescriptor> fromPd = Arrays.asList(fromBean.getPropertyDescriptors());
 
             for (PropertyDescriptor propertyDescriptor : toPd) {
                 propertyDescriptor.getDisplayName();
-                PropertyDescriptor pd = fromPd.get(fromPd
-                        .indexOf(propertyDescriptor));
+                PropertyDescriptor pd = fromPd.get(fromPd.indexOf(propertyDescriptor));
                 if (pd.getDisplayName().equals(
                         propertyDescriptor.getDisplayName()) &&
                         !pd.getDisplayName().equals("class") &&

@@ -35,8 +35,8 @@ import java.util.Map;
  */
 public class ReflectionProvider {
 
-    private transient Map<Class<?>, byte[]> serializedDataCache = Collections
-            .synchronizedMap(new HashMap<Class<?>, byte[]>());
+    private transient Map<Class<?>, byte[]> serializedDataCache = Collections.synchronizedMap(
+            new HashMap<Class<?>, byte[]>());
     private transient FieldDictionary fieldDictionary = new FieldDictionary();
 
     public Object newInstance(Class<?> type) {

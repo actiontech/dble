@@ -211,8 +211,7 @@ public final class ServerParseShow {
                     (c2 == 'S' || c2 == 's') &&
                     (c3 == 'E' || c3 == 'e') &&
                     (c4 == 'S' || c4 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
                 return DATABASES;
             }
         }
@@ -234,8 +233,7 @@ public final class ServerParseShow {
                     (c4 == 'M' || c4 == 'm') &&
                     (c5 == 'A' || c5 == 'a') &&
                     (c6 == 'S' || c6 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
                 return DATABASES;
             }
         }
@@ -255,8 +253,7 @@ public final class ServerParseShow {
                     (c4 == 'S' || c4 == 's') &&
                     (c5 == 'E' || c5 == 'e') &&
                     (c6 == 'T' || c6 == 't') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
                 return CHARSET;
             }
         }
@@ -278,8 +275,7 @@ public final class ServerParseShow {
                     (c4 == 'C' || c4 == 'c') &&
                     (c5 == 'E' || c5 == 'e') &&
                     (c6 == 'S' || c6 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
                 return DATASOURCES;
             }
         }

@@ -45,11 +45,9 @@ public final class ServerParseSelect {
 
     public static final int SESSION_TX_READ_ONLY = 10;
 
-    private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT"
-            .toCharArray();
+    private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
     private static final char[] IDENTITY_STR = "IDENTITY".toCharArray();
-    private static final char[] LAST_INSERT_ID_STR = "LAST_INSERT_ID"
-            .toCharArray();
+    private static final char[] LAST_INSERT_ID_STR = "LAST_INSERT_ID".toCharArray();
     private static final char[] DATABASE_STR = "DATABASE()".toCharArray();
     private static final char[] CURRENT_USER_STR = "CURRENT_USER()".toCharArray();
 

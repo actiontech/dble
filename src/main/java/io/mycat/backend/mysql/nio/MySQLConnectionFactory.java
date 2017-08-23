@@ -44,8 +44,7 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
                                 String schema) throws IOException {
 
         DBHostConfig dsc = pool.getConfig();
-        NetworkChannel channel = openSocketChannel(MycatServer.getInstance()
-                .isAIO());
+        NetworkChannel channel = openSocketChannel(MycatServer.getInstance().isAIO());
 
         MySQLConnection c = new MySQLConnection(channel, pool.isReadNode());
         MycatServer.getInstance().getConfig().setSocketParams(c, false);
@@ -60,12 +59,9 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
         if (channel instanceof AsynchronousSocketChannel) {
             ((AsynchronousSocketChannel) channel).connect(
                     new InetSocketAddress(dsc.getIp(), dsc.getPort()), c,
-                    (CompletionHandler) MycatServer.getInstance()
-                            .getConnector());
+                    (CompletionHandler) MycatServer.getInstance().getConnector());
         } else {
-            ((NIOConnector) MycatServer.getInstance().getConnector())
-                    .postConnect(c);
-
+            ((NIOConnector) MycatServer.getInstance().getConnector()).postConnect(c);
         }
         return c;
     }

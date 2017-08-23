@@ -34,10 +34,10 @@ import java.util.Map;
  */
 public class FieldDictionary {
 
-    private final Map<String, Map<String, Field>> nameCache = Collections
-            .synchronizedMap(new HashMap<String, Map<String, Field>>());
-    private final Map<String, Map<FieldKey, Field>> keyCache = Collections
-            .synchronizedMap(new HashMap<String, Map<FieldKey, Field>>());
+    private final Map<String, Map<String, Field>> nameCache = Collections.synchronizedMap(
+            new HashMap<String, Map<String, Field>>());
+    private final Map<String, Map<FieldKey, Field>> keyCache = Collections.synchronizedMap(
+            new HashMap<String, Map<FieldKey, Field>>());
 
     /**
      * Returns an iterator for all serializable fields for some class

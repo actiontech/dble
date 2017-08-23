@@ -265,8 +265,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        final RouteResultsetNode node = (RouteResultsetNode) conn
-                .getAttachment();
+        final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
         innerExecute(conn, node);
     }
@@ -324,11 +323,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.handleSpecial(rrs, source.getSchema(), true);
                 if (rrs.isLoadData()) {
-                    byte lastPackId = source.getLoadDataInfileHandler()
-                            .getLastPackId();
+                    byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
                     ok.packetId = ++lastPackId; // OK_PACKET
-                    ok.message = ("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0")
-                            .getBytes(); // 此处信息只是为了控制台给人看的
+                    ok.message = ("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes(); // 此处信息只是为了控制台给人看的
                     source.getLoadDataInfileHandler().clear();
                 } else {
                     ok.packetId = ++packetId; // OK_PACKET
@@ -599,18 +596,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             Set<String> shouldRemoveAvgField = new HashSet<>();
             Set<String> shouldRenameAvgField = new HashSet<>();
             if (needMerg) {
-                Map<String, Integer> mergeColsMap = dataMergeSvr.getRrs()
-                        .getMergeCols();
+                Map<String, Integer> mergeColsMap = dataMergeSvr.getRrs().getMergeCols();
                 if (mergeColsMap != null) {
-                    for (Map.Entry<String, Integer> entry : mergeColsMap
-                            .entrySet()) {
+                    for (Map.Entry<String, Integer> entry : mergeColsMap.entrySet()) {
                         String key = entry.getKey();
                         int mergeType = entry.getValue();
                         if (MergeCol.MERGE_AVG == mergeType && mergeColsMap.containsKey(key + "SUM")) {
-                            shouldRemoveAvgField.add((key + "COUNT")
-                                    .toUpperCase());
-                            shouldRenameAvgField.add((key + "SUM")
-                                    .toUpperCase());
+                            shouldRemoveAvgField.add((key + "COUNT").toUpperCase());
+                            shouldRenameAvgField.add((key + "SUM").toUpperCase());
                         }
                     }
                 }

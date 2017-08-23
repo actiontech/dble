@@ -518,11 +518,11 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("[thread=")
-                .append(Thread.currentThread().getName()).append(",class=")
-                .append(getClass().getSimpleName()).append(",id=").append(id)
-                .append(",host=").append(host).append(",port=").append(port)
-                .append(",schema=").append(schema).append(']').toString();
+        return new StringBuilder().append("[thread=").
+                append(Thread.currentThread().getName()).append(",class=").
+                append(getClass().getSimpleName()).append(",id=").append(id).
+                append(",host=").append(host).append(",port=").append(port).
+                append(",schema=").append(schema).append(']').toString();
     }
 
     private final static byte[] encodeString(String src, String charset) {

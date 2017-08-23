@@ -44,8 +44,7 @@ import java.util.List;
  * @author mycat
  */
 public class MySQLConnectionHandler extends BackendAsyncHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MySQLConnectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionHandler.class);
     private static final int RESULT_STATUS_INIT = 0;
     private static final int RESULT_STATUS_HEADER = 1;
     private static final int RESULT_STATUS_FIELD_EOF = 2;

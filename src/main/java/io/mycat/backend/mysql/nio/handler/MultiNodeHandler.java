@@ -38,8 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author mycat
  */
 public abstract class MultiNodeHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MultiNodeHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
     protected final NonBlockingSession session;
     private AtomicBoolean isFailed = new AtomicBoolean(false);

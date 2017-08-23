@@ -51,8 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author mycat
  */
 public class MySQLConnection extends BackendAIOConnection {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MySQLConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
     private static final long CLIENT_FLAGS = initClientFlags();
     private volatile long lastTime;
     private volatile String schema = null;
@@ -107,20 +106,16 @@ public class MySQLConnection extends BackendAIOConnection {
     static {
         READ_UNCOMMITTED.packetId = 0;
         READ_UNCOMMITTED.command = MySQLPacket.COM_QUERY;
-        READ_UNCOMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED"
-                .getBytes();
+        READ_UNCOMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED".getBytes();
         READ_COMMITTED.packetId = 0;
         READ_COMMITTED.command = MySQLPacket.COM_QUERY;
-        READ_COMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED"
-                .getBytes();
+        READ_COMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED".getBytes();
         REPEATED_READ.packetId = 0;
         REPEATED_READ.command = MySQLPacket.COM_QUERY;
-        REPEATED_READ.arg = "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ"
-                .getBytes();
+        REPEATED_READ.arg = "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes();
         SERIALIZABLE.packetId = 0;
         SERIALIZABLE.command = MySQLPacket.COM_QUERY;
-        SERIALIZABLE.arg = "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE"
-                .getBytes();
+        SERIALIZABLE.arg = "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE".getBytes();
         AUTOCOMMIT_ON.packetId = 0;
         AUTOCOMMIT_ON.command = MySQLPacket.COM_QUERY;
         AUTOCOMMIT_ON.arg = "SET autocommit=1".getBytes();
@@ -286,8 +281,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     private static void getCharsetCommand(StringBuilder sb, int clientCharIndex) {
-        sb.append("SET names ").append(CharsetUtil.getCharset(clientCharIndex))
-                .append(";");
+        sb.append("SET names ").append(CharsetUtil.getCharset(clientCharIndex)).append(";");
     }
 
     private static void getTxIsolationCommand(StringBuilder sb, int txIsolation) {
@@ -633,10 +627,11 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     @Override
-    public String toString() { return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema +
-            ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId=" +
-            threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
-            ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port +
+    public String toString() {
+        return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema +
+                ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId=" +
+                threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
+                ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port +
                 ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size() +
                 ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
     }

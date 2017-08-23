@@ -50,8 +50,7 @@ import java.nio.ByteBuffer;
 public final class ShowConnection {
 
     private static final int FIELD_COUNT = 15;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
@@ -82,8 +81,7 @@ public final class ShowConnection {
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
-        FIELDS[i] = PacketUtil
-                .getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
         FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
@@ -102,8 +100,7 @@ public final class ShowConnection {
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].packetId = ++packetId;
 
-        FIELDS[i] = PacketUtil
-                .getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
         FIELDS[i] = PacketUtil.getField("AUTOCOMMIT",

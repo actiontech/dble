@@ -84,8 +84,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         this.fieldCount = fieldCount;
 
         if (rrs.getHavingCols() != null) {
-            ColMeta colMeta = columToIndx.get(rrs.getHavingCols().getLeft()
-                    .toUpperCase());
+            ColMeta colMeta = columToIndx.get(rrs.getHavingCols().getLeft().toUpperCase());
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("getHavingCols:" + rrs.getHavingCols().toString());
@@ -103,8 +102,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("isHasAggrColumn:" + mergeColsMap.toString());
                 }
-                for (Map.Entry<String, Integer> mergEntry : mergeColsMap
-                        .entrySet()) {
+                for (Map.Entry<String, Integer> mergEntry : mergeColsMap.entrySet()) {
                     String colName = mergEntry.getKey().toUpperCase();
                     int type = mergEntry.getValue();
                     if (MergeCol.MERGE_AVG == type) {
@@ -114,8 +112,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                             ColMeta colMeta = new ColMeta(sumColMeta.colIndex,
                                     countColMeta.colIndex,
                                     sumColMeta.getColType());
-                            mergCols.add(new MergeCol(colMeta, mergEntry
-                                    .getValue()));
+                            mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
                         }
                     } else {
                         ColMeta colMeta = columToIndx.get(colName);
@@ -147,8 +144,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             orderCols = new OrderCol[orders.size()];
             int i = 0;
             for (Map.Entry<String, Integer> entry : orders.entrySet()) {
-                String key = StringUtil.removeBackQuote(entry.getKey()
-                        .toUpperCase());
+                String key = StringUtil.removeBackQuote(entry.getKey().toUpperCase());
                 ColMeta colMeta = columToIndx.get(key);
                 if (colMeta == null) {
                     throw new IllegalArgumentException(

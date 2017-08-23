@@ -754,8 +754,8 @@ public class RouterUtil {
                                 }
                             }
                             if (pair.rangeValue != null) {
-                                Integer[] nodeIndexs = algorithm
-                                        .calculateRange(pair.rangeValue.beginValue.toString(), pair.rangeValue.endValue.toString());
+                                Integer[] nodeIndexs = algorithm.calculateRange(
+                                        pair.rangeValue.beginValue.toString(), pair.rangeValue.endValue.toString());
                                 ArrayList<String> dataNodes = tableConfig.getDataNodes();
                                 String node;
                                 for (Integer idx : nodeIndexs) {

@@ -34,8 +34,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NewConnectionRespHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(NewConnectionRespHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NewConnectionRespHandler.class);
     private BackendConnection backConn;
     private ReentrantLock lock = new ReentrantLock();
     private Condition inited = lock.newCondition();

@@ -58,8 +58,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author mycat
  */
 public class ServerConnection extends FrontendConnection {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ServerConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     private volatile int txIsolation;
@@ -221,9 +220,7 @@ public class ServerConnection extends FrontendConnection {
         // 路由计算
         RouteResultset rrs;
         try {
-            rrs = MycatServer.getInstance().getRouterService()
-                    .route(schema, type, sql, this.charset, this);
-
+            rrs = MycatServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
         } catch (Exception e) {
             executeException(e, sql);
             return null;
@@ -262,8 +259,7 @@ public class ServerConnection extends FrontendConnection {
         // 路由计算
         RouteResultset rrs;
         try {
-            rrs = MycatServer.getInstance().getRouterService()
-                    .route(schema, type, sql, this.charset, this);
+            rrs = MycatServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
             if (rrs == null) {
                 return;
             }

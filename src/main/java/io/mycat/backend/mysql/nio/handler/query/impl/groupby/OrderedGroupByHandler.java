@@ -207,8 +207,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                 List<Order> orders = HandlerTool.makeOrder(selFunc.arguments());
                 RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type(),
                         conn.getCharset());
-                store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset)
-                        .setMemSizeController(session.getOtherBufferMC());
+                store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset).
+                        setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
             }
             func.setAggregator(needDistinct && func.hasWithDistinct() ?

@@ -129,8 +129,8 @@ public abstract class PlanNode {
     /**
      * 依赖的所有列，保存的是childnode->iselectable
      */
-    protected LoadingCache<PlanNode, List<Item>> columnsReferedCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<PlanNode, List<Item>>() {
+    protected LoadingCache<PlanNode, List<Item>> columnsReferedCache = CacheBuilder.newBuilder().build(
+            new CacheLoader<PlanNode, List<Item>>() {
                 @Override
                 public List<Item> load(PlanNode tn) {
                     return new ArrayList<Item>();

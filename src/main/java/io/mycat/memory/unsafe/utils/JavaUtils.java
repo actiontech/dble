@@ -115,30 +115,30 @@ public class JavaUtils {
     }
 
     private static final ImmutableMap<String, TimeUnit> TIME_SUFFIXES =
-            ImmutableMap.<String, TimeUnit>builder()
-                    .put("us", TimeUnit.MICROSECONDS)
-                    .put("ms", TimeUnit.MILLISECONDS)
-                    .put("s", TimeUnit.SECONDS)
-                    .put("m", TimeUnit.MINUTES)
-                    .put("min", TimeUnit.MINUTES)
-                    .put("h", TimeUnit.HOURS)
-                    .put("d", TimeUnit.DAYS)
-                    .build();
+            ImmutableMap.<String, TimeUnit>builder().
+                    put("us", TimeUnit.MICROSECONDS).
+                    put("ms", TimeUnit.MILLISECONDS).
+                    put("s", TimeUnit.SECONDS).
+                    put("m", TimeUnit.MINUTES).
+                    put("min", TimeUnit.MINUTES).
+                    put("h", TimeUnit.HOURS).
+                    put("d", TimeUnit.DAYS).
+                    build();
 
     private static final ImmutableMap<String, ByteUnit> BYTE_SUFFIXES =
-            ImmutableMap.<String, ByteUnit>builder()
-                    .put("b", ByteUnit.BYTE)
-                    .put("k", ByteUnit.KiB)
-                    .put("kb", ByteUnit.KiB)
-                    .put("m", ByteUnit.MiB)
-                    .put("mb", ByteUnit.MiB)
-                    .put("g", ByteUnit.GiB)
-                    .put("gb", ByteUnit.GiB)
-                    .put("t", ByteUnit.TiB)
-                    .put("tb", ByteUnit.TiB)
-                    .put("p", ByteUnit.PiB)
-                    .put("pb", ByteUnit.PiB)
-                    .build();
+            ImmutableMap.<String, ByteUnit>builder().
+                    put("b", ByteUnit.BYTE).
+                    put("k", ByteUnit.KiB).
+                    put("kb", ByteUnit.KiB).
+                    put("m", ByteUnit.MiB).
+                    put("mb", ByteUnit.MiB).
+                    put("g", ByteUnit.GiB).
+                    put("gb", ByteUnit.GiB).
+                    put("t", ByteUnit.TiB).
+                    put("tb", ByteUnit.TiB).
+                    put("p", ByteUnit.PiB).
+                    put("pb", ByteUnit.PiB).
+                    build();
 
     /**
      * Convert a passed time string (e.g. 50s, 100ms, or 250us) to a time count in the given unit.

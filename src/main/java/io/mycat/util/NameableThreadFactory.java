@@ -11,8 +11,7 @@ public class NameableThreadFactory implements ThreadFactory {
 
     public NameableThreadFactory(String name, boolean isDaemon) {
         SecurityManager s = System.getSecurityManager();
-        this.group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
-                .getThreadGroup();
+        this.group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
         this.namePrefix = name;
         this.threadId = new AtomicInteger(0);
         this.isDaemon = isDaemon;

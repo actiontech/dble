@@ -38,8 +38,7 @@ public abstract class BackendConnectionFactory {
     protected NetworkChannel openSocketChannel(boolean isAIO)
             throws IOException {
         if (isAIO) {
-            return AsynchronousSocketChannel
-                    .open(MycatServer.getInstance().getNextAsyncChannelGroup());
+            return AsynchronousSocketChannel.open(MycatServer.getInstance().getNextAsyncChannelGroup());
         } else {
             SocketChannel channel = null;
             channel = SocketChannel.open();

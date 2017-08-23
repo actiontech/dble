@@ -40,8 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class GetConnectionHandler implements ResponseHandler {
     private final CopyOnWriteArrayList<BackendConnection> successCons;
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(GetConnectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetConnectionHandler.class);
     private final AtomicInteger finishedCount = new AtomicInteger(0);
     private final int total;
 

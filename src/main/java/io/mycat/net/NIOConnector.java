@@ -110,8 +110,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
             if (finishConnect(c, (SocketChannel) c.channel)) {
                 clearSelectionKey(key);
                 c.setId(ID_GENERATOR.getId());
-                NIOProcessor processor = MycatServer.getInstance()
-                        .nextProcessor();
+                NIOProcessor processor = MycatServer.getInstance().nextProcessor();
                 c.setProcessor(processor);
                 NIOReactor reactor = reactorPool.getNextReactor();
                 reactor.postRegister(c);

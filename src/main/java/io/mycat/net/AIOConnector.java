@@ -56,8 +56,7 @@ public final class AIOConnector implements SocketConnector,
         try {
             if (c.finishConnect()) {
                 c.setId(ID_GENERATOR.getId());
-                NIOProcessor processor = MycatServer.getInstance()
-                        .nextProcessor();
+                NIOProcessor processor = MycatServer.getInstance().nextProcessor();
                 c.setProcessor(processor);
                 c.register();
             }

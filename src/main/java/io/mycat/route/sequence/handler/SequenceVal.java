@@ -56,8 +56,7 @@ public class SequenceVal {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    IncrSequenceMySQLHandler.LOGGER
-                            .warn("wait db fetch sequnce err " + e);
+                    IncrSequenceMySQLHandler.LOGGER.warn("wait db fetch sequnce err " + e);
                 }
             }
         }

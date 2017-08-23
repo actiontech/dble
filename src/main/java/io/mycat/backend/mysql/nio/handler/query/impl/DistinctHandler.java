@@ -68,8 +68,8 @@ public class DistinctHandler extends BaseDMLHandler {
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distincts);
         cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type(), conn.getCharset());
-        localResult = new DistinctLocalResult(pool, this.sourceFields.size(), cmptor, conn.getCharset())
-                .setMemSizeController(session.getOtherBufferMC());
+        localResult = new DistinctLocalResult(pool, this.sourceFields.size(), cmptor, conn.getCharset()).
+                setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 

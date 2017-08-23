@@ -58,8 +58,7 @@ public final class ShowDataNode {
 
     private static final NumberFormat NF = DecimalFormat.getInstance();
     private static final int FIELD_COUNT = 8;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil
-            .getHeader(FIELD_COUNT);
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
@@ -73,8 +72,7 @@ public final class ShowDataNode {
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
-        FIELDS[i] = PacketUtil
-                .getField("DATHOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("DATHOST", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].packetId = ++packetId;
 
         FIELDS[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);

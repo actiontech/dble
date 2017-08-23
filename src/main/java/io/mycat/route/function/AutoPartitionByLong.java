@@ -160,14 +160,11 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 String pairs[] = line.substring(0, ind).trim().split("-");
                 long longStart = NumberParseUtil.parseLong(pairs[0].trim());
                 long longEnd = NumberParseUtil.parseLong(pairs[1].trim());
-                int nodeId = Integer.parseInt(line.substring(ind + 1)
-                        .trim());
-                longRangeList
-                        .add(new LongRange(nodeId, longStart, longEnd));
+                int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
+                longRangeList.add(new LongRange(nodeId, longStart, longEnd));
 
             }
-            longRongs = longRangeList.toArray(new LongRange[longRangeList
-                    .size()]);
+            longRongs = longRangeList.toArray(new LongRange[longRangeList.size()]);
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;

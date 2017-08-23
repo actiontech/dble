@@ -66,8 +66,7 @@ public class XMLRuleLoader {
     }
 
     public Map<String, TableRuleConfig> getTableRules() {
-        return (Map<String, TableRuleConfig>) (tableRules.isEmpty() ? Collections
-                .emptyMap() : tableRules);
+        return (Map<String, TableRuleConfig>) (tableRules.isEmpty() ? Collections.emptyMap() : tableRules);
     }
 
 
@@ -78,8 +77,7 @@ public class XMLRuleLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             //读取出语意树
-            Element root = ConfigUtil.getDocument(dtd, xml)
-                    .getDocumentElement();
+            Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
             //加载Function
             loadFunctions(root);
             //加载TableRule

@@ -1702,8 +1702,7 @@ public class MyTime {
             }
             retMonth.set(1);
             ;
-            for (monthPos = 0; dayOfYear > DAYS_IN_MONTH[monthPos]; dayOfYear -= DAYS_IN_MONTH[monthPos++], retMonth
-                    .incre())
+            for (monthPos = 0; dayOfYear > DAYS_IN_MONTH[monthPos]; dayOfYear -= DAYS_IN_MONTH[monthPos++], retMonth.incre())
                 ;
             retYear.set(year);
             retDay.set(dayOfYear + leapDay);

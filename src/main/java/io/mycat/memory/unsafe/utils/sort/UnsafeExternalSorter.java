@@ -172,7 +172,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
             /**
              * 创建一个写外存的SpillWriter，当前内存数据已经排序了，直接写到磁盘中.
              */
-            final UnsafeSorterSpillWriter spillWriter = new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, /**writeMetrics,*/ inMemSorter.numRecords());
+            final UnsafeSorterSpillWriter spillWriter = new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, /**writeMetrics,*/inMemSorter.numRecords());
 
             /**
              * 添加到SpillWriter列表中，标志了有多少 spillWriters.size()写到磁盘中了。
@@ -560,7 +560,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
 
                 // Iterate over the records that have not been returned and spill them.
                 final UnsafeSorterSpillWriter spillWriter =
-                        new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, /**writeMetrics,*/ numRecords);
+                        new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, /**writeMetrics,*/numRecords);
                 while (inMemIterator.hasNext()) {
                     inMemIterator.loadNext();
                     final Object baseObject = inMemIterator.getBaseObject();

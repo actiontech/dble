@@ -39,9 +39,8 @@ public class HintMasterDBHandler implements HintHandler {
 //        LOGGER.debug("schema.getName(): " + schema.getDataNode()); // null
 //        LOGGER.debug("hintSQLValue: " + hintSQLValue); // master/slave
 
-        RouteResultset rrs = RouteStrategyFactory.getRouteStrategy()
-                .route(schema, sqlType,
-                        realSQL, charset, sc, cachePool);
+        RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
+                schema, sqlType, realSQL, charset, sc, cachePool);
 
         LOGGER.debug("schema.rrs(): " + rrs); // master
         Boolean isRouteToMaster = null;    // 默认不施加任何影响

@@ -642,8 +642,7 @@ public final class MysqlDefs {
         mysqlToJdbcTypesMap.put("LONGBLOB", Integer.valueOf(
                 java.sql.Types.LONGVARBINARY));
         mysqlToJdbcTypesMap.put("TINYTEXT", Integer.valueOf(java.sql.Types.VARCHAR));
-        mysqlToJdbcTypesMap
-                .put("TEXT", Integer.valueOf(java.sql.Types.LONGVARCHAR));
+        mysqlToJdbcTypesMap.put("TEXT", Integer.valueOf(java.sql.Types.LONGVARCHAR));
         mysqlToJdbcTypesMap.put("MEDIUMTEXT", Integer.valueOf(
                 java.sql.Types.LONGVARCHAR));
         mysqlToJdbcTypesMap.put("LONGTEXT", Integer.valueOf(

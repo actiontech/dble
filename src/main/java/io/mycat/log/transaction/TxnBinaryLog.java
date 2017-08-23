@@ -68,9 +68,10 @@ public class TxnBinaryLog {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(executeTime).append(", ConnID:").append(connid).append(", XID:").append(xid).append(", ").append("MySQL user ").append("'").append(user)
-                .append("'").append("@'").append(host).append("', ").append(" Current schema `").append(schema)
-                .append("`, ").append("Current query ").append("\n").append(query).append("\n");
+        builder.append(executeTime).append(", ConnID:").append(connid).append(", XID:").append(xid).append(", ").
+                append("MySQL user ").append("'").append(user).
+                append("'").append("@'").append(host).append("', ").append(" Current schema `").append(schema).
+                append("`, ").append("Current query ").append("\n").append(query).append("\n");
         return builder.toString();
     }
 }

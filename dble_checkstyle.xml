@@ -69,7 +69,7 @@
         <module name="TypecastParenPad"/>
         <module name="WhitespaceAfter"/>
         <module name="WhitespaceAround"/>
-        <!--<module name="SeparatorWrap"/>-->
+        <module name="SeparatorWrap"/>
         <!--<module name="NoLineWrap"/>-->
         <!--<module name="EmptyForInitializerPad"/>-->
 

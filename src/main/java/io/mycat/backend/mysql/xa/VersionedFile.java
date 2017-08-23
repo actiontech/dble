@@ -50,8 +50,7 @@ public class VersionedFile {
         File cd = new File(getBaseDir());
         String[] names = cd.list(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                return (name.startsWith(getBaseName()) && name
-                        .endsWith(getSuffix()));
+                return (name.startsWith(getBaseName()) && name.endsWith(getSuffix()));
             }
         });
         if (names != null) {

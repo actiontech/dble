@@ -494,8 +494,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void releaseConnection(BackendConnection con) {
-        Iterator<Entry<RouteResultsetNode, BackendConnection>> itor = target
-                .entrySet().iterator();
+        Iterator<Entry<RouteResultsetNode, BackendConnection>> itor = target.entrySet().iterator();
         while (itor.hasNext()) {
             BackendConnection theCon = itor.next().getValue();
             if (theCon == con) {
@@ -595,8 +594,7 @@ public class NonBlockingSession implements Session {
             }
         }
         if (hooked) {
-            for (Entry<RouteResultsetNode, BackendConnection> en : killees
-                    .entrySet()) {
+            for (Entry<RouteResultsetNode, BackendConnection> en : killees.entrySet()) {
                 KillConnectionHandler kill = new KillConnectionHandler(
                         en.getValue(), this);
                 MycatConfig conf = MycatServer.getInstance().getConfig();

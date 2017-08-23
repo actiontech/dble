@@ -111,8 +111,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type(),
                 conn.getCharset());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), cmptor, localResultFps,
-                localResultReferedSums, this.isAllPushDown(), conn.getCharset())
-                .setMemSizeController(session.getOtherBufferMC());
+                localResultReferedSums, this.isAllPushDown(), conn.getCharset()).
+                setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
             RowDataComparator tmpcmptor = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type(), conn.getCharset());

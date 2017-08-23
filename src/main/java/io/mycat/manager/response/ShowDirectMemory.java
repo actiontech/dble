@@ -231,18 +231,15 @@ public class ShowDirectMemory {
                 totalAvailable = Platform.getMaxDirectMemory();
             }
 
-            row.add(JavaUtils.bytesToString2(totalAvailable - usedforMerge - usedforNetworkd)
-                    .getBytes(c.getCharset()));
+            row.add(JavaUtils.bytesToString2(totalAvailable - usedforMerge - usedforNetworkd).getBytes(c.getCharset()));
 
             if (useOffHeapForMerge == 1) {
                 /**
                  * 输出安全系统DIRECT_SAFETY_FRACTION
                  */
-                row.add(("" + MyCatMemory.DIRECT_SAFETY_FRACTION)
-                        .getBytes(c.getCharset()));
+                row.add(("" + MyCatMemory.DIRECT_SAFETY_FRACTION).getBytes(c.getCharset()));
             } else {
-                row.add(("1.0")
-                        .getBytes(c.getCharset()));
+                row.add(("1.0").getBytes(c.getCharset()));
             }
 
 

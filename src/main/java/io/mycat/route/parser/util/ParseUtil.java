@@ -232,6 +232,8 @@ public final class ParseUtil {
                     }
                 }
                 break;
+            default:
+                break;
         }
         return offset;
     }

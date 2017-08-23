@@ -1164,6 +1164,8 @@ public final class ManagerParseShow {
                         case 'U':
                         case 'u':
                             return show2SqlSUCheck(stmt, offset);
+                        default:
+                            break;
                     }
                 case 'H':
                 case 'h':

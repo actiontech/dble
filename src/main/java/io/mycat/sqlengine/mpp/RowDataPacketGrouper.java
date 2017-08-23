@@ -116,6 +116,8 @@ public class RowDataPacketGrouper {
                         it.remove();
                     }
                     break;
+                default:
+                    break;
             }
         }
 
@@ -177,6 +179,8 @@ public class RowDataPacketGrouper {
             case ColMeta.COL_TYPE_SET:
                 return ByteUtil.compareNumberByte(left, right);
             // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+            default:
+                break;
         }
         return 0;
     }

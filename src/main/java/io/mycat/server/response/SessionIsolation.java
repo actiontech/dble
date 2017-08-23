@@ -78,6 +78,8 @@ public class SessionIsolation {
             case Isolations.SERIALIZABLE:
                 value = "SERIALIZABLE";
                 break;
+            default:
+                break;
         }
         row.add(StringUtil.encode(value, c.getCharset()));
         row.packetId = ++packetId;

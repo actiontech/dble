@@ -134,6 +134,8 @@ public class CompareLike {
                         si++;
                     }
                     return false;
+                default:
+                    break;
             }
         }
         return si == sLen;

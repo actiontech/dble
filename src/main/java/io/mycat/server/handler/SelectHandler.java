@@ -69,6 +69,8 @@ public final class SelectHandler {
                         case 'L':
                         case 'l':
                             break loop;
+                        default:
+                            break;
                     }
                 }
                 offset = ServerParseSelect.indexAfterLastInsertIdFunc(stmt, offset);
@@ -88,6 +90,8 @@ public final class SelectHandler {
                             continue;
                         case '@':
                             break loop;
+                        default:
+                            break;
                     }
                 }
                 int indexOfAtAt = offset;

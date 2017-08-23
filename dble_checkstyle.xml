@@ -89,11 +89,9 @@
 
         <!-- Checks for common coding problems. -->
         <module name="EmptyStatement"/>
-        <!--<module name="EqualsHashCode"/>-->
-        <!--<module name="IllegalInstantiation"/>-->
-        <!--<module name="InnerAssignment"/>-->
-        <!--<module name="MagicNumber"/>-->
-        <!--<module name="MissingSwitchDefault"/>-->
+        <module name="EqualsHashCode"/>
+        <module name="IllegalInstantiation"/>
+        <module name="MissingSwitchDefault"/>
         <!--<module name="SimplifyBooleanExpression"/>-->
         <!--<module name="SimplifyBooleanReturn"/>-->
         <!--<module name="ArrayTrailingComma"/>-->

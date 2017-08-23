@@ -162,6 +162,8 @@ public class MySQLHeartbeat extends DBHeartbeat {
             case TIMEOUT_STATUS:
                 setTimeout(detector);
                 break;
+            default:
+                break;
         }
         if (this.status != OK_STATUS) {
             switchSourceIfNeed("heartbeat error");

@@ -425,6 +425,8 @@ public class UnsafeRowGrouper {
                             sorter.insertRow(row);
                         }
                         break;
+                    default:
+                        break;
                 }
             }
         } catch (IOException e) {

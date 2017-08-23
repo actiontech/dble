@@ -86,6 +86,8 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
                 case ColMeta.COL_TYPE_SET:
                     return PrefixComparators.BinaryPrefixComparator.computePrefix(rowIndexElem);
                 // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+                default:
+                    break;
             }
             return 0;
         } else {

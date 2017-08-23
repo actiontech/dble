@@ -100,6 +100,8 @@ public class CharacterSet {
             case CHARACTER_SET_CONNECTION:
                 charConnection = sqlList[0].substring(rs >>> 8).trim();
                 break;
+            default:
+                break;
         }
 
         // check remaining

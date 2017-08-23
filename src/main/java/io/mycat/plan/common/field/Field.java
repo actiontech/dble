@@ -224,4 +224,9 @@ public abstract class Field {
         }
         return h;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
 }

@@ -119,6 +119,8 @@ public class ItemExtract extends ItemIntFunc {
                 maxLength = 9;
                 dateValue = false;
                 break;
+            default:
+                break;
         }
     }
 
@@ -185,6 +187,8 @@ public class ItemExtract extends ItemIntFunc {
                 return BigInteger.valueOf((((ltime.minute * 100 + ltime.second)) * 1000000L + ltime.secondPart) * neg);
             case SECOND_MICROSECOND:
                 return BigInteger.valueOf((ltime.second * 1000000L + ltime.secondPart) * neg);
+            default:
+                break;
         }
         return BigInteger.ZERO; // Impossible
     }

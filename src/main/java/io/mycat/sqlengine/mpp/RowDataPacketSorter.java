@@ -190,6 +190,8 @@ public class RowDataPacketSorter {
             case ColMeta.COL_TYPE_SET:
                 return BytesTools.compareTo(left, right);
             // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+            default:
+                break;
         }
         return 0;
     }

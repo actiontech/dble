@@ -234,6 +234,8 @@ public final class ServerParseSelect {
                         case '"':
                             state = 2;
                             break;
+                        default:
+                            break;
                     }
                     break;
                 case 1:
@@ -247,6 +249,8 @@ public final class ServerParseSelect {
                         default:
                             return offset;
                     }
+                    break;
+                default:
                     break;
             }
         }
@@ -276,6 +280,8 @@ public final class ServerParseSelect {
                         case '\'':
                             state = 2;
                             break;
+                        default:
+                            break;
                     }
                     break;
                 case 1:
@@ -289,6 +295,8 @@ public final class ServerParseSelect {
                         default:
                             return offset;
                     }
+                    break;
+                default:
                     break;
             }
         }
@@ -377,6 +385,8 @@ public final class ServerParseSelect {
                 case '\'':
                 case '"':
                     return ++offset;
+                default:
+                    break;
             }
             return offset;
         }

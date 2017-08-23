@@ -54,7 +54,7 @@ import java.util.Comparator;
  * @see io.mycat.memory.unsafe.utils.sort.SortDataFormat
  * @see io.mycat.memory.unsafe.utils.sort.Sorter
  */
-class TimSort<K, BUFFER> {
+class TimSort<K, B> {
 
     /**
      * This is the minimum sized sequence that will be merged.  Shorter
@@ -75,9 +75,9 @@ class TimSort<K, BUFFER> {
      */
     private static final int MIN_MERGE = 32;
 
-    private final SortDataFormat<K, BUFFER> s;
+    private final SortDataFormat<K, B> s;
 
-    public TimSort(SortDataFormat<K, BUFFER> sortDataFormat) {
+    public TimSort(SortDataFormat<K, B> sortDataFormat) {
         this.s = sortDataFormat;
     }
 
@@ -114,7 +114,7 @@ class TimSort<K, BUFFER> {
      *
      * @author Josh Bloch
      */
-    public void sort(BUFFER a, int lo, int hi, Comparator<? super K> c) {
+    public void sort(B a, int lo, int hi, Comparator<? super K> c) {
         assert c != null;
 
         int nRemaining = hi - lo;
@@ -180,7 +180,7 @@ class TimSort<K, BUFFER> {
      * @param c     comparator to used for the sort
      */
     @SuppressWarnings("fallthrough")
-    private void binarySort(BUFFER a, int lo, int hi, int start, Comparator<? super K> c) {
+    private void binarySort(B a, int lo, int hi, int start, Comparator<? super K> c) {
         assert lo <= start && start <= hi;
         if (start == lo)
             start++;
@@ -188,7 +188,7 @@ class TimSort<K, BUFFER> {
         K key0 = s.newKey();
         K key1 = s.newKey();
 
-        BUFFER pivotStore = s.allocate(1);
+        B pivotStore = s.allocate(1);
         for (; start < hi; start++) {
             s.copyElement(a, start, pivotStore, 0);
             K pivot = s.getKey(pivotStore, 0, key0);
@@ -258,7 +258,7 @@ class TimSort<K, BUFFER> {
      * @return the length of the run beginning at the specified position in
      * the specified array
      */
-    private int countRunAndMakeAscending(BUFFER a, int lo, int hi, Comparator<? super K> c) {
+    private int countRunAndMakeAscending(B a, int lo, int hi, Comparator<? super K> c) {
         assert lo < hi;
         int runHi = lo + 1;
         if (runHi == hi)
@@ -287,7 +287,7 @@ class TimSort<K, BUFFER> {
      * @param lo the index of the first element in the range to be reversed
      * @param hi the index after the last element in the range to be reversed
      */
-    private void reverseRange(BUFFER a, int lo, int hi) {
+    private void reverseRange(B a, int lo, int hi) {
         hi--;
         while (lo < hi) {
             s.swap(a, lo, hi);
@@ -328,7 +328,7 @@ class TimSort<K, BUFFER> {
         /**
          * The Buffer being sorted.
          */
-        private final BUFFER a;
+        private final B a;
 
         /**
          * Length of the sort Buffer.
@@ -365,7 +365,7 @@ class TimSort<K, BUFFER> {
         /**
          * Temp storage for merges.
          */
-        private BUFFER tmp; // Actual runtime type will be Object[], regardless of T
+        private B tmp; // Actual runtime type will be Object[], regardless of T
 
         /**
          * Length of the temp storage.
@@ -392,7 +392,7 @@ class TimSort<K, BUFFER> {
          * @param a the array to be sorted
          * @param c the comparator to determine the order of the sort
          */
-        private SortState(BUFFER a, Comparator<? super K> c, int len) {
+        private SortState(B a, Comparator<? super K> c, int len) {
             this.aLength = len;
             this.a = a;
             this.c = c;
@@ -546,7 +546,7 @@ class TimSort<K, BUFFER> {
          * the first k elements of a should precede key, and the last n - k
          * should follow it.
          */
-        private int gallopLeft(K key, BUFFER a, int base, int len, int hint, Comparator<? super K> c) {
+        private int gallopLeft(K key, B a, int base, int len, int hint, Comparator<? super K> c) {
             assert len > 0 && hint >= 0 && hint < len;
             int lastOfs = 0;
             int ofs = 1;
@@ -617,7 +617,7 @@ class TimSort<K, BUFFER> {
          * @param c    the comparator used to order the range, and to search
          * @return the int k,  0 <= k <= n such that a[b + k - 1] <= key < a[b + k]
          */
-        private int gallopRight(K key, BUFFER a, int base, int len, int hint, Comparator<? super K> c) {
+        private int gallopRight(K key, B a, int base, int len, int hint, Comparator<? super K> c) {
             assert len > 0 && hint >= 0 && hint < len;
 
             int ofs = 1;
@@ -696,8 +696,8 @@ class TimSort<K, BUFFER> {
             assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
             // Copy first run into temp array
-            BUFFER a = this.a; // For performance
-            BUFFER tmp = ensureCapacity(len1);
+            B a = this.a; // For performance
+            B tmp = ensureCapacity(len1);
             s.copyRange(a, base1, tmp, 0, len1);
 
             int cursor1 = 0;       // Indexes into tmp array
@@ -816,8 +816,8 @@ class TimSort<K, BUFFER> {
             assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
             // Copy second run into temp array
-            BUFFER a = this.a; // For performance
-            BUFFER tmp = ensureCapacity(len2);
+            B a = this.a; // For performance
+            B tmp = ensureCapacity(len2);
             s.copyRange(a, base2, tmp, 0, len2);
 
             int cursor1 = base1 + len1 - 1;  // Indexes into a
@@ -933,7 +933,7 @@ class TimSort<K, BUFFER> {
          * @param minCapacity the minimum required capacity of the tmp array
          * @return tmp, whether or not it grew
          */
-        private BUFFER ensureCapacity(int minCapacity) {
+        private B ensureCapacity(int minCapacity) {
             if (tmpLength < minCapacity) {
                 // Compute smallest power of 2 > minCapacity
                 int newSize = minCapacity;

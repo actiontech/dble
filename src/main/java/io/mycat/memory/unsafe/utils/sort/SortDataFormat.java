@@ -33,7 +33,7 @@ package io.mycat.memory.unsafe.utils.sort;
  */
 // TODO: Making Buffer a real trait would be a better abstraction, but adds some complexity.
 
-public abstract class SortDataFormat<K, BUFFER> {
+public abstract class SortDataFormat<K, B> {
 
     /**
      * Creates a new mutable key for reuse. This should be implemented if you want to override
@@ -44,36 +44,36 @@ public abstract class SortDataFormat<K, BUFFER> {
     /**
      * Return the sort key for the element at the given index.
      */
-    protected abstract K getKey(BUFFER data, int pos);
+    protected abstract K getKey(B data, int pos);
 
     /**
      * Returns the sort key for the element at the given index and reuse the input key if possible.
      * The default implementation ignores the reuse parameter and invokes [[getKey(Buffer, Int]].
      * If you want to override this method, you must implement [[newKey()]].
      */
-    protected K getKey(BUFFER data, int pos, K reuse) {
+    protected K getKey(B data, int pos, K reuse) {
         return getKey(data, pos);
     }
 
     /**
      * Swap two elements.
      */
-    protected abstract void swap(BUFFER data, int pos0, int pos1);
+    protected abstract void swap(B data, int pos0, int pos1);
 
     /**
      * Copy a single element from src(srcPos) to dst(dstPos).
      */
-    protected abstract void copyElement(BUFFER src, int srcPos, BUFFER dst, int dstPos);
+    protected abstract void copyElement(B src, int srcPos, B dst, int dstPos);
 
     /**
      * Copy a range of elements starting at src(srcPos) to dst, starting at dstPos.
      * Overlapping ranges are allowed.
      */
-    protected abstract void copyRange(BUFFER src, int srcPos, BUFFER dst, int dstPos, int length);
+    protected abstract void copyRange(B src, int srcPos, B dst, int dstPos, int length);
 
     /**
      * Allocates a Buffer that can hold up to 'length' elements.
      * All elements of the buffer should be considered invalid until data is explicitly copied in.
      */
-    protected abstract BUFFER allocate(int length);
+    protected abstract B allocate(int length);
 }

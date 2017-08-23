@@ -298,17 +298,12 @@ public class DruidSelectParser extends DefaultDruidParser {
     private Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
-        Map<String, Integer> aggrColumns = new HashMap<>();
 
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
         if (rrs.isNeedOptimizer()) {
             tryAddLimit(schema, tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
             return aliaColumns;
-        }
-
-        if (aggrColumns.size() > 0) {
-            rrs.setMergeCols(aggrColumns);
         }
 
         // 通过优化转换成group by来实现

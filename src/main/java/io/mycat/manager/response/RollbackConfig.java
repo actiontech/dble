@@ -129,7 +129,7 @@ public final class RollbackConfig {
     }
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
-        String sb = "Rollback config failure.The reason is " + errorMsg;
+        String sb = "Rollback config failure.The reason is that " + errorMsg;
         LOGGER.warn(sb + "." + String.valueOf(c));
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
@@ -137,48 +137,51 @@ public final class RollbackConfig {
     public static void rollback() throws Exception {
         MycatConfig conf = MycatServer.getInstance().getConfig();
         Map<String, PhysicalDBPool> dataHosts = conf.getBackupDataHosts();
-
-        // 检查可回滚状态
-        if (!conf.canRollback()) {
-            throw new Exception("Conf can not be rollback because of no old version");
-        }
-
-        // 如果回滚已经存在的pool
-        boolean rollbackStatus = true;
-        String errorMsg = null;
-        for (PhysicalDBPool dn : dataHosts.values()) {
-            dn.init(dn.getActiveIndex());
-            if (!dn.isInitSuccess()) {
-                rollbackStatus = false;
-                errorMsg = "dataHost" + dn.getHostName() + " inited failure";
-                break;
-            }
-        }
-        // 如果回滚不成功，则清理已初始化的资源。
-        if (!rollbackStatus) {
-            for (PhysicalDBPool dn : dataHosts.values()) {
-                dn.clearDataSources("rollbackup config");
-                dn.stopHeartbeat();
-            }
-            throw new Exception(errorMsg);
-        }
-        // 应用回滚
         Map<String, UserConfig> users = conf.getBackupUsers();
         Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
         Map<String, PhysicalDBNode> dataNodes = conf.getBackupDataNodes();
         FirewallConfig firewall = conf.getBackupFirewall();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
-
-        // 处理旧的资源
-        Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
-        for (PhysicalDBPool dn : cNodes.values()) {
-            dn.clearDataSources("clear old config ");
-            dn.stopHeartbeat();
+        // 检查可回滚状态
+        if (conf.canRollback()) {
+            conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
+            //清理缓存
+            MycatServer.getInstance().getCacheService().clearCache();
+            MycatServer.getInstance().reloadMetaData();
+        } else if (conf.canRollbackAll()) {
+            Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
+            // 如果回滚已经存在的pool
+            boolean rollbackStatus = true;
+            String errorMsg = null;
+            for (PhysicalDBPool dn : dataHosts.values()) {
+                dn.init(dn.getActiveIndex());
+                if (!dn.isInitSuccess()) {
+                    rollbackStatus = false;
+                    errorMsg = "dataHost[" + dn.getHostName() + "] inited failure";
+                    break;
+                }
+            }
+            // 如果回滚不成功，则清理已初始化的资源。
+            if (!rollbackStatus && dataHosts != null) {
+                for (PhysicalDBPool dn : dataHosts.values()) {
+                    dn.clearDataSources("rollbackup config");
+                    dn.stopHeartbeat();
+                }
+                throw new Exception(errorMsg);
+            }
+            // 应用回滚
+            conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
+            // 处理旧的资源
+            for (PhysicalDBPool dn : cNodes.values()) {
+                dn.clearDataSources("clear old config ");
+                dn.stopHeartbeat();
+            }
+            //清理缓存
+            MycatServer.getInstance().getCacheService().clearCache();
+            MycatServer.getInstance().reloadMetaData();
+        } else {
+            throw new Exception("there is no old version");
         }
-
-        //清理缓存
-        MycatServer.getInstance().getCacheService().clearCache();
-        MycatServer.getInstance().reloadMetaData();
     }
 }

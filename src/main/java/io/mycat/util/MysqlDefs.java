@@ -334,6 +334,80 @@ public final class MysqlDefs {
         return jdbcType;
     }
 
+    /**
+     * Maps the given MySQL type to the correct JDBC type.
+     */
+    static int mysqlToJavaType(String mysqlType) {
+        if (mysqlType.equalsIgnoreCase("BIT")) {
+            return mysqlToJavaType(FIELD_TYPE_BIT);
+        } else if (mysqlType.equalsIgnoreCase("TINYINT")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_TINY);
+        } else if (mysqlType.equalsIgnoreCase("SMALLINT")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_SHORT);
+        } else if (mysqlType.equalsIgnoreCase("MEDIUMINT")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_INT24);
+        } else if (mysqlType.equalsIgnoreCase("INT") || mysqlType.equalsIgnoreCase("INTEGER")) { //$NON-NLS-1$ //$NON-NLS-2$
+            return mysqlToJavaType(FIELD_TYPE_LONG);
+        } else if (mysqlType.equalsIgnoreCase("BIGINT")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_LONGLONG);
+        } else if (mysqlType.equalsIgnoreCase("INT24")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_INT24);
+        } else if (mysqlType.equalsIgnoreCase("REAL")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DOUBLE);
+        } else if (mysqlType.equalsIgnoreCase("FLOAT")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_FLOAT);
+        } else if (mysqlType.equalsIgnoreCase("DECIMAL")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DECIMAL);
+        } else if (mysqlType.equalsIgnoreCase("NUMERIC")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DECIMAL);
+        } else if (mysqlType.equalsIgnoreCase("DOUBLE")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DOUBLE);
+        } else if (mysqlType.equalsIgnoreCase("CHAR")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_STRING);
+        } else if (mysqlType.equalsIgnoreCase("VARCHAR")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_VAR_STRING);
+        } else if (mysqlType.equalsIgnoreCase("DATE")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DATE);
+        } else if (mysqlType.equalsIgnoreCase("TIME")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_TIME);
+        } else if (mysqlType.equalsIgnoreCase("YEAR")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_YEAR);
+        } else if (mysqlType.equalsIgnoreCase("TIMESTAMP")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_TIMESTAMP);
+        } else if (mysqlType.equalsIgnoreCase("DATETIME")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_DATETIME);
+        } else if (mysqlType.equalsIgnoreCase("TINYBLOB")) { //$NON-NLS-1$
+            return java.sql.Types.BINARY;
+        } else if (mysqlType.equalsIgnoreCase("BLOB")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARBINARY;
+        } else if (mysqlType.equalsIgnoreCase("MEDIUMBLOB")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARBINARY;
+        } else if (mysqlType.equalsIgnoreCase("LONGBLOB")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARBINARY;
+        } else if (mysqlType.equalsIgnoreCase("TINYTEXT")) { //$NON-NLS-1$
+            return java.sql.Types.VARCHAR;
+        } else if (mysqlType.equalsIgnoreCase("TEXT")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARCHAR;
+        } else if (mysqlType.equalsIgnoreCase("MEDIUMTEXT")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARCHAR;
+        } else if (mysqlType.equalsIgnoreCase("LONGTEXT")) { //$NON-NLS-1$
+            return java.sql.Types.LONGVARCHAR;
+        } else if (mysqlType.equalsIgnoreCase("ENUM")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_ENUM);
+        } else if (mysqlType.equalsIgnoreCase("SET")) { //$NON-NLS-1$
+            return mysqlToJavaType(FIELD_TYPE_SET);
+        } else if (mysqlType.equalsIgnoreCase("GEOMETRY")) {
+            return mysqlToJavaType(FIELD_TYPE_GEOMETRY);
+        } else if (mysqlType.equalsIgnoreCase("BINARY")) {
+            return Types.BINARY; // no concrete type on the wire
+        } else if (mysqlType.equalsIgnoreCase("VARBINARY")) {
+            return Types.VARBINARY; // no concrete type on the wire
+        }
+
+        // Punt
+        return java.sql.Types.OTHER;
+    }
+
     public static int javaTypeDetect(int javaType, int scale) {
         switch (javaType) {
             case Types.NUMERIC: {
@@ -430,80 +504,6 @@ public final class MysqlDefs {
             //    return Types.VARCHAR;
         }
 
-    }
-
-    /**
-     * Maps the given MySQL type to the correct JDBC type.
-     */
-    static int mysqlToJavaType(String mysqlType) {
-        if (mysqlType.equalsIgnoreCase("BIT")) {
-            return mysqlToJavaType(FIELD_TYPE_BIT);
-        } else if (mysqlType.equalsIgnoreCase("TINYINT")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_TINY);
-        } else if (mysqlType.equalsIgnoreCase("SMALLINT")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_SHORT);
-        } else if (mysqlType.equalsIgnoreCase("MEDIUMINT")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_INT24);
-        } else if (mysqlType.equalsIgnoreCase("INT") || mysqlType.equalsIgnoreCase("INTEGER")) { //$NON-NLS-1$ //$NON-NLS-2$
-            return mysqlToJavaType(FIELD_TYPE_LONG);
-        } else if (mysqlType.equalsIgnoreCase("BIGINT")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_LONGLONG);
-        } else if (mysqlType.equalsIgnoreCase("INT24")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_INT24);
-        } else if (mysqlType.equalsIgnoreCase("REAL")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DOUBLE);
-        } else if (mysqlType.equalsIgnoreCase("FLOAT")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_FLOAT);
-        } else if (mysqlType.equalsIgnoreCase("DECIMAL")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DECIMAL);
-        } else if (mysqlType.equalsIgnoreCase("NUMERIC")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DECIMAL);
-        } else if (mysqlType.equalsIgnoreCase("DOUBLE")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DOUBLE);
-        } else if (mysqlType.equalsIgnoreCase("CHAR")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_STRING);
-        } else if (mysqlType.equalsIgnoreCase("VARCHAR")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_VAR_STRING);
-        } else if (mysqlType.equalsIgnoreCase("DATE")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DATE);
-        } else if (mysqlType.equalsIgnoreCase("TIME")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_TIME);
-        } else if (mysqlType.equalsIgnoreCase("YEAR")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_YEAR);
-        } else if (mysqlType.equalsIgnoreCase("TIMESTAMP")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_TIMESTAMP);
-        } else if (mysqlType.equalsIgnoreCase("DATETIME")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_DATETIME);
-        } else if (mysqlType.equalsIgnoreCase("TINYBLOB")) { //$NON-NLS-1$
-            return java.sql.Types.BINARY;
-        } else if (mysqlType.equalsIgnoreCase("BLOB")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARBINARY;
-        } else if (mysqlType.equalsIgnoreCase("MEDIUMBLOB")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARBINARY;
-        } else if (mysqlType.equalsIgnoreCase("LONGBLOB")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARBINARY;
-        } else if (mysqlType.equalsIgnoreCase("TINYTEXT")) { //$NON-NLS-1$
-            return java.sql.Types.VARCHAR;
-        } else if (mysqlType.equalsIgnoreCase("TEXT")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARCHAR;
-        } else if (mysqlType.equalsIgnoreCase("MEDIUMTEXT")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARCHAR;
-        } else if (mysqlType.equalsIgnoreCase("LONGTEXT")) { //$NON-NLS-1$
-            return java.sql.Types.LONGVARCHAR;
-        } else if (mysqlType.equalsIgnoreCase("ENUM")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_ENUM);
-        } else if (mysqlType.equalsIgnoreCase("SET")) { //$NON-NLS-1$
-            return mysqlToJavaType(FIELD_TYPE_SET);
-        } else if (mysqlType.equalsIgnoreCase("GEOMETRY")) {
-            return mysqlToJavaType(FIELD_TYPE_GEOMETRY);
-        } else if (mysqlType.equalsIgnoreCase("BINARY")) {
-            return Types.BINARY; // no concrete type on the wire
-        } else if (mysqlType.equalsIgnoreCase("VARBINARY")) {
-            return Types.VARBINARY; // no concrete type on the wire
-        }
-
-        // Punt
-        return java.sql.Types.OTHER;
     }
 
     /**

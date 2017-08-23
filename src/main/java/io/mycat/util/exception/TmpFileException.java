@@ -43,6 +43,17 @@ public final class TmpFileException extends RuntimeException {
         return new TmpFileException(message, cause);
     }
 
+    /**
+     * Create a ares exception for a specific error code.
+     *
+     * @param errorCode the error code
+     * @param p1        the first parameter of the message
+     * @return the exception
+     */
+    public static TmpFileException get(int errorCode, String p1) {
+        return get(errorCode, new String[]{p1});
+    }
+
     private static String translate(String key, String... params) {
         String message = MESSAGES.getProperty(key);
         if (message == null) {
@@ -72,17 +83,6 @@ public final class TmpFileException extends RuntimeException {
             buff.append(c);
         }
         return buff.append('\"').toString();
-    }
-
-    /**
-     * Create a ares exception for a specific error code.
-     *
-     * @param errorCode the error code
-     * @param p1        the first parameter of the message
-     * @return the exception
-     */
-    public static TmpFileException get(int errorCode, String p1) {
-        return get(errorCode, new String[]{p1});
     }
 
     /**

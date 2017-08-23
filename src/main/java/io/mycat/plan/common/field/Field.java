@@ -195,6 +195,11 @@ public abstract class Field {
         return false;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
     /**
      * Returns DATE/DATETIME value in packed longlong format. This method should
      * not be called for non-temporal types. Temporal field types override the
@@ -223,10 +228,5 @@ public abstract class Field {
                 h = 31 * h + (int) ptr[i];
         }
         return h;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
     }
 }

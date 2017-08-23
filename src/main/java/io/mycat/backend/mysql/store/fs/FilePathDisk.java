@@ -362,6 +362,12 @@ public class FilePathDisk extends FilePath {
         }
 
         @Override
+        public FileChannel position(long pos) throws IOException {
+            file.seek(pos);
+            return this;
+        }
+
+        @Override
         public long size() throws IOException {
             return file.length();
         }
@@ -373,12 +379,6 @@ public class FilePathDisk extends FilePath {
                 dst.position(dst.position() + len);
             }
             return len;
-        }
-
-        @Override
-        public FileChannel position(long pos) throws IOException {
-            file.seek(pos);
-            return this;
         }
 
         @Override

@@ -24,6 +24,11 @@ public abstract class FileBase extends FileChannel {
     }
 
     @Override
+    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public synchronized int write(ByteBuffer src, long position) throws IOException {
         long oldPos = position();
         position(position);
@@ -33,17 +38,17 @@ public abstract class FileBase extends FileChannel {
     }
 
     @Override
+    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public FileLock lock(long position, long size, boolean shared) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -59,11 +64,6 @@ public abstract class FileBase extends FileChannel {
 
     @Override
     public FileLock tryLock(long position, long size, boolean shared) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
         throw new UnsupportedOperationException();
     }
 }

@@ -155,6 +155,32 @@ public class ProxyMetaManager {
             schemaMeta.dropTable(tbName);
     }
 
+    /**
+     * In fact, it only have single table
+     */
+    private void dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
+        for (SQLExprTableSource table : statement.getTableSources()) {
+            SchemaInfo schemaInfo = getSchemaInfo(schema, table);
+            try {
+                if (!isSuccess) {
+                    return;
+                }
+                dropTable(schemaInfo.schema, schemaInfo.table);
+            } catch (Exception e) {
+                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
+            } finally {
+                removeMetaLock(schemaInfo.schema, schemaInfo.table);
+                if (MycatServer.getInstance().isUseZK()) {
+                    try {
+                        notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                    } catch (Exception e) {
+                        LOGGER.warn("notifyClusterDDL error", e);
+                    }
+                }
+            }
+        }
+    }
+
     public TableMeta getSyncTableMeta(String schema, String tbName) {
         while (true) {
             metalock.lock();
@@ -176,15 +202,14 @@ public class ProxyMetaManager {
     private TableMeta getTableMeta(String schema, String tbName) {
         return catalogs.get(schema).getTableMeta(tbName);
     }
-
 //    public TableMeta removeTableMetaNosync(String schema, String tbName) {
 //        SchemaMeta schemaMeta = catalogs.remove(schema);
 //        if (schemaMeta == null) {
 //            return null;
 //        }
 //        return schemaMeta.dropTable(tbName);
-//    }
 
+//    }
 //    public void createView(String schema, String viewName, String createSql, List<String> columns, PlanNode selectNode,
 //            ViewCreateMode mode, boolean writeToZk) {
 //        if (!checkDbExists(schema)) {
@@ -238,8 +263,8 @@ public class ProxyMetaManager {
 //            }
 //        }
 //        schemaMeta.addViewMeta(viewName, vm);
-//    }
 
+//    }
 //    @Override
 //    public void dropView(List<Pair<String, String>> views, boolean ifExists) {
 //        StringBuilder unknownTable = new StringBuilder();
@@ -334,6 +359,7 @@ public class ProxyMetaManager {
 //        SchemaMeta schemaMeta = getSchema(schema);
 //        ViewMeta vm = schemaMeta.getViewMeta(viewName);
 //        return vm.getViewNode();
+
 //    }
 
     private Set<String> getSelfNodes(MycatConfig config) {
@@ -418,8 +444,8 @@ public class ProxyMetaManager {
         }
         catalogs.clear();
     }
-
     //定时检查不同分片表结构一致性
+
     private Runnable tableStructureCheckTask(final Set<String> selfNode) {
         return new Runnable() {
             @Override
@@ -496,8 +522,8 @@ public class ProxyMetaManager {
             }
         }
     }
-
     //no need to check user
+
     private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
         try {
             return SchemaUtil.getSchemaInfo(null, schema, tableSource);
@@ -525,32 +551,6 @@ public class ProxyMetaManager {
                     notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyClusterDDL error", e);
-                }
-            }
-        }
-    }
-
-    /**
-     * In fact, it only have single table
-     */
-    private void dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
-        for (SQLExprTableSource table : statement.getTableSources()) {
-            SchemaInfo schemaInfo = getSchemaInfo(schema, table);
-            try {
-                if (!isSuccess) {
-                    return;
-                }
-                dropTable(schemaInfo.schema, schemaInfo.table);
-            } catch (Exception e) {
-                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
-            } finally {
-                removeMetaLock(schemaInfo.schema, schemaInfo.table);
-                if (MycatServer.getInstance().isUseZK()) {
-                    try {
-                        notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
-                    } catch (Exception e) {
-                        LOGGER.warn("notifyClusterDDL error", e);
-                    }
                 }
             }
         }
@@ -733,18 +733,18 @@ public class ProxyMetaManager {
         }
     }
 
+    private void addIndex(String indexName, TableMeta.Builder tmBuilder, IndexType indexType, List<SQLExpr> columnExprs) {
+
+        IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
+        tmBuilder.addIndex(indexMeta);
+    }
+
     private List<SQLExpr> itemsToColumns(List<SQLSelectOrderByItem> items) {
         List<SQLExpr> columnExprs = new ArrayList<>();
         for (SQLSelectOrderByItem item : items) {
             columnExprs.add(item.getExpr());
         }
         return columnExprs;
-    }
-
-    private void addIndex(String indexName, TableMeta.Builder tmBuilder, IndexType indexType, List<SQLExpr> columnExprs) {
-
-        IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
-        tmBuilder.addIndex(indexMeta);
     }
 
     private void dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess, boolean needNotifyOther) {

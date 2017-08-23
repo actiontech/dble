@@ -155,6 +155,14 @@ public final class ByteUtil {
         return getBytes(data, "GBK");
     }
 
+    public static byte[] getBytes(Date date, boolean isTime) {
+        if (isTime) {
+            return getBytesFromTime(date);
+        } else {
+            return getBytesFromDate(date);
+        }
+    }
+
     public static short getShort(byte[] bytes) {
         return (short) ((0xff & bytes[0]) | (0xff00 & (bytes[1] << 8)));
     }
@@ -205,14 +213,6 @@ public final class ByteUtil {
 
     public static String getTimestmap(byte[] bytes) {
         return new String(bytes);
-    }
-
-    public static byte[] getBytes(Date date, boolean isTime) {
-        if (isTime) {
-            return getBytesFromTime(date);
-        } else {
-            return getBytesFromDate(date);
-        }
     }
 
     private static byte[] getBytesFromTime(Date date) {

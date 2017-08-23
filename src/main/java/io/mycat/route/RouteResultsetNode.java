@@ -155,6 +155,13 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         return false;
     }
 
+    private static boolean equals(String str1, String str2) {
+        if (str1 == null) {
+            return str2 == null;
+        }
+        return str1.equals(str2);
+    }
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
@@ -162,13 +169,6 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         s.append('{').append(statement).append('}');
         s.append(".").append(multiplexNum.get());
         return s.toString();
-    }
-
-    private static boolean equals(String str1, String str2) {
-        if (str1 == null) {
-            return str2 == null;
-        }
-        return str1.equals(str2);
     }
 
     public boolean isModifySQL() {

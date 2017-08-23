@@ -54,6 +54,18 @@ public class ItemField extends ItemIdent {
         setField(fields.get(index));
     }
 
+    protected void setField(Field field) {
+        this.field = field;
+        maybeNull = field.maybeNull(); // 有可能为null
+        decimals = field.decimals;
+        tableName = field.table;
+        itemName = field.name;
+        dbName = field.dbname;
+        maxLength = field.fieldLength;
+        charsetIndex = field.charsetIndex;
+        fixed = true;
+    }
+
     @Override
     public ItemType type() {
         return ItemType.FIELD_ITEM;
@@ -186,18 +198,6 @@ public class ItemField extends ItemIdent {
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("parse string exception!", e);
         }
-    }
-
-    protected void setField(Field field) {
-        this.field = field;
-        maybeNull = field.maybeNull(); // 有可能为null
-        decimals = field.decimals;
-        tableName = field.table;
-        itemName = field.name;
-        dbName = field.dbname;
-        maxLength = field.fieldLength;
-        charsetIndex = field.charsetIndex;
-        fixed = true;
     }
 
     public String getTableName() {

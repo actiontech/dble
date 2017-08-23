@@ -113,13 +113,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     }
 
-    @Override
-    public void connectionAcquired(final BackendConnection conn) {
-        session.bindConnection(node, conn);
-        execute(conn);
-
-    }
-
     private void execute(BackendConnection conn) {
         if (session.closed()) {
             waitingResponse = false;
@@ -132,6 +125,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
         conn.execute(node, session.getSource(), isAutocommit);
+    }
+
+    @Override
+    public void connectionAcquired(final BackendConnection conn) {
+        session.bindConnection(node, conn);
+        execute(conn);
+
     }
 
     @Override

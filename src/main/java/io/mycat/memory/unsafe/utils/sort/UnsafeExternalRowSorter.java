@@ -163,6 +163,15 @@ public final class UnsafeExternalRowSorter {
     }
 
 
+    public Iterator<UnsafeRow> sort(Iterator<UnsafeRow> inputIterator) throws IOException {
+
+        while (inputIterator.hasNext()) {
+            insertRow(inputIterator.next());
+        }
+
+        return sort();
+    }
+
     public UnsafeSorterIterator getRowUnsafeSorterIterator() throws IOException {
         return sorter.getSortedIterator();
     }
@@ -229,15 +238,6 @@ public final class UnsafeExternalRowSorter {
         }
     }
 
-
-    public Iterator<UnsafeRow> sort(Iterator<UnsafeRow> inputIterator) throws IOException {
-
-        while (inputIterator.hasNext()) {
-            insertRow(inputIterator.next());
-        }
-
-        return sort();
-    }
 
 
     private static final class RowComparator extends RecordComparator {

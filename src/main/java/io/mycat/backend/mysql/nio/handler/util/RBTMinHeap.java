@@ -68,6 +68,18 @@ public class RBTMinHeap<E> implements MinHeap<E> {
         return Arrays.copyOf(obj, size);
     }
 
+    @Override
+    public <T> T[] toArray(T[] a) {
+        Object[] obj = inOrder();
+        if (a.length < size)
+            // Make a new array of a's runtime type, but my contents:
+            return (T[]) Arrays.copyOf(obj, size, a.getClass());
+        System.arraycopy(obj, 0, a, 0, size);
+        if (a.length > size)
+            a[size] = null;
+        return a;
+    }
+
     private void inOrder(RBTNode<E> node, List<E> list) {
         if (node != null) {
             inOrder(node.left, list);
@@ -80,18 +92,6 @@ public class RBTMinHeap<E> implements MinHeap<E> {
         List<E> list = new ArrayList<E>(size);
         inOrder(root, list);
         return list.toArray();
-    }
-
-    @Override
-    public <T> T[] toArray(T[] a) {
-        Object[] obj = inOrder();
-        if (a.length < size)
-            // Make a new array of a's runtime type, but my contents:
-            return (T[]) Arrays.copyOf(obj, size, a.getClass());
-        System.arraycopy(obj, 0, a, 0, size);
-        if (a.length > size)
-            a[size] = null;
-        return a;
     }
 
     @Override

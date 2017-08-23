@@ -63,6 +63,8 @@ public abstract class Item {
         return false;
     }
 
+    public abstract Item fixFields(NameResolutionContext context);
+
     public ItemResult resultType() {
         return ItemResult.REAL_RESULT;
     }
@@ -245,11 +247,11 @@ public abstract class Item {
             return false; // Wrong (but safe)
         }
     }
-
     /*
      * Returns true if this is a simple constant item like an integer, not a
      * constant expression. Used in the optimizer to propagate basic constants.
      */
+
     public boolean basicConstItem() {
         return false;
     }
@@ -310,10 +312,10 @@ public abstract class Item {
     public boolean isNull() {
         return false;
     }
-
     /*
      * Make sure the null_value member has a correct value.
      */
+
     public void updateNullValue() {
         valInt();
     }
@@ -386,8 +388,8 @@ public abstract class Item {
             return TypeConversionStatus.TYPE_ERR_BAD_VALUE;
         }
     }
-
     /*-------------------------helper funtion----------------------------*/
+
     protected String valStringFromReal() {
         BigDecimal nr = valReal();
         if (nullValue)
@@ -706,13 +708,13 @@ public abstract class Item {
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);
     }
-
     /*
      * - Return NULL if argument is NULL. - Return zero if argument is not NULL,
      * but we could not convert it to DATETIME. - Return zero if argument is not
      * NULL and represents a valid DATETIME value, but the value is out of the
      * supported Unix timestamp range.
      */
+
     public boolean getTimeval(Timeval tm) {
         MySQLTime ltime = new MySQLTime();
         if (getDate(ltime, MyTime.TIME_FUZZY_DATE)) {
@@ -788,8 +790,8 @@ public abstract class Item {
     public void setPushDownName(String pushDownName) {
         this.pushDownName = pushDownName;
     }
-
     //TODO:YHQ  NEED CHECK
+
     public final String getItemName() {
         if (itemName == null || itemName.length() == 0) {
             SQLExpr expr = toExpression();
@@ -837,8 +839,6 @@ public abstract class Item {
         return null;
     }
 
-    public abstract Item fixFields(NameResolutionContext context);
-
     /**
      * added to construct all refers in an item
      *
@@ -859,12 +859,6 @@ public abstract class Item {
         return clone;
     }
 
-    public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        Item clone = cloneStruct(true, calArgs, isPushDown, fields);
-        // TODO
-        return clone;
-    }
-
     /**
      * cloen item's struct,visitName is all empty
      *
@@ -876,6 +870,12 @@ public abstract class Item {
      */
     protected abstract Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown,
                                         List<Field> fields);
+
+    public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        Item clone = cloneStruct(true, calArgs, isPushDown, fields);
+        // TODO
+        return clone;
+    }
 
     //TODO:YHQ  NEED CHECK
     protected final List<SQLExpr> toExpressionList(List<Item> args) {

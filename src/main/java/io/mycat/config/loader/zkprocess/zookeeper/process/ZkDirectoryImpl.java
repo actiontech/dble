@@ -72,13 +72,13 @@ public class ZkDirectoryImpl implements DiretoryInf {
     }
 
     @Override
-    public List<Object> getSubordinateInfo() {
-        return this.subordinateInfoList;
+    public void add(DataInf data) {
+        this.subordinateInfoList.add(data);
     }
 
     @Override
-    public void add(DataInf data) {
-        this.subordinateInfoList.add(data);
+    public List<Object> getSubordinateInfo() {
+        return this.subordinateInfoList;
     }
 
     @Override

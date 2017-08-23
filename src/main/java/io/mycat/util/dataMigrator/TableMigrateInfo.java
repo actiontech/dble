@@ -79,23 +79,27 @@ public class TableMigrateInfo {
         }
     }
 
+    public void setTableStructure(String tableStructure) {
+        this.tableStructure = tableStructure;
+    }
     //缩容后，找出被移除的节点
+
     public List<DataNode> getRemovedDataNodes() {
         List<DataNode> list = new ArrayList<>();
         list.addAll(oldDataNodes);
         list.removeAll(newDataNodes);
         return list;
     }
-
     //扩容后，找出除旧节点以外新增加的节点
+
     public List<DataNode> getNewAddDataNodes() {
         List<DataNode> list = new ArrayList<>();
         list.addAll(newDataNodes);
         list.removeAll(oldDataNodes);
         return list;
     }
-
     //对新增的节点创建表：create table if not exists
+
     public void createTableToNewDataNodes() throws SQLException {
         if (this.isExpantion) {
             List<DataNode> newDataNodes = getNewAddDataNodes();
@@ -104,8 +108,8 @@ public class TableMigrateInfo {
             }
         }
     }
-
     //打印迁移信息
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void printMigrateInfo() {
         Map<String, String> map = new LinkedHashMap();
@@ -207,6 +211,10 @@ public class TableMigrateInfo {
         this.size = new AtomicLong(size);
     }
 
+    public void setSize(AtomicLong size) {
+        this.size = size;
+    }
+
     public boolean isError() {
         return isError;
     }
@@ -217,14 +225,6 @@ public class TableMigrateInfo {
 
     public String getTableStructure() {
         return tableStructure;
-    }
-
-    public void setTableStructure(String tableStructure) {
-        this.tableStructure = tableStructure;
-    }
-
-    public void setSize(AtomicLong size) {
-        this.size = size;
     }
 
     public Map<String, String> getDnMigrateSize() {

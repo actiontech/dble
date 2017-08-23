@@ -39,6 +39,13 @@ class FileNio extends FileBase {
     }
 
     @Override
+    public synchronized FileChannel position(long pos) throws IOException {
+        channel.position(pos);
+        this.pos = (int) pos;
+        return this;
+    }
+
+    @Override
     public long size() throws IOException {
         return channel.size();
     }
@@ -62,13 +69,6 @@ class FileNio extends FileBase {
     }
 
     @Override
-    public synchronized FileChannel position(long pos) throws IOException {
-        channel.position(pos);
-        this.pos = (int) pos;
-        return this;
-    }
-
-    @Override
     public synchronized int read(ByteBuffer dst, long position) throws IOException {
         return channel.read(dst, position);
     }
@@ -76,6 +76,28 @@ class FileNio extends FileBase {
     @Override
     public synchronized int write(ByteBuffer src, long position) throws IOException {
         return channel.write(src, position);
+    }
+
+    @Override
+    public synchronized int write(ByteBuffer src) throws IOException {
+        try {
+            int len;
+            if (fileLength < pos + src.remaining()) {
+                int length = (int) (fileLength - pos);
+                int limit = src.limit();
+                src.limit(length);
+                len = channel.write(src);
+                src.limit(limit);
+                pos += len;
+                return len;
+            } else {
+                len = channel.write(src);
+                pos += len;
+                return len;
+            }
+        } catch (NonWritableChannelException e) {
+            throw new IOException("read only");
+        }
     }
 
     @Override
@@ -109,28 +131,6 @@ class FileNio extends FileBase {
     @Override
     public void force(boolean metaData) throws IOException {
         channel.force(metaData);
-    }
-
-    @Override
-    public synchronized int write(ByteBuffer src) throws IOException {
-        try {
-            int len;
-            if (fileLength < pos + src.remaining()) {
-                int length = (int) (fileLength - pos);
-                int limit = src.limit();
-                src.limit(length);
-                len = channel.write(src);
-                src.limit(limit);
-                pos += len;
-                return len;
-            } else {
-                len = channel.write(src);
-                pos += len;
-                return len;
-            }
-        } catch (NonWritableChannelException e) {
-            throw new IOException("read only");
-        }
     }
 
     @Override

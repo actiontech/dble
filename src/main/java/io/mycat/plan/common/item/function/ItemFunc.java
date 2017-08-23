@@ -101,6 +101,26 @@ public abstract class ItemFunc extends Item {
     }
 
     @Override
+    public final ItemFunc fixFields(NameResolutionContext context) {
+        getReferTables().clear();
+        if (getArgCount() > 0) {
+            for (int index = 0; index < getArgCount(); index++) {
+                Item arg = args.get(index);
+                Item fixedArg = arg.fixFields(context);
+                if (fixedArg == null)
+                    return null;
+                args.set(index, fixedArg);
+                getReferTables().addAll(fixedArg.getReferTables());
+                withSumFunc = withSumFunc || fixedArg.withSumFunc;
+                withIsNull = withIsNull || fixedArg.withIsNull;
+                withSubQuery = withSubQuery || fixedArg.withSubQuery;
+                withUnValAble = withUnValAble || arg.withUnValAble;
+            }
+        }
+        return this;
+    }
+
+    @Override
     public boolean isNull() {
         updateNullValue();
         return nullValue;
@@ -228,26 +248,6 @@ public abstract class ItemFunc extends Item {
 
     public boolean getArg0Time(MySQLTime ltime) {
         return (nullValue = args.get(0).getTime(ltime));
-    }
-
-    @Override
-    public final ItemFunc fixFields(NameResolutionContext context) {
-        getReferTables().clear();
-        if (getArgCount() > 0) {
-            for (int index = 0; index < getArgCount(); index++) {
-                Item arg = args.get(index);
-                Item fixedArg = arg.fixFields(context);
-                if (fixedArg == null)
-                    return null;
-                args.set(index, fixedArg);
-                getReferTables().addAll(fixedArg.getReferTables());
-                withSumFunc = withSumFunc || fixedArg.withSumFunc;
-                withIsNull = withIsNull || fixedArg.withIsNull;
-                withSubQuery = withSubQuery || fixedArg.withSubQuery;
-                withUnValAble = withUnValAble || arg.withUnValAble;
-            }
-        }
-        return this;
     }
 
     @Override

@@ -55,16 +55,16 @@ public class MySQLMessage {
         return position;
     }
 
+    public void position(int i) {
+        this.position = i;
+    }
+
     public byte[] bytes() {
         return data;
     }
 
     public void move(int i) {
         position += i;
-    }
-
-    public void position(int i) {
-        this.position = i;
     }
 
     public boolean hasRemaining() {

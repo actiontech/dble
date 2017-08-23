@@ -44,16 +44,16 @@ public final class UnsafeSortDataFormat
     }
 
     @Override
-    public RecordPointerAndKeyPrefix newKey() {
-        return new RecordPointerAndKeyPrefix();
-    }
-
-    @Override
     public RecordPointerAndKeyPrefix getKey(LongArray data, int pos,
                                             RecordPointerAndKeyPrefix reuse) {
         reuse.recordPointer = data.get(pos * 2);
         reuse.keyPrefix = data.get(pos * 2 + 1);
         return reuse;
+    }
+
+    @Override
+    public RecordPointerAndKeyPrefix newKey() {
+        return new RecordPointerAndKeyPrefix();
     }
 
     @Override

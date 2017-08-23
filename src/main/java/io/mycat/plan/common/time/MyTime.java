@@ -926,6 +926,18 @@ public final class MyTime {
         return 0;
     }
 
+    public static long timeToLonglongPacked(final MySQLTime ltime, FieldTypes type) {
+        if (type == FieldTypes.MYSQL_TYPE_TIME) {
+            return timeToLonglongTimePacked(ltime);
+        } else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
+            return timeToLonglongDatetimePacked(ltime);
+        } else if (type == FieldTypes.MYSQL_TYPE_DATE) {
+            return timeToLonglongDatePacked(ltime);
+        } else {
+            return timeToLonglongPacked(ltime);
+        }
+    }
+
     /**
      * Convert packed numeric datetime representation to MYSQL_TIME.
      *
@@ -1037,9 +1049,13 @@ public final class MyTime {
         assert (delsum + (int) y / 4 - temp >= 0);
         return (delsum + (int) y / 4 - temp);
     } /* calc_daynr */
-
     /* Calc days in one year. works with 0 <= year <= 99 */
+
     public static int calcDaysInYear(int year) {
+        return ((year & 3) == 0 && (year % 100 != 0 || (year % 400 == 0 && year != 0)) ? 366 : 365);
+    }
+
+    public static long calcDaysInYear(long year) {
         return ((year & 3) == 0 && (year % 100 != 0 || (year % 400 == 0 && year != 0)) ? 366 : 365);
     }
 
@@ -1064,7 +1080,6 @@ public final class MyTime {
     public static String myDateToStr(MySQLTime mysqlTime) {
         return String.format("%04d-%02d-%02d", mysqlTime.year, mysqlTime.month, mysqlTime.day);
     }
-
     /**
      * Print a datetime value with an optional fractional part.
      *
@@ -1093,6 +1108,7 @@ public final class MyTime {
      * NOTE The string must have at least MAX_DATE_STRING_REP_LENGTH bytes
      * reserved.
      */
+
     public static String myTimeToStr(final MySQLTime lTime, int dec) {
         if (lTime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
             return myDatetimeToStr(lTime, dec);
@@ -1108,10 +1124,10 @@ public final class MyTime {
     }
 
     /*-------------------------My_time.h  end------------------------------*/
-
     /*-------------------------Sql_time.h(其它类型向MySqlTime转换)start----------------------------*/
 
     /* Rounding functions */
+
     private static final long[] MSEC_ROUND_ADD = new long[]{500000000, 50000000, 5000000, 500000, 50000, 5000, 0};
 
     /**
@@ -1454,18 +1470,6 @@ public final class MyTime {
         return timestamp;
     }
 
-    public static long timeToLonglongPacked(final MySQLTime ltime, FieldTypes type) {
-        if (type == FieldTypes.MYSQL_TYPE_TIME) {
-            return timeToLonglongTimePacked(ltime);
-        } else if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
-            return timeToLonglongDatetimePacked(ltime);
-        } else if (type == FieldTypes.MYSQL_TYPE_DATE) {
-            return timeToLonglongDatePacked(ltime);
-        } else {
-            return timeToLonglongPacked(ltime);
-        }
-    }
-
     public static void timeFromLonglongPacked(MySQLTime ltime, FieldTypes type, long packedValue) {
         if (type == FieldTypes.MYSQL_TYPE_TIME) {
             timeFromLonglongTimePacked(ltime, packedValue);
@@ -1550,8 +1554,8 @@ public final class MyTime {
                 ltime.minute, ltime.second, ltime.secondPart);
         return new BigDecimal(stmp);
     }
-
     /* Functions to handle periods */
+
     public static long convertPeriodToMonth(long period) {
         long a, b;
         if (period == 0)
@@ -1573,8 +1577,8 @@ public final class MyTime {
         }
         return year * 100 + month % 12 + 1;
     }
-
     /* Calc weekday from daynr */
+
     /* Returns 0 for monday, 1 for tuesday .... */
 
     public static int calcWeekday(long daynr, boolean sundayFirstDayOfWeek) {
@@ -1670,8 +1674,8 @@ public final class MyTime {
         return checkDate(ltime, ltime.isNonZeroDate(), TIME_NO_ZERO_IN_DATE, new LongPtr(0)) ||
                 datetimeWithNoZeroInDateToTimeval(ltime, tm);
     }
-
     /* Change a daynr to year, month and day */
+
     /* Daynr 0 is returned as date 00.00.00 */
 
     public static void getDateFromDaynr(long daynr, LongPtr retYear, LongPtr retMonth, LongPtr retDay) {
@@ -1705,8 +1709,8 @@ public final class MyTime {
             retDay.set(dayOfYear + leapDay);
         }
     }
-
     /*-----------------------helper method---------------------------*/
+
     private static boolean checkTimeMmssffRange(final MySQLTime ltime) {
         return ltime.minute >= 60 || ltime.second >= 60 || ltime.secondPart > 999999;
     }
@@ -1806,10 +1810,6 @@ public final class MyTime {
     }
 
     /* Calc days in one year. works with 0 <= year <= 99 */
-
-    public static long calcDaysInYear(long year) {
-        return ((year & 3) == 0 && (year % 100 != 0 || (year % 400 == 0 && year != 0)) ? 366 : 365);
-    }
 
     private static void myTimeStatusInit(MySQLTimeStatus status) {
         status.warnings = 0;

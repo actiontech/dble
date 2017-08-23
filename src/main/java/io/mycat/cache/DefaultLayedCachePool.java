@@ -86,26 +86,18 @@ public class DefaultLayedCachePool implements LayerCachePool {
         putIfAbsent(DEFAULT_CACHE, key, value);
     }
 
-    /* obsoleted, to be clean */
-    @Override
-    public Object get(Object key) {
-        return get(DEFAULT_CACHE, key);
-    }
-
-    @Override
-    public void clearCache() {
-        LOGGER.info("clear cache ");
-        for (CachePool pool : allCaches.values()) {
-            pool.clearCache();
-        }
-    }
-
     @Override
     public void putIfAbsent(String primaryKey, Object secondKey, Object value) {
         CachePool pool = getCache(primaryKey);
         if (pool != null) {
             pool.putIfAbsent(secondKey, value);
         }
+    }
+
+    /* obsoleted, to be clean */
+    @Override
+    public Object get(Object key) {
+        return get(DEFAULT_CACHE, key);
     }
 
     @Override
@@ -115,6 +107,14 @@ public class DefaultLayedCachePool implements LayerCachePool {
             return pool.get(secondKey);
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public void clearCache() {
+        LOGGER.info("clear cache ");
+        for (CachePool pool : allCaches.values()) {
+            pool.clearCache();
         }
     }
 

@@ -107,6 +107,40 @@ public final class UnsafeFixedWidthAggregationMap {
                         key.getSizeInBytes(), SEED));
     }
 
+    public UnsafeRow getAggregationBufferFromUnsafeRow(UnsafeRow key, int hash) {
+        // Probe our map using the serialized key
+        final BytesToBytesMap.Location loc = map.lookup(
+                key.getBaseObject(),
+                key.getBaseOffset(),
+                key.getSizeInBytes(),
+                hash);
+
+        if (!loc.isDefined()) {
+            // This is the first time that we've seen this grouping key, so we'll insert a copy of the
+            // empty aggregation buffer into the map:
+            boolean putSucceeded = loc.append(
+                    key.getBaseObject(),
+                    key.getBaseOffset(),
+                    key.getSizeInBytes(),
+                    emptyAggregationBuffer,
+                    Platform.BYTE_ARRAY_OFFSET,
+                    emptyAggregationBuffer.length
+            );
+
+            if (!putSucceeded) {
+                return null;
+            }
+        }
+
+        // Reset the pointer to point to the value that we just stored or looked up:
+        currentAggregationBuffer.pointTo(
+                loc.getValueBase(),
+                loc.getValueOffset(),
+                loc.getValueLength()
+        );
+        return currentAggregationBuffer;
+    }
+
     public boolean put(UnsafeRow key, UnsafeRow value) {
 
         int hash = Murmur3OfX86And32Bit.hashUnsafeWords(key.getBaseObject(),
@@ -152,40 +186,6 @@ public final class UnsafeFixedWidthAggregationMap {
         return true;
     }
 
-
-    public UnsafeRow getAggregationBufferFromUnsafeRow(UnsafeRow key, int hash) {
-        // Probe our map using the serialized key
-        final BytesToBytesMap.Location loc = map.lookup(
-                key.getBaseObject(),
-                key.getBaseOffset(),
-                key.getSizeInBytes(),
-                hash);
-
-        if (!loc.isDefined()) {
-            // This is the first time that we've seen this grouping key, so we'll insert a copy of the
-            // empty aggregation buffer into the map:
-            boolean putSucceeded = loc.append(
-                    key.getBaseObject(),
-                    key.getBaseOffset(),
-                    key.getSizeInBytes(),
-                    emptyAggregationBuffer,
-                    Platform.BYTE_ARRAY_OFFSET,
-                    emptyAggregationBuffer.length
-            );
-
-            if (!putSucceeded) {
-                return null;
-            }
-        }
-
-        // Reset the pointer to point to the value that we just stored or looked up:
-        currentAggregationBuffer.pointTo(
-                loc.getValueBase(),
-                loc.getValueOffset(),
-                loc.getValueLength()
-        );
-        return currentAggregationBuffer;
-    }
 
     /**
      * Returns an iterator over the keys and values in this map. This uses destructive iterator of

@@ -110,6 +110,10 @@ public class CompareLike {
         }
     }
 
+    private boolean compare(char[] pattern, String s, int pi, int si) {
+        return pattern[pi] == s.charAt(si) || equalsChars(patternString, pi, s, si, true);
+    }
+
     private boolean compareAt(String s, int pi, int si, int sLen, char[] pattern, int[] types) {
         for (; pi < patternLength; pi++) {
             switch (types[pi]) {
@@ -139,10 +143,6 @@ public class CompareLike {
             }
         }
         return si == sLen;
-    }
-
-    private boolean compare(char[] pattern, String s, int pi, int si) {
-        return pattern[pi] == s.charAt(si) || equalsChars(patternString, pi, s, si, true);
     }
 
     public boolean equalsChars(String a, int ai, String b, int bi, boolean ignoreCase) {

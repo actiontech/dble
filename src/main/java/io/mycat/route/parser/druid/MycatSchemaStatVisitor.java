@@ -169,6 +169,120 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLBinaryOpExpr x) {
+        x.getLeft().setParent(x);
+        x.getRight().setParent(x);
+
+        switch (x.getOperator()) {
+            case Equality:
+            case LessThanOrEqualOrGreaterThan:
+            case Is:
+            case IsNot:
+                handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
+                handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
+                handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
+                break;
+            case BooleanOr:
+                //永真条件，where条件抛弃
+                if (!RouterUtil.isConditionAlwaysTrue(x)) {
+                    hasOrCondition = true;
+
+                    WhereUnit whereUnit = null;
+                    if (conditions.size() > 0) {
+                        whereUnit = new WhereUnit();
+                        whereUnit.setFinishedParse(true);
+                        whereUnit.addOutConditions(getConditions());
+                        WhereUnit innerWhereUnit = new WhereUnit(x);
+                        whereUnit.addSubWhereUnit(innerWhereUnit);
+                    } else {
+                        whereUnit = new WhereUnit(x);
+                        whereUnit.addOutConditions(getConditions());
+                    }
+                    whereUnits.add(whereUnit);
+                }
+                return false;
+            case Like:
+            case NotLike:
+            case NotEqual:
+            case GreaterThan:
+            case GreaterThanOrEqual:
+            case LessThan:
+            case LessThanOrEqual:
+            default:
+                break;
+        }
+        return true;
+    }
+
+    public boolean visit(MySqlInsertStatement x) {
+        SQLName sqlName = x.getTableName();
+        if (sqlName != null) {
+            setCurrentTable(sqlName.toString());
+        }
+        return false;
+    }
+
+    // DUAL
+    public boolean visit(MySqlDeleteStatement x) {
+        setAliasMap();
+
+        setMode(x, Mode.Delete);
+
+        accept(x.getFrom());
+        accept(x.getUsing());
+        x.getTableSource().accept(this);
+
+        if (x.getTableSource() instanceof SQLExprTableSource) {
+            SQLName tableName = (SQLName) ((SQLExprTableSource) x.getTableSource()).getExpr();
+            String ident = tableName.toString();
+            setCurrentTable(x, ident);
+
+            TableStat stat = this.getTableStat(ident, ident);
+            stat.incrementDeleteCount();
+        }
+
+        accept(x.getWhere());
+
+        accept(x.getOrderBy());
+        accept(x.getLimit());
+
+        return false;
+    }
+
+    public boolean visit(SQLUpdateStatement x) {
+        setAliasMap();
+
+        setMode(x, Mode.Update);
+
+        SQLName identName = x.getTableName();
+        if (identName != null) {
+            String ident = identName.toString();
+            setCurrentTable(ident);
+
+            TableStat stat = getTableStat(ident);
+            stat.incrementUpdateCount();
+
+            Map<String, String> aliasMap = getAliasMap();
+            aliasMap.put(ident, ident);
+
+            String alias = x.getTableSource().getAlias();
+            if (alias != null) {
+                aliasMap.put(alias, ident);
+            }
+        } else {
+            x.getTableSource().accept(this);
+        }
+
+        accept(x.getItems());
+        accept(x.getWhere());
+
+        return false;
+    }
+
+    public void endVisit(MySqlDeleteStatement x) {
+    }
+
+    @Override
     protected Column getColumn(SQLExpr expr) {
         Map<String, String> aliasMap = getAliasMap();
         if (aliasMap == null) {
@@ -322,52 +436,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             }
         }
         return "";
-    }
-
-    @Override
-    public boolean visit(SQLBinaryOpExpr x) {
-        x.getLeft().setParent(x);
-        x.getRight().setParent(x);
-
-        switch (x.getOperator()) {
-            case Equality:
-            case LessThanOrEqualOrGreaterThan:
-            case Is:
-            case IsNot:
-                handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
-                handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
-                handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
-                break;
-            case BooleanOr:
-                //永真条件，where条件抛弃
-                if (!RouterUtil.isConditionAlwaysTrue(x)) {
-                    hasOrCondition = true;
-
-                    WhereUnit whereUnit = null;
-                    if (conditions.size() > 0) {
-                        whereUnit = new WhereUnit();
-                        whereUnit.setFinishedParse(true);
-                        whereUnit.addOutConditions(getConditions());
-                        WhereUnit innerWhereUnit = new WhereUnit(x);
-                        whereUnit.addSubWhereUnit(innerWhereUnit);
-                    } else {
-                        whereUnit = new WhereUnit(x);
-                        whereUnit.addOutConditions(getConditions());
-                    }
-                    whereUnits.add(whereUnit);
-                }
-                return false;
-            case Like:
-            case NotLike:
-            case NotEqual:
-            case GreaterThan:
-            case GreaterThanOrEqual:
-            case LessThan:
-            case LessThanOrEqual:
-            default:
-                break;
-        }
-        return true;
     }
 
     /**
@@ -574,73 +642,5 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (!RouterUtil.isConditionAlwaysFalse(expr)) {
             whereUnit.addSplitedExpr(expr);
         }
-    }
-
-    public boolean visit(MySqlInsertStatement x) {
-        SQLName sqlName = x.getTableName();
-        if (sqlName != null) {
-            setCurrentTable(sqlName.toString());
-        }
-        return false;
-    }
-
-    // DUAL
-    public boolean visit(MySqlDeleteStatement x) {
-        setAliasMap();
-
-        setMode(x, Mode.Delete);
-
-        accept(x.getFrom());
-        accept(x.getUsing());
-        x.getTableSource().accept(this);
-
-        if (x.getTableSource() instanceof SQLExprTableSource) {
-            SQLName tableName = (SQLName) ((SQLExprTableSource) x.getTableSource()).getExpr();
-            String ident = tableName.toString();
-            setCurrentTable(x, ident);
-
-            TableStat stat = this.getTableStat(ident, ident);
-            stat.incrementDeleteCount();
-        }
-
-        accept(x.getWhere());
-
-        accept(x.getOrderBy());
-        accept(x.getLimit());
-
-        return false;
-    }
-
-    public void endVisit(MySqlDeleteStatement x) {
-    }
-
-    public boolean visit(SQLUpdateStatement x) {
-        setAliasMap();
-
-        setMode(x, Mode.Update);
-
-        SQLName identName = x.getTableName();
-        if (identName != null) {
-            String ident = identName.toString();
-            setCurrentTable(ident);
-
-            TableStat stat = getTableStat(ident);
-            stat.incrementUpdateCount();
-
-            Map<String, String> aliasMap = getAliasMap();
-            aliasMap.put(ident, ident);
-
-            String alias = x.getTableSource().getAlias();
-            if (alias != null) {
-                aliasMap.put(alias, ident);
-            }
-        } else {
-            x.getTableSource().accept(this);
-        }
-
-        accept(x.getItems());
-        accept(x.getWhere());
-
-        return false;
     }
 }

@@ -208,6 +208,26 @@ public final class ByteBufferUtil {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
 
+    public static ByteBuffer bytes(int i) {
+        return ByteBuffer.allocate(4).putInt(0, i);
+    }
+
+    public static ByteBuffer bytes(long n) {
+        return ByteBuffer.allocate(8).putLong(0, n);
+    }
+
+    public static ByteBuffer bytes(float f) {
+        return ByteBuffer.allocate(4).putFloat(0, f);
+    }
+
+    public static ByteBuffer bytes(double d) {
+        return ByteBuffer.allocate(8).putDouble(0, d);
+    }
+
+    public static ByteBuffer bytes(InetAddress address) {
+        return ByteBuffer.wrap(address.getAddress());
+    }
+
     /**
      * @return a new copy of the data in @param buffer
      * USUALLY YOU SHOULD USE ByteBuffer.duplicate() INSTEAD, which creates a new Buffer
@@ -256,10 +276,16 @@ public final class ByteBufferUtil {
         out.write(bytes);
     }
 
-
     /* @return An unsigned short in an integer. */
+
     public static int readShortLength(DataInput in) throws IOException {
         return in.readUnsignedShort();
+    }
+
+    // changes bb position
+    public static int readShortLength(ByteBuffer bb) {
+        int length = (bb.get() & 0xFF) << 8;
+        return length | (bb.get() & 0xFF);
     }
 
 
@@ -268,6 +294,14 @@ public final class ByteBufferUtil {
         byte[] bytes = new byte[length];
         in.readFully(bytes);
         return bytes;
+    }
+
+    // changes bb position
+    public static ByteBuffer readBytes(ByteBuffer bb, int length) {
+        ByteBuffer copy = bb.duplicate();
+        copy.limit(copy.position() + length);
+        bb.position(bb.position() + length);
+        return copy;
     }
 
     /**
@@ -291,22 +325,6 @@ public final class ByteBufferUtil {
 
     public static double toDouble(ByteBuffer bytes) {
         return bytes.getDouble(bytes.position());
-    }
-
-    public static ByteBuffer bytes(int i) {
-        return ByteBuffer.allocate(4).putInt(0, i);
-    }
-
-    public static ByteBuffer bytes(long n) {
-        return ByteBuffer.allocate(8).putLong(0, n);
-    }
-
-    public static ByteBuffer bytes(float f) {
-        return ByteBuffer.allocate(4).putFloat(0, f);
-    }
-
-    public static ByteBuffer bytes(double d) {
-        return ByteBuffer.allocate(8).putDouble(0, d);
     }
 
     public static InputStream inputStream(ByteBuffer bytes) {
@@ -374,12 +392,8 @@ public final class ByteBufferUtil {
         return 0;
     }
 
-    public static ByteBuffer bytes(InetAddress address) {
-        return ByteBuffer.wrap(address.getAddress());
-    }
-
-
     // Returns whether {@code prefix} is a prefix of {@code value}.
+
     public static boolean isPrefix(ByteBuffer prefix, ByteBuffer value) {
         if (prefix.remaining() > value.remaining()) {
             return false;
@@ -388,7 +402,6 @@ public final class ByteBufferUtil {
         int diff = value.remaining() - prefix.remaining();
         return prefix.equals(value.duplicate().limit(value.remaining() - diff));
     }
-
     /**
      * trims size of bytebuffer to exactly number of bytes in it, to do not hold too much memory
      */
@@ -397,29 +410,16 @@ public final class ByteBufferUtil {
     }
 
     // Doesn't change bb position
+
     public static int getShortLength(ByteBuffer bb, int position) {
         int length = (bb.get(position) & 0xFF) << 8;
         return length | (bb.get(position + 1) & 0xFF);
     }
-
     // changes bb position
-    public static int readShortLength(ByteBuffer bb) {
-        int length = (bb.get() & 0xFF) << 8;
-        return length | (bb.get() & 0xFF);
-    }
 
-    // changes bb position
     public static void writeShortLength(ByteBuffer bb, int length) {
         bb.put((byte) ((length >> 8) & 0xFF));
         bb.put((byte) (length & 0xFF));
-    }
-
-    // changes bb position
-    public static ByteBuffer readBytes(ByteBuffer bb, int length) {
-        ByteBuffer copy = bb.duplicate();
-        copy.limit(copy.position() + length);
-        bb.position(bb.position() + length);
-        return copy;
     }
 
     // changes bb position

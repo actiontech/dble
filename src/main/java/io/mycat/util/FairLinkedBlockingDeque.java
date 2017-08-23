@@ -300,6 +300,28 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
 
     /**
      * @throws NullPointerException {@inheritDoc}
+     * @throws InterruptedException {@inheritDoc}
+     */
+    public boolean offerFirst(E e, long timeout, TimeUnit unit) throws InterruptedException {
+        if (e == null)
+            throw new NullPointerException();
+        long nanos = unit.toNanos(timeout);
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            while (!linkFirst(e)) {
+                if (nanos <= 0)
+                    return false;
+                nanos = notFull.awaitNanos(nanos);
+            }
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
      */
     public boolean offerLast(E e) {
         if (e == null)
@@ -308,6 +330,28 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         lock.lock();
         try {
             return linkLast(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     * @throws InterruptedException {@inheritDoc}
+     */
+    public boolean offerLast(E e, long timeout, TimeUnit unit) throws InterruptedException {
+        if (e == null)
+            throw new NullPointerException();
+        long nanos = unit.toNanos(timeout);
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            while (!linkLast(e)) {
+                if (nanos <= 0)
+                    return false;
+                nanos = notFull.awaitNanos(nanos);
+            }
+            return true;
         } finally {
             lock.unlock();
         }
@@ -342,50 +386,6 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         try {
             while (!linkLast(e))
                 notFull.await();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     * @throws InterruptedException {@inheritDoc}
-     */
-    public boolean offerFirst(E e, long timeout, TimeUnit unit) throws InterruptedException {
-        if (e == null)
-            throw new NullPointerException();
-        long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
-        try {
-            while (!linkFirst(e)) {
-                if (nanos <= 0)
-                    return false;
-                nanos = notFull.awaitNanos(nanos);
-            }
-            return true;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     * @throws InterruptedException {@inheritDoc}
-     */
-    public boolean offerLast(E e, long timeout, TimeUnit unit) throws InterruptedException {
-        if (e == null)
-            throw new NullPointerException();
-        long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
-        try {
-            while (!linkLast(e)) {
-                if (nanos <= 0)
-                    return false;
-                nanos = notFull.awaitNanos(nanos);
-            }
-            return true;
         } finally {
             lock.unlock();
         }
@@ -446,11 +446,45 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         }
     }
 
+    public E pollFirst(long timeout, TimeUnit unit) throws InterruptedException {
+        long nanos = unit.toNanos(timeout);
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            E x;
+            while ((x = unlinkFirst()) == null) {
+                if (nanos <= 0)
+                    return null;
+                nanos = notEmpty.awaitNanos(nanos);
+            }
+            return x;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public E pollLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             return unlinkLast();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public E pollLast(long timeout, TimeUnit unit) throws InterruptedException {
+        long nanos = unit.toNanos(timeout);
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            E x;
+            while ((x = unlinkLast()) == null) {
+                if (nanos <= 0)
+                    return null;
+                nanos = notEmpty.awaitNanos(nanos);
+            }
+            return x;
         } finally {
             lock.unlock();
         }
@@ -476,40 +510,6 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             E x;
             while ((x = unlinkLast()) == null)
                 notEmpty.await();
-            return x;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public E pollFirst(long timeout, TimeUnit unit) throws InterruptedException {
-        long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
-        try {
-            E x;
-            while ((x = unlinkFirst()) == null) {
-                if (nanos <= 0)
-                    return null;
-                nanos = notEmpty.awaitNanos(nanos);
-            }
-            return x;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public E pollLast(long timeout, TimeUnit unit) throws InterruptedException {
-        long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
-        try {
-            E x;
-            while ((x = unlinkLast()) == null) {
-                if (nanos <= 0)
-                    return null;
-                nanos = notEmpty.awaitNanos(nanos);
-            }
             return x;
         } finally {
             lock.unlock();
@@ -622,16 +622,16 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * @throws NullPointerException {@inheritDoc}
      * @throws InterruptedException {@inheritDoc}
      */
-    public void put(E e) throws InterruptedException {
-        putLast(e);
+    public boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException {
+        return offerLast(e, timeout, unit);
     }
 
     /**
      * @throws NullPointerException {@inheritDoc}
      * @throws InterruptedException {@inheritDoc}
      */
-    public boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException {
-        return offerLast(e, timeout, unit);
+    public void put(E e) throws InterruptedException {
+        putLast(e);
     }
 
     /**
@@ -649,16 +649,35 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         return removeFirst();
     }
 
+    /**
+     * Removes the first occurrence of the specified element from this deque. If
+     * the deque does not contain the element, it is unchanged. More formally,
+     * removes the first element <tt>e</tt> such that <tt>o.equals(e)</tt> (if
+     * such an element exists). Returns <tt>true</tt> if this deque contained
+     * the specified element (or equivalently, if this deque changed as a result
+     * of the call).
+     * <p>
+     * <p>
+     * This method is equivalent to {@link #removeFirstOccurrence(Object)
+     * removeFirstOccurrence}.
+     *
+     * @param o element to be removed from this deque, if present
+     * @return <tt>true</tt> if this deque changed as a result of the call
+     */
+    public boolean remove(Object o) {
+        return removeFirstOccurrence(o);
+    }
+
     public E poll() {
         return pollFirst();
     }
 
-    public E take() throws InterruptedException {
-        return takeFirst();
-    }
-
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
         return pollFirst(timeout, unit);
+    }
+
+    public E take() throws InterruptedException {
+        return takeFirst();
     }
 
     /**
@@ -755,25 +774,6 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     }
 
     // Collection methods
-
-    /**
-     * Removes the first occurrence of the specified element from this deque. If
-     * the deque does not contain the element, it is unchanged. More formally,
-     * removes the first element <tt>e</tt> such that <tt>o.equals(e)</tt> (if
-     * such an element exists). Returns <tt>true</tt> if this deque contained
-     * the specified element (or equivalently, if this deque changed as a result
-     * of the call).
-     * <p>
-     * <p>
-     * This method is equivalent to {@link #removeFirstOccurrence(Object)
-     * removeFirstOccurrence}.
-     *
-     * @param o element to be removed from this deque, if present
-     * @return <tt>true</tt> if this deque changed as a result of the call
-     */
-    public boolean remove(Object o) {
-        return removeFirstOccurrence(o);
-    }
 
     /**
      * Returns the number of elements in this deque.

@@ -47,6 +47,11 @@ public class ItemRef extends Item {
     }
 
     @Override
+    public Item fixFields(NameResolutionContext context) {
+        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected usage!");
+    }
+
+    @Override
     public BigDecimal valReal() {
         return ref.valReal();
     }
@@ -130,11 +135,6 @@ public class ItemRef extends Item {
                 LOGGER.warn("parse string exception!", e);
             }
         }
-    }
-
-    @Override
-    public Item fixFields(NameResolutionContext context) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected usage!");
     }
 
     @Override

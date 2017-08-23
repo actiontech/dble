@@ -137,6 +137,14 @@ public final class MySQLcom {
         return 0;
     }
 
+    public static int memcmp(byte[] aPtr, byte[] bPtr) {
+        int aLen = aPtr.length, bLen = bPtr.length;
+        if (aLen >= bLen)
+            return memcmp0(aPtr, bPtr);
+        else
+            return -memcmp(bPtr, aPtr);
+    }
+
     public static BigInteger getUnsignedLong(long l) {
         BigInteger bi = BigInteger.valueOf(l);
         BigInteger bmask = new BigInteger("FFFFFFFFFFFFFFFF", 16);
@@ -167,7 +175,6 @@ public final class MySQLcom {
         return MyTime.timeToLonglongDatetimePacked(ltime);
 
     }
-
     /*
      * Collects different types for comparison of first item with each other
      * items
@@ -183,6 +190,7 @@ public final class MySQLcom {
      * RETURN 0 - if row type incompatibility has been detected (see
      * cmp_row_type) Bitmap of collected types - otherwise 可以表示出一共有几种type
      */
+
     public static int collectCmpTypes(List<Item> items, boolean skipnulls) {
         int foundtypes = 0;
         ItemResult leftResult = items.get(0).resultType();
@@ -298,14 +306,6 @@ public final class MySQLcom {
         if (retLen == -1)
             retLen = 1;
         return Arrays.copyOfRange(bb, bb.length - retLen, bb.length);
-    }
-
-    public static int memcmp(byte[] aPtr, byte[] bPtr) {
-        int aLen = aPtr.length, bLen = bPtr.length;
-        if (aLen >= bLen)
-            return memcmp0(aPtr, bPtr);
-        else
-            return -memcmp(bPtr, aPtr);
     }
 
     public static void memcpy(byte[] aPtr, int aStart, byte[] bPtr) {

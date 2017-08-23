@@ -30,6 +30,16 @@ public abstract class FilePathWrapper extends FilePath {
         return unwrap(name);
     }
 
+    /**
+     * Get the base path for the given wrapped path.
+     *
+     * @param path the path including the scheme prefix
+     * @return the base file path
+     */
+    protected FilePath unwrap(String path) {
+        return FilePath.get(path.substring(getScheme().length() + 1));
+    }
+
     private FilePathWrapper create(String path, FilePath base) {
         try {
             FilePathWrapper p = getClass().newInstance();
@@ -43,16 +53,6 @@ public abstract class FilePathWrapper extends FilePath {
 
     protected String getPrefix() {
         return getScheme() + ":";
-    }
-
-    /**
-     * Get the base path for the given wrapped path.
-     *
-     * @param path the path including the scheme prefix
-     * @return the base file path
-     */
-    protected FilePath unwrap(String path) {
-        return FilePath.get(path.substring(getScheme().length() + 1));
     }
 
     protected FilePath getBase() {

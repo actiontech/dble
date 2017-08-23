@@ -229,6 +229,28 @@ public class NonBlockingSession implements Session {
         }
     }
 
+    public void execute(PlanNode node) {
+        init();
+        HandlerBuilder builder = new HandlerBuilder(node, this);
+        try {
+            builder.build(false); //no next
+        } catch (SQLSyntaxErrorException e) {
+            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//            source.setCurrentSQL(null);
+            source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
+        } catch (NoSuchElementException e) {
+            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//            source.setCurrentSQL(null);
+            this.terminate();
+            source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
+        } catch (Exception e) {
+            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+//            source.setCurrentSQL(null);
+            this.terminate();
+            source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
+        }
+    }
+
     private void executeMultiSelect(RouteResultset rrs) {
 //        if (this.source.isTxInterrupted()) {
 //            sendErrorPacket(ErrorCode.ER_YES, "Transaction error, need to rollback.");
@@ -259,28 +281,6 @@ public class NonBlockingSession implements Session {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
             }
-        }
-    }
-
-    public void execute(PlanNode node) {
-        init();
-        HandlerBuilder builder = new HandlerBuilder(node, this);
-        try {
-            builder.build(false); //no next
-        } catch (SQLSyntaxErrorException e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//            source.setCurrentSQL(null);
-            source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
-        } catch (NoSuchElementException e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//            source.setCurrentSQL(null);
-            this.terminate();
-            source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
-        } catch (Exception e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
-//            source.setCurrentSQL(null);
-            this.terminate();
-            source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
     }
 
@@ -486,13 +486,6 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public void releaseConnections(final boolean needRollback) {
-        boolean debug = LOGGER.isDebugEnabled();
-        for (RouteResultsetNode rrn : target.keySet()) {
-            releaseConnection(rrn, debug, needRollback);
-        }
-    }
-
     public void releaseConnection(BackendConnection con) {
         Iterator<Entry<RouteResultsetNode, BackendConnection>> itor = target.entrySet().iterator();
         while (itor.hasNext()) {
@@ -507,6 +500,13 @@ public class NonBlockingSession implements Session {
             }
         }
 
+    }
+
+    public void releaseConnections(final boolean needRollback) {
+        boolean debug = LOGGER.isDebugEnabled();
+        for (RouteResultsetNode rrn : target.keySet()) {
+            releaseConnection(rrn, debug, needRollback);
+        }
     }
 
     /**

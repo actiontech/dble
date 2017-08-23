@@ -410,6 +410,43 @@ public final class BytesTools {
         return readBytes(dup);
     }
 
+    /**
+     * Converts a string to a UTF-8 byte array.
+     *
+     * @param s string
+     * @return the byte array
+     */
+    public static byte[] toBytes(String s) {
+        return s.getBytes(UTF8_CHARSET);
+    }
+
+    /**
+     * Convert a boolean to a byte array. True becomes -1
+     * and false becomes 0.
+     *
+     * @param b value
+     * @return <code>b</code> encoded in a byte array.
+     */
+    public static byte[] toBytes(final boolean b) {
+        return new byte[]{b ? (byte) -1 : (byte) 0};
+    }
+
+    /**
+     * Convert a long value to a byte array using big-endian.
+     *
+     * @param val value to convert
+     * @return the byte array
+     */
+    public static byte[] toBytes(long val) {
+        byte[] b = new byte[8];
+        for (int i = 7; i > 0; i--) {
+            b[i] = (byte) val;
+            val >>>= 8;
+        }
+        b[0] = (byte) val;
+        return b;
+    }
+
     private static byte[] readBytes(ByteBuffer buf) {
         byte[] result = new byte[buf.remaining()];
         buf.get(result);
@@ -595,27 +632,6 @@ public final class BytesTools {
     }
 
     /**
-     * Converts a string to a UTF-8 byte array.
-     *
-     * @param s string
-     * @return the byte array
-     */
-    public static byte[] toBytes(String s) {
-        return s.getBytes(UTF8_CHARSET);
-    }
-
-    /**
-     * Convert a boolean to a byte array. True becomes -1
-     * and false becomes 0.
-     *
-     * @param b value
-     * @return <code>b</code> encoded in a byte array.
-     */
-    public static byte[] toBytes(final boolean b) {
-        return new byte[]{b ? (byte) -1 : (byte) 0};
-    }
-
-    /**
      * Reverses {@link #toBytes(boolean)}
      *
      * @param b array
@@ -626,22 +642,6 @@ public final class BytesTools {
             throw new IllegalArgumentException("Array has wrong size: " + b.length);
         }
         return b[0] != (byte) 0;
-    }
-
-    /**
-     * Convert a long value to a byte array using big-endian.
-     *
-     * @param val value to convert
-     * @return the byte array
-     */
-    public static byte[] toBytes(long val) {
-        byte[] b = new byte[8];
-        for (int i = 7; i > 0; i--) {
-            b[i] = (byte) val;
-            val >>>= 8;
-        }
-        b[0] = (byte) val;
-        return b;
     }
 
     /**
@@ -877,18 +877,6 @@ public final class BytesTools {
     }
 
     /**
-     * @param t operands
-     * @return Array of binary byte arrays made from passed array of binary strings
-     */
-    public static byte[][] toBinaryByteArrays(final String[] t) {
-        byte[][] result = new byte[t.length][];
-        for (int i = 0; i < t.length; i++) {
-            result[i] = BytesTools.toBytesBinary(t[i]);
-        }
-        return result;
-    }
-
-    /**
      * @param column operand
      * @return A byte array of a byte array where first and only entry is
      * <code>column</code>
@@ -905,6 +893,18 @@ public final class BytesTools {
     public static byte[][] toByteArrays(final byte[] column) {
         byte[][] result = new byte[1][];
         result[0] = column;
+        return result;
+    }
+
+    /**
+     * @param t operands
+     * @return Array of binary byte arrays made from passed array of binary strings
+     */
+    public static byte[][] toBinaryByteArrays(final String[] t) {
+        byte[][] result = new byte[t.length][];
+        for (int i = 0; i < t.length; i++) {
+            result[i] = BytesTools.toBytesBinary(t[i]);
+        }
         return result;
     }
 

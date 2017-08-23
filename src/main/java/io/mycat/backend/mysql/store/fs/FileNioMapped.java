@@ -145,6 +145,13 @@ class FileNioMapped extends FileBase {
     }
 
     @Override
+    public synchronized FileChannel position(long pos) throws IOException {
+        checkFileSizeLimit(pos);
+        this.pos = (int) pos;
+        return this;
+    }
+
+    @Override
     public String toString() {
         return "nioMapped:" + name;
     }
@@ -185,13 +192,6 @@ class FileNioMapped extends FileBase {
             e2.initCause(e);
             throw e2;
         }
-    }
-
-    @Override
-    public synchronized FileChannel position(long pos) throws IOException {
-        checkFileSizeLimit(pos);
-        this.pos = (int) pos;
-        return this;
     }
 
     @Override

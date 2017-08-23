@@ -50,19 +50,6 @@ public final class ParseUtil {
         return null;
     }
 
-    public static long getSQLId(String stmt) {
-        int offset = stmt.indexOf('=');
-        if (offset != -1 && stmt.length() > ++offset) {
-            String id = stmt.substring(offset).trim();
-            try {
-                return Long.parseLong(id);
-            } catch (NumberFormatException e) {
-                //ignore error
-            }
-        }
-        return 0L;
-    }
-
     /**
      * <code>'abc'</code>
      *
@@ -108,6 +95,19 @@ public final class ParseUtil {
             }
         }
         return sb.toString();
+    }
+
+    public static long getSQLId(String stmt) {
+        int offset = stmt.indexOf('=');
+        if (offset != -1 && stmt.length() > ++offset) {
+            String id = stmt.substring(offset).trim();
+            try {
+                return Long.parseLong(id);
+            } catch (NumberFormatException e) {
+                //ignore error
+            }
+        }
+        return 0L;
     }
 
     /**

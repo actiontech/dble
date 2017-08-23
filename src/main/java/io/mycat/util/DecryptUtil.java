@@ -70,27 +70,6 @@ public final class DecryptUtil {
         return passwrod;
     }
 
-    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String passwrod) {
-        if ("1".equals(usingDecrypt)) {
-            //type:host:user:password
-            //1:myhost1:test:test
-            boolean flag = false;
-            try {
-                String passwrods[] = DecryptUtil.decrypt(passwrod).split(":");
-                if ("1".equals(passwrods[0]) && host.equals(passwrods[1]) && user.equals(passwrods[2])) {
-                    return passwrods[3];
-                }
-                if (!flag) {
-                    throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
-                }
-            } catch (Exception e2) {
-                throw new ConfigException("host " + host + ",user " + user + " passwrod need to decrype ,but decrype password is wrong !", e2);
-            }
-        }
-        return passwrod;
-    }
-
-
     public static String decrypt(String cipherText) throws Exception {
         return decrypt((String) null, cipherText);
     }
@@ -101,24 +80,6 @@ public final class DecryptUtil {
 
         return decrypt(publicKey, cipherText);
     }
-
-    public static PublicKey getPublicKey(String publicKeyText) {
-        if (publicKeyText == null || publicKeyText.length() == 0) {
-            publicKeyText = DecryptUtil.DEFAULT_PUBLIC_KEY_STRING;
-        }
-
-        try {
-            byte[] publicKeyBytes = Base64.base64ToByteArray(publicKeyText);
-            X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(
-                    publicKeyBytes);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            return keyFactory.generatePublic(x509KeySpec);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to get public key", e);
-        }
-    }
-
 
     public static String decrypt(PublicKey publicKey, String cipherText)
             throws Exception {
@@ -144,6 +105,45 @@ public final class DecryptUtil {
 
         return new String(plainBytes);
     }
+
+    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String passwrod) {
+        if ("1".equals(usingDecrypt)) {
+            //type:host:user:password
+            //1:myhost1:test:test
+            boolean flag = false;
+            try {
+                String passwrods[] = DecryptUtil.decrypt(passwrod).split(":");
+                if ("1".equals(passwrods[0]) && host.equals(passwrods[1]) && user.equals(passwrods[2])) {
+                    return passwrods[3];
+                }
+                if (!flag) {
+                    throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
+                }
+            } catch (Exception e2) {
+                throw new ConfigException("host " + host + ",user " + user + " passwrod need to decrype ,but decrype password is wrong !", e2);
+            }
+        }
+        return passwrod;
+    }
+
+
+    public static PublicKey getPublicKey(String publicKeyText) {
+        if (publicKeyText == null || publicKeyText.length() == 0) {
+            publicKeyText = DecryptUtil.DEFAULT_PUBLIC_KEY_STRING;
+        }
+
+        try {
+            byte[] publicKeyBytes = Base64.base64ToByteArray(publicKeyText);
+            X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(
+                    publicKeyBytes);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePublic(x509KeySpec);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to get public key", e);
+        }
+    }
+
 
     public static String encrypt(String plainText) throws Exception {
         return encrypt((String) null, plainText);
@@ -215,15 +215,6 @@ public final class DecryptUtil {
             return byteArrayToBase64(a, false);
         }
 
-        /**
-         * Translates the specified byte array into an "alternate representation" Base64 string. This non-standard variant
-         * uses an alphabet that does not contain the uppercase alphabetic characters, which makes it suitable for use in
-         * situations where case-folding occurs.
-         */
-        public static String byteArrayToAltBase64(byte[] a) {
-            return byteArrayToBase64(a, true);
-        }
-
         private static String byteArrayToBase64(byte[] a, boolean alternate) {
             int aLen = a.length;
             int numFullGroups = aLen / 3;
@@ -265,6 +256,15 @@ public final class DecryptUtil {
         }
 
         /**
+         * Translates the specified byte array into an "alternate representation" Base64 string. This non-standard variant
+         * uses an alphabet that does not contain the uppercase alphabetic characters, which makes it suitable for use in
+         * situations where case-folding occurs.
+         */
+        public static String byteArrayToAltBase64(byte[] a) {
+            return byteArrayToBase64(a, true);
+        }
+
+        /**
          * This array is a lookup table that translates 6-bit positive integer index values into their "Base64 Alphabet"
          * equivalents as specified in Table 1 of RFC 2045.
          */
@@ -291,16 +291,6 @@ public final class DecryptUtil {
          */
         public static byte[] base64ToByteArray(String s) {
             return base64ToByteArray(s, false);
-        }
-
-        /**
-         * Translates the specified "alternate representation" Base64 string into a byte array.
-         *
-         * @throw IllegalArgumentException or ArrayOutOfBoundsException if <tt>s</tt> is not a valid alternate
-         * representation Base64 string.
-         */
-        public static byte[] altBase64ToByteArray(String s) {
-            return base64ToByteArray(s, true);
         }
 
         private static byte[] base64ToByteArray(String s, boolean alternate) {
@@ -349,6 +339,16 @@ public final class DecryptUtil {
             // assert inCursor == s.length()-missingBytesInLastGroup;
             // assert outCursor == result.length;
             return result;
+        }
+
+        /**
+         * Translates the specified "alternate representation" Base64 string into a byte array.
+         *
+         * @throw IllegalArgumentException or ArrayOutOfBoundsException if <tt>s</tt> is not a valid alternate
+         * representation Base64 string.
+         */
+        public static byte[] altBase64ToByteArray(String s) {
+            return base64ToByteArray(s, true);
         }
 
         /**

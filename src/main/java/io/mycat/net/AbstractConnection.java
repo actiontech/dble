@@ -395,17 +395,6 @@ public abstract class AbstractConnection implements NIOConnection {
 
     }
 
-    private void writeNotSend(ByteBuffer buffer) {
-        if (isSupportCompress()) {
-            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
-            writeQueue.offer(newBuffer);
-
-        } else {
-            writeQueue.offer(buffer);
-        }
-    }
-
-
     @Override
     public final void write(ByteBuffer buffer) {
 
@@ -426,6 +415,17 @@ public abstract class AbstractConnection implements NIOConnection {
             this.close("write err:" + e);
         }
     }
+
+    private void writeNotSend(ByteBuffer buffer) {
+        if (isSupportCompress()) {
+            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
+            writeQueue.offer(newBuffer);
+
+        } else {
+            writeQueue.offer(buffer);
+        }
+    }
+
 
 
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {

@@ -74,6 +74,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         return item;
     }
 
+    private Item getItem(SQLExpr expr) {
+        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex);
+        expr.accept(fv);
+        return fv.getItem();
+    }
+
     public void setItem(Item item) {
         this.item = item;
     }
@@ -705,12 +711,6 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             args.add(getItem(expr));
         }
         return args;
-    }
-
-    private Item getItem(SQLExpr expr) {
-        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex);
-        expr.accept(fv);
-        return fv.getItem();
     }
 
     private MySqlIntervalUnit getIntervalUint(SQLExpr expr) {

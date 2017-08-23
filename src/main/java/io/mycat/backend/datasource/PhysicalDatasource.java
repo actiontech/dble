@@ -384,6 +384,11 @@ public abstract class PhysicalDatasource {
         });
     }
 
+    /**
+     * 创建新连接
+     */
+    public abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
+
     public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
                               final Object attachment) throws IOException {
         if (dying.get()) {
@@ -471,11 +476,6 @@ public abstract class PhysicalDatasource {
             queue.removeCon(conn);
         }
     }
-
-    /**
-     * 创建新连接
-     */
-    public abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
 
     /**
      * 测试连接，用于初始化及热更新配置检测

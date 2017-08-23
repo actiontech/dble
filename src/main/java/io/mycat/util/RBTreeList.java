@@ -40,6 +40,19 @@ public class RBTreeList<E> extends AbstractList<E> {
         return true;
     }
 
+    @Override
+    public void add(int index, E element) {
+        if (index > size || index < 0)
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+
+        ensureCapacity(size + 1); // Increments modCount!!
+        System.arraycopy(elementData, index, elementData, index + 1, size - index);
+        elementData[index] = element;
+        RBTNode<E> node = new RBTNode<E>(index, BLACK, element);
+        insert(node);
+        size++;
+    }
+
     private void insert(RBTNode<E> node) {
         if (root == null) {
             root = node;
@@ -204,19 +217,6 @@ public class RBTreeList<E> extends AbstractList<E> {
         RBTNode<E> newNode = new RBTNode<E>(index, BLACK, element);
         insert(newNode);
         return oldValue;
-    }
-
-    @Override
-    public void add(int index, E element) {
-        if (index > size || index < 0)
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
-
-        ensureCapacity(size + 1); // Increments modCount!!
-        System.arraycopy(elementData, index, elementData, index + 1, size - index);
-        elementData[index] = element;
-        RBTNode<E> node = new RBTNode<E>(index, BLACK, element);
-        insert(node);
-        size++;
     }
 
     @Override

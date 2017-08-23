@@ -68,6 +68,19 @@ public final class XAStateLog {
         updateXARecoverylog(xaTxId, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
     }
 
+    public static void updateXARecoverylog(String xaTxId, String host, int port, String schema, TxState txState) {
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
+        for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
+            if (coordinatorLogEntry.getParticipants()[i] != null &&
+                    coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema) &&
+                    coordinatorLogEntry.getParticipants()[i].getHost().equals(host) &&
+                    coordinatorLogEntry.getParticipants()[i].getPort() == port) {
+                coordinatorLogEntry.getParticipants()[i].setTxState(txState);
+            }
+        }
+        flushMemoryRepository(xaTxId, coordinatorLogEntry);
+    }
+
     public static boolean writeCheckpoint(String xaTxId) {
         lock.lock();
         try {
@@ -158,19 +171,6 @@ public final class XAStateLog {
                 lock.unlock();
             }
         }
-    }
-
-    public static void updateXARecoverylog(String xaTxId, String host, int port, String schema, TxState txState) {
-        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
-        for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
-            if (coordinatorLogEntry.getParticipants()[i] != null &&
-                    coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema) &&
-                    coordinatorLogEntry.getParticipants()[i].getHost().equals(host) &&
-                    coordinatorLogEntry.getParticipants()[i].getPort() == port) {
-                coordinatorLogEntry.getParticipants()[i].setTxState(txState);
-            }
-        }
-        flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }
 
     public static void flushMemoryRepository(String xaTxId, CoordinatorLogEntry coordinatorLogEntry) {

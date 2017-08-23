@@ -105,7 +105,7 @@ public final class ServerParseShow {
         if (stmt.length() > offset++) {
             if (stmt.charAt(offset) == 'u' || stmt.charAt(offset) == 'U') {
                 return showFullCheck(stmt, offset);
-            } else if (stmt.charAt(offset) == 'i' || stmt.charAt(offset) == 'I') {//show fields
+            } else if (stmt.charAt(offset) == 'i' || stmt.charAt(offset) == 'I') { //show fields
                 return showColumns(stmt);
             } else {
                 return OTHER;

@@ -299,7 +299,7 @@ public class GlobalVisitor extends MysqlVisitor {
             pushAlias = item.getAlias();
             if (pushAlias.startsWith(Item.FNAF))
                 pushAlias = getRandomAliasName();
-        } else if (orgPushDownName.length() > MAX_COL_LENGTH) {// 如果超出最大长度，则需要自定义别名
+        } else if (orgPushDownName.length() > MAX_COL_LENGTH) { // 如果超出最大长度，则需要自定义别名
             pushAlias = getRandomAliasName();
         }
         if (pushAlias == null) {

@@ -61,7 +61,7 @@ public class GlobalTableProcessor {
                 tn.setNoshardNode(null);
                 return status;
             }
-            if (unGlobalCount == 1 && tn instanceof JoinNode) {// joinNode
+            if (unGlobalCount == 1 && tn instanceof JoinNode) { // joinNode
                 JoinNode jn = (JoinNode) tn;
                 if (jn.isNotIn()) {
                     tn.setNoshardNode(null);
@@ -74,7 +74,7 @@ public class GlobalTableProcessor {
                 } else {
                     // left join
                     PlanNode left = jn.getLeftNode();
-                    if (left.getUnGlobalTableCount() == 0) {// 左边是global，leftjoin不下发
+                    if (left.getUnGlobalTableCount() == 0) { // 左边是global，leftjoin不下发
                         tn.setNoshardNode(null);
                         status = false;
                     } else if (left.type() == PlanNode.PlanNodeType.TABLE || !PlanUtil.isERNode(left)) {

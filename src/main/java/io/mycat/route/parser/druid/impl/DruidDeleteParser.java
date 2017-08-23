@@ -63,7 +63,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             }
             schema = schemaInfo.schemaConfig;
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-            if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
+            if (RouterUtil.isNoSharding(schema, schemaInfo.table)) { //整个schema都不分库或者该表不拆分
                 if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, new StringPtr(schemaInfo.schema))) {
                     String msg = "DELETE query with sub-query is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);

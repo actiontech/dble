@@ -186,7 +186,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 }
 
                 // 'xa rollback' ok
-            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE || mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE) {// we dont' konw if the conn prepared or not
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE || mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE) { // we dont' konw if the conn prepared or not
 
 
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
@@ -199,7 +199,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
 
-            } else {// LOGGER.error("Wrong XA status flag!");
+            } else { // LOGGER.error("Wrong XA status flag!");
             }
         }
     }
@@ -260,7 +260,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     }
                 }
 
-            } else {// LOGGER.error("Wrong XA status flag!");
+            } else { // LOGGER.error("Wrong XA status flag!");
             }
         }
     }
@@ -306,7 +306,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
 
-            } else {// LOGGER.error("Wrong XA status flag!");
+            } else { // LOGGER.error("Wrong XA status flag!");
             }
         }
     }
@@ -345,13 +345,13 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
 
-            } else {// LOGGER.error("Wrong XA status flag!");
+            } else { // LOGGER.error("Wrong XA status flag!");
             }
         }
     }
 
     private void cleanAndFeedback() {
-        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {// clear all resources
+        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
             //取消限制
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);

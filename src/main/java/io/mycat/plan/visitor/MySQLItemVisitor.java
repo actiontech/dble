@@ -119,7 +119,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = new ItemFuncIsnull(itemLeft);
                 } else if (itemRight instanceof ItemInt) {
                     ItemInt itemBool = (ItemInt) itemRight;
-                    if (itemBool.valInt().longValue() == 1) {// is true
+                    if (itemBool.valInt().longValue() == 1) { // is true
                         item = new ItemFuncIstrue(itemLeft);
                     } else {
                         item = new ItemFuncIsfalse(itemLeft);
@@ -134,7 +134,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = new ItemFuncIsnotnull(itemLeft);
                 } else if (itemRight instanceof ItemInt) {
                     ItemInt itemBool = (ItemInt) itemRight;
-                    if (itemBool.valInt().longValue() == 1) {// is true
+                    if (itemBool.valInt().longValue() == 1) { // is true
                         item = new ItemFuncIsnottrue(itemLeft);
                     } else {
                         item = new ItemFuncIsnotfalse(itemLeft);

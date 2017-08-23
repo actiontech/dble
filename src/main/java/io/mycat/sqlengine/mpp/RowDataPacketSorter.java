@@ -137,18 +137,18 @@ public class RowDataPacketSorter {
 
         if (compareObject(left, right, this.orderCols[byColumnIndex]) <= 0) {
             if (compareObject(left, right, this.orderCols[byColumnIndex]) < 0) {
-                if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {// 升序
+                if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) { // 升序
                     resultTemp[pr++] = array[p1++];
                 } else {
                     resultTemp[pr++] = array[p2++];
                 }
-            } else {// 如果当前字段相等，则按照下一个字段排序
+            } else { // 如果当前字段相等，则按照下一个字段排序
                 compare(byColumnIndex + 1);
 
             }
 
         } else {
-            if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {// 升序
+            if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) { // 升序
                 resultTemp[pr++] = array[p2++];
             } else {
                 resultTemp[pr++] = array[p1++];

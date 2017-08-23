@@ -115,7 +115,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
                 schema = schemaInfo.schemaConfig;
-                if (RouterUtil.isNoSharding(schema, schemaInfo.table)) {//整个schema都不分库或者该表不拆分
+                if (RouterUtil.isNoSharding(schema, schemaInfo.table)) { //整个schema都不分库或者该表不拆分
                     RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                     return schema;
                 }
@@ -617,7 +617,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
                 if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
                         ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null &&
-                        tc.getDataNodes().size() > 1) {//有主键条件
+                        tc.getDataNodes().size() > 1) { //有主键条件
                     return false;
                 }
             }
@@ -629,7 +629,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                              MySqlSelectQueryBlock mysqlSelectQuery) {
         if (schema.getDefaultMaxLimit() == -1) {
             return;
-        } else if (mysqlSelectQuery.getLimit() != null) {// 语句中已有limit
+        } else if (mysqlSelectQuery.getLimit() != null) { // 语句中已有limit
             return;
         } else if (!tableConfig.isNeedAddLimit()) {
             return; // 优先从配置文件取
@@ -655,7 +655,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             return false;
         } else if (schema.getDefaultMaxLimit() == -1) {
             return false;
-        } else if (mysqlSelectQuery.getLimit() != null) {// 语句中已有limit
+        } else if (mysqlSelectQuery.getLimit() != null) { // 语句中已有limit
             return false;
         } else if (ctx.getTables().size() == 1) {
             if (rrs.hasPrimaryKeyToCache()) {
@@ -680,7 +680,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
             // 无条件
             return allConditions.get(tableName) == null || allConditions.get(tableName).get(primaryKey) == null;
-        } else {// 多表或无表
+        } else { // 多表或无表
             return false;
         }
 

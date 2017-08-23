@@ -150,7 +150,7 @@ public class SplitUtil {
         int i = 0;
         int start = 0;
         boolean match = false;
-        if (separatorChars == null) {// null表示使用空白作为分隔符
+        if (separatorChars == null) { // null表示使用空白作为分隔符
             while (i < length) {
                 if (Character.isWhitespace(src.charAt(i))) {
                     if (match) {
@@ -166,7 +166,7 @@ public class SplitUtil {
                 match = true;
                 i++;
             }
-        } else if (separatorChars.length() == 1) {// 优化分隔符长度为1的情形
+        } else if (separatorChars.length() == 1) { // 优化分隔符长度为1的情形
             char sep = separatorChars.charAt(0);
             while (i < length) {
                 if (src.charAt(i) == sep) {
@@ -183,7 +183,7 @@ public class SplitUtil {
                 match = true;
                 i++;
             }
-        } else {// 一般情形
+        } else { // 一般情形
             while (i < length) {
                 if (separatorChars.indexOf(src.charAt(i)) >= 0) {
                     if (match) {

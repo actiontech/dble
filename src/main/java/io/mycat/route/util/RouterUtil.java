@@ -568,7 +568,7 @@ public class RouterUtil {
                     isFirstAdd = false;
                 } else {
                     retNodesSet.retainAll(entry.getValue());
-                    if (retNodesSet.size() == 0) {//两个表的路由无交集
+                    if (retNodesSet.size() == 0) { //两个表的路由无交集
                         String errMsg = "invalid route in sql, multi tables found but datanode has no intersection " +
                                 " sql:" + rrs.getStatement();
                         LOGGER.warn(errMsg);
@@ -596,15 +596,15 @@ public class RouterUtil {
         }
 
 
-        if (tc.isGlobalTable()) {//全局表
+        if (tc.isGlobalTable()) { //全局表
             if (isSelect) {
                 // global select ,not cache route result
                 rrs.setCacheAble(false);
                 return routeToSingleNode(rrs, tc.getRandomDataNode());
-            } else {//insert into 全局表的记录
+            } else { //insert into 全局表的记录
                 return routeToMultiNode(false, rrs, tc.getDataNodes(), true);
             }
-        } else {//单表或者分库表
+        } else { //单表或者分库表
             if (!checkRuleRequired(schema, routeUnit, tc)) {
                 throw new IllegalArgumentException("route rule for table " +
                         tc.getName() + " is required: " + rrs.getStatement());
@@ -652,7 +652,7 @@ public class RouterUtil {
 
         String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
         boolean allFound = true;
-        for (ColumnRoutePair pair : primaryKeyPairs) {// 可能id in(1,2,3)多主键
+        for (ColumnRoutePair pair : primaryKeyPairs) { // 可能id in(1,2,3)多主键
             String cacheKey = pair.colValue;
             String dataNode = (String) cachePool.get(tableKey, cacheKey);
             if (dataNode == null) {
@@ -703,7 +703,7 @@ public class RouterUtil {
             if (tableConfig.isGlobalTable() || schema.getTables().get(tableName).getDataNodes().size() == 1) {
                 //global table or single node shard-ing table will router later
                 continue;
-            } else {//非全局表：分库表、childTable、其他
+            } else { //非全局表：分库表、childTable、其他
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
                 if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
                     continue;

@@ -130,7 +130,7 @@ abstract class BaseHandlerBuilder {
         // 默认的可以global的都是unglobalcount=0，除了是joinnode有特殊情况
         // 當且僅當node.unglobalcount=0,所以所有的語句都可以下發，僅需要將語句拼出來下發到一個節點即可
         String sql = null;
-        if (node.getParent() == null) {// root节点
+        if (node.getParent() == null) { // root节点
             sql = node.getSql();
         }
         // 有可能node来自于view
@@ -179,7 +179,7 @@ abstract class BaseHandlerBuilder {
                             sumRefs);
                     addHandler(gh);
                 }
-            } else {// @bug 1052 canDirectGroupby condition we use
+            } else { // @bug 1052 canDirectGroupby condition we use
                 // directgroupby already
                 OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
                         sumRefs);

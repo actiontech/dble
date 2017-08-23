@@ -99,7 +99,7 @@ public class ArgComparator {
     public int setCompareFunc(ItemFunc ownerarg, ItemResult type) {
         owner = ownerarg;
         func = comparatorMatrix[type.ordinal()][isOwnerEqualFunc() == true ? 1 : 0];
-        if (type == ItemResult.ROW_RESULT) {// 未实现
+        if (type == ItemResult.ROW_RESULT) { // 未实现
             return 1;
         } else if (type == ItemResult.STRING_RESULT) {
             if (func instanceof CompareString)
@@ -222,7 +222,7 @@ public class ArgComparator {
             if (b.isTemporalWithDate())// date[time] + date
             {
                 return true;
-            } else if (b.resultType() == ItemResult.STRING_RESULT) {// date[time]
+            } else if (b.resultType() == ItemResult.STRING_RESULT) { // date[time]
                 //
                 // string
                 return !getDateFromConst(a, b, constvalue);

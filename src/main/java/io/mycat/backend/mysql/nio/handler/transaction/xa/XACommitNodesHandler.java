@@ -176,7 +176,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' err
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {//TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -214,7 +214,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' connectionError
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {//TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -250,7 +250,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' connectionClose
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {//TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -272,7 +272,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     private void cleanAndFeedback() {
-        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {// clear all resources
+        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
             //在这里释放取消限制锁
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);

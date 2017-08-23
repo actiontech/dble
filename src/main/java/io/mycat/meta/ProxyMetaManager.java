@@ -501,7 +501,7 @@ public class ProxyMetaManager {
     private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
         try {
             return SchemaUtil.getSchemaInfo(null, schema, tableSource);
-        } catch (SQLException e) {// is should not happen
+        } catch (SQLException e) { // is should not happen
             LOGGER.warn("getSchemaInfo error", e);
             return null;
         }
@@ -623,7 +623,7 @@ public class ProxyMetaManager {
                         MySqlPrimaryKey primaryKey = (MySqlPrimaryKey) constraint;
                         IndexMeta indexMeta = MetaHelper.makeIndexMeta(MetaHelper.PRIMARY, IndexType.PRI, primaryKey.getColumns());
                         tmBuilder.setPrimary(indexMeta);
-                    } else {// NOT SUPPORT
+                    } else { // NOT SUPPORT
                     }
                 } else if (alterItem instanceof SQLAlterTableDropIndex) {
                     SQLAlterTableDropIndex dropIndex = (SQLAlterTableDropIndex) alterItem;

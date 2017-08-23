@@ -85,7 +85,7 @@ public class XAStateLog {
         } finally {
             lockNum.unlock();
         }
-        if (hasLeader.compareAndSet(false, true)) {// leader thread
+        if (hasLeader.compareAndSet(false, true)) { // leader thread
             waitSet.remove(Thread.currentThread().getId());
             while (waitSet.size() > 0) {
                 //  make all wait thread all became leader or  follower
@@ -139,7 +139,7 @@ public class XAStateLog {
             } finally {
                 lockNum.unlock();
             }
-        } else {// follower thread
+        } else { // follower thread
             lock.lock();
             try {
                 waitSet.remove(Thread.currentThread().getId());

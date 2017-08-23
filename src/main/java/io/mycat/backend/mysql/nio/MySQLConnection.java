@@ -337,7 +337,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
         public boolean synAndExecuted(MySQLConnection conn) {
             int remains = synCmdCount.decrementAndGet();
-            if (remains == 0) {// syn command finished
+            if (remains == 0) { // syn command finished
                 this.updateConnectionInfo(conn);
                 conn.metaDataSyned = true;
                 return false;
@@ -562,7 +562,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     public void release() {
-        if (metaDataSyned == false) {// indicate connection not normalfinished
+        if (metaDataSyned == false) { // indicate connection not normalfinished
             // ,and
             // we can't know it's syn status ,so
             // close

@@ -33,7 +33,7 @@ public class RangRowDataPacketSorter extends RowDataSorter {
     }
 
     public boolean ascDesc(int byColumnIndex) {
-        if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {// 升序
+        if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) { // 升序
             return true;
         }
         return false;

@@ -74,7 +74,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
         long begin = Long.parseLong(beginValue);
         long end = Long.parseLong(endValue);
         int length = partitionUtil.getPartitionLength();
-        if (end - begin >= length || begin > end) {//TODO: optimize begin > end
+        if (end - begin >= length || begin > end) { //TODO: optimize begin > end
             return new Integer[0];
         }
         Integer beginNode = 0, endNode = 0;

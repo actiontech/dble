@@ -160,7 +160,7 @@ public class MigratorConditonFilesMaker implements Runnable {
             }
             if ((isForce || sb.toString().getBytes().length > 1024) && sb.length() > 0) {
                 String s = sb.toString();
-                if (isForce) {//最后一次将末尾的','截掉
+                if (isForce) { //最后一次将末尾的','截掉
                     s = s.substring(0, s.length() - 1);
                 }
                 DataMigratorUtil.appendDataToFile(files.get(dn), s);

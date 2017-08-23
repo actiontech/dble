@@ -28,7 +28,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
         if (ownJobFlag.compareAndSet(false, true)) {
             // thread未启动即进入了terminate
             recycleResources();
-        } else {// thread已经启动
+        } else { // thread已经启动
             synchronized (ownThreadLock) {
                 if (!preparedToRecycle) { // 还未进入释放资源的地步
                     terminateThread();

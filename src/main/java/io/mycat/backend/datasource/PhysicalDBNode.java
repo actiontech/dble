@@ -115,7 +115,7 @@ public class PhysicalDBNode {
                             rrs.setCanRunInReadDB(false);
                         }
                     }
-                } else {// 强制走 master
+                } else { // 强制走 master
                     // 默认获得的是 writeSource，也就是 走master
                     LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
                     PhysicalDatasource writeSource = dbPool.getSource();

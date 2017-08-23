@@ -67,7 +67,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             schema = schemaInfo.schemaConfig;
             String tableName = schemaInfo.table;
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-            if (RouterUtil.isNoSharding(schema, tableName)) {//整个schema都不分库或者该表不拆分
+            if (RouterUtil.isNoSharding(schema, tableName)) { //整个schema都不分库或者该表不拆分
                 if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, new StringPtr(schemaInfo.schema))) {
                     String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);

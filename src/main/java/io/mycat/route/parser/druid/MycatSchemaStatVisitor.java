@@ -237,7 +237,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (betweenExpr.getTestExpr() != null) {
                 String tableName = null;
                 String column = null;
-                if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) {//字段带别名的
+                if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //字段带别名的
                     tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
                     column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
                     SQLObject query = this.subQueryMap.get(tableName);
@@ -282,11 +282,11 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * @return
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (tableStats.size() == 1) {//只有一个表，直接返回这一个表名
+        if (tableStats.size() == 1) { //只有一个表，直接返回这一个表名
             return tableStats.keySet().iterator().next().getName();
-        } else if (tableStats.size() == 0) {//一个表都没有，返回空串
+        } else if (tableStats.size() == 0) { //一个表都没有，返回空串
             return "";
-        } else {//多个表名
+        } else { //多个表名
             for (Column col : columns.keySet()) {
                 if (col.getName().equals(column)) {
                     return col.getTable();
@@ -307,10 +307,10 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
             if (parent instanceof MySqlSelectQueryBlock) {
                 MySqlSelectQueryBlock select = (MySqlSelectQueryBlock) parent;
-                if (select.getFrom() instanceof SQLJoinTableSource) {//多表连接
+                if (select.getFrom() instanceof SQLJoinTableSource) { //多表连接
                     SQLJoinTableSource joinTableSource = (SQLJoinTableSource) select.getFrom();
                     return joinTableSource.getLeft().toString(); //将left作为主表，此处有不严谨处，但也是实在没有办法，如果要准确，字段前带表名或者表的别名即可
-                } else if (select.getFrom() instanceof SQLExprTableSource) {//单表
+                } else if (select.getFrom() instanceof SQLExprTableSource) { //单表
                     return select.getFrom().toString();
                 }
             } else if (parent instanceof SQLUpdateStatement) {

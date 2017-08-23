@@ -24,13 +24,13 @@ public class FieldUtil {
     public static int compareIntUsingStringBytes(byte[] b1, byte[] b2) {
         char b1c0 = (char) b1[0];
         char b2c0 = (char) b2[0];
-        if (b1c0 == '-') {// b1为负数
+        if (b1c0 == '-') { // b1为负数
             if (b2c0 == '-') { // b2为负数
                 return -compareUnIntUsingStringBytes(b1, 1, b2, 1);
             } else {
                 return -1;
             }
-        } else {// b1为正数
+        } else { // b1为正数
             if (b2c0 == '-') {
                 return 1;
             } else {

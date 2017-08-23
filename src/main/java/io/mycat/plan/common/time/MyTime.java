@@ -2323,17 +2323,19 @@ public class MyTime {
                         break;
                     case 'M':
                         if ((lTime.month = MySQLcom.checkWord(MONTH_NAMES, valcs, val, valEnd)) <= 0)
-                            err:{
-                                // logger.warn
-                                return true;
-                            }
+                            err:
+                                    {
+                                        // logger.warn
+                                        return true;
+                                    }
                         break;
                     case 'b':
                         if ((lTime.month = MySQLcom.checkWord(AB_MONTH_NAMES, valcs, val, valEnd)) <= 0)
-                            err:{
-                                // logger.warn
-                                return true;
-                            }
+                            err:
+                                    {
+                                        // logger.warn
+                                        return true;
+                                    }
                         break;
     /* Day */
                     case 'd':
@@ -2392,10 +2394,11 @@ public class MyTime {
     /* AM / PM */
                     case 'p':
                         if (valLen < 2 || !usaTime)
-                            err:{
-                                // logger.warn
-                                return true;
-                            }
+                            err:
+                                    {
+                                        // logger.warn
+                                        return true;
+                                    }
                         if (new String(valcs, val, 2).compareTo("PM") == 0)
                             daypart = 12;
                         else if (new String(valcs, val, 2).compareTo("AM") == 0) {
@@ -2514,25 +2517,28 @@ public class MyTime {
                         }
                 }
                 if (error.get()) // Error from MySql_com.myStrtoll10
-                    err:{
-                        // logger.warn
-                        return true;
-                    }
+                    err:
+                            {
+                                // logger.warn
+                                return true;
+                            }
             } else if (!Ctype.spaceChar(ptrcs[ptr])) {
                 if (valcs[val] != ptrcs[ptr])
-                    err:{
-                        // logger.warn
-                        return true;
-                    }
+                    err:
+                            {
+                                // logger.warn
+                                return true;
+                            }
                 val++;
             }
         }
         if (usaTime) {
             if (lTime.hour > 12 || lTime.hour < 1)
-                err:{
-                    // logger.warn
-                    return true;
-                }
+                err:
+                        {
+                            // logger.warn
+                            return true;
+                        }
             lTime.hour = lTime.hour % 12 + daypart;
         }
 
@@ -2540,10 +2546,11 @@ public class MyTime {
             long days;
             days = calcDaynr(lTime.year, 1L, 1L) + yearday - 1;
             if (days <= 0 || days > MAX_DAY_NUMBER)
-                err:{
-                    // logger.warn
-                    return true;
-                }
+                err:
+                        {
+                            // logger.warn
+                            return true;
+                        }
             LongPtr yPtr = new LongPtr(lTime.year);
             LongPtr mPtr = new LongPtr(lTime.month);
             LongPtr dPtr = new LongPtr(lTime.day);
@@ -2564,10 +2571,11 @@ public class MyTime {
             if ((strictWeekNumber && (strictWeekNumberYear < 0 ||
                     strictWeekNumberYearType != sundayFirstNFirstWeekNonIso)) ||
                     (!strictWeekNumber && strictWeekNumberYear >= 0))
-                err:{
-                    // logger.warn
-                    return true;
-                }
+                err:
+                        {
+                            // logger.warn
+                            return true;
+                        }
 
     /* Number of days since year 0 till 1st Jan of this year */
             days = (int) calcDaynr((strictWeekNumber ? strictWeekNumberYear : lTime.year), 1, 1);
@@ -2586,10 +2594,11 @@ public class MyTime {
             }
 
             if (days <= 0 || days > MAX_DAY_NUMBER)
-                err:{
-                    // logger.warn
-                    return true;
-                }
+                err:
+                        {
+                            // logger.warn
+                            return true;
+                        }
             LongPtr yPtr = new LongPtr(lTime.year);
             LongPtr mPtr = new LongPtr(lTime.month);
             LongPtr dPtr = new LongPtr(lTime.day);
@@ -2600,10 +2609,11 @@ public class MyTime {
         }
 
         if (lTime.month > 12 || lTime.day > 31 || lTime.hour > 23 || lTime.minute > 59 || lTime.second > 59)
-            err:{
-                // logger.warn
-                return true;
-            }
+            err:
+                    {
+                        // logger.warn
+                        return true;
+                    }
 
         if (val != valEnd) {
             do {

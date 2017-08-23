@@ -105,7 +105,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
         Integer begin = 0, end = 0;
-        if (isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)) {//如果beginValue或者是endValue中存在边际条件
+        if (isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)) { //如果beginValue或者是endValue中存在边际条件
             begin = 0;
             end = longRongs.length - 1;
         } else {

@@ -311,7 +311,7 @@ public class RowDataPacketGrouper {
     // private static final
 
     private boolean sameGropuColums(RowDataPacket newRow, RowDataPacket existRow) {
-        if (groupColumnIndexs == null) {// select count(*) from aaa , or group
+        if (groupColumnIndexs == null) { // select count(*) from aaa , or group
             // column
             return true;
         }

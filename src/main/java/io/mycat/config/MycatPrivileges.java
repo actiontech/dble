@@ -195,7 +195,9 @@ public class MycatPrivileges implements FrontendPrivileges {
         return isPassed;
     }
 
-    public enum Checktype {INSERT, UPDATE, SELECT, DELETE}
+    public enum Checktype {
+        INSERT, UPDATE, SELECT, DELETE
+    }
 
     ;
 

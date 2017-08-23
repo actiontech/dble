@@ -91,12 +91,12 @@ public class MyOptimizer {
         }
 
         if (isAllGlobal) {
-            if (dataNodes == null) {// all nonamenode
+            if (dataNodes == null) { // all nonamenode
                 String db = SchemaUtil.getRandomDb();
                 SchemaConfig schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(db);
                 node.setNoshardNode(schemaConfig.getAllDataNodes());
                 return 1;
-            } else if (dataNodes.size() > 0) {//all global table
+            } else if (dataNodes.size() > 0) { //all global table
                 node.setNoshardNode(dataNodes);
                 String sql = node.getSql();
                 for (TableNode tn : node.getReferedTableNodes()) {

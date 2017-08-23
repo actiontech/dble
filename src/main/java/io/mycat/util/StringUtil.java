@@ -317,9 +317,9 @@ public class StringUtil {
         int strIndex = 0;
         ByteArrayOutputStream out = new ByteArrayOutputStream(bytesLen);
         while (true) {
-            if (srcString.charAt(strIndex) == '\\') {// write it out as-is
+            if (srcString.charAt(strIndex) == '\\') { // write it out as-is
                 out.write(src[bufIndex++]);
-            } else {// Grab the first byte
+            } else { // Grab the first byte
                 int loByte = src[bufIndex];
                 if (loByte < 0) {
                     loByte += 256; // adjust for signedness/wrap-around
@@ -344,7 +344,7 @@ public class StringUtil {
                     if (hiByte < 0) {
                         hiByte += 256; // adjust for signedness/wrap-around
                     }
-                    if (hiByte == 0x62) {// we need to escape the 0x5c
+                    if (hiByte == 0x62) { // we need to escape the 0x5c
                         out.write(0x5c);
                         out.write(0x62);
                         bufIndex++;
@@ -443,7 +443,7 @@ public class StringUtil {
         boolean modified = false;
         for (int i = 0, isize = searchChars.length(); i < isize; i++) {
             char searchChar = searchChars.charAt(i);
-            if ((replaceChars == null) || (i >= replaceChars.length())) {// 删除
+            if ((replaceChars == null) || (i >= replaceChars.length())) { // 删除
                 int pos = 0;
                 for (int j = 0; j < len; j++) {
                     if (chars[j] != searchChar) {
@@ -453,7 +453,7 @@ public class StringUtil {
                     }
                 }
                 len = pos;
-            } else {// 替换
+            } else { // 替换
                 for (int j = 0; j < len; j++) {
                     if (chars[j] == searchChar) {
                         chars[j] = replaceChars.charAt(i);

@@ -80,7 +80,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         try {
             conn.query(sql);
             connection = conn;
-        } catch (Exception e) {// (UnsupportedEncodingException e) {
+        } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
         }
 

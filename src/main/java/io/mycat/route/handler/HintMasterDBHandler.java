@@ -75,11 +75,11 @@ public class HintMasterDBHandler implements HintHandler {
             return rrs;
         }
 
-        if (isRouteToMaster) {// 强制走 master
+        if (isRouteToMaster) { // 强制走 master
             rrs.setRunOnSlave(false);
         }
 
-        if (!isRouteToMaster) {// 强制走slave
+        if (!isRouteToMaster) { // 强制走slave
             rrs.setRunOnSlave(true);
         }
 

@@ -213,7 +213,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
                     return null;
             }
             return res;
-        } else {// This case should never be chosen
+        } else { // This case should never be chosen
             return null;
         }
     }

@@ -32,7 +32,7 @@ public abstract class Field {
     public static Field getFieldItem(String name, String table, int type, int charsetIndex, int fieldLength,
                                      int decimals, long flags) {
         FieldTypes fieldType = FieldTypes.valueOf(type);
-        if (fieldType == FieldTypes.MYSQL_TYPE_NEWDECIMAL) {// mysql use newdecimal after some version
+        if (fieldType == FieldTypes.MYSQL_TYPE_NEWDECIMAL) { // mysql use newdecimal after some version
             return new FieldNewdecimal(name, table, charsetIndex, fieldLength, decimals, flags);
         } else if (fieldType == FieldTypes.MYSQL_TYPE_DECIMAL) {
             return new FieldDecimal(name, table, charsetIndex, fieldLength, decimals, flags);

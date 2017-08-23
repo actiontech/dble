@@ -78,7 +78,7 @@ public class DataSourceSyncRecorder {
                     }
                     this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
                 }
-                if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) {//cluster
+                if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
                     double wsrepLocalRecvQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
                     this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecvQueueAvg));
                 }

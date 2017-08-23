@@ -83,7 +83,7 @@ public class DefaultDruidParser implements DruidParser {
         if (visitor.hasOrCondition()) {
             // 根据or拆分
             mergedConditionList = visitor.splitConditions();
-        } else {// 不包含OR语句
+        } else { // 不包含OR语句
             mergedConditionList.add(visitor.getConditions());
         }
         Map<String, String> tableAliasMap = getTableAliasMap(visitor.getAliasMap());
@@ -150,7 +150,7 @@ public class DefaultDruidParser implements DruidParser {
                     if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
                         tableName = tableName.toLowerCase();
                     }
-                    if (tableAliasMap != null && tableAliasMap.get(tableName) == null) {//子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) == null) { //子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
                         continue;
                     }
                     if (tableAliasMap != null && tableAliasMap.get(tableName) != null &&

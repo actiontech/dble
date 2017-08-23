@@ -60,7 +60,7 @@ public class ERJoinChooser {
     public JoinNode optimize() {
         if (jn.isLeftOuterJoin() && !jn.isNotIn()) {
             return leftJoinOptimizer();
-        } else {// (jn.isInnerJoin()) {
+        } else { // (jn.isInnerJoin()) {
             return innerJoinOptimizer();
         }
     }
@@ -110,7 +110,7 @@ public class ERJoinChooser {
         ERTable erKey = new ERTable(tn.getSchema(), tn.getPureName(), col.getItemName());
         if (child.type() == PlanNodeType.TABLE) {
             return erKey;
-        } else {// joinnode
+        } else { // joinnode
             List<ERTable> erKeys = ((JoinNode) child).getERkeys();
             for (ERTable cerKey : erKeys) {
                 if (isErRelation(erKey, cerKey))
@@ -305,7 +305,7 @@ public class ERJoinChooser {
                 JoinNode jn = new JoinNode(newT, global);
                 List<ItemFuncEqual> jnFilter = makeJoinFilter(jn, newT, global, false);
                 // @如果没有可以join的join列，证明剩下的都是cross join
-                if (jnFilter.size() > 0 || selLists.size() == 0) {// 可以join
+                if (jnFilter.size() > 0 || selLists.size() == 0) { // 可以join
                     replaceSelListReferedTn(newT, global, jn);
                     foundJoin = true;
                     jn.setJoinFilter(jnFilter);

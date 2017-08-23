@@ -225,7 +225,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
                 } else {
                     result.get(pack.dataNode).add(row);
                 }
-            }// rof
+            } // rof
         } catch (final Exception e) {
             multiQueryHandler.handleDataProcessException(e);
         } finally {

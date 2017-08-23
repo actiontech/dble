@@ -128,7 +128,7 @@ public final class ExpressionUtil {
         return true;
     }
 
-    private static boolean isLogicalExpression(SQLExpr expr) {//XOR?
+    private static boolean isLogicalExpression(SQLExpr expr) { //XOR?
         if (!(expr instanceof SQLBinaryOpExpr)) {
             return false;
         }

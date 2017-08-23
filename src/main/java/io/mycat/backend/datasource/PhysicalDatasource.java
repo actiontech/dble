@@ -230,7 +230,7 @@ public abstract class PhysicalDatasource {
             BackendConnection con = linkedQueue.poll();
             if (con.isClosedOrQuit()) {
                 continue;
-            } else if (con.getLastTime() < hearBeatTime) {//if the connection is idle for a long time
+            } else if (con.getLastTime() < hearBeatTime) { //if the connection is idle for a long time
                 con.setBorrowed(true);
                 new ConnectionHeartBeatHandler().doHeartBeat(con);
             } else {
@@ -417,7 +417,7 @@ public abstract class PhysicalDatasource {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
             int activeCons = this.getActiveCount(); // 当前最大活动连接
-            if (activeCons + 1 > size) {// 下一个连接大于最大连接数
+            if (activeCons + 1 > size) { // 下一个连接大于最大连接数
                 LOGGER.error("the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection

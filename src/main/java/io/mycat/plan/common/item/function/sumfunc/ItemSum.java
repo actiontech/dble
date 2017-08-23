@@ -319,7 +319,7 @@ public abstract class ItemSum extends ItemResultField {
         boolean needAddArgToRefer = true;
         if (context.isPushDownNode() && !planNode.existUnPushDownGroup()) {
             boolean isUnpushSum = PlanUtil.isUnPushDownSum(this);
-            if (isUnpushSum) {// 这个函数是非下推函数
+            if (isUnpushSum) { // 这个函数是非下推函数
                 planNode.setExistUnPushDownGroup(true);
                 needAddArgToRefer = true;
                 // 补上sunfuncs里面的arg参数

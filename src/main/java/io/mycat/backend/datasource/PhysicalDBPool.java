@@ -741,7 +741,7 @@ public class PhysicalDBPool {
 
         for (int i = 0; i < this.writeSources.length; i++) {
             PhysicalDatasource theSource = writeSources[i];
-            if (isAlive(theSource)) {// write node is active
+            if (isAlive(theSource)) { // write node is active
                 if (includeWriteNode) {
                     boolean isCurWriteNode = (i == curActive);
                     if (isCurWriteNode && includeCurWriteNode == false) {

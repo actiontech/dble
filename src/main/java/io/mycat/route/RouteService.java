@@ -122,7 +122,7 @@ public class RouteService {
                         LOGGER.warn("TODO , support hint sql type : " + hintType);
                     }
 
-                } else {//fixed by runfriends@126.com
+                } else { //fixed by runfriends@126.com
                     String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
                     LOGGER.warn(msg);
                     throw new SQLSyntaxErrorException(msg);
@@ -156,7 +156,7 @@ public class RouteService {
             if (sql.charAt(j) == annotation[0]) {
                 j--;
             }
-            if (j + 6 >= len) {// prevent the following sql.charAt overflow
+            if (j + 6 >= len) { // prevent the following sql.charAt overflow
                 return -1;        // false
             }
 

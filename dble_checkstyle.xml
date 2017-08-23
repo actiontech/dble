@@ -99,8 +99,8 @@
         <module name="SuperFinalize"/>
         <module name="StringLiteralEquality"/>
         <module name="OuterTypeNumber"/>
-        <!--<module name="PackageDeclaration"/>-->
-        <!--<module name="DefaultComesLast"/>-->
+        <module name="PackageDeclaration"/>
+        <module name="DefaultComesLast"/>
         <!--<module name="FallThrough"/>-->
         <!--<module name="CovariantEquals"/>-->
         <!--<module name="HiddenField">-->

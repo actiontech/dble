@@ -133,13 +133,6 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
-                            break;
-                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -159,6 +152,13 @@ public final class StructureMeta {
                                 mutableBitfield0 |= 0x00000004;
                             }
                             columns_.add(bs);
+                            break;
+                        }
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
                             break;
                         }
                     }
@@ -1166,13 +1166,6 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
-                            break;
-                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -1225,6 +1218,13 @@ public final class StructureMeta {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000200;
                             charsetname_ = bs;
+                            break;
+                        }
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
                             break;
                         }
                     }
@@ -2869,13 +2869,6 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
-                            break;
-                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -2948,6 +2941,13 @@ public final class StructureMeta {
                                 mutableBitfield0 |= 0x00000400;
                             }
                             index_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
+                            break;
+                        }
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
                             break;
                         }
                     }

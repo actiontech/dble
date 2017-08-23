@@ -37,6 +37,7 @@ public final class ManagerParseReload {
     public static final int USER_STAT = 4;
     public static final int CONFIG_ALL = 5;
     public static final int SQL_SLOW = 6;
+    public static final int META_DATA = 7;
     public static final int QUERY_CF = 8;
 
     public static int parse(String stmt, int offset) {
@@ -73,6 +74,9 @@ public final class ManagerParseReload {
                 case 'Q':
                 case 'q':
                     return reload2QCheck(stmt, offset);
+                case 'M':
+                case 'm':
+                    return reload2MCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -117,21 +121,17 @@ public final class ManagerParseReload {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')) {
-
-
                 if (stmt.length() > offset + 5) {
                     char c6 = stmt.charAt(++offset);
                     char c7 = stmt.charAt(++offset);
                     char c8 = stmt.charAt(++offset);
                     char c9 = stmt.charAt(++offset);
                     char c10 = stmt.charAt(++offset);
-
                     if ((c6 == '_' || c6 == '-') && (c7 == 'S' || c7 == 's') && (c8 == 'T' || c8 == 't') &&
                             (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't')) {
                         return USER_STAT;
                     }
                 }
-
                 return OTHER;
             }
         }
@@ -140,7 +140,7 @@ public final class ManagerParseReload {
 
     // RELOAD @@SQL
     static int reload2SCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
+        if (stmt.length() > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -159,10 +159,30 @@ public final class ManagerParseReload {
         }
         return OTHER;
     }
+    // RELOAD @@METADATA
+    static int reload2MCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 7) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
 
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'D' || c4 == 'd') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'A' || c7 == 'a')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return META_DATA;
+            }
+        }
+        return OTHER;
+    }
     // RELOAD @@QUERY
     static int reload2QCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
+        if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

@@ -25,10 +25,7 @@ package io.mycat.manager.handler;
 
 import io.mycat.config.ErrorCode;
 import io.mycat.manager.ManagerConnection;
-import io.mycat.manager.response.ReloadConfig;
-import io.mycat.manager.response.ReloadQueryCf;
-import io.mycat.manager.response.ReloadSqlSlowTime;
-import io.mycat.manager.response.ReloadUserStat;
+import io.mycat.manager.response.*;
 import io.mycat.route.parser.ManagerParseReload;
 import io.mycat.route.parser.util.ParseUtil;
 
@@ -57,6 +54,9 @@ public final class ReloadHandler {
             case ManagerParseReload.QUERY_CF:
                 String filted = ParseUtil.parseString(stmt);
                 ReloadQueryCf.execute(c, filted);
+                break;
+            case ManagerParseReload.META_DATA:
+                ReloadMetaData.execute(c);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

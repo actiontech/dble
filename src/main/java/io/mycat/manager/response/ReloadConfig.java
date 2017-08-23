@@ -270,12 +270,6 @@ public final class ReloadConfig {
             LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
 
-            //清理缓存
-            MycatServer.getInstance().getCacheService().clearCache();
-            if (!loader.isDataHostWithoutWH()) {
-                MycatServer.getInstance().reloadMetaData();
-            }
-
             //set the dataHost ready flag
             config.setDataHostWithoutWR(loader.isDataHostWithoutWH());
         } else {
@@ -306,12 +300,6 @@ public final class ReloadConfig {
 
         /* 2、在老的配置上， 应用新的配置 */
         MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, false);
-        /* 3、清理缓存 */
-        MycatServer.getInstance().getCacheService().clearCache();
-
-        if (!loader.isDataHostWithoutWH()) {
-            MycatServer.getInstance().reloadMetaData();
-        }
     }
 
 }

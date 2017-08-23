@@ -224,7 +224,7 @@ public class ProxyMetaManager {
         return selfNode;
     }
 
-    public void init() throws Exception {
+    public void init(MycatConfig config) throws Exception {
         if (MycatServer.getInstance().isUseZK()) {
             //add syncMeta.lock the other DDL will wait
             boolean createSuccess = false;
@@ -255,7 +255,7 @@ public class ProxyMetaManager {
                 }
                 times++;
             }
-            initMeta();
+            initMeta(config);
             // 创建online状态
             ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
             //创建 监视
@@ -263,12 +263,11 @@ public class ProxyMetaManager {
             // syncMeta UNLOCK
             zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
         } else {
-            initMeta();
+            initMeta(config);
         }
     }
 
-    public void initMeta() {
-        MycatConfig config = MycatServer.getInstance().getConfig();
+    public void initMeta(MycatConfig config) {
         Set<String> selfNode = getSelfNodes(config);
         SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
         handler.execute();

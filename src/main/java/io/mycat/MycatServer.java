@@ -413,7 +413,7 @@ public final class MycatServer {
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init tmManager
             try {
-                tmManager.init();
+                tmManager.init(this.getConfig());
             } catch (Exception e) {
                 throw new IOException(e);
             }
@@ -459,7 +459,7 @@ public final class MycatServer {
 
         if (!this.getConfig().isDataHostWithoutWR()) {
             // init datahost
-            Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
+            Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
             LOGGER.info("Initialize dataHost ...");
             for (PhysicalDBPool node : dataHosts.values()) {
                 String index = dnIndexProperties.getProperty(node.getHostName(), "0");
@@ -496,7 +496,7 @@ public final class MycatServer {
         }
     }
 
-    public void reloadMetaData() {
+    public void reloadMetaData(MycatConfig conf) {
         for (; ; ) {
             if (tmManager.getDdlCount() > 0) {
                 continue;
@@ -508,7 +508,7 @@ public final class MycatServer {
                 }
                 tmManager.terminate();
                 tmManager = new ProxyMetaManager();
-                tmManager.initMeta();
+                tmManager.initMeta(conf);
                 break;
             } finally {
                 metaLock.writeLock().unlock();
@@ -521,7 +521,7 @@ public final class MycatServer {
         // load datanode active index from properties
         dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
         // init datahost
-        Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
+        Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
         LOGGER.info("reInitialize dataHost ...");
         for (PhysicalDBPool node : dataHosts.values()) {
             String index = dnIndexProperties.getProperty(node.getHostName(), "0");
@@ -581,9 +581,9 @@ public final class MycatServer {
                     long bufferSize = pool.size();
                     long bufferCapacity = pool.capacity();
                     long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
-                    if (bufferUsagePercent < config.getSystem().getBufferUsagePercent()) {
+                    if (bufferUsagePercent < MycatServer.getInstance().getConfig().getSystem().getBufferUsagePercent()) {
                         Map<String, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
-                        Set<String> userSet = config.getUsers().keySet();
+                        Set<String> userSet = MycatServer.getInstance().getConfig().getUsers().keySet();
                         for (String user : userSet) {
                             UserStat userStat = map.get(user);
                             if (userStat != null) {
@@ -667,7 +667,7 @@ public final class MycatServer {
     }
 
     private boolean isUseZkSwitch() {
-        return isUseZK() && config.getSystem().isUseZKSwitch();
+        return isUseZK() && MycatServer.getInstance().getConfig().getSystem().isUseZKSwitch();
     }
 
     public boolean isUseZK() {
@@ -813,13 +813,13 @@ public final class MycatServer {
                     @Override
                     public void run() {
 
-                        Map<String, PhysicalDBPool> nodes = config.getDataHosts();
+                        Map<String, PhysicalDBPool> nodes = MycatServer.getInstance().getConfig().getDataHosts();
                         for (PhysicalDBPool node : nodes.values()) {
                             node.heartbeatCheck(heartPeriod);
                         }
 
                         /*
-                        Map<String, PhysicalDBPool> _nodes = config.getBackupDataHosts();
+                        Map<String, PhysicalDBPool> _nodes = MycatServer.getInstance().getConfig().getBackupDataHosts();
                         if (_nodes != null) {
                             for (PhysicalDBPool node : _nodes.values()) {
                                 node.heartbeatCheck(heartPeriod);
@@ -841,7 +841,7 @@ public final class MycatServer {
                     @Override
                     public void run() {
                         if (!MycatServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            Map<String, PhysicalDBPool> nodes = config.getDataHosts();
+                            Map<String, PhysicalDBPool> nodes = MycatServer.getInstance().getConfig().getDataHosts();
                             for (PhysicalDBPool node : nodes.values()) {
                                 node.doHeartbeat();
                             }
@@ -920,11 +920,11 @@ public final class MycatServer {
     }
 
     private void tryRecovery(CoordinatorLogEntry coordinatorLogEntry, boolean needCommit) {
-        StringBuilder xacmd = new StringBuilder();
+        StringBuilder xaCmd = new StringBuilder();
         if (needCommit) {
-            xacmd.append("XA COMMIT ");
+            xaCmd.append("XA COMMIT ");
         } else {
-            xacmd.append("XA ROLLBACK ");
+            xaCmd.append("XA ROLLBACK ");
         }
         boolean finished = true;
         for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
@@ -939,21 +939,21 @@ public final class MycatServer {
                 continue;
             }
             finished = false;
-            outloop:
+            outLoop:
             for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
                 for (TableConfig table : schema.getTables().values()) {
                     for (String dataNode : table.getDataNodes()) {
                         PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
                         if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
                             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit, participantLogEntry));
-                            xacmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
-                            xacmd.append(".");
-                            xacmd.append(dn.getDatabase());
-                            xacmd.append("'");
-                            SQLJob sqlJob = new SQLJob(xacmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+                            xaCmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
+                            xaCmd.append(".");
+                            xaCmd.append(dn.getDatabase());
+                            xaCmd.append("'");
+                            SQLJob sqlJob = new SQLJob(xaCmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
                             sqlJob.run();
-                            LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xacmd, dn.getName(), dn.getDatabase()));
-                            break outloop;
+                            LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
+                            break outLoop;
                         }
                     }
                 }

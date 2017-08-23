@@ -399,6 +399,9 @@ public class MycatConfig {
             this.schemas = newSchemas;
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
+            MycatServer.getInstance().getCacheService().clearCache();
+            //TODO: check isDataHostWithoutWH
+            MycatServer.getInstance().reloadMetaData(this);
         } finally {
             confLock.writeLock().unlock();
         }

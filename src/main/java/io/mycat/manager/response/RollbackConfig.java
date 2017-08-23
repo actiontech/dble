@@ -146,9 +146,6 @@ public final class RollbackConfig {
         // 检查可回滚状态
         if (conf.canRollback()) {
             conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall);
-            //清理缓存
-            MycatServer.getInstance().getCacheService().clearCache();
-            MycatServer.getInstance().reloadMetaData();
         } else if (conf.canRollbackAll()) {
             Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
             // 如果回滚已经存在的pool
@@ -177,9 +174,6 @@ public final class RollbackConfig {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
             }
-            //清理缓存
-            MycatServer.getInstance().getCacheService().clearCache();
-            MycatServer.getInstance().reloadMetaData();
         } else {
             throw new Exception("there is no old version");
         }

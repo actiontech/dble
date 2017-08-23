@@ -24,6 +24,7 @@
 package io.mycat.route.parser;
 
 import io.mycat.route.parser.util.Pair;
+import io.mycat.route.parser.util.ParseUtil;
 import io.mycat.util.StringUtil;
 
 /**
@@ -52,7 +53,7 @@ public final class ManagerParseHeartbeat {
                         return show2HeaDetailCheck(stmt, offset);
                     }
                 }
-                if (ManagerParseShow.tailCheck(++offset, stmt)) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
                 return ManagerParseShow.HEARTBEAT;

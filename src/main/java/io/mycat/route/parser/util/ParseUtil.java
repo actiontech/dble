@@ -37,7 +37,21 @@ public final class ParseUtil {
     public static boolean isSpace(char space) {
         return space == ' ' || space == '\r' || space == '\n' || space == '\t';
     }
-
+    /**
+     * 检查SQL的最后部分是不是存在非法的输入
+     *
+     * @param offset
+     * @param stmt
+     * @return
+     */
+    public static boolean isErrorTail(int offset, String stmt) {
+        for (; offset < stmt.length(); offset++) {
+            if (!ParseUtil.isSpace(stmt.charAt(offset))) {
+                return true;
+            }
+        }
+        return false;
+    }
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
         while (stmt.charAt(++offset) == ' ') {

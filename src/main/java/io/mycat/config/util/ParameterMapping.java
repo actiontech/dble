@@ -189,15 +189,11 @@ public class ParameterMapping {
     }
 
     private static boolean isPrimitiveType(Class<?> cls) {
-        if (cls.equals(String.class) || cls.equals(Boolean.TYPE) || cls.equals(Byte.TYPE) || cls.equals(Short.TYPE) ||
+        return cls.equals(String.class) || cls.equals(Boolean.TYPE) || cls.equals(Byte.TYPE) || cls.equals(Short.TYPE) ||
                 cls.equals(Integer.TYPE) || cls.equals(Long.TYPE) || cls.equals(Double.TYPE) ||
                 cls.equals(Float.TYPE) || cls.equals(Boolean.class) || cls.equals(Byte.class) ||
                 cls.equals(Short.class) || cls.equals(Integer.class) || cls.equals(Long.class) ||
-                cls.equals(Float.class) || cls.equals(Double.class) || cls.equals(Class.class)) {
-            return true;
-        } else {
-            return false;
-        }
+                cls.equals(Float.class) || cls.equals(Double.class) || cls.equals(Class.class);
     }
 
 }

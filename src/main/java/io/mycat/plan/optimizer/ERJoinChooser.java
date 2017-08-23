@@ -381,11 +381,7 @@ public class ERJoinChooser {
     private boolean isUnit(PlanNode node) {
         if (isGlobalTree(node))
             return true;
-        else if (node.type() == PlanNodeType.JOIN && !node.isSubQuery() && ((JoinNode) node).isInnerJoin())
-            // 仅有干净的inner join才可以作为继续拆分的对象
-            return false;
-        else
-            return true;
+        else return node.type() != PlanNodeType.JOIN || node.isSubQuery() || !((JoinNode) node).isInnerJoin();
     }
 
     /**

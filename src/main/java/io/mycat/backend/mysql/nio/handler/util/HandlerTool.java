@@ -310,10 +310,6 @@ public class HandlerTool {
 
     // @bug 1086
     public static boolean needSendNoRow(List<Order> groupBys) {
-        if (groupBys == null || groupBys.size() == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return groupBys == null || groupBys.size() == 0;
     }
 }

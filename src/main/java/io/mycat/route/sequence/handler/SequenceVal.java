@@ -26,11 +26,7 @@ public class SequenceVal {
     }
 
     public boolean isNexValValid(Long nexVal) {
-        if (nexVal < this.maxSegValue) {
-            return true;
-        } else {
-            return false;
-        }
+        return nexVal < this.maxSegValue;
     }
 
 //    FetchMySQLSequnceHandler seqHandler;

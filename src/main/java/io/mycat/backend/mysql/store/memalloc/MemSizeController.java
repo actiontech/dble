@@ -31,10 +31,7 @@ public class MemSizeController {
             long current = size.get();
             long next = current + incre;
             if (size.compareAndSet(current, next)) {
-                if (next + minLeft >= maxSize)
-                    return false;
-                else
-                    return true;
+                return next + minLeft < maxSize;
             }
         }
     }

@@ -136,11 +136,7 @@ public class FrontendAuthenticator implements NIOHandler {
 
         // check null
         if (pass == null || pass.length() == 0) {
-            if (password == null || password.length == 0) {
-                return true;
-            } else {
-                return false;
-            }
+            return password == null || password.length == 0;
         }
         if (password == null || password.length == 0) {
             return false;

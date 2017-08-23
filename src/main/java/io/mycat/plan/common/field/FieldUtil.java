@@ -88,11 +88,7 @@ public class FieldUtil {
     }
 
     public static boolean isTemporalType(FieldTypes valuetype) {
-        if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP || valuetype == FieldTypes.MYSQL_TYPE_TIME || valuetype == FieldTypes.MYSQL_TYPE_NEWDATE) {
-            return true;
-        } else {
-            return false;
-        }
+        return valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP || valuetype == FieldTypes.MYSQL_TYPE_TIME || valuetype == FieldTypes.MYSQL_TYPE_NEWDATE;
     }
 
     /**
@@ -112,19 +108,11 @@ public class FieldUtil {
     }
 
     public static boolean isTemporalTypeWithTime(FieldTypes type) {
-        if (type == FieldTypes.MYSQL_TYPE_TIME || type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
-            return true;
-        } else {
-            return false;
-        }
+        return type == FieldTypes.MYSQL_TYPE_TIME || type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP;
     }
 
     public static boolean isTemporalTypeWithDate(FieldTypes valuetype) {
-        if (valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
-            return true;
-        } else {
-            return false;
-        }
+        return valuetype == FieldTypes.MYSQL_TYPE_DATE || valuetype == FieldTypes.MYSQL_TYPE_DATETIME || valuetype == FieldTypes.MYSQL_TYPE_TIMESTAMP;
     }
 
     /**
@@ -137,11 +125,7 @@ public class FieldUtil {
      * parts.
      */
     public static boolean isTemporalTypeWithDateAndTime(FieldTypes type) {
-        if (type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
-            return true;
-        } else {
-            return false;
-        }
+        return type == FieldTypes.MYSQL_TYPE_DATETIME || type == FieldTypes.MYSQL_TYPE_TIMESTAMP;
     }
 
     /**

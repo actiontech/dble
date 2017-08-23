@@ -105,11 +105,8 @@ public class PlanUtil {
             PlanNode referTable = referTables.iterator().next();
             if (referTable == child) {
                 // left join的right 节点的is null不下发
-                if (sel.withIsNull && parent.type() == PlanNodeType.JOIN && ((JoinNode) parent).isLeftOuterJoin() &&
-                        ((JoinNode) parent).getRightNode() == child)
-                    return false;
-                else
-                    return true;
+                return !sel.withIsNull || parent.type() != PlanNodeType.JOIN || !((JoinNode) parent).isLeftOuterJoin() ||
+                        ((JoinNode) parent).getRightNode() != child;
             }
         }
         return false;
@@ -123,10 +120,7 @@ public class PlanUtil {
             return false;
         else {
             // 如果函数涉及的所有的参数仅有一个table，则可以下推
-            if (func.getReferTables().size() <= 1)
-                return true;
-            else
-                return false;
+            return func.getReferTables().size() <= 1;
         }
     }
 

@@ -61,11 +61,7 @@ public class MycatPropertyConf {
         String value = (String) settings.get(s);
         if (value != null) {
 
-            if (value.equals("true")) {
-                return true;
-            } else {
-                return false;
-            }
+            return value.equals("true");
         }
         return b;
     }

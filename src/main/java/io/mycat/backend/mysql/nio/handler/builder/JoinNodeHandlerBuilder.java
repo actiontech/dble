@@ -34,10 +34,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public boolean canDoAsMerge() {
-        if (PlanUtil.isGlobalOrER(node))
-            return true;
-        else
-            return false;
+        return PlanUtil.isGlobalOrER(node);
     }
 
     @Override

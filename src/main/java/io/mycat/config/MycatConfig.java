@@ -218,12 +218,8 @@ public class MycatConfig {
     }
 
     public boolean canRollback() {
-        if (users2 == null || schemas2 == null || dataNodes2 == null || dataHosts2 == null ||
-                firewall2 == null || status == ROLLBACK) {
-            return false;
-        } else {
-            return true;
-        }
+        return users2 != null && schemas2 != null && dataNodes2 != null && dataHosts2 != null &&
+                firewall2 != null && status != ROLLBACK;
     }
 
     public void rollback(Map<String, UserConfig> users, Map<String, SchemaConfig> schemas,

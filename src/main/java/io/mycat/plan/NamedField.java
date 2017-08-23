@@ -43,10 +43,7 @@ public class NamedField {
         if (!(obj instanceof NamedField))
             return false;
         NamedField other = (NamedField) obj;
-        if (StringUtils.equals(table, other.table) && StringUtils.equalsIgnoreCase(name, other.name))
-            return true;
-        else
-            return false;
+        return StringUtils.equals(table, other.table) && StringUtils.equalsIgnoreCase(name, other.name);
     }
 
     @Override

@@ -86,10 +86,6 @@ public class JoinStrategyChooser {
      * @return
      */
     private boolean isSmallTable(TableNode tn) {
-        if (tn.getWhereFilter() == null) {
-            return false;
-        } else {
-            return true;
-        }
+        return tn.getWhereFilter() != null;
     }
 }

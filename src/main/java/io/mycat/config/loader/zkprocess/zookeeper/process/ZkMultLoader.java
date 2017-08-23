@@ -78,9 +78,8 @@ public class ZkMultLoader {
                 for (String childPath : childPathList) {
                     this.getTreeDirectory(ZKPaths.makePath(path, childPath), childPath, directory);
                 }
-            }
-            // 添加当前的数据节点信息
-            else {
+            } else {
+                // 添加当前的数据节点信息
                 zkDirectory.add(new ZkDataImpl(name, currDate));
             }
         }

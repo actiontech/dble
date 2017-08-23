@@ -82,7 +82,7 @@
             <property name="option" value="text"/>
         </module>
         <module name="LeftCurly"/>
-        <!--<module name="RightCurly"/>-->
+        <module name="RightCurly"/>
         <!--<module name="EmptyCatchBlock">-->
         <!--<property name="commentFormat" value="do nothing here"/>-->
         <!--</module>-->

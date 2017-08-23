@@ -10,7 +10,9 @@ import java.util.Map;
 /**
  * Created by zhangchao on 2016/10/17.
  */
-public class Deserializer {
+public final class Deserializer {
+    private Deserializer() {
+    }
 
     private static final String JSON_ARRAY_END = "]";
 

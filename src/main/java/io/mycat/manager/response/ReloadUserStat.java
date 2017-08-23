@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public final class ReloadUserStat {
+    private ReloadUserStat() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadUserStat.class);
 

@@ -40,6 +40,8 @@ import java.util.List;
  * @author mycat
  */
 public final class KillConnection {
+    private KillConnection() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KillConnection.class);
 

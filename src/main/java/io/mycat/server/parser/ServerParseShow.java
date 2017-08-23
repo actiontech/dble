@@ -35,6 +35,8 @@ import java.util.regex.Pattern;
  * @author mycat
  */
 public final class ServerParseShow {
+    private ServerParseShow() {
+    }
 
     public static final int OTHER = -1;
     public static final int DATABASES = 1;

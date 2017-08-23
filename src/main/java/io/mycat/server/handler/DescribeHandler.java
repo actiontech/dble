@@ -10,7 +10,10 @@ import io.mycat.server.parser.ServerParse;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 
-public class DescribeHandler {
+public final class DescribeHandler {
+    private DescribeHandler() {
+    }
+
     public static void handle(String stmt, ServerConnection c) {
         try {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);

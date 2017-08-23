@@ -8,7 +8,9 @@ import io.mycat.plan.util.PlanUtil;
 import java.util.HashSet;
 import java.util.Set;
 
-public class GlobalTableProcessor {
+public final class GlobalTableProcessor {
+    private GlobalTableProcessor() {
+    }
 
     public static PlanNode optimize(PlanNode qtn) {
         initGlobalStatus(qtn);

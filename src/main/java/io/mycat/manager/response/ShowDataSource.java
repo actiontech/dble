@@ -49,6 +49,8 @@ import java.util.Map;
  * @author mycat
  */
 public final class ShowDataSource {
+    private ShowDataSource() {
+    }
 
     private static final int FIELD_COUNT = 10;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

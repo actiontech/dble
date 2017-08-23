@@ -44,6 +44,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowConnectionSQL {
+    private ShowConnectionSQL() {
+    }
 
     private static final int FIELD_COUNT = 7;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

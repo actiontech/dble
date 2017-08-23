@@ -11,7 +11,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Created by huqing.yan on 2017/6/15.
  */
-public class ConfFileRWUtils {
+public final class ConfFileRWUtils {
+    private ConfFileRWUtils() {
+    }
+
     public static String readFile(String name) throws IOException {
         StringBuilder mapFileStr = new StringBuilder();
         String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;

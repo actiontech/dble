@@ -30,9 +30,12 @@ import java.io.UnsupportedEncodingException;
 /**
  * @author mycat
  */
-public class BindValueUtil {
+public final class BindValueUtil {
 
-    public static final void read(MySQLMessage mm, BindValue bv, String charset) throws UnsupportedEncodingException {
+    private BindValueUtil() {
+    }
+
+    public static void read(MySQLMessage mm, BindValue bv, String charset) throws UnsupportedEncodingException {
         switch (bv.type & 0xff) {
             case Fields.FIELD_TYPE_BIT:
                 bv.value = mm.readBytesWithLength();

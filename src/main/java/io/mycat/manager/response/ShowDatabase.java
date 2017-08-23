@@ -45,6 +45,8 @@ import java.util.TreeSet;
  * @author mycat
  */
 public final class ShowDatabase {
+    private ShowDatabase() {
+    }
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

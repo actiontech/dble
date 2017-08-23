@@ -3,7 +3,9 @@ package io.mycat.plan.optimizer;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.node.JoinNode;
 
-public class JoinPreProcessor {
+public final class JoinPreProcessor {
+    private JoinPreProcessor() {
+    }
 
     public static PlanNode optimize(PlanNode qtn) {
         qtn = findAndChangeRightJoinToLeftJoin(qtn);

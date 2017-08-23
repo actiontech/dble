@@ -7,7 +7,9 @@ import io.mycat.plan.util.FilterUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MergeHavingFilter {
+public final class MergeHavingFilter {
+    private MergeHavingFilter() {
+    }
     /**
      * 将having中可合并的条件合并到where
      *

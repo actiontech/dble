@@ -29,12 +29,15 @@ import java.util.concurrent.SynchronousQueue;
 /**
  * @author mycat
  */
-public class ExecutorUtil {
-    public static final NameableExecutor createFixed(String name, int size) {
+public final class ExecutorUtil {
+    private ExecutorUtil() {
+    }
+
+    public static  NameableExecutor createFixed(String name, int size) {
         return createFixed(name, size, true);
     }
 
-    public static final NameableExecutor createCached(String name, int size) {
+    public static  NameableExecutor createCached(String name, int size) {
         return createCached(name, size, true);
     }
 

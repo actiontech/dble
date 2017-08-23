@@ -22,7 +22,9 @@ import io.mycat.route.parser.util.Pair;
 
 import java.util.*;
 
-public class PlanUtil {
+public final class PlanUtil {
+    private PlanUtil() {
+    }
     public static boolean existAggr(PlanNode node) {
         if (node.getReferedTableNodes().size() == 0)
             return false;

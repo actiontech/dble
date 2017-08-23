@@ -33,6 +33,8 @@ import io.mycat.server.response.*;
  * @author mycat
  */
 public final class SelectHandler {
+    private SelectHandler() {
+    }
 
     public static void handle(String stmt, ServerConnection c, int offs) {
         int offset = offs;

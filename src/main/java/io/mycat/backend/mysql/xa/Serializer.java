@@ -3,7 +3,9 @@ package io.mycat.backend.mysql.xa;
 /**
  * Created by zhangchao on 2016/10/17.
  */
-public class Serializer {
+public final class Serializer {
+    private Serializer() {
+    }
     private static final String PROPERTY_SEPARATOR = ",";
     private static final String QUOTE = "\"";
     private static final String END_ARRAY = "]";

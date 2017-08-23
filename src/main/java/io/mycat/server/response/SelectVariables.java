@@ -44,6 +44,8 @@ import java.util.Map;
  * @author mycat
  */
 public final class SelectVariables {
+    private SelectVariables() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectVariables.class);
 
 

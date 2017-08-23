@@ -5,6 +5,8 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 
 public final class ExpressionUtil {
+    private ExpressionUtil() {
+    }
 
     /**
      * convert Expression to DNF Expression

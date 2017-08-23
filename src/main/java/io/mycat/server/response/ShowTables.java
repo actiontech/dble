@@ -36,7 +36,9 @@ import java.util.regex.Pattern;
  *
  * @author yanglixue
  */
-public class ShowTables {
+public final class ShowTables {
+    private ShowTables() {
+    }
     public static void response(ServerConnection c, String stmt) {
         ShowCreateStmtInfo info;
         try {

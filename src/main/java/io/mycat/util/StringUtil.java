@@ -34,7 +34,9 @@ import java.util.Random;
 /**
  * @author mycat
  */
-public class StringUtil {
+public final class StringUtil {
+    private StringUtil() {
+    }
     public static final String TABLE_COLUMN_SEPARATOR = ".";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);

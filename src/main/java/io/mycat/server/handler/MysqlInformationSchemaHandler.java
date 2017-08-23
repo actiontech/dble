@@ -19,7 +19,9 @@ import java.nio.ByteBuffer;
  *
  * @author zhuam
  */
-public class MysqlInformationSchemaHandler {
+public final class MysqlInformationSchemaHandler {
+    private MysqlInformationSchemaHandler() {
+    }
 
     /**
      * 写入数据包

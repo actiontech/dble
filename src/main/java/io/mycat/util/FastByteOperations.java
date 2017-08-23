@@ -34,7 +34,10 @@ import java.security.PrivilegedAction;
  * This is borrowed and slightly modified from Guava's {@link UnsignedBytes}
  * class to be able to compare arrays that start at non-zero offsets.
  */
-public class FastByteOperations {
+public final class FastByteOperations {
+
+    private FastByteOperations() {
+    }
 
     /**
      * Lexicographically compare two byte arrays.

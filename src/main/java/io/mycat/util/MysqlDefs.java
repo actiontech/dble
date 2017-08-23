@@ -47,6 +47,8 @@ import java.util.Map;
  * @version $Id: MysqlDefs.java 4724 2005-12-20 23:27:01Z mmatthews $
  */
 public final class MysqlDefs {
+    private MysqlDefs() {
+    }
     // ~ Static fields/initializers
     // ---------------------------------------------
 

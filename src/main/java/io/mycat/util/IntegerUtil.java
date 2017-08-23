@@ -27,6 +27,8 @@ package io.mycat.util;
  * @author mycat
  */
 public final class IntegerUtil {
+    private IntegerUtil() {
+    }
 
     static final byte[] MIN_VALUE = "-2147483648".getBytes();
     static final int[] SIZE_TABLE = {9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, Integer.MAX_VALUE};

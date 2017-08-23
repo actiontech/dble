@@ -24,6 +24,8 @@ import java.util.Map;
  * @author zhuam
  */
 public final class ShowSQLHigh {
+    private ShowSQLHigh() {
+    }
 
     private static final int FIELD_COUNT = 9;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

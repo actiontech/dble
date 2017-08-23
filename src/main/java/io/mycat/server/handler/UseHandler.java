@@ -37,6 +37,8 @@ import java.util.Set;
  * @author mycat
  */
 public final class UseHandler {
+    private UseHandler() {
+    }
 
     public static void handle(String sql, ServerConnection c, int offset) {
         String schema = sql.substring(offset).trim();

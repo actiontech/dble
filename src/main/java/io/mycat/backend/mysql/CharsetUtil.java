@@ -32,7 +32,10 @@ import java.util.Map;
 /**
  * @author mycat
  */
-public class CharsetUtil {
+public final class CharsetUtil {
+    private CharsetUtil() {
+    }
+
     public static final Logger LOGGER = LoggerFactory.getLogger(CharsetUtil.class);
     private static final String[] INDEX_TO_CHARSET = new String[251];
     private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
@@ -324,11 +327,11 @@ public class CharsetUtil {
         CHARSET_TO_JAVA.put("armscii8", "ISO8859_1");
     }
 
-    public static final String getCharset(int index) {
+    public static String getCharset(int index) {
         return INDEX_TO_CHARSET[index];
     }
 
-    public static final int getIndex(String charset) {
+    public static int getIndex(String charset) {
         if (charset == null || charset.length() == 0) {
             return 0;
         } else {
@@ -346,7 +349,7 @@ public class CharsetUtil {
         return javaCharset;
     }
 
-    public static final String getJavaCharset(int index) {
+    public static String getJavaCharset(int index) {
         String charset = getCharset(index);
         return getJavaCharset(charset);
     }

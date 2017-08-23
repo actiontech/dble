@@ -32,6 +32,8 @@ import io.mycat.route.parser.ManagerParseStop;
  * @author mycat
  */
 public final class StopHandler {
+    private StopHandler() {
+    }
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
         switch (ManagerParseStop.parse(stmt, offset)) {

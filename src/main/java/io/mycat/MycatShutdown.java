@@ -29,6 +29,8 @@ import java.util.Date;
  * @author mycat
  */
 public final class MycatShutdown {
+    private MycatShutdown() {
+    }
 
     public static void main(String[] args) {
         System.out.println(new Date() + ",server shutdown!");

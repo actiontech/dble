@@ -33,6 +33,8 @@ import io.mycat.util.StringUtil;
  * @author mycat
  */
 public final class ShowHandler {
+    private ShowHandler() {
+    }
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
         int rs = ManagerParseShow.parse(stmt, offset);

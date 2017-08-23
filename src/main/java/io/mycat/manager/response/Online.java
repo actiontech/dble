@@ -30,7 +30,9 @@ import io.mycat.net.mysql.OkPacket;
 /**
  * @author mycat
  */
-public class Online {
+public final class Online {
+    private Online() {
+    }
 
     private static final OkPacket OK = new OkPacket();
 

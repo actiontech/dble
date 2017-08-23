@@ -40,6 +40,8 @@ import java.util.List;
  * @author mycat
  */
 public final class ObjectUtil {
+    private ObjectUtil() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ObjectUtil.class);
 
 

@@ -27,6 +27,8 @@ package io.mycat.util;
  * @author mycat
  */
 public final class HexFormatUtil {
+    private HexFormatUtil() {
+    }
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 

@@ -50,6 +50,9 @@ import java.util.Date;
  * @author wuzh
  */
 public final class ConfFileHandler {
+    private ConfFileHandler() {
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfFileHandler.class);
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

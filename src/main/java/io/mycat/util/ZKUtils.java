@@ -14,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
-public class ZKUtils {
+public final class ZKUtils {
+    private ZKUtils() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ZKUtils.class);
     private static CuratorFramework curatorFramework = null;
 

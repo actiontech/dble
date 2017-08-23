@@ -34,6 +34,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class Platform {
+    private Platform() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Platform.class);
     private static final Pattern MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN =

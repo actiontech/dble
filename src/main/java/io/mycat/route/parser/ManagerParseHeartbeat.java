@@ -30,6 +30,8 @@ import io.mycat.util.StringUtil;
  * @author songwie
  */
 public final class ManagerParseHeartbeat {
+    private ManagerParseHeartbeat() {
+    }
 
     public static final int OTHER = -1;
 

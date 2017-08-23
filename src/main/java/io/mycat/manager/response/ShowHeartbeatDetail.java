@@ -51,7 +51,9 @@ import java.util.*;
 /**
  * @author songwie
  */
-public class ShowHeartbeatDetail {
+public final class ShowHeartbeatDetail {
+    private ShowHeartbeatDetail() {
+    }
 
     private static final int FIELD_COUNT = 5;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

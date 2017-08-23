@@ -28,7 +28,9 @@ import java.util.Map;
 /**
  * Created by magicdoom on 2016/1/26.
  */
-public class SchemaUtil {
+public final class SchemaUtil {
+    private SchemaUtil() {
+    }
     public static final String MYSQL_SCHEMA = "mysql";
     public static final String INFORMATION_SCHEMA = "information_schema";
     public static final String TABLE_PROC = "proc";

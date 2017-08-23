@@ -48,7 +48,9 @@ import java.util.Map;
 /**
  * @author songwie
  */
-public class ShowDatasourceSyn {
+public final class ShowDatasourceSyn {
+    private ShowDatasourceSyn() {
+    }
 
     private static final int FIELD_COUNT = 12;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

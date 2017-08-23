@@ -31,7 +31,9 @@ import java.nio.charset.Charset;
  * Utility class that handles byte arrays, conversions to/from other types,
  */
 @SuppressWarnings("restriction")
-public class BytesTools {
+public final class BytesTools {
+    private BytesTools() {
+    }
 
     //HConstants.UTF8_ENCODING should be updated if this changed
     /**

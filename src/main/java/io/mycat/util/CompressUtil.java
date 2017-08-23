@@ -36,7 +36,9 @@ import java.util.zip.Inflater;
  * Q:为什么消息体是 压缩内容 或者未压缩内容?
  * A:这是因为mysql内部有一个约定，如果查询语句payload小于50字节时， 对内容不压缩而保持原貌的方式，而mysql此举是为了减少CPU性能开销
  */
-public class CompressUtil {
+public final class CompressUtil {
+    private CompressUtil() {
+    }
 
     public static final int MINI_LENGTH_TO_COMPRESS = 50;
     public static final int NO_COMPRESS_PACKET_LENGTH = MINI_LENGTH_TO_COMPRESS + 4;

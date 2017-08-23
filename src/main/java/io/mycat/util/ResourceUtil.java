@@ -5,7 +5,9 @@ import java.io.InputStream;
 /**
  * Created by huqing.yan on 2017/7/5.
  */
-public class ResourceUtil {
+public final class ResourceUtil {
+    private ResourceUtil() {
+    }
     public static InputStream getResourceAsStream(String name) {
         return ResourceUtil.class.getResourceAsStream(name);
     }

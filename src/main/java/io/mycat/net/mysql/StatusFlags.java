@@ -1,6 +1,8 @@
 package io.mycat.net.mysql;
 
-public class StatusFlags {
+public final class StatusFlags {
+    private StatusFlags() {
+    }
     // a transaction is active
     public static final int SERVER_STATUS_IN_TRANS = 0x0001;
     // auto-commit is enabled

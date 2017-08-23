@@ -33,6 +33,8 @@ import io.mycat.route.parser.ManagerParseRollback;
  */
 public final class RollbackHandler {
 
+    private RollbackHandler() {
+    }
     public static void handle(String stmt, ManagerConnection c, int offset) {
         switch (ManagerParseRollback.parse(stmt, offset)) {
             case ManagerParseRollback.CONFIG:

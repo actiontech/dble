@@ -45,6 +45,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowProcessor {
+    private ShowProcessor() {
+    }
 
     private static final int FIELD_COUNT = 12;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

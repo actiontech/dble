@@ -20,7 +20,9 @@ import java.util.Map;
  *
  * @author ActionTech 2015-07-10
  */
-public class OrderByPusher {
+public final class OrderByPusher {
+    private OrderByPusher() {
+    }
 
     /**
      * 详细优化见类描述

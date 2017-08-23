@@ -15,7 +15,10 @@ import java.util.List;
 /**
  * compare用到的一些公共方法
  */
-public class CmpUtil {
+public final class CmpUtil {
+    private CmpUtil() {
+    }
+
     /**
      * Parse date provided in a string to a MYSQL_TIME.
      *

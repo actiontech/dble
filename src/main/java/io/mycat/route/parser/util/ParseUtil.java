@@ -27,6 +27,8 @@ package io.mycat.route.parser.util;
  * @author mycat
  */
 public final class ParseUtil {
+    private ParseUtil() {
+    }
 
     public static boolean isEOF(char c) {
         return (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ';');

@@ -18,7 +18,9 @@ import io.mycat.util.StringUtil;
 
 import java.util.*;
 
-public class MetaHelper {
+public final class MetaHelper {
+    private MetaHelper() {
+    }
     public enum IndexType {
         PRI, UNI, MUL
     }

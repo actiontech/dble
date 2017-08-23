@@ -22,7 +22,9 @@ import java.util.*;
  * @author ActionTech
  * @CreateTime Mar 16, 2016
  */
-public class FilterPreProcessor {
+public final class FilterPreProcessor {
+    private FilterPreProcessor() {
+    }
 
     public static PlanNode optimize(PlanNode qtn) {
         MergeHavingFilter.optimize(qtn);

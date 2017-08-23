@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
  * @author mycat
  */
 public final class ServerParse {
+    private ServerParse() {
+    }
 
     public static final int OTHER = -1;
     public static final int BEGIN = 1;

@@ -25,7 +25,9 @@ import java.util.concurrent.ConcurrentMap;
  * @create 2016-09-21 17:35
  */
 
-public class ShowDirectMemory {
+public final class ShowDirectMemory {
+    private ShowDirectMemory() {
+    }
     private static final int DETAIL_FIELD_COUNT = 3;
     private static final ResultSetHeaderPacket DETAIL_HEADER = PacketUtil.getHeader(DETAIL_FIELD_COUNT);
     private static final FieldPacket[] DETAIL_FIELDS = new FieldPacket[DETAIL_FIELD_COUNT];

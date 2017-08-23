@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat;
  * @version 2008-11-24 下午12:58:17
  */
 public final class FormatUtil {
+    private FormatUtil() {
+    }
 
     // 右对齐格式化字符串
     public static final int ALIGN_RIGHT = 0;

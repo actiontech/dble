@@ -19,7 +19,9 @@ import java.nio.ByteBuffer;
  *
  * @author zhuam
  */
-public class ShowSysLog {
+public final class ShowSysLog {
+    private ShowSysLog() {
+    }
 
     private static final int FIELD_COUNT = 2;
 

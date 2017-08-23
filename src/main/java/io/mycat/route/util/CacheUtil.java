@@ -3,7 +3,10 @@ package io.mycat.route.util;
 /**
  * Created by 862911 on 2016/5/4.
  */
-public class CacheUtil {
+public final class CacheUtil {
+    private CacheUtil() {
+    }
+
     private static final int RUNS = 10;
     private static final int DIMENSION_1 = 1024 * 1024;
     private static final int DIMENSION_2 = 6;

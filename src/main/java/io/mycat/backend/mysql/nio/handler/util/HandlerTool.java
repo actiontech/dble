@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class HandlerTool {
+public final class HandlerTool {
+    private HandlerTool() {
+    }
+
     // 两端是单引号，并且中间不允许出现单引号
     // private static Pattern pat = Pattern.compile("^\'([^\']*?)\'$");
 

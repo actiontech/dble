@@ -48,7 +48,9 @@ import java.util.Map;
 /**
  * @author songwie
  */
-public class ShowDatasourceCluster {
+public final class ShowDatasourceCluster {
+    private ShowDatasourceCluster() {
+    }
 
     private static final int FIELD_COUNT = 17;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

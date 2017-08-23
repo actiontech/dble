@@ -42,6 +42,8 @@ import java.util.Map;
  * @author mycat
  */
 public final class StopHeartbeat {
+    private StopHeartbeat() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StopHeartbeat.class);
 

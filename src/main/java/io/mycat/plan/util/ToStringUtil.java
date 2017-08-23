@@ -5,7 +5,9 @@ import io.mycat.plan.common.item.Item;
 
 import java.util.List;
 
-public class ToStringUtil {
+public final class ToStringUtil {
+    private ToStringUtil() {
+    }
     /**
      * add tab like <[ ]>
      *

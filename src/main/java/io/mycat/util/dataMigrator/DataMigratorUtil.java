@@ -14,7 +14,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 
-public class DataMigratorUtil {
+public final class DataMigratorUtil {
+    private DataMigratorUtil() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataMigratorUtil.class);
 

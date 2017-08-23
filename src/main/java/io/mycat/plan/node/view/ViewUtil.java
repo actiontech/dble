@@ -9,7 +9,9 @@ import io.mycat.plan.util.PlanUtil;
  *
  * @author ActionTech
  */
-public class ViewUtil {
+public final class ViewUtil {
+    private ViewUtil() {
+    }
 
     /**
      * Check whether the merging algorithm can be used on this VIEW see

@@ -14,7 +14,10 @@ import java.sql.SQLNonTransientException;
  *
  * @author wdw
  */
-public class DruidParserFactory {
+public final class DruidParserFactory {
+    private DruidParserFactory() {
+    }
+
     public static DruidParser create(SQLStatement statement, int sqlType)
             throws SQLNonTransientException {
         DruidParser parser = null;

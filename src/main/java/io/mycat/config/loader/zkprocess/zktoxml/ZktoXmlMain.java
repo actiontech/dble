@@ -29,7 +29,9 @@ import java.util.concurrent.locks.LockSupport;
  * 文件描述：TODO
  * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
  */
-public class ZktoXmlMain {
+public final class ZktoXmlMain {
+    private ZktoXmlMain() {
+    }
 
     /**
      * 日志

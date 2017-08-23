@@ -49,6 +49,8 @@ import java.util.Map;
  * @author zhuam
  */
 public final class ShowSQL {
+    private ShowSQL() {
+    }
 
     private static final int FIELD_COUNT = 5;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

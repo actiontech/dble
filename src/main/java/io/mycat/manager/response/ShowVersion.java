@@ -40,6 +40,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowVersion {
+    private ShowVersion() {
+    }
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

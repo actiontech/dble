@@ -28,38 +28,40 @@ import java.nio.ByteBuffer;
 /**
  * @author mycat
  */
-public class BufferUtil {
+public final class BufferUtil {
+    private BufferUtil() {
+    }
 
-    public static final void writeUB2(ByteBuffer buffer, int i) {
+    public static void writeUB2(ByteBuffer buffer, int i) {
         buffer.put((byte) (i & 0xff));
         buffer.put((byte) (i >>> 8));
     }
 
-    public static final void writeUB3(ByteBuffer buffer, int i) {
+    public static void writeUB3(ByteBuffer buffer, int i) {
         buffer.put((byte) (i & 0xff));
         buffer.put((byte) (i >>> 8));
         buffer.put((byte) (i >>> 16));
     }
 
-    public static final void writeInt(ByteBuffer buffer, int i) {
+    public static void writeInt(ByteBuffer buffer, int i) {
         buffer.put((byte) (i & 0xff));
         buffer.put((byte) (i >>> 8));
         buffer.put((byte) (i >>> 16));
         buffer.put((byte) (i >>> 24));
     }
 
-    public static final void writeFloat(ByteBuffer buffer, float f) {
+    public static void writeFloat(ByteBuffer buffer, float f) {
         writeInt(buffer, Float.floatToIntBits(f));
     }
 
-    public static final void writeUB4(ByteBuffer buffer, long l) {
+    public static void writeUB4(ByteBuffer buffer, long l) {
         buffer.put((byte) (l & 0xff));
         buffer.put((byte) (l >>> 8));
         buffer.put((byte) (l >>> 16));
         buffer.put((byte) (l >>> 24));
     }
 
-    public static final void writeLong(ByteBuffer buffer, long l) {
+    public static void writeLong(ByteBuffer buffer, long l) {
         buffer.put((byte) (l & 0xff));
         buffer.put((byte) (l >>> 8));
         buffer.put((byte) (l >>> 16));
@@ -70,11 +72,11 @@ public class BufferUtil {
         buffer.put((byte) (l >>> 56));
     }
 
-    public static final void writeDouble(ByteBuffer buffer, double d) {
+    public static void writeDouble(ByteBuffer buffer, double d) {
         writeLong(buffer, Double.doubleToLongBits(d));
     }
 
-    public static final void writeLength(ByteBuffer buffer, long l) {
+    public static void writeLength(ByteBuffer buffer, long l) {
         if (l < 251) {
             buffer.put((byte) l);
         } else if (l < 0x10000L) {
@@ -89,12 +91,12 @@ public class BufferUtil {
         }
     }
 
-    public static final void writeWithNull(ByteBuffer buffer, byte[] src) {
+    public static void writeWithNull(ByteBuffer buffer, byte[] src) {
         buffer.put(src);
         buffer.put((byte) 0);
     }
 
-    public static final void writeWithLength(ByteBuffer buffer, byte[] src) {
+    public static void writeWithLength(ByteBuffer buffer, byte[] src) {
         int length = src.length;
         if (length < 251) {
             buffer.put((byte) length);
@@ -111,7 +113,7 @@ public class BufferUtil {
         buffer.put(src);
     }
 
-    public static final void writeWithLength(ByteBuffer buffer, byte[] src, byte nullValue) {
+    public static void writeWithLength(ByteBuffer buffer, byte[] src, byte nullValue) {
         if (src == null) {
             buffer.put(nullValue);
         } else {
@@ -119,7 +121,7 @@ public class BufferUtil {
         }
     }
 
-    public static final int getLength(long length) {
+    public static int getLength(long length) {
         if (length < 251) {
             return 1;
         } else if (length < 0x10000L) {
@@ -131,7 +133,7 @@ public class BufferUtil {
         }
     }
 
-    public static final int getLength(byte[] src) {
+    public static int getLength(byte[] src) {
         int length = src.length;
         if (length < 251) {
             return 1 + length;

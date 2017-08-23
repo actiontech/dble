@@ -41,7 +41,9 @@ import java.util.Map;
 /**
  * @author mycat
  */
-public class ParameterMapping {
+public final class ParameterMapping {
+    private ParameterMapping() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<Class<?>, PropertyDescriptor[]>();
 

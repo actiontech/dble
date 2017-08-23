@@ -27,6 +27,8 @@ package io.mycat.route.parser;
  * @author mycat
  */
 public final class ManagerParseRollback {
+    private ManagerParseRollback() {
+    }
 
     public static final int OTHER = -1;
     public static final int CONFIG = 1;

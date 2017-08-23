@@ -34,7 +34,9 @@ import io.mycat.net.mysql.OkPacket;
  *
  * @author mycat
  */
-public class Ping {
+public final class Ping {
+    private Ping() {
+    }
 
     private static final ErrorPacket ERROR = PacketUtil.getShutdown();
 

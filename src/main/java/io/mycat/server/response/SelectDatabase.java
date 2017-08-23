@@ -37,7 +37,9 @@ import java.nio.ByteBuffer;
 /**
  * @author mycat
  */
-public class SelectDatabase {
+public final class SelectDatabase {
+    private SelectDatabase() {
+    }
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];

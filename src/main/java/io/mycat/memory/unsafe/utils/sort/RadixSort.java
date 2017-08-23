@@ -21,7 +21,9 @@ package io.mycat.memory.unsafe.utils.sort;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.LongArray;
 
-public class RadixSort {
+public final class RadixSort {
+    private RadixSort() {
+    }
 
     /**
      * Sorts a given array of longs using least-significant-digit radix sort. This routine assumes

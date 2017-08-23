@@ -45,6 +45,8 @@ import java.util.Map;
  * @author mycat
  */
 public final class ShowHelp {
+    private ShowHelp() {
+    }
 
     private static final int FIELD_COUNT = 2;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

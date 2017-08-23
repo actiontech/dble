@@ -55,6 +55,8 @@ import java.util.*;
  * @author mycat
  */
 public final class ShowDataNode {
+    private ShowDataNode() {
+    }
 
     private static final NumberFormat NF = DecimalFormat.getInstance();
     private static final int FIELD_COUNT = 8;

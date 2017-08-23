@@ -41,7 +41,9 @@ import static io.mycat.server.parser.ServerParseSet.*;
 /**
  * @author mycat
  */
-public class CharacterSet {
+public final class CharacterSet {
+    private CharacterSet() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CharacterSet.class);
 

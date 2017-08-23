@@ -28,7 +28,9 @@ import java.util.Map;
  *
  * @author zhuam
  */
-public class ShowSQLSumUser {
+public final class ShowSQLSumUser {
+    private ShowSQLSumUser() {
+    }
 
     private static DecimalFormat decimalFormat = new DecimalFormat("0.00");
 

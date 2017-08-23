@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author mycat
  */
-public class Heartbeat {
+public final class Heartbeat {
+    private Heartbeat() {
+    }
 
     private static final Logger HEARTBEAT = LoggerFactory.getLogger("heartbeat");
 

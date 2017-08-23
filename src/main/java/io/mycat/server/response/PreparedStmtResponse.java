@@ -34,7 +34,9 @@ import java.nio.ByteBuffer;
 /**
  * @author mycat
  */
-public class PreparedStmtResponse {
+public final class PreparedStmtResponse {
+    private PreparedStmtResponse() {
+    }
 
     public static void response(PreparedStatement pstmt, FrontendConnection c) {
         byte packetId = 0;

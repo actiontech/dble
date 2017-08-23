@@ -38,7 +38,9 @@ import java.nio.ByteBuffer;
 /**
  * @author mycat
  */
-public class SelectIdentity {
+public final class SelectIdentity {
+    private SelectIdentity() {
+    }
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

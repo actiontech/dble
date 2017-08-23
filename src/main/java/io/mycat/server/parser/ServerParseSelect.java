@@ -30,6 +30,8 @@ import io.mycat.route.parser.util.ParseUtil;
  * @author mycat
  */
 public final class ServerParseSelect {
+    private ServerParseSelect() {
+    }
 
     public static final int OTHER = -1;
     public static final int VERSION_COMMENT = 1;

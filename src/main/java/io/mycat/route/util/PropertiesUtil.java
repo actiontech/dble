@@ -16,7 +16,9 @@ import static io.mycat.route.sequence.handler.IncrSequenceHandler.*;
  * @version 1.0
  * @time 00:08:03 2016/5/3
  */
-public class PropertiesUtil {
+public final class PropertiesUtil {
+    private PropertiesUtil() {
+    }
     public static Properties loadProps(String propsFile) {
         Properties props = new Properties();
         InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile);

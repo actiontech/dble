@@ -47,7 +47,9 @@ import java.util.List;
  * "table1.id>5 && table1.id<10").join(table2.query(
  * "table2.id>5 && table2.id<10")).on("table1.id = table2.id")
  */
-public class FilterPusher {
+public final class FilterPusher {
+    private FilterPusher() {
+    }
 
     /**
      * 详细优化见类描述 {@linkplain FilterPusher}

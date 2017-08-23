@@ -38,6 +38,8 @@ import java.util.Map;
  * @author mycat
  */
 public final class SwitchDataSource {
+    private SwitchDataSource() {
+    }
 
     public static void response(String stmt, ManagerConnection c) {
         int count = 0;

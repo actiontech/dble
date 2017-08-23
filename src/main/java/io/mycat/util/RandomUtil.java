@@ -26,7 +26,9 @@ package io.mycat.util;
 /**
  * @author mycat
  */
-public class RandomUtil {
+public final class RandomUtil {
+    private RandomUtil() {
+    }
     private static final byte[] BYTES = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'q', 'w', 'e', 'r', 't',
             'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm',
             'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X',
@@ -45,7 +47,7 @@ public class RandomUtil {
         seed = s;
     }
 
-    public static final byte[] randomBytes(int size) {
+    public static byte[] randomBytes(int size) {
         byte[] bb = BYTES;
         byte[] ab = new byte[size];
         for (int i = 0; i < size; i++) {

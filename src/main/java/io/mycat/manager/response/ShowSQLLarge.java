@@ -23,7 +23,9 @@ import java.util.Map;
  *
  * @author zhuam
  */
-public class ShowSQLLarge {
+public final class ShowSQLLarge {
+    private ShowSQLLarge() {
+    }
 
     private static final int FIELD_COUNT = 5;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

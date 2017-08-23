@@ -15,7 +15,9 @@ import java.util.regex.Pattern;
 /**
  * Created by huqing.yan on 2017/7/19.
  */
-public class ShowColumns {
+public final class ShowColumns {
+    private ShowColumns() {
+    }
     private static final String COLUMNS_PAT = "^\\s*(show)" +
             "(\\s+full)?" +
             "(\\s+(columns|fields))" +

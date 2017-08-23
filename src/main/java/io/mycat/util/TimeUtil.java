@@ -28,18 +28,20 @@ package io.mycat.util;
  *
  * @author mycat
  */
-public class TimeUtil {
+public final class TimeUtil {
+    private TimeUtil() {
+    }
     private static volatile long currentTime = System.currentTimeMillis();
 
-    public static final long currentTimeMillis() {
+    public static long currentTimeMillis() {
         return currentTime;
     }
 
-    public static final long currentTimeNanos() {
+    public static long currentTimeNanos() {
         return System.nanoTime();
     }
 
-    public static final void update() {
+    public static void update() {
         currentTime = System.currentTimeMillis();
     }
 

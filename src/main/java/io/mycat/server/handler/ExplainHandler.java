@@ -65,7 +65,9 @@ import java.util.*;
 /**
  * @author mycat
  */
-public class ExplainHandler {
+public final class ExplainHandler {
+    private ExplainHandler() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExplainHandler.class);
     private static final int FIELD_COUNT = 3;

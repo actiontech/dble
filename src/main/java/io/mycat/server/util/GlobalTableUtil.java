@@ -32,7 +32,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author digdeep@126.com
  * 全局表一致性检查 和 拦截
  */
-public class GlobalTableUtil {
+public final class GlobalTableUtil {
+    private GlobalTableUtil() {
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTableUtil.class);
     private static Map<String, TableConfig> globalTableMap = new ConcurrentHashMap<>();
     /**

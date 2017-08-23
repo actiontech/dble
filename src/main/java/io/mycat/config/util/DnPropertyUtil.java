@@ -12,7 +12,9 @@ import java.util.Properties;
 /**
  * @author yanglixue
  */
-public class DnPropertyUtil {
+public final class DnPropertyUtil {
+    private DnPropertyUtil() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger("DnPropertyUtil");
 

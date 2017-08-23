@@ -39,7 +39,9 @@ import java.util.Properties;
 /**
  * @author mycat
  */
-public class ConfigUtil {
+public final class ConfigUtil {
+    private ConfigUtil() {
+    }
 
     public static String filter(String text) {
         return filter(text, System.getProperties());

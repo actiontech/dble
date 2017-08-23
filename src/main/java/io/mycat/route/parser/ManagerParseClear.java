@@ -28,7 +28,9 @@ import io.mycat.route.parser.util.ParseUtil;
 /**
  * @author mycat
  */
-public class ManagerParseClear {
+public final class ManagerParseClear {
+    private ManagerParseClear() {
+    }
 
     public static final int OTHER = -1;
     public static final int SLOW_SCHEMA = 1;

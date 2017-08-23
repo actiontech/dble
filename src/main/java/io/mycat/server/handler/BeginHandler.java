@@ -28,6 +28,9 @@ import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.ServerConnection;
 
 public final class BeginHandler {
+    private BeginHandler() {
+    }
+
     public static void handle(String stmt, ServerConnection c) {
         if (c.isTxstart() || !c.isAutocommit()) {
             c.beginInTx(stmt);

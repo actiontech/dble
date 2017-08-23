@@ -5,7 +5,9 @@ import io.mycat.plan.node.JoinNode;
 import io.mycat.plan.node.MergeNode;
 import io.mycat.plan.node.QueryNode;
 
-public class LimitPusher {
+public final class LimitPusher {
+    private LimitPusher() {
+    }
 
     public static PlanNode optimize(PlanNode qtn) {
         qtn = findChild(qtn);

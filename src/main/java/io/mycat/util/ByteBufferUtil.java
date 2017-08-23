@@ -72,9 +72,11 @@ import java.util.Arrays;
  * <p>
  * }
  */
-public class ByteBufferUtil {
-    public static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new byte[0]);
+public final class ByteBufferUtil {
+    private ByteBufferUtil() {
+    }
 
+    public static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new byte[0]);
 
     public static int compareUnsigned(ByteBuffer o1, ByteBuffer o2) {
         return FastByteOperations.compareUnsigned(o1, o2);

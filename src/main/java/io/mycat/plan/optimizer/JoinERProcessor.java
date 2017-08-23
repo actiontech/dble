@@ -3,7 +3,10 @@ package io.mycat.plan.optimizer;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.node.JoinNode;
 
-public class JoinERProcessor {
+public final class JoinERProcessor {
+    private JoinERProcessor() {
+    }
+
     public static PlanNode optimize(PlanNode qtn) {
         if (qtn instanceof JoinNode) {
             qtn = new ERJoinChooser((JoinNode) qtn).optimize();

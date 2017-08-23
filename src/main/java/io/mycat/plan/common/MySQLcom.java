@@ -18,7 +18,9 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
-public class MySQLcom {
+public final class MySQLcom {
+    private MySQLcom() {
+    }
     public static final double M_PI = Math.PI;
     public static final int DBL_DIG = 6;
     public static final int FLT_DIG = 10;

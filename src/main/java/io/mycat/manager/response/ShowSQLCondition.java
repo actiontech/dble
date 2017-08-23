@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author zhuam
  */
-public class ShowSQLCondition {
+public final class ShowSQLCondition {
+    private ShowSQLCondition() {
+    }
 
     private static final int FIELD_COUNT = 4;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

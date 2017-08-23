@@ -28,7 +28,10 @@ import java.util.*;
 /**
  * @author mycat
  */
-public class CollectionUtil {
+public final class CollectionUtil {
+    private CollectionUtil() {
+    }
+
     /**
      * @param orig if null, return intersect
      */

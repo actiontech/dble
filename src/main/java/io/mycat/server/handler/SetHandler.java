@@ -43,6 +43,8 @@ import static io.mycat.server.parser.ServerParseSet.*;
  * @author zhuam
  */
 public final class SetHandler {
+    private SetHandler() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SetHandler.class);
 

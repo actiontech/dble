@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class ReloadSqlSlowTime {
+public final class ReloadSqlSlowTime {
+    private ReloadSqlSlowTime() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c, long time) {

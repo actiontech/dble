@@ -11,8 +11,9 @@ import java.util.Date;
  *
  * @author CrazyPig
  */
-public class DateUtil {
-
+public final class DateUtil {
+    private DateUtil() {
+    }
 
     public static final String DEFAULT_DATE_PATTERN = "YYYY-MM-dd HH:mm:ss";
     public static final String DATE_PATTERN_FULL = "YYYY-MM-dd HH:mm:ss.SSSSSS";

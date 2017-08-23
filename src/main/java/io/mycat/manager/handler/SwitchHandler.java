@@ -34,6 +34,8 @@ import static io.mycat.route.parser.ManagerParseSwitch.DATASOURCE;
  * @author mycat
  */
 public final class SwitchHandler {
+    private SwitchHandler() {
+    }
 
     public static void handler(String stmt, ManagerConnection c, int offset) {
         switch (ManagerParseSwitch.parse(stmt, offset)) {

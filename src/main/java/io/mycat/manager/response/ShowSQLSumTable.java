@@ -17,7 +17,9 @@ import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.List;
 
-public class ShowSQLSumTable {
+public final class ShowSQLSumTable {
+    private ShowSQLSumTable() {
+    }
 
     private static DecimalFormat decimalFormat = new DecimalFormat("0.00");
 

@@ -48,6 +48,8 @@ import java.util.Map;
  * @author zhuam
  */
 public final class ShowSQLSlow {
+    private ShowSQLSlow() {
+    }
 
     private static final int FIELD_COUNT = 4;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

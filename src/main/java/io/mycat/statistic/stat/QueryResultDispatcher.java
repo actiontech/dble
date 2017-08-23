@@ -12,7 +12,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author zhuam
  */
-public class QueryResultDispatcher {
+public final class QueryResultDispatcher {
+    private QueryResultDispatcher() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryResultDispatcher.class);
 

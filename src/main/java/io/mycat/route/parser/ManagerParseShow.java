@@ -29,6 +29,8 @@ import io.mycat.route.parser.util.ParseUtil;
  * @author mycat
  */
 public final class ManagerParseShow {
+    private ManagerParseShow() {
+    }
 
     public static final int OTHER = -1;
     public static final int COMMAND = 1;

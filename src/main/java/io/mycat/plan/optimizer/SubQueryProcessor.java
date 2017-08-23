@@ -20,7 +20,9 @@ import java.util.List;
  *
  * @author ActionTech
  */
-public class SubQueryProcessor {
+public final class SubQueryProcessor {
+    private SubQueryProcessor() {
+    }
 
     public static PlanNode optimize(PlanNode qtn) {
         BoolPtr merged = new BoolPtr(false);

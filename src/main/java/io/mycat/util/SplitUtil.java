@@ -30,7 +30,9 @@ import java.util.List;
 /**
  * @author mycat
  */
-public class SplitUtil {
+public final class SplitUtil {
+    private SplitUtil() {
+    }
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     /**

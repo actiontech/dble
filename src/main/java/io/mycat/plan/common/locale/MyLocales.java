@@ -8,7 +8,9 @@ import io.mycat.plan.common.typelib.TypeLib;
  *
  * @author ActionTech
  */
-public class MyLocales {
+public final class MyLocales {
+    private MyLocales() {
+    }
     enum ErrMsgsIndex {
         en_US, cs_CZ, da_DK, nl_NL, et_EE, fr_FR, de_DE, el_GR, hu_HU, it_IT, ja_JP, ko_KR, no_NO, nn_NO, pl_PL, pt_PT, ro_RO, ru_RU, sr_RS, sk_SK, es_ES, sv_SE, uk_UA
     }

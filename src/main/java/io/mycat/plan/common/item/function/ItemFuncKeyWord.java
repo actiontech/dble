@@ -1,6 +1,8 @@
 package io.mycat.plan.common.item.function;
 
-public class ItemFuncKeyWord {
+public final class ItemFuncKeyWord {
+    private ItemFuncKeyWord() {
+    }
     public static final String USING = "USING";
     public static final String FROM = "FROM";
     public static final String TRIM_TYPE = "TRIM_TYPE";

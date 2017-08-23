@@ -22,6 +22,8 @@ import io.mycat.memory.unsafe.Platform;
 import java.util.Arrays;
 
 public final class ByteArray {
+    private ByteArray() {
+    }
 
     public static final byte[] EMPTY_BYTE = new byte[0];
 

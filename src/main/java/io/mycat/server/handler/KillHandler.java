@@ -34,7 +34,9 @@ import io.mycat.util.StringUtil;
 /**
  * @author mycat
  */
-public class KillHandler {
+public final class KillHandler {
+    private KillHandler() {
+    }
 
     public static void handle(String stmt, int offset, ServerConnection c) {
         String id = stmt.substring(offset).trim();

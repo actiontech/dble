@@ -12,7 +12,9 @@ import java.util.regex.Pattern;
  *
  * @author zhuam
  */
-public class SetIgnoreUtil {
+public final class SetIgnoreUtil {
+    private SetIgnoreUtil() {
+    }
 
     private static List<Pattern> ptrnIgnoreList = new ArrayList<Pattern>();
 

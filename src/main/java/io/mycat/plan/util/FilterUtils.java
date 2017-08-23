@@ -12,7 +12,10 @@ import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FilterUtils {
+public final class FilterUtils {
+    private FilterUtils() {
+    }
+
     /**
      * 将filter尽可能拆分 一个无法拆分的filter：booleanfiler，orfilter
      *

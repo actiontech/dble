@@ -26,7 +26,9 @@ package io.mycat.backend.mysql;
 /**
  * @author mycat
  */
-public class ByteUtil {
+public final class ByteUtil {
+    private ByteUtil() {
+    }
 
     public static int readUB2(byte[] data, int offset) {
         int i = data[offset] & 0xff;

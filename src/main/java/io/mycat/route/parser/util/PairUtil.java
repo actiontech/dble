@@ -27,6 +27,8 @@ package io.mycat.route.parser.util;
  * @author mycat
  */
 public final class PairUtil {
+    private PairUtil() {
+    }
     private static final int DEFAULT_INDEX = -1;
 
     /**

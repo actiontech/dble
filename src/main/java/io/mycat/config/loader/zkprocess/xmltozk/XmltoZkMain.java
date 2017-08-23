@@ -12,7 +12,9 @@ import org.apache.curator.framework.CuratorFramework;
 
 import java.nio.charset.StandardCharsets;
 
-public class XmltoZkMain {
+public final class XmltoZkMain {
+    private XmltoZkMain() {
+    }
 
     public static void main(String[] args) throws Exception {
         initFileToZK();

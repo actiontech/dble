@@ -41,7 +41,9 @@ import java.util.concurrent.locks.LockSupport;
 
 import static io.mycat.config.loader.zkprocess.zookeeper.process.BinlogPause.BinlogPauseStatus;
 
-public class ShowBinlogStatus {
+public final class ShowBinlogStatus {
+    private ShowBinlogStatus() {
+    }
     private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS_PACKET = new FieldPacket[FIELD_COUNT];

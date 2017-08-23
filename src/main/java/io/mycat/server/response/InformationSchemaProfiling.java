@@ -10,7 +10,9 @@ import io.mycat.server.ServerConnection;
 import java.nio.ByteBuffer;
 
 
-public class InformationSchemaProfiling {
+public final class InformationSchemaProfiling {
+    private InformationSchemaProfiling() {
+    }
 
     private static final int FIELD_COUNT = 3;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

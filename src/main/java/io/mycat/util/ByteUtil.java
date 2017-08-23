@@ -26,7 +26,9 @@ package io.mycat.util;
 import java.nio.charset.Charset;
 import java.util.Date;
 
-public class ByteUtil {
+public final class ByteUtil {
+    private ByteUtil() {
+    }
 
     /**
      * compare to number or dicamal ascii byte array, for number :123456 ,store

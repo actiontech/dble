@@ -63,6 +63,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author zhuam
  */
 public final class ReloadConfig {
+    private ReloadConfig() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
 

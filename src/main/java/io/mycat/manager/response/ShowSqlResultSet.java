@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * @author songgw
  */
 public final class ShowSqlResultSet {
+    private ShowSqlResultSet() {
+    }
 
     private static final int FIELD_COUNT = 5;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

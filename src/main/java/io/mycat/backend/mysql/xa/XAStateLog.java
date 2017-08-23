@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class XAStateLog {
+public final class XAStateLog {
+    private XAStateLog() {
+    }
     public static final Logger LOGGER = LoggerFactory.getLogger(XAStateLog.class);
     private static final Repository FILE_REPOSITORY;
 

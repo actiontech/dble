@@ -14,7 +14,9 @@ import io.mycat.plan.common.ptr.StringPtr;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-public class MyTime {
+public final class MyTime {
+    private MyTime() {
+    }
     private static final DateTimeFormat TIME_AMPM_FORMAT = new DateTimeFormat("%I:%i:%S %p");
     private static final DateTimeFormat TIME_24_HRS_FORMAT = new DateTimeFormat("%H:%i:%S");
 

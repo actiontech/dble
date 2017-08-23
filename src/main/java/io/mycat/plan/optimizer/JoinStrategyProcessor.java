@@ -5,7 +5,9 @@ import io.mycat.plan.PlanNode.PlanNodeType;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.plan.util.PlanUtil;
 
-public class JoinStrategyProcessor {
+public final class JoinStrategyProcessor {
+    private JoinStrategyProcessor() {
+    }
     public static PlanNode optimize(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
             return qtn;

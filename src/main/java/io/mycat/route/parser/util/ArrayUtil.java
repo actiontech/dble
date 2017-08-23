@@ -26,7 +26,10 @@ package io.mycat.route.parser.util;
 /**
  * @author mycat
  */
-public class ArrayUtil {
+public final class ArrayUtil {
+    private ArrayUtil() {
+    }
+
     public static boolean equals(String str1, String str2) {
         if (str1 == null) {
             return str2 == null;

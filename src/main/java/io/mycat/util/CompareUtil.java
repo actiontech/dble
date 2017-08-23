@@ -26,7 +26,10 @@ package io.mycat.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompareUtil {
+public final class CompareUtil {
+    private CompareUtil() {
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CompareUtil.class);
 
     public static int compareInt(int l, int r) {

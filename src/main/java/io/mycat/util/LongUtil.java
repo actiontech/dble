@@ -27,6 +27,8 @@ package io.mycat.util;
  * @author mycat
  */
 public final class LongUtil {
+    private LongUtil() {
+    }
 
     private static final byte[] MIN_VALUE = "-9223372036854775808".getBytes();
 

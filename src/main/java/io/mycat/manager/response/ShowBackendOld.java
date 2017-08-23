@@ -22,7 +22,9 @@ import java.nio.ByteBuffer;
  *
  * @author zhuam
  */
-public class ShowBackendOld {
+public final class ShowBackendOld {
+    private ShowBackendOld() {
+    }
 
     private static final int FIELD_COUNT = 10;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

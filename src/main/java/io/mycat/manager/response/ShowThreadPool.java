@@ -47,6 +47,8 @@ import java.util.List;
  * @author mycat
  */
 public final class ShowThreadPool {
+    private ShowThreadPool() {
+    }
 
     private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

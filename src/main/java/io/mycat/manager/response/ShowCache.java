@@ -42,7 +42,9 @@ import io.mycat.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ShowCache {
+public final class ShowCache {
+    private ShowCache() {
+    }
 
     private static final int FIELD_COUNT = 8;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

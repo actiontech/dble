@@ -36,6 +36,8 @@ import io.mycat.route.parser.util.ParseUtil;
  * @author mycat
  */
 public final class ReloadHandler {
+    private ReloadHandler() {
+    }
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
         int rs = ManagerParseReload.parse(stmt, offset);

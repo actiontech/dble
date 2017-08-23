@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class ShowWhiteHost {
+    private ShowWhiteHost() {
+    }
 
     private static final int FIELD_COUNT = 2;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

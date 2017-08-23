@@ -19,7 +19,10 @@ import java.util.List;
 /**
  * 只下推有ER关系可能的filter
  */
-public class FilterJoinColumnPusher {
+public final class FilterJoinColumnPusher {
+    private FilterJoinColumnPusher() {
+    }
+
 
     public static PlanNode optimize(PlanNode qtn) {
         qtn = pushFilter(qtn, new ArrayList<Item>());

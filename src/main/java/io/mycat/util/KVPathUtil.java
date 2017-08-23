@@ -7,7 +7,9 @@ import io.mycat.config.loader.zkprocess.comm.ZkParamCfg;
 /**
  * Created by huqing.yan on 2017/6/26.
  */
-public class KVPathUtil {
+public final class KVPathUtil {
+    private KVPathUtil() {
+    }
     public static final String SEPARATOR = "/";
     private static final String ROOT_PATH = Versions.ROOT_PREFIX;
     //depth:1, base_path" /root_name/cluster_name/

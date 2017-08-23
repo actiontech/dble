@@ -46,7 +46,9 @@ import java.util.Map;
 /**
  * @author mycat
  */
-public class ShowHeartbeat {
+public final class ShowHeartbeat {
+    private ShowHeartbeat() {
+    }
 
     private static final int FIELD_COUNT = 10;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

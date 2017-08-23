@@ -1,6 +1,9 @@
 package io.mycat.plan.common;
 
-public class Ctype {
+public final class Ctype {
+    private Ctype() {
+    }
+
     private static final int MY_U = 1; /* Upper case */
     private static final int MY_L = 2; /* Lower case */
     private static final int MY_NMR = 4; /* Numeral (digit) */

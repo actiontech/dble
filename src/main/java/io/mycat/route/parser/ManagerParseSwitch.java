@@ -30,6 +30,8 @@ import io.mycat.util.SplitUtil;
  * @author mycat
  */
 public final class ManagerParseSwitch {
+    private ManagerParseSwitch() {
+    }
 
     public static final int OTHER = -1;
     public static final int DATASOURCE = 1;

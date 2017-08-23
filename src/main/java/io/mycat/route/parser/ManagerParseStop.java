@@ -31,6 +31,8 @@ import io.mycat.util.SplitUtil;
  * @author mycat
  */
 public final class ManagerParseStop {
+    private ManagerParseStop() {
+    }
 
     public static final int OTHER = -1;
     public static final int HEARTBEAT = 1;

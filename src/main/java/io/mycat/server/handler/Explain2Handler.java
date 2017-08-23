@@ -43,7 +43,9 @@ import java.nio.ByteBuffer;
 /**
  * @author rainbow
  */
-public class Explain2Handler {
+public final class Explain2Handler {
+    private Explain2Handler() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Explain2Handler.class);
     private static final RouteResultsetNode[] EMPTY_ARRAY = new RouteResultsetNode[1];

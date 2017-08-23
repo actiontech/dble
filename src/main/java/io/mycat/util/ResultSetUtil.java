@@ -11,7 +11,9 @@ import java.util.List;
 /**
  * @author struct
  */
-public class ResultSetUtil {
+public final class ResultSetUtil {
+    private ResultSetUtil() {
+    }
 
     public static int toFlag(ResultSetMetaData metaData, int column)
             throws SQLException {

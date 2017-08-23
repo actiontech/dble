@@ -7,7 +7,9 @@ import io.mycat.statistic.stat.QueryConditionAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReloadQueryCf {
+public final class ReloadQueryCf {
+    private ReloadQueryCf() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 

@@ -48,6 +48,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowConnection {
+    private ShowConnection() {
+    }
 
     private static final int FIELD_COUNT = 15;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

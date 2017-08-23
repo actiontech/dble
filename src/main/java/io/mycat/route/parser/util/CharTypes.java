@@ -27,7 +27,10 @@ package io.mycat.route.parser.util;
  * @author mycat
  * @author mycat
  */
-public class CharTypes {
+public final class CharTypes {
+    private CharTypes() {
+    }
+
     private static final boolean[] HEX_FLAGS = new boolean[256];
 
     static {

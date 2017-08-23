@@ -13,7 +13,10 @@ import java.util.List;
  * @author ActionTech
  * @createTime 2013-11-11
  */
-public class FileUtils {
+public final class FileUtils {
+    private FileUtils() {
+    }
+
     /**
      * Checks if a file exists. This method is similar to Java 7
      * <code>java.nio.file.Path.exists</code>.

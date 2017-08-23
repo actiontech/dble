@@ -44,6 +44,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowCommand {
+    private ShowCommand() {
+    }
 
     private static final int FIELD_COUNT = 10;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);

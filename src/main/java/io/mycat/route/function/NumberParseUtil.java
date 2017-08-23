@@ -23,7 +23,9 @@
  */
 package io.mycat.route.function;
 
-public class NumberParseUtil {
+public final class NumberParseUtil {
+    private NumberParseUtil() {
+    }
     /**
      * 只去除开头结尾的引号，而且是结对去除，语法不对的话通不过
      *

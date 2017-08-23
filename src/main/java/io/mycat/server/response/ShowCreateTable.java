@@ -12,7 +12,9 @@ import io.mycat.server.util.SchemaUtil;
 /**
  * Created by huqing.yan on 2017/7/19.
  */
-public class ShowCreateTable {
+public final class ShowCreateTable {
+    private ShowCreateTable() {
+    }
     public static void response(ServerConnection c, String stmt) {
         try {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);

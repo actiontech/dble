@@ -36,7 +36,9 @@ import java.util.*;
  *
  * @author wang.dw
  */
-public class RouterUtil {
+public final class RouterUtil {
+    private RouterUtil() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
 

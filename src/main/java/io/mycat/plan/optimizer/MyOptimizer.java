@@ -12,7 +12,9 @@ import org.apache.log4j.Logger;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MyOptimizer {
+public final class MyOptimizer {
+    private MyOptimizer() {
+    }
     public static PlanNode optimize(PlanNode node) {
 
         try {

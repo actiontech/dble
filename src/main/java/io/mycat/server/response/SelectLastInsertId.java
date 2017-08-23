@@ -38,7 +38,9 @@ import java.nio.ByteBuffer;
 /**
  * @author mycat
  */
-public class SelectLastInsertId {
+public final class SelectLastInsertId {
+    private SelectLastInsertId() {
+    }
 
     private static final String ORG_NAME = "LAST_INSERT_ID()";
     private static final int FIELD_COUNT = 1;

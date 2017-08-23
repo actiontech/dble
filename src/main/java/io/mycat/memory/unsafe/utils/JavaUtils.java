@@ -34,7 +34,9 @@ import java.util.regex.Pattern;
  * Utility class,
  */
 
-public class JavaUtils {
+public final class JavaUtils {
+    private JavaUtils() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaUtils.class);
 
     /**

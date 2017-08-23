@@ -276,7 +276,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
-        errPacket.packetId = 1;//TODO :CONFIRM ?++packetId??
+        errPacket.packetId = 1; //TODO :CONFIRM ?++packetId??
         err = errPacket;
         lock.lock();
         try {
@@ -326,12 +326,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (rrs.isLoadData()) {
                     byte lastPackId = source.getLoadDataInfileHandler()
                             .getLastPackId();
-                    ok.packetId = ++lastPackId;// OK_PACKET
+                    ok.packetId = ++lastPackId; // OK_PACKET
                     ok.message = ("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0")
-                            .getBytes();// 此处信息只是为了控制台给人看的
+                            .getBytes(); // 此处信息只是为了控制台给人看的
                     source.getLoadDataInfileHandler().clear();
                 } else {
-                    ok.packetId = ++packetId;// OK_PACKET
+                    ok.packetId = ++packetId; // OK_PACKET
                 }
 
                 ok.affectedRows = affectedRows;

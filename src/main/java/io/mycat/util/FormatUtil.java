@@ -122,11 +122,11 @@ public final class FormatUtil {
      */
     public static String formatTime(long millis, int precision) {
         long[] la = new long[5];
-        la[0] = (millis / 86400000);// days
-        la[1] = (millis / 3600000) % 24;// hours
-        la[2] = (millis / 60000) % 60;// minutes
-        la[3] = (millis / 1000) % 60;// seconds
-        la[4] = (millis % 1000);// ms
+        la[0] = (millis / 86400000); // days
+        la[1] = (millis / 3600000) % 24; // hours
+        la[2] = (millis / 60000) % 60; // minutes
+        la[3] = (millis / 1000) % 60; // seconds
+        la[4] = (millis % 1000); // ms
 
         int index = 0;
         for (int i = 0; i < la.length; i++) {

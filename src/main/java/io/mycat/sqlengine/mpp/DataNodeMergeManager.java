@@ -213,8 +213,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 prefixComparator,
                 prefixComputer,
                 conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
-                false,/**是否使用基数排序*/
-                false/**不排序*/);
+                false, /**是否使用基数排序*/
+                false /**不排序*/);
     }
 
     private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {

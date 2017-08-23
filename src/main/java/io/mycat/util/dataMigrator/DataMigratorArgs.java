@@ -57,9 +57,9 @@ public class DataMigratorArgs {
 
     private static final int DEFAULT_DEL_THRAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
 
-    private static final int DEFAULT_CMD_LENGTH = 110 * 1024;//操作系统命令行限制长度 110KB
+    private static final int DEFAULT_CMD_LENGTH = 110 * 1024; //操作系统命令行限制长度 110KB
 
-    private static final int DEFAULT_PAGE_SIZE = 100000;//默认一次读取10w条数据
+    private static final int DEFAULT_PAGE_SIZE = 100000; //默认一次读取10w条数据
 
     private static final String DEFAULT_CHARSET = "utf8";
 

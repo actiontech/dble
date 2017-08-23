@@ -199,7 +199,7 @@ public class OrderByPusher {
                     } else {
                         if (newOrderBys.size() == node.getGroupBys().size()) {
                             // 说明出现order by包含了整个group by
-                            node.setGroupBys(newOrderBys);// 将group by重置一下顺序
+                            node.setGroupBys(newOrderBys); // 将group by重置一下顺序
                         } else {
                             return;
                         }
@@ -211,7 +211,7 @@ public class OrderByPusher {
                         newOrderBys.add(groupBy.copy());
                     }
                 }
-                node.setGroupBys(newOrderBys);// 将group by重置一下顺序
+                node.setGroupBys(newOrderBys); // 将group by重置一下顺序
                 node.setOrderBys(newOrderBys);
             }
         } else {

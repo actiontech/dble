@@ -103,7 +103,7 @@ public final class ShowSQLSlow {
             }
 
             if (isClear) {
-                userStat.clearSqlslow();//读取慢SQL后，清理
+                userStat.clearSqlslow(); //读取慢SQL后，清理
             }
         }
 

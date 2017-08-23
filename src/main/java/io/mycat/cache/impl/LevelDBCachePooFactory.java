@@ -20,7 +20,7 @@ public class LevelDBCachePooFactory extends CachePoolFactory {
     public CachePool createCachePool(String poolName, int cacheSize,
                                      int expireSeconds) {
         Options options = new Options();
-        options.cacheSize(1048576L * cacheSize);//cacheSize M 大小
+        options.cacheSize(1048576L * cacheSize); //cacheSize M 大小
         options.createIfMissing(true);
         DB db = null;
         String filePath = "leveldb\\" + poolName;

@@ -446,7 +446,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private RouteResultset buildResultSet(Map<String, LoadData> routeMap) {
-        statement.setLocal(true);//强制local
+        statement.setLocal(true); //强制local
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //默认druid会过滤掉路径的分隔符，所以这里重新设置下
         statement.setFileName(fn);
         //在这里使用替换方法替换掉SQL语句中的 IGNORE X LINES 防止每个物理节点都IGNORE X个元素

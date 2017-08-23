@@ -285,7 +285,7 @@ public class DataMigratorUtil {
             String merge = key + " " + mark + " " + value;
             mergeList.add(merge);
         }
-        int maxLineLength = 300;//一行显示最大字符数
+        int maxLineLength = 300; //一行显示最大字符数
         if (maxLength > maxLineLength) {
             maxLength = maxLineLength;
         }

@@ -109,7 +109,7 @@ public class ItemString extends ItemBasicConstant {
 
     @Override
     public SQLExpr toExpression() {
-        return new SQLCharExpr(value);//LiteralString(null, value, false);
+        return new SQLCharExpr(value); //LiteralString(null, value, false);
     }
 
     @Override

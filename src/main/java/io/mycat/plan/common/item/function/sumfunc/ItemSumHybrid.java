@@ -17,7 +17,7 @@ public abstract class ItemSumHybrid extends ItemSum {
     protected ItemResult hybridType;
     protected FieldTypes hybridFieldType;
     protected int cmpSign;
-    protected boolean wasValues;// Set if we have found at least one row (for
+    protected boolean wasValues; // Set if we have found at least one row (for
     // max/min only)
 
     public ItemSumHybrid(List<Item> args, int sign, boolean isPushDown, List<Field> fields) {

@@ -101,7 +101,7 @@ public class FilterJoinColumnPusher {
                 refreshPdFilters(jn, dnfNodetoPushToRight);
                 pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight);
                 if (!dnfNodeToPush.isEmpty()) {
-                    jn.query(FilterUtils.and(dnfNodetoPushToLeft));// 在父节点完成filter，不能下推
+                    jn.query(FilterUtils.and(dnfNodetoPushToLeft)); // 在父节点完成filter，不能下推
                 }
             } else {
                 if (!dnfNodeToPush.isEmpty()) {

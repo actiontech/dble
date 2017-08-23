@@ -34,7 +34,7 @@ public class MigratorConditonFilesMaker implements Runnable {
 
     private Map<DataNode, File> files = new HashMap<>();
 
-    Map<DataNode, StringBuilder> map = new HashMap<>();//存放节点发生变化的拆分字段字符串数据 key:dn索引 value 拆分字段值,以逗号分隔
+    Map<DataNode, StringBuilder> map = new HashMap<>(); //存放节点发生变化的拆分字段字符串数据 key:dn索引 value 拆分字段值,以逗号分隔
 
     public MigratorConditonFilesMaker(TableMigrateInfo tableInfo, DataNode srcDn, String tempFileDir, int pageSize) {
         this.tableInfo = tableInfo;

@@ -66,8 +66,8 @@
             <property name="option" value="eol"/>
         </module>
         <module name="ParenPad"/>
-        <!--<module name="TypecastParenPad"/>-->
-        <!--<module name="WhitespaceAfter"/>-->
+        <module name="TypecastParenPad"/>
+        <module name="WhitespaceAfter"/>
         <!--<module name="WhitespaceAround"/>-->
         <!--<module name="SeparatorWrap"/>-->
         <!--<module name="NoLineWrap"/>-->

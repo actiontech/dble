@@ -130,7 +130,7 @@ public class MySQLConsistencyChecker {
                         new OneRawSQLQueryResultHandler(new String[]{GlobalTableUtil.INNER_COLUMN}, detector);
                 String db = " and table_schema='" + dbName + "'";
                 SQLJob sqlJob = new SQLJob(this.columnExistSQL + db, dbName, resultHandler, source);
-                detector.setSqlJob(sqlJob);//table_schema='db1'
+                detector.setSqlJob(sqlJob); //table_schema='db1'
                 LOGGER.debug(sqlJob.toString());
                 sqlJob.run();
                 this.jobCount.incrementAndGet();

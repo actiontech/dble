@@ -34,7 +34,7 @@ public class ItemSumSum extends ItemSumNum {
 
         } else if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT) {
             int precision = args.get(0).decimalPrecision() + MySQLcom.DECIMAL_LONGLONG_DIGITS;
-            maxLength = precision + 2;// 一个小数点一个负号hybrid_type = ItemResult.DECIMAL_RESULT;sum = BigDecimal.ZERO;
+            maxLength = precision + 2; // 一个小数点一个负号hybrid_type = ItemResult.DECIMAL_RESULT;sum = BigDecimal.ZERO;
         } else {
             assert (false);
         }

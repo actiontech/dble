@@ -37,7 +37,7 @@ import java.util.Map;
 public final class RouteResultset implements Serializable {
     private static final long serialVersionUID = 3906972758236875720L;
 
-    private String srcStatement;// 原始语句
+    private String srcStatement; // 原始语句
     private String statement;
     private String schema;
     private String table;

@@ -266,7 +266,7 @@ public class NonBlockingSession implements Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            builder.build(false);//no next
+            builder.build(false); //no next
         } catch (SQLSyntaxErrorException e) {
             LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
 //            source.setCurrentSQL(null);

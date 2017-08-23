@@ -30,7 +30,7 @@ public class MaxHeap implements HeapItf {
 
     private void heapify(int i, int size) {
         int max = 0;
-        int mid = size >> 1;// ==size/2
+        int mid = size >> 1; // ==size/2
         while (i <= mid) {
             max = i;
             int left = i << 1;

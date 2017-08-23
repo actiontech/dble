@@ -42,7 +42,7 @@ import java.util.Map;
 public class DataSourceSyncRecorder {
 
     private Map<String, String> records;
-    private final List<Record> asynRecords;//value,time
+    private final List<Record> asynRecords; //value,time
     private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
 
 

@@ -309,7 +309,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 MySqlSelectQueryBlock select = (MySqlSelectQueryBlock) parent;
                 if (select.getFrom() instanceof SQLJoinTableSource) {//多表连接
                     SQLJoinTableSource joinTableSource = (SQLJoinTableSource) select.getFrom();
-                    return joinTableSource.getLeft().toString();//将left作为主表，此处有不严谨处，但也是实在没有办法，如果要准确，字段前带表名或者表的别名即可
+                    return joinTableSource.getLeft().toString(); //将left作为主表，此处有不严谨处，但也是实在没有办法，如果要准确，字段前带表名或者表的别名即可
                 } else if (select.getFrom() instanceof SQLExprTableSource) {//单表
                     return select.getFrom().toString();
                 }

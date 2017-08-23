@@ -89,7 +89,7 @@ public abstract class Field {
      **/
     public String name;
     public String table;
-    public String dbname;// TODO
+    public String dbname; // TODO
     public int charsetIndex;
     public String charsetName;
     public long flags;

@@ -143,10 +143,10 @@ public final class UnsafeSorterSpillWriter {
              * 执行数据拷贝动作，将baseObject的数据拷贝到writeBuffer中
              */
             Platform.copyMemory(
-                    baseObject,/**srd*/
-                    recordReadPosition,/**offset*/
+                    baseObject, /**srd*/
+                    recordReadPosition, /**offset*/
                     writeBuffer, /**write dst*/
-                    Platform.BYTE_ARRAY_OFFSET + (DISK_WRITE_BUFFER_SIZE - freeSpaceInWriteBuffer),/**write offset*/
+                    Platform.BYTE_ARRAY_OFFSET + (DISK_WRITE_BUFFER_SIZE - freeSpaceInWriteBuffer), /**write offset*/
                     toTransfer);
 
             /**

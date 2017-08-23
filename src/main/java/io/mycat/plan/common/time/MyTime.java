@@ -1413,7 +1413,7 @@ public class MyTime {
             return timeToUlonglongDatetime(ltime);
         if (ltime.second < 59)
             return timeToUlonglongDatetime(ltime) + 1;
-        return timeToUlonglongDatetime(ltime);// TIME_microseconds_round(ltime);
+        return timeToUlonglongDatetime(ltime); // TIME_microseconds_round(ltime);
     }
 
     public static long timeToUlonglongTimeRound(final MySQLTime ltime) {

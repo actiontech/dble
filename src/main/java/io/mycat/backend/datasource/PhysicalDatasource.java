@@ -416,7 +416,7 @@ public abstract class PhysicalDatasource {
         // 从当前连接map中拿取已建立好的后端连接
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
-            int activeCons = this.getActiveCount();// 当前最大活动连接
+            int activeCons = this.getActiveCount(); // 当前最大活动连接
             if (activeCons + 1 > size) {// 下一个连接大于最大连接数
                 LOGGER.error("the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");

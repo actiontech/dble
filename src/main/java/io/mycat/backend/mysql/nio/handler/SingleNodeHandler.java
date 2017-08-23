@@ -208,11 +208,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ok.read(data);
             if (rrs.isLoadData()) {
                 byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
-                ok.packetId = ++lastPackId;// OK_PACKET
+                ok.packetId = ++lastPackId; // OK_PACKET
                 source.getLoadDataInfileHandler().clear();
 
             } else {
-                ok.packetId = ++packetId;// OK_PACKET
+                ok.packetId = ++packetId; // OK_PACKET
             }
             ok.serverStatus = source.isAutocommit() ? 2 : 1;
             source.setLastInsertId(ok.insertId);

@@ -21,7 +21,7 @@ public class QueryNode extends PlanNode {
         this.whereFilter = filter;
         this.setChild(child);
         if (child != null) {
-            child.setSubQuery(true);// 默认设置为subQuery
+            child.setSubQuery(true); // 默认设置为subQuery
         }
     }
 

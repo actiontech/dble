@@ -291,7 +291,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private String getFieldName(SQLSelectItem item) {
         if ((item.getExpr() instanceof SQLPropertyExpr) || (item.getExpr() instanceof SQLMethodInvokeExpr) ||
                 (item.getExpr() instanceof SQLIdentifierExpr) || item.getExpr() instanceof SQLBinaryOpExpr) {
-            return item.getExpr().toString();// 字段别名
+            return item.getExpr().toString(); // 字段别名
         } else {
             return item.toString();
         }
@@ -425,7 +425,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // 此步骤得到的column必须是不带.的，有别名的用别名，无别名的用字段名
                 column = column.substring(dotIndex + 1);
             }
-            groupByCols[i] = getAliaColumn(aliaColumns, column);// column;
+            groupByCols[i] = getAliaColumn(aliaColumns, column); // column;
         }
         return groupByCols;
     }
@@ -541,7 +541,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
             throws SQLException {
         if (rrs.isFinishedRoute()) {
-            return;// 避免重复路由
+            return; // 避免重复路由
         }
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         String table = ctx.getTables().get(0);
@@ -632,7 +632,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) {// 语句中已有limit
             return;
         } else if (!tableConfig.isNeedAddLimit()) {
-            return;// 优先从配置文件取
+            return; // 优先从配置文件取
         }
         SQLLimit limit = new SQLLimit();
         limit.setRowCount(new SQLIntegerExpr(schema.getDefaultMaxLimit()));
@@ -670,7 +670,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
             boolean isNeedAddLimit = tableConfig.isNeedAddLimit();
             if (!isNeedAddLimit) {
-                return false;// 优先从配置文件取
+                return false; // 优先从配置文件取
             }
 
             if (schema.getTables().get(tableName).isGlobalTable()) {

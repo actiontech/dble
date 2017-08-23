@@ -130,7 +130,7 @@ public class ErrorPacket extends MySQLPacket {
 
     @Override
     public int calcPacketSize() {
-        int size = 9;// 1 + 2 + 1 + 5
+        int size = 9; // 1 + 2 + 1 + 5
         if (message != null) {
             size += message.length;
         }

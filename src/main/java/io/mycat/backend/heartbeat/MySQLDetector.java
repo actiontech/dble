@@ -144,9 +144,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
             } else if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS && source.getHostConfig().isShowClusterSql()) {
                 //String Variable_name = resultResult != null ? resultResult.get("Variable_name") : null;
-                String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null;// Primary
-                String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null;// ON
-                String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null;// ON
+                String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null; // Primary
+                String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null; // ON
+                String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
                 if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
                     heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);

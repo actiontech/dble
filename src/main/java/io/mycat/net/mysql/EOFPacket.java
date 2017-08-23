@@ -77,7 +77,7 @@ public class EOFPacket extends MySQLPacket {
 
     @Override
     public int calcPacketSize() {
-        return 5;// 1+2+2;
+        return 5; // 1+2+2;
     }
 
     @Override

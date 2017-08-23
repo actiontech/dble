@@ -234,7 +234,7 @@ public class ArgComparator {
         {
             return !getDateFromConst(b, a, constvalue);
         } else
-            return false;// No date[time] items found
+            return false; // No date[time] items found
     }
 
     private static ArgCmpFunc[][] comparatorMatrix = {{new CompareString(), new CompareEString()},

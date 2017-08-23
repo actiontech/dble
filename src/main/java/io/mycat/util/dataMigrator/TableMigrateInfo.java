@@ -24,7 +24,7 @@ public class TableMigrateInfo {
     private List<DataNode> newDataNodes;
     private AtomicLong size = new AtomicLong();
 
-    private List<DataNodeMigrateInfo> dataNodesDetail = new ArrayList<>();//节点间数据迁移详细信息
+    private List<DataNodeMigrateInfo> dataNodesDetail = new ArrayList<>(); //节点间数据迁移详细信息
 
     private AbstractPartitionAlgorithm newRuleAlgorithm;
     private String column;

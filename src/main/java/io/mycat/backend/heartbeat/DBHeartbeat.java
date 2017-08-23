@@ -41,7 +41,7 @@ public abstract class DBHeartbeat {
     // heartbeat config
     protected long heartbeatTimeout = DEFAULT_HEARTBEAT_TIMEOUT; // 心跳超时时间
     protected int heartbeatRetry = DEFAULT_HEARTBEAT_RETRY; // 检查连接发生异常到切换，重试次数
-    protected String heartbeatSQL;// 静态心跳语句
+    protected String heartbeatSQL; // 静态心跳语句
     protected final AtomicBoolean isStop = new AtomicBoolean(true);
     protected final AtomicBoolean isChecking = new AtomicBoolean(false);
     protected int errorCount;

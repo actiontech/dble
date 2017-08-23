@@ -40,11 +40,11 @@ public abstract class Item {
     ;
 
     protected String itemName; /* Name from visit */
-    protected String pushDownName;/* name in child or db */
+    protected String pushDownName; /* name in child or db */
     protected String aliasName; /* name for alias */
     public int maxLength = 0;
     public int decimals = NOT_FIXED_DEC;
-    public boolean maybeNull;/* If item may be null */
+    public boolean maybeNull; /* If item may be null */
     public boolean nullValue;
     public boolean withSumFunc;
     public boolean withIsNull;

@@ -5365,19 +5365,19 @@ public final class StructureMeta {
         internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR,
-                new java.lang.String[]{"Name", "Type", "Columns",});
+                new java.lang.String[]{"Name", "Type", "Columns"});
         INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR =
                 getDescriptor().getMessageTypes().get(1);
         internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR,
-                new java.lang.String[]{"Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname",});
+                new java.lang.String[]{"Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname"});
         INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR =
                 getDescriptor().getMessageTypes().get(2);
         internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR,
-                new java.lang.String[]{"TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index",});
+                new java.lang.String[]{"TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index"});
     }
 
     // @@protoc_insertion_point(outer_class_scope)

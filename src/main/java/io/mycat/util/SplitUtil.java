@@ -278,9 +278,9 @@ public class SplitUtil {
         }
         // 分成的条数不确定(整除的情况下也许会多出一条),所以先用list再转化为array
         List list = new ArrayList();
-        int offset = 0;// 偏移量,也就是截取的字符串的首字节的位置
-        int length = 0;// 截取的字符串的长度,可能是size,可能是size-1
-        int position = 0;// 可能的截取点,根据具体情况判断是不是在此截取
+        int offset = 0; // 偏移量,也就是截取的字符串的首字节的位置
+        int length = 0; // 截取的字符串的长度,可能是size,可能是size-1
+        int position = 0; // 可能的截取点,根据具体情况判断是不是在此截取
         while (position < bytes.length) {
             position = offset + size;
             if (position > bytes.length) {

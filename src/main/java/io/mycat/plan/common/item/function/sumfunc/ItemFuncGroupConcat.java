@@ -23,7 +23,7 @@ public class ItemFuncGroupConcat extends ItemSum {
     protected StringBuilder resultSb;
     protected String seperator;
     private List<Order> orders;
-    protected boolean alwaysNull;// 如果参数存在null时
+    protected boolean alwaysNull; // 如果参数存在null时
 
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
                                boolean isPushDown, List<Field> fields) {

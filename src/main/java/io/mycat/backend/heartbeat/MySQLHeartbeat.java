@@ -176,7 +176,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                 if (isStop.get()) {
                     detector.quit();
                 } else {
-                    heartbeat();// timeout, heart beat again
+                    heartbeat(); // timeout, heart beat again
                 }
                 break;
             case DBHeartbeat.OK_STATUS:

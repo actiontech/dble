@@ -100,7 +100,7 @@ public class ShowSQLSumUser {
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             i++;
-            RowDataPacket row = getRow(userStat, i, c.getCharset());//getRow(sqlStat,sql, c.getCharset());
+            RowDataPacket row = getRow(userStat, i, c.getCharset()); //getRow(sqlStat,sql, c.getCharset());
             row.packetId = ++packetId;
             buffer = row.write(buffer, c, true);
 

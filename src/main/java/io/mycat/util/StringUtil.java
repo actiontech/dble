@@ -324,19 +324,19 @@ public class StringUtil {
                 if (loByte < 0) {
                     loByte += 256; // adjust for signedness/wrap-around
                 }
-                out.write(loByte);// We always write the first byte
+                out.write(loByte); // We always write the first byte
                 if (loByte >= 0x80) {
                     if (bufIndex < (bytesLen - 1)) {
                         int hiByte = src[bufIndex + 1];
                         if (hiByte < 0) {
                             hiByte += 256; // adjust for signedness/wrap-around
                         }
-                        out.write(hiByte);// write the high byte here, and
+                        out.write(hiByte); // write the high byte here, and
                         // increment the index for the high
                         // byte
                         bufIndex++;
                         if (hiByte == 0x5C) {
-                            out.write(hiByte);// escape 0x5c if necessary
+                            out.write(hiByte); // escape 0x5c if necessary
                         }
                     }
                 } else if (loByte == 0x5c && bufIndex < (bytesLen - 1)) {
@@ -353,7 +353,7 @@ public class StringUtil {
                 bufIndex++;
             }
             if (bufIndex >= bytesLen) {
-                break;// we're done
+                break; // we're done
             }
             strIndex++;
         }

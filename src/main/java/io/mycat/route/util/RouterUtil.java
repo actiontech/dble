@@ -320,7 +320,7 @@ public class RouterUtil {
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
         }
     }
 
@@ -342,7 +342,7 @@ public class RouterUtil {
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
         }
     }
 
@@ -364,7 +364,7 @@ public class RouterUtil {
             if (ifInd >= 0 && tabInd > 0 && tabInd > ifInd) {
                 return new int[]{tabInd, token2.length()};
             } else {
-                return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
+                return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
             }
         } else {
             String token1 = "DROP ";
@@ -375,7 +375,7 @@ public class RouterUtil {
             if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
                 return new int[]{tabInd, token2.length()};
             } else {
-                return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
+                return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
             }
         }
     }
@@ -398,7 +398,7 @@ public class RouterUtil {
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()};// 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
         }
     }
 

@@ -12,8 +12,8 @@ public class MySQLOutPutException extends RuntimeException {
      */
     private static final long serialVersionUID = -7089907072181836842L;
 
-    private int errorCode = -1;
-    private String sqlState = "";
+    private final int errorCode;
+    private final String sqlState;
 
     public MySQLOutPutException(int errorCode, String sqlState, String msg) {
         super(msg);

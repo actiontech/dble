@@ -112,8 +112,8 @@
         <module name="FinalClass"/>
         <module name="HideUtilityClassConstructor"/>
         <module name="InterfaceIsType"/>
-        <!--<module name="ThrowsCount"/>-->
-        <!--<module name="MutableException"/>-->
+        <module name="ThrowsCount"/>
+        <module name="MutableException"/>
         <!--<module name="OverloadMethodsDeclarationOrder"/>-->
         <!--<module name="OneTopLevelClass"/>-->
         <!--<module name="OneStatementPerLine"/>-->

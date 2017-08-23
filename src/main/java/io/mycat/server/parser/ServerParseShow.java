@@ -191,6 +191,7 @@ public final class ServerParseShow {
                                     (ParseUtil.isSpace(stmt.charAt(++offset)))) {
                                 return CREATE_TABLE;
                             }
+                            return OTHER;
                         default:
                             return OTHER;
                     }

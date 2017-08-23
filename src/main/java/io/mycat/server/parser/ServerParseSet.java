@@ -295,6 +295,7 @@ public final class ServerParseSet {
                             return (offset << 8) | CHARACTER_SET_NAME;
                         }
                     }
+                    return OTHER;
                 default:
                     return OTHER;
             }

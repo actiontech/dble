@@ -518,6 +518,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, false);
                     break;
                 }
+                // fallthrough
             case "DATE_ADD":
                 MySqlIntervalExpr intervalExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
                 item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUint(x.getParameters().get(1)), false);
@@ -527,6 +528,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, true);
                     break;
                 }
+                // fallthrough
             case "DATE_SUB":
                 MySqlIntervalExpr valueExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
                 item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUint(x.getParameters().get(1)), true);

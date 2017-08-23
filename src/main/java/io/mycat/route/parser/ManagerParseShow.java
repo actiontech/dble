@@ -366,6 +366,7 @@ public final class ManagerParseShow {
                             return OTHER;
                         }
                     }
+                    return OTHER;
                 case 'C':
                 case 'c':
                     if (stmt.length() > offset + "luster".length()) {
@@ -383,6 +384,7 @@ public final class ManagerParseShow {
                             return OTHER;
                         }
                     }
+                    return OTHER;
                 default:
                     return OTHER;
             }
@@ -1167,6 +1169,7 @@ public final class ManagerParseShow {
                         default:
                             break;
                     }
+                    return OTHER;
                 case 'H':
                 case 'h':
                     return show2SqlHCheck(stmt, offset);

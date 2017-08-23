@@ -127,6 +127,7 @@ public final class Platform {
                             case 'M':
                             case 'm':
                                 maxDirectMemory *= 1048576L;
+                                break label41;
                             default:
                                 break label41;
                         }

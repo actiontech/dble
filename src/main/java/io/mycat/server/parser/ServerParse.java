@@ -85,6 +85,7 @@ public final class ServerParse {
                             stmt.charAt(length - 1) == '/') {
                         return MYSQL_CMD_COMMENT;
                     }
+                    continue;
                 case '#':
                     i = ParseUtil.comment(stmt, i);
                     if (i + 1 == length) {

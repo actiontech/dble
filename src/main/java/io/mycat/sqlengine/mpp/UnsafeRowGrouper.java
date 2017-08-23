@@ -485,6 +485,7 @@ public class UnsafeRowGrouper {
                 switch (curColMeta.colType) {
                     case ColMeta.COL_TYPE_BIT:
                         key.setByte(i, row.getByte(curColMeta.colIndex));
+                        // fallthrough
                     case ColMeta.COL_TYPE_INT:
                     case ColMeta.COL_TYPE_LONG:
                     case ColMeta.COL_TYPE_INT24:
@@ -649,6 +650,7 @@ public class UnsafeRowGrouper {
                     switch (type) {
                         case ColMeta.COL_TYPE_BIT:
                             toRow.setByte(index, result[0]);
+                            // fallthrough
                         case ColMeta.COL_TYPE_INT:
                         case ColMeta.COL_TYPE_LONG:
                         case ColMeta.COL_TYPE_INT24:
@@ -830,7 +832,7 @@ public class UnsafeRowGrouper {
                     decimal = decimal.add(new BigDecimal(new String(bs2)));
                     return decimal.toString().getBytes();
                 }
-
+                return null;
 
             case MergeCol.MERGE_COUNT: {
                 long s1 = BytesTools.getLong(bs);
@@ -867,6 +869,7 @@ public class UnsafeRowGrouper {
                     BigDecimal avg = sum.divide(new BigDecimal(count), sum.scale() + 4, RoundingMode.HALF_UP);
                     return avg.toString().getBytes();
                 }
+                return null;
             }
             default:
                 return null;

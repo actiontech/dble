@@ -101,7 +101,7 @@
         <module name="OuterTypeNumber"/>
         <module name="PackageDeclaration"/>
         <module name="DefaultComesLast"/>
-        <!--<module name="FallThrough"/>-->
+        <module name="FallThrough"/>
         <!--<module name="CovariantEquals"/>-->
         <!--<module name="HiddenField">-->
         <!--<property name="ignoreSetter" value="true"/>-->

@@ -266,6 +266,7 @@ public class RowDataPacketGrouper {
                     return String.valueOf(d1).getBytes();
                 }
                 // continue to count case
+                // fallthrough
             case MergeCol.MERGE_COUNT: {
                 long s1 = Long.parseLong(new String(bs));
                 long s2 = Long.parseLong(new String(bs2));
@@ -306,6 +307,7 @@ public class RowDataPacketGrouper {
                     return avg.toString().getBytes();
                 }
             }
+            return null;
             default:
                 return null;
         }

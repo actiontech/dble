@@ -28,11 +28,11 @@ package io.mycat.util;
  */
 public final class LongUtil {
 
-    private static final byte[] minValue = "-9223372036854775808".getBytes();
+    private static final byte[] MIN_VALUE = "-9223372036854775808".getBytes();
 
     public static byte[] toBytes(long i) {
         if (i == Long.MIN_VALUE) {
-            return minValue;
+            return MIN_VALUE;
         }
         int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
         byte[] buf = new byte[size];
@@ -68,8 +68,8 @@ public final class LongUtil {
             // really: r = i - (q * 100);
             r = (int) (i - ((q << 6) + (q << 5) + (q << 2)));
             i = q;
-            buf[--charPos] = IntegerUtil.digitOnes[r];
-            buf[--charPos] = IntegerUtil.digitTens[r];
+            buf[--charPos] = IntegerUtil.DIGIT_ONES[r];
+            buf[--charPos] = IntegerUtil.DIGIT_TENS[r];
         }
 
         // Get 2 digits/iteration using ints
@@ -80,8 +80,8 @@ public final class LongUtil {
             // really: r = i2 - (q * 100);
             r = i2 - ((q2 << 6) + (q2 << 5) + (q2 << 2));
             i2 = q2;
-            buf[--charPos] = IntegerUtil.digitOnes[r];
-            buf[--charPos] = IntegerUtil.digitTens[r];
+            buf[--charPos] = IntegerUtil.DIGIT_ONES[r];
+            buf[--charPos] = IntegerUtil.DIGIT_TENS[r];
         }
 
         // Fall thru to fast mode for smaller numbers
@@ -89,7 +89,7 @@ public final class LongUtil {
         for (; ; ) {
             q2 = (i2 * 52429) >>> (16 + 3);
             r = i2 - ((q2 << 3) + (q2 << 1)); // r = i2-(q2*10) ...
-            buf[--charPos] = IntegerUtil.digits[r];
+            buf[--charPos] = IntegerUtil.DIGITS[r];
             i2 = q2;
             if (i2 == 0) {
                 break;

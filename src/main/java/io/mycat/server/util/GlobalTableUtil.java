@@ -44,7 +44,7 @@ public class GlobalTableUtil {
     public static final String INNER_COLUMN = "inner_col_exist";
     private static volatile int isInnerColumnCheckFinished = 0;
     private static volatile int isColumnCountCheckFinished = 0;
-    private static final ReentrantLock lock = new ReentrantLock(false);
+    private static final ReentrantLock LOCK = new ReentrantLock(false);
 
     public static Map<String, TableConfig> getGlobalTableMap() {
         return globalTableMap;
@@ -165,7 +165,7 @@ public class GlobalTableUtil {
      */
     public static List<SQLQueryResult<Map<String, String>>>
     finished(List<SQLQueryResult<Map<String, String>>> list) {
-        lock.lock();
+        LOCK.lock();
         try {
             //[{"dataNode":"db3","result":{"inner_col_exist":"id,_mycat_op_time"},"success":true,"tableName":"COMPANY"}]
             // {"dataNode":"db2","result":{"max_timestamp":"1450423751170"},"success":true,"tableName":"COMPANY"}
@@ -210,7 +210,7 @@ public class GlobalTableUtil {
         } finally {
             isInnerColumnCheckFinished = 1;
             isColumnCountCheckFinished = 1;
-            lock.unlock();
+            LOCK.unlock();
         }
         return list;
     }

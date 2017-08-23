@@ -30,12 +30,12 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     private int defaultNode = -1;
     private transient ThreadLocal<SimpleDateFormat> formatter;
 
-    private static final long oneDay = 86400000;
+    private static final long ONE_DAY = 86400000;
 
     @Override
     public void init() {
         try {
-            partitionTime = Integer.parseInt(sPartionDay) * oneDay;
+            partitionTime = Integer.parseInt(sPartionDay) * ONE_DAY;
 
             beginDate = new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
 

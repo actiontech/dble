@@ -46,7 +46,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     private LongRange[] longRongs;
     private Integer[] allNode;
     private int defaultNode = -1;// 包含非数值字符，默认存储节点
-    private static final Pattern pattern = Pattern.compile("[0-9]*");
+    private static final Pattern PATTERN = Pattern.compile("[0-9]*");
     ;
 
     @Override
@@ -164,7 +164,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     public static boolean isNumeric(String str) {
-        return pattern.matcher(str).matches();
+        return PATTERN.matcher(str).matches();
     }
 
     private void initialize_aux(LinkedList<LongRange> ll, LongRange lr) {

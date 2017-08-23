@@ -43,7 +43,7 @@ import static io.mycat.server.parser.ServerParseSet.*;
  */
 public class CharacterSet {
 
-    private static final Logger logger = LoggerFactory.getLogger(CharacterSet.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CharacterSet.class);
 
     public static void response(String stmt, ServerConnection c, int rs) {
     /* TODO: completely charsets support
@@ -123,7 +123,7 @@ public class CharacterSet {
                     boolean ignore = SetIgnoreUtil.isIgnoreStmt(sql);
                     if (!ignore) {
                         StringBuilder s = new StringBuilder();
-                        logger.warn(s.append(c).append(sql).append(" is not executed").toString());
+                        LOGGER.warn(s.append(c).append(sql).append(" is not executed").toString());
                     }
             }
         }

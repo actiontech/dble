@@ -68,7 +68,7 @@ public final class ReloadConfig {
 
     public static void execute(ManagerConnection c, final boolean loadAll) {
         // reload @@config_all 校验前一次的事务完成情况
-        if (loadAll && !NIOProcessor.backends_old.isEmpty()) {
+        if (loadAll && !NIOProcessor.BACKENDS_OLD.isEmpty()) {
             c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
             return;
         }
@@ -240,10 +240,10 @@ public final class ReloadConfig {
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
 
     /* 2.4、 处理旧的资源 */
-            LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.backends_old.size());
+            LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
             // 清除前一次 reload 转移出去的 old Cons
-            Iterator<BackendConnection> iter = NIOProcessor.backends_old.iterator();
+            Iterator<BackendConnection> iter = NIOProcessor.BACKENDS_OLD.iterator();
             while (iter.hasNext()) {
                 BackendConnection con = iter.next();
                 con.close("clear old datasources");
@@ -260,14 +260,14 @@ public final class ReloadConfig {
                             if (con instanceof MySQLConnection) {
                                 MySQLConnection mysqlCon = (MySQLConnection) con;
                                 if (mysqlCon.getPool() == ds && con.isBorrowed()) {
-                                    NIOProcessor.backends_old.add(con);
+                                    NIOProcessor.BACKENDS_OLD.add(con);
                                 }
                             }
                         }
                     }
                 }
             }
-            LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.backends_old.size());
+            LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
 
             //清理缓存

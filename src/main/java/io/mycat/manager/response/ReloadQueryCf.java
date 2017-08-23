@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReloadQueryCf {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c, String cf) {
 
@@ -22,7 +22,7 @@ public class ReloadQueryCf {
         StringBuilder s = new StringBuilder();
         s.append(c).append("Reset show  @@sql.condition=" + cf + " success by manager");
 
-        logger.warn(s.toString());
+        LOGGER.warn(s.toString());
 
         OkPacket ok = new OkPacket();
         ok.packetId = 1;

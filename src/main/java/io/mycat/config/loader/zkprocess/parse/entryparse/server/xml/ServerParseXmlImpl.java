@@ -28,7 +28,7 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger lOG = LoggerFactory.getLogger(ServerParseXmlImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerParseXmlImpl.class);
 
     /**
      * 基本的转换类的信息
@@ -59,10 +59,10 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
             server = (Server) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
             e.printStackTrace();
-            lOG.error("ServerParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.error("ServerParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
             e.printStackTrace();
-            lOG.error("ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.error("ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return server;
@@ -74,7 +74,7 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
             e.printStackTrace();
-            lOG.error("ServerParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.error("ServerParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

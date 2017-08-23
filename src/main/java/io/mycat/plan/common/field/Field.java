@@ -82,7 +82,7 @@ public abstract class Field {
         }
     }
 
-    protected static final Logger logger = Logger.getLogger(Field.class);
+    protected static final Logger LOGGER = Logger.getLogger(Field.class);
 
     /**
      * -- field的长度 --
@@ -132,7 +132,7 @@ public abstract class Field {
         try {
             val = MySQLcom.getFullString(charsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            logger.warn("parse string exception!", ue);
+            LOGGER.warn("parse string exception!", ue);
         }
         return val;
     }
@@ -151,7 +151,7 @@ public abstract class Field {
             fp.name = this.name.getBytes(charsetName);
             fp.db = this.dbname != null ? this.dbname.getBytes(charsetName) : null;
         } catch (UnsupportedEncodingException ue) {
-            logger.warn("parse string exception!", ue);
+            LOGGER.warn("parse string exception!", ue);
         }
         fp.charsetIndex = this.charsetIndex;
         fp.length = this.fieldLength;

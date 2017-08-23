@@ -10,12 +10,12 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
 
     private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";
-    private static final IncrSequenceTimeHandler instance = new IncrSequenceTimeHandler();
+    private static final IncrSequenceTimeHandler INSTANCE = new IncrSequenceTimeHandler();
     private IdWorker workey;
 
 
     public static IncrSequenceTimeHandler getInstance() {
-        return IncrSequenceTimeHandler.instance;
+        return IncrSequenceTimeHandler.INSTANCE;
     }
 
     private IncrSequenceTimeHandler() {
@@ -49,27 +49,27 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
      * 64位ID (30(毫秒)+5(机器ID)+5(业务编码)+12(重复累加)+12(毫秒))
      */
     static class IdWorker {
-        private final static long twepoch = 1288834974657L;
-        private final static long timestampLowBits = 12L;
-        private final static long timestampLowMask = 0xFFF;
+        private final static long TWEPOCH = 1288834974657L;
+        private final static long TIMESTAMP_LOW_BITS = 12L;
+        private final static long TIMESTAMP_LOW_MASK = 0xFFF;
 
         // 机器标识位数
-        private final static long workerIdBits = 5L;
+        private final static long WORKER_ID_BITS = 5L;
         // 数据中心标识位数
-        private final static long datacenterIdBits = 5L;
+        private final static long DATACENTER_ID_BITS = 5L;
         // 机器ID最大值 31
-        private final static long maxWorkerId = -1L ^ (-1L << workerIdBits);
+        private final static long MAX_WORKER_ID = -1L ^ (-1L << WORKER_ID_BITS);
         // 数据中心ID最大值 31
-        private final static long maxDatacenterId = -1L ^ (-1L << datacenterIdBits);
+        private final static long MAX_DATACENTER_ID = -1L ^ (-1L << DATACENTER_ID_BITS);
         // 毫秒内自增位
-        private final static long sequenceBits = 12L;
+        private final static long SEQUENCE_BITS = 12L;
 
-        private final static long sequenceShift = timestampLowBits;
-        private final static long workerIdShift = sequenceBits + timestampLowBits;
-        private final static long datacenterIdShift = workerIdBits + sequenceBits + timestampLowBits;
-        private final static long timestampHighShift = datacenterIdBits + workerIdBits + sequenceBits + timestampLowBits;
+        private final static long SEQUENCE_SHIFT = TIMESTAMP_LOW_BITS;
+        private final static long WORKER_ID_SHIFT = SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
+        private final static long DATACENTER_ID_SHIFT = WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
+        private final static long TIMESTAMP_HIGH_SHIFT = DATACENTER_ID_BITS + WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
 
-        private final static long sequenceMask = -1L ^ (-1L << sequenceBits);
+        private final static long SEQUENCE_MASK = -1L ^ (-1L << SEQUENCE_BITS);
 
         private static long lastTimestamp = -1L;
 
@@ -78,11 +78,11 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
         private final long datacenterId;
 
         public IdWorker(long workerId, long datacenterId) {
-            if (workerId > maxWorkerId || workerId < 0) {
-                throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
+            if (workerId > MAX_WORKER_ID || workerId < 0) {
+                throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", MAX_WORKER_ID));
             }
-            if (datacenterId > maxDatacenterId || datacenterId < 0) {
-                throw new IllegalArgumentException(String.format("datacenter Id can't be greater than %d or less than 0", maxDatacenterId));
+            if (datacenterId > MAX_DATACENTER_ID || datacenterId < 0) {
+                throw new IllegalArgumentException(String.format("datacenter Id can't be greater than %d or less than 0", MAX_DATACENTER_ID));
             }
             this.workerId = workerId;
             this.datacenterId = datacenterId;
@@ -101,7 +101,7 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
 
             if (lastTimestamp == timestamp) {
                 // 当前毫秒内，则+1
-                sequence = (sequence + 1) & sequenceMask;
+                sequence = (sequence + 1) & SEQUENCE_MASK;
                 if (sequence == 0) {
                     // 当前毫秒内计数满了，则等待下一秒
                     timestamp = tilNextMillis(lastTimestamp);
@@ -114,11 +114,11 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
             // ID偏移组合生成最终的ID，并返回ID
 
             //42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit
-            long nextId = (((timestamp - twepoch) >> timestampLowBits) << timestampHighShift)
-                    | (datacenterId << datacenterIdShift)
-                    | (workerId << workerIdShift)
-                    | (sequence << sequenceShift)
-                    | ((timestamp - twepoch) & timestampLowMask);
+            long nextId = (((timestamp - TWEPOCH) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT)
+                    | (datacenterId << DATACENTER_ID_SHIFT)
+                    | (workerId << WORKER_ID_SHIFT)
+                    | (sequence << SEQUENCE_SHIFT)
+                    | ((timestamp - TWEPOCH) & TIMESTAMP_LOW_MASK);
 
             return nextId;
         }

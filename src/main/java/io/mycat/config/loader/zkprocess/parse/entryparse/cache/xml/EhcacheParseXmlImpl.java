@@ -31,7 +31,7 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger lOG = LoggerFactory.getLogger(EhcacheParseXmlImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EhcacheParseXmlImpl.class);
 
     /**
      * 基本的转换类的信息
@@ -62,10 +62,10 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
             schema = (Ehcache) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
             e.printStackTrace();
-            lOG.error("EhcacheParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.error("EhcacheParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
             e.printStackTrace();
-            lOG.error("EhcacheParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.error("EhcacheParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -81,7 +81,7 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName, paramMap);
         } catch (IOException e) {
             e.printStackTrace();
-            lOG.error("EhcacheParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.error("EhcacheParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

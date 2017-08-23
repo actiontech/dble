@@ -918,7 +918,7 @@ public class BytesTools {
         }
 
         byte[] b = new byte[SIZEOF_INT];
-        if (Platform.littleEndian) {
+        if (Platform.LITTLE_ENDIAN) {
             for (int i = 0; i < SIZEOF_INT - a.length; i++) {
                 b[i] = 0x00;
             }
@@ -942,7 +942,7 @@ public class BytesTools {
         }
 
         byte[] b = new byte[SIZEOF_LONG];
-        if (Platform.littleEndian) {
+        if (Platform.LITTLE_ENDIAN) {
             for (int i = 0; i < SIZEOF_LONG - a.length; i++) {
                 b[i] = 0x00;
             }
@@ -966,7 +966,7 @@ public class BytesTools {
             return a;
         }
         byte[] b = new byte[SIZEOF_SHORT];
-        if (Platform.littleEndian) {
+        if (Platform.LITTLE_ENDIAN) {
             for (int i = 0; i < SIZEOF_SHORT - a.length; i++) {
                 b[i] = 0x00;
             }

@@ -51,69 +51,69 @@ import java.util.Map;
 public final class ShowDataSource {
 
     private static final int FIELD_COUNT = 10;
-    private static final ResultSetHeaderPacket header = PacketUtil
+    private static final ResultSetHeaderPacket HEADER = PacketUtil
             .getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
         /*fields[i] = PacketUtil.getField("DATANODE",
                 Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;*/
 
-        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c, String name) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         MycatConfig conf = MycatServer.getInstance().getConfig();
 
         if (null != name) {

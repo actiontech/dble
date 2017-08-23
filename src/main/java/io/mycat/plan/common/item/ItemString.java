@@ -30,7 +30,7 @@ public class ItemString extends ItemBasicConstant {
         try {
             decValue = new BigDecimal(value);
         } catch (Exception e) {
-            logger.warn("convert string to decimal exception!", e);
+            LOGGER.warn("convert string to decimal exception!", e);
         }
         return decValue;
     }
@@ -45,10 +45,10 @@ public class ItemString extends ItemBasicConstant {
                 try {
                     return new BigInteger(value.getBytes());
                 } catch (Exception e2) {
-                    logger.warn("convert string to int exception!", e);
+                    LOGGER.warn("convert string to int exception!", e);
                 }
             } else {
-                logger.warn("convert string to int exception!", e);
+                LOGGER.warn("convert string to int exception!", e);
             }
         }
         return intValue;

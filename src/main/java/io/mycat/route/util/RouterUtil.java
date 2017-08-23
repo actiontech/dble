@@ -640,7 +640,7 @@ public class RouterUtil {
         if (cachePool == null || primaryKey == null || columnsMap.get(primaryKey) == null) {
             return false;
         }
-        if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.loadDataHint) || rrs.isLoadData()) {
+        if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.LOAD_DATA_HINT) || rrs.isLoadData()) {
             //由于load data一次会计算很多路由数据，如果输出此日志会极大降低load data的性能
             return false;
         }

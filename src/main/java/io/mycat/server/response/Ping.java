@@ -36,13 +36,13 @@ import io.mycat.net.mysql.OkPacket;
  */
 public class Ping {
 
-    private static final ErrorPacket error = PacketUtil.getShutdown();
+    private static final ErrorPacket ERROR = PacketUtil.getShutdown();
 
     public static void response(FrontendConnection c) {
         if (MycatServer.getInstance().isOnline()) {
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
         } else {
-            error.write(c);
+            ERROR.write(c);
         }
     }
 

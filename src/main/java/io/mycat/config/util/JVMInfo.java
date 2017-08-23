@@ -33,8 +33,8 @@ import java.util.Map;
  */
 public class JVMInfo {
     private static final float DEFAULT_JAVA_VERSION = 1.3f;
-    private static final boolean reverseFieldOrder;
-    private static final float majorJavaVersion = getMajorJavaVersion(System.getProperty("java.specification.version"));
+    private static final boolean REVERSE_FIELD_ORDER;
+    private static final float MAJOR_JAVA_VERSION = getMajorJavaVersion(System.getProperty("java.specification.version"));
 
     private ReflectionProvider reflectionProvider;
     private Map<String, Class<?>> loaderCache = new HashMap<String, Class<?>>();
@@ -47,7 +47,7 @@ public class JVMInfo {
                 reverse = i > 3;
             }
         }
-        reverseFieldOrder = reverse;
+        REVERSE_FIELD_ORDER = reverse;
     }
 
     /**
@@ -67,15 +67,15 @@ public class JVMInfo {
     }
 
     public static boolean is14() {
-        return majorJavaVersion >= 1.4f;
+        return MAJOR_JAVA_VERSION >= 1.4f;
     }
 
     public static boolean is15() {
-        return majorJavaVersion >= 1.5f;
+        return MAJOR_JAVA_VERSION >= 1.5f;
     }
 
     public static boolean is16() {
-        return majorJavaVersion >= 1.6f;
+        return MAJOR_JAVA_VERSION >= 1.6f;
     }
 
     private static boolean isSun() {
@@ -162,11 +162,11 @@ public class JVMInfo {
     }
 
     public static boolean reverseFieldDefinition() {
-        return reverseFieldOrder;
+        return REVERSE_FIELD_ORDER;
     }
 
     public static void main(String[] args) {
-        System.out.println(majorJavaVersion);
+        System.out.println(MAJOR_JAVA_VERSION);
     }
 
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 1.处理已经依据groupby的列进行过排序的groupby 2.处理需要用到Aggregator_distinct的group by
  */
 public class OrderedGroupByHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(OrderedGroupByHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(OrderedGroupByHandler.class);
     /* 接收到的参数 */
     private List<Order> groupBys;
     private List<ItemSum> referedSumFunctions;
@@ -111,7 +111,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     @Override
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        logger.debug("rowresponse");
+        LOGGER.debug("rowresponse");
         if (terminate.get())
             return true;
         lock.lock();
@@ -159,7 +159,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("row eof for orderby.");
+        LOGGER.debug("row eof for orderby.");
         if (terminate.get())
             return;
         if (!hasFirstRow) {
@@ -198,7 +198,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      */
     protected void prepare_sum_aggregators(List<ItemSum> funcs, List<ItemSum> sumfuncs, List<FieldPacket> packets,
                                            boolean isAllPushDown, boolean need_distinct, MySQLConnection conn) {
-        logger.info("prepare_sum_aggregators");
+        LOGGER.info("prepare_sum_aggregators");
         for (int i = 0; i < funcs.size(); i++) {
             ItemSum func = funcs.get(i);
             ResultStore store = null;
@@ -227,7 +227,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      */
 
     protected boolean setup_sum_funcs(List<ItemSum> funcs) {
-        logger.info("setup_sum_funcs");
+        LOGGER.info("setup_sum_funcs");
         for (ItemSum func : funcs) {
             if (func.aggregatorSetup())
                 return true;

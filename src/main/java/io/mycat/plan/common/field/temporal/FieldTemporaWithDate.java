@@ -53,7 +53,7 @@ public abstract class FieldTemporaWithDate extends FieldTemporal {
                 MyTime.str_to_datetime_with_warn(sval2, ltime2, MyTime.TIME_FUZZY_DATE);
                 return ltime1.getCompareResult(ltime2);
             } catch (Exception e) {
-                logger.info("String to biginteger exception!", e);
+                LOGGER.info("String to biginteger exception!", e);
                 return -1;
             }
     }

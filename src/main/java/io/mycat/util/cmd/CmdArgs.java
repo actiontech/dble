@@ -10,7 +10,7 @@ import java.util.Map;
  * @author me
  */
 public class CmdArgs {
-    private static final CmdArgs cmdArgs = new CmdArgs();
+    private static final CmdArgs CMD_ARGS = new CmdArgs();
 
     private Map<String, String> args;
 
@@ -20,13 +20,13 @@ public class CmdArgs {
 
 
     public static CmdArgs getInstance(String[] args) {
-        Map<String, String> cmdArgs = CmdArgs.cmdArgs.args;
+        Map<String, String> cmdArgs = CmdArgs.CMD_ARGS.args;
         for (int i = 0, l = args.length; i < l; i++) {
             String arg = args[i].trim();
             int split = arg.indexOf('=');
             cmdArgs.put(arg.substring(1, split), arg.substring(split + 1));
         }
-        return CmdArgs.cmdArgs;
+        return CmdArgs.CMD_ARGS;
     }
 
     public String getString(String name) {

@@ -44,7 +44,7 @@ public class ItemFuncConv extends ItemStrFunc {
             try {
                 dec = Long.parseLong(res, from_base);
             } catch (NumberFormatException ne) {
-                logger.info("long parse from radix error, string:" + res + ", radix:" + from_base);
+                LOGGER.info("long parse from radix error, string:" + res + ", radix:" + from_base);
             }
         }
 
@@ -52,7 +52,7 @@ public class ItemFuncConv extends ItemStrFunc {
         try {
             str = Long.toString(dec, to_base);
         } catch (Exception e) {
-            logger.warn("long to string failed ,value:" + dec + ", to_base:" + to_base);
+            LOGGER.warn("long to string failed ,value:" + dec + ", to_base:" + to_base);
             nullValue = true;
         }
         return str;

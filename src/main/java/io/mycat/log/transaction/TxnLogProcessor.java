@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TxnLogProcessor extends Thread {
-    private static final Logger logger = Logger.getLogger(TxnLogProcessor.class);
+    private static final Logger LOGGER = Logger.getLogger(TxnLogProcessor.class);
     private final DateFormat dateFormat;
     private BlockingQueue<TxnBinaryLog> queue;
     private DailyRotateLogStore store;
@@ -54,7 +54,7 @@ public class TxnLogProcessor extends Thread {
                 writeLog(log);
             }
         } catch (IOException e) {
-            logger.warn("transaction log error:", e);
+            LOGGER.warn("transaction log error:", e);
             store.close();
         }
     }

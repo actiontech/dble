@@ -16,13 +16,13 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
             .getLogger(IncrSequenceMySQLHandler.class);
 
     private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
-    protected static final String errSeqResult = "-999999999,null";
-    protected static final Map<String, String> latestErrors = new ConcurrentHashMap<String, String>();
+    protected static final String ERR_SEQ_RESULT = "-999999999,null";
+    protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<String, String>();
     private final FetchMySQLSequnceHandler mysqlSeqFetcher = new FetchMySQLSequnceHandler();
-    private static final IncrSequenceMySQLHandler instance = new IncrSequenceMySQLHandler();
+    private static final IncrSequenceMySQLHandler INSTANCE = new IncrSequenceMySQLHandler();
 
     public static IncrSequenceMySQLHandler getInstance() {
-        return IncrSequenceMySQLHandler.instance;
+        return IncrSequenceMySQLHandler.INSTANCE;
     }
 
     public void load(boolean isLowerCaseTableNames) {

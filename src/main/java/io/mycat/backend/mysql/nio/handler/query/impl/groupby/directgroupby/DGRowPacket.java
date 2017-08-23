@@ -90,7 +90,7 @@ public class DGRowPacket extends RowDataPacket {
     @Override
     public byte[] toBytes() {
         int size = getRealSize();
-        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
+        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < this.sumSize; i++) {

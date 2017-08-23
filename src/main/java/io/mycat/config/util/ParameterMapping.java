@@ -44,7 +44,7 @@ import java.util.Map;
 public class ParameterMapping {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(ParameterMapping.class);
-    private static final Map<Class<?>, PropertyDescriptor[]> descriptors = new HashMap<Class<?>, PropertyDescriptor[]>();
+    private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<Class<?>, PropertyDescriptor[]>();
 
     /**
      * 将property键值对赋值组装到object中
@@ -124,7 +124,7 @@ public class ParameterMapping {
         //PropertyDescriptor类表示JavaBean类通过存储器导出一个属性
         PropertyDescriptor[] pds;
         List<PropertyDescriptor> list;
-        PropertyDescriptor[] pds2 = descriptors.get(clazz);
+        PropertyDescriptor[] pds2 = DESCRIPTORS.get(clazz);
         //该clazz是否第一次加载
         if (null == pds2) {
             try {
@@ -144,7 +144,7 @@ public class ParameterMapping {
                 pds2 = new PropertyDescriptor[0];
             }
         }
-        descriptors.put(clazz, pds2);
+        DESCRIPTORS.put(clazz, pds2);
         return (pds2);
     }
 

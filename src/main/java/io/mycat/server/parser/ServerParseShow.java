@@ -288,7 +288,7 @@ public final class ServerParseShow {
     }
 
     public static int showTableType(String sql) {
-        Pattern pattern = ShowCreateStmtInfo.pattern;
+        Pattern pattern = ShowCreateStmtInfo.PATTERN;
         Matcher ma = pattern.matcher(sql);
         if (ma.matches()) {
             return TABLES;
@@ -298,7 +298,7 @@ public final class ServerParseShow {
     }
 
     private static int showColumns(String sql) {
-        Pattern pattern = ShowColumns.pattern;
+        Pattern pattern = ShowColumns.PATTERN;
         Matcher ma = pattern.matcher(sql);
         if (ma.matches()) {
             return COLUMNS;
@@ -308,7 +308,7 @@ public final class ServerParseShow {
     }
 
     private static int showIndex(String sql) {
-        Pattern pattern = ShowIndex.pattern;
+        Pattern pattern = ShowIndex.PATTERN;
         Matcher ma = pattern.matcher(sql);
         if (ma.matches()) {
             return INDEX;

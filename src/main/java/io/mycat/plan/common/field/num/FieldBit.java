@@ -83,7 +83,7 @@ public class FieldBit extends Field {
                 Long b2 = getBitInt(v2);
                 return b1.compareTo(b2);
             } catch (Exception e) {
-                logger.info("String to biginteger exception!", e);
+                LOGGER.info("String to biginteger exception!", e);
                 return -1;
             }
     }

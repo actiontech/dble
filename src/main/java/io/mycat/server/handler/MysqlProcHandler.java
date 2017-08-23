@@ -31,16 +31,16 @@ import io.mycat.server.ServerConnection;
 
 public class MysqlProcHandler {
     private static final int FIELD_COUNT = 2;
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
 
     static {
-        fields[0] = PacketUtil.getField("name",
+        FIELDS[0] = PacketUtil.getField("name",
                 Fields.FIELD_TYPE_VAR_STRING);
-        fields[1] = PacketUtil.getField("type", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[1] = PacketUtil.getField("type", Fields.FIELD_TYPE_VAR_STRING);
     }
 
     public static void handle(ServerConnection c) {
-        MysqlInformationSchemaHandler.doWrite(FIELD_COUNT, fields, c);
+        MysqlInformationSchemaHandler.doWrite(FIELD_COUNT, FIELDS, c);
     }
 
 

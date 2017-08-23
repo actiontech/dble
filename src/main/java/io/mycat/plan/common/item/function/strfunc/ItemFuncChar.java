@@ -59,7 +59,7 @@ public class ItemFuncChar extends ItemStrFunc {
             return new String(b, CharsetUtil.getJavaCharset(mysqlCharset));
         } catch (UnsupportedEncodingException e) {
             nullValue = true;
-            logger.warn("char() charset exception:", e);
+            LOGGER.warn("char() charset exception:", e);
             return null;
         }
     }

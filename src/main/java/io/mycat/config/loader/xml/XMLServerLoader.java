@@ -294,7 +294,7 @@ public class XMLServerLoader {
              * 比如 10.x...,下面获取主版本的代码要做修改
              */
             majorMySQLVersion = majorMySQLVersion.substring(0, majorMySQLVersion.indexOf(".", 2));
-            for (String ver : SystemConfig.MySQLVersions) {
+            for (String ver : SystemConfig.MYSQL_VERSIONS) {
                 // 这里只是比较mysql前面的大版本号
                 if (majorMySQLVersion.equals(ver)) {
                     validVersion = true;

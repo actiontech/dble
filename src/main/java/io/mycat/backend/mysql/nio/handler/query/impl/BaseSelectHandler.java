@@ -21,7 +21,7 @@ import java.util.List;
  * 仅用来执行Sql，将接收到的数据转发到下一个handler
  */
 public class BaseSelectHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(BaseSelectHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(BaseSelectHandler.class);
 
     private final boolean autocommit;
     private volatile int fieldCounts = -1;
@@ -59,8 +59,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
             return;
         }
         conn.setResponseHandler(this);
-        if (logger.isInfoEnabled()) {
-            logger.info(conn.toString() + " send sql:" + rrss.getStatement());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(conn.toString() + " send sql:" + rrss.getStatement());
         }
         if (session.closed()) {
             session.onQueryError("failed or cancelled by other thread".getBytes());
@@ -81,8 +81,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(conn.toString() + "'s field is reached.");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + "'s field is reached.");
         }
         if (terminate.get()) {
             return;
@@ -112,8 +112,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(conn.toString() + " 's rowEof is reached.");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
         ((MySQLConnection) conn).setRunning(false);
         if (this.terminate.get())
@@ -129,7 +129,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        logger.warn(
+        LOGGER.warn(
                 new StringBuilder().append(conn.toString()).append("|connectionError()|").append(e.getMessage()).toString());
         session.onQueryError(e.getMessage().getBytes());
     }
@@ -145,7 +145,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } catch (UnsupportedEncodingException e) {
             errMsg = "UnsupportedEncodingException:" + conn.getCharset();
         }
-        logger.warn(conn.toString() + errMsg);
+        LOGGER.warn(conn.toString() + errMsg);
         if (terminate.get())
             return;
         session.onQueryError(errMsg.getBytes());
@@ -154,7 +154,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     protected void onTerminate() {
         if (autocommit) {
-            this.session.releaseConnection(rrss, logger.isDebugEnabled(), false);
+            this.session.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
         }
     }
 

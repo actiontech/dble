@@ -63,7 +63,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
 
     private final Logger logger = LoggerFactory.getLogger(BytesToBytesMap.class);
 
-    private static final HashMapGrowthStrategy growthStrategy = HashMapGrowthStrategy.DOUBLING;
+    private static final HashMapGrowthStrategy GROWTH_STRATEGY = HashMapGrowthStrategy.DOUBLING;
 
     private final DataNodeMemoryManager dataNodeMemoryManager;
 
@@ -950,7 +950,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
         final int oldCapacity = (int) oldLongArray.size() / 2;
 
         // Allocate the new data structures
-        allocate(Math.min(growthStrategy.nextCapacity(oldCapacity), MAX_CAPACITY));
+        allocate(Math.min(GROWTH_STRATEGY.nextCapacity(oldCapacity), MAX_CAPACITY));
 
         // Re-mask (we don't recompute the hashcode because we stored all 32 bits of it)
         for (int i = 0; i < oldLongArray.size(); i += 2) {

@@ -44,7 +44,7 @@ import java.util.List;
  * @author mycat
  */
 public class MySQLConnectionHandler extends BackendAsyncHandler {
-    private static final Logger logger = LoggerFactory
+    private static final Logger LOGGER = LoggerFactory
             .getLogger(MySQLConnectionHandler.class);
     private static final int RESULT_STATUS_INIT = 0;
     private static final int RESULT_STATUS_HEADER = 1;
@@ -212,7 +212,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private void closeNoHandler() {
         if (!source.isClosedOrQuit()) {
             source.close("no handler");
-            logger.warn("no handler bind in this con " + this + " client:"
+            LOGGER.warn("no handler bind in this con " + this + " client:"
                     + source);
         }
     }
@@ -230,7 +230,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     protected void handleDataError(Exception e) {
-        logger.warn(this.source.toString() + " handle data error:", e);
+        LOGGER.warn(this.source.toString() + " handle data error:", e);
         dataQueue.clear();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)

@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class HavingHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(HavingHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(HavingHandler.class);
 
     public HavingHandler(long id, NonBlockingSession session, Item having) {
         super(id, session);
@@ -77,7 +77,7 @@ public class HavingHandler extends BaseDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("roweof");
+        LOGGER.debug("roweof");
         if (terminate.get())
             return;
         nextHandler.rowEofResponse(data, isLeft, conn);

@@ -50,46 +50,46 @@ import java.util.Map;
 public final class ShowSQLSlow {
 
     private static final int FIELD_COUNT = 4;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("START_TIME", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("START_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c, boolean isClear) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             String user = userStat.getUser();

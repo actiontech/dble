@@ -35,10 +35,10 @@ import java.util.regex.Pattern;
 
 public final class Platform {
 
-    private final static Logger logger = LoggerFactory.getLogger(Platform.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(Platform.class);
     private static final Pattern MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN =
             Pattern.compile("\\s*-XX:MaxDirectMemorySize\\s*=\\s*([0-9]+)\\s*([kKmMgG]?)\\s*$");
-    private static final Unsafe _UNSAFE;
+    private static final Unsafe UNSAFE;
 
     public static final int BYTE_ARRAY_OFFSET;
 
@@ -54,9 +54,9 @@ public final class Platform {
 
     private static final long MAX_DIRECT_MEMORY;
 
-    private static final boolean unaligned;
+    private static final boolean UNALIGNED;
 
-    public static final boolean littleEndian = ByteOrder.nativeOrder()
+    public static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder()
             .equals(ByteOrder.LITTLE_ENDIAN);
 
     static {
@@ -74,7 +74,7 @@ public final class Platform {
             //noinspection DynamicRegexReplaceableByCompiledPattern
             _unaligned = arch.matches("^(i[3-6]86|x86(_64)?|x64|amd64)$");
         }
-        unaligned = _unaligned;
+        UNALIGNED = _unaligned;
         MAX_DIRECT_MEMORY = maxDirectMemory();
 
     }
@@ -134,7 +134,7 @@ public final class Platform {
                     }
                 }
             } catch (Throwable var9) {
-                logger.error(var9.getMessage());
+                LOGGER.error(var9.getMessage());
             }
 
             if (maxDirectMemory <= 0L) {
@@ -160,84 +160,84 @@ public final class Platform {
      * system having unaligned-access capability.
      */
     public static boolean unaligned() {
-        return unaligned;
+        return UNALIGNED;
     }
 
     public static int getInt(Object object, long offset) {
-        return _UNSAFE.getInt(object, offset);
+        return UNSAFE.getInt(object, offset);
     }
 
     public static void putInt(Object object, long offset, int value) {
-        _UNSAFE.putInt(object, offset, value);
+        UNSAFE.putInt(object, offset, value);
     }
 
     public static boolean getBoolean(Object object, long offset) {
-        return _UNSAFE.getBoolean(object, offset);
+        return UNSAFE.getBoolean(object, offset);
     }
 
     public static void putBoolean(Object object, long offset, boolean value) {
-        _UNSAFE.putBoolean(object, offset, value);
+        UNSAFE.putBoolean(object, offset, value);
     }
 
     public static byte getByte(Object object, long offset) {
-        return _UNSAFE.getByte(object, offset);
+        return UNSAFE.getByte(object, offset);
     }
 
     public static void putByte(Object object, long offset, byte value) {
-        _UNSAFE.putByte(object, offset, value);
+        UNSAFE.putByte(object, offset, value);
     }
 
     public static short getShort(Object object, long offset) {
-        return _UNSAFE.getShort(object, offset);
+        return UNSAFE.getShort(object, offset);
     }
 
     public static void putShort(Object object, long offset, short value) {
-        _UNSAFE.putShort(object, offset, value);
+        UNSAFE.putShort(object, offset, value);
     }
 
     public static long getLong(Object object, long offset) {
-        return _UNSAFE.getLong(object, offset);
+        return UNSAFE.getLong(object, offset);
     }
 
     public static void putLong(Object object, long offset, long value) {
-        _UNSAFE.putLong(object, offset, value);
+        UNSAFE.putLong(object, offset, value);
     }
 
     public static float getFloat(Object object, long offset) {
-        return _UNSAFE.getFloat(object, offset);
+        return UNSAFE.getFloat(object, offset);
     }
 
     public static void putFloat(Object object, long offset, float value) {
-        _UNSAFE.putFloat(object, offset, value);
+        UNSAFE.putFloat(object, offset, value);
     }
 
     public static double getDouble(Object object, long offset) {
-        return _UNSAFE.getDouble(object, offset);
+        return UNSAFE.getDouble(object, offset);
     }
 
     public static void putDouble(Object object, long offset, double value) {
-        _UNSAFE.putDouble(object, offset, value);
+        UNSAFE.putDouble(object, offset, value);
     }
 
 
     public static Object getObjectVolatile(Object object, long offset) {
-        return _UNSAFE.getObjectVolatile(object, offset);
+        return UNSAFE.getObjectVolatile(object, offset);
     }
 
     public static void putObjectVolatile(Object object, long offset, Object value) {
-        _UNSAFE.putObjectVolatile(object, offset, value);
+        UNSAFE.putObjectVolatile(object, offset, value);
     }
 
     public static long allocateMemory(long size) {
-        return _UNSAFE.allocateMemory(size);
+        return UNSAFE.allocateMemory(size);
     }
 
     public static void freeMemory(long address) {
-        _UNSAFE.freeMemory(address);
+        UNSAFE.freeMemory(address);
     }
 
     public static long reallocateMemory(long address, long oldSize, long newSize) {
-        long newMemory = _UNSAFE.allocateMemory(newSize);
+        long newMemory = UNSAFE.allocateMemory(newSize);
         copyMemory(null, address, null, newMemory, oldSize);
         freeMemory(address);
         return newMemory;
@@ -273,7 +273,7 @@ public final class Platform {
     }
 
     public static void setMemory(long address, byte value, long size) {
-        _UNSAFE.setMemory(address, size, value);
+        UNSAFE.setMemory(address, size, value);
     }
 
     public static void copyMemory(
@@ -283,7 +283,7 @@ public final class Platform {
         if (dstOffset < srcOffset) {
             while (length > 0) {
                 long size = Math.min(length, UNSAFE_COPY_THRESHOLD);
-                _UNSAFE.copyMemory(src, srcOffset, dst, dstOffset, size);
+                UNSAFE.copyMemory(src, srcOffset, dst, dstOffset, size);
                 length -= size;
                 srcOffset += size;
                 dstOffset += size;
@@ -295,7 +295,7 @@ public final class Platform {
                 long size = Math.min(length, UNSAFE_COPY_THRESHOLD);
                 srcOffset -= size;
                 dstOffset -= size;
-                _UNSAFE.copyMemory(src, srcOffset, dst, dstOffset, size);
+                UNSAFE.copyMemory(src, srcOffset, dst, dstOffset, size);
                 length -= size;
             }
 
@@ -306,7 +306,7 @@ public final class Platform {
      * Raises an exception bypassing compiler checks for checked exceptions.
      */
     public static void throwException(Throwable t) {
-        _UNSAFE.throwException(t);
+        UNSAFE.throwException(t);
     }
 
     /**
@@ -324,15 +324,15 @@ public final class Platform {
         } catch (Throwable cause) {
             unsafe = null;
         }
-        _UNSAFE = unsafe;
+        UNSAFE = unsafe;
 
-        if (_UNSAFE != null) {
-            BYTE_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(byte[].class);
-            SHORT_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(short[].class);
-            INT_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(int[].class);
-            LONG_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(long[].class);
-            FLOAT_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(float[].class);
-            DOUBLE_ARRAY_OFFSET = _UNSAFE.arrayBaseOffset(double[].class);
+        if (UNSAFE != null) {
+            BYTE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
+            SHORT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(short[].class);
+            INT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(int[].class);
+            LONG_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(long[].class);
+            FLOAT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(float[].class);
+            DOUBLE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(double[].class);
         } else {
             BYTE_ARRAY_OFFSET = 0;
             SHORT_ARRAY_OFFSET = 0;
@@ -344,46 +344,46 @@ public final class Platform {
     }
 
     public static long objectFieldOffset(Field field) {
-        return _UNSAFE.objectFieldOffset(field);
+        return UNSAFE.objectFieldOffset(field);
     }
 
     public static void putOrderedLong(Object object, long valueOffset, long initialValue) {
-        _UNSAFE.putOrderedLong(object, valueOffset, initialValue);
+        UNSAFE.putOrderedLong(object, valueOffset, initialValue);
     }
 
     public static void putLongVolatile(Object object, long valueOffset, long value) {
-        _UNSAFE.putLongVolatile(object, valueOffset, value);
+        UNSAFE.putLongVolatile(object, valueOffset, value);
     }
 
     public static boolean compareAndSwapLong(Object object, long valueOffset, long expectedValue, long newValue) {
-        return _UNSAFE.compareAndSwapLong(object, valueOffset, expectedValue, newValue);
+        return UNSAFE.compareAndSwapLong(object, valueOffset, expectedValue, newValue);
     }
 
     public static int arrayBaseOffset(Class aClass) {
-        return _UNSAFE.arrayBaseOffset(aClass);
+        return UNSAFE.arrayBaseOffset(aClass);
     }
 
     public static int arrayIndexScale(Class aClass) {
-        return _UNSAFE.arrayIndexScale(aClass);
+        return UNSAFE.arrayIndexScale(aClass);
     }
 
     public static void putOrderedInt(Object availableBuffer, long bufferAddress, int flag) {
-        _UNSAFE.putOrderedInt(availableBuffer, bufferAddress, flag);
+        UNSAFE.putOrderedInt(availableBuffer, bufferAddress, flag);
     }
 
     public static int getIntVolatile(Object availableBuffer, long bufferAddress) {
-        return _UNSAFE.getIntVolatile(availableBuffer, bufferAddress);
+        return UNSAFE.getIntVolatile(availableBuffer, bufferAddress);
     }
 
     public static Object getObject(Object entries, long l) {
-        return _UNSAFE.getObject(entries, l);
+        return UNSAFE.getObject(entries, l);
     }
 
     public static char getChar(Object baseObj, long l) {
-        return _UNSAFE.getChar(baseObj, l);
+        return UNSAFE.getChar(baseObj, l);
     }
 
     public static void putChar(Object baseObj, long l, char value) {
-        _UNSAFE.putChar(baseObj, l, value);
+        UNSAFE.putChar(baseObj, l, value);
     }
 }

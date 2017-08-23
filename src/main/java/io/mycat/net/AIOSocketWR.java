@@ -9,8 +9,8 @@ import java.nio.channels.CompletionHandler;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AIOSocketWR extends SocketWR {
-    private static final AIOReadHandler aioReadHandler = new AIOReadHandler();
-    private static final AIOWriteHandler aioWriteHandler = new AIOWriteHandler();
+    private static final AIOReadHandler AIO_READ_HANDLER = new AIOReadHandler();
+    private static final AIOWriteHandler AIO_WRITE_HANDLER = new AIOWriteHandler();
     private final AsynchronousSocketChannel channel;
     protected final AbstractConnection con;
     protected final AtomicBoolean writing = new AtomicBoolean(false);
@@ -27,10 +27,10 @@ public class AIOSocketWR extends SocketWR {
         if (theBuffer == null) {
             theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
             con.readBuffer = theBuffer;
-            channel.read(theBuffer, this, aioReadHandler);
+            channel.read(theBuffer, this, AIO_READ_HANDLER);
 
         } else if (theBuffer.hasRemaining()) {
-            channel.read(theBuffer, this, aioReadHandler);
+            channel.read(theBuffer, this, AIO_READ_HANDLER);
         } else {
             throw new java.lang.IllegalArgumentException("full buffer to read ");
         }
@@ -40,7 +40,7 @@ public class AIOSocketWR extends SocketWR {
     private void asynWrite(final ByteBuffer buffer) {
 
         buffer.flip();
-        this.channel.write(buffer, this, aioWriteHandler);
+        this.channel.write(buffer, this, AIO_WRITE_HANDLER);
 
 
     }

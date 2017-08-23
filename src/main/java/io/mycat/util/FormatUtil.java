@@ -41,9 +41,9 @@ public final class FormatUtil {
     // 左对齐格式化字符串
     public static final int ALIGN_LEFT = 1;
 
-    private static final char defaultSplitChar = ' ';
+    private static final char DEFAULT_SPLIT_CHAR = ' ';
 
-    private static final String[] timeFormat = new String[]{"d ", "h ", "m ", "s ", "ms"};
+    private static final String[] TIME_FORMAT = new String[]{"d ", "h ", "m ", "s ", "ms"};
 
     /**
      * 格式化后返回的字符串
@@ -53,7 +53,7 @@ public final class FormatUtil {
      * @return String
      */
     public static String format(String s, int fillLength) {
-        return format(s, fillLength, defaultSplitChar, ALIGN_LEFT);
+        return format(s, fillLength, DEFAULT_SPLIT_CHAR, ALIGN_LEFT);
     }
 
     /**
@@ -64,7 +64,7 @@ public final class FormatUtil {
      * @return String
      */
     public static String format(int i, int fillLength) {
-        return format(Integer.toString(i), fillLength, defaultSplitChar, ALIGN_RIGHT);
+        return format(Integer.toString(i), fillLength, DEFAULT_SPLIT_CHAR, ALIGN_RIGHT);
     }
 
     /**
@@ -75,7 +75,7 @@ public final class FormatUtil {
      * @return String
      */
     public static String format(long l, int fillLength) {
-        return format(Long.toString(l), fillLength, defaultSplitChar, ALIGN_RIGHT);
+        return format(Long.toString(l), fillLength, DEFAULT_SPLIT_CHAR, ALIGN_RIGHT);
     }
 
     /**
@@ -139,7 +139,7 @@ public final class FormatUtil {
         StringBuilder buf = new StringBuilder();
         int validLength = la.length - index;
         for (int i = 0; (i < validLength && i < precision); i++) {
-            buf.append(la[index]).append(timeFormat[index]);
+            buf.append(la[index]).append(TIME_FORMAT[index]);
             index++;
         }
         return buf.toString();

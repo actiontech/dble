@@ -18,41 +18,41 @@ import java.util.Map;
 public final class ShowWhiteHost {
 
     private static final int FIELD_COUNT = 2;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("IP", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("IP", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
 
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
 
         Map<String, List<UserConfig>> map = MycatServer.getInstance().getConfig().getFirewall().getWhitehost();
         for (Map.Entry<String, List<UserConfig>> entry : map.entrySet()) {

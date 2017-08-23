@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author ActionTech
  */
 public class DirectGroupByHandler extends OwnThreadDMLHandler {
-    private static final Logger logger = Logger.getLogger(DirectGroupByHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(DirectGroupByHandler.class);
 
     private BlockingQueue<RowDataPacket> queue;
 
@@ -172,20 +172,20 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
-            logger.warn(msg, e);
+            LOGGER.warn(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }
 
     private void recordElapsedTime(String prefix) {
-        if (logger.isInfoEnabled()) {
-            logger.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
         }
     }
 
     @Override
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        logger.debug("rowResponse");
+        LOGGER.debug("rowResponse");
         if (terminate.get())
             return true;
         hasFirstRow.compareAndSet(false, true);
@@ -199,7 +199,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("roweof");
+        LOGGER.debug("roweof");
         if (terminate.get())
             return;
         try {
@@ -278,7 +278,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      * @return
      */
     protected void prepare_sum_aggregators(List<ItemSum> funcs, boolean need_distinct) {
-        logger.info("prepare_sum_aggregators");
+        LOGGER.info("prepare_sum_aggregators");
         for (ItemSum func : funcs) {
             func.setAggregator(need_distinct && func.has_with_distinct()
                             ? Aggregator.AggregatorType.DISTINCT_AGGREGATOR : Aggregator.AggregatorType.SIMPLE_AGGREGATOR,
@@ -296,7 +296,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      */
 
     protected boolean setup_sum_funcs(List<ItemSum> funcs) {
-        logger.info("setup_sum_funcs");
+        LOGGER.info("setup_sum_funcs");
         for (ItemSum func : funcs) {
             if (func.aggregatorSetup())
                 return true;

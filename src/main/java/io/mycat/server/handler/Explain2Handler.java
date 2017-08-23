@@ -45,15 +45,15 @@ import java.nio.ByteBuffer;
  */
 public class Explain2Handler {
 
-    private static final Logger logger = LoggerFactory.getLogger(Explain2Handler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Explain2Handler.class);
     private static final RouteResultsetNode[] EMPTY_ARRAY = new RouteResultsetNode[1];
     private static final int FIELD_COUNT = 2;
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
 
     static {
-        fields[0] = PacketUtil.getField("SQL",
+        FIELDS[0] = PacketUtil.getField("SQL",
                 Fields.FIELD_TYPE_VAR_STRING);
-        fields[1] = PacketUtil.getField("MSG",
+        FIELDS[1] = PacketUtil.getField("MSG",
                 Fields.FIELD_TYPE_VAR_STRING);
     }
 
@@ -80,7 +80,7 @@ public class Explain2Handler {
             SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
             singleNodeHandler.execute();
         } catch (Exception e) {
-            logger.error(e.getMessage(), e.getCause());
+            LOGGER.error(e.getMessage(), e.getCause());
             showerror(stmt, c, e.getMessage());
         }
     }
@@ -93,7 +93,7 @@ public class Explain2Handler {
         buffer = header.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             field.packetId = ++packetId;
             buffer = field.write(buffer, c, true);
         }

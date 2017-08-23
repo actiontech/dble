@@ -50,7 +50,7 @@ public class MycatPrivileges implements FrontendPrivileges {
     private static final Logger ALARM = LoggerFactory.getLogger("alarm");
 
     private boolean check = false;
-    private final static ThreadLocal<WallProvider> contextLocal = new ThreadLocal<WallProvider>();
+    private final static ThreadLocal<WallProvider> CONTEXT_LOCAL = new ThreadLocal<WallProvider>();
 
     public static MycatPrivileges instance() {
         return instance;
@@ -174,18 +174,18 @@ public class MycatPrivileges implements FrontendPrivileges {
 
         boolean isPassed = true;
 
-        if (contextLocal.get() == null) {
+        if (CONTEXT_LOCAL.get() == null) {
             FirewallConfig firewallConfig = MycatServer.getInstance().getConfig().getFirewall();
             if (firewallConfig != null) {
                 if (firewallConfig.isCheck()) {
-                    contextLocal.set(firewallConfig.getProvider());
+                    CONTEXT_LOCAL.set(firewallConfig.getProvider());
                     check = true;
                 }
             }
         }
 
         if (check) {
-            WallCheckResult result = contextLocal.get().check(sql);
+            WallCheckResult result = CONTEXT_LOCAL.get().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
                 ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:"

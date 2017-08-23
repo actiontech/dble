@@ -29,16 +29,16 @@ public class MYLOCALES {
             new MYLOCALEERRMSGS("swedish", null), new MYLOCALEERRMSGS("ukrainian", null),
             new MYLOCALEERRMSGS(null, null)};
 
-    public static final String NullS = MySQLcom.Nulls;
+    public static final String NULL_S = MySQLcom.NULLS;
 
     /***** LOCALE BEGIN en_US: English - United States *****/
     static String my_locale_month_names_en_US[] = {"January", "February", "March", "April", "May", "June", "July",
-            "August", "September", "October", "November", "December", NullS};
+            "August", "September", "October", "November", "December", NULL_S};
     static String my_locale_ab_month_names_en_US[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
-            "Oct", "Nov", "Dec", NullS};
+            "Oct", "Nov", "Dec", NULL_S};
     static String my_locale_day_names_en_US[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
-            "Sunday", NullS};
-    static String my_locale_ab_day_names_en_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NullS};
+            "Sunday", NULL_S};
+    static String my_locale_ab_day_names_en_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
     static TYPELIB my_locale_typelib_month_names_en_US = new TYPELIB(my_locale_month_names_en_US.length - 1, "",
             my_locale_month_names_en_US, null);
     static TYPELIB my_locale_typelib_ab_month_names_en_US = new TYPELIB(my_locale_ab_month_names_en_US.length - 1, "",
@@ -47,7 +47,7 @@ public class MYLOCALES {
             my_locale_day_names_en_US, null);
     static TYPELIB my_locale_typelib_ab_day_names_en_US = new TYPELIB((my_locale_ab_day_names_en_US.length) - 1, "",
             my_locale_ab_day_names_en_US, null);
-    public static final MYLOCALE my_locale_en_US = new MYLOCALE(0, "en_US", "English - United States", true,
+    public static final MYLOCALE MY_LOCALE_EN_US = new MYLOCALE(0, "en_US", "English - United States", true,
             my_locale_typelib_month_names_en_US, my_locale_typelib_ab_month_names_en_US,
             my_locale_typelib_day_names_en_US, my_locale_typelib_ab_day_names_en_US, 9, 9,
             '.', /*

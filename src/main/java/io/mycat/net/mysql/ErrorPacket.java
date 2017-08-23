@@ -86,7 +86,7 @@ public class ErrorPacket extends MySQLPacket {
 
     public byte[] toBytes() {
         int size = calcPacketSize();
-        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + packetHeaderSize);
+        ByteBuffer buffer = MycatServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);
@@ -107,7 +107,7 @@ public class ErrorPacket extends MySQLPacket {
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, MySQLPacket.packetHeaderSize + size,
+        buffer = c.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE + size,
                 writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);

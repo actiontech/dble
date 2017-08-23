@@ -51,71 +51,71 @@ import java.util.Map;
 public class ShowDatasourceSyn {
 
     private static final int FIELD_COUNT = 12;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MASTER_HOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MASTER_PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SLAVE_IO_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SLAVE_IO_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SLAVE_SQL_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SLAVE_SQL_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("SLAVE_IO_STATE", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("SLAVE_IO_STATE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("CONNECT_RETRY", Fields.FIELD_TYPE_LONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("CONNECT_RETRY", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("LAST_IO_ERROR", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LAST_IO_ERROR", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        eof.packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void response(ManagerConnection c) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
 
         for (RowDataPacket row : getRows(c.getCharset())) {
             row.packetId = ++packetId;

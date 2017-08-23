@@ -41,7 +41,7 @@ import java.util.List;
  */
 public final class KillConnection {
 
-    private static final Logger logger = LoggerFactory.getLogger(KillConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KillConnection.class);
 
     public static void response(String stmt, int offset, ManagerConnection mc) {
         int count = 0;
@@ -49,7 +49,7 @@ public final class KillConnection {
         if (list != null) {
             for (NIOConnection c : list) {
                 StringBuilder s = new StringBuilder();
-                logger.warn(s.append(c).append("killed by manager").toString());
+                LOGGER.warn(s.append(c).append("killed by manager").toString());
                 c.close("kill by manager");
                 count++;
             }

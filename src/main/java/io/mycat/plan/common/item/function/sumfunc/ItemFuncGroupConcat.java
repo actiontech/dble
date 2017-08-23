@@ -136,7 +136,7 @@ public class ItemFuncGroupConcat extends ItemSum {
             try {
                 return new BigDecimal(res);
             } catch (Exception e) {
-                logger.info("group_concat val_real() convert exception, string value is: " + res);
+                LOGGER.info("group_concat val_real() convert exception, string value is: " + res);
                 return BigDecimal.ZERO;
             }
     }
@@ -150,7 +150,7 @@ public class ItemFuncGroupConcat extends ItemSum {
             try {
                 return new BigInteger(res);
             } catch (Exception e) {
-                logger.info("group_concat val_int() convert exception, string value is: " + res);
+                LOGGER.info("group_concat val_int() convert exception, string value is: " + res);
                 return BigInteger.ZERO;
             }
     }

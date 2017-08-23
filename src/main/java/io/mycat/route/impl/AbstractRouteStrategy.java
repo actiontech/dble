@@ -26,7 +26,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         /*
          * 优化debug loaddata输出cache的日志会极大降低性能
          */
-        if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.loadDataHint)) {
+        if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.LOAD_DATA_HINT)) {
             rrs.setCacheAble(false);
         }
 

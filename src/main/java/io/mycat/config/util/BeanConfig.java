@@ -33,7 +33,7 @@ import java.util.Map;
  * @author mycat
  */
 public class BeanConfig implements Cloneable {
-    private static final ReflectionProvider refProvider = new ReflectionProvider();
+    private static final ReflectionProvider REF_PROVIDER = new ReflectionProvider();
 
     private String name;
     private String className;
@@ -66,7 +66,7 @@ public class BeanConfig implements Cloneable {
     public Object create(boolean initEarly) throws IllegalAccessException, InvocationTargetException {
         Object obj = null;
         try {
-            obj = refProvider.newInstance(Class.forName(className));
+            obj = REF_PROVIDER.newInstance(Class.forName(className));
         } catch (ClassNotFoundException e) {
             throw new ConfigException(e);
         }

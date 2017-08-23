@@ -33,68 +33,68 @@ public class ShowSQLSumUser {
     private static DecimalFormat decimalFormat = new DecimalFormat("0.00");
 
     private static final int FIELD_COUNT = 11;
-    private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket eof = new EOFPacket();
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
 
     static {
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        HEADER.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("R", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("R", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("W", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("W", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("R%", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("R%", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("MAX", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("MAX", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
 
         //22-06h, 06-13h, 13-18h, 18-22h
-        fields[i] = PacketUtil.getField("TIME_COUNT", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("TIME_COUNT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
         //<10ms, 10ms-200ms, 200ms-1s, >1s
-        fields[i] = PacketUtil.getField("TTL_COUNT", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("TTL_COUNT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("LAST_TIME", Fields.FIELD_TYPE_LONGLONG);
-        fields[i++].packetId = ++packetId;
-        eof.packetId = ++packetId;
+        FIELDS[i] = PacketUtil.getField("LAST_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].packetId = ++packetId;
+        EOF.packetId = ++packetId;
     }
 
     public static void execute(ManagerConnection c, boolean isClear) {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c, true);
+        buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c, true);
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = eof.packetId;
+        byte packetId = EOF.packetId;
         int i = 0;
 
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();

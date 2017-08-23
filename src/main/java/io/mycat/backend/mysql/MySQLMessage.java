@@ -311,13 +311,13 @@ public class MySQLMessage {
         return new StringBuilder().append(Arrays.toString(data)).toString();
     }
 
-    private static final ThreadLocal<Calendar> localCalendar = new ThreadLocal<Calendar>();
+    private static final ThreadLocal<Calendar> LOCAL_CALENDAR = new ThreadLocal<Calendar>();
 
     private static final Calendar getLocalCalendar() {
-        Calendar cal = localCalendar.get();
+        Calendar cal = LOCAL_CALENDAR.get();
         if (cal == null) {
             cal = Calendar.getInstance();
-            localCalendar.set(cal);
+            LOCAL_CALENDAR.set(cal);
         }
         return cal;
     }

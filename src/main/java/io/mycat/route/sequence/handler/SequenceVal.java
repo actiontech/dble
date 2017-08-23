@@ -44,7 +44,7 @@ public class SequenceVal {
         long start = System.currentTimeMillis();
         long end = start + 10 * 1000;
         while (System.currentTimeMillis() < end) {
-            if (dbretVal == IncrSequenceMySQLHandler.errSeqResult) {
+            if (dbretVal == IncrSequenceMySQLHandler.ERR_SEQ_RESULT) {
                 throw new java.lang.RuntimeException(
                         "sequnce not found in db table ");
             } else if (dbretVal != null) {

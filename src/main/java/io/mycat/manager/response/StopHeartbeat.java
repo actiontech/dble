@@ -43,7 +43,7 @@ import java.util.Map;
  */
 public final class StopHeartbeat {
 
-    private static final Logger logger = LoggerFactory.getLogger(StopHeartbeat.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StopHeartbeat.class);
 
     public static void execute(String stmt, ManagerConnection c) {
         int count = 0;
@@ -58,7 +58,7 @@ public final class StopHeartbeat {
                     ++count;
                     StringBuilder s = new StringBuilder();
                     s.append(dn.getHostName()).append(" stop heartbeat '");
-                    logger.warn(s.append(FormatUtil.formatTime(time, 3)).append("' by manager.").toString());
+                    LOGGER.warn(s.append(FormatUtil.formatTime(time, 3)).append("' by manager.").toString());
                 }
             }
         }

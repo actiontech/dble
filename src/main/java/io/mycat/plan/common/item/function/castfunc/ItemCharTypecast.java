@@ -52,7 +52,7 @@ public class ItemCharTypecast extends ItemStrFunc {
             try {
                 res = new String(res.getBytes(), CharsetUtil.getJavaCharset(charSetName));
             } catch (UnsupportedEncodingException e) {
-                logger.warn("convert using charset exception", e);
+                LOGGER.warn("convert using charset exception", e);
                 nullValue = true;
                 return null;
             }

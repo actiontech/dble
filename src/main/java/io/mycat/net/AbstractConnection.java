@@ -534,7 +534,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     protected int getPacketLength(ByteBuffer buffer, int offset) {
-        int headerSize = MySQLPacket.packetHeaderSize;
+        int headerSize = MySQLPacket.PACKET_HEADER_SIZE;
         if (isSupportCompress()) {
             headerSize = 7;
         }

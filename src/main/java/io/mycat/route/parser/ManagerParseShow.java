@@ -71,7 +71,7 @@ public final class ManagerParseShow {
     public static final int WHITE_HOST = 43;
     public static final int WHITE_HOST_SET = 44;
     public static final int DIRECTMEMORY_TOTAL = 45;
-    public static final int DIRECTMEMORY_DETAILl = 46;
+    public static final int DIRECTMEMORY_DETAIL = 46;
     public static final int BINLOG_STATUS = 47;
 
     public static int parse(String stmt, int offset) {
@@ -325,7 +325,7 @@ public final class ManagerParseShow {
                         returnValue = DIRECTMEMORY_TOTAL;
                         break;
                     case '2':
-                        returnValue = DIRECTMEMORY_DETAILl;
+                        returnValue = DIRECTMEMORY_DETAIL;
                         break;
                     default:
                         return OTHER;

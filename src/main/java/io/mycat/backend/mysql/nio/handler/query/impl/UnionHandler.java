@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class UnionHandler extends BaseDMLHandler {
-    private static final Logger logger = Logger.getLogger(UnionHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(UnionHandler.class);
 
     public UnionHandler(long id, NonBlockingSession session, List<Item> sels, int nodecount) {
         super(id, session);
@@ -73,7 +73,7 @@ public class UnionHandler extends BaseDMLHandler {
             }
         } catch (Exception e) {
             String msg = "Union field merge error, " + e.getLocalizedMessage();
-            logger.warn(msg, e);
+            LOGGER.warn(msg, e);
             conFieldSend.signalAll();
             session.onQueryError(msg.getBytes());
         } finally {

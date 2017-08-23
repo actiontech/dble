@@ -39,8 +39,8 @@ public class DataHostConfig {
     public static final int DEFAULT_SWITCH_DS = 1;
     public static final int SYN_STATUS_SWITCH_DS = 2;
     public static final int CLUSTER_STATUS_SWITCH_DS = 3;
-    private static final Pattern pattern = Pattern.compile("\\s*show\\s+slave\\s+status\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern patternCluster = Pattern.compile("\\s*show\\s+status\\s+like\\s+'wsrep%'", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("\\s*show\\s+slave\\s+status\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_CLUSTER = Pattern.compile("\\s*show\\s+status\\s+like\\s+'wsrep%'", Pattern.CASE_INSENSITIVE);
     private String name;
     private int maxCon = 128;// 保持后端数据通道的默认最大值
     private int minCon = 10;
@@ -124,11 +124,11 @@ public class DataHostConfig {
 
     public void setHearbeatSQL(String heartbeatSQL) {
         this.hearbeatSQL = heartbeatSQL;
-        Matcher matcher = pattern.matcher(heartbeatSQL);
+        Matcher matcher = PATTERN.matcher(heartbeatSQL);
         if (matcher.find()) {
             isShowSlaveSql = true;
         }
-        Matcher matcher2 = patternCluster.matcher(heartbeatSQL);
+        Matcher matcher2 = PATTERN_CLUSTER.matcher(heartbeatSQL);
         if (matcher2.find()) {
             isShowClusterSql = true;
         }

@@ -115,6 +115,7 @@ public class ArgComparator {
                 //
             }
         } else if (type == ItemResult.DECIMAL_RESULT) {
+            //
         } else if (type == ItemResult.REAL_RESULT) {
             if (a.decimals < Item.NOT_FIXED_DEC && b.decimals < Item.NOT_FIXED_DEC) {
                 precision = 5 / Math.pow(10, (Math.max(a.decimals, b.decimals) + 1));
@@ -123,7 +124,6 @@ public class ArgComparator {
                 else if (func instanceof CompareEReal)
                     func = new CompareERealFixed();
             }
-        } else {
         }
         return 0;
     }

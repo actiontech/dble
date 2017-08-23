@@ -54,7 +54,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
             FieldTypes i = fieldType();
             if (i == FieldTypes.MYSQL_TYPE_TIME || i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
                 return valRealFromDecimal();
-            } else {
             }
             String res = strOp();
             if (res == null)
@@ -66,7 +65,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
                     LOGGER.error(res + " to BigDecimal error!", e);
                 }
             }
-        } else {
         }
         return BigDecimal.ZERO;
     }
@@ -90,7 +88,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
                 return new BigDecimal(valIntFromDatetime()).toBigInteger();
             } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
                 return new BigDecimal(valIntFromTime()).toBigInteger();
-            } else {
             }
             String res = strOp();
             if (res == null)
@@ -100,7 +97,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
             } catch (Exception e) {
                 LOGGER.error(res + " to BigInteger error!", e);
             }
-        } else {
         }
         return BigInteger.ZERO;
     }
@@ -123,7 +119,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
                 return valDecimalFromDate();
             } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
                 return valDecimalFromTime();
-            } else {
             }
             String res = strOp();
             if (res == null)
@@ -133,7 +128,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
             } catch (Exception e) {
                 val = null;
             }
-        } else {
         }
         return val;
     }
@@ -163,10 +157,8 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
                 return valStringFromDate();
             } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
                 return valStringFromTime();
-            } else {
             }
             return strOp();
-        } else {
         }
         return str;
     }

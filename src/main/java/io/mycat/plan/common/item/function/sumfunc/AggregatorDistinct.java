@@ -57,10 +57,8 @@ public class AggregatorDistinct extends Aggregator {
     public void clear() {
         endupDone = false;
         distinctRows.clear();
-        if (itemSum.sumType() == ItemSum.Sumfunctype.COUNT_FUNC ||
-                itemSum.sumType() == ItemSum.Sumfunctype.COUNT_DISTINCT_FUNC) {
-
-        } else {
+        if (!(itemSum.sumType() == ItemSum.Sumfunctype.COUNT_FUNC ||
+                itemSum.sumType() == ItemSum.Sumfunctype.COUNT_DISTINCT_FUNC)) {
             itemSum.nullValue = true;
         }
     }

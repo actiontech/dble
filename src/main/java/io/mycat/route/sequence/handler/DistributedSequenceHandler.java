@@ -211,6 +211,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
 
     private long blockUntilNextMillis(long time) {
         while (System.currentTimeMillis() == time) {
+            //block
         }
         return System.currentTimeMillis();
     }

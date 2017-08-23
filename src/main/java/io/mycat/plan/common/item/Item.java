@@ -283,7 +283,6 @@ public abstract class Item {
             return valInt();
         } else if (type == ItemResult.STRING_RESULT) {
             return valStr();
-        } else {
         }
         return null;
     }

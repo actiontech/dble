@@ -531,6 +531,7 @@ public final class StructureMeta {
 
             private void maybeForceBuilderInitialization() {
                 if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                    //do nothing
                 }
             }
 
@@ -1808,6 +1809,7 @@ public final class StructureMeta {
 
             private void maybeForceBuilderInitialization() {
                 if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                    //do nothing
                 }
             }
 

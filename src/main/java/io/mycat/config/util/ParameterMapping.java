@@ -106,6 +106,7 @@ public class ParameterMapping {
                 map.put(key, value);
             }
         } else if (bean instanceof List) {
+            //do nothing
         } else {
             mapping(bean, config.getParams());
         }

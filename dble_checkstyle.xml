@@ -78,9 +78,9 @@
         <module name="RedundantModifier"/>
 
         <!-- Checks for blocks. -->
-        <!--<module name="EmptyBlock">-->
-        <!--<property name="option" value="text"/>-->
-        <!--</module>-->
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
         <!--<module name="LeftCurly"/>-->
         <!--<module name="RightCurly"/>-->
         <!--<module name="EmptyCatchBlock">-->

@@ -465,6 +465,7 @@ public class MyTime {
      */
                 status.nanoseconds = 100 * (chars[strindex++] - '0');
                 for (; strindex != end && Ctype.isDigit(chars[strindex]); strindex++) {
+                    //block
                 }
             }
         }
@@ -596,6 +597,7 @@ public class MyTime {
                 status.fractionalDigits = 6;
                 status.nanoseconds = 100 * (int) (chars[pos - 1] - '0');
                 for (; pos != end && Ctype.isDigit(chars[pos]); pos++) {
+                    //block
                 }
             }
             date[4] = value;

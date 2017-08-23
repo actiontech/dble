@@ -319,8 +319,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             } else if (parent instanceof SQLDeleteStatement) {
                 SQLDeleteStatement delete = (SQLDeleteStatement) parent;
                 return delete.getTableName().getSimpleName();
-            } else {
-
             }
         }
         return "";

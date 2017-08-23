@@ -188,8 +188,8 @@ public final class ServerParseSelect {
             default:
                 if (CharTypes.isIdentifierChar(stmt.charAt(offset))) {
                     for (; offset < stmt.length() &&
-                            CharTypes.isIdentifierChar(stmt.charAt(offset)); ++offset) {
-                    }
+                            CharTypes.isIdentifierChar(stmt.charAt(offset)); ++offset)
+                        ;
                     return offset;
                 }
         }

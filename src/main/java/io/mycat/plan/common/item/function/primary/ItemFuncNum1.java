@@ -25,11 +25,12 @@ public abstract class ItemFuncNum1 extends ItemFuncNumhybrid {
     public void findNumType() {
         ItemResult i = hybridType = args.get(0).resultType();
         if (i == ItemResult.INT_RESULT) {
+            //do nothing
         } else if (i == ItemResult.STRING_RESULT || i == ItemResult.REAL_RESULT) {
             hybridType = ItemResult.REAL_RESULT;
             maxLength = floatLength(decimals);
-
         } else if (i == ItemResult.DECIMAL_RESULT) {
+            //do nothing
         } else {
             assert (false);
         }

@@ -32,9 +32,6 @@ public class MycatPropertyConf {
             throw new NullPointerException("null value for " + key);
         }
 
-        if (!silent) {
-        }
-
         settings.put(key, value);
         return this;
     }

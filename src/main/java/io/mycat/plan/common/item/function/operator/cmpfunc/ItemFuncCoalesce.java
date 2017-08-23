@@ -38,15 +38,13 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
         cachedFieldType = MySQLcom.aggFieldType(args, 0, args.size());
         hybridType = MySQLcom.aggResultType(args, 0, args.size());
         if (hybridType == ItemResult.STRING_RESULT) {
+            //do nothing
         } else if (hybridType == ItemResult.DECIMAL_RESULT) {
             countDecimalLength();
-
         } else if (hybridType == ItemResult.REAL_RESULT) {
             countRealLength();
-
         } else if (hybridType == ItemResult.INT_RESULT) {
             decimals = 0;
-
         } else {
             assert (false);
         }

@@ -78,7 +78,6 @@ public class HandlerBuilder {
             return new QueryNodeHandlerBuilder(session, (QueryNode) node, this);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
             return new NoNameNodeHandlerBuilder(session, (NoNameNode) node, this);
-        } else {
         }
         throw new RuntimeException("not supported tree node type:" + node.type());
     }

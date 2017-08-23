@@ -38,8 +38,7 @@ public final class ParseUtil {
 
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
-        while (stmt.charAt(++offset) == ' ') {
-        }
+        while (stmt.charAt(++offset) == ' ') ;
         if (offset != -1 && stmt.length() > offset) {
             String txt = stmt.substring(offset).trim();
             return txt;

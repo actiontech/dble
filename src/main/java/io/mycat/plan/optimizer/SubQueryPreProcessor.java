@@ -60,12 +60,6 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static class SubQueryAndFilter {
-
-        PlanNode query; // 子查询可能会改变query节点为join node
-        Item filter; // 子查询带上来的filter
-    }
-
     private static SubQueryAndFilter buildSubQuery(SubQueryAndFilter qtn, Item filter) {
         if (filter == null)
             return qtn;
@@ -205,6 +199,12 @@ public final class SubQueryPreProcessor {
             return result;
         }
         return qtn;
+    }
+
+    private static class SubQueryAndFilter {
+
+        PlanNode query; // 子查询可能会改变query节点为join node
+        Item filter; // 子查询带上来的filter
     }
 
 }

@@ -45,10 +45,6 @@ public final class UnsafeExternalRowSorter {
     private final RecordComparator recordComparator;
 
 
-    public abstract static class PrefixComputer {
-        protected abstract long computePrefix(UnsafeRow row) throws UnsupportedEncodingException;
-    }
-
     public UnsafeExternalRowSorter(DataNodeMemoryManager dataNodeMemoryManager,
                                    @Nonnull MyCatMemory memory,
                                    StructType schema,
@@ -162,7 +158,6 @@ public final class UnsafeExternalRowSorter {
         }
     }
 
-
     public Iterator<UnsafeRow> sort(Iterator<UnsafeRow> inputIterator) throws IOException {
 
         while (inputIterator.hasNext()) {
@@ -175,7 +170,6 @@ public final class UnsafeExternalRowSorter {
     public UnsafeSorterIterator getRowUnsafeSorterIterator() throws IOException {
         return sorter.getSortedIterator();
     }
-
 
     public Iterator<UnsafeRow> mergerSort(List<UnsafeSorterIterator> list) throws IOException {
 
@@ -238,14 +232,12 @@ public final class UnsafeExternalRowSorter {
         }
     }
 
-
-
     private static final class RowComparator extends RecordComparator {
+
         private final int numFields;
         private final UnsafeRow row1;
         private final UnsafeRow row2;
         private final StructType schema;
-
         RowComparator(StructType schema) {
 
             assert schema.length() >= 0;
@@ -304,5 +296,10 @@ public final class UnsafeExternalRowSorter {
             }
             return cmp;
         }
+
+    }
+
+    public abstract static class PrefixComputer {
+        protected abstract long computePrefix(UnsafeRow row) throws UnsupportedEncodingException;
     }
 }

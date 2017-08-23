@@ -34,37 +34,6 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     private static final long serialVersionUID = -387911632671998426L;
 
     /**
-     * Doubly-linked list node class
-     */
-    static final class Node<E> {
-        /**
-         * The item, or null if this node has been removed.
-         */
-
-        E item;
-
-        /**
-         * One of: - the real predecessor Node - this Node, meaning the
-         * predecessor is tail - null, meaning there is no predecessor
-         */
-
-        Node<E> prev;
-
-        /**
-         * One of: - the real successor Node - this Node, meaning the successor
-         * is head - null, meaning there is no successor
-         */
-
-        Node<E> next;
-
-        Node(E x, Node<E> p, Node<E> n) {
-            item = x;
-            prev = p;
-            next = n;
-        }
-    }
-
-    /**
      * Pointer to first node
      */
     transient Node<E> first;
@@ -1001,6 +970,49 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     }
 
     /**
+     * Save the state of this deque to a stream (that is, serialize it).
+     *
+     * @param s the stream
+     * @serialData The capacity (int), followed by elements (each an
+     * <tt>Object</tt>) in the proper order, followed by a null
+     */
+    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            // Write out capacity and any hidden stuff
+            s.defaultWriteObject();
+            // Write out all elements in the proper order.
+            for (Node<E> p = first; p != null; p = p.next)
+                s.writeObject(p.item);
+            // Use trailing null as sentinel
+            s.writeObject(null);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Reconstitute this deque from a stream (that is, deserialize it).
+     *
+     * @param s the stream
+     */
+    private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
+        s.defaultReadObject();
+        count = 0;
+        first = null;
+        last = null;
+        // Read in all elements and place in queue
+        for (; ; ) {
+            // @SuppressWarnings("unchecked")
+            E item = (E) s.readObject();
+            if (item == null)
+                break;
+            add(item);
+        }
+    }
+
+    /**
      * Base class for Iterators for LinkedBlockingDeque
      */
     private abstract class AbstractItr implements Iterator<E> {
@@ -1121,45 +1133,33 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     }
 
     /**
-     * Save the state of this deque to a stream (that is, serialize it).
-     *
-     * @param s the stream
-     * @serialData The capacity (int), followed by elements (each an
-     * <tt>Object</tt>) in the proper order, followed by a null
+     * Doubly-linked list node class
      */
-    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
-        try {
-            // Write out capacity and any hidden stuff
-            s.defaultWriteObject();
-            // Write out all elements in the proper order.
-            for (Node<E> p = first; p != null; p = p.next)
-                s.writeObject(p.item);
-            // Use trailing null as sentinel
-            s.writeObject(null);
-        } finally {
-            lock.unlock();
-        }
-    }
+    static final class Node<E> {
+        /**
+         * The item, or null if this node has been removed.
+         */
 
-    /**
-     * Reconstitute this deque from a stream (that is, deserialize it).
-     *
-     * @param s the stream
-     */
-    private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
-        s.defaultReadObject();
-        count = 0;
-        first = null;
-        last = null;
-        // Read in all elements and place in queue
-        for (; ; ) {
-            // @SuppressWarnings("unchecked")
-            E item = (E) s.readObject();
-            if (item == null)
-                break;
-            add(item);
+        E item;
+
+        /**
+         * One of: - the real predecessor Node - this Node, meaning the
+         * predecessor is tail - null, meaning there is no predecessor
+         */
+
+        Node<E> prev;
+
+        /**
+         * One of: - the real successor Node - this Node, meaning the successor
+         * is head - null, meaning there is no successor
+         */
+
+        Node<E> next;
+
+        Node(E x, Node<E> p, Node<E> n) {
+            item = x;
+            prev = p;
+            next = n;
         }
     }
 }

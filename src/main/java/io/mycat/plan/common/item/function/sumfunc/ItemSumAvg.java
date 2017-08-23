@@ -38,18 +38,6 @@ public class ItemSumAvg extends ItemSumSum {
         count = 0;
     }
 
-    private static class AvgAggData extends AggData {
-
-        private static final long serialVersionUID = -1831762635995954526L;
-        public long count;
-
-        AvgAggData(BigDecimal sum, long count, boolean isNull) {
-            super(sum, isNull);
-            this.count = count;
-        }
-
-    }
-
     @Override
     public Object getTransAggObj() {
         AvgAggData aggData = new AvgAggData(sum, count, nullValue);
@@ -157,5 +145,17 @@ public class ItemSumAvg extends ItemSumSum {
         } else {
             return new ItemSumAvg(calArgs, hasWithDistinct(), isPushDown, fields);
         }
+    }
+
+    private static class AvgAggData extends AggData {
+
+        private static final long serialVersionUID = -1831762635995954526L;
+        public long count;
+
+        AvgAggData(BigDecimal sum, long count, boolean isNull) {
+            super(sum, isNull);
+            this.count = count;
+        }
+
     }
 }

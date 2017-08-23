@@ -45,6 +45,17 @@ public abstract class ItemSumBit extends ItemSumInt {
         super.cleanup();
     }
 
+    @Override
+    public Object getTransAggObj() {
+        AggData data = new AggData(bits, nullValue);
+        return data;
+    }
+
+    @Override
+    public int getTransSize() {
+        return 15;
+    }
+
     protected static class AggData implements Serializable {
 
         private static final long serialVersionUID = -5952130248997591472L;
@@ -57,17 +68,6 @@ public abstract class ItemSumBit extends ItemSumInt {
             this.isNull = isNull;
         }
 
-    }
-
-    @Override
-    public Object getTransAggObj() {
-        AggData data = new AggData(bits, nullValue);
-        return data;
-    }
-
-    @Override
-    public int getTransSize() {
-        return 15;
     }
 
 }

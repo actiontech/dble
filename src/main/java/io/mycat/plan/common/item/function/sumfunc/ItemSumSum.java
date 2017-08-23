@@ -50,20 +50,6 @@ public class ItemSumSum extends ItemSumNum {
         sum = BigDecimal.ZERO;
     }
 
-    protected static class AggData implements Serializable {
-
-        private static final long serialVersionUID = 6951860386146676307L;
-
-        public BigDecimal bd;
-        public boolean isNull;
-
-        public AggData(BigDecimal bd, boolean isNull) {
-            this.bd = bd;
-            this.isNull = isNull;
-        }
-
-    }
-
     @Override
     public Object getTransAggObj() {
         AggData data = new AggData(sum, nullValue);
@@ -162,5 +148,19 @@ public class ItemSumSum extends ItemSumNum {
         } else {
             return new ItemSumSum(calArgs, hasWithDistinct(), isPushDown, fields);
         }
+    }
+
+    protected static class AggData implements Serializable {
+
+        private static final long serialVersionUID = 6951860386146676307L;
+
+        public BigDecimal bd;
+        public boolean isNull;
+
+        public AggData(BigDecimal bd, boolean isNull) {
+            this.bd = bd;
+            this.isNull = isNull;
+        }
+
     }
 }

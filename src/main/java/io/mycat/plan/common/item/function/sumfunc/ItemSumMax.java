@@ -20,19 +20,6 @@ public class ItemSumMax extends ItemSumHybrid {
         return Sumfunctype.MAX_FUNC;
     }
 
-    private static class AggData implements Serializable {
-
-        private static final long serialVersionUID = 5265691791812484350L;
-        public byte[] ptr;
-        public boolean isNull = false;
-
-        AggData(byte[] ptr, boolean isNull) {
-            this.ptr = ptr;
-            this.isNull = isNull;
-        }
-
-    }
-
     @Override
     public Object getTransAggObj() {
         AggData data = new AggData(value.ptr, nullValue);
@@ -95,5 +82,18 @@ public class ItemSumMax extends ItemSumHybrid {
         } else {
             return new ItemSumMax(calArgs, isPushDown, fields);
         }
+    }
+
+    private static class AggData implements Serializable {
+
+        private static final long serialVersionUID = 5265691791812484350L;
+        public byte[] ptr;
+        public boolean isNull = false;
+
+        AggData(byte[] ptr, boolean isNull) {
+            this.ptr = ptr;
+            this.isNull = isNull;
+        }
+
     }
 }

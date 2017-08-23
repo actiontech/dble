@@ -35,38 +35,6 @@ import java.util.Comparator;
  */
 public final class UnsafeInMemorySorter {
 
-    private static final class SortComparator implements Comparator<RecordPointerAndKeyPrefix> {
-
-        private final RecordComparator recordComparator;
-        private final PrefixComparator prefixComparator;
-        private final DataNodeMemoryManager memoryManager;
-
-        SortComparator(
-                RecordComparator recordComparator,
-                PrefixComparator prefixComparator,
-                DataNodeMemoryManager memoryManager) {
-            this.recordComparator = recordComparator;
-            this.prefixComparator = prefixComparator;
-            this.memoryManager = memoryManager;
-        }
-
-        @Override
-        public int compare(RecordPointerAndKeyPrefix r1, RecordPointerAndKeyPrefix r2) {
-
-            final int prefixComparisonResult = prefixComparator.compare(r1.keyPrefix, r2.keyPrefix);
-
-            if (prefixComparisonResult == 0) {
-                final Object baseObject1 = memoryManager.getPage(r1.recordPointer);
-                final long baseOffset1 = memoryManager.getOffsetInPage(r1.recordPointer) + 4; // skip length
-                final Object baseObject2 = memoryManager.getPage(r2.recordPointer);
-                final long baseOffset2 = memoryManager.getOffsetInPage(r2.recordPointer) + 4; // skip length
-                return recordComparator.compare(baseObject1, baseOffset1, baseObject2, baseOffset2);
-            } else {
-                return prefixComparisonResult;
-            }
-        }
-    }
-
     private final MemoryConsumer consumer;
     private final DataNodeMemoryManager memoryManager;
     @Nullable
@@ -221,6 +189,34 @@ public final class UnsafeInMemorySorter {
         pos++;
     }
 
+    /**
+     * Return an iterator over record pointers in sorted order. For efficiency, all calls to
+     * {@code next()} will return the same mutable object.
+     */
+    public SortedIterator getSortedIterator() {
+        int offset = 0;
+        long start = System.nanoTime();
+        if (sorter != null && enableSort) {
+            if (this.radixSortSupport != null) {
+                // TODO(ekl) we should handle NULL values before radix sort for efficiency, since they
+                // force a full-width sort (and we cannot radix-sort nullable long fields at all).
+                offset = RadixSort.sortKeyPrefixArray(array, pos / 2, 0, 7, radixSortSupport.sortDescending(), radixSortSupport.sortSigned());
+            } else {
+                sorter.sort(array, 0, pos / 2, sortComparator);
+            }
+        }
+        totalSortTimeNanos += System.nanoTime() - start;
+        return new SortedIterator(pos / 2, offset);
+    }
+
+    /**
+     * Return an iterator over record pointers int not sorted order. For efficiency, all calls to
+     * {@code next()} will return the same mutable object.
+     */
+    public SortedIterator getIterator() {
+        return new SortedIterator(pos / 2, 0);
+    }
+
     public final class SortedIterator extends UnsafeSorterIterator implements Cloneable {
 
         private final int numRecords;
@@ -292,32 +288,35 @@ public final class UnsafeInMemorySorter {
         }
     }
 
-    /**
-     * Return an iterator over record pointers in sorted order. For efficiency, all calls to
-     * {@code next()} will return the same mutable object.
-     */
-    public SortedIterator getSortedIterator() {
-        int offset = 0;
-        long start = System.nanoTime();
-        if (sorter != null && enableSort) {
-            if (this.radixSortSupport != null) {
-                // TODO(ekl) we should handle NULL values before radix sort for efficiency, since they
-                // force a full-width sort (and we cannot radix-sort nullable long fields at all).
-                offset = RadixSort.sortKeyPrefixArray(array, pos / 2, 0, 7, radixSortSupport.sortDescending(), radixSortSupport.sortSigned());
+    private static final class SortComparator implements Comparator<RecordPointerAndKeyPrefix> {
+
+        private final RecordComparator recordComparator;
+        private final PrefixComparator prefixComparator;
+        private final DataNodeMemoryManager memoryManager;
+
+        SortComparator(
+                RecordComparator recordComparator,
+                PrefixComparator prefixComparator,
+                DataNodeMemoryManager memoryManager) {
+            this.recordComparator = recordComparator;
+            this.prefixComparator = prefixComparator;
+            this.memoryManager = memoryManager;
+        }
+
+        @Override
+        public int compare(RecordPointerAndKeyPrefix r1, RecordPointerAndKeyPrefix r2) {
+
+            final int prefixComparisonResult = prefixComparator.compare(r1.keyPrefix, r2.keyPrefix);
+
+            if (prefixComparisonResult == 0) {
+                final Object baseObject1 = memoryManager.getPage(r1.recordPointer);
+                final long baseOffset1 = memoryManager.getOffsetInPage(r1.recordPointer) + 4; // skip length
+                final Object baseObject2 = memoryManager.getPage(r2.recordPointer);
+                final long baseOffset2 = memoryManager.getOffsetInPage(r2.recordPointer) + 4; // skip length
+                return recordComparator.compare(baseObject1, baseOffset1, baseObject2, baseOffset2);
             } else {
-                sorter.sort(array, 0, pos / 2, sortComparator);
+                return prefixComparisonResult;
             }
         }
-        totalSortTimeNanos += System.nanoTime() - start;
-        return new SortedIterator(pos / 2, offset);
     }
-
-    /**
-     * Return an iterator over record pointers int not sorted order. For efficiency, all calls to
-     * {@code next()} will return the same mutable object.
-     */
-    public SortedIterator getIterator() {
-        return new SortedIterator(pos / 2, 0);
-    }
-
 }

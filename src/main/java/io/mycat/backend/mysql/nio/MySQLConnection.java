@@ -311,72 +311,6 @@ public class MySQLConnection extends BackendAIOConnection {
         }
     }
 
-    private static class StatusSync {
-        private final String schema;
-        private final Integer charsetIndex;
-        private final Integer txtIsolation;
-        private final Boolean autocommit;
-        private final AtomicInteger synCmdCount;
-
-        StatusSync(String schema,
-                   Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
-                   int synCount) {
-            super();
-            this.schema = schema;
-            this.charsetIndex = charsetIndex;
-            this.txtIsolation = txtIsolation;
-            this.autocommit = autocommit;
-            this.synCmdCount = new AtomicInteger(synCount);
-        }
-
-        public boolean synAndExecuted(MySQLConnection conn) {
-            int remains = synCmdCount.decrementAndGet();
-            if (remains == 0) { // syn command finished
-                this.updateConnectionInfo(conn);
-                conn.metaDataSyned = true;
-                return false;
-            } else if (remains < 0) {
-                return true;
-            }
-            return false;
-        }
-
-        private void updateConnectionInfo(MySQLConnection conn) {
-            if (schema != null) {
-                conn.schema = schema;
-                conn.oldSchema = conn.schema;
-            }
-            if (charsetIndex != null) {
-                conn.setCharset(CharsetUtil.getCharset(charsetIndex));
-            }
-            if (txtIsolation != null) {
-                conn.txIsolation = txtIsolation;
-            }
-            if (autocommit != null) {
-                conn.autocommit = autocommit;
-            }
-        }
-
-    }
-
-    /**
-     * @return if synchronization finished and execute-sql has already been sent
-     * before
-     */
-    public boolean syncAndExcute() {
-        StatusSync sync = this.statusSync;
-        if (sync == null) {
-            return true;
-        } else {
-            boolean executed = sync.synAndExecuted(this);
-            if (executed) {
-                statusSync = null;
-            }
-            return executed;
-        }
-
-    }
-
     public void execute(RouteResultsetNode rrn, ServerConnection sc,
                         boolean autocommit) {
         if (!modifiedSQLExecuted && rrn.isModifySQL()) {
@@ -651,5 +585,71 @@ public class MySQLConnection extends BackendAIOConnection {
     @Override
     public int getTxIsolation() {
         return txIsolation;
+    }
+
+    /**
+     * @return if synchronization finished and execute-sql has already been sent
+     * before
+     */
+    public boolean syncAndExcute() {
+        StatusSync sync = this.statusSync;
+        if (sync == null) {
+            return true;
+        } else {
+            boolean executed = sync.synAndExecuted(this);
+            if (executed) {
+                statusSync = null;
+            }
+            return executed;
+        }
+
+    }
+
+    private static class StatusSync {
+        private final String schema;
+        private final Integer charsetIndex;
+        private final Integer txtIsolation;
+        private final Boolean autocommit;
+        private final AtomicInteger synCmdCount;
+
+        StatusSync(String schema,
+                   Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
+                   int synCount) {
+            super();
+            this.schema = schema;
+            this.charsetIndex = charsetIndex;
+            this.txtIsolation = txtIsolation;
+            this.autocommit = autocommit;
+            this.synCmdCount = new AtomicInteger(synCount);
+        }
+
+        public boolean synAndExecuted(MySQLConnection conn) {
+            int remains = synCmdCount.decrementAndGet();
+            if (remains == 0) { // syn command finished
+                this.updateConnectionInfo(conn);
+                conn.metaDataSyned = true;
+                return false;
+            } else if (remains < 0) {
+                return true;
+            }
+            return false;
+        }
+
+        private void updateConnectionInfo(MySQLConnection conn) {
+            if (schema != null) {
+                conn.schema = schema;
+                conn.oldSchema = conn.schema;
+            }
+            if (charsetIndex != null) {
+                conn.setCharset(CharsetUtil.getCharset(charsetIndex));
+            }
+            if (txtIsolation != null) {
+                conn.txIsolation = txtIsolation;
+            }
+            if (autocommit != null) {
+                conn.autocommit = autocommit;
+            }
+        }
+
     }
 }

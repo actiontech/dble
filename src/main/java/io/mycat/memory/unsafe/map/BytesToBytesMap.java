@@ -238,174 +238,6 @@ public final class BytesToBytesMap extends MemoryConsumer {
         return numValues;
     }
 
-    public final class MapIterator implements Iterator<Location> {
-
-        private int numRecords;
-        private final Location loc;
-
-        private MemoryBlock currentPage = null;
-        private int recordsInPage = 0;
-        private Object pageBaseObject;
-        private long offsetInPage;
-
-        // If this iterator destructive or not. When it is true, it frees each page as it moves onto
-        // next one.
-        private boolean destructive = false;
-        private UnsafeSorterSpillReader reader = null;
-
-        private MapIterator(int numRecords, Location loc, boolean destructive) {
-            this.numRecords = numRecords;
-            this.loc = loc;
-            this.destructive = destructive;
-            if (destructive) {
-                destructiveIterator = this;
-            }
-        }
-
-        private void advanceToNextPage() {
-            synchronized (this) {
-                int nextIdx = dataPages.indexOf(currentPage) + 1;
-                if (destructive && currentPage != null) {
-                    dataPages.remove(currentPage);
-                    freePage(currentPage);
-                    nextIdx--;
-                }
-                if (dataPages.size() > nextIdx) {
-                    currentPage = dataPages.get(nextIdx);
-                    pageBaseObject = currentPage.getBaseObject();
-                    offsetInPage = currentPage.getBaseOffset();
-                    recordsInPage = Platform.getInt(pageBaseObject, offsetInPage);
-                    offsetInPage += 4;
-                } else {
-                    currentPage = null;
-                    if (reader != null) {
-                        // remove the spill file from disk
-                        File file = spillWriters.removeFirst().getFile();
-                        if (file != null && file.exists()) {
-                            if (!file.delete()) {
-                                logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
-                            }
-                        }
-                    }
-                    try {
-                        Closeables.close(reader, /* swallowIOException = */ false);
-                        if (spillWriters.size() > 0) {
-                            reader = spillWriters.getFirst().getReader(serializerManager);
-                        }
-                        recordsInPage = -1;
-
-                    } catch (IOException e) {
-                        // Scala iterator does not handle exception
-                        Platform.throwException(e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (numRecords == 0) {
-                if (reader != null) {
-                    // remove the spill file from disk
-                    File file = spillWriters.removeFirst().getFile();
-                    if (file != null && file.exists()) {
-                        if (!file.delete()) {
-                            logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
-                        }
-                    }
-                }
-            }
-            return numRecords > 0;
-        }
-
-        @Override
-        public Location next() {
-            if (recordsInPage == 0) {
-                advanceToNextPage();
-            }
-            numRecords--;
-            if (currentPage != null) {
-                int totalLength = Platform.getInt(pageBaseObject, offsetInPage);
-                loc.with(currentPage, offsetInPage);
-                // [total size] [key size] [key] [value] [pointer to next]
-                offsetInPage += 4 + totalLength + 8;
-                recordsInPage--;
-                return loc;
-            } else {
-
-
-                assert (reader != null);
-//        if(reader == null)
-//          return null;
-
-                if (!reader.hasNext()) {
-                    advanceToNextPage();
-                }
-                try {
-                    reader.loadNext();
-                } catch (IOException e) {
-                    try {
-                        reader.close();
-                    } catch (IOException e2) {
-                        logger.error("Error while closing spill reader", e2);
-                    }
-                    // Scala iterator does not handle exception
-                    Platform.throwException(e);
-                }
-                loc.with(reader.getBaseObject(), reader.getBaseOffset(), reader.getRecordLength());
-                return loc;
-            }
-        }
-
-        public long spill(long numBytes) throws IOException {
-            synchronized (this) {
-                if (!destructive || dataPages.size() == 1) {
-                    return 0L;
-                }
-
-
-                long released = 0L;
-                while (dataPages.size() > 0) {
-                    MemoryBlock block = dataPages.getLast();
-                    // The currentPage is used, cannot be released
-                    if (block == currentPage) {
-                        break;
-                    }
-
-                    Object base = block.getBaseObject();
-                    long offset = block.getBaseOffset();
-                    int numRecords = Platform.getInt(base, offset);
-                    offset += 4;
-                    final UnsafeSorterSpillWriter writer =
-                            new UnsafeSorterSpillWriter(blockManager, 32 * 1024, numRecords);
-                    while (numRecords > 0) {
-                        int length = Platform.getInt(base, offset);
-                        writer.write(base, offset + 4, length, 0);
-                        offset += 4 + length + 8;
-                        numRecords--;
-                    }
-                    writer.close();
-                    spillWriters.add(writer);
-
-                    dataPages.removeLast();
-                    released += block.size();
-                    freePage(block);
-
-                    if (released >= numBytes) {
-                        break;
-                    }
-                }
-
-                return released;
-            }
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
     /**
      * Returns an iterator for iterating over the entries of this map.
      * <p>
@@ -519,9 +351,213 @@ public final class BytesToBytesMap extends MemoryConsumer {
     }
 
     /**
+     * Acquire a new page from the memory manager.
+     *
+     * @return whether there is enough space to allocate the new page.
+     */
+    private boolean acquireNewPage(long required) {
+        try {
+            currentPage = allocatePage(required);
+        } catch (OutOfMemoryError e) {
+            return false;
+        }
+        dataPages.add(currentPage);
+        Platform.putInt(currentPage.getBaseObject(), currentPage.getBaseOffset(), 0);
+        pageCursor = 4;
+        return true;
+    }
+    @Override
+    public long spill(long size, MemoryConsumer trigger) throws IOException {
+        if (trigger != this && destructiveIterator != null) {
+            return destructiveIterator.spill(size);
+        }
+        return 0L;
+    }
+
+    /**
+     * Allocate new data structures for this map. When calling this outside of the constructor,
+     * make sure to keep references to the old data structures so that you can free them.
+     *
+     * @param capacity the new map capacity
+     */
+    private void allocate(int capacity) {
+        assert (capacity >= 0);
+        capacity = Math.max((int) Math.min(MAX_CAPACITY, ByteArrayMethods.nextPowerOf2(capacity)), 64);
+        assert (capacity <= MAX_CAPACITY);
+        longArray = allocateLongArray(capacity * 2);
+        longArray.zeroOut();
+
+        this.growthThreshold = (int) (capacity * loadFactor);
+        this.mask = capacity - 1;
+    }
+
+    /**
+     * Free all allocated memory associated with this map, including the storage for keys and values
+     * as well as the hash map array itself.
+     * <p>
+     * This method is idempotent and can be called multiple times.
+     */
+    public void free() {
+        updatePeakMemoryUsed();
+        if (longArray != null) {
+            freeLongArray(longArray);
+            longArray = null;
+        }
+        Iterator<MemoryBlock> dataPagesIterator = dataPages.iterator();
+        while (dataPagesIterator.hasNext()) {
+            MemoryBlock dataPage = dataPagesIterator.next();
+            dataPagesIterator.remove();
+            freePage(dataPage);
+        }
+        assert (dataPages.isEmpty());
+
+        while (!spillWriters.isEmpty()) {
+            File file = spillWriters.removeFirst().getFile();
+            if (file != null && file.exists()) {
+                if (!file.delete()) {
+                    logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
+                }
+            }
+        }
+    }
+
+    public DataNodeMemoryManager getDataNodeMemoryManager() {
+        return dataNodeMemoryManager;
+    }
+
+    public long getPageSizeBytes() {
+        return pageSizeBytes;
+    }
+
+    /**
+     * Returns the total amount of memory, in bytes, consumed by this map's managed structures.
+     */
+    public long getTotalMemoryConsumption() {
+        long totalDataPagesSize = 0L;
+        for (MemoryBlock dataPage : dataPages) {
+            totalDataPagesSize += dataPage.size();
+        }
+        return totalDataPagesSize + ((longArray != null) ? longArray.memoryBlock().size() : 0L);
+    }
+
+    private void updatePeakMemoryUsed() {
+        long mem = getTotalMemoryConsumption();
+        if (mem > peakMemoryUsedBytes) {
+            peakMemoryUsedBytes = mem;
+        }
+    }
+
+    /**
+     * Return the peak memory used so far, in bytes.
+     */
+    public long getPeakMemoryUsedBytes() {
+        updatePeakMemoryUsed();
+        return peakMemoryUsedBytes;
+    }
+
+    /**
+     * Returns the total amount of time spent resizing this map (in nanoseconds).
+     */
+    public long getTimeSpentResizingNs() {
+        if (!enablePerfMetrics) {
+            throw new IllegalStateException();
+        }
+        return timeSpentResizingNs;
+    }
+
+    /**
+     * Returns the average number of probes per key lookup.
+     */
+    public double getAverageProbesPerLookup() {
+        if (!enablePerfMetrics) {
+            throw new IllegalStateException();
+        }
+        return (1.0 * numProbes) / numKeyLookups;
+    }
+
+    public long getNumHashCollisions() {
+        if (!enablePerfMetrics) {
+            throw new IllegalStateException();
+        }
+        return numHashCollisions;
+    }
+
+    @VisibleForTesting
+    public int getNumDataPages() {
+        return dataPages.size();
+    }
+
+    /**
+     * Returns the underline long[] of longArray.
+     */
+    public LongArray getArray() {
+        assert (longArray != null);
+        return longArray;
+    }
+
+    /**
+     * Reset this map to initialized state.
+     */
+    public void reset() {
+        numKeys = 0;
+        numValues = 0;
+        longArray.zeroOut();
+
+        while (dataPages.size() > 0) {
+            MemoryBlock dataPage = dataPages.removeLast();
+            freePage(dataPage);
+        }
+        currentPage = null;
+        pageCursor = 0;
+    }
+
+    /**
+     * Grows the size of the hash table and re-hash everything.
+     */
+    @VisibleForTesting
+    void growAndRehash() {
+        assert (longArray != null);
+
+        long resizeStartTime = -1;
+        if (enablePerfMetrics) {
+            resizeStartTime = System.nanoTime();
+        }
+        // Store references to the old data structures to be used when we re-hash
+        final LongArray oldLongArray = longArray;
+        final int oldCapacity = (int) oldLongArray.size() / 2;
+
+        // Allocate the new data structures
+        allocate(Math.min(GROWTH_STRATEGY.nextCapacity(oldCapacity), MAX_CAPACITY));
+
+        // Re-mask (we don't recompute the hashcode because we stored all 32 bits of it)
+        for (int i = 0; i < oldLongArray.size(); i += 2) {
+            final long keyPointer = oldLongArray.get(i);
+            if (keyPointer == 0) {
+                continue;
+            }
+            final int hashcode = (int) oldLongArray.get(i + 1);
+            int newPos = hashcode & mask;
+            int step = 1;
+            while (longArray.get(newPos * 2) != 0) {
+                newPos = (newPos + step) & mask;
+                step++;
+            }
+            longArray.set(newPos * 2, keyPointer);
+            longArray.set(newPos * 2 + 1, hashcode);
+        }
+
+        freeLongArray(oldLongArray);
+
+        if (enablePerfMetrics) {
+            timeSpentResizingNs += System.nanoTime() - resizeStartTime;
+        }
+    }
+
+    /**
      * Handle returned by {@link BytesToBytesMap#lookup(Object, long, int)} function.
      */
     public final class Location {
+
         /**
          * An index into the hash map's Long array
          */
@@ -541,7 +577,6 @@ public final class BytesToBytesMap extends MemoryConsumer {
         private int keyLength;
         private long valueOffset;
         private int valueLength;
-
         /**
          * Memory page containing the record. Only set if created by {@link BytesToBytesMap#iterator()}.
          */
@@ -770,209 +805,177 @@ public final class BytesToBytesMap extends MemoryConsumer {
             }
             return true;
         }
+
     }
 
-    /**
-     * Acquire a new page from the memory manager.
-     *
-     * @return whether there is enough space to allocate the new page.
-     */
-    private boolean acquireNewPage(long required) {
-        try {
-            currentPage = allocatePage(required);
-        } catch (OutOfMemoryError e) {
-            return false;
+    public final class MapIterator implements Iterator<Location> {
+
+
+        private int numRecords;
+        private final Location loc;
+
+        private MemoryBlock currentPage = null;
+        private int recordsInPage = 0;
+        private Object pageBaseObject;
+        private long offsetInPage;
+
+        // If this iterator destructive or not. When it is true, it frees each page as it moves onto
+        // next one.
+        private boolean destructive = false;
+        private UnsafeSorterSpillReader reader = null;
+
+        private MapIterator(int numRecords, Location loc, boolean destructive) {
+            this.numRecords = numRecords;
+            this.loc = loc;
+            this.destructive = destructive;
+            if (destructive) {
+                destructiveIterator = this;
+            }
         }
-        dataPages.add(currentPage);
-        Platform.putInt(currentPage.getBaseObject(), currentPage.getBaseOffset(), 0);
-        pageCursor = 4;
-        return true;
-    }
 
-    @Override
-    public long spill(long size, MemoryConsumer trigger) throws IOException {
-        if (trigger != this && destructiveIterator != null) {
-            return destructiveIterator.spill(size);
-        }
-        return 0L;
-    }
+        private void advanceToNextPage() {
+            synchronized (this) {
+                int nextIdx = dataPages.indexOf(currentPage) + 1;
+                if (destructive && currentPage != null) {
+                    dataPages.remove(currentPage);
+                    freePage(currentPage);
+                    nextIdx--;
+                }
+                if (dataPages.size() > nextIdx) {
+                    currentPage = dataPages.get(nextIdx);
+                    pageBaseObject = currentPage.getBaseObject();
+                    offsetInPage = currentPage.getBaseOffset();
+                    recordsInPage = Platform.getInt(pageBaseObject, offsetInPage);
+                    offsetInPage += 4;
+                } else {
+                    currentPage = null;
+                    if (reader != null) {
+                        // remove the spill file from disk
+                        File file = spillWriters.removeFirst().getFile();
+                        if (file != null && file.exists()) {
+                            if (!file.delete()) {
+                                logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
+                            }
+                        }
+                    }
+                    try {
+                        Closeables.close(reader, /* swallowIOException = */ false);
+                        if (spillWriters.size() > 0) {
+                            reader = spillWriters.getFirst().getReader(serializerManager);
+                        }
+                        recordsInPage = -1;
 
-    /**
-     * Allocate new data structures for this map. When calling this outside of the constructor,
-     * make sure to keep references to the old data structures so that you can free them.
-     *
-     * @param capacity the new map capacity
-     */
-    private void allocate(int capacity) {
-        assert (capacity >= 0);
-        capacity = Math.max((int) Math.min(MAX_CAPACITY, ByteArrayMethods.nextPowerOf2(capacity)), 64);
-        assert (capacity <= MAX_CAPACITY);
-        longArray = allocateLongArray(capacity * 2);
-        longArray.zeroOut();
-
-        this.growthThreshold = (int) (capacity * loadFactor);
-        this.mask = capacity - 1;
-    }
-
-    /**
-     * Free all allocated memory associated with this map, including the storage for keys and values
-     * as well as the hash map array itself.
-     * <p>
-     * This method is idempotent and can be called multiple times.
-     */
-    public void free() {
-        updatePeakMemoryUsed();
-        if (longArray != null) {
-            freeLongArray(longArray);
-            longArray = null;
-        }
-        Iterator<MemoryBlock> dataPagesIterator = dataPages.iterator();
-        while (dataPagesIterator.hasNext()) {
-            MemoryBlock dataPage = dataPagesIterator.next();
-            dataPagesIterator.remove();
-            freePage(dataPage);
-        }
-        assert (dataPages.isEmpty());
-
-        while (!spillWriters.isEmpty()) {
-            File file = spillWriters.removeFirst().getFile();
-            if (file != null && file.exists()) {
-                if (!file.delete()) {
-                    logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
+                    } catch (IOException e) {
+                        // Scala iterator does not handle exception
+                        Platform.throwException(e);
+                    }
                 }
             }
         }
-    }
 
-    public DataNodeMemoryManager getDataNodeMemoryManager() {
-        return dataNodeMemoryManager;
-    }
-
-    public long getPageSizeBytes() {
-        return pageSizeBytes;
-    }
-
-    /**
-     * Returns the total amount of memory, in bytes, consumed by this map's managed structures.
-     */
-    public long getTotalMemoryConsumption() {
-        long totalDataPagesSize = 0L;
-        for (MemoryBlock dataPage : dataPages) {
-            totalDataPagesSize += dataPage.size();
-        }
-        return totalDataPagesSize + ((longArray != null) ? longArray.memoryBlock().size() : 0L);
-    }
-
-    private void updatePeakMemoryUsed() {
-        long mem = getTotalMemoryConsumption();
-        if (mem > peakMemoryUsedBytes) {
-            peakMemoryUsedBytes = mem;
-        }
-    }
-
-    /**
-     * Return the peak memory used so far, in bytes.
-     */
-    public long getPeakMemoryUsedBytes() {
-        updatePeakMemoryUsed();
-        return peakMemoryUsedBytes;
-    }
-
-    /**
-     * Returns the total amount of time spent resizing this map (in nanoseconds).
-     */
-    public long getTimeSpentResizingNs() {
-        if (!enablePerfMetrics) {
-            throw new IllegalStateException();
-        }
-        return timeSpentResizingNs;
-    }
-
-    /**
-     * Returns the average number of probes per key lookup.
-     */
-    public double getAverageProbesPerLookup() {
-        if (!enablePerfMetrics) {
-            throw new IllegalStateException();
-        }
-        return (1.0 * numProbes) / numKeyLookups;
-    }
-
-    public long getNumHashCollisions() {
-        if (!enablePerfMetrics) {
-            throw new IllegalStateException();
-        }
-        return numHashCollisions;
-    }
-
-    @VisibleForTesting
-    public int getNumDataPages() {
-        return dataPages.size();
-    }
-
-    /**
-     * Returns the underline long[] of longArray.
-     */
-    public LongArray getArray() {
-        assert (longArray != null);
-        return longArray;
-    }
-
-    /**
-     * Reset this map to initialized state.
-     */
-    public void reset() {
-        numKeys = 0;
-        numValues = 0;
-        longArray.zeroOut();
-
-        while (dataPages.size() > 0) {
-            MemoryBlock dataPage = dataPages.removeLast();
-            freePage(dataPage);
-        }
-        currentPage = null;
-        pageCursor = 0;
-    }
-
-    /**
-     * Grows the size of the hash table and re-hash everything.
-     */
-    @VisibleForTesting
-    void growAndRehash() {
-        assert (longArray != null);
-
-        long resizeStartTime = -1;
-        if (enablePerfMetrics) {
-            resizeStartTime = System.nanoTime();
-        }
-        // Store references to the old data structures to be used when we re-hash
-        final LongArray oldLongArray = longArray;
-        final int oldCapacity = (int) oldLongArray.size() / 2;
-
-        // Allocate the new data structures
-        allocate(Math.min(GROWTH_STRATEGY.nextCapacity(oldCapacity), MAX_CAPACITY));
-
-        // Re-mask (we don't recompute the hashcode because we stored all 32 bits of it)
-        for (int i = 0; i < oldLongArray.size(); i += 2) {
-            final long keyPointer = oldLongArray.get(i);
-            if (keyPointer == 0) {
-                continue;
+        @Override
+        public boolean hasNext() {
+            if (numRecords == 0) {
+                if (reader != null) {
+                    // remove the spill file from disk
+                    File file = spillWriters.removeFirst().getFile();
+                    if (file != null && file.exists()) {
+                        if (!file.delete()) {
+                            logger.error("Was unable to delete spill file {}", file.getAbsolutePath());
+                        }
+                    }
+                }
             }
-            final int hashcode = (int) oldLongArray.get(i + 1);
-            int newPos = hashcode & mask;
-            int step = 1;
-            while (longArray.get(newPos * 2) != 0) {
-                newPos = (newPos + step) & mask;
-                step++;
-            }
-            longArray.set(newPos * 2, keyPointer);
-            longArray.set(newPos * 2 + 1, hashcode);
+            return numRecords > 0;
         }
 
-        freeLongArray(oldLongArray);
+        @Override
+        public Location next() {
+            if (recordsInPage == 0) {
+                advanceToNextPage();
+            }
+            numRecords--;
+            if (currentPage != null) {
+                int totalLength = Platform.getInt(pageBaseObject, offsetInPage);
+                loc.with(currentPage, offsetInPage);
+                // [total size] [key size] [key] [value] [pointer to next]
+                offsetInPage += 4 + totalLength + 8;
+                recordsInPage--;
+                return loc;
+            } else {
 
-        if (enablePerfMetrics) {
-            timeSpentResizingNs += System.nanoTime() - resizeStartTime;
+
+                assert (reader != null);
+//        if(reader == null)
+//          return null;
+
+                if (!reader.hasNext()) {
+                    advanceToNextPage();
+                }
+                try {
+                    reader.loadNext();
+                } catch (IOException e) {
+                    try {
+                        reader.close();
+                    } catch (IOException e2) {
+                        logger.error("Error while closing spill reader", e2);
+                    }
+                    // Scala iterator does not handle exception
+                    Platform.throwException(e);
+                }
+                loc.with(reader.getBaseObject(), reader.getBaseOffset(), reader.getRecordLength());
+                return loc;
+            }
+        }
+
+        public long spill(long numBytes) throws IOException {
+            synchronized (this) {
+                if (!destructive || dataPages.size() == 1) {
+                    return 0L;
+                }
+
+
+                long released = 0L;
+                while (dataPages.size() > 0) {
+                    MemoryBlock block = dataPages.getLast();
+                    // The currentPage is used, cannot be released
+                    if (block == currentPage) {
+                        break;
+                    }
+
+                    Object base = block.getBaseObject();
+                    long offset = block.getBaseOffset();
+                    int numRecords = Platform.getInt(base, offset);
+                    offset += 4;
+                    final UnsafeSorterSpillWriter writer =
+                            new UnsafeSorterSpillWriter(blockManager, 32 * 1024, numRecords);
+                    while (numRecords > 0) {
+                        int length = Platform.getInt(base, offset);
+                        writer.write(base, offset + 4, length, 0);
+                        offset += 4 + length + 8;
+                        numRecords--;
+                    }
+                    writer.close();
+                    spillWriters.add(writer);
+
+                    dataPages.removeLast();
+                    released += block.size();
+                    freePage(block);
+
+                    if (released >= numBytes) {
+                        break;
+                    }
+                }
+
+                return released;
+            }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
+
 }
+

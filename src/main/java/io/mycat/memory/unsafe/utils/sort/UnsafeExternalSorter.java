@@ -531,6 +531,43 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
     }
 
     /**
+     * Returns a iterator, which will return the rows in the order as inserted.
+     * <p>
+     * It is the caller's responsibility to call `cleanupResources()`
+     * after consuming this iterator.
+     * <p>
+     * TODO: support forced spilling
+     */
+    public UnsafeSorterIterator getIterator() throws IOException {
+        /**
+         * 如果spillWriters为空说明，直接读取内存中即可
+         */
+        if (spillWriters.isEmpty()) {
+            assert (inMemSorter != null);
+            return inMemSorter.getSortedIterator();
+        } else {
+            /**
+             * 否则将spillWriters对应的file中的数据，通过getReader对应UnsafeSorterSpillReader的
+             * 读取器反序列化到UnsafeSorterIterator中，然后到添加到queue队列中
+             * UnsafeSorterSpillReader也是UnsafeSorterIterator的子类
+             */
+            LinkedList<UnsafeSorterIterator> queue = new LinkedList<UnsafeSorterIterator>();
+            for (UnsafeSorterSpillWriter spillWriter : spillWriters) {
+                queue.add(spillWriter.getReader(serializerManager));
+            }
+            if (inMemSorter != null) {
+                queue.add(inMemSorter.getSortedIterator());
+            }
+            /**
+             * ChainedIterator是一个UnsafeSorterIterator的子类
+             * 实现将将多个UnsafeSorterIterator合成一个UnsafeSorterIterator
+             * 提供给应用使用
+             */
+            return new ChainedIterator(queue);
+        }
+    }
+
+    /**
      * An UnsafeSorterIterator that support spilling.
      */
     public class SpillableIterator extends UnsafeSorterIterator {
@@ -640,43 +677,6 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         @Override
         public long getKeyPrefix() {
             return upstream.getKeyPrefix();
-        }
-    }
-
-    /**
-     * Returns a iterator, which will return the rows in the order as inserted.
-     * <p>
-     * It is the caller's responsibility to call `cleanupResources()`
-     * after consuming this iterator.
-     * <p>
-     * TODO: support forced spilling
-     */
-    public UnsafeSorterIterator getIterator() throws IOException {
-        /**
-         * 如果spillWriters为空说明，直接读取内存中即可
-         */
-        if (spillWriters.isEmpty()) {
-            assert (inMemSorter != null);
-            return inMemSorter.getSortedIterator();
-        } else {
-            /**
-             * 否则将spillWriters对应的file中的数据，通过getReader对应UnsafeSorterSpillReader的
-             * 读取器反序列化到UnsafeSorterIterator中，然后到添加到queue队列中
-             * UnsafeSorterSpillReader也是UnsafeSorterIterator的子类
-             */
-            LinkedList<UnsafeSorterIterator> queue = new LinkedList<UnsafeSorterIterator>();
-            for (UnsafeSorterSpillWriter spillWriter : spillWriters) {
-                queue.add(spillWriter.getReader(serializerManager));
-            }
-            if (inMemSorter != null) {
-                queue.add(inMemSorter.getSortedIterator());
-            }
-            /**
-             * ChainedIterator是一个UnsafeSorterIterator的子类
-             * 实现将将多个UnsafeSorterIterator合成一个UnsafeSorterIterator
-             * 提供给应用使用
-             */
-            return new ChainedIterator(queue);
         }
     }
 

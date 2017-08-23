@@ -49,6 +49,13 @@ public class ReplaceableStringBuilder {
         return sb.toString();
     }
 
+    /**
+     * like stringbuilder.setlength(0)
+     */
+    public void clear() {
+        elements.clear();
+    }
+
     public static final class Element {
         private final StringBuilder sb;
         private StringPtr repString;
@@ -80,13 +87,6 @@ public class ReplaceableStringBuilder {
             this.repString = repString;
         }
 
-    }
-
-    /**
-     * like stringbuilder.setlength(0)
-     */
-    public void clear() {
-        elements.clear();
     }
 
 }

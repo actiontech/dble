@@ -53,27 +53,6 @@ public class ItemSumVariance extends ItemSumNum {
     private double sumAi2 = 0;
     private double sumA = 0;
 
-    private static class AggData implements Serializable {
-
-        private static final long serialVersionUID = -5441804522036055390L;
-
-        public double sumAi2;
-        public double sumA;
-        public long count;
-
-        AggData(double sumAi2, double sumA, long count) {
-            this.sumAi2 = sumAi2;
-            this.sumA = sumA;
-            this.count = count;
-        }
-
-    }
-
-    public ItemSumVariance(List<Item> args, int sample, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
-        this.sample = sample;
-    }
-
     @Override
     public void fixLengthAndDec() {
         maybeNull = nullValue = true;
@@ -138,8 +117,8 @@ public class ItemSumVariance extends ItemSumNum {
     }
 
     // pushdown variables下发的情况下计算时所需要用到的变量
+
     // 下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
-    // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
         // 下发的做法,依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
@@ -155,7 +134,7 @@ public class ItemSumVariance extends ItemSumNum {
 
         return false;
     }
-
+    // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     @Override
     public BigDecimal valReal() {
         if (!isPushDown) {
@@ -250,5 +229,26 @@ public class ItemSumVariance extends ItemSumNum {
         } else {
             return new ItemSumVariance(calArgs, sample, isPushDown, fields);
         }
+    }
+
+    public ItemSumVariance(List<Item> args, int sample, boolean isPushDown, List<Field> fields) {
+        super(args, isPushDown, fields);
+        this.sample = sample;
+    }
+
+    private static class AggData implements Serializable {
+
+        private static final long serialVersionUID = -5441804522036055390L;
+
+        public double sumAi2;
+        public double sumA;
+        public long count;
+
+        AggData(double sumAi2, double sumA, long count) {
+            this.sumAi2 = sumAi2;
+            this.sumA = sumA;
+            this.count = count;
+        }
+
     }
 }

@@ -671,74 +671,9 @@ public final class BytesTools {
                 compareTo(buffer1, offset1, length1, buffer2, offset2, length2);
     }
 
-    interface Comparer<T> {
-        int compareTo(
-                T buffer1, int offset1, int length1, T buffer2, int offset2, int length2
-        );
-    }
-
     @VisibleForTesting
     static Comparer<byte[]> lexicographicalComparerJavaImpl() {
         return LexicographicalComparerHolder.PureJavaComparer.INSTANCE;
-    }
-
-    /**
-     * Provides a lexicographical comparer implementation; either a Java
-     * implementation or a faster implementation based on {@link Unsafe}.
-     * <p>
-     * <p>Uses reflection to gracefully fall back to the Java implementation if
-     * {@code Unsafe} isn't available.
-     */
-    @VisibleForTesting
-    static class LexicographicalComparerHolder {
-        static final String UNSAFE_COMPARER_NAME =
-                LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
-
-        static final Comparer<byte[]> BEST_COMPARER = getBestComparer();
-
-        /**
-         * Returns the Unsafe-using Comparer, or falls back to the pure-Java
-         * implementation if unable to do so.
-         */
-        static Comparer<byte[]> getBestComparer() {
-            try {
-                Class<?> theClass = Class.forName(UNSAFE_COMPARER_NAME);
-
-                // yes, UnsafeComparer does implement Comparer<byte[]>
-                @SuppressWarnings("unchecked")
-                Comparer<byte[]> comparer =
-                        (Comparer<byte[]>) theClass.getEnumConstants()[0];
-                return comparer;
-            } catch (Throwable t) { // ensure we really catch *everything*
-                return lexicographicalComparerJavaImpl();
-            }
-        }
-
-        enum PureJavaComparer implements Comparer<byte[]> {
-            INSTANCE;
-
-            @Override
-            public int compareTo(byte[] buffer1, int offset1, int length1,
-                                 byte[] buffer2, int offset2, int length2) {
-                // Short circuit equal case
-                if (buffer1 == buffer2 &&
-                        offset1 == offset2 &&
-                        length1 == length2) {
-                    return 0;
-                }
-                // Bring WritableComparator code local
-                int end1 = offset1 + length1;
-                int end2 = offset2 + length2;
-                for (int i = offset1, j = offset2; i < end1 && j < end2; i++, j++) {
-                    int a = (buffer1[i] & 0xff);
-                    int b = (buffer2[j] & 0xff);
-                    if (a != b) {
-                        return a - b;
-                    }
-                }
-                return length1 - length2;
-            }
-        }
     }
 
     /**
@@ -853,15 +788,6 @@ public final class BytesTools {
         return result;
     }
 
-    /**
-     * Split passed range.  Expensive operation relatively.  Uses BigInteger math.
-     * Useful splitting ranges for MapReduce jobs.
-     * @param a Beginning of range
-     * @param b End of range
-     * @param num Number of times to split range.  Pass 1 if you want to split
-     * the range in two; i.e. one split.
-     * @return Array of dividing values
-     */
 
 
     /**
@@ -981,4 +907,89 @@ public final class BytesTools {
         }
         return b;
     }
+
+    /**
+     * Split passed range.  Expensive operation relatively.  Uses BigInteger math.
+     * Useful splitting ranges for MapReduce jobs.
+     * @param a Beginning of range
+     * @param b End of range
+     * @param num Number of times to split range.  Pass 1 if you want to split
+     * the range in two; i.e. one split.
+     * @return Array of dividing values
+     */
+    interface Comparer<T> {
+        int compareTo(
+                T buffer1, int offset1, int length1, T buffer2, int offset2, int length2
+        );
+    }
+
+    /**
+     * Provides a lexicographical comparer implementation; either a Java
+     * implementation or a faster implementation based on {@link Unsafe}.
+     * <p>
+     * <p>Uses reflection to gracefully fall back to the Java implementation if
+     * {@code Unsafe} isn't available.
+     */
+    @VisibleForTesting
+    static class LexicographicalComparerHolder {
+
+        static final String UNSAFE_COMPARER_NAME =
+                LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
+        static final Comparer<byte[]> BEST_COMPARER = getBestComparer();
+
+        /**
+         * Returns the Unsafe-using Comparer, or falls back to the pure-Java
+         * implementation if unable to do so.
+         */
+        static Comparer<byte[]> getBestComparer() {
+            try {
+                Class<?> theClass = Class.forName(UNSAFE_COMPARER_NAME);
+
+                // yes, UnsafeComparer does implement Comparer<byte[]>
+                @SuppressWarnings("unchecked")
+                Comparer<byte[]> comparer =
+                        (Comparer<byte[]>) theClass.getEnumConstants()[0];
+                return comparer;
+            } catch (Throwable t) { // ensure we really catch *everything*
+                return lexicographicalComparerJavaImpl();
+            }
+        }
+
+        enum PureJavaComparer implements Comparer<byte[]> {
+            INSTANCE;
+
+            @Override
+            public int compareTo(byte[] buffer1, int offset1, int length1,
+                                 byte[] buffer2, int offset2, int length2) {
+                // Short circuit equal case
+                if (buffer1 == buffer2 &&
+                        offset1 == offset2 &&
+                        length1 == length2) {
+                    return 0;
+                }
+                // Bring WritableComparator code local
+                int end1 = offset1 + length1;
+                int end2 = offset2 + length2;
+                for (int i = offset1, j = offset2; i < end1 && j < end2; i++, j++) {
+                    int a = (buffer1[i] & 0xff);
+                    int b = (buffer2[j] & 0xff);
+                    if (a != b) {
+                        return a - b;
+                    }
+                }
+                return length1 - length2;
+            }
+
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+

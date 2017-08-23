@@ -488,51 +488,6 @@ public class ERJoinChooser {
         return filter;
     }
 
-    /**
-     * 记录joinkey的关联属性
-     *
-     * @author chenzifei
-     */
-    private static class JoinKeyInfo {
-        public Item key; // join on的on key
-        public PlanNode tn; // 该joinkey属于哪个treenode
-        public ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
-
-        JoinKeyInfo(Item key) {
-            this.key = key;
-            tn = null;
-            cm = null;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = this.key.getTableName().hashCode();
-            hash = hash * 31 + this.key.getItemName().toLowerCase().hashCode();
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == null)
-                return false;
-            if (o == this)
-                return true;
-            if (!(o instanceof JoinKeyInfo)) {
-                return false;
-            }
-            JoinKeyInfo other = (JoinKeyInfo) o;
-            if (this.key == null)
-                return false;
-            return StringUtil.equals(this.key.getTableName(), other.key.getTableName()) &&
-                    StringUtil.equalsIgnoreCase(this.key.getItemName(), other.key.getItemName());
-        }
-
-        @Override
-        public String toString() {
-            return "key:" + key;
-        }
-    }
-
     private ERTable getERKey(PlanNode tn, Item c) {
         if (!(c instanceof ItemField))
             return null;
@@ -558,6 +513,7 @@ public class ERJoinChooser {
     }
 
     //TODO:performance
+
     private boolean isGlobalTree(PlanNode tn) {
         if (tn instanceof TableNode) {
             return tn.getUnGlobalTableCount() == 0 ? true : false;
@@ -571,7 +527,6 @@ public class ERJoinChooser {
             return true;
         }
     }
-
     private Item nodeHasSelectable(PlanNode child, Item sel) {
         if (sel instanceof ItemField) {
             return nodeHasColumn(child, (ItemField) sel);
@@ -637,5 +592,50 @@ public class ERJoinChooser {
             return false;
         }
         return erList.contains(er1);
+    }
+
+    /**
+     * 记录joinkey的关联属性
+     *
+     * @author chenzifei
+     */
+    private static class JoinKeyInfo {
+        public Item key; // join on的on key
+        public PlanNode tn; // 该joinkey属于哪个treenode
+        public ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
+
+        JoinKeyInfo(Item key) {
+            this.key = key;
+            tn = null;
+            cm = null;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = this.key.getTableName().hashCode();
+            hash = hash * 31 + this.key.getItemName().toLowerCase().hashCode();
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null)
+                return false;
+            if (o == this)
+                return true;
+            if (!(o instanceof JoinKeyInfo)) {
+                return false;
+            }
+            JoinKeyInfo other = (JoinKeyInfo) o;
+            if (this.key == null)
+                return false;
+            return StringUtil.equals(this.key.getTableName(), other.key.getTableName()) &&
+                    StringUtil.equalsIgnoreCase(this.key.getItemName(), other.key.getItemName());
+        }
+
+        @Override
+        public String toString() {
+            return "key:" + key;
+        }
     }
 }

@@ -104,8 +104,8 @@
         <module name="FallThrough"/>
         <module name="CovariantEquals"/>
         <!--<module name="HiddenField">-->
-            <!--<property name="ignoreSetter" value="true"/>-->
-            <!--<property name="ignoreConstructorParameter" value="true"/>-->
+        <!--<property name="ignoreSetter" value="true"/>-->
+        <!--<property name="ignoreConstructorParameter" value="true"/>-->
         <!--</module>-->
 
         <!-- Checks for class design. -->
@@ -117,15 +117,14 @@
         <module name="OverloadMethodsDeclarationOrder"/>
         <module name="OneTopLevelClass"/>
         <module name="OneStatementPerLine"/>
-        <!--<module name="NoClone"/>-->
-        <!--<module name="NoFinalizer"/>-->
-        <!--<module name="InnerTypeLast"/>-->
+        <module name="NoFinalizer"/>
+        <module name="InnerTypeLast"/>
         <!--<module name="VisibilityModifier">-->
-        <!--<property name="packageAllowed" value="true"/>-->
-        <!--<property name="protectedAllowed" value="true"/>-->
-        <!--<property name="publicMemberPattern" value="^$"/>-->
-        <!--<property name="allowPublicFinalFields" value="true"/>-->
-        <!--<property name="allowPublicImmutableFields" value="true"/>-->
+            <!--<property name="packageAllowed" value="true"/>-->
+            <!--<property name="protectedAllowed" value="true"/>-->
+            <!--<property name="publicMemberPattern" value="^$"/>-->
+            <!--<property name="allowPublicFinalFields" value="true"/>-->
+            <!--<property name="allowPublicImmutableFields" value="true"/>-->
         <!--</module>-->
 
         <!-- Checks for metrics. -->
@@ -145,6 +144,6 @@
 
     <module name="UniqueProperties"/>
     <module name="SuppressionFilter">
-        <property name="file" value="dble_checkstyle_suppression.xml" />
+        <property name="file" value="dble_checkstyle_suppression.xml"/>
     </module>
 </module>

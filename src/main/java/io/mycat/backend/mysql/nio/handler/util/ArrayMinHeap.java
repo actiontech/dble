@@ -53,75 +53,6 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
         return new Itr();
     }
 
-    private final class Itr implements Iterator<E> {
-        /**
-         * Index (into queue array) of element to be returned by subsequent call
-         * to next.
-         */
-        private int cursor = 0;
-
-        /**
-         * Index of element returned by most recent call to next, unless that
-         * element came from the forgetMeNot list. Set to -1 if element is
-         * deleted by a call to remove.
-         */
-        private int lastRet = -1;
-
-        /**
-         * A queue of elements that were moved from the unvisited portion of the
-         * heap into the visited portion as a result of "unlucky" element
-         * removals during the iteration. (Unlucky element removals are those
-         * that require a siftup instead of a siftdown.) We must visit all of
-         * the elements in this list to complete the iteration. We do this after
-         * we've completed the "normal" iteration.
-         * <p>
-         * We expect that most iterations, even those involving removals, will
-         * not need to store elements in this field.
-         */
-        private ArrayDeque<E> forgetMeNot = null;
-
-        /**
-         * Element returned by the most recent call to next iff that element was
-         * drawn from the forgetMeNot list.
-         */
-        private E lastRetElt = null;
-
-        public boolean hasNext() {
-            return cursor < size || (forgetMeNot != null && !forgetMeNot.isEmpty());
-        }
-
-        public E next() {
-            if (cursor < size)
-                return (E) heap[lastRet = cursor++];
-            if (forgetMeNot != null) {
-                lastRet = -1;
-                lastRetElt = forgetMeNot.poll();
-                if (lastRetElt != null)
-                    return lastRetElt;
-            }
-            throw new NoSuchElementException();
-        }
-
-        public void remove() {
-            if (lastRet != -1) {
-                E moved = ArrayMinHeap.this.removeAt(lastRet);
-                lastRet = -1;
-                if (moved == null)
-                    cursor--;
-                else {
-                    if (forgetMeNot == null)
-                        forgetMeNot = new ArrayDeque<E>();
-                    forgetMeNot.add(moved);
-                }
-            } else if (lastRetElt != null) {
-                ArrayMinHeap.this.removeEq(lastRetElt);
-                lastRetElt = null;
-            } else {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
     @Override
     public Object[] toArray() {
         return Arrays.copyOf(heap, size);
@@ -325,6 +256,75 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
     public void clear() {
         while (poll() != null) {
             //do nothing
+        }
+    }
+
+    private final class Itr implements Iterator<E> {
+        /**
+         * Index (into queue array) of element to be returned by subsequent call
+         * to next.
+         */
+        private int cursor = 0;
+
+        /**
+         * Index of element returned by most recent call to next, unless that
+         * element came from the forgetMeNot list. Set to -1 if element is
+         * deleted by a call to remove.
+         */
+        private int lastRet = -1;
+
+        /**
+         * A queue of elements that were moved from the unvisited portion of the
+         * heap into the visited portion as a result of "unlucky" element
+         * removals during the iteration. (Unlucky element removals are those
+         * that require a siftup instead of a siftdown.) We must visit all of
+         * the elements in this list to complete the iteration. We do this after
+         * we've completed the "normal" iteration.
+         * <p>
+         * We expect that most iterations, even those involving removals, will
+         * not need to store elements in this field.
+         */
+        private ArrayDeque<E> forgetMeNot = null;
+
+        /**
+         * Element returned by the most recent call to next iff that element was
+         * drawn from the forgetMeNot list.
+         */
+        private E lastRetElt = null;
+
+        public boolean hasNext() {
+            return cursor < size || (forgetMeNot != null && !forgetMeNot.isEmpty());
+        }
+
+        public E next() {
+            if (cursor < size)
+                return (E) heap[lastRet = cursor++];
+            if (forgetMeNot != null) {
+                lastRet = -1;
+                lastRetElt = forgetMeNot.poll();
+                if (lastRetElt != null)
+                    return lastRetElt;
+            }
+            throw new NoSuchElementException();
+        }
+
+        public void remove() {
+            if (lastRet != -1) {
+                E moved = ArrayMinHeap.this.removeAt(lastRet);
+                lastRet = -1;
+                if (moved == null)
+                    cursor--;
+                else {
+                    if (forgetMeNot == null)
+                        forgetMeNot = new ArrayDeque<E>();
+                    forgetMeNot.add(moved);
+                }
+            } else if (lastRetElt != null) {
+                ArrayMinHeap.this.removeEq(lastRetElt);
+                lastRetElt = null;
+            } else {
+                throw new IllegalStateException();
+            }
         }
     }
 

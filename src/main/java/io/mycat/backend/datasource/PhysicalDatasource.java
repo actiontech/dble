@@ -283,8 +283,8 @@ public abstract class PhysicalDatasource {
     }
 
     private void createByIdleLitte(int idleCons, int createCount) {
-        LOGGER.info("create connections ,because idle connection not enough ,cur is "
-                + idleCons + ", minCon is " + hostConfig.getMinCon() + " for " + name);
+        LOGGER.info("create connections ,because idle connection not enough ,cur is " +
+                idleCons + ", minCon is " + hostConfig.getMinCon() + " for " + name);
 
         final String[] schemas = dbPool.getSchemas();
         for (int i = 0; i < createCount; i++) {
@@ -405,8 +405,8 @@ public abstract class PhysicalDatasource {
                 LOGGER.error(msg);
                 throw new IOException(msg);
             } else { // create connection
-                LOGGER.info("no ilde connection in pool,create new connection for "
-                        + this.name + " of schema " + schema);
+                LOGGER.info("no ilde connection in pool,create new connection for " +
+                        this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
             }
         }

@@ -397,8 +397,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
                     sib = rightOf(parentOf(x));
                 }
 
-                if (colorOf(leftOf(sib)) == BLACK
-                        && colorOf(rightOf(sib)) == BLACK) {
+                if (colorOf(leftOf(sib)) == BLACK && colorOf(rightOf(sib)) == BLACK) {
                     setColor(sib, RED);
                     x = parentOf(x);
                 } else {
@@ -424,8 +423,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
                     sib = leftOf(parentOf(x));
                 }
 
-                if (colorOf(rightOf(sib)) == BLACK
-                        && colorOf(leftOf(sib)) == BLACK) {
+                if (colorOf(rightOf(sib)) == BLACK && colorOf(leftOf(sib)) == BLACK) {
                     setColor(sib, RED);
                     x = parentOf(x);
                 } else {

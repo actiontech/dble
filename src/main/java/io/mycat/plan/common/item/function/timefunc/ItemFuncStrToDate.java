@@ -112,9 +112,9 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         if (!nullDate) {
             nullValue = false;
             dateTimeFormat.format = format;
-            if (MyTime.extractDateTime(dateTimeFormat, val, ltime, cachedTimestampType, "datetime")
-                    || ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0
-                    && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
+            if (MyTime.extractDateTime(dateTimeFormat, val, ltime, cachedTimestampType, "datetime") ||
+                    ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0 &&
+                            (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
                 nullDate = true;
         }
         if (!nullDate) {

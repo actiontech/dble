@@ -59,9 +59,9 @@ public class HintMasterDBHandler implements HintHandler {
 //                }else{
 //                    isRouteToMaster = false;
 //                }
-                if (sqlType == ServerParse.DELETE || sqlType == ServerParse.INSERT
-                        || sqlType == ServerParse.REPLACE || sqlType == ServerParse.UPDATE
-                        || sqlType == ServerParse.DDL) {
+                if (sqlType == ServerParse.DELETE || sqlType == ServerParse.INSERT ||
+                        sqlType == ServerParse.REPLACE || sqlType == ServerParse.UPDATE ||
+                        sqlType == ServerParse.DDL) {
                     LOGGER.error("should not use hint 'db_type' to route 'delete', 'insert', 'replace', 'update', 'ddl' to a slave db.");
                     isRouteToMaster = null;    // 不施加任何影响
                 } else {

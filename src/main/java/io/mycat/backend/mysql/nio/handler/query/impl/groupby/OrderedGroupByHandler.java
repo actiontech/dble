@@ -211,8 +211,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                         .setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
             }
-            func.setAggregator(needDistinct && func.hasWithDistinct()
-                            ? AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
+            func.setAggregator(needDistinct && func.hasWithDistinct() ?
+                            AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     store);
         }
     }

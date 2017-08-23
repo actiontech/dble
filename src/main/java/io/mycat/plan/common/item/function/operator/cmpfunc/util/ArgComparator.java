@@ -72,9 +72,9 @@ public class ArgComparator {
         } else {
             // Convert from string to DATETIME
             String strVal = strArg.valStr();
-            MySQLTimestampType ttype = (dateArg.fieldType() == FieldTypes.MYSQL_TYPE_DATE
-                    ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
-                    : MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            MySQLTimestampType ttype = (dateArg.fieldType() == FieldTypes.MYSQL_TYPE_DATE ?
+                    MySQLTimestampType.MYSQL_TIMESTAMP_DATE :
+                    MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
             if (strArg.nullValue) {
                 return true;
             }
@@ -147,16 +147,16 @@ public class ArgComparator {
             getValueBFunc = new GetDatetimeValue();
             setcmpcontextfordatetime();
             return 0;
-        } else if (type == ItemResult.STRING_RESULT && a.fieldType() == FieldTypes.MYSQL_TYPE_TIME
-                && b.fieldType() == FieldTypes.MYSQL_TYPE_TIME) {
+        } else if (type == ItemResult.STRING_RESULT && a.fieldType() == FieldTypes.MYSQL_TYPE_TIME &&
+                b.fieldType() == FieldTypes.MYSQL_TYPE_TIME) {
             isNullsEq = isOwnerEqualFunc();
             func = new CompareDatetime();
             getValueAFunc = new GetTimeValue();
             getValueBFunc = new GetTimeValue();
             setcmpcontextfordatetime();
             return 0;
-        } else if (type == ItemResult.STRING_RESULT && a.resultType() == ItemResult.STRING_RESULT
-                && b.resultType() == ItemResult.STRING_RESULT) {
+        } else if (type == ItemResult.STRING_RESULT && a.resultType() == ItemResult.STRING_RESULT &&
+                b.resultType() == ItemResult.STRING_RESULT) {
             // see item_cmpfunc.cc line1054
         } else if (tryYearCmpFunc(type)) {
             return 0;
@@ -444,8 +444,7 @@ public class ArgComparator {
             res2 = ac.b.valStr();
             if (res1 == null || res2 == null)
                 return (res1 == null && res2 == null) ? 1 : 0;
-            return MySQLcom.memcmp(res1.getBytes(), res2.getBytes(), Math.min(res1.length(), res2.length())) == 0 ? 1
-                    : 0;
+            return MySQLcom.memcmp(res1.getBytes(), res2.getBytes(), Math.min(res1.length(), res2.length())) == 0 ? 1 : 0;
         }
     }
 

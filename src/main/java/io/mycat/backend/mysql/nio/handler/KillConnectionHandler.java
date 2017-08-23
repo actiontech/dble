@@ -69,8 +69,8 @@ public class KillConnectionHandler implements ResponseHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("kill connection success connection id:"
-                    + killee.getThreadId());
+            LOGGER.debug("kill connection success connection id:" +
+                    killee.getThreadId());
         }
         conn.release();
         killee.close("killed");
@@ -96,8 +96,7 @@ public class KillConnectionHandler implements ResponseHandler {
         } catch (UnsupportedEncodingException e) {
             msg = new String(err.message);
         }
-        LOGGER.warn("kill backend connection " + killee + " failed: " + msg
-                + " con:" + conn);
+        LOGGER.warn("kill backend connection " + killee + " failed: " + msg + " con:" + conn);
         conn.release();
         killee.close("exception:" + msg);
     }

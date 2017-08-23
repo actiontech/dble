@@ -102,8 +102,9 @@ public class CacheService {
         String layedCacheType = props.getProperty("layedpool.TableID2DataNodeCacheType");
         String cacheDefault = props.getProperty("layedpool.TableID2DataNodeCache");
         if (cacheDefault != null && layedCacheType != null) {
-            throw new java.lang.IllegalArgumentException("invalid cache config, layedpool.TableID2DataNodeCacheType and "
-                    + "layedpool.TableID2DataNodeCache don't coexist");
+            throw new java.lang.IllegalArgumentException(
+                    "invalid cache config, layedpool.TableID2DataNodeCacheType and " +
+                    "layedpool.TableID2DataNodeCache don't coexist");
         }
 
         final String rootlayedCacheName = "TableID2DataNodeCache";
@@ -160,8 +161,8 @@ public class CacheService {
                 }
 
                 if ((pool == null) || !(pool instanceof LayerCachePool)) {
-                    throw new java.lang.IllegalArgumentException("parent pool not exists or not layered cache pool:"
-                            + parent + " the child cache is:" + child);
+                    throw new java.lang.IllegalArgumentException("parent pool not exists or not layered cache pool:" +
+                            parent + " the child cache is:" + child);
                 }
 
                 int size = Integer.parseInt(valueItems[0]);
@@ -213,8 +214,8 @@ public class CacheService {
 
     private void createLayeredPool(String cacheName, String type, int size, int expireSeconds) {
         checkExists(cacheName);
-        LOGGER.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " + size
-                + " ,default expire seconds" + expireSeconds);
+        LOGGER.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " +
+                size + " ,default expire seconds" + expireSeconds);
         DefaultLayedCachePool layerdPool = new DefaultLayedCachePool(cacheName, this.getCacheFact(type), size, expireSeconds);
         this.allPools.put(cacheName, layerdPool);
     }

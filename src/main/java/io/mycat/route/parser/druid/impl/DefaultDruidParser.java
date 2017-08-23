@@ -153,8 +153,8 @@ public class DefaultDruidParser implements DruidParser {
                     if (tableAliasMap != null && tableAliasMap.get(tableName) == null) {//子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
                         continue;
                     }
-                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null
-                            && !tableAliasMap.get(tableName).equals(tableName)) {
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null &&
+                            !tableAliasMap.get(tableName).equals(tableName)) {
                         tableName = tableAliasMap.get(tableName);
                     }
                     String operator = condition.getOperator();

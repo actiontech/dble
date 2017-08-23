@@ -187,8 +187,8 @@ public class MySQLcom {
         for (int i = 1; i < items.size(); i++) {
             if (skipnulls && items.get(i).type() == Item.ItemType.NULL_ITEM)
                 continue;
-            if (leftResult == ItemResult.ROW_RESULT || items.get(i).resultType() == ItemResult.ROW_RESULT
-                    && cmpRowType(items.get(0), items.get(i)) != 0)
+            if (leftResult == ItemResult.ROW_RESULT || items.get(i).resultType() == ItemResult.ROW_RESULT &&
+                    cmpRowType(items.get(0), items.get(i)) != 0)
                 return 0;
             foundtypes |= 1 << MySQLcom.itemCmpType(leftResult, items.get(i).resultType()).ordinal();
         }
@@ -212,8 +212,8 @@ public class MySQLcom {
             return ItemResult.STRING_RESULT;
         if (a == ItemResult.INT_RESULT && b == ItemResult.INT_RESULT)
             return ItemResult.INT_RESULT;
-        if ((a == ItemResult.INT_RESULT || a == ItemResult.DECIMAL_RESULT)
-                && (b == ItemResult.INT_RESULT || b == ItemResult.DECIMAL_RESULT))
+        if ((a == ItemResult.INT_RESULT || a == ItemResult.DECIMAL_RESULT) &&
+                (b == ItemResult.INT_RESULT || b == ItemResult.DECIMAL_RESULT))
             return ItemResult.DECIMAL_RESULT;
         return ItemResult.REAL_RESULT;
     }

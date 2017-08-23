@@ -143,8 +143,7 @@ public class FileSystemRepository implements Repository {
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (DeserialisationException unexpectedEOF) {
-            LOGGER.warn("Unexpected EOF - logfile not closed properly last time? "
-                    + unexpectedEOF);
+            LOGGER.warn("Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
         }
         return coordinatorLogEntries;
     }

@@ -49,9 +49,9 @@ public class ERTable {
             return true;
         if (obj instanceof ERTable) {
             ERTable erTable = (ERTable) obj;
-            return this.schema.equals(erTable.getSchema())
-                    && this.table.equals(erTable.getTable())
-                    && this.column.equalsIgnoreCase(erTable.getColumn());
+            return this.schema.equals(erTable.getSchema()) &&
+                    this.table.equals(erTable.getTable()) &&
+                    this.column.equalsIgnoreCase(erTable.getColumn());
         }
         return false;
     }

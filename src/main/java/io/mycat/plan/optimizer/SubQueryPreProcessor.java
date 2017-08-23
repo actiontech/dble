@@ -89,9 +89,9 @@ public class SubQueryPreProcessor {
             PlanNode query;
             boolean isNotIn = false;
             boolean neeEexchange = false;
-            if (filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe
-                    || filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe
-                    || filter instanceof ItemFuncStrictEqual) {
+            if (filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
+                    filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
+                    filter instanceof ItemFuncStrictEqual) {
                 ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
                 Item arg0 = eqFilter.arguments().get(0);
                 Item arg1 = eqFilter.arguments().get(1);
@@ -167,17 +167,17 @@ public class SubQueryPreProcessor {
                 result.filter = null;
             } else {
                 Item joinFilter = null;
-                if (((filter instanceof ItemFuncGt) && !neeEexchange)
-                        || ((filter instanceof ItemFuncLt) && neeEexchange)) {
+                if (((filter instanceof ItemFuncGt) && !neeEexchange) ||
+                        ((filter instanceof ItemFuncLt) && neeEexchange)) {
                     joinFilter = FilterUtils.greaterThan(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncLt) && !neeEexchange)
-                        || ((filter instanceof ItemFuncGt) && neeEexchange)) {
+                } else if (((filter instanceof ItemFuncLt) && !neeEexchange) ||
+                        ((filter instanceof ItemFuncGt) && neeEexchange)) {
                     joinFilter = FilterUtils.lessThan(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncGe) && !neeEexchange)
-                        || ((filter instanceof ItemFuncLe) && neeEexchange)) {
+                } else if (((filter instanceof ItemFuncGe) && !neeEexchange) ||
+                        ((filter instanceof ItemFuncLe) && neeEexchange)) {
                     joinFilter = FilterUtils.greaterEqual(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncLe) && !neeEexchange)
-                        || ((filter instanceof ItemFuncGe) && neeEexchange)) {
+                } else if (((filter instanceof ItemFuncLe) && !neeEexchange) ||
+                        ((filter instanceof ItemFuncGe) && neeEexchange)) {
                     joinFilter = FilterUtils.lessEqual(leftColumn, rightJoinColumn);
                 } else if (filter instanceof ItemFuncNe) {
                     joinFilter = FilterUtils.notEqual(leftColumn, rightJoinColumn);

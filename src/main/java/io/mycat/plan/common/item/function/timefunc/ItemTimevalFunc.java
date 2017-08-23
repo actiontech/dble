@@ -30,8 +30,8 @@ public abstract class ItemTimevalFunc extends ItemFunc {
     @Override
     public BigDecimal valReal() {
         Timeval tm = new Timeval();
-        return valTimeval(tm) ? BigDecimal.ZERO
-                : BigDecimal.valueOf((double) tm.tvSec + (double) tm.tvUsec / (double) 1000000);
+        return valTimeval(tm) ? BigDecimal.ZERO :
+                BigDecimal.valueOf((double) tm.tvSec + (double) tm.tvUsec / (double) 1000000);
     }
 
     @Override

@@ -459,9 +459,9 @@ public class MySQLConnection extends BackendAIOConnection {
             sb.append(xaCmd);
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("con need syn ,total syn cmd " + synCount
-                    + " commands " + sb.toString() + "schema change:"
-                    + (schemaCmd != null) + " con:" + this);
+            LOGGER.debug("con need syn ,total syn cmd " + synCount +
+                    " commands " + sb.toString() + "schema change:" +
+                    (schemaCmd != null) + " con:" + this);
         }
         metaDataSyned = false;
         statusSync = new StatusSync(conSchema,
@@ -588,8 +588,7 @@ public class MySQLConnection extends BackendAIOConnection {
             respHandler = queryHandler;
             return true;
         } else if (queryHandler != null) {
-            LOGGER.warn("set not MySQLConnectionHandler "
-                    + queryHandler.getClass().getCanonicalName());
+            LOGGER.warn("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());
         }
         return false;
     }
@@ -634,13 +633,12 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     @Override
-    public String toString() {
-        return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema
-                + ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId="
-                + threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
-                + ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port
-                + ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size()
-                + ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
+    public String toString() { return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema +
+            ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId=" +
+            threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
+            ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port +
+                ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size() +
+                ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
     }
 
     public String compactInfo() {

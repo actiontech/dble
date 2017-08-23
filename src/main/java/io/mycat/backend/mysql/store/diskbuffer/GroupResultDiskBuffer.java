@@ -80,8 +80,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
      */
     protected void prepareSumAggregators(List<ItemSum> funcs, boolean needDistinct) {
         for (ItemSum func : funcs) {
-            func.setAggregator(needDistinct && func.hasWithDistinct()
-                            ? AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
+            func.setAggregator(needDistinct && func.hasWithDistinct() ?
+                            AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     null);
         }
     }

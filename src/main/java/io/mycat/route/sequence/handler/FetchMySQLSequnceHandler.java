@@ -26,8 +26,8 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         PhysicalDBNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("execute in datanode " + seqVal.dataNode
-                        + " for fetch sequnce sql " + seqVal.sql);
+                LOGGER.debug("execute in datanode " + seqVal.dataNode +
+                        " for fetch sequnce sql " + seqVal.sql);
             }
             // 修正获取seq的逻辑，在读写分离的情况下只能走写节点。修改Select模式为Update模式。
             mysqlDN.getConnection(mysqlDN.getDatabase(), true,
@@ -94,8 +94,8 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
-            LOGGER.warn(" sequnce sql returned err value ,sequence:"
-                    + seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
+            LOGGER.warn(" sequnce sql returned err value ,sequence:" +
+                    seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
             seqVal.dbretVal = columnVal;
         }

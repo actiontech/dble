@@ -65,8 +65,8 @@ public class MigratorConditonFilesMaker implements Runnable {
             createTempFiles();
 
             //暂时只实现mysql的分页查询
-            list = DataMigratorUtil.executeQuery(con, "select "
-                            + column + " from " + tableName + " limit ?,?", page++ * pageSize,
+            list = DataMigratorUtil.executeQuery(con, "select " +
+                            column + " from " + tableName + " limit ?,?", page++ * pageSize,
                     pageSize);
             int total = 0; //该节点表总数据量
 
@@ -86,8 +86,8 @@ public class MigratorConditonFilesMaker implements Runnable {
                         map.get(newDn).append(filedVal + ",");
                     }
                 }
-                list = DataMigratorUtil.executeQuery(con, "select "
-                                + column + " from " + tableName + " limit ?,?", page++ * pageSize,
+                list = DataMigratorUtil.executeQuery(con, "select " +
+                                column + " from " + tableName + " limit ?,?", page++ * pageSize,
                         pageSize);
             }
             flushData(true);

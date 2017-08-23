@@ -67,8 +67,8 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 
     @Override
     public String toString() {
-        return "BackendConnection [id=" + id + ", host=" + host + ", port="
-                + port + ", localPort=" + localPort + "]";
+        return "BackendConnection [id=" + id + ", host=" + host + ", port=" + port +
+                ", localPort=" + localPort + "]";
     }
 
     public String compactInfo() {

@@ -107,8 +107,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
                     if (MergeCol.MERGE_AVG == type) {
 
                         ColMeta sumColMeta = columToIndx.get(colName + "SUM");
-                        ColMeta countColMeta = columToIndx.get(colName
-                                + "COUNT");
+                        ColMeta countColMeta = columToIndx.get(colName + "COUNT");
                         if (sumColMeta != null && countColMeta != null) {
                             ColMeta colMeta = new ColMeta(sumColMeta.colIndex,
                                     countColMeta.colIndex,
@@ -128,8 +127,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
             for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
                 String colName = fieldEntry.getKey();
                 int result = MergeCol.tryParseAggCol(colName);
-                if (result != MergeCol.MERGE_UNSUPPORT
-                        && result != MergeCol.MERGE_NOMERGE) {
+                if (result != MergeCol.MERGE_UNSUPPORT && result != MergeCol.MERGE_NOMERGE) {
                     mergCols.add(new MergeCol(fieldEntry.getValue(), result));
                 }
             }
@@ -150,8 +148,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
                 ColMeta colMeta = columToIndx.get(key);
                 if (colMeta == null) {
                     throw new IllegalArgumentException(
-                            "all columns in order by clause should be in the selected column list!"
-                                    + entry.getKey());
+                            "all columns in order by clause should be in the selected column list!" + entry.getKey());
                 }
                 orderCols[i++] = new OrderCol(colMeta, entry.getValue());
             }

@@ -103,9 +103,9 @@ public class UserConfig {
 
     @Override
     public String toString() {
-        return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword="
-                + this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager
-                + ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
+        return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword=" +
+                this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager +
+                ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
     }
 
 

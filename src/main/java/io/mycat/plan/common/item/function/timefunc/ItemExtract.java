@@ -177,8 +177,8 @@ public class ItemExtract extends ItemIntFunc {
                 return BigInteger.valueOf(ltime.secondPart * neg);
             case DAY_MICROSECOND:
                 return BigInteger.valueOf(
-                        ((ltime.day * 1000000L + ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L
-                                + ltime.secondPart) * neg);
+                        ((ltime.day * 1000000L + ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L +
+                                ltime.secondPart) * neg);
             case HOUR_MICROSECOND:
                 return BigInteger.valueOf(
                         ((ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L + ltime.secondPart) * neg);

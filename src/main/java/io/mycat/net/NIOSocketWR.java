@@ -123,8 +123,7 @@ public class NIOSocketWR extends SocketWR {
             SelectionKey key = this.processKey;
             key.interestOps(key.interestOps() & OP_NOT_WRITE);
         } catch (Exception e) {
-            AbstractConnection.LOGGER.warn("can't disable write " + e + " con "
-                    + con);
+            AbstractConnection.LOGGER.warn("can't disable write " + e + " con " + con);
         }
 
     }

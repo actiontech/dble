@@ -190,8 +190,8 @@ public class FieldUtil {
     public static int fieldType2Index(FieldTypes fieldType) {
         fieldType = realTypeToType(fieldType);
         assert (fieldType.numberValue() < FIELDTYPE_TEAR_FROM || fieldType.numberValue() > FIELDTYPE_TEAR_TO);
-        return (fieldType.numberValue() < FIELDTYPE_TEAR_FROM ? fieldType.numberValue()
-                : ((int) FIELDTYPE_TEAR_FROM) + (fieldType.numberValue() - FIELDTYPE_TEAR_TO) - 1);
+        return (fieldType.numberValue() < FIELDTYPE_TEAR_FROM ? fieldType.numberValue() :
+                ((int) FIELDTYPE_TEAR_FROM) + (fieldType.numberValue() - FIELDTYPE_TEAR_TO) - 1);
     }
 
     public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {

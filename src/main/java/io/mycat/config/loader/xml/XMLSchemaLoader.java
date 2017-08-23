@@ -534,9 +534,9 @@ public class XMLSchemaLoader implements SchemaLoader {
         AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
         int suitValue = function.suitableFor(tableConf);
         if (suitValue < 0) {// 少节点,给提示并抛异常
-            throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ "
-                    + tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : "
-                    + tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
+            throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
+                    tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : " +
+                    tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
         } else if (suitValue > 0) {// 有些节点是多余的,给出warn log
             LOGGER.warn("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant",
                     new String[]{
@@ -576,8 +576,8 @@ public class XMLSchemaLoader implements SchemaLoader {
             String[] hostStrings = io.mycat.util.SplitUtil.split(host, ',', '$', '-');
 
             if (dnNames.length > 1 && dnNames.length != databases.length * hostStrings.length) {
-                throw new ConfigException("dataNode " + dnNamePre
-                        + " define error ,dnNames.length must be=databases.length*hostStrings.length");
+                throw new ConfigException("dataNode " + dnNamePre +
+                        " define error ,dnNames.length must be=databases.length*hostStrings.length");
             }
             if (dnNames.length > 1) {
 
@@ -652,10 +652,9 @@ public class XMLSchemaLoader implements SchemaLoader {
         int port = 0;
         if (empty(nodeHost) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
-                    "dataHost "
-                            + dataHost
-                            + " define error,some attributes of this element is empty: "
-                            + nodeHost);
+                    "dataHost " + dataHost +
+                            " define error,some attributes of this element is empty: " +
+                            nodeHost);
         }
 
         int colonIndex = nodeUrl.indexOf(':');

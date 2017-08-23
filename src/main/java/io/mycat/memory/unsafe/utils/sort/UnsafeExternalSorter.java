@@ -163,8 +163,8 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
             return 0L;
         }
 
-        logger.info("Thread" + Thread.currentThread().getId() + " spilling sort data of " + JavaUtils.bytesToString(getMemoryUsage())
-                + " to disk (" + spillWriters.size() + " times so far)");
+        logger.info("Thread" + Thread.currentThread().getId() + " spilling sort data of " + JavaUtils.bytesToString(getMemoryUsage()) +
+                " to disk (" + spillWriters.size() + " times so far)");
 
         // We only write out contents of the inMemSorter if it is not empty.
         if (inMemSorter.numRecords() > 0) {
@@ -551,8 +551,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
 
         public long spill() throws IOException {
             synchronized (this) {
-                if (!(upstream instanceof UnsafeInMemorySorter.SortedIterator && nextUpstream == null
-                        && numRecords > 0)) {
+                if (!(upstream instanceof UnsafeInMemorySorter.SortedIterator && nextUpstream == null && numRecords > 0)) {
                     return 0L;
                 }
 

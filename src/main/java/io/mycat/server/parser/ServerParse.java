@@ -81,8 +81,8 @@ public final class ServerParse {
                 case '/':
                     // such as /*!40101 SET character_set_client = @saved_cs_client
                     // */;
-                    if (i == 0 && stmt.charAt(1) == '*' && stmt.charAt(2) == '!' && stmt.charAt(length - 2) == '*'
-                            && stmt.charAt(length - 1) == '/') {
+                    if (i == 0 && stmt.charAt(1) == '*' && stmt.charAt(2) == '!' && stmt.charAt(length - 2) == '*' &&
+                            stmt.charAt(length - 1) == '/') {
                         return MYSQL_CMD_COMMENT;
                     }
                 case '#':
@@ -202,12 +202,12 @@ public final class ServerParse {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'A' || c2 == 'a')
-                    && (c3 == 'D' || c3 == 'd')) {
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'D' || c3 == 'd')) {
                 Matcher matcher = PATTERN.matcher(stmt);
                 return matcher.find() ? LOAD_DATA_INFILE_SQL : OTHER;
-            } else if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c')
-                    && (c3 == 'K' || c3 == 'k')) {
+            } else if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c') &&
+                    (c3 == 'K' || c3 == 'k')) {
                 return LOCK;
             }
         }
@@ -225,12 +225,12 @@ public final class ServerParse {
             char c6 = stmt.charAt(++offset);
 
 
-            if ((c1 == 'i' || c1 == 'I')
-                    && (c2 == 'g' || c2 == 'G')
-                    && (c3 == 'r' || c3 == 'R')
-                    && (c4 == 'a' || c4 == 'A')
-                    && (c5 == 't' || c5 == 'T')
-                    && (c6 == 'e' || c6 == 'E')) {
+            if ((c1 == 'i' || c1 == 'I') &&
+                    (c2 == 'g' || c2 == 'G') &&
+                    (c3 == 'r' || c3 == 'R') &&
+                    (c4 == 'a' || c4 == 'A') &&
+                    (c5 == 't' || c5 == 'T') &&
+                    (c6 == 'e' || c6 == 'E')) {
                 return MIGRATE;
             }
         }
@@ -249,14 +249,14 @@ public final class ServerParse {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
 
-            if ((c1 == 'R' || c1 == 'r')
-                    && (c2 == 'U' || c2 == 'u')
-                    && (c3 == 'N' || c3 == 'n')
-                    && (c4 == 'C' || c4 == 'c')
-                    && (c5 == 'A' || c5 == 'a')
-                    && (c6 == 'T' || c6 == 't')
-                    && (c7 == 'E' || c7 == 'e')
-                    && (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'U' || c2 == 'u') &&
+                    (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'A' || c5 == 'a') &&
+                    (c6 == 'T' || c6 == 't') &&
+                    (c7 == 'E' || c7 == 'e') &&
+                    (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                 return DDL;
             }
         }
@@ -271,11 +271,11 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l')
-                    && (c2 == 'T' || c2 == 't')
-                    && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'R' || c4 == 'r')
-                    && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'T' || c2 == 't') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'R' || c4 == 'r') &&
+                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return DDL;
             }
         }
@@ -291,12 +291,12 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r')
-                    && (c2 == 'E' || c2 == 'e')
-                    && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'T' || c4 == 't')
-                    && (c5 == 'E' || c5 == 'e')
-                    && (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'T' || c4 == 't') &&
+                    (c5 == 'E' || c5 == 'e') &&
+                    (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
                 return DDL;
             }
         }
@@ -310,10 +310,10 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r')
-                    && (c2 == 'O' || c2 == 'o')
-                    && (c3 == 'P' || c3 == 'p')
-                    && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'P' || c3 == 'p') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 return DDL;
             }
         }
@@ -344,8 +344,8 @@ public final class ServerParse {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'P' || c3 == 'p')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'P' || c3 == 'p')) {
                 return (offset << 8) | HELP;
             }
         }
@@ -363,9 +363,9 @@ public final class ServerParse {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'X' || c1 == 'x') && (c2 == 'P' || c2 == 'p')
-                    && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a')
-                    && (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n')) {
+            if ((c1 == 'X' || c1 == 'x') && (c2 == 'P' || c2 == 'p') &&
+                    (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a') &&
+                    (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n')) {
                 if (ParseUtil.isSpace(c7)) {
                     return (offset << 8) | EXPLAIN;
                 } else if (c7 == '2' && (stmt.length() > offset + 1) && ParseUtil.isSpace(stmt.charAt(++offset))) {
@@ -385,9 +385,9 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'I' || c1 == 'i') && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'L' || c3 == 'l')
-                    && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'L' || c3 == 'l') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -416,9 +416,9 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e')
-                    && (c3 == 'R' || c3 == 'r') && (c4 == 'Y' || c4 == 'y')
-                    && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'R' || c3 == 'r') && (c4 == 'Y' || c4 == 'y') &&
+                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -443,12 +443,12 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e')
-                    && (c2 == 'G' || c2 == 'g')
-                    && (c3 == 'I' || c3 == 'i')
-                    && (c4 == 'N' || c4 == 'n')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+            if ((c1 == 'E' || c1 == 'e') &&
+                    (c2 == 'G' || c2 == 'g') &&
+                    (c3 == 'I' || c3 == 'i') &&
+                    (c4 == 'N' || c4 == 'n') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+                            .charAt(offset)))) {
                 return BEGIN;
             }
         }
@@ -463,13 +463,13 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o')
-                    && (c2 == 'M' || c2 == 'm')
-                    && (c3 == 'M' || c3 == 'm')
-                    && (c4 == 'I' || c4 == 'i')
-                    && (c5 == 'T' || c5 == 't')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+            if ((c1 == 'O' || c1 == 'o') &&
+                    (c2 == 'M' || c2 == 'm') &&
+                    (c3 == 'M' || c3 == 'm') &&
+                    (c4 == 'I' || c4 == 'i') &&
+                    (c5 == 'T' || c5 == 't') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+                            .charAt(offset)))) {
                 return COMMIT;
             }
         }
@@ -483,8 +483,8 @@ public final class ServerParse {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'L' || c3 == 'l')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'L' || c3 == 'l')) {
                 return CALL;
             }
         }
@@ -529,10 +529,10 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'E' || c3 == 'e') && (c4 == 'T' || c4 == 't')
-                    && (c5 == 'E' || c5 == 'e')
-                    && (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'T' || c4 == 't') &&
+                    (c5 == 'E' || c5 == 'e') &&
+                    (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
                 return DELETE;
             }
         }
@@ -547,9 +547,9 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's')
-                    && (c3 == 'C' || c3 == 'c')
-                    && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'C' || c3 == 'c') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 return DESCRIBE;
             }
             //describe
@@ -558,11 +558,11 @@ public final class ServerParse {
                 char c6 = stmt.charAt(++offset);
                 char c7 = stmt.charAt(++offset);
                 char c8 = stmt.charAt(++offset);
-                if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's')
-                        && (c3 == 'C' || c3 == 'c') && (c4 == 'R' || c4 == 'r')
-                        && (c5 == 'I' || c5 == 'i') && (c6 == 'B' || c6 == 'b')
-                        && (c7 == 'E' || c7 == 'e')
-                        && (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+                if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') &&
+                        (c3 == 'C' || c3 == 'c') && (c4 == 'R' || c4 == 'r') &&
+                        (c5 == 'I' || c5 == 'i') && (c6 == 'B' || c6 == 'b') &&
+                        (c7 == 'E' || c7 == 'e') &&
+                        (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                     return DESCRIBE;
                 }
             }
@@ -579,10 +579,10 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'N' || c1 == 'n') && (c2 == 'S' || c2 == 's')
-                    && (c3 == 'E' || c3 == 'e') && (c4 == 'R' || c4 == 'r')
-                    && (c5 == 'T' || c5 == 't')
-                    && (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'R' || c4 == 'r') &&
+                    (c5 == 'T' || c5 == 't') &&
+                    (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
                 return INSERT;
             }
         }
@@ -614,10 +614,10 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'P' || c1 == 'p') && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'A' || c3 == 'a') && (c4 == 'C' || c4 == 'c')
-                    && (c5 == 'E' || c5 == 'e')
-                    && (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+            if ((c1 == 'P' || c1 == 'p') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'A' || c3 == 'a') && (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'E' || c5 == 'e') &&
+                    (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
                 return REPLACE;
             }
         }
@@ -633,14 +633,14 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l')
-                    && (c2 == 'L' || c2 == 'l')
-                    && (c3 == 'B' || c3 == 'b')
-                    && (c4 == 'A' || c4 == 'a')
-                    && (c5 == 'C' || c5 == 'c')
-                    && (c6 == 'K' || c6 == 'k')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
-                    .charAt(offset)))) {
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'B' || c3 == 'b') &&
+                    (c4 == 'A' || c4 == 'a') &&
+                    (c5 == 'C' || c5 == 'c') &&
+                    (c6 == 'K' || c6 == 'k') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+                            .charAt(offset)))) {
                 return ROLLBACK;
             }
         }
@@ -680,11 +680,11 @@ public final class ServerParse {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'V' || c1 == 'v') && (c2 == 'E' || c2 == 'e')
-                    && (c3 == 'P' || c3 == 'p') && (c4 == 'O' || c4 == 'o')
-                    && (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n')
-                    && (c7 == 'T' || c7 == 't')
-                    && (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+            if ((c1 == 'V' || c1 == 'v') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'P' || c3 == 'p') && (c4 == 'O' || c4 == 'o') &&
+                    (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n') &&
+                    (c7 == 'T' || c7 == 't') &&
+                    (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                 return SAVEPOINT;
             }
         }
@@ -712,8 +712,7 @@ public final class ServerParse {
                         }
 
                         char c = stmt.charAt(offset);
-                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t'
-                                || c == '/' || c == '#') {
+                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == '/' || c == '#') {
                             return (offset << 8) | SET;
                         }
                     }
@@ -732,11 +731,10 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e')
-                    && (c2 == 'C' || c2 == 'c')
-                    && (c3 == 'T' || c3 == 't')
-                    && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n'
-                    || c4 == '/' || c4 == '#')) {
+            if ((c1 == 'E' || c1 == 'e') &&
+                    (c2 == 'C' || c2 == 'c') &&
+                    (c3 == 'T' || c3 == 't') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n' || c4 == '/' || c4 == '#')) {
                 return (offset << 8) | SELECT;
             }
         }
@@ -749,8 +747,8 @@ public final class ServerParse {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w')
-                    && (c3 == ' ' || c3 == '\t' || c3 == '\r' || c3 == '\n')) {
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') &&
+                    (c3 == ' ' || c3 == '\t' || c3 == '\r' || c3 == '\n')) {
                 return (offset << 8) | SHOW;
             }
         }
@@ -764,9 +762,9 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r')
-                    && (c3 == 'T' || c3 == 't')
-                    && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'T' || c3 == 't') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 return (offset << 8) | START;
             }
         }
@@ -785,11 +783,11 @@ public final class ServerParse {
                         char c3 = stmt.charAt(++offset);
                         char c4 = stmt.charAt(++offset);
                         char c5 = stmt.charAt(++offset);
-                        if ((c1 == 'D' || c1 == 'd')
-                                && (c2 == 'A' || c2 == 'a')
-                                && (c3 == 'T' || c3 == 't')
-                                && (c4 == 'E' || c4 == 'e')
-                                && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                        if ((c1 == 'D' || c1 == 'd') &&
+                                (c2 == 'A' || c2 == 'a') &&
+                                (c3 == 'T' || c3 == 't') &&
+                                (c4 == 'E' || c4 == 'e') &&
+                                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                             return UPDATE;
                         }
                     }
@@ -799,8 +797,8 @@ public final class ServerParse {
                     if (stmt.length() > offset + 2) {
                         char c1 = stmt.charAt(++offset);
                         char c2 = stmt.charAt(++offset);
-                        if ((c1 == 'E' || c1 == 'e')
-                                && (c2 == ' ' || c2 == '\t' || c2 == '\r' || c2 == '\n')) {
+                        if ((c1 == 'E' || c1 == 'e') &&
+                                (c2 == ' ' || c2 == '\t' || c2 == '\r' || c2 == '\n')) {
                             return (offset << 8) | USE;
                         }
                     }
@@ -813,11 +811,11 @@ public final class ServerParse {
                         char c3 = stmt.charAt(++offset);
                         char c4 = stmt.charAt(++offset);
                         char c5 = stmt.charAt(++offset);
-                        if ((c1 == 'L' || c1 == 'l')
-                                && (c2 == 'O' || c2 == 'o')
-                                && (c3 == 'C' || c3 == 'c')
-                                && (c4 == 'K' || c4 == 'k')
-                                && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                        if ((c1 == 'L' || c1 == 'l') &&
+                                (c2 == 'O' || c2 == 'o') &&
+                                (c3 == 'C' || c3 == 'c') &&
+                                (c4 == 'K' || c4 == 'k') &&
+                                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                             return UNLOCK;
                         }
                     }

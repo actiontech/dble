@@ -71,8 +71,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             a = args.get(1).valStr();
             b = args.get(2).valStr();
             if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (value.compareTo(a) >= 0 && value.compareTo(b) <= 0) != negated ? BigInteger.ONE
-                        : BigInteger.ZERO;
+                return (value.compareTo(a) >= 0 && value.compareTo(b) <= 0) != negated ? BigInteger.ONE : BigInteger.ZERO;
             if (args.get(1).isNull() && args.get(2).isNull())
                 nullValue = true;
             else if (args.get(1).isNull()) {
@@ -84,8 +83,8 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             }
         } else if (cmpType.get() == ItemResult.INT_RESULT) {
             long a, b, value;
-            value = compareAsTemporalTimes ? args.get(0).valTimeTemporal()
-                    : compareAsTemporalDates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
+            value = compareAsTemporalTimes ? args.get(0).valTimeTemporal() :
+                    compareAsTemporalDates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
             if (nullValue = args.get(0).isNull())
                 return BigInteger.ZERO; /* purecov: inspected */
             if (compareAsTemporalTimes) {
@@ -115,8 +114,8 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             aDec = args.get(1).valDecimal();
             bDec = args.get(2).valDecimal();
             if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (dec.compareTo(aDec) >= 0 && dec.compareTo(bDec) <= 0) != negated ? BigInteger.ONE
-                        : BigInteger.ZERO;
+                return (dec.compareTo(aDec) >= 0 && dec.compareTo(bDec) <= 0) != negated ?
+                        BigInteger.ONE : BigInteger.ZERO;
             if (args.get(1).isNull() && args.get(2).isNull())
                 nullValue = true;
             else if (args.get(1).isNull())

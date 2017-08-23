@@ -96,8 +96,7 @@ public final class ConfFileHandler {
         } else if (theStmt.startsWith(UPLOAD_CMD)) {
             int index = stmt.indexOf(' ', UPLOAD_CMD.length());
             int index2 = stmt.indexOf(' ', index + 1);
-            if (index <= 0 || index2 <= 0 || index + 1 > stmt.length()
-                    || index2 + 1 > stmt.length()) {
+            if (index <= 0 || index2 <= 0 || index + 1 > stmt.length() || index2 + 1 > stmt.length()) {
                 bufInf = showInfo(c, buffer, packetId, "Invald param ,usage  ");
             }
             String fileName = stmt.substring(index + 1, index2);
@@ -176,11 +175,9 @@ public final class ConfFileHandler {
 
     private static PackageBufINf upLoadConfigFile(ManagerConnection c,
                                                   ByteBuffer buffer, byte packetId, String fileName, String content) {
-        LOGGER.info("Upload Daas Config file " + fileName + " ,content:"
-                + content);
+        LOGGER.info("Upload Daas Config file " + fileName + " ,content:" + content);
         String tempFileName = System.currentTimeMillis() + "_" + fileName;
-        File tempFile = new File(SystemConfig.getHomePath(), "conf"
-                + File.separator + tempFileName);
+        File tempFile = new File(SystemConfig.getHomePath(), "conf" + File.separator + tempFileName);
         BufferedOutputStream buff = null;
         boolean suc = false;
         try {
@@ -208,32 +205,26 @@ public final class ConfFileHandler {
         }
         if (suc) {
             // if succcess
-            File oldFile = new File(SystemConfig.getHomePath(), "conf"
-                    + File.separator + fileName);
+            File oldFile = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
             if (oldFile.exists()) {
-                File backUP = new File(SystemConfig.getHomePath(), "conf"
-                        + File.separator + fileName + "_"
-                        + System.currentTimeMillis() + "_auto");
+                File backUP = new File(SystemConfig.getHomePath(), "conf" +
+                        File.separator + fileName + "_" +
+                        System.currentTimeMillis() + "_auto");
                 if (!oldFile.renameTo(backUP)) {
                     String msg = "rename old file failed";
-                    LOGGER.warn(msg + " for upload file "
-                            + oldFile.getAbsolutePath());
+                    LOGGER.warn(msg + " for upload file " + oldFile.getAbsolutePath());
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
-            File dest = new File(SystemConfig.getHomePath(), "conf"
-                    + File.separator + fileName);
+            File dest = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
             if (!tempFile.renameTo(dest)) {
                 String msg = "rename file failed";
-                LOGGER.warn(msg + " for upload file "
-                        + tempFile.getAbsolutePath());
+                LOGGER.warn(msg + " for upload file " + tempFile.getAbsolutePath());
                 return showInfo(c, buffer, packetId, msg);
             }
-            return showInfo(c, buffer, packetId, "SUCCESS SAVED FILE:"
-                    + fileName);
+            return showInfo(c, buffer, packetId, "SUCCESS SAVED FILE:" + fileName);
         } else {
-            return showInfo(c, buffer, packetId, "UPLOAD ERROR OCCURD:"
-                    + fileName);
+            return showInfo(c, buffer, packetId, "UPLOAD ERROR OCCURD:" + fileName);
         }
     }
 
@@ -251,8 +242,7 @@ public final class ConfFileHandler {
 
     private static PackageBufINf showConfigFile(ManagerConnection c,
                                                 ByteBuffer buffer, byte packetId, String fileName) {
-        File file = new File(SystemConfig.getHomePath(), "conf"
-                + File.separator + fileName);
+        File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
         BufferedReader br = null;
         PackageBufINf bufINf = new PackageBufINf();
         try {
@@ -304,8 +294,8 @@ public final class ConfFileHandler {
                     if (f.isFile()) {
                         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                         row.add(StringUtil.encode(
-                                (i++) + " : " + f.getName() + "  time:"
-                                        + df.format(new Date(f.lastModified())),
+                                (i++) + " : " + f.getName() + "  time:" +
+                                        df.format(new Date(f.lastModified())),
                                 c.getCharset()));
                         row.packetId = ++packetId;
                         buffer = row.write(buffer, c, true);
@@ -332,8 +322,8 @@ public final class ConfFileHandler {
         String stmt = "FILE @@UPLOAD test.xml 1234567890";
         int index = stmt.indexOf(' ', UPLOAD_CMD.length());
         int index2 = stmt.indexOf(' ', index + 1);
-        if (index <= 0 || index2 <= 0 || index + 1 > stmt.length()
-                || index2 + 1 > stmt.length()) {
+        if (index <= 0 || index2 <= 0 || index + 1 > stmt.length() ||
+                index2 + 1 > stmt.length()) {
             System.out.println("valid ....");
         } else {
             String fileName = stmt.substring(index + 1, index2);

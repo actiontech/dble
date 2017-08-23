@@ -121,8 +121,7 @@ public class UnsafeRowGrouper {
             curColMeta = columToIndx.get(columns[i].toUpperCase());
             if (curColMeta == null) {
                 throw new IllegalArgumentException(
-                        "all columns in group by clause should be in the selected column list.!"
-                                + columns[i]);
+                        "all columns in group by clause should be in the selected column list.!" + columns[i]);
             }
             map.put(columns[i], curColMeta.colIndex);
         }
@@ -817,14 +816,14 @@ public class UnsafeRowGrouper {
 
         switch (mergeType) {
             case MergeCol.MERGE_SUM:
-                if (colType == ColMeta.COL_TYPE_DOUBLE
-                        || colType == ColMeta.COL_TYPE_FLOAT) {
+                if (colType == ColMeta.COL_TYPE_DOUBLE ||
+                        colType == ColMeta.COL_TYPE_FLOAT) {
                     double value = BytesTools.getDouble(bs) +
                             BytesTools.getDouble(bs2);
 
                     return BytesTools.double2Bytes(value);
-                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL
-                        || colType == ColMeta.COL_TYPE_DECIMAL) {
+                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL ||
+                        colType == ColMeta.COL_TYPE_DECIMAL) {
                     BigDecimal decimal = new BigDecimal(new String(bs));
                     decimal = decimal.add(new BigDecimal(new String(bs2)));
                     return decimal.toString().getBytes();
@@ -853,16 +852,14 @@ public class UnsafeRowGrouper {
                  * 元素总个数
                  */
                 long count = BytesTools.getLong(bs2);
-                if (colType == ColMeta.COL_TYPE_DOUBLE
-                        || colType == ColMeta.COL_TYPE_FLOAT) {
+                if (colType == ColMeta.COL_TYPE_DOUBLE || colType == ColMeta.COL_TYPE_FLOAT) {
                     /**
                      * 数值总和
                      */
                     double sum = BytesTools.getDouble(bs);
                     double value = sum / count;
                     return BytesTools.double2Bytes(value);
-                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL
-                        || colType == ColMeta.COL_TYPE_DECIMAL) {
+                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL || colType == ColMeta.COL_TYPE_DECIMAL) {
                     BigDecimal sum = new BigDecimal(new String(bs));
                     // AVG计算时候小数点精度扩展4, 并且四舍五入
                     BigDecimal avg = sum.divide(new BigDecimal(count), sum.scale() + 4, RoundingMode.HALF_UP);

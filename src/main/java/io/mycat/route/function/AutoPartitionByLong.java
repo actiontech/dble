@@ -142,8 +142,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
             // FileInputStream fin = new FileInputStream(new File(fileMapPath));
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
             if (fin == null) {
-                throw new RuntimeException("can't find class resource file "
-                        + mapFile);
+                throw new RuntimeException("can't find class resource file " + mapFile);
             }
             in = new BufferedReader(new InputStreamReader(fin));
             LinkedList<LongRange> longRangeList = new LinkedList<LongRange>();
@@ -155,8 +154,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 }
                 int ind = line.indexOf('=');
                 if (ind < 0) {
-                    System.out.println(" warn: bad line int " + mapFile + " :"
-                            + line);
+                    System.out.println(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
                 String pairs[] = line.substring(0, ind).trim().split("-");

@@ -221,8 +221,7 @@ public class ByteUtil {
         int microSecond = DateUtil.getMicroSecond(date);
         byte[] bytes = null;
         byte[] tmp = null;
-        if (day == 0 && hour == 0 && minute == 0
-                && second == 0 && microSecond == 0) {
+        if (day == 0 && hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
             bytes = new byte[1];
             bytes[0] = (byte) 0;
         } else if (microSecond == 0) {
@@ -268,13 +267,10 @@ public class ByteUtil {
         int microSecond = DateUtil.getMicroSecond(date);
         byte[] bytes = null;
         byte[] tmp = null;
-        if (year == 0 && month == 0 && day == 0
-                && hour == 0 && minute == 0 && second == 0
-                && microSecond == 0) {
+        if (year == 0 && month == 0 && day == 0 && hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
             bytes = new byte[1];
             bytes[0] = (byte) 0;
-        } else if (hour == 0 && minute == 0 && second == 0
-                && microSecond == 0) {
+        } else if (hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
             bytes = new byte[1 + 4];
             bytes[0] = (byte) 4;
             tmp = getBytes((short) year);

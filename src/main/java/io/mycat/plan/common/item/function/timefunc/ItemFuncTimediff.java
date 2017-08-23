@@ -48,15 +48,15 @@ public class ItemFuncTimediff extends ItemTimeFunc {
 
         nullValue = false;
 
-        if ((args.get(0).isTemporalWithDate() && args.get(1).fieldType() == FieldTypes.MYSQL_TYPE_TIME)
-                || (args.get(1).isTemporalWithDate()
-                && args.get(0).fieldType() == FieldTypes.MYSQL_TYPE_TIME)) {
+        if ((args.get(0).isTemporalWithDate() && args.get(1).fieldType() == FieldTypes.MYSQL_TYPE_TIME) ||
+                (args.get(1).isTemporalWithDate() &&
+                        args.get(0).fieldType() == FieldTypes.MYSQL_TYPE_TIME)) {
             return nullValue = true;
         } // Incompatible types
 
         if (args.get(0).isTemporalWithDate() || args.get(1).isTemporalWithDate()) {
-            if (args.get(0).getDate(lTime1, MyTime.TIME_FUZZY_DATE)
-                    || args.get(1).getDate(lTime2, MyTime.TIME_FUZZY_DATE))
+            if (args.get(0).getDate(lTime1, MyTime.TIME_FUZZY_DATE) ||
+                    args.get(1).getDate(lTime2, MyTime.TIME_FUZZY_DATE))
                 return nullValue = true;
         } else {
             if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2))

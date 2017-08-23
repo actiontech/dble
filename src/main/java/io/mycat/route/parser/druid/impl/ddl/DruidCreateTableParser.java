@@ -54,8 +54,8 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         }
         //如果这个不是no_sharing表格那么就需要这么进行检查
         sharingTableCheck(createStmt);
-        if (GlobalTableUtil.useGlobleTableCheck()
-                && GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (GlobalTableUtil.useGlobleTableCheck() &&
+                GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
             String sql = addColumnIfCreate(createStmt);
             rrs.setSrcStatement(sql);
             sql = RouterUtil.removeSchema(sql, schemaInfo.schema);

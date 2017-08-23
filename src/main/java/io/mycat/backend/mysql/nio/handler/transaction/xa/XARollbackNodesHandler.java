@@ -71,8 +71,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         //在发起真正的rollback之前就获取到session级别的锁
         //当执行END的时候我们就可以认为这个状态处于一种不定的状态
         //不再允许XA事务被kill,如果事务已经被kill那么我们不再执行commit
-        if (session.getXaState() != null
-                && session.getXaState() == TxState.TX_ENDED_STATE) {
+        if (session.getXaState() != null &&
+                session.getXaState() == TxState.TX_ENDED_STATE) {
             if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITING)) {
                 return;
             }

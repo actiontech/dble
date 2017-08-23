@@ -271,8 +271,7 @@ public abstract class AbstractConnection implements NIOConnection {
         if (got < 0) {
             this.close("stream closed");
             return;
-        } else if (got == 0
-                && !this.channel.isOpen()) {
+        } else if (got == 0 && !this.channel.isOpen()) {
             this.close("socket closed");
             return;
         }
@@ -287,8 +286,8 @@ public abstract class AbstractConnection implements NIOConnection {
                 if (offset != 0) {
                     this.readBuffer = compactReadBuffer(readBuffer, offset);
                 } else if (readBuffer != null && !readBuffer.hasRemaining()) {
-                    throw new RuntimeException("invalid readbuffer capacity ,too little buffer size "
-                            + readBuffer.capacity());
+                    throw new RuntimeException("invalid readbuffer capacity ,too little buffer size " +
+                            readBuffer.capacity());
                 }
                 break;
             }
@@ -314,8 +313,8 @@ public abstract class AbstractConnection implements NIOConnection {
                     // if cur buffer is temper none direct byte buffer and not
                     // received large message in recent 30 seconds
                     // then change to direct buffer for performance
-                    if (readBuffer != null && !readBuffer.isDirect()
-                            && lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
+                    if (readBuffer != null && !readBuffer.isDirect() &&
+                            lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
                         }

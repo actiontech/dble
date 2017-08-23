@@ -70,8 +70,8 @@ public final class ManagerParseStop {
 
     // HEARTBEAT
     static int stop2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
-                && stmt.length() > offset + 9) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' &&
+                stmt.length() > offset + 9) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -81,9 +81,9 @@ public final class ManagerParseStop {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'R' || c4 == 'r') && (c5 == 'T' || c5 == 't') && (c6 == 'B' || c6 == 'b')
-                    && (c7 == 'E' || c7 == 'e') && (c8 == 'A' || c8 == 'a') && (c9 == 'T' || c9 == 't')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'R' || c4 == 'r') && (c5 == 'T' || c5 == 't') && (c6 == 'B' || c6 == 'b') &&
+                    (c7 == 'E' || c7 == 'e') && (c8 == 'A' || c8 == 'a') && (c9 == 'T' || c9 == 't')) {
                 if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
                     return OTHER;
                 }

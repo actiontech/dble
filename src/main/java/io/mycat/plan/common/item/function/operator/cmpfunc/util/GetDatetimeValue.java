@@ -24,9 +24,9 @@ public class GetDatetimeValue implements GetValueFunc {
         if (str != null) {
             BoolPtr error = new BoolPtr(false);
             FieldTypes fType = warnItem.fieldType();
-            MySQLTimestampType tType = fType == FieldTypes.MYSQL_TYPE_DATE
-                    ? MySQLTimestampType.MYSQL_TIMESTAMP_DATE
-                    : MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
+            MySQLTimestampType tType = fType == FieldTypes.MYSQL_TYPE_DATE ?
+                    MySQLTimestampType.MYSQL_TIMESTAMP_DATE :
+                    MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
             value = MySQLcom.getDateFromStr(str, tType, error);
         }
         return value;

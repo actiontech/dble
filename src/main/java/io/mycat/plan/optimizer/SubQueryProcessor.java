@@ -114,8 +114,8 @@ public class SubQueryProcessor {
             if (StringUtils.isEmpty(selName)) {
                 selName = pSel.getItemName();
                 // 下推时，父节点是函数，且函数无别名，mysql不允许select func() as func()这种
-                if (pSel.type() == ItemType.FUNC_ITEM || pSel.type() == ItemType.COND_ITEM
-                        || pSel.type() == ItemType.SUM_FUNC_ITEM)
+                if (pSel.type() == ItemType.FUNC_ITEM || pSel.type() == ItemType.COND_ITEM ||
+                        pSel.type() == ItemType.SUM_FUNC_ITEM)
                     selName = Item.FNAF + selName;
             }
             pSel0.setAlias(selName);

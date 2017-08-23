@@ -180,8 +180,8 @@ public class ConfigInitializer {
         Iterator<String> dataHost = this.dataHosts.keySet().iterator();
         while (dataHost.hasNext()) {
             String dataHostName = dataHost.next();
-            if (dataHosts.get(dataHostName).getSources() == null
-                    || dataHosts.get(dataHostName).getSources().length == 0) {
+            if (dataHosts.get(dataHostName).getSources() == null ||
+                    dataHosts.get(dataHostName).getSources().length == 0) {
                 LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
                 this.dataHostWithoutWH = true;
                 dataHost.remove();

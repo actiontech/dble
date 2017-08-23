@@ -65,8 +65,7 @@ public class SQLJob implements ResponseHandler, Runnable {
     }
 
     public void teminate(String reason) {
-        LOGGER.info("terminate this job reason:" + reason + " con:"
-                + connection + " sql " + this.sql);
+        LOGGER.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
         if (connection != null) {
             connection.close(reason);
         }
@@ -107,8 +106,8 @@ public class SQLJob implements ResponseHandler, Runnable {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
-        String errMsg = "error response errno:" + errPg.errno + ", " + new String(errPg.message)
-                + " from of sql :" + sql + " at con:" + conn;
+        String errMsg = "error response errno:" + errPg.errno + ", " + new String(errPg.message) +
+                " from of sql :" + sql + " at con:" + conn;
 
 
         if (errPg.errno == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
@@ -173,9 +172,9 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [ id=" + id + ",dataNodeOrDatabase="
-                + dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler="
-                + jobHandler + "]";
+        return "SQLJob [ id=" + id + ",dataNodeOrDatabase=" +
+                dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler=" +
+                jobHandler + "]";
     }
 
     @Override

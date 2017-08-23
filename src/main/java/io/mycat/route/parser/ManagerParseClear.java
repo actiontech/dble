@@ -55,15 +55,15 @@ public class ManagerParseClear {
 
     // CLEAR @@SLOW
     static int clear2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
-                && stmt.length() > offset + "SLOW ".length()) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' &&
+                stmt.length() > offset + "SLOW ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's') && (c2 == 'L' || c2 == 'l') && (c3 == 'O' || c3 == 'o')
-                    && (c4 == 'W' || c4 == 'w') && (c5 == ' ')) {
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'L' || c2 == 'l') && (c3 == 'O' || c3 == 'o') &&
+                    (c4 == 'W' || c4 == 'w') && (c5 == ' ')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -88,8 +88,8 @@ public class ManagerParseClear {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e') && (c5 == ' ')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == ' ')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -119,9 +119,9 @@ public class ManagerParseClear {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd')
-                    && (c7 == 'E' || c7 == 'e')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd') &&
+                    (c7 == 'E' || c7 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -153,8 +153,8 @@ public class ManagerParseClear {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'M' || c4 == 'm') && (c5 == 'A' || c5 == 'a')) {
+            if ((c1 == 'C' || c1 == 'c') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'M' || c4 == 'm') && (c5 == 'A' || c5 == 'a')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':

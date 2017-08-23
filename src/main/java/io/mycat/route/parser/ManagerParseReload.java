@@ -57,8 +57,7 @@ public final class ManagerParseReload {
     }
 
     static int reload2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
-                && stmt.length() > ++offset) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'C':
                 case 'c':
@@ -87,15 +86,15 @@ public final class ManagerParseReload {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'N' || c2 == 'n') && (c3 == 'F' || c3 == 'f')
-                    && (c4 == 'I' || c4 == 'i') && (c5 == 'G' || c5 == 'g')) {
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'N' || c2 == 'n') && (c3 == 'F' || c3 == 'f') &&
+                    (c4 == 'I' || c4 == 'i') && (c5 == 'G' || c5 == 'g')) {
                 if (stmt.length() > offset + 4) {
                     char c6 = stmt.charAt(++offset);
                     char c7 = stmt.charAt(++offset);
                     char c8 = stmt.charAt(++offset);
                     char c9 = stmt.charAt(++offset);
-                    if ((c6 == '_' || c6 == '-') && (c7 == 'A' || c7 == 'a') && (c8 == 'L' || c8 == 'l')
-                            && (c9 == 'L' || c9 == 'l')) {
+                    if ((c6 == '_' || c6 == '-') && (c7 == 'A' || c7 == 'a') && (c8 == 'L' || c8 == 'l') &&
+                            (c9 == 'L' || c9 == 'l')) {
                         return CONFIG_ALL;
                     }
                 }
@@ -125,8 +124,8 @@ public final class ManagerParseReload {
                     char c9 = stmt.charAt(++offset);
                     char c10 = stmt.charAt(++offset);
 
-                    if ((c6 == '_' || c6 == '-') && (c7 == 'S' || c7 == 's') && (c8 == 'T' || c8 == 't')
-                            && (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't')) {
+                    if ((c6 == '_' || c6 == '-') && (c7 == 'S' || c7 == 's') && (c8 == 'T' || c8 == 't') &&
+                            (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't')) {
                         return USER_STAT;
                     }
                 }
@@ -148,9 +147,9 @@ public final class ManagerParseReload {
             char c6 = stmt.charAt(++offset);
 
             // reload @@sqlslow
-            if ((c1 == 'Q' || c1 == 'q') && (c2 == 'L' || c2 == 'l') && (c3 == 's' || c3 == 'S')
-                    && (c4 == 'L' || c4 == 'l') && (c5 == 'O' || c5 == 'o') && (c6 == 'W' || c6 == 'w')
-                    && stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+            if ((c1 == 'Q' || c1 == 'q') && (c2 == 'L' || c2 == 'l') && (c3 == 's' || c3 == 'S') &&
+                    (c4 == 'L' || c4 == 'l') && (c5 == 'O' || c5 == 'o') && (c6 == 'W' || c6 == 'w') &&
+                    stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
                 return SQL_SLOW;
             }
 
@@ -170,8 +169,8 @@ public final class ManagerParseReload {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
 
-            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'Y' || c4 == 'y') && (c5 == '_') && (c6 == 'C' || c6 == 'c') && (c7 == 'F' || c7 == 'f')) {
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'Y' || c4 == 'y') && (c5 == '_') && (c6 == 'C' || c6 == 'c') && (c7 == 'F' || c7 == 'f')) {
                 if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
                     return QUERY_CF;
                 }

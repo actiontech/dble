@@ -192,8 +192,7 @@ public class StringUtil {
                     b = 0xf0;
                     break;
                 default:
-                    throw new IllegalArgumentException("illegal hex-string: "
-                            + new String(hexString, offset, length));
+                    throw new IllegalArgumentException("illegal hex-string: " + new String(hexString, offset, length));
             }
             switch (low) {
                 case '0':
@@ -250,8 +249,7 @@ public class StringUtil {
                     b += 15;
                     break;
                 default:
-                    throw new IllegalArgumentException("illegal hex-string: "
-                            + new String(hexString, offset, length));
+                    throw new IllegalArgumentException("illegal hex-string: " + new String(hexString, offset, length));
             }
             bs[(i - offset) >> 1] = (byte) b;
         }
@@ -341,8 +339,7 @@ public class StringUtil {
                             out.write(hiByte);// escape 0x5c if necessary
                         }
                     }
-                } else if (loByte == 0x5c
-                        && bufIndex < (bytesLen - 1)) {
+                } else if (loByte == 0x5c && bufIndex < (bytesLen - 1)) {
                     int hiByte = src[bufIndex + 1];
                     if (hiByte < 0) {
                         hiByte += 256; // adjust for signedness/wrap-around
@@ -411,8 +408,7 @@ public class StringUtil {
     }
 
     public static String replace(String text, String repl, String with, int max) {
-        if ((text == null) || (repl == null) || (with == null)
-                || (repl.length() == 0) || (max == 0)) {
+        if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0) || (max == 0)) {
             return text;
         }
         StringBuffer buf = new StringBuffer(text.length());
@@ -439,8 +435,7 @@ public class StringUtil {
 
     public static String replaceChars(String str, String searchChars,
                                       String replaceChars) {
-        if ((str == null) || (str.length() == 0) || (searchChars == null)
-                || (searchChars.length() == 0)) {
+        if ((str == null) || (str.length() == 0) || (searchChars == null) || (searchChars.length() == 0)) {
             return str;
         }
         char[] chars = str.toCharArray();

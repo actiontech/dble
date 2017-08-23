@@ -65,9 +65,9 @@ public class ConMap {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
-                    if (mysqlCon.getSchema().equals(schema)
-                            && mysqlCon.getPool() == dataSouce
-                            && mysqlCon.isBorrowed()) {
+                    if (mysqlCon.getSchema().equals(schema) &&
+                            mysqlCon.getPool() == dataSouce &&
+                            mysqlCon.isBorrowed()) {
                         total++;
                     }
                 }
@@ -83,9 +83,7 @@ public class ConMap {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
-                    if (mysqlCon.getPool() == dataSouce
-                            && mysqlCon.isBorrowed()
-                            && !mysqlCon.isClosed()) {
+                    if (mysqlCon.getPool() == dataSouce && mysqlCon.isBorrowed() && !mysqlCon.isClosed()) {
                         total++;
                     }
                 }

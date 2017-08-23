@@ -170,10 +170,10 @@ public class HandlerTool {
             Item itemCount = createFieldItem(sumfunCount, fields, startIndex);
             args.add(itemSum);
             args.add(itemCount);
-        } else if (funName.equalsIgnoreCase("STD") || funName.equalsIgnoreCase("STDDEV_POP")
-                || funName.equalsIgnoreCase("STDDEV_SAMP") || funName.equalsIgnoreCase("STDDEV")
-                || funName.equalsIgnoreCase("VAR_POP") || funName.equalsIgnoreCase("VAR_SAMP")
-                || funName.equalsIgnoreCase("VARIANCE")) {
+        } else if (funName.equalsIgnoreCase("STD") || funName.equalsIgnoreCase("STDDEV_POP") ||
+                funName.equalsIgnoreCase("STDDEV_SAMP") || funName.equalsIgnoreCase("STDDEV") ||
+                funName.equalsIgnoreCase("VAR_POP") || funName.equalsIgnoreCase("VAR_SAMP") ||
+                funName.equalsIgnoreCase("VARIANCE")) {
             // variance:下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
             String colNameCount = colName.replace(funName + "(", "COUNT(");
             String colNameSum = colName.replace(funName + "(", "SUM(");

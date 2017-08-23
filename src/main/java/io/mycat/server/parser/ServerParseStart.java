@@ -106,10 +106,10 @@ public final class ServerParseStart {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
-                    && (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
-                    && (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o')
-                    && (c10 == 'N' || c10 == 'n')) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c') &&
+                    (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o') &&
+                    (c10 == 'N' || c10 == 'n')) {
                 return offset;
             }
         }
@@ -133,8 +133,8 @@ public final class ServerParseStart {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c0 == 'R' || c0 == 'r') && (c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a')
-                    && (c3 == 'D' || c3 == 'd') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+            if ((c0 == 'R' || c0 == 'r') && (c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'D' || c3 == 'd') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 return READCHARCS;
             }
         }

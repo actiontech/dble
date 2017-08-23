@@ -87,8 +87,7 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
         private E lastRetElt = null;
 
         public boolean hasNext() {
-            return cursor < size
-                    || (forgetMeNot != null && !forgetMeNot.isEmpty());
+            return cursor < size || (forgetMeNot != null && !forgetMeNot.isEmpty());
         }
 
         public E next() {
@@ -144,8 +143,7 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
             throw new OutOfMemoryError();
         int oldCapacity = heap.length;
         // Double size if small; else grow by 50%
-        int newCapacity = ((oldCapacity < 64) ? ((oldCapacity + 1) * 2)
-                : ((oldCapacity / 2) * 3));
+        int newCapacity = ((oldCapacity < 64) ? ((oldCapacity + 1) * 2) : ((oldCapacity / 2) * 3));
         if (newCapacity < 0) // overflow
             newCapacity = Integer.MAX_VALUE;
         if (newCapacity < minCapacity)

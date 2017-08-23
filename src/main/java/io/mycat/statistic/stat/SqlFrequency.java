@@ -59,8 +59,7 @@ public class SqlFrequency implements Comparable<SqlFrequency> {
         if (this.minTime == 0) {
             this.minTime = execTime;
         }
-        if (execTime > 0
-                && execTime < this.minTime) {
+        if (execTime > 0 && execTime < this.minTime) {
             this.minTime = execTime;
         }
         this.allExecuteTime += execTime;

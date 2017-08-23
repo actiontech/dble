@@ -142,8 +142,8 @@ public class FieldDictionary {
 
             final FieldKey fieldKey = (FieldKey) o;
 
-            if (declaringClass != null ? !declaringClass.equals(fieldKey.declaringClass)
-                    : fieldKey.declaringClass != null) {
+            if (declaringClass != null ? !declaringClass.equals(fieldKey.declaringClass) :
+                    fieldKey.declaringClass != null) {
                 return false;
             }
 
@@ -164,8 +164,8 @@ public class FieldDictionary {
 
         @Override
         public String toString() {
-            return "FieldKey{" + "order=" + order + ", writer=" + depth + ", declaringClass=" + declaringClass
-                    + ", fieldName='" + fieldName + "'" + "}";
+            return "FieldKey{" + "order=" + order + ", writer=" + depth + ", declaringClass=" + declaringClass +
+                    ", fieldName='" + fieldName + "'" + "}";
         }
 
     }

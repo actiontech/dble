@@ -76,9 +76,9 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
             maxTimestamp = rowMap.get(GlobalTableUtil.MAX_COLUMN);
             count = rowMap.get(GlobalTableUtil.COUNT_COLUMN);
             innerCol = rowMap.get(GlobalTableUtil.INNER_COLUMN);
-            if ((rowMap.containsKey(GlobalTableUtil.MAX_COLUMN) && StringUtils.isNotBlank(maxTimestamp))
-                    || (rowMap.containsKey(GlobalTableUtil.COUNT_COLUMN) && StringUtils.isNotBlank(count))
-                    || (rowMap.containsKey(GlobalTableUtil.INNER_COLUMN) && StringUtils.isNotBlank(innerCol))) {
+            if ((rowMap.containsKey(GlobalTableUtil.MAX_COLUMN) && StringUtils.isNotBlank(maxTimestamp)) ||
+                    (rowMap.containsKey(GlobalTableUtil.COUNT_COLUMN) && StringUtils.isNotBlank(count)) ||
+                    (rowMap.containsKey(GlobalTableUtil.INNER_COLUMN) && StringUtils.isNotBlank(innerCol))) {
                 heartbeat.setResult(result);
                 return;
             } else {

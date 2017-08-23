@@ -43,20 +43,20 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, alterTable.getTableSource());
         boolean support = false;
         for (SQLAlterTableItem alterItem : alterTable.getItems()) {
-            if (alterItem instanceof SQLAlterTableAddColumn
-                    || alterItem instanceof SQLAlterTableAddIndex
-                    || alterItem instanceof SQLAlterTableDropIndex
-                    || alterItem instanceof SQLAlterTableDropKey
-                    || alterItem instanceof SQLAlterTableDropPrimaryKey) {
+            if (alterItem instanceof SQLAlterTableAddColumn ||
+                    alterItem instanceof SQLAlterTableAddIndex ||
+                    alterItem instanceof SQLAlterTableDropIndex ||
+                    alterItem instanceof SQLAlterTableDropKey ||
+                    alterItem instanceof SQLAlterTableDropPrimaryKey) {
                 support = true;
             } else if (alterItem instanceof SQLAlterTableAddConstraint) {
                 SQLConstraint constraint = ((SQLAlterTableAddConstraint) alterItem).getConstraint();
                 if (constraint instanceof MySqlPrimaryKey) {
                     support = true;
                 }
-            } else if (alterItem instanceof MySqlAlterTableChangeColumn
-                    || alterItem instanceof MySqlAlterTableModifyColumn
-                    || alterItem instanceof SQLAlterTableDropColumnItem) {
+            } else if (alterItem instanceof MySqlAlterTableChangeColumn ||
+                    alterItem instanceof MySqlAlterTableModifyColumn ||
+                    alterItem instanceof SQLAlterTableDropColumnItem) {
                 List<SQLName> columnList = new ArrayList<>();
                 if (alterItem instanceof MySqlAlterTableChangeColumn) {
                     columnList.add(((MySqlAlterTableChangeColumn) alterItem).getColumnName());
@@ -79,8 +79,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
             return schemaInfo.schemaConfig;
         }
-        if (GlobalTableUtil.useGlobleTableCheck()
-                && GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (GlobalTableUtil.useGlobleTableCheck() &&
+                GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
             String sql = modifyColumnIfAlter(schemaInfo, rrs.getStatement(), alterTable);
             rrs.setSrcStatement(sql);
             sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
@@ -149,8 +149,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 int lastIndex = cols.size() - 1;
                 String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
                 //last column is GLOBAL_TABLE_CHECK_COLUMN,so new add will move to the pos before it
-                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
-                        && cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) &&
+                        cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                     newModifyColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex - 1)));
                     cols.add(lastIndex, modifyColName);
                 } else {
@@ -198,8 +198,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 removeOldCol(cols, oldColName);
                 int lastIndex = cols.size() - 1;
                 String afterColName = StringUtil.removeBackQuote(((SQLIdentifierExpr) afterColumn).getName());
-                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
-                        && cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) &&
+                        cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                     newChangeColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex - 1)));
                     cols.add(lastIndex, newColName);
                 } else {
@@ -226,8 +226,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 String afterColName = StringUtil.removeBackQuote(afterColumn.getSimpleName());
                 //last column is GLOBAL_TABLE_CHECK_COLUMN,so new add will move to the pos before it
                 int lastIndex = cols.size() - 1;
-                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)
-                        && cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                if (afterColName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) &&
+                        cols.get(lastIndex).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                     newAddColumn.setAfterColumn(new SQLIdentifierExpr(cols.get(lastIndex - 1)));
                     cols.add(lastIndex, addName);
                 }
@@ -278,16 +278,16 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         if (chanagedTable == null) {
             return false;
         }
-        if (columnName.equalsIgnoreCase(chanagedTable.getPartitionColumn())
-                || columnName.equalsIgnoreCase(chanagedTable.getJoinKey())) {
+        if (columnName.equalsIgnoreCase(chanagedTable.getPartitionColumn()) ||
+                columnName.equalsIgnoreCase(chanagedTable.getJoinKey())) {
             return true;
         }
         // Traversal all the table node to find if some table is the child table of the changedTale
         for (Map.Entry<String, TableConfig> entry : tableConfig.entrySet()) {
             TableConfig tb = entry.getValue();
-            if (tb.getParentTC() != null
-                    && tableName.equalsIgnoreCase(tb.getParentTC().getName())
-                    && columnName.equalsIgnoreCase(tb.getParentKey())) {
+            if (tb.getParentTC() != null &&
+                    tableName.equalsIgnoreCase(tb.getParentTC().getName()) &&
+                    columnName.equalsIgnoreCase(tb.getParentKey())) {
                 return true;
             }
         }

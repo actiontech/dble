@@ -264,9 +264,9 @@ public final class ObjectUtil {
                 PropertyDescriptor pd = fromPd.get(fromPd
                         .indexOf(propertyDescriptor));
                 if (pd.getDisplayName().equals(
-                        propertyDescriptor.getDisplayName())
-                        && !pd.getDisplayName().equals("class")
-                        && propertyDescriptor.getWriteMethod() != null) {
+                        propertyDescriptor.getDisplayName()) &&
+                        !pd.getDisplayName().equals("class") &&
+                        propertyDescriptor.getWriteMethod() != null) {
                     propertyDescriptor.getWriteMethod().invoke(toObj, pd.getReadMethod().invoke(fromObj, null));
                 }
 

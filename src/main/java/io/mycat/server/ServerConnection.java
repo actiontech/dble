@@ -405,12 +405,12 @@ public class ServerConnection extends FrontendConnection {
     public void close(String reason) {
 
         //处于第一阶段的XA事务，可以通过关闭的方式回滚
-        if (session.getSource().isTxstart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING)
-                && session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        if (session.getSource().isTxstart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
+                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             super.close(reason);
             session.initiativeTerminate();
-        } else if (session.getSource().isTxstart()
-                && session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        } else if (session.getSource().isTxstart() &&
+                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             //已经提交了commit/rollback的XA事务，关闭前端，待后端自动完成
             super.close(reason);
         } else {
@@ -426,9 +426,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public String toString() {
-        return "ServerConnection [id=" + id + ", schema=" + schema + ", host="
-                + host + ", user=" + user + ",txIsolation=" + txIsolation
-                + ", autocommit=" + autocommit + ", schema=" + schema + "]";
+        return "ServerConnection [id=" + id + ", schema=" + schema + ", host=" + host +
+                ", user=" + user + ",txIsolation=" + txIsolation + ", autocommit=" + autocommit +
+                ", schema=" + schema + "]";
     }
 
 }

@@ -62,7 +62,9 @@
         <module name="NoWhitespaceBefore">
             <property name="tokens" value="COMMA, POST_INC, POST_DEC, ELLIPSIS"/>
         </module>
-        <!--<module name="OperatorWrap"/>-->
+        <module name="OperatorWrap">
+            <property name="option" value="eol"/>
+        </module>
         <!--<module name="ParenPad"/>-->
         <!--<module name="TypecastParenPad"/>-->
         <!--<module name="WhitespaceAfter"/>-->

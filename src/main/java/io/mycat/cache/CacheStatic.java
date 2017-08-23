@@ -131,10 +131,10 @@ public class CacheStatic {
 
     @Override
     public String toString() {
-        return "CacheStatic [memorySize=" + memorySize + ", itemSize="
-                + itemSize + ", accessTimes=" + accessTimes + ", putTimes="
-                + putTimes + ", hitTimes=" + hitTimes + ", lastAccesTime="
-                + lastAccesTime + ", lastPutTime=" + lastPutTime + "]";
+        return "CacheStatic [memorySize=" + memorySize + ", itemSize=" +
+                itemSize + ", accessTimes=" + accessTimes + ", putTimes=" +
+                putTimes + ", hitTimes=" + hitTimes + ", lastAccesTime=" +
+                lastAccesTime + ", lastPutTime=" + lastPutTime + "]";
     }
 
 }

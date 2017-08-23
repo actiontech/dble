@@ -393,8 +393,7 @@ public final class SystemConfig {
 
     public static String getHomePath() {
         String home = System.getProperty(SystemConfig.SYS_HOME);
-        if (home != null
-                && home.endsWith(File.pathSeparator)) {
+        if (home != null && home.endsWith(File.pathSeparator)) {
             home = home.substring(0, home.length() - 1);
             System.setProperty(SystemConfig.SYS_HOME, home);
         }
@@ -764,46 +763,46 @@ public final class SystemConfig {
 
     @Override
     public String toString() {
-        return "SystemConfig [frontSocketSoRcvbuf="
-                + frontSocketSoRcvbuf
-                + ", frontSocketSoSndbuf=" + frontSocketSoSndbuf
-                + ", backSocketSoRcvbuf=" + backSocketSoRcvbuf
-                + ", backSocketSoSndbuf=" + backSocketSoSndbuf
-                + ", frontSocketNoDelay=" + frontSocketNoDelay
-                + ", backSocketNoDelay=" + backSocketNoDelay
-                + ", bindIp=" + bindIp
-                + ", serverPort=" + serverPort
-                + ", managerPort=" + managerPort
-                + ", charset=" + charset
-                + ", processors=" + processors
-                + ", processorExecutor=" + processorExecutor
-                + ", managerExecutor=" + managerExecutor
-                + ", idleTimeout=" + idleTimeout
-                + ", sqlExecuteTimeout=" + sqlExecuteTimeout
-                + ", showBinlogStatusTimeout=" + showBinlogStatusTimeout
-                + ", processorCheckPeriod=" + processorCheckPeriod
-                + ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod
-                + ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod
-                + ", xaSessionCheckPeriod=" + xaSessionCheckPeriod
-                + ", xaLogCleanPeriod=" + xaLogCleanPeriod
-                + ", transactionLogBaseDir=" + transactionLogBaseDir
-                + ", transactionLogBaseName=" + transactionLogBaseName
-                + ", clusterHeartbeatUser=" + clusterHeartbeatUser
-                + ", clusterHeartbeatPass=" + clusterHeartbeatPass
-                + ", txIsolation=" + txIsolation
-                + ", sqlRecordCount=" + sqlRecordCount
-                + ", bufferPoolPageSize=" + bufferPoolPageSize
-                + ", bufferPoolChunkSize=" + bufferPoolChunkSize
-                + ", bufferPoolPageNumber=" + bufferPoolPageNumber
-                + ", maxResultSet=" + maxResultSet
-                + ", bufferUsagePercent=" + bufferUsagePercent
-                + ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs
-                + ", sequnceHandlerType=" + sequnceHandlerType
-                + ", usingAIO=" + usingAIO
-                + ", maxPacketSize=" + maxPacketSize
-                + ", serverNodeId=" + serverNodeId
-                + ", dataNodeSortedTempDir=" + dataNodeSortedTempDir
-                + "]";
+        return "SystemConfig [frontSocketSoRcvbuf=" +
+                frontSocketSoRcvbuf +
+                ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
+                ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
+                ", backSocketSoSndbuf=" + backSocketSoSndbuf +
+                ", frontSocketNoDelay=" + frontSocketNoDelay +
+                ", backSocketNoDelay=" + backSocketNoDelay +
+                ", bindIp=" + bindIp +
+                ", serverPort=" + serverPort +
+                ", managerPort=" + managerPort +
+                ", charset=" + charset +
+                ", processors=" + processors +
+                ", processorExecutor=" + processorExecutor +
+                ", managerExecutor=" + managerExecutor +
+                ", idleTimeout=" + idleTimeout +
+                ", sqlExecuteTimeout=" + sqlExecuteTimeout +
+                ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
+                ", processorCheckPeriod=" + processorCheckPeriod +
+                ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
+                ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
+                ", xaSessionCheckPeriod=" + xaSessionCheckPeriod +
+                ", xaLogCleanPeriod=" + xaLogCleanPeriod +
+                ", transactionLogBaseDir=" + transactionLogBaseDir +
+                ", transactionLogBaseName=" + transactionLogBaseName +
+                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
+                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
+                ", txIsolation=" + txIsolation +
+                ", sqlRecordCount=" + sqlRecordCount +
+                ", bufferPoolPageSize=" + bufferPoolPageSize +
+                ", bufferPoolChunkSize=" + bufferPoolChunkSize +
+                ", bufferPoolPageNumber=" + bufferPoolPageNumber +
+                ", maxResultSet=" + maxResultSet +
+                ", bufferUsagePercent=" + bufferUsagePercent +
+                ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs +
+                ", sequnceHandlerType=" + sequnceHandlerType +
+                ", usingAIO=" + usingAIO +
+                ", maxPacketSize=" + maxPacketSize +
+                ", serverNodeId=" + serverNodeId +
+                ", dataNodeSortedTempDir=" + dataNodeSortedTempDir +
+                "]";
     }
 
 

@@ -133,8 +133,8 @@ public abstract class ItemFunc extends Item {
         assert (fixed == true);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
-                if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_DATE
-                        || arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME))
+                if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_DATE ||
+                        arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME))
                     return true;
             }
         return false;
@@ -144,8 +144,8 @@ public abstract class ItemFunc extends Item {
         assert (fixed == true);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
-                if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_TIME
-                        || arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME))
+                if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_TIME ||
+                        arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME))
                     return true;
             }
         return false;

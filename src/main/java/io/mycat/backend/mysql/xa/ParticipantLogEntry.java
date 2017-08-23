@@ -54,8 +54,8 @@ public class ParticipantLogEntry implements Serializable {
 
     @Override
     public String toString() {
-        return "ParticipantLogEntry [id=" + coordinatorId + ", host=" + host + ", port=" + port + ", expires=" + expires
-                + ", state=" + txState + ", schema=" + schema + "]";
+        return "ParticipantLogEntry [id=" + coordinatorId + ", host=" + host + ", port=" + port + ", expires=" + expires +
+                ", state=" + txState + ", schema=" + schema + "]";
     }
 
     public String getCoordinatorId() {

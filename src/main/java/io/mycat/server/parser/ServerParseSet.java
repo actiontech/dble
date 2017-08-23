@@ -129,11 +129,11 @@ public final class ServerParseSet {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
-            if ((c1 == 'U' || c1 == 'u') && (c2 == 'T' || c2 == 't')
-                    && (c3 == 'O' || c3 == 'o') && (c4 == 'C' || c4 == 'c')
-                    && (c5 == 'O' || c5 == 'o') && (c6 == 'M' || c6 == 'm')
-                    && (c7 == 'M' || c7 == 'm') && (c8 == 'I' || c8 == 'i')
-                    && (c9 == 'T' || c9 == 't')) {
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'T' || c2 == 't') &&
+                    (c3 == 'O' || c3 == 'o') && (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'O' || c5 == 'o') && (c6 == 'M' || c6 == 'm') &&
+                    (c7 == 'M' || c7 == 'm') && (c8 == 'I' || c8 == 'i') &&
+                    (c9 == 'T' || c9 == 't')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -172,15 +172,13 @@ public final class ServerParseSet {
                 case '\t':
                     continue;
                 case '1':
-                    if (stmt.length() == ++offset
-                            || ParseUtil.isEOF(stmt.charAt(offset))) {
+                    if (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset))) {
                         return VALUE_ON;
                     } else {
                         return OTHER;
                     }
                 case '0':
-                    if (stmt.length() == ++offset
-                            || ParseUtil.isEOF(stmt.charAt(offset))) {
+                    if (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset))) {
                         return VALUE_OFF;
                     } else {
                         return OTHER;
@@ -199,8 +197,7 @@ public final class ServerParseSet {
             switch (stmt.charAt(offset)) {
                 case 'N':
                 case 'n':
-                    if (stmt.length() == ++offset
-                            || ParseUtil.isEOF(stmt.charAt(offset))) {
+                    if (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset))) {
                         return VALUE_ON;
                     } else {
                         return OTHER;
@@ -221,8 +218,7 @@ public final class ServerParseSet {
             switch (stmt.charAt(offset)) {
                 case 'F':
                 case 'f':
-                    if (stmt.length() == ++offset
-                            || ParseUtil.isEOF(stmt.charAt(offset))) {
+                    if (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset))) {
                         return VALUE_OFF;
                     } else {
                         return OTHER;
@@ -241,9 +237,9 @@ public final class ServerParseSet {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'M' || c2 == 'm')
-                    && (c3 == 'E' || c3 == 'e') && (c4 == 'S' || c4 == 's')
-                    && ParseUtil.isSpace(stmt.charAt(++offset))) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'M' || c2 == 'm') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'S' || c4 == 's') &&
+                    ParseUtil.isSpace(stmt.charAt(++offset))) {
                 return (offset << 8) | NAMES;
             }
         }
@@ -262,9 +258,9 @@ public final class ServerParseSet {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'T' || c6 == 't')
-                    && (c7 == 'E' || c7 == 'e') && (c8 == 'R' || c8 == 'r')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'T' || c6 == 't') &&
+                    (c7 == 'E' || c7 == 'e') && (c8 == 'R' || c8 == 'r')) {
                 switch (c9) {
                     case ' ':
                     case '\r':
@@ -314,8 +310,8 @@ public final class ServerParseSet {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's')
-                    && (c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') && (c4 == '_')) {
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'T' || c3 == 't') && (c4 == '_')) {
                 switch (c5) {
                     case 'R':
                     case 'r':
@@ -340,8 +336,8 @@ public final class ServerParseSet {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'U' || c3 == 'u')
-                    && (c4 == 'L' || c4 == 'l') && (c5 == 'T' || c5 == 't') && (c6 == 'S' || c6 == 's')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'U' || c3 == 'u') &&
+                    (c4 == 'L' || c4 == 'l') && (c5 == 'T' || c5 == 't') && (c6 == 'S' || c6 == 's')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -400,10 +396,10 @@ public final class ServerParseSet {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'N' || c1 == 'n') && (c2 == 'N' || c2 == 'n')
-                    && (c3 == 'E' || c3 == 'e') && (c4 == 'C' || c4 == 'c')
-                    && (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i')
-                    && (c7 == 'O' || c7 == 'o') && (c8 == 'N' || c8 == 'n')) {
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'N' || c2 == 'n') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') &&
+                    (c7 == 'O' || c7 == 'o') && (c8 == 'N' || c8 == 'n')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -440,8 +436,8 @@ public final class ServerParseSet {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'I' || c1 == 'i') && (c2 == 'E' || c2 == 'e')
-                    && (c3 == 'N' || c3 == 'n') && (c4 == 'T' || c4 == 't')) {
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'N' || c3 == 'n') && (c4 == 'T' || c4 == 't')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -596,10 +592,10 @@ public final class ServerParseSet {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
-                    && (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
-                    && (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o')
-                    && (c10 == 'N' || c10 == 'n') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c') &&
+                    (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o') &&
+                    (c10 == 'N' || c10 == 'n') && ParseUtil.isSpace(stmt.charAt(++offset))) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -653,8 +649,8 @@ public final class ServerParseSet {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'L' || c4 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'L' || c4 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -702,8 +698,8 @@ public final class ServerParseSet {
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
             char c11 = stmt.charAt(++offset);
-            if ((c1 == 'E') && (c2 == 'R') && (c3 == 'I') && (c4 == 'A') && (c5 == 'L') && (c6 == 'I') && (c7 == 'Z')
-                    && (c8 == 'A') && (c9 == 'B') && (c10 == 'L') && (c11 == 'E')) {
+            if ((c1 == 'E') && (c2 == 'R') && (c3 == 'I') && (c4 == 'A') && (c5 == 'L') && (c6 == 'I') && (c7 == 'Z') &&
+                    (c8 == 'A') && (c9 == 'B') && (c10 == 'L') && (c11 == 'E')) {
                 if (checkApostrophe && stmt.charAt(++offset) != '\'') {
                     return OTHER;
                 }
@@ -794,8 +790,8 @@ public final class ServerParseSet {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'O') && (c2 == 'M') && (c3 == 'M') && (c4 == 'I') && (c5 == 'T') && (c6 == 'T') && (c7 == 'E')
-                    && (c8 == 'D')) {
+            if ((c1 == 'O') && (c2 == 'M') && (c3 == 'M') && (c4 == 'I') && (c5 == 'T') && (c6 == 'T') && (c7 == 'E') &&
+                    (c8 == 'D')) {
                 if (checkApostrophe && stmt.charAt(++offset) != '\'') {
                     return OTHER;
                 }
@@ -820,8 +816,8 @@ public final class ServerParseSet {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
-            if ((c1 == 'N') && (c2 == 'C') && (c3 == 'O') && (c4 == 'M') && (c5 == 'M') && (c6 == 'I') && (c7 == 'T')
-                    && (c8 == 'T') && (c9 == 'E') && (c10 == 'D')) {
+            if ((c1 == 'N') && (c2 == 'C') && (c3 == 'O') && (c4 == 'M') && (c5 == 'M') && (c6 == 'I') && (c7 == 'T') &&
+                    (c8 == 'T') && (c9 == 'E') && (c10 == 'D')) {
                 if (checkApostrophe && stmt.charAt(++offset) != '\'') {
                     return OTHER;
                 }
@@ -908,9 +904,9 @@ public final class ServerParseSet {
         char c6 = stmt.charAt(++offset);
         char c7 = stmt.charAt(++offset);
         char c8 = stmt.charAt(++offset);
-        if ((c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a')
-                && (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') && (c7 == 'O' || c7 == 'o')
-                && (c8 == 'N' || c8 == 'n')) {
+        if ((c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a') &&
+                (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') && (c7 == 'O' || c7 == 'o') &&
+                (c8 == 'N' || c8 == 'n')) {
             return true;
         }
         return false;
@@ -923,8 +919,8 @@ public final class ServerParseSet {
         char c4 = stmt.charAt(++offset);
         char c5 = stmt.charAt(++offset);
         char c6 = stmt.charAt(++offset);
-        if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i')
-                && (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
+        if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i') &&
+                (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
             return true;
         }
         return false;

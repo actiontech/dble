@@ -388,11 +388,10 @@ public class NonBlockingSession implements Session {
     public void lockTable(RouteResultset rrs) {
         // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
-        if (nodes == null || nodes.length == 0 || nodes[0].getName() == null
-                || nodes[0].getName().equals("")) {
+        if (nodes == null || nodes.length == 0 || nodes[0].getName() == null ||
+                nodes[0].getName().equals("")) {
             source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                    "No dataNode found ,please check tables defined in schema:"
-                            + source.getSchema());
+                    "No dataNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
         LockTablesHandler handler = new LockTablesHandler(this, rrs);
@@ -528,8 +527,8 @@ public class NonBlockingSession implements Session {
 
         boolean canReUse = false;
         // conn 是 slave db 的，并且 路由结果显示，本次sql可以重用该 conn
-        if (conn.isFromSlaveDB() && (node.canRunnINReadDB(getSource().isAutocommit())
-                && (node.getRunOnSlave() == null || node.getRunOnSlave()))) {
+        if (conn.isFromSlaveDB() && (node.canRunnINReadDB(getSource().isAutocommit()) &&
+                (node.getRunOnSlave() == null || node.getRunOnSlave()))) {
             canReUse = true;
         }
 
@@ -540,16 +539,14 @@ public class NonBlockingSession implements Session {
 
         if (canReUse) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("found connections in session to use " + conn
-                        + " for " + node);
+                LOGGER.debug("found connections in session to use " + conn + " for " + node);
             }
             conn.setAttachment(node);
             return true;
         } else {
             // slavedb connection and can't use anymore ,release it
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("release slave connection,can't be used in trasaction  "
-                        + conn + " for " + node);
+                LOGGER.debug("release slave connection,can't be used in trasaction  " + conn + " for " + node);
             }
             releaseConnection(node, LOGGER.isDebugEnabled(), false);
         }

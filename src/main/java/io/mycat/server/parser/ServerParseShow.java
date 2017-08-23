@@ -118,8 +118,8 @@ public final class ServerParseShow {
         if (stmt.length() > offset + "ll ?".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l')
-                    && (c2 == 'L' || c2 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'L' || c2 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
                 while (stmt.length() > ++offset) {
                     if (ParseUtil.isSpace(stmt.charAt(offset))) {
                         continue;
@@ -146,8 +146,7 @@ public final class ServerParseShow {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't')
-                    && (c3 == 'A' || c3 == 'a')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')) {
                 switch (stmt.charAt(++offset)) {
                     case 'B':
                     case 'b':
@@ -170,10 +169,10 @@ public final class ServerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e')
-                    && (c2 == 'A' || c2 == 'a')
-                    && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'E' || c4 == 'e')) {
+            if ((c1 == 'E' || c1 == 'e') &&
+                    (c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'T' || c3 == 't') &&
+                    (c4 == 'E' || c4 == 'e')) {
                 while (stmt.length() > ++offset) {
                     if (ParseUtil.isSpace(stmt.charAt(offset))) {
                         continue;
@@ -185,11 +184,11 @@ public final class ServerParseShow {
                             char c6 = stmt.charAt(++offset);
                             char c7 = stmt.charAt(++offset);
                             char c8 = stmt.charAt(++offset);
-                            if ((c5 == 'A' || c5 == 'a')
-                                    && (c6 == 'B' || c6 == 'b')
-                                    && (c7 == 'L' || c7 == 'l')
-                                    && (c8 == 'E' || c8 == 'e')
-                                    && (ParseUtil.isSpace(stmt.charAt(++offset)))) {
+                            if ((c5 == 'A' || c5 == 'a') &&
+                                    (c6 == 'B' || c6 == 'b') &&
+                                    (c7 == 'L' || c7 == 'l') &&
+                                    (c8 == 'E' || c8 == 'e') &&
+                                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
                                 return CREATE_TABLE;
                             }
                         default:
@@ -208,11 +207,11 @@ public final class ServerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a')
-                    && (c2 == 'S' || c2 == 's')
-                    && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'S' || c4 == 's')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+            if ((c1 == 'A' || c1 == 'a') &&
+                    (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'S' || c4 == 's') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
                     .charAt(offset)))) {
                 return DATABASES;
             }
@@ -229,13 +228,13 @@ public final class ServerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c')
-                    && (c2 == 'H' || c2 == 'h')
-                    && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'M' || c4 == 'm')
-                    && (c5 == 'A' || c5 == 'a')
-                    && (c6 == 'S' || c6 == 's')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+            if ((c1 == 'C' || c1 == 'c') &&
+                    (c2 == 'H' || c2 == 'h') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'M' || c4 == 'm') &&
+                    (c5 == 'A' || c5 == 'a') &&
+                    (c6 == 'S' || c6 == 's') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
                     .charAt(offset)))) {
                 return DATABASES;
             }
@@ -251,12 +250,12 @@ public final class ServerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c2 == 'A' || c2 == 'a')
-                    && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'S' || c4 == 's')
-                    && (c5 == 'E' || c5 == 'e')
-                    && (c6 == 'T' || c6 == 't')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+            if ((c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'S' || c4 == 's') &&
+                    (c5 == 'E' || c5 == 'e') &&
+                    (c6 == 'T' || c6 == 't') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
                     .charAt(offset)))) {
                 return CHARSET;
             }
@@ -273,13 +272,13 @@ public final class ServerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o')
-                    && (c2 == 'U' || c2 == 'u')
-                    && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'C' || c4 == 'c')
-                    && (c5 == 'E' || c5 == 'e')
-                    && (c6 == 'S' || c6 == 's')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+            if ((c1 == 'O' || c1 == 'o') &&
+                    (c2 == 'U' || c2 == 'u') &&
+                    (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'E' || c5 == 'e') &&
+                    (c6 == 'S' || c6 == 's') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
                     .charAt(offset)))) {
                 return DATASOURCES;
             }

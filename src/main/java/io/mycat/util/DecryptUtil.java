@@ -54,8 +54,7 @@ public class DecryptUtil {
             boolean flag = false;
             try {
                 String passwrods[] = DecryptUtil.decrypt(passwrod).split(":");
-                if ("0".equals(passwrods[0])
-                        && user.equals(passwrods[1])) {
+                if ("0".equals(passwrods[0]) && user.equals(passwrods[1])) {
                     flag = true;
                     return passwrods[2];
                 }

@@ -109,8 +109,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     int type = mergEntry.getValue();
                     if (MergeCol.MERGE_AVG == type) {
                         ColMeta sumColMeta = columToIndx.get(colName + "SUM");
-                        ColMeta countColMeta = columToIndx.get(colName
-                                + "COUNT");
+                        ColMeta countColMeta = columToIndx.get(colName + "COUNT");
                         if (sumColMeta != null && countColMeta != null) {
                             ColMeta colMeta = new ColMeta(sumColMeta.colIndex,
                                     countColMeta.colIndex,
@@ -129,8 +128,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
                 String colName = fieldEntry.getKey();
                 int result = MergeCol.tryParseAggCol(colName);
-                if (result != MergeCol.MERGE_UNSUPPORT
-                        && result != MergeCol.MERGE_NOMERGE) {
+                if (result != MergeCol.MERGE_UNSUPPORT && result != MergeCol.MERGE_NOMERGE) {
                     mergCols.add(new MergeCol(fieldEntry.getValue(), result));
                 }
             }
@@ -154,8 +152,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 ColMeta colMeta = columToIndx.get(key);
                 if (colMeta == null) {
                     throw new IllegalArgumentException(
-                            "all columns in order by clause should be in the selected column list!"
-                                    + entry.getKey());
+                            "all columns in order by clause should be in the selected column list!" + entry.getKey());
                 }
                 orderCols[i++] = new OrderCol(colMeta, entry.getValue());
             }
@@ -232,15 +229,15 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             case ColMeta.COL_TYPE_INT24:
             case ColMeta.COL_TYPE_SHORT:
             case ColMeta.COL_TYPE_LONGLONG:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
-                        : PrefixComparators.LONG_DESC);
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
+                        PrefixComparators.LONG : PrefixComparators.LONG_DESC);
                 break;
             case ColMeta.COL_TYPE_FLOAT:
             case ColMeta.COL_TYPE_DOUBLE:
             case ColMeta.COL_TYPE_DECIMAL:
             case ColMeta.COL_TYPE_NEWDECIMAL:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.DOUBLE
-                        : PrefixComparators.DOUBLE_DESC);
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
+                        PrefixComparators.DOUBLE : PrefixComparators.DOUBLE_DESC);
                 break;
             case ColMeta.COL_TYPE_DATE:
             case ColMeta.COL_TYPE_TIMSTAMP:
@@ -253,12 +250,12 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             case ColMeta.COL_TYPE_STRING:
             case ColMeta.COL_TYPE_ENUM:
             case ColMeta.COL_TYPE_SET:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.BINARY
-                        : PrefixComparators.BINARY_DESC);
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
+                        PrefixComparators.BINARY : PrefixComparators.BINARY_DESC);
                 break;
             default:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ? PrefixComparators.LONG
-                        : PrefixComparators.LONG_DESC);
+                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
+                        PrefixComparators.LONG : PrefixComparators.LONG_DESC);
                 break;
         }
 

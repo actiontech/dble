@@ -39,8 +39,8 @@ public class DruidLockTableParser extends DefaultDruidParser {
             for (int i = 1; i < stmts.length; i++) {
                 tmpStmt = stmts[i];
                 tmpWords = SplitUtil.split(tmpStmt, ' ', true);
-                if (tmpWords.length == 2
-                        && ("READ".equalsIgnoreCase(tmpWords[1]) || "WRITE".equalsIgnoreCase(tmpWords[1]))) {
+                if (tmpWords.length == 2 &&
+                        ("READ".equalsIgnoreCase(tmpWords[1]) || "WRITE".equalsIgnoreCase(tmpWords[1]))) {
                     // 如果符合多表锁的语法，则继续，并在最后提示不能多表锁！
                     continue;
                 } else {

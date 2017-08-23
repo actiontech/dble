@@ -172,25 +172,23 @@ public class TableConfig {
             tableSb.append(tb.parentTC.name).append(',');
             String relation = null;
             if (level == 0) {
-                latestCond = " " + tb.parentTC.getName() + '.' + tb.parentKey
-                        + "=";
+                latestCond = " " + tb.parentTC.getName() + '.' + tb.parentKey + "=";
             } else {
-                relation = tb.parentTC.getName() + '.' + tb.parentKey + '='
-                        + tb.name + '.' + tb.joinKey;
+                relation = tb.parentTC.getName() + '.' + tb.parentKey + '=' + tb.name + '.' + tb.joinKey;
                 condition.append(relation).append(" AND ");
             }
             level++;
             prevTC = tb;
             tb = tb.parentTC;
         }
-        String sql = "SELECT "
-                + prevTC.parentTC.name
-                + '.'
-                + prevTC.parentKey
-                + " FROM "
-                + tableSb.substring(0, tableSb.length() - 1)
-                + " WHERE "
-                + ((level < 2) ? latestCond : condition.toString() + latestCond);
+        String sql = "SELECT " +
+                prevTC.parentTC.name +
+                '.' +
+                prevTC.parentKey +
+                " FROM " +
+                tableSb.substring(0, tableSb.length() - 1) +
+                " WHERE " +
+                ((level < 2) ? latestCond : condition.toString() + latestCond);
         // System.out.println(this.name+" sql " + sql);
         return sql;
 

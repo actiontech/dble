@@ -82,8 +82,7 @@ public class ParameterMapping {
                 value = list.toArray();
             }
             //赋值
-            if (cls != null
-                    && value != null) {
+            if (cls != null && value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
                     method.invoke(object, new Object[]{value});
@@ -167,9 +166,9 @@ public class ParameterMapping {
             value = Double.valueOf(string);
         } else if (cls.equals(Float.TYPE)) {
             value = Float.valueOf(string);
-        } else if ((cls.equals(Boolean.class)) || (cls.equals(Byte.class)) || (cls.equals(Short.class))
-                || (cls.equals(Integer.class)) || (cls.equals(Long.class)) || (cls.equals(Float.class))
-                || (cls.equals(Double.class))) {
+        } else if ((cls.equals(Boolean.class)) || (cls.equals(Byte.class)) || (cls.equals(Short.class)) ||
+                (cls.equals(Integer.class)) || (cls.equals(Long.class)) || (cls.equals(Float.class)) ||
+                (cls.equals(Double.class))) {
             try {
                 method = cls.getMethod("valueOf", new Class[]{String.class});
                 value = method.invoke(null, new Object[]{string});
@@ -190,11 +189,11 @@ public class ParameterMapping {
     }
 
     private static boolean isPrimitiveType(Class<?> cls) {
-        if (cls.equals(String.class) || cls.equals(Boolean.TYPE) || cls.equals(Byte.TYPE) || cls.equals(Short.TYPE)
-                || cls.equals(Integer.TYPE) || cls.equals(Long.TYPE) || cls.equals(Double.TYPE)
-                || cls.equals(Float.TYPE) || cls.equals(Boolean.class) || cls.equals(Byte.class)
-                || cls.equals(Short.class) || cls.equals(Integer.class) || cls.equals(Long.class)
-                || cls.equals(Float.class) || cls.equals(Double.class) || cls.equals(Class.class)) {
+        if (cls.equals(String.class) || cls.equals(Boolean.TYPE) || cls.equals(Byte.TYPE) || cls.equals(Short.TYPE) ||
+                cls.equals(Integer.TYPE) || cls.equals(Long.TYPE) || cls.equals(Double.TYPE) ||
+                cls.equals(Float.TYPE) || cls.equals(Boolean.class) || cls.equals(Byte.class) ||
+                cls.equals(Short.class) || cls.equals(Integer.class) || cls.equals(Long.class) ||
+                cls.equals(Float.class) || cls.equals(Double.class) || cls.equals(Class.class)) {
             return true;
         } else {
             return false;

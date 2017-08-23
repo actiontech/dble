@@ -297,8 +297,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.netOutBytes += data.length;
         boolean executeResponse = conn.syncAndExcute();
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("received ok response ,executeResponse:"
-                    + executeResponse + " from " + conn);
+            LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
         }
         if (executeResponse) {
             ServerConnection source = session.getSource();
@@ -596,8 +595,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             fieldsReturned = true;
 
-            boolean needMerg = (dataMergeSvr != null)
-                    && dataMergeSvr.getRrs().needMerge();
+            boolean needMerg = (dataMergeSvr != null) && dataMergeSvr.getRrs().needMerge();
             Set<String> shouldRemoveAvgField = new HashSet<>();
             Set<String> shouldRenameAvgField = new HashSet<>();
             if (needMerg) {
@@ -608,8 +606,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                             .entrySet()) {
                         String key = entry.getKey();
                         int mergeType = entry.getValue();
-                        if (MergeCol.MERGE_AVG == mergeType
-                                && mergeColsMap.containsKey(key + "SUM")) {
+                        if (MergeCol.MERGE_AVG == mergeType && mergeColsMap.containsKey(key + "SUM")) {
                             shouldRemoveAvgField.add((key + "COUNT")
                                     .toUpperCase());
                             shouldRenameAvgField.add((key + "SUM")
@@ -652,8 +649,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     fieldPkg.read(field);
                     fieldPackets.add(fieldPkg);
                     String fieldName = new String(fieldPkg.name).toUpperCase();
-                    if (columToIndx != null
-                            && !columToIndx.containsKey(fieldName)) {
+                    if (columToIndx != null && !columToIndx.containsKey(fieldName)) {
                         if (shouldRemoveAvgField.contains(fieldName)) {
                             shouldSkip = true;
                             fieldPackets.remove(fieldPackets.size() - 1);

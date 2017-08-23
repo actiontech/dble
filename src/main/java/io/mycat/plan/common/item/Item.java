@@ -92,8 +92,7 @@ public abstract class Item {
      * be numbers rather than strings.
      */
     public ItemResult temporalWithDateAsNumberResultType() {
-        return isTemporalWithDate() ? (decimals == 0 ? ItemResult.DECIMAL_RESULT : ItemResult.INT_RESULT)
-                : resultType();
+        return isTemporalWithDate() ? (decimals == 0 ? ItemResult.DECIMAL_RESULT : ItemResult.INT_RESULT) : resultType();
     }
 
     public ItemResult castToIntType() {

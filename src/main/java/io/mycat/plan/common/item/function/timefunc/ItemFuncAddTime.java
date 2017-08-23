@@ -68,16 +68,16 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME) // TIMESTAMP
         // function
         {
-            if (getArg0Date(lTime1, fuzzyDate) || args.get(1).getTime(lTime2)
-                    || lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
-                    || lTime2.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
+            if (getArg0Date(lTime1, fuzzyDate) || args.get(1).getTime(lTime2) ||
+                    lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ||
+                    lTime2.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
                 nullValue = true;
                 return true;
             }
         } else // ADDTIME function
         {
-            if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2)
-                    || lTime2.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
+            if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2) ||
+                    lTime2.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
                 nullValue = true;
                 return true;
             }

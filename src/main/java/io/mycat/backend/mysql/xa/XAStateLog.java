@@ -48,11 +48,11 @@ public class XAStateLog {
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
         //will preparing, may success send but failed received,should be rollback
-        if (sessionState == TxState.TX_PREPARING_STATE
+        if (sessionState == TxState.TX_PREPARING_STATE ||
                 //will committing, may success send but failed received,should be commit agagin
-                || sessionState == TxState.TX_COMMITING_STATE
+                sessionState == TxState.TX_COMMITING_STATE ||
                 //will rollbacking, may success send but failed received,should be rollback agagin
-                || sessionState == TxState.TX_ROLLBACKING_STATE) {
+                sessionState == TxState.TX_ROLLBACKING_STATE) {
             return writeCheckpoint(xaTxId);
         }
         return true;
@@ -161,10 +161,10 @@ public class XAStateLog {
     public static void updateXARecoverylog(String xaTxId, String host, int port, String schema, TxState txState) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
-            if (coordinatorLogEntry.getParticipants()[i] != null
-                    && coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema)
-                    && coordinatorLogEntry.getParticipants()[i].getHost().equals(host)
-                    && coordinatorLogEntry.getParticipants()[i].getPort() == port) {
+            if (coordinatorLogEntry.getParticipants()[i] != null &&
+                    coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema) &&
+                    coordinatorLogEntry.getParticipants()[i].getHost().equals(host) &&
+                    coordinatorLogEntry.getParticipants()[i].getPort() == port) {
                 coordinatorLogEntry.getParticipants()[i].setTxState(txState);
             }
         }

@@ -157,8 +157,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         int errPort = source.getLocalPort();
 
         String errmgs = " errno:" + errPkg.errno + " " + new String(errPkg.message);
-        LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn
-                + " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+        LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn +
+                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
         session.releaseConnectionIfSafe(conn, false);
 

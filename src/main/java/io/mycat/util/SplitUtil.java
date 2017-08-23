@@ -289,8 +289,8 @@ public class SplitUtil {
                 list.add(s);
                 break;
             }
-            if (bytes[position - 1] > 0
-                    || (bytes[position - 1] < 0 && bytes[position - 2] < 0)) {
+            if (bytes[position - 1] > 0 ||
+                    (bytes[position - 1] < 0 && bytes[position - 2] < 0)) {
                 // 截断点是字母,或者是汉字
                 length = size;
             } else {

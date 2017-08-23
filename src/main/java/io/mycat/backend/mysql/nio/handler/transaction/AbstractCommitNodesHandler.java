@@ -35,8 +35,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
         //在发起真正的commit之前就获取到session级别的锁
         //当执行END成功并到这里进行再次调用的时候就会获取这里的锁
         //不再允许XA事务被kill,如果事务已经被kill那么我们不再执行commit
-        if (session.getXaState() != null
-                && session.getXaState() == TxState.TX_ENDED_STATE) {
+        if (session.getXaState() != null && session.getXaState() == TxState.TX_ENDED_STATE) {
             if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITING)) {
                 return;
             }

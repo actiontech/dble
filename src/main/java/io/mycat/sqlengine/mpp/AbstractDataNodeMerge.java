@@ -106,8 +106,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
             curColMeta = toIndexMap.get(columns[i].toUpperCase());
             if (curColMeta == null) {
                 throw new IllegalArgumentException(
-                        "all columns in group by clause should be in the selected column list.!"
-                                + columns[i]);
+                        "all columns in group by clause should be in the selected column list.!" + columns[i]);
             }
             result[i] = curColMeta.colIndex;
         }

@@ -128,16 +128,16 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     if (null != secondsBehindMaster && !"".equals(secondsBehindMaster)) {
                         int behindMaster = Integer.parseInt(secondsBehindMaster);
                         if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
-                            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! "
-                                    + heartbeat.getSource().getConfig() + ", binlog sync time delay: "
-                                    + behindMaster + "s");
+                            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " +
+                                    heartbeat.getSource().getConfig() + ", binlog sync time delay: " +
+                                    behindMaster + "s");
                         }
                         heartbeat.setSlaveBehindMaster(behindMaster);
                     }
                 } else if (source.isSalveOrRead()) {
                     //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! "
-                            + heartbeat.getSource().getConfig() + ", " + resultResult);
+                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
+                            heartbeat.getSource().getConfig() + ", " + resultResult);
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
                 }
                 heartbeat.getAsynRecorder().set(resultResult, switchType);
@@ -151,9 +151,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
                     heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
                 } else {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! "
-                            + heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus
-                            + " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
+                    MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
+                            heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
+                            " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
                     );
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
                     heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, null);

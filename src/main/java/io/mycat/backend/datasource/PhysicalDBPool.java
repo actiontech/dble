@@ -257,8 +257,8 @@ public class PhysicalDBPool {
         int switchType = ds.getHostConfig().getSwitchType();
         int curDsHbStatus = getSource().getHeartbeat().getStatus();
         // read node can't switch, only write node can switch
-        if (!ds.isReadNode()
-                && curDsHbStatus != DBHeartbeat.OK_STATUS && getSources().length > 1) {
+        if (!ds.isReadNode() &&
+                curDsHbStatus != DBHeartbeat.OK_STATUS && getSources().length > 1) {
             // try to see if need switch datasource
             if (curDsHbStatus != DBHeartbeat.INIT_STATUS && curDsHbStatus != DBHeartbeat.OK_STATUS) {
                 int curIndex = getActiveIndex();
@@ -274,18 +274,17 @@ public class PhysicalDBPool {
                     if (theDsHb.getStatus() == DBHeartbeat.OK_STATUS) {
                         if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                             if (Integer.valueOf(0).equals(theDsHb.getSlaveBehindMaster())) {
-                                LOGGER.info("try to switch datasource, slave is " + "synchronized to master "
-                                        + theDs.getConfig());
+                                LOGGER.info("try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
                                 switchSource(nextId, true, reason);
                                 break;
                             } else {
-                                LOGGER.warn("ignored  datasource ,slave is not " + "synchronized to master, slave "
-                                        + "behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
+                                LOGGER.warn("ignored  datasource ,slave is not " + "synchronized to master, slave " +
+                                        "behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
                             }
                         } else {
                             // normal switch
-                            LOGGER.info("try to switch datasource ,not checked slave" + "synchronize status "
-                                    + theDs.getConfig());
+                            LOGGER.info("try to switch datasource ,not checked slave" + "synchronize status " +
+                                    theDs.getConfig());
                             switchSource(nextId, true, reason);
                             break;
                         }
@@ -379,8 +378,8 @@ public class PhysicalDBPool {
     private boolean initSource(int index, PhysicalDatasource ds) {
         int initSize = ds.getConfig().getMinCon();
 
-        LOGGER.info("init backend myqsl source ,create connections total " + initSize + " for " + ds.getName()
-                + " index :" + index);
+        LOGGER.info("init backend myqsl source ,create connections total " + initSize + " for " + ds.getName() +
+                " index :" + index);
 
         CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<BackendConnection>();
         GetConnectionHandler getConHandler = new GetConnectionHandler(list, initSize);
@@ -447,8 +446,8 @@ public class PhysicalDBPool {
         for (PhysicalDatasource ds : all) {
             // only readnode or all write node or writetype=WRITE_ONLYONE_NODE
             // and current write node will check
-            if (ds != null && (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS)
-                    && (ds.isReadNode() || ds == this.getSource())) {
+            if (ds != null && (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) &&
+                    (ds.isReadNode() || ds == this.getSource())) {
                 ds.connectionHeatBeatCheck(ildCheckPeriod);
             }
         }
@@ -647,8 +646,8 @@ public class PhysicalDBPool {
     }
 
     private boolean checkSlaveSynStatus() {
-        return (dataHostConfig.getSlaveThreshold() != -1)
-                && (dataHostConfig.getSwitchType() == DataHostConfig.SYN_STATUS_SWITCH_DS);
+        return (dataHostConfig.getSlaveThreshold() != -1) &&
+                (dataHostConfig.getSwitchType() == DataHostConfig.SYN_STATUS_SWITCH_DS);
     }
 
     /**

@@ -35,13 +35,13 @@ public class ItemFuncTrim extends ItemStrFunc {
     }
 
     private final boolean trimLeading() {
-        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.LEADING
-                || mTrimMode == TrimTypeEnum.LTRIM;
+        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.LEADING ||
+                mTrimMode == TrimTypeEnum.LTRIM;
     }
 
     private final boolean trimTrailing() {
-        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.TRAILING
-                || mTrimMode == TrimTypeEnum.RTRIM;
+        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.TRAILING ||
+                mTrimMode == TrimTypeEnum.RTRIM;
     }
 
     @Override

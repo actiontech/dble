@@ -43,8 +43,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
         int neg = 1;
 
         long months = 0;
-        if (args.get(0).getDate(ltime1, MyTime.TIME_NO_ZERO_DATE)
-                || args.get(1).getDate(ltime2, MyTime.TIME_NO_ZERO_DATE)) {
+        if (args.get(0).getDate(ltime1, MyTime.TIME_NO_ZERO_DATE) ||
+                args.get(1).getDate(ltime2, MyTime.TIME_NO_ZERO_DATE)) {
             nullValue = true;
             return BigInteger.ZERO;
         }
@@ -55,8 +55,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             neg = -1;
 
         long seconds = lpseconds.get(), microseconds = lpmicroseconds.get();
-        if (intType == MySqlIntervalUnit.YEAR || intType == MySqlIntervalUnit.QUARTER
-                || intType == MySqlIntervalUnit.MONTH) {
+        if (intType == MySqlIntervalUnit.YEAR || intType == MySqlIntervalUnit.QUARTER ||
+                intType == MySqlIntervalUnit.MONTH) {
             long yearBeg, yearEnd, monthBeg, monthEnd, dayBeg, dayEnd;
             long years = 0;
             long secondBeg, secondEnd, microsecondBeg, microsecondEnd;
@@ -99,8 +99,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
 
             if (dayEnd < dayBeg)
                 months -= 1;
-            else if ((dayEnd == dayBeg)
-                    && ((secondEnd < secondBeg) || (secondEnd == secondBeg && microsecondEnd < microsecondBeg)))
+            else if ((dayEnd == dayBeg) &&
+                    ((secondEnd < secondBeg) || (secondEnd == secondBeg && microsecondEnd < microsecondBeg)))
                 months -= 1;
         }
 

@@ -35,8 +35,8 @@ public class ItemFuncMaketime extends ItemTimeFunc {
         long hour = args.get(0).valInt().longValue();
         long minute = args.get(1).valInt().longValue();
         BigDecimal sec = args.get(2).valDecimal();
-        if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null
-                || minute < 0 || minute > 59))) {
+        if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null ||
+                minute < 0 || minute > 59))) {
             return true;
         }
         long scdquot = sec.longValue();

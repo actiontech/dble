@@ -35,8 +35,8 @@ public class ItemFuncFromDays extends ItemDateFunc {
         ltime.month = lpmonth.get();
         ltime.day = lpday.get();
 
-        if ((nullValue = ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0)
-                && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
+        if ((nullValue = ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0) &&
+                (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
             return true;
 
         ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;

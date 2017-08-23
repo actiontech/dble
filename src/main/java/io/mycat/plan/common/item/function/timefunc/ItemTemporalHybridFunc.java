@@ -62,9 +62,9 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
         else {
             MySQLTime ltime = new MySQLTime();
             valDatetime(ltime, MyTime.TIME_FUZZY_DATE);
-            return nullValue ? BigDecimal.ZERO
-                    : ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2MyDecimal(ltime)
-                    : MyTime.date2MyDecimal(ltime);
+            return nullValue ? BigDecimal.ZERO :
+                    ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2MyDecimal(ltime) :
+                            MyTime.date2MyDecimal(ltime);
         }
     }
 
@@ -74,8 +74,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
 
         if (valDatetime(ltime, MyTime.TIME_FUZZY_DATE))
             return null;
-        String res = MyTime.myTimeToStr(ltime, cachedFieldType == FieldTypes.MYSQL_TYPE_STRING
-                ? (ltime.secondPart != 0 ? MyTime.DATETIME_MAX_DECIMALS : 0) : decimals);
+        String res = MyTime.myTimeToStr(ltime, cachedFieldType == FieldTypes.MYSQL_TYPE_STRING ?
+                (ltime.secondPart != 0 ? MyTime.DATETIME_MAX_DECIMALS : 0) : decimals);
 
         if (res == null)
             nullValue = true;
@@ -89,8 +89,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
             assert (nullValue == true);
             return true;
         }
-        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
-                || tm.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME ||
+                tm.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.timeToDatetime(tm, ltime);
         else
             ltime = tm;
@@ -103,8 +103,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
             assert (nullValue == true);
             return true;
         }
-        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
-                && ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME &&
+                ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.datetimeToTime(ltime);
         return false;
     }

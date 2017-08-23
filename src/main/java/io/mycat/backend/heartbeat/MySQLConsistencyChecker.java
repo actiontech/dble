@@ -58,8 +58,8 @@ public class MySQLConsistencyChecker {
 
     // 此处用到了 mysql 多行转一行 group_concat 的用法，主要是为了简化对结果的处理
     // 得到的结果类似于：id,name,_mycat_op_time
-    private String columnExistSQL = "select group_concat(COLUMN_NAME separator ',') as "
-            + GlobalTableUtil.INNER_COLUMN + " from information_schema.columns where TABLE_NAME='"; //user' and TABLE_SCHEMA='db1';
+    private String columnExistSQL = "select group_concat(COLUMN_NAME separator ',') as " +
+            GlobalTableUtil.INNER_COLUMN + " from information_schema.columns where TABLE_NAME='"; //user' and TABLE_SCHEMA='db1';
 
     private List<SQLQueryResult<Map<String, String>>> list = new ArrayList<>();
 
@@ -69,8 +69,7 @@ public class MySQLConsistencyChecker {
         this.physicalSchemas = physicalSchemas;
         this.lock = new ReentrantLock(false);
         this.tableName = tableName;
-        this.countSQL = " select count(*) as " + GlobalTableUtil.COUNT_COLUMN + " from "
-                + this.tableName;
+        this.countSQL = " select count(*) as " + GlobalTableUtil.COUNT_COLUMN + " from " + this.tableName;
         this.maxSQL = " select max(" + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + ") as " +
                 GlobalTableUtil.MAX_COLUMN + " from " + this.tableName;
         this.columnExistSQL += this.tableName + "' ";
@@ -158,8 +157,8 @@ public class MySQLConsistencyChecker {
                         sql = this.getMaxSQL();
                     if (result.getResult().containsKey(GlobalTableUtil.INNER_COLUMN))
                         sql = this.getColumnExistSQL();
-                    LOGGER.warn(sql + " execute failed in db: " + result.getDataNode()
-                            + " during global table consistency check task.");
+                    LOGGER.warn(sql + " execute failed in db: " + result.getDataNode() +
+                            " during global table consistency check task.");
                 }
             }
             if (this.jobCount.get() <= 0 || isTimeOut()) {

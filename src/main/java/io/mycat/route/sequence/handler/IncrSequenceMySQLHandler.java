@@ -26,7 +26,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     public void load(boolean isLowerCaseTableNames) {
-        // load sequnce properties
+        // load sequence properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS, isLowerCaseTableNames);
         removeDesertedSequenceVals(props);
         putNewSequenceVals(props);
@@ -55,7 +55,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     /**
-     * save sequnce -> curval
+     * save sequence -> curval
      */
     private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<String, SequenceVal>();
 
@@ -63,8 +63,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     public long nextId(String seqName) {
         SequenceVal seqVal = seqValueMap.get(seqName);
         if (seqVal == null) {
-            throw new ConfigException("can't find definition for sequence :"
-                    + seqName);
+            throw new ConfigException("can't find definition for sequence :" + seqName);
         }
         if (!seqVal.isSuccessFetched()) {
             return getSeqValueFromDB(seqVal);
@@ -86,8 +85,8 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     private long getSeqValueFromDB(SequenceVal seqVal) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("get next segement of sequence from db for sequnce:"
-                    + seqVal.seqName + " curVal " + seqVal.curVal);
+            LOGGER.debug("get next segement of sequence from db for sequence:" +
+                    seqVal.seqName + " curVal " + seqVal.curVal);
         }
         if (seqVal.fetching.compareAndSet(false, true)) {
             seqVal.dbretVal = null;
@@ -98,9 +97,8 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         Long[] values = seqVal.waitFinish();
         if (values == null) {
 
-            throw new RuntimeException("can't fetch sequnce in db,sequnce :"
-                    + seqVal.seqName + " detail:"
-                    + mysqlSeqFetcher.getLastestError(seqVal.seqName));
+            throw new RuntimeException("can't fetch sequence in db,sequence :" +
+                    seqVal.seqName + " detail:" + mysqlSeqFetcher.getLastestError(seqVal.seqName));
         } else {
             if (seqVal.newValueSetted.compareAndSet(false, true)) {
                 seqVal.setCurValue(values[0]);

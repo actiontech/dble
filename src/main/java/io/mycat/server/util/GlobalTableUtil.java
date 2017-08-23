@@ -175,14 +175,14 @@ public class GlobalTableUtil {
                 Map<String, String> row = map.getResult();
                 if (row != null) {
                     if (row.containsKey(GlobalTableUtil.MAX_COLUMN)) {
-                        LOGGER.info(map.getDataNode() + "." + map.getTableName()
-                                + "." + GlobalTableUtil.MAX_COLUMN
-                                + ": " + map.getResult().get(GlobalTableUtil.MAX_COLUMN));
+                        LOGGER.info(map.getDataNode() + "." + map.getTableName() +
+                                "." + GlobalTableUtil.MAX_COLUMN +
+                                ": " + map.getResult().get(GlobalTableUtil.MAX_COLUMN));
                     }
                     if (row.containsKey(GlobalTableUtil.COUNT_COLUMN)) {
-                        LOGGER.info(map.getDataNode() + "." + map.getTableName()
-                                + "." + GlobalTableUtil.COUNT_COLUMN
-                                + ": " + map.getResult().get(GlobalTableUtil.COUNT_COLUMN));
+                        LOGGER.info(map.getDataNode() + "." + map.getTableName() +
+                                "." + GlobalTableUtil.COUNT_COLUMN +
+                                ": " + map.getResult().get(GlobalTableUtil.COUNT_COLUMN));
                     }
                     if (row.containsKey(GlobalTableUtil.INNER_COLUMN)) {
                         String columnsList = null;
@@ -193,12 +193,10 @@ public class GlobalTableUtil {
                         } catch (Exception e) {
                             LOGGER.warn(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
                         } finally {
-                            if (columnsList == null
-                                    || columnsList.indexOf(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) == -1) {
-                                LOGGER.warn(map.getDataNode() + "." + map.getTableName()
-                                        + " inner column: "
-                                        + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN
-                                        + " is not exist.");
+                            if (columnsList == null ||
+                                    columnsList.indexOf(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) == -1) {
+                                LOGGER.warn(map.getDataNode() + "." + map.getTableName() +
+                                        " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.");
                             } else {
                                 LOGGER.debug("columnsList: " + columnsList);
                             }

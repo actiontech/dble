@@ -188,8 +188,8 @@ public class MycatPrivileges implements FrontendPrivileges {
             WallCheckResult result = CONTEXT_LOCAL.get().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
-                ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:"
-                        + result.getViolations().get(0).getMessage() + " \r\n " + sql);
+                ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
+                        result.getViolations().get(0).getMessage() + " \r\n " + sql);
             }
         }
         return isPassed;

@@ -87,8 +87,8 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return schema;
                 }
 
-                if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema)
-                        && SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
+                if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema) &&
+                        SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
                     // 兼容MySQLWorkbench
                     MysqlProcHandler.handle(sc);
                     rrs.setFinishedExecute(true);
@@ -98,9 +98,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
                 // `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
                 // GROUP BY STATE ORDER BY SEQ
-                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)
-                        && SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table)
-                        && rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
+                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema) &&
+                        SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table) &&
+                        rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
                     InformationSchemaProfiling.response(sc);
                     rrs.setFinishedExecute(true);
                     return schema;
@@ -134,13 +134,12 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
                 // 更改canRunInReadDB属性
-                if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())
-                        && !sc.isAutocommit()) {
+                if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
                 }
-            } else if (mysqlFrom instanceof SQLSubqueryTableSource
-                    || mysqlFrom instanceof SQLJoinTableSource
-                    || mysqlFrom instanceof SQLUnionQueryTableSource) {
+            } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
+                    mysqlFrom instanceof SQLJoinTableSource ||
+                    mysqlFrom instanceof SQLUnionQueryTableSource) {
                 schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
                 if (rrs.isFinishedRoute()) {
                     return schema;
@@ -290,8 +289,8 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private String getFieldName(SQLSelectItem item) {
-        if ((item.getExpr() instanceof SQLPropertyExpr) || (item.getExpr() instanceof SQLMethodInvokeExpr)
-                || (item.getExpr() instanceof SQLIdentifierExpr) || item.getExpr() instanceof SQLBinaryOpExpr) {
+        if ((item.getExpr() instanceof SQLPropertyExpr) || (item.getExpr() instanceof SQLMethodInvokeExpr) ||
+                (item.getExpr() instanceof SQLIdentifierExpr) || item.getExpr() instanceof SQLBinaryOpExpr) {
             return item.getExpr().toString();// 字段别名
         } else {
             return item.toString();
@@ -352,8 +351,8 @@ public class DruidSelectParser extends DefaultDruidParser {
 
         String leftValue = null;
         if (left instanceof SQLAggregateExpr) {
-            leftValue = ((SQLAggregateExpr) left).getMethodName() + "("
-                    + ((SQLAggregateExpr) left).getArguments().get(0) + ")";
+            leftValue = ((SQLAggregateExpr) left).getMethodName() + "(" +
+                    ((SQLAggregateExpr) left).getArguments().get(0) + ")";
         } else if (left instanceof SQLIdentifierExpr) {
             leftValue = ((SQLIdentifierExpr) left).getName();
         }
@@ -517,9 +516,9 @@ public class DruidSelectParser extends DefaultDruidParser {
 
                     if (offset != null) {
                         if (limitStart < 0) {
-                            String msg = "You have an error in your SQL syntax; check the manual that "
-                                    + "corresponds to your MySQL server version for the right syntax to use near '"
-                                    + limitStart + "'";
+                            String msg = "You have an error in your SQL syntax; check the manual that " +
+                                    "corresponds to your MySQL server version for the right syntax to use near '" +
+                                    limitStart + "'";
                             throw new SQLNonTransientException(ErrorCode.ER_PARSE_ERROR + " - " + msg);
                         } else {
                             changedLimit.setOffset(new SQLIntegerExpr(0));
@@ -616,9 +615,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (ctx.getTables().size() == 1) {
                 String tableName = ctx.getTables().get(0);
                 String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
-                if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null
-                        && ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null
-                        && tc.getDataNodes().size() > 1) {//有主键条件
+                if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
+                        ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null &&
+                        tc.getDataNodes().size() > 1) {//有主键条件
                     return false;
                 }
             }

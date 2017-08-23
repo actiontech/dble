@@ -128,8 +128,8 @@ public class RouterUtil {
          * 没有from的select语句或其他
          */
         DruidShardingParseInfo ctx = druidParser.getCtx();
-        if ((ctx.getTables() == null || ctx.getTables().size() == 0)
-                && (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
+        if ((ctx.getTables() == null || ctx.getTables().size() == 0) &&
+                (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
             if (schema == null) {
                 schema = MycatServer.getInstance().getConfig().getSchemas().get(SchemaUtil.getRandomDb());
             }
@@ -569,8 +569,8 @@ public class RouterUtil {
                 } else {
                     retNodesSet.retainAll(entry.getValue());
                     if (retNodesSet.size() == 0) {//两个表的路由无交集
-                        String errMsg = "invalid route in sql, multi tables found but datanode has no intersection "
-                                + " sql:" + rrs.getStatement();
+                        String errMsg = "invalid route in sql, multi tables found but datanode has no intersection " +
+                                " sql:" + rrs.getStatement();
                         LOGGER.warn(errMsg);
                         throw new SQLNonTransientException(errMsg);
                     }
@@ -606,12 +606,12 @@ public class RouterUtil {
             }
         } else {//单表或者分库表
             if (!checkRuleRequired(schema, routeUnit, tc)) {
-                throw new IllegalArgumentException("route rule for table "
-                        + tc.getName() + " is required: " + rrs.getStatement());
+                throw new IllegalArgumentException("route rule for table " +
+                        tc.getName() + " is required: " + rrs.getStatement());
 
             }
-            if ((tc.getPartitionColumn() == null && tc.getParentTC() == null)
-                    || (tc.getParentTC() != null && tc.getDirectRouteTC() == null)) {
+            if ((tc.getPartitionColumn() == null && tc.getParentTC() == null) ||
+                    (tc.getParentTC() != null && tc.getDirectRouteTC() == null)) {
                 // 单表路由  或者 复杂ER表中的某个子表
                 return routeToMultiNode(rrs.isCacheAble(), rrs, tc.getDataNodes());
             } else {
@@ -727,8 +727,8 @@ public class RouterUtil {
                             if (pair.colValue != null) {
                                 Integer nodeIndex = algorithm.calculate(pair.colValue);
                                 if (nodeIndex == null) {
-                                    String msg = "can't find any valid datanode :" + tableConfig.getName()
-                                            + " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
+                                    String msg = "can't find any valid datanode :" + tableConfig.getName() +
+                                            " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
                                     LOGGER.warn(msg);
                                     throw new SQLNonTransientException(msg);
                                 }
@@ -740,9 +740,9 @@ public class RouterUtil {
 
                                 } else {
                                     node = null;
-                                    String msg = "Can't find a valid data node for specified node index :"
-                                            + tableConfig.getName() + " -> " + tableConfig.getPartitionColumn()
-                                            + " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
+                                    String msg = "Can't find a valid data node for specified node index :" +
+                                            tableConfig.getName() + " -> " + tableConfig.getPartitionColumn() +
+                                            " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
                                     LOGGER.warn(msg);
                                     throw new SQLNonTransientException(msg);
                                 }
@@ -762,8 +762,8 @@ public class RouterUtil {
                                     if (idx >= 0 && idx < dataNodes.size()) {
                                         node = dataNodes.get(idx);
                                     } else {
-                                        String msg = "Can't find valid data node(s) for some of specified node indexes :"
-                                                + tableConfig.getName() + " -> " + tableConfig.getPartitionColumn();
+                                        String msg = "Can't find valid data node(s) for some of specified node indexes :" +
+                                                tableConfig.getName() + " -> " + tableConfig.getPartitionColumn();
                                         LOGGER.warn(msg);
                                         throw new SQLNonTransientException(msg);
                                     }
@@ -789,8 +789,8 @@ public class RouterUtil {
                                 "parent key can't find any valid datanode ");
                     }
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  "
-                                + Arrays.toString(dataNodeSet.toArray()) + " sql :" + rrs.getStatement());
+                        LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  " +
+                                Arrays.toString(dataNodeSet.toArray()) + " sql :" + rrs.getStatement());
                     }
                     if (dataNodeSet.size() > 1) {
                         routeToMultiNode(rrs.isCacheAble(), rrs, dataNodeSet);

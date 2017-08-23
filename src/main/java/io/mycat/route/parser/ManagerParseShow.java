@@ -98,8 +98,8 @@ public final class ManagerParseShow {
 
     // SHOW @
     private static int show2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
-                && stmt.length() > ++offset) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' &&
+                stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'B':
                 case 'b':
@@ -167,10 +167,10 @@ public final class ManagerParseShow {
             char c10 = stmt.charAt(++offset);
             char c11 = stmt.charAt(++offset);
             char c12 = stmt.charAt(++offset);
-            if ((c2 == 'N' || c2 == 'n') && (c3 == 'L' || c3 == 'l')
-                    && (c4 == 'O' || c4 == 'o') && (c5 == 'G' || c5 == 'g') && (c6 == '.') && (c7 == 'S' || c7 == 's')
-                    && (c8 == 'T' || c8 == 't') && (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't')
-                    && (c11 == 'U' || c11 == 'u') && (c12 == 'S' || c12 == 's')) {
+            if ((c2 == 'N' || c2 == 'n') && (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'O' || c4 == 'o') && (c5 == 'G' || c5 == 'g') && (c6 == '.') && (c7 == 'S' || c7 == 's') &&
+                    (c8 == 'T' || c8 == 't') && (c9 == 'A' || c9 == 'a') && (c10 == 'T' || c10 == 't') &&
+                    (c11 == 'U' || c11 == 'u') && (c12 == 'S' || c12 == 's')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -189,8 +189,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k')
-                    && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'D' || c6 == 'd')) {
+            if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'D' || c6 == 'd')) {
 
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
@@ -260,8 +260,8 @@ public final class ManagerParseShow {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && stmt.length() > ++offset) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    stmt.length() > ++offset) {
                 switch (stmt.charAt(offset)) {
                     case 'B':
                     case 'b':
@@ -275,10 +275,10 @@ public final class ManagerParseShow {
                     default:
                         return OTHER;
                 }
-            } else if ((c1 == 'I' || c1 == 'i')
-                    && (c2 == 'R' || c2 == 'r')
-                    && (c3 == 'E' || c3 == 'e')
-                    && stmt.length() > ++offset) {   /**DIRECTMEMORY**/
+            } else if ((c1 == 'I' || c1 == 'i') &&
+                    (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    stmt.length() > ++offset) {   /**DIRECTMEMORY**/
                 switch (stmt.charAt(offset)) {
                     case 'C':
                     case 'c':
@@ -303,14 +303,14 @@ public final class ManagerParseShow {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
 
-            if ((c1 == 'T' || c1 == 't')
-                    && (c2 == 'M' || c2 == 'm')
-                    && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'M' || c4 == 'm')
-                    && (c5 == 'O' || c5 == 'o')
-                    && (c6 == 'R' || c6 == 'r')
-                    && (c7 == 'Y' || c7 == 'y')
-                    && stmt.length() > ++offset) {
+            if ((c1 == 'T' || c1 == 't') &&
+                    (c2 == 'M' || c2 == 'm') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'M' || c4 == 'm') &&
+                    (c5 == 'O' || c5 == 'o') &&
+                    (c6 == 'R' || c6 == 'r') &&
+                    (c7 == 'Y' || c7 == 'y') &&
+                    stmt.length() > ++offset) {
 
                 offset = trim(offset, stmt);
 
@@ -375,9 +375,9 @@ public final class ManagerParseShow {
                         char c4 = stmt.charAt(++offset);
                         char c5 = stmt.charAt(++offset);
                         char c6 = stmt.charAt(++offset);
-                        if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u')
-                                && (c3 == 'S' || c3 == 's') && (c4 == 'T' || c4 == 't')
-                                && (c5 == 'E' || c5 == 'e') && (c6 == 'R' || c6 == 'r')) {
+                        if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u') &&
+                                (c3 == 'S' || c3 == 's') && (c4 == 'T' || c4 == 't') &&
+                                (c5 == 'E' || c5 == 'e') && (c6 == 'R' || c6 == 'r')) {
                             return DATASOURCE_CLUSTER;
                         } else {
                             return OTHER;
@@ -399,8 +399,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'I' || c4 == 'i') && (c5 == 'L' || c5 == 'l') && c6 == ' ') {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'I' || c4 == 'i') && (c5 == 'L' || c5 == 'l') && c6 == ' ') {
                 offset = trim(++offset, stmt);
                 if (offset >= stmt.length() - 1) {
                     return OTHER;
@@ -411,8 +411,8 @@ public final class ManagerParseShow {
                 char c41 = stmt.charAt(++offset);
                 char c51 = stmt.charAt(++offset);
                 char c61 = stmt.charAt(++offset);
-                if ((c11 == 'W' || c11 == 'w') && (c21 == 'H' || c21 == 'h') && (c31 == 'E' || c31 == 'e')
-                        && (c41 == 'R' || c41 == 'r') && (c51 == 'E' || c51 == 'e') && c61 == ' ') {
+                if ((c11 == 'W' || c11 == 'w') && (c21 == 'H' || c21 == 'h') && (c31 == 'E' || c31 == 'e') &&
+                        (c41 == 'R' || c41 == 'r') && (c51 == 'E' || c51 == 'e') && c61 == ' ') {
                     offset = trim(++offset, stmt);
                     if (offset >= stmt.length() - 1) {
                         return OTHER;
@@ -421,8 +421,8 @@ public final class ManagerParseShow {
                     char c22 = stmt.charAt(++offset);
                     char c32 = stmt.charAt(++offset);
                     char c42 = stmt.charAt(++offset);
-                    if ((c12 == 'N' || c12 == 'n') && (c22 == 'A' || c22 == 'a') && (c32 == 'M' || c32 == 'm')
-                            && (c42 == 'e' || c42 == 'E')) {
+                    if ((c12 == 'N' || c12 == 'n') && (c22 == 'A' || c22 == 'a') && (c32 == 'M' || c32 == 'm') &&
+                            (c42 == 'e' || c42 == 'E')) {
                         offset = trim(++offset, stmt);
                         if (offset >= stmt.length() - 1) {
                             return OTHER;
@@ -456,8 +456,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
 
-            if ((c1 == 'T' || c1 == 't') && (c2 == 'A' || c2 == 'a') && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'U' || c4 == 'u') && (c5 == 'S' || c5 == 's')) {
+            if ((c1 == 'T' || c1 == 't') && (c2 == 'A' || c2 == 'a') && (c3 == 'T' || c3 == 't') &&
+                    (c4 == 'U' || c4 == 'u') && (c5 == 'S' || c5 == 's')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -555,8 +555,8 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
 
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r')
-                    && (c3 == 'A' || c3 == 'a') && (c4 == 'M' || c4 == 'm')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'A' || c3 == 'a') && (c4 == 'M' || c4 == 'm')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -584,8 +584,8 @@ public final class ManagerParseShow {
                 char c7 = stmt.charAt(++offset);
                 char c8 = stmt.charAt(++offset);
 
-                if ((c4 == 'L' || c4 == 'l') && (c5 == 'I' || c5 == 'i') && (c6 == 'M' || c6 == 'm')
-                        && (c7 == 'I' || c7 == 'i') && (c8 == 'T' || c8 == 't')) {
+                if ((c4 == 'L' || c4 == 'l') && (c5 == 'I' || c5 == 'i') && (c6 == 'M' || c6 == 'm') &&
+                        (c7 == 'I' || c7 == 'i') && (c8 == 'T' || c8 == 't')) {
 
                     while (stmt.length() > ++offset) {
                         switch (stmt.charAt(offset)) {
@@ -663,8 +663,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r') && (c3 == 'S' || c3 == 's')
-                    && (c4 == 'I' || c4 == 'i') && (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r') && (c3 == 'S' || c3 == 's') &&
+                    (c4 == 'I' || c4 == 'i') && (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -681,8 +681,8 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'I' || c2 == 'i') && (c3 == 'T' || c3 == 't')
-                    && (c4 == 'E' || c4 == 'e')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'I' || c2 == 'i') && (c3 == 'T' || c3 == 't') &&
+                    (c4 == 'E' || c4 == 'e')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -759,8 +759,8 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -788,8 +788,8 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'M' || c4 == 'm') && (c5 == 'A' || c5 == 'a')) {
+            if ((c1 == 'C' || c1 == 'c') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'M' || c4 == 'm') && (c5 == 'A' || c5 == 'a')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -821,8 +821,8 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'C' || c4 == 'c') && (c5 == 'E' || c5 == 'e')) {
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'C' || c4 == 'c') && (c5 == 'E' || c5 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -853,8 +853,8 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -884,9 +884,9 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd')
-                    && (c7 == 'E' || c7 == 'e')) {
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd') &&
+                    (c7 == 'E' || c7 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -920,9 +920,9 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'S' || c4 == 's') && (c5 == 'S' || c5 == 's') && (c6 == 'O' || c6 == 'o')
-                    && (c7 == 'R' || c7 == 'r')) {
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c') && (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'S' || c4 == 's') && (c5 == 'S' || c5 == 's') && (c6 == 'O' || c6 == 'o') &&
+                    (c7 == 'R' || c7 == 'r')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -941,8 +941,8 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i')
-                    && (c4 == 'O' || c4 == 'o') && (c5 == 'N' || c5 == 'n')) {
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i') &&
+                    (c4 == 'O' || c4 == 'o') && (c5 == 'N' || c5 == 'n')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -954,8 +954,8 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e')
-                    && (c4 == 'R' || c4 == 'r')) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'V' || c2 == 'v') && (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'R' || c4 == 'r')) {
                 if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
                     return OTHER;
                 }
@@ -976,9 +976,9 @@ public final class ManagerParseShow {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a')
-                    && (c4 == 'D' || c4 == 'd') && (c5 == 'P' || c5 == 'p') && (c6 == 'O' || c6 == 'o')
-                    && (c7 == 'O' || c7 == 'o') && (c8 == 'L' || c8 == 'l')) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'D' || c4 == 'd') && (c5 == 'P' || c5 == 'p') && (c6 == 'O' || c6 == 'o') &&
+                    (c7 == 'O' || c7 == 'o') && (c8 == 'L' || c8 == 'l')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -994,8 +994,8 @@ public final class ManagerParseShow {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'M' || c1 == 'm') && (c2 == 'E' || c2 == 'e') && (c3 == '.')
-                    && (stmt.length() > ++offset)) {
+            if ((c1 == 'M' || c1 == 'm') && (c2 == 'E' || c2 == 'e') && (c3 == '.') &&
+                    (stmt.length() > ++offset)) {
                 switch (stmt.charAt(offset)) {
                     case 'C':
                     case 'c':
@@ -1018,8 +1018,8 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'M' || c1 == 'm') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
-                    && (c4 == 'D' || c4 == 'd')) {
+            if ((c1 == 'M' || c1 == 'm') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'D' || c4 == 'd')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -1039,9 +1039,9 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c')
-                    && (c4 == 'T' || c4 == 't') && (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o')
-                    && (c7 == 'N' || c7 == 'n')) {
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c') &&
+                    (c4 == 'T' || c4 == 't') && (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o') &&
+                    (c7 == 'N' || c7 == 'n')) {
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -1086,8 +1086,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'U' || c1 == 'u') && (c2 == 'R' || c2 == 'r') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'T' || c6 == 't')) {
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'R' || c2 == 'r') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'T' || c6 == 't')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -1106,8 +1106,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'T' || c1 == 't') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'T' || c4 == 't') && (c5 == 'U' || c5 == 'u') && (c6 == 'P' || c6 == 'p')) {
+            if ((c1 == 'T' || c1 == 't') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'T' || c4 == 't') && (c5 == 'U' || c5 == 'u') && (c6 == 'P' || c6 == 'p')) {
                 if (tailCheck(++offset, stmt)) {
                     return OTHER;
                 }
@@ -1363,16 +1363,16 @@ public final class ManagerParseShow {
                         char c4 = stmt.charAt(++offset);
                         char c5 = stmt.charAt(++offset);
 
-                        if ((c2 == 'U' || c2 == 'u') && (c3 == 'S' || c3 == 's')
-                                && (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r')) {
+                        if ((c2 == 'U' || c2 == 'u') && (c3 == 'S' || c3 == 's') &&
+                                (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r')) {
                             if (tailCheck(++offset, stmt)) {
                                 return OTHER;
                             }
                             return SQL_SUM_USER;
 
-                        } else if ((c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')
-                                && (c4 == 'B' || c4 == 'b') && (c5 == 'L' || c5 == 'l')
-                                && stmt.length() > (offset + 1)) {
+                        } else if ((c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                                (c4 == 'B' || c4 == 'b') && (c5 == 'L' || c5 == 'l') &&
+                                stmt.length() > (offset + 1)) {
 
                             char c6 = stmt.charAt(++offset);
                             if (c6 == 'E' || c6 == 'e') {
@@ -1423,8 +1423,8 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
-                    && (c4 == 'E' || c4 == 'e') && (c5 == ' ')) {
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == ' ')) {
                 boolean jump1 = false;
                 for (++offset; stmt.length() > offset && !jump1; ++offset) {
                     switch (stmt.charAt(offset)) {

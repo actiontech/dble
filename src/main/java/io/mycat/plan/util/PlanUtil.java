@@ -27,8 +27,8 @@ public class PlanUtil {
         if (node.getReferedTableNodes().size() == 0)
             return false;
         else {
-            if (node.sumFuncs.size() > 0 || node.getGroupBys().size() > 0 || node.getLimitTo() != -1
-                    || node.isDistinct())
+            if (node.sumFuncs.size() > 0 || node.getGroupBys().size() > 0 ||
+                    node.getLimitTo() != -1 || node.isDistinct())
                 return true;
         }
         return false;
@@ -105,8 +105,8 @@ public class PlanUtil {
             PlanNode referTable = referTables.iterator().next();
             if (referTable == child) {
                 // left join的right 节点的is null不下发
-                if (sel.withIsNull && parent.type() == PlanNodeType.JOIN && ((JoinNode) parent).isLeftOuterJoin()
-                        && ((JoinNode) parent).getRightNode() == child)
+                if (sel.withIsNull && parent.type() == PlanNodeType.JOIN && ((JoinNode) parent).isLeftOuterJoin() &&
+                        ((JoinNode) parent).getRightNode() == child)
                     return false;
                 else
                     return true;

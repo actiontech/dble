@@ -148,8 +148,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         }
         if (obj instanceof RouteResultsetNode) {
             RouteResultsetNode rrn = (RouteResultsetNode) obj;
-            if ((this.multiplexNum.get() == rrn.getMultiplexNum().get())
-                    && equals(name, rrn.getName())) {
+            if ((this.multiplexNum.get() == rrn.getMultiplexNum().get()) && equals(name, rrn.getName())) {
                 return true;
             }
         }

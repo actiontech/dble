@@ -149,11 +149,10 @@ public final class ShowServerLog {
             String line = null;
             while ((line = br.readLine()) != null) {
                 curLine++;
-                if (curLine >= start && curLine <= end
-                        && (
-                        (pattern != null && pattern.matcher(line).find())
-                                || (pattern == null && key == null)
-                                || (key != null && line.toLowerCase().contains(key))
+                if (curLine >= start && curLine <= end && (
+                        (pattern != null && pattern.matcher(line).find()) ||
+                                (pattern == null && key == null) ||
+                                (key != null && line.toLowerCase().contains(key))
                 )) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode(curLine + "->" + line,
@@ -218,13 +217,12 @@ public final class ShowServerLog {
             }
 
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode("files in log dir:" + totalLines
-                    + fileNames, c.getCharset()));
+            row.add(StringUtil.encode("files in log dir:" + totalLines + fileNames, c.getCharset()));
             row.packetId = ++packetId;
             buffer = row.write(buffer, c, true);
             row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode("Total lines " + totalLines + " ,tail "
-                    + queue.size() + " line is following:", c.getCharset()));
+            row.add(StringUtil.encode("Total lines " + totalLines + " ,tail " +
+                    queue.size() + " line is following:", c.getCharset()));
             row.packetId = ++packetId;
             buffer = row.write(buffer, c, true);
             int size = queue.size() - 1;

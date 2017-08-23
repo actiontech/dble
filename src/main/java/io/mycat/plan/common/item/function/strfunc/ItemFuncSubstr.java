@@ -22,8 +22,8 @@ public class ItemFuncSubstr extends ItemStrFunc {
         long start = args.get(1).valInt().longValue();
         long length = args.size() == 3 ? args.get(2).valInt().longValue() : Long.MAX_VALUE;
         long tmpLength;
-        if (this.nullValue = (args.get(0).isNull() || args.get(1).isNull()
-                || (args.size() == 3 && args.get(2).isNull())))
+        if (this.nullValue = (args.get(0).isNull() || args.get(1).isNull() ||
+                (args.size() == 3 && args.get(2).isNull())))
             return EMPTY;
         if (args.size() == 3 && length <= 0)
             return EMPTY;

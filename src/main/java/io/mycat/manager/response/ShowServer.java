@@ -136,8 +136,7 @@ public final class ShowServer {
         row.add(StringUtil.encode(FormatUtil.formatDate(server.getConfig().getReloadTime()), charset));
         row.add(LongUtil.toBytes(server.getConfig().getRollbackTime()));
         row.add(StringUtil.encode(charset, charset));
-        row.add(StringUtil.encode(MycatServer.getInstance().isOnline() ? "ON"
-                : "OFF", charset));
+        row.add(StringUtil.encode(MycatServer.getInstance().isOnline() ? "ON" : "OFF", charset));
         return row;
     }
 

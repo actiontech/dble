@@ -286,11 +286,11 @@ public class ItemCreate {
                         "too big precision in cast time/datetime,max 6,current:" + type.length);
             }
             if (type.length == -1) {
-                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a)
-                        : new ItemDatetimeTypecast(a);
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a) :
+                        new ItemDatetimeTypecast(a);
             } else {
-                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length)
-                        : new ItemDatetimeTypecast(a, type.length);
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length) :
+                        new ItemDatetimeTypecast(a, type.length);
             }
         } else if (castType == CastTarget.ITEM_CAST_DECIMAL) {
             if (type.length < type.dec) {

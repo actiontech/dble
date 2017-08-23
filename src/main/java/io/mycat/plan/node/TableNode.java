@@ -132,8 +132,8 @@ public class TableNode extends PlanNode {
         String tabTittle = ToStringUtil.getTab(level);
         String tabContent = ToStringUtil.getTab(level + 1);
         if (this.getAlias() != null) {
-            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + "<" + this.getSubAlias() + ">" + " as "
-                    + this.getAlias());
+            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + "<" + this.getSubAlias() +
+                    ">" + " as " + this.getAlias());
         } else {
             ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + "<" + this.getSubAlias() + ">");
         }

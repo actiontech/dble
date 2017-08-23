@@ -287,8 +287,7 @@ public class ExplainHandler {
         }
         SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(db);
         if (schema == null) {
-            c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '"
-                    + db + "'");
+            c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
             return null;
         }
         try {

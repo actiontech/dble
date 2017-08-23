@@ -223,8 +223,8 @@ public class DruidInsertParser extends DefaultDruidParser {
         Integer nodeIndex = algorithm.calculate(shardingValue);
         //没找到插入的分片
         if (nodeIndex == null) {
-            String msg = "can't find any valid datanode :" + schemaInfo.table
-                    + " -> " + partitionColumn + " -> " + shardingValue;
+            String msg = "can't find any valid datanode :" + schemaInfo.table + " -> " +
+                    partitionColumn + " -> " + shardingValue;
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
@@ -273,8 +273,8 @@ public class DruidInsertParser extends DefaultDruidParser {
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         for (ValuesClause valueClause : valueClauseList) {
             if (valueClause.getValues().size() != columnNum) {
-                String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != "
-                        + valueClause.getValues().size() + "values:" + valueClause;
+                String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != " +
+                        valueClause.getValues().size() + "values:" + valueClause;
                 LOGGER.warn(msg);
                 throw new SQLNonTransientException(msg);
             }
@@ -283,8 +283,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             Integer nodeIndex = algorithm.calculate(shardingValue);
             // 没找到插入的分片
             if (nodeIndex == null) {
-                String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> "
-                        + shardingValue;
+                String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
                 LOGGER.warn(msg);
                 throw new SQLNonTransientException(msg);
             }

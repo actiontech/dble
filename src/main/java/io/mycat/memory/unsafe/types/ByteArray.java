@@ -44,8 +44,7 @@ public final class ByteArray {
             final int minLen = Math.min(bytes.length, 8);
             long p = 0;
             for (int i = 0; i < minLen; ++i) {
-                p |= (128L + Platform.getByte(bytes, Platform.BYTE_ARRAY_OFFSET + i))
-                        << (56 - 8 * i);
+                p |= (128L + Platform.getByte(bytes, Platform.BYTE_ARRAY_OFFSET + i)) << (56 - 8 * i);
             }
             return p;
         }

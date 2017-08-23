@@ -157,8 +157,8 @@ public class JVMInfo {
     }
 
     protected boolean canUseSun14ReflectionProvider() {
-        return (isSun() || isApple() || isHPUX() || isIBM() || isBlackdown() || isBEAWithUnsafeSupport()) && is14()
-                && loadClass("sun.misc.Unsafe") != null;
+        return (isSun() || isApple() || isHPUX() || isIBM() || isBlackdown() || isBEAWithUnsafeSupport()) && is14() &&
+                loadClass("sun.misc.Unsafe") != null;
     }
 
     public static boolean reverseFieldDefinition() {

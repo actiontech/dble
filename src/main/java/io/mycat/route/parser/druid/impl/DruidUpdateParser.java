@@ -166,8 +166,8 @@ public class DruidUpdateParser extends DefaultDruidParser {
     * IN (select...), ANY, EXISTS, ALL等关键字, IN (1,2,3...) 这种对应的是SQLInListExpr
      */
     private static boolean isSubQueryClause(SQLExpr sqlExpr) throws SQLNonTransientException {
-        return (sqlExpr instanceof SQLInSubQueryExpr || sqlExpr instanceof SQLAnyExpr || sqlExpr instanceof SQLAllExpr
-                || sqlExpr instanceof SQLQueryExpr || sqlExpr instanceof SQLExistsExpr);
+        return (sqlExpr instanceof SQLInSubQueryExpr || sqlExpr instanceof SQLAnyExpr || sqlExpr instanceof SQLAllExpr ||
+                sqlExpr instanceof SQLQueryExpr || sqlExpr instanceof SQLExistsExpr);
     }
 
     /*

@@ -298,17 +298,16 @@ public class MycatServer {
         // server startup
         LOGGER.info("===============================================");
         LOGGER.info(NAME + "Server is ready to startup ...");
-        String inf = "Startup processors ...,total processors:"
-                + system.getProcessors() + ",aio thread pool size:"
-                + system.getProcessorExecutor()
-                + "    \r\n each process allocated socket buffer pool "
-                + " bytes ,a page size:"
-                + system.getBufferPoolPageSize()
-                + "  a page's chunk number(PageSize/ChunkSize) is:"
-                + (system.getBufferPoolPageSize()
-                / system.getBufferPoolChunkSize())
-                + "  buffer page's number is:"
-                + system.getBufferPoolPageNumber();
+        String inf = "Startup processors ...,total processors:" +
+                system.getProcessors() + ",aio thread pool size:" +
+                system.getProcessorExecutor() +
+                "    \r\n each process allocated socket buffer pool " +
+                " bytes ,a page size:" +
+                system.getBufferPoolPageSize() +
+                "  a page's chunk number(PageSize/ChunkSize) is:" +
+                (system.getBufferPoolPageSize() / system.getBufferPoolChunkSize()) +
+                "  buffer page's number is:" +
+                system.getBufferPoolPageNumber();
         LOGGER.info(inf);
         LOGGER.info("sysconfig params:" + system.toString());
 
@@ -904,18 +903,18 @@ public class MycatServer {
             boolean needRollback = false;
             boolean needCommit = false;
             StringBuilder xacmd = new StringBuilder();
-            if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE
+            if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE ||
                     // will committing, may send but failed receiving, should commit agagin
-                    || coordinatorLogEntry.getTxState() == TxState.TX_COMMITING_STATE) {
+                    coordinatorLogEntry.getTxState() == TxState.TX_COMMITING_STATE) {
                 needCommit = true;
                 xacmd.append("XA COMMIT ");
-            } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE
+            } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE ||
                     //don't konw prepare is successed or not ,should rollback
-                    || coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE
+                    coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE ||
                     // will rollbacking, may send but failed receiving,should rollback agagin
-                    || coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACKING_STATE
+                    coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACKING_STATE ||
                     // will preparing, may send but failed receiving,should rollback agagin
-                    || coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
+                    coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
                 needRollback = true;
                 xacmd.append("XA ROLLBACK ");
             }
@@ -925,12 +924,12 @@ public class MycatServer {
                 for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
                     ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
                     // XA commit
-                    if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE
-                            && participantLogEntry.getTxState() != TxState.TX_COMMITING_STATE
-                            && participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE
-                            && participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE
-                            && participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE
-                            && participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE) {
+                    if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE &&
+                            participantLogEntry.getTxState() != TxState.TX_COMMITING_STATE &&
+                            participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
+                            participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
+                            participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
+                            participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE) {
                         continue;
                     }
                     finished = false;

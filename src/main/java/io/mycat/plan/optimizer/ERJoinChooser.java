@@ -527,8 +527,8 @@ public class ERJoinChooser {
             JoinKeyInfo other = (JoinKeyInfo) o;
             if (this.key == null)
                 return false;
-            return StringUtil.equals(this.key.getTableName(), other.key.getTableName())
-                    && StringUtil.equalsIgnoreCase(this.key.getItemName(), other.key.getItemName());
+            return StringUtil.equals(this.key.getTableName(), other.key.getTableName()) &&
+                    StringUtil.equalsIgnoreCase(this.key.getItemName(), other.key.getItemName());
         }
 
         @Override
@@ -613,8 +613,8 @@ public class ERJoinChooser {
             // 存在col名称
             if (child.getAlias() == null) {
                 for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
-                    if (StringUtil.equals(table, entry.getKey().getTable())
-                            && StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
+                    if (StringUtil.equals(table, entry.getKey().getTable()) &&
+                            StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
                         return entry.getValue();
                     }
                 }

@@ -25,8 +25,8 @@ public class ItemFuncDatediff extends ItemIntFunc {
     public BigInteger valInt() {
         MySQLTime ltime1 = new MySQLTime();
         MySQLTime ltime2 = new MySQLTime();
-        if (args.get(0).nullValue || args.get(1).nullValue || args.get(0).getDate(ltime1, MyTime.TIME_FUZZY_DATE)
-                || args.get(1).getDate(ltime2, MyTime.TIME_FUZZY_DATE)) {
+        if (args.get(0).nullValue || args.get(1).nullValue || args.get(0).getDate(ltime1, MyTime.TIME_FUZZY_DATE) ||
+                args.get(1).getDate(ltime2, MyTime.TIME_FUZZY_DATE)) {
             nullValue = true;
             return BigInteger.ZERO;
         }

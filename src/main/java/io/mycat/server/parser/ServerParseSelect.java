@@ -119,9 +119,9 @@ public final class ServerParseSelect {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r')
-                    && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i')
-                    && (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i') &&
+                    (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -189,8 +189,8 @@ public final class ServerParseSelect {
                 return skipIdentifierEscape(stmt, offset);
             default:
                 if (CharTypes.isIdentifierChar(stmt.charAt(offset))) {
-                    for (; offset < stmt.length()
-                            && CharTypes.isIdentifierChar(stmt.charAt(offset)); ++offset) {
+                    for (; offset < stmt.length() &&
+                            CharTypes.isIdentifierChar(stmt.charAt(offset)); ++offset) {
                     }
                     return offset;
                 }
@@ -207,8 +207,8 @@ public final class ServerParseSelect {
      */
     private static int skipIdentifierEscape(String stmt, int offset) {
         for (++offset; offset < stmt.length(); ++offset) {
-            if (stmt.charAt(offset) == '`'
-                    && (++offset >= stmt.length() || stmt.charAt(offset) != '`')) {
+            if (stmt.charAt(offset) == '`' &&
+                    (++offset >= stmt.length() || stmt.charAt(offset) != '`')) {
                 return offset;
             }
         }
@@ -308,15 +308,15 @@ public final class ServerParseSelect {
      */
     public static int skipAs(String stmt, int offset) {
         offset = ParseUtil.move(stmt, offset, 0);
-        if (stmt.length() > offset + "AS".length()
-                && (stmt.charAt(offset) == 'A' || stmt.charAt(offset) == 'a')
-                && (stmt.charAt(offset + 1) == 'S' || stmt.charAt(offset + 1) == 's')
-                && (stmt.charAt(offset + 2) == ' '
-                || stmt.charAt(offset + 2) == '\r'
-                || stmt.charAt(offset + 2) == '\n'
-                || stmt.charAt(offset + 2) == '\t'
-                || stmt.charAt(offset + 2) == '/' || stmt
-                .charAt(offset + 2) == '#')) {
+        if (stmt.length() > offset + "AS".length() &&
+                (stmt.charAt(offset) == 'A' || stmt.charAt(offset) == 'a') &&
+                (stmt.charAt(offset + 1) == 'S' || stmt.charAt(offset + 1) == 's') &&
+                (stmt.charAt(offset + 2) == ' ' ||
+                        stmt.charAt(offset + 2) == '\r' ||
+                        stmt.charAt(offset + 2) == '\n' ||
+                        stmt.charAt(offset + 2) == '\t' ||
+                        stmt.charAt(offset + 2) == '/' ||
+                        stmt.charAt(offset + 2) == '#')) {
             offset = ParseUtil.move(stmt, offset + 2, 0);
         }
         return offset;
@@ -328,8 +328,8 @@ public final class ServerParseSelect {
      * LAST_INSERT_ID
      */
     public static int indexAfterLastInsertIdFunc(String stmt, int offset) {
-        if (stmt.length() >= offset + "LAST_INSERT_ID()".length()
-                && ParseUtil.compare(stmt, offset, LAST_INSERT_ID_STR)) {
+        if (stmt.length() >= offset + "LAST_INSERT_ID()".length() &&
+                ParseUtil.compare(stmt, offset, LAST_INSERT_ID_STR)) {
             offset = ParseUtil.move(stmt, offset + LAST_INSERT_ID_STR.length,
                     0);
             if (offset + 1 < stmt.length() && stmt.charAt(offset) == '(') {
@@ -426,8 +426,7 @@ public final class ServerParseSelect {
     }
 
     static int select2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@'
-                && stmt.length() > ++offset) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'V':
                 case 'v':
@@ -450,8 +449,7 @@ public final class ServerParseSelect {
      */
     static int databaseCheck(String stmt, int offset) {
         int length = offset + DATABASE_STR.length;
-        if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, DATABASE_STR)) {
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, DATABASE_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             } else {
@@ -471,12 +469,9 @@ public final class ServerParseSelect {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's')
-                    && (c2 == 'E' || c2 == 'e')
-                    && (c3 == 'R' || c3 == 'r')
-                    && (c4 == '(')
-                    && (c5 == ')')
-                    && (stmt.length() == ++offset || ParseUtil.isEOF(stmt
+            if ((c1== 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') && (c4 == '(') &&
+                    (c5 == ')') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt
                     .charAt(offset)))) {
                 return USER;
             }
@@ -489,8 +484,7 @@ public final class ServerParseSelect {
      */
     static int currentUserCheck(String stmt, int offset) {
         int length = offset + CURRENT_USER_STR.length;
-        if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, CURRENT_USER_STR)) {
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, CURRENT_USER_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             }
@@ -504,8 +498,7 @@ public final class ServerParseSelect {
      */
     static int versionCommentCheck(String stmt, int offset) {
         int length = offset + VERSION_COMMENT_STR.length;
-        if (stmt.length() >= length
-                && ParseUtil.compare(stmt, offset, VERSION_COMMENT_STR)) {
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, VERSION_COMMENT_STR)) {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             } else {

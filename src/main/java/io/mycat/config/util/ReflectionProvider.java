@@ -53,8 +53,8 @@ public class ReflectionProvider {
             if (Serializable.class.isAssignableFrom(type)) {
                 return instantiateUsingSerialization(type);
             } else {
-                throw new ObjectAccessException("Cannot construct " + type.getName()
-                        + " as it does not have a no-args constructor");
+                throw new ObjectAccessException("Cannot construct " + type.getName() +
+                        " as it does not have a no-args constructor");
             }
         } catch (InstantiationException e) {
             throw new ObjectAccessException("Cannot construct " + type.getName(), e);
@@ -168,8 +168,8 @@ public class ReflectionProvider {
             if (JVMInfo.is15()) {
                 field.setAccessible(true);
             } else {
-                throw new ObjectAccessException("Invalid final field " + field.getDeclaringClass().getName() + "."
-                        + field.getName());
+                throw new ObjectAccessException("Invalid final field " + field.getDeclaringClass().getName() + "." +
+                        field.getName());
             }
         }
     }

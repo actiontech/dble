@@ -394,8 +394,8 @@ public final class UnsafeRow extends MySQLPacket {
      * Returns the underlying bytes for this UnsafeRow.
      */
     public byte[] getBytes() {
-        if (baseObject instanceof byte[] && baseOffset == Platform.BYTE_ARRAY_OFFSET
-                && (((byte[]) baseObject).length == sizeInBytes)) {
+        if (baseObject instanceof byte[] && baseOffset == Platform.BYTE_ARRAY_OFFSET &&
+                (((byte[]) baseObject).length == sizeInBytes)) {
             return (byte[]) baseObject;
         } else {
             byte[] bytes = new byte[sizeInBytes];

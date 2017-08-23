@@ -92,8 +92,8 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
             long timestamp = timeGen();
             if (timestamp < lastTimestamp) {
                 try {
-                    throw new Exception("Clock moved backwards.  Refusing to generate id for "
-                            + (lastTimestamp - timestamp) + " milliseconds");
+                    throw new Exception("Clock moved backwards.  Refusing to generate id for " +
+                            (lastTimestamp - timestamp) + " milliseconds");
                 } catch (Exception e) {
                     LOGGER.error("error", e);
                 }
@@ -114,11 +114,11 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
             // ID偏移组合生成最终的ID，并返回ID
 
             //42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit
-            long nextId = (((timestamp - TWEPOCH) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT)
-                    | (datacenterId << DATACENTER_ID_SHIFT)
-                    | (workerId << WORKER_ID_SHIFT)
-                    | (sequence << SEQUENCE_SHIFT)
-                    | ((timestamp - TWEPOCH) & TIMESTAMP_LOW_MASK);
+            long nextId = (((timestamp - TWEPOCH) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT) |
+                    (datacenterId << DATACENTER_ID_SHIFT) |
+                    (workerId << WORKER_ID_SHIFT) |
+                    (sequence << SEQUENCE_SHIFT) |
+                    ((timestamp - TWEPOCH) & TIMESTAMP_LOW_MASK);
 
             return nextId;
         }

@@ -75,8 +75,8 @@ public class PhysicalDBNode {
 
     private void checkRequest(String schema) {
         if (schema != null && !schema.equals(this.database)) {
-            throw new RuntimeException("invalid param ,connection request db is :"
-                    + schema + " and datanode db is " + this.database);
+            throw new RuntimeException("invalid param ,connection request db is :" + schema +
+                    " and datanode db is " + this.database);
         }
         if (!dbPool.isInitSuccess()) {
             int activeIndex = dbPool.init(dbPool.activeIndex);
@@ -104,8 +104,8 @@ public class PhysicalDBNode {
                         LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());
                         if (!dbPool.getReadCon(schema, autoCommit, handler,
                                 attachment)) {
-                            LOGGER.warn("Do not have slave connection to use, "
-                                    + "use master connection instead.");
+                            LOGGER.warn("Do not have slave connection to use, " +
+                                    "use master connection instead.");
                             PhysicalDatasource writeSource = dbPool.getSource();
                             //记录写节点写负载值
                             writeSource.setWriteCount();

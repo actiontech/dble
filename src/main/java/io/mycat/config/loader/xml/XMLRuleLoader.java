@@ -129,15 +129,13 @@ public class XMLRuleLoader {
                     throw new ConfigException("name is null or empty");
                 }
                 if (tableRules.containsKey(name)) {
-                    throw new ConfigException("table rule " + name
-                            + " duplicated!");
+                    throw new ConfigException("table rule " + name + " duplicated!");
                 }
                 //获取rule标签
                 NodeList ruleNodes = e.getElementsByTagName("rule");
                 int length = ruleNodes.getLength();
                 if (length > 1) {
-                    throw new ConfigException("only one rule can defined :"
-                            + name);
+                    throw new ConfigException("only one rule can defined :" + name);
                 }
                 //目前只处理第一个，未来可能有多列复合逻辑需求
                 //RuleConfig是保存着rule与function对应关系的对象
@@ -157,8 +155,8 @@ public class XMLRuleLoader {
         }
         String[] columns = SplitUtil.split(column, ',', true);
         if (columns.length > 1) {
-            throw new ConfigException("table rule coulmns has multi values:"
-                    + columnsEle.getTextContent());
+            throw new ConfigException("table rule coulmns has multi values:" +
+                    columnsEle.getTextContent());
         }
         //读取algorithm
         Element algorithmEle = ConfigUtil.loadElement(element, "algorithm");
@@ -200,8 +198,7 @@ public class XMLRuleLoader {
                 String name = e.getAttribute("name");
                 //如果Map已有，则function重复
                 if (functions.containsKey(name)) {
-                    throw new ConfigException("rule function " + name
-                            + " duplicated!");
+                    throw new ConfigException("rule function " + name + " duplicated!");
                 }
                 //获取class标签
                 String clazz = e.getAttribute("class");
@@ -240,8 +237,8 @@ public class XMLRuleLoader {
                 Class<?> clz = Class.forName(clazz);
                 //判断是否继承AbstractPartitionAlgorithm
                 if (!AbstractPartitionAlgorithm.class.isAssignableFrom(clz)) {
-                    throw new IllegalArgumentException("rule function must implements "
-                            + AbstractPartitionAlgorithm.class.getName() + ", name=" + name);
+                    throw new IllegalArgumentException("rule function must implements " +
+                            AbstractPartitionAlgorithm.class.getName() + ", name=" + name);
                 }
                 return (AbstractPartitionAlgorithm) clz.newInstance();
         }

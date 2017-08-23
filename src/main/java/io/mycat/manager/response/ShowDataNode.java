@@ -171,8 +171,7 @@ public final class ShowDataNode {
             row.add(IntegerUtil.toBytes(idle));
             row.add(IntegerUtil.toBytes(ds.getSize()));
             row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
-            long recoveryTime = pool.getSource().getHeartbeatRecoveryTime()
-                    - TimeUtil.currentTimeMillis();
+            long recoveryTime = pool.getSource().getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
             row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
             return row;
         } else {

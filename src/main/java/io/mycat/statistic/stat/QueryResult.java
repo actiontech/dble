@@ -18,8 +18,7 @@ public class QueryResult {
     private int resultSize;     //结果集大小
 
     public QueryResult(String user, int sqlType, String sql, long sqlRows,
-                       long netInBytes, long netOutBytes, long startTime, long endTime
-            , int resultSize) {
+                       long netInBytes, long netOutBytes, long startTime, long endTime, int resultSize) {
         super();
         this.user = user;
         this.sqlType = sqlType;

@@ -202,7 +202,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     }
 
     @Override
-    public Boolean updateCURIDVal(String prefixName, Long val) {
+    public Boolean updateCurIDVal(String prefixName, Long val) {
         Map<String, Map<String, String>> tableParaValMap = tableParaValMapThreadLocal.get();
         if (tableParaValMap == null) {
             throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");

@@ -393,11 +393,11 @@ public class MySQLConnection extends BackendAIOConnection {
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTXID = getConnXID(sc.getSession2());
+        String xaTxId = getConnXID(sc.getSession2());
         if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
             sc.setTxstart(true);
         }
-        synAndDoExecute(xaTXID, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), autocommit);
+        synAndDoExecute(xaTxId, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), autocommit);
     }
 
     public String getConnXID(NonBlockingSession session) {

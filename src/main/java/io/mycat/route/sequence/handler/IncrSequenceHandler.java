@@ -48,7 +48,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
 
     public abstract Map<String, String> getParaValMap(String prefixName);
 
-    public abstract Boolean updateCURIDVal(String prefixName, Long val);
+    public abstract Boolean updateCurIDVal(String prefixName, Long val);
 
     public abstract Boolean fetchNextPeriod(String prefixName);
 
@@ -66,7 +66,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
             fetchNextPeriod(prefixName);
             return nextId(prefixName);
         }
-        updateCURIDVal(prefixName, nextId);
+        updateCurIDVal(prefixName, nextId);
         return nextId.longValue();
 
     }

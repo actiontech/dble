@@ -12,7 +12,7 @@ public class Serializer {
     private static final String END_OBJECT = "}";
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    public static String toJSON(CoordinatorLogEntry coordinatorLogEntry) {
+    public static String toJson(CoordinatorLogEntry coordinatorLogEntry) {
         StringBuilder strBuilder = new StringBuilder(600);
         strBuilder.append(START_OBJECT);
         strBuilder.append(QUOTE).append(CoordinatorLogEntry.ID).append(QUOTE).append(":").append(QUOTE).append(coordinatorLogEntry.getId()).append(QUOTE);

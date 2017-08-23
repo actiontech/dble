@@ -88,7 +88,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
 
     /* Here arg[1] is a Item_interval object */
     private boolean getDateInternal(MySQLTime ltime, long fuzzyDate) {
-        INTERVAL interval = new INTERVAL();
+        Interval interval = new Interval();
 
         if (args.get(0).getDate(ltime, MyTime.TIME_NO_ZERO_DATE)
                 || MyTime.getIntervalValue(args.get(1), intType, strValue, interval))
@@ -113,7 +113,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
     }
 
     private boolean getTimeInternal(MySQLTime ltime) {
-        INTERVAL interval = new INTERVAL();
+        Interval interval = new Interval();
         if ((nullValue = args.get(0).getTime(ltime)
                 || MyTime.getIntervalValue(args.get(1), intType, strValue, interval)))
             return true;

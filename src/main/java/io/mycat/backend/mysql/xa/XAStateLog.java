@@ -43,30 +43,30 @@ public class XAStateLog {
     private static Set<Long> waitSet = new CopyOnWriteArraySet<>();
     private static ConcurrentMap<Long, Boolean> mapResult = new ConcurrentHashMap<>();
 
-    public static boolean saveXARecoverylog(String xaTXID, TxState sessionState) {
-        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
+    public static boolean saveXARecoverylog(String xaTxId, TxState sessionState) {
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         coordinatorLogEntry.setTxState(sessionState);
-        flushMemoryRepository(xaTXID, coordinatorLogEntry);
+        flushMemoryRepository(xaTxId, coordinatorLogEntry);
         //will preparing, may success send but failed received,should be rollback
         if (sessionState == TxState.TX_PREPARING_STATE
                 //will committing, may success send but failed received,should be commit agagin
                 || sessionState == TxState.TX_COMMITING_STATE
                 //will rollbacking, may success send but failed received,should be rollback agagin
                 || sessionState == TxState.TX_ROLLBACKING_STATE) {
-            return writeCheckpoint(xaTXID);
+            return writeCheckpoint(xaTxId);
         }
         return true;
     }
 
-    public static void saveXARecoverylog(String xaTXID, MySQLConnection mysqlCon) {
-        updateXARecoverylog(xaTXID, mysqlCon, mysqlCon.getXaStatus());
+    public static void saveXARecoverylog(String xaTxId, MySQLConnection mysqlCon) {
+        updateXARecoverylog(xaTxId, mysqlCon, mysqlCon.getXaStatus());
     }
 
-    private static void updateXARecoverylog(String xaTXID, MySQLConnection mysqlCon, TxState txState) {
-        updateXARecoverylog(xaTXID, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
+    private static void updateXARecoverylog(String xaTxId, MySQLConnection mysqlCon, TxState txState) {
+        updateXARecoverylog(xaTxId, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
     }
 
-    public static boolean writeCheckpoint(String xaTXID) {
+    public static boolean writeCheckpoint(String xaTxId) {
         lock.lock();
         try {
             while (isWriting) {
@@ -74,7 +74,7 @@ public class XAStateLog {
                 waitWriting.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("writeCheckpoint error, waiter XID is " + xaTXID, e);
+            LOGGER.warn("writeCheckpoint error, waiter XID is " + xaTxId, e);
         } finally {
             lock.unlock();
         }
@@ -108,7 +108,7 @@ public class XAStateLog {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTXID, e);
+                    LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {
                     lockmap.unlock();
@@ -150,7 +150,7 @@ public class XAStateLog {
                 mapResult.remove(Thread.currentThread().getId());
                 return result;
             } catch (InterruptedException e) {
-                LOGGER.warn("writeCheckpoint error, follower Xid is:" + xaTXID, e);
+                LOGGER.warn("writeCheckpoint error, follower Xid is:" + xaTxId, e);
                 return false;
             } finally {
                 lock.unlock();
@@ -158,8 +158,8 @@ public class XAStateLog {
         }
     }
 
-    public static void updateXARecoverylog(String xaTXID, String host, int port, String schema, TxState txState) {
-        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
+    public static void updateXARecoverylog(String xaTxId, String host, int port, String schema, TxState txState) {
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
             if (coordinatorLogEntry.getParticipants()[i] != null
                     && coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema)
@@ -168,18 +168,18 @@ public class XAStateLog {
                 coordinatorLogEntry.getParticipants()[i].setTxState(txState);
             }
         }
-        flushMemoryRepository(xaTXID, coordinatorLogEntry);
+        flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }
 
-    public static void flushMemoryRepository(String xaTXID, CoordinatorLogEntry coordinatorLogEntry) {
-        IN_MEMORY_REPOSITORY.put(xaTXID, coordinatorLogEntry);
+    public static void flushMemoryRepository(String xaTxId, CoordinatorLogEntry coordinatorLogEntry) {
+        IN_MEMORY_REPOSITORY.put(xaTxId, coordinatorLogEntry);
     }
 
-    public static void initRecoverylog(String xaTXID, int position, MySQLConnection conn) {
-        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTXID);
-        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTXID, conn.getHost(), conn.getPort(), 0,
+    public static void initRecoverylog(String xaTxId, int position, MySQLConnection conn) {
+        CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
+        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, conn.getHost(), conn.getPort(), 0,
                 conn.getSchema(), conn.getXaStatus());
-        flushMemoryRepository(xaTXID, coordinatorLogEntry);
+        flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }
 
     public static void cleanCompleteRecoverylog() {

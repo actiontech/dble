@@ -1,33 +1,33 @@
 package io.mycat.plan.common.locale;
 
 import io.mycat.plan.common.MySQLcom;
-import io.mycat.plan.common.typelib.TYPELIB;
+import io.mycat.plan.common.typelib.TypeLib;
 
 /**
  * only locale_en_us is supported now
  *
  * @author ActionTech
  */
-public class MYLOCALES {
+public class MyLocales {
     enum ErrMsgsIndex {
         en_US, cs_CZ, da_DK, nl_NL, et_EE, fr_FR, de_DE, el_GR, hu_HU, it_IT, ja_JP, ko_KR, no_NO, nn_NO, pl_PL, pt_PT, ro_RO, ru_RU, sr_RS, sk_SK, es_ES, sv_SE, uk_UA
     }
 
     ;
 
-    static final MYLOCALEERRMSGS GLOBAL_ERRMSGS[] = {new MYLOCALEERRMSGS("english", null),
-            new MYLOCALEERRMSGS("czech", null), new MYLOCALEERRMSGS("danish", null),
-            new MYLOCALEERRMSGS("dutch", null), new MYLOCALEERRMSGS("estonian", null),
-            new MYLOCALEERRMSGS("french", null), new MYLOCALEERRMSGS("german", null),
-            new MYLOCALEERRMSGS("greek", null), new MYLOCALEERRMSGS("hungarian", null),
-            new MYLOCALEERRMSGS("italian", null), new MYLOCALEERRMSGS("japanese", null),
-            new MYLOCALEERRMSGS("korean", null), new MYLOCALEERRMSGS("norwegian", null),
-            new MYLOCALEERRMSGS("norwegian-ny", null), new MYLOCALEERRMSGS("polish", null),
-            new MYLOCALEERRMSGS("portuguese", null), new MYLOCALEERRMSGS("romanian", null),
-            new MYLOCALEERRMSGS("russian", null), new MYLOCALEERRMSGS("serbian", null),
-            new MYLOCALEERRMSGS("slovak", null), new MYLOCALEERRMSGS("spanish", null),
-            new MYLOCALEERRMSGS("swedish", null), new MYLOCALEERRMSGS("ukrainian", null),
-            new MYLOCALEERRMSGS(null, null)};
+    static final MyLocaleErrMsgs GLOBAL_ERRMSGS[] = {new MyLocaleErrMsgs("english", null),
+            new MyLocaleErrMsgs("czech", null), new MyLocaleErrMsgs("danish", null),
+            new MyLocaleErrMsgs("dutch", null), new MyLocaleErrMsgs("estonian", null),
+            new MyLocaleErrMsgs("french", null), new MyLocaleErrMsgs("german", null),
+            new MyLocaleErrMsgs("greek", null), new MyLocaleErrMsgs("hungarian", null),
+            new MyLocaleErrMsgs("italian", null), new MyLocaleErrMsgs("japanese", null),
+            new MyLocaleErrMsgs("korean", null), new MyLocaleErrMsgs("norwegian", null),
+            new MyLocaleErrMsgs("norwegian-ny", null), new MyLocaleErrMsgs("polish", null),
+            new MyLocaleErrMsgs("portuguese", null), new MyLocaleErrMsgs("romanian", null),
+            new MyLocaleErrMsgs("russian", null), new MyLocaleErrMsgs("serbian", null),
+            new MyLocaleErrMsgs("slovak", null), new MyLocaleErrMsgs("spanish", null),
+            new MyLocaleErrMsgs("swedish", null), new MyLocaleErrMsgs("ukrainian", null),
+            new MyLocaleErrMsgs(null, null)};
 
     public static final String NULL_S = MySQLcom.NULLS;
 
@@ -39,15 +39,15 @@ public class MYLOCALES {
     static final String MY_LOCALE_DAY_NAMES_EN_US[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
             "Sunday", NULL_S};
     static final String MY_LOCALE_AB_DAY_NAMES_EN_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
-    static final TYPELIB MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US = new TYPELIB(MY_LOCALE_MONTH_NAMES_EN_US.length - 1, "",
+    static final TypeLib MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US = new TypeLib(MY_LOCALE_MONTH_NAMES_EN_US.length - 1, "",
             MY_LOCALE_MONTH_NAMES_EN_US, null);
-    static final TYPELIB MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US = new TYPELIB(MY_LOCALE_AB_MONTH_NAMES_EN_US.length - 1, "",
+    static final TypeLib MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US = new TypeLib(MY_LOCALE_AB_MONTH_NAMES_EN_US.length - 1, "",
             MY_LOCALE_AB_MONTH_NAMES_EN_US, null);
-    static final TYPELIB MY_LOCALE_TYPELIB_DAY_NAMES_EN_US = new TYPELIB((MY_LOCALE_DAY_NAMES_EN_US.length) - 1, "",
+    static final TypeLib MY_LOCALE_TYPELIB_DAY_NAMES_EN_US = new TypeLib((MY_LOCALE_DAY_NAMES_EN_US.length) - 1, "",
             MY_LOCALE_DAY_NAMES_EN_US, null);
-    static final TYPELIB MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US = new TYPELIB((MY_LOCALE_AB_DAY_NAMES_EN_US.length) - 1, "",
+    static final TypeLib MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US = new TypeLib((MY_LOCALE_AB_DAY_NAMES_EN_US.length) - 1, "",
             MY_LOCALE_AB_DAY_NAMES_EN_US, null);
-    public static final MYLOCALE MY_LOCALE_EN_US = new MYLOCALE(0, "en_US", "English - United States", true,
+    public static final MyLocale MY_LOCALE_EN_US = new MyLocale(0, "en_US", "English - United States", true,
             MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US,
             MY_LOCALE_TYPELIB_DAY_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US, 9, 9,
             '.', /*

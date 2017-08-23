@@ -199,7 +199,7 @@ public class MycatServer {
         return backupLocked.get();
     }
 
-    public String genXATXID() {
+    public String genXaTxId() {
         long seq = this.xaIDInc.incrementAndGet();
         if (seq < 0) {
             synchronized (xaIDInc) {

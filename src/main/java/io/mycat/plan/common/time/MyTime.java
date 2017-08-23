@@ -5,8 +5,8 @@ import io.mycat.plan.common.Ctype;
 import io.mycat.plan.common.MySQLcom;
 import io.mycat.plan.common.item.FieldTypes;
 import io.mycat.plan.common.item.Item;
-import io.mycat.plan.common.locale.MYLOCALE;
-import io.mycat.plan.common.locale.MYLOCALES;
+import io.mycat.plan.common.locale.MyLocale;
+import io.mycat.plan.common.locale.MyLocales;
 import io.mycat.plan.common.ptr.BoolPtr;
 import io.mycat.plan.common.ptr.LongPtr;
 import io.mycat.plan.common.ptr.StringPtr;
@@ -1184,7 +1184,7 @@ public class MyTime {
         return rc;
     }
 
-    public static boolean dateAddInterval(MySQLTime ltime, MySqlIntervalUnit intType, INTERVAL interval) {
+    public static boolean dateAddInterval(MySQLTime ltime, MySqlIntervalUnit intType, Interval interval) {
         long period, sign;
 
         ltime.neg = false;
@@ -1923,7 +1923,7 @@ public class MyTime {
             return false;
 
         ltime.secondPart %= 1000000;
-        INTERVAL interval = new INTERVAL();
+        Interval interval = new Interval();
         interval.second = 1;
 
         if (dateAddInterval(ltime, MySqlIntervalUnit.SECOND, interval)) {
@@ -2031,7 +2031,7 @@ public class MyTime {
      */
 
     public static boolean getIntervalValue(Item arg, MySqlIntervalUnit unit, StringPtr strValue,
-                                           INTERVAL interval) {
+                                           Interval interval) {
         long[] array = new long[5];
         long value = 0;
         //        int int_type = unit.ordinal();
@@ -2635,7 +2635,7 @@ public class MyTime {
         int ptr = 0, end;
         char[] formatChars = format.format.toCharArray();
         StringBuilder str = new StringBuilder();
-        MYLOCALE locale = MYLOCALES.MY_LOCALE_EN_US;
+        MyLocale locale = MyLocales.MY_LOCALE_EN_US;
 
         if (lTime.neg)
             str.append('-');

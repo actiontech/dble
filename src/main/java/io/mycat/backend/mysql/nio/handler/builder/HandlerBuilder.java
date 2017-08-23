@@ -25,7 +25,7 @@ public class HandlerBuilder {
         this.session = session;
     }
 
-    public void checkRRSS(RouteResultsetNode[] rrssArray) {
+    public void checkRRSs(RouteResultsetNode[] rrssArray) {
         for (RouteResultsetNode rrss : rrssArray) {
             while (rrsNodes.contains(rrss)) {
                 rrss.getMultiplexNum().incrementAndGet();

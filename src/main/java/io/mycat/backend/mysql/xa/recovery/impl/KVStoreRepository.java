@@ -75,7 +75,7 @@ public class KVStoreRepository implements Repository {
         String logs[] = data.split(Serializer.LINE_SEPARATOR);
         for (String log : logs) {
             try {
-                CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJSON(log);
+                CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJson(log);
                 coordinatorLogEntries.put(coordinatorLogEntry.getId(), coordinatorLogEntry);
             } catch (DeserialisationException e) {
                 LOGGER.warn("Unexpected EOF - logfile not closed properly last time? ", e);
@@ -89,7 +89,7 @@ public class KVStoreRepository implements Repository {
         try {
             StringBuilder sb = new StringBuilder();
             for (CoordinatorLogEntry coordinatorLogEntry : checkpointContent) {
-                sb.append(Serializer.toJSON(coordinatorLogEntry));
+                sb.append(Serializer.toJson(coordinatorLogEntry));
             }
             byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
             if (zkConn.checkExists().forPath(logPath) == null) {

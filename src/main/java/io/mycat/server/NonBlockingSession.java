@@ -85,7 +85,7 @@ public class NonBlockingSession implements Session {
     private volatile MultiNodeDdlHandler multiNodeDdlHandler;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
-    private volatile String xaTXID;
+    private volatile String xaTxId;
     private volatile TxState xaState;
     private boolean prepared;
     private volatile boolean needWaitFinished = false;
@@ -660,20 +660,20 @@ public class NonBlockingSession implements Session {
     }
 
 
-    public void setXATXEnabled(boolean xaTXEnabled) {
-        if (xaTXEnabled && this.xaTXID == null) {
+    public void setXaTxEnabled(boolean xaTXEnabled) {
+        if (xaTXEnabled && this.xaTxId == null) {
             LOGGER.info("XA Transaction enabled ,con " + this.getSource());
-            xaTXID = MycatServer.getInstance().genXATXID();
+            xaTxId = MycatServer.getInstance().genXaTxId();
             xaState = TxState.TX_INITIALIZE_STATE;
-        } else if (!xaTXEnabled && this.xaTXID != null) {
+        } else if (!xaTXEnabled && this.xaTxId != null) {
             LOGGER.info("XA Transaction disabled ,con " + this.getSource());
-            xaTXID = null;
+            xaTxId = null;
             xaState = null;
         }
     }
 
     public String getSessionXaID() {
-        return xaTXID;
+        return xaTxId;
     }
 
     public boolean isPrepared() {

@@ -70,7 +70,7 @@ public class FileSystemRepository implements Repository {
 
     private void write(CoordinatorLogEntry coordinatorLogEntry,
                        boolean flushImmediately) throws IOException {
-        String str = Serializer.toJSON(coordinatorLogEntry);
+        String str = Serializer.toJson(coordinatorLogEntry);
         byte[] buffer = str.getBytes();
         ByteBuffer buff = ByteBuffer.wrap(buffer);
         writeToFile(buff, flushImmediately);
@@ -160,7 +160,7 @@ public class FileSystemRepository implements Repository {
 
     private static CoordinatorLogEntry deserialize(String line)
             throws DeserialisationException {
-        return Deserializer.fromJSON(line);
+        return Deserializer.fromJson(line);
     }
 
     @Override

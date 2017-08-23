@@ -185,7 +185,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
                     tables, sqlMaxLimit);
             mergeFuncNodeERMap(schemaConfig);
-            mergeFKERMap(schemaConfig);
+            mergeFkERMap(schemaConfig);
             schemas.put(name, schemaConfig);
         }
         makeAllErRelations();
@@ -239,16 +239,16 @@ public class XMLSchemaLoader implements SchemaLoader {
         schemaFuncNodeER = null;
     }
 
-    private void mergeFKERMap(SchemaConfig schemaConfig) {
-        Map<ERTable, Set<ERTable>> schemaFKERMap = schemaConfig.getFkErRelations();
-        if (schemaFKERMap == null) {
+    private void mergeFkERMap(SchemaConfig schemaConfig) {
+        Map<ERTable, Set<ERTable>> schemaFkERMap = schemaConfig.getFkErRelations();
+        if (schemaFkERMap == null) {
             return;
         }
         if (erRelations == null) {
             erRelations = new HashMap<ERTable, Set<ERTable>>();
         }
-        erRelations.putAll(schemaFKERMap);
-        schemaFKERMap = null;
+        erRelations.putAll(schemaFkERMap);
+        schemaFkERMap = null;
     }
 
     /**
@@ -275,7 +275,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             int mmEndIdx = Integer.parseInt(params[3]);
 
             //日期处理
-            SimpleDateFormat yyyyMMSDF = new SimpleDateFormat("yyyyMM");
+            SimpleDateFormat yyyyMMDateFormat = new SimpleDateFormat("yyyyMM");
 
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, yyyy);
@@ -286,7 +286,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             StringBuffer tableNameBuffer = new StringBuffer();
             for (int mmIdx = 0; mmIdx <= mmEndIdx; mmIdx++) {
                 tableNameBuffer.append(tableNameElement);
-                tableNameBuffer.append(yyyyMMSDF.format(cal.getTime()));
+                tableNameBuffer.append(yyyyMMDateFormat.format(cal.getTime()));
                 cal.add(Calendar.MONTH, 1);
 
                 if (mmIdx != mmEndIdx) {

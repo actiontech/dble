@@ -73,7 +73,7 @@ public final class SetHandler {
                     c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before ending a transaction");
                     return;
                 }
-                c.getSession2().setXATXEnabled(true);
+                c.getSession2().setXaTxEnabled(true);
                 c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
                 break;
             }
@@ -82,7 +82,7 @@ public final class SetHandler {
                     c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before ending a transaction");
                     return;
                 }
-                c.getSession2().setXATXEnabled(false);
+                c.getSession2().setXaTxEnabled(false);
                 c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
                 return;
             }

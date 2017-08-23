@@ -44,10 +44,10 @@ public class Deserializer {
         return content.substring(start + 1, end);
     }
 
-    public static CoordinatorLogEntry fromJSON(String coordinatorLogEntryStr) throws DeserialisationException {
+    public static CoordinatorLogEntry fromJson(String coordinatorLogEntryStr) throws DeserialisationException {
         try {
             String jsonContent = coordinatorLogEntryStr.trim();
-            validateJSONContent(jsonContent);
+            validateJsonContent(jsonContent);
             Map<String, String> header = extractHeader(jsonContent);
             String coordinatorId = header.get(CoordinatorLogEntry.ID);
             String arrayContent = extractArrayPart(jsonContent);
@@ -65,7 +65,7 @@ public class Deserializer {
         }
     }
 
-    private static void validateJSONContent(String coordinatorLogEntryStr)
+    private static void validateJsonContent(String coordinatorLogEntryStr)
             throws DeserialisationException {
         if (!coordinatorLogEntryStr.startsWith(OBJECT_START)) {
             throw new DeserialisationException(coordinatorLogEntryStr);

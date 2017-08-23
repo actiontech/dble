@@ -93,19 +93,19 @@
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.typelib.TYPELIB"/>
+        <Class name="io.mycat.plan.common.typelib.TypeLib"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.locale.MYLOCALEERRMSGS"/>
+        <Class name="io.mycat.plan.common.locale.MyLocaleErrMsgs"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.locale.MYLOCALE"/>
+        <Class name="io.mycat.plan.common.locale.MyLocale"/>
     </Match>
     <!-- need refactor -->
     <Match>

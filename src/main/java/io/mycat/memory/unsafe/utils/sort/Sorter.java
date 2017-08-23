@@ -25,18 +25,18 @@ import java.util.Comparator;
  * The Java implementation is package private, and hence it cannot be called outside package
  * org.opencloudb.memory.unsafe.utils.sort. This is a simple wrapper of it that is available to mycat.
  */
-public class Sorter<K, Buffer> {
+public class Sorter<K, BUFFER> {
 
     private TimSort timSort = null;
 
-    public Sorter(SortDataFormat<K, Buffer> s) {
+    public Sorter(SortDataFormat<K, BUFFER> s) {
         timSort = new TimSort(s);
     }
 
     /**
      * Sorts the input buffer within range [lo, hi).
      */
-    public void sort(Buffer a, int lo, int hi, Comparator<K> c) {
+    public void sort(BUFFER a, int lo, int hi, Comparator<K> c) {
         timSort.sort(a, lo, hi, c);
     }
 }

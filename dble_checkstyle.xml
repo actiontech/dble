@@ -40,7 +40,7 @@
         <module name="AbbreviationAsWordInName">
             <property name="allowedAbbreviations" value="HPUX"/>
         </module>
-        <!--<module name="ClassTypeParameterName"/>-->
+        <module name="ClassTypeParameterName"/>
         <!--<module name="MethodTypeParameterName"/>-->
         <!--<module name="InterfaceTypeParameterName"/>-->
 

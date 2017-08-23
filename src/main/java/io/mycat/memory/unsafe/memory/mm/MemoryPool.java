@@ -19,14 +19,14 @@ public abstract class MemoryPool {
     }
 
     @GuardedBy("lock")
-    private long _poolSize = 0;
+    private long poolSize = 0;
 
     /**
      * Returns the current size of the pool, in bytes.
      */
     public final long poolSize() {
         synchronized (lock) {
-            return _poolSize;
+            return poolSize;
         }
     }
 
@@ -35,7 +35,7 @@ public abstract class MemoryPool {
      */
     public long memoryFree() {
         synchronized (lock) {
-            return (_poolSize - memoryUsed());
+            return (poolSize - memoryUsed());
         }
     }
 
@@ -45,7 +45,7 @@ public abstract class MemoryPool {
     public final void incrementPoolSize(long delta) {
         assert (delta >= 0);
         synchronized (lock) {
-            _poolSize += delta;
+            poolSize += delta;
         }
     }
 
@@ -55,9 +55,9 @@ public abstract class MemoryPool {
     public final void decrementPoolSize(long delta) {
         synchronized (lock) {
             assert (delta >= 0);
-            assert (delta <= _poolSize);
-            assert (_poolSize - delta >= memoryUsed());
-            _poolSize -= delta;
+            assert (delta <= poolSize);
+            assert (poolSize - delta >= memoryUsed());
+            poolSize -= delta;
         }
     }
 

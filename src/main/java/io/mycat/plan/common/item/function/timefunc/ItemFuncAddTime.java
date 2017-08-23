@@ -45,11 +45,11 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
          * first argument is MYSQL_TYPE_DATE.
          */
         if (args.get(0).fieldType() == FieldTypes.MYSQL_TYPE_TIME && !isDate) {
-            cached_field_type = FieldTypes.MYSQL_TYPE_TIME;
+            cachedFieldType = FieldTypes.MYSQL_TYPE_TIME;
         } else if (args.get(0).isTemporalWithDateAndTime() || isDate) {
-            cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
+            cachedFieldType = FieldTypes.MYSQL_TYPE_DATETIME;
         } else {
-            cached_field_type = FieldTypes.MYSQL_TYPE_STRING;
+            cachedFieldType = FieldTypes.MYSQL_TYPE_STRING;
         }
         maybeNull = true;
     }
@@ -65,28 +65,28 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         int lSign = sign;
 
         nullValue = false;
-        if (cached_field_type == FieldTypes.MYSQL_TYPE_DATETIME) // TIMESTAMP
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME) // TIMESTAMP
         // function
         {
             if (getArg0Date(lTime1, fuzzy_date) || args.get(1).getTime(lTime2)
-                    || lTime1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
-                    || lTime2.time_type != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
+                    || lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME
+                    || lTime2.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
                 nullValue = true;
                 return true;
             }
         } else // ADDTIME function
         {
             if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2)
-                    || lTime2.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
+                    || lTime2.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
                 nullValue = true;
                 return true;
             }
-            isTime = (lTime1.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            isTime = (lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
         }
         if (lTime1.neg != lTime2.neg)
             lSign = -lSign;
 
-        time.set_zero_time(time.time_type);
+        time.set_zero_time(time.timeType);
 
         time.neg = MyTime.calc_time_diff(lTime1, lTime2, -lSign, seconds, microseconds);
 
@@ -114,13 +114,13 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
             time.year = lpyear.get();
             time.month = lpmonth.get();
             time.day = lpday.get();
-            time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
+            time.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
             if (time.day != 0)
                 return false;
             nullValue = true;
             return true;
         }
-        time.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
+        time.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
         time.hour += days * 24;
         return false;
     }

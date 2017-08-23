@@ -704,7 +704,7 @@ public abstract class Item {
             // Nanosecond rounding is not needed, for performance purposes
             if ((tmp != null) && !MyTime.str_to_datetime(tmp, tmp.length(), ltime,
                     MyTime.TIME_NO_NSEC_ROUNDING | MyTime.TIME_FUZZY_DATE, status))
-                return Math.min((int) status.fractional_digits, MyTime.DATETIME_MAX_DECIMALS);
+                return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);
     }
@@ -721,7 +721,7 @@ public abstract class Item {
             if (nullValue)
                 return true; /* Value is NULL */
             else {
-                tm.tv_sec = tm.tv_usec = 0;
+                tm.tvSec = tm.tvUsec = 0;
                 return false;
             }
         }
@@ -729,7 +729,7 @@ public abstract class Item {
                 tm)) { /*
                          * Value is out of the supported range
                          */
-            tm.tv_sec = tm.tv_usec = 0;
+            tm.tvSec = tm.tvUsec = 0;
             return false;
         }
         return false; /* Value is a good Unix timestamp */
@@ -766,7 +766,7 @@ public abstract class Item {
             MySQLTimeStatus status = new MySQLTimeStatus();
             // Nanosecond rounding is not needed, for performance purposes
             if (tmp != null && MyTime.str_to_time(tmp, tmp.length(), ltime, status) == false)
-                return Math.min((int) status.fractional_digits, MyTime.DATETIME_MAX_DECIMALS);
+                return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);
     }

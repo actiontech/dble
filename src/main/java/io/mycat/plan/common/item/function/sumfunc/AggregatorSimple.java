@@ -19,21 +19,21 @@ public class AggregatorSimple extends Aggregator {
 
     @Override
     public boolean setup() {
-        return item_sum.setup();
+        return itemSum.setup();
     }
 
     @Override
     public void clear() {
-        item_sum.clear();
+        itemSum.clear();
     }
 
     @Override
     public boolean add(RowDataPacket row, Object transObj) {
-        FieldUtil.initFields(item_sum.sourceFields, row.fieldValues);
-        if (!item_sum.isPushDown)
-            return item_sum.add(row, transObj);
+        FieldUtil.initFields(itemSum.sourceFields, row.fieldValues);
+        if (!itemSum.isPushDown)
+            return itemSum.add(row, transObj);
         else
-            return item_sum.pushDownAdd(row);
+            return itemSum.pushDownAdd(row);
     }
 
     @Override
@@ -42,17 +42,17 @@ public class AggregatorSimple extends Aggregator {
 
     @Override
     public BigDecimal arg_val_decimal() {
-        return item_sum.args.get(0).valDecimal();
+        return itemSum.args.get(0).valDecimal();
     }
 
     @Override
     public BigDecimal arg_val_real() {
-        return item_sum.args.get(0).valReal();
+        return itemSum.args.get(0).valReal();
     }
 
     @Override
     public boolean arg_is_null() {
-        return item_sum.args.get(0).nullValue;
+        return itemSum.args.get(0).nullValue;
     }
 
 }

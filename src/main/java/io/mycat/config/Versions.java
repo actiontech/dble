@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese
- * opensource volunteers. you can redistribute it and/or modify it under the
+ * This code is free software;Designed and Developed mainly by many Chinese 
+ * opensource volunteers. you can redistribute it and/or modify it under the 
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Any questions about this component can be directed to it's project Web address
+ * 
+ * Any questions about this component can be directed to it's project Web address 
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -28,17 +28,13 @@ package io.mycat.config;
  */
 public abstract class Versions {
 
-    /**
-     * 协议版本
-     **/
+    /**协议版本**/
     public static final byte PROTOCOL_VERSION = 10;
 
-    /**
-     * 服务器版本
-     **/
-    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.08.0-dev-20170822220443".getBytes();
-    public static byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
-    public static final String ANNOTATION_NAME = "mycat:";
+    /**服务器版本**/
+    public static byte[] SERVER_VERSION = "5.6.29-mycat-2.17.08.0-dev-20170823112210".getBytes();
+	public static byte[] VERSION_COMMENT = "MyCat Server (OpenCloundDB)".getBytes();
+	public static final String ANNOTATION_NAME = "mycat:";
     public static final String ROOT_PREFIX = "mycat";
 
     public static void setServerVersion(String version) {

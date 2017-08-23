@@ -49,7 +49,7 @@ public class RouteService {
     private final CachePool sqlRouteCache;
     private final LayerCachePool tableId2DataNodeCache;
 
-    private final String HINT_SPLIT = "=";
+    private final String hintSplit = "=";
 
 
     public RouteService(CacheService cachService) {
@@ -91,7 +91,7 @@ public class RouteService {
 //                int hintLength = isMatchOldHint ? OLD_MYCAT_HINT.length() : NEW_MYCAT_HINT.length();
                 String hint = stmt.substring(hintLength, endPos).trim();
 
-                int firstSplitPos = hint.indexOf(HINT_SPLIT);
+                int firstSplitPos = hint.indexOf(hintSplit);
                 if (firstSplitPos > 0) {
                     Map hintMap = parseHint(hint);
                     String hintType = (String) hintMap.get(HINT_TYPE);

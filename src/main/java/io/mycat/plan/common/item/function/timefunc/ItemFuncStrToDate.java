@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
-    private MySQLTimestampType cached_timestamp_type;
+    private MySQLTimestampType cachedTimestampType;
 
     /**
      * @param args
@@ -29,8 +29,8 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
     @Override
     public void fixLengthAndDec() {
         maybeNull = true;
-        cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
-        cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
+        cachedFieldType = FieldTypes.MYSQL_TYPE_DATETIME;
+        cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
         if (args.get(1).basicConstItem()) {
             String format = args.get(1).valStr();
             if (!args.get(1).nullValue)
@@ -71,8 +71,8 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
                      * already have all types of date-time components and can
                      * end our search.
                      */
-                    cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
-                    cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
+                    cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
+                    cachedFieldType = FieldTypes.MYSQL_TYPE_DATETIME;
                     fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATETIME_WIDTH, MyTime.DATETIME_MAX_DECIMALS);
                     return;
                 }
@@ -81,22 +81,22 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 
         /* We don't have all three types of date-time components */
         if (fracSecondUsed) /* TIME with microseconds */ {
-            cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
-            cached_field_type = FieldTypes.MYSQL_TYPE_TIME;
+            cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
+            cachedFieldType = FieldTypes.MYSQL_TYPE_TIME;
             fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_FULL_WIDTH, MyTime.DATETIME_MAX_DECIMALS);
         } else if (timePartUsed) {
             if (datePartUsed) /* DATETIME, no microseconds */ {
-                cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
-                cached_field_type = FieldTypes.MYSQL_TYPE_DATETIME;
+                cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
+                cachedFieldType = FieldTypes.MYSQL_TYPE_DATETIME;
                 fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATETIME_WIDTH, 0);
             } else /* TIME, no microseconds */ {
-                cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
-                cached_field_type = FieldTypes.MYSQL_TYPE_TIME;
+                cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
+                cachedFieldType = FieldTypes.MYSQL_TYPE_TIME;
                 fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_WIDTH, 0);
             }
         } else /* DATE */ {
-            cached_timestamp_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
-            cached_field_type = FieldTypes.MYSQL_TYPE_DATE;
+            cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
+            cachedFieldType = FieldTypes.MYSQL_TYPE_DATE;
             fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATE_WIDTH, 0);
         }
     }
@@ -112,14 +112,14 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         if (!nullDate) {
             nullValue = false;
             dateTimeFormat.format = format;
-            if (MyTime.extract_date_time(dateTimeFormat, val, ltime, cached_timestamp_type, "datetime")
+            if (MyTime.extract_date_time(dateTimeFormat, val, ltime, cachedTimestampType, "datetime")
                     || ((fuzzy_date & MyTime.TIME_NO_ZERO_DATE) != 0
                     && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
                 nullDate = true;
         }
         if (!nullDate) {
-            ltime.time_type = cached_timestamp_type;
-            if (cached_timestamp_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.day != 0) {
+            ltime.timeType = cachedTimestampType;
+            if (cachedTimestampType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.day != 0) {
                 /*
                  * Day part for time type can be nonzero value and so we should
                  * add hours from day part to hour part to keep valid time

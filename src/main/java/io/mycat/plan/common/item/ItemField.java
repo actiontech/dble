@@ -150,7 +150,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         if ((nullValue = field.isNull()) || field.getDate(ltime, fuzzydate)) {
-            ltime.set_zero_time(ltime.time_type);
+            ltime.set_zero_time(ltime.timeType);
             return true;
         }
         return false;
@@ -159,7 +159,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getTime(MySQLTime ltime) {
         if ((nullValue = field.isNull()) || field.getTime(ltime)) {
-            ltime.set_zero_time(ltime.time_type);
+            ltime.set_zero_time(ltime.timeType);
             return true;
         }
         return false;

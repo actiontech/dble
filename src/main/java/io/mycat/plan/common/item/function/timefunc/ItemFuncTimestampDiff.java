@@ -16,13 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemFuncTimestampDiff extends ItemIntFunc {
-    private MySqlIntervalUnit int_type;
+    private MySqlIntervalUnit intType;
 
     public ItemFuncTimestampDiff(Item a, Item b, MySqlIntervalUnit type) {
         super(new ArrayList<Item>());
         args.add(a);
         args.add(b);
-        this.int_type = type;
+        this.intType = type;
     }
 
     @Override
@@ -55,8 +55,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             neg = -1;
 
         long seconds = lpseconds.get(), microseconds = lpmicroseconds.get();
-        if (int_type == MySqlIntervalUnit.YEAR || int_type == MySqlIntervalUnit.QUARTER
-                || int_type == MySqlIntervalUnit.MONTH) {
+        if (intType == MySqlIntervalUnit.YEAR || intType == MySqlIntervalUnit.QUARTER
+                || intType == MySqlIntervalUnit.MONTH) {
             long yearBeg, yearEnd, monthBeg, monthEnd, dayBeg, dayEnd;
             long years = 0;
             long secondBeg, secondEnd, microsecondBeg, microsecondEnd;
@@ -70,8 +70,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
                 dayEnd = ltime1.day;
                 secondBeg = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
                 secondEnd = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
-                microsecondBeg = ltime2.second_part;
-                microsecondEnd = ltime1.second_part;
+                microsecondBeg = ltime2.secondPart;
+                microsecondEnd = ltime1.secondPart;
             } else {
                 yearBeg = ltime1.year;
                 yearEnd = ltime2.year;
@@ -81,8 +81,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
                 dayEnd = ltime2.day;
                 secondBeg = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
                 secondEnd = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
-                microsecondBeg = ltime1.second_part;
-                microsecondEnd = ltime2.second_part;
+                microsecondBeg = ltime1.secondPart;
+                microsecondEnd = ltime2.secondPart;
             }
 
             /* calc years */
@@ -104,23 +104,23 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
                 months -= 1;
         }
 
-        if (int_type == MySqlIntervalUnit.YEAR)
+        if (intType == MySqlIntervalUnit.YEAR)
             return BigInteger.valueOf(months / 12 * neg);
-        if (int_type == MySqlIntervalUnit.QUARTER)
+        if (intType == MySqlIntervalUnit.QUARTER)
             return BigInteger.valueOf(months / 3 * neg);
-        if (int_type == MySqlIntervalUnit.MONTH)
+        if (intType == MySqlIntervalUnit.MONTH)
             return BigInteger.valueOf(months * neg);
-        if (int_type == MySqlIntervalUnit.WEEK)
+        if (intType == MySqlIntervalUnit.WEEK)
             return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H / 7L * neg);
-        if (int_type == MySqlIntervalUnit.DAY)
+        if (intType == MySqlIntervalUnit.DAY)
             return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H * neg);
-        if (int_type == MySqlIntervalUnit.HOUR)
+        if (intType == MySqlIntervalUnit.HOUR)
             return BigInteger.valueOf(seconds / 3600L * neg);
-        if (int_type == MySqlIntervalUnit.MINUTE)
+        if (intType == MySqlIntervalUnit.MINUTE)
             return BigInteger.valueOf(seconds / 60L * neg);
-        if (int_type == MySqlIntervalUnit.SECOND)
+        if (intType == MySqlIntervalUnit.SECOND)
             return BigInteger.valueOf(seconds * neg);
-        if (int_type == MySqlIntervalUnit.MICROSECOND)
+        if (intType == MySqlIntervalUnit.MICROSECOND)
             /*
              * In MySQL difference between any two valid datetime values in
              * microseconds fits into longlong.
@@ -135,7 +135,7 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
     @Override
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName());
-        method.addParameter(new SQLIdentifierExpr(int_type.toString()));
+        method.addParameter(new SQLIdentifierExpr(intType.toString()));
         for (Item arg : args) {
             method.addParameter(arg.toExpression());
         }
@@ -149,6 +149,6 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncTimestampDiff(newArgs.get(0), newArgs.get(1), int_type);
+        return new ItemFuncTimestampDiff(newArgs.get(0), newArgs.get(1), intType);
     }
 }

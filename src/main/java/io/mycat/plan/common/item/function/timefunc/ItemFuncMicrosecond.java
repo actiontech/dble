@@ -22,7 +22,7 @@ public class ItemFuncMicrosecond extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         MySQLTime ltime = new MySQLTime();
-        return getArg0Time(ltime) ? BigInteger.ZERO : BigInteger.valueOf(ltime.second_part);
+        return getArg0Time(ltime) ? BigInteger.ZERO : BigInteger.valueOf(ltime.secondPart);
     }
 
     @Override

@@ -42,7 +42,7 @@ public class SchemaConfig {
      */
     private final int defaultMaxLimit;
     private final String[] allDataNodeStrArr;
-    private Map<ERTable, Set<ERTable>> FkErRelations;
+    private Map<ERTable, Set<ERTable>> fkErRelations;
     private Map<String, Set<ERTable>> funcNodeERMap;
 
     public SchemaConfig(String name, String dataNode,
@@ -97,24 +97,24 @@ public class SchemaConfig {
                 continue;
             }
             if (parent.getDirectRouteTC() == null || tc.getDirectRouteTC() == null) {
-                if (FkErRelations == null) {
-                    FkErRelations = new HashMap<>();
+                if (fkErRelations == null) {
+                    fkErRelations = new HashMap<>();
                 }
                 ERTable parentTable = new ERTable(name, parent.getName(), tc.getParentKey());
                 ERTable childTable = new ERTable(name, tc.getName(), tc.getJoinKey());
-                Set<ERTable> relationParent = FkErRelations.get(parentTable);
+                Set<ERTable> relationParent = fkErRelations.get(parentTable);
                 if (relationParent == null) {
                     relationParent = new HashSet<>(1);
                 }
                 relationParent.add(childTable);
-                FkErRelations.put(parentTable, relationParent);
+                fkErRelations.put(parentTable, relationParent);
 
-                Set<ERTable> relationChild = FkErRelations.get(childTable);
+                Set<ERTable> relationChild = fkErRelations.get(childTable);
                 if (relationChild == null) {
                     relationChild = new HashSet<>(1);
                 }
                 relationChild.add(parentTable);
-                FkErRelations.put(childTable, relationChild);
+                fkErRelations.put(childTable, relationChild);
             } else {
                 if (tc.getDirectRouteTC() != null) {
                     TableConfig root = tc.getDirectRouteTC();
@@ -159,7 +159,7 @@ public class SchemaConfig {
     }
 
     public Map<ERTable, Set<ERTable>> getFkErRelations() {
-        return FkErRelations;
+        return fkErRelations;
     }
 
     public String getRandomDataNode() {

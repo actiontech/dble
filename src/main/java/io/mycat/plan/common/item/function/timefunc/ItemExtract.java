@@ -17,12 +17,12 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class ItemExtract extends ItemIntFunc {
-    private MySqlIntervalUnit int_type;
-    private boolean date_value;
+    private MySqlIntervalUnit intType;
+    private boolean dateValue;
 
     public ItemExtract(Item a, MySqlIntervalUnit int_type) {
         super(a);
-        this.int_type = int_type;
+        this.intType = int_type;
     }
 
     @Override
@@ -38,86 +38,86 @@ public class ItemExtract extends ItemIntFunc {
     @Override
     public void fixLengthAndDec() {
         maybeNull = true; // If wrong date
-        switch (int_type) {
+        switch (intType) {
             case YEAR:
                 maxLength = 4;
-                date_value = true;
+                dateValue = true;
                 break;
             case YEAR_MONTH:
                 maxLength = 6;
-                date_value = true;
+                dateValue = true;
                 break;
             case QUARTER:
                 maxLength = 2;
-                date_value = true;
+                dateValue = true;
                 break;
             case MONTH:
                 maxLength = 2;
-                date_value = true;
+                dateValue = true;
                 break;
             case WEEK:
                 maxLength = 2;
-                date_value = true;
+                dateValue = true;
                 break;
             case DAY:
                 maxLength = 2;
-                date_value = true;
+                dateValue = true;
                 break;
             case DAY_HOUR:
                 maxLength = 9;
-                date_value = false;
+                dateValue = false;
                 break;
             case DAY_MINUTE:
                 maxLength = 11;
-                date_value = false;
+                dateValue = false;
                 break;
             case DAY_SECOND:
                 maxLength = 13;
-                date_value = false;
+                dateValue = false;
                 break;
             case HOUR:
                 maxLength = 2;
-                date_value = false;
+                dateValue = false;
                 break;
             case HOUR_MINUTE:
                 maxLength = 4;
-                date_value = false;
+                dateValue = false;
                 break;
             case HOUR_SECOND:
                 maxLength = 6;
-                date_value = false;
+                dateValue = false;
                 break;
             case MINUTE:
                 maxLength = 2;
-                date_value = false;
+                dateValue = false;
                 break;
             case MINUTE_SECOND:
                 maxLength = 4;
-                date_value = false;
+                dateValue = false;
                 break;
             case SECOND:
                 maxLength = 2;
-                date_value = false;
+                dateValue = false;
                 break;
             case MICROSECOND:
                 maxLength = 2;
-                date_value = false;
+                dateValue = false;
                 break;
             case DAY_MICROSECOND:
                 maxLength = 20;
-                date_value = false;
+                dateValue = false;
                 break;
             case HOUR_MICROSECOND:
                 maxLength = 13;
-                date_value = false;
+                dateValue = false;
                 break;
             case MINUTE_MICROSECOND:
                 maxLength = 11;
-                date_value = false;
+                dateValue = false;
                 break;
             case SECOND_MICROSECOND:
                 maxLength = 9;
-                date_value = false;
+                dateValue = false;
                 break;
         }
     }
@@ -127,7 +127,7 @@ public class ItemExtract extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         int weekFormat;
         long neg;
-        if (date_value) {
+        if (dateValue) {
             if (getArg0Date(ltime, MyTime.TIME_FUZZY_DATE))
                 return BigInteger.ZERO;
             neg = 1;
@@ -137,7 +137,7 @@ public class ItemExtract extends ItemIntFunc {
             ;
             neg = ltime.neg ? -1 : 1;
         }
-        switch (int_type) {
+        switch (intType) {
             case YEAR:
                 return BigInteger.valueOf(ltime.year);
             case YEAR_MONTH:
@@ -174,18 +174,18 @@ public class ItemExtract extends ItemIntFunc {
             case SECOND:
                 return BigInteger.valueOf(ltime.second * neg);
             case MICROSECOND:
-                return BigInteger.valueOf(ltime.second_part * neg);
+                return BigInteger.valueOf(ltime.secondPart * neg);
             case DAY_MICROSECOND:
                 return BigInteger.valueOf(
                         ((ltime.day * 1000000L + ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L
-                                + ltime.second_part) * neg);
+                                + ltime.secondPart) * neg);
             case HOUR_MICROSECOND:
                 return BigInteger.valueOf(
-                        ((ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L + ltime.second_part) * neg);
+                        ((ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L + ltime.secondPart) * neg);
             case MINUTE_MICROSECOND:
-                return BigInteger.valueOf((((ltime.minute * 100 + ltime.second)) * 1000000L + ltime.second_part) * neg);
+                return BigInteger.valueOf((((ltime.minute * 100 + ltime.second)) * 1000000L + ltime.secondPart) * neg);
             case SECOND_MICROSECOND:
-                return BigInteger.valueOf((ltime.second * 1000000L + ltime.second_part) * neg);
+                return BigInteger.valueOf((ltime.second * 1000000L + ltime.secondPart) * neg);
         }
         return BigInteger.ZERO; // Impossible
     }
@@ -194,7 +194,7 @@ public class ItemExtract extends ItemIntFunc {
     public SQLExpr toExpression() {
         MySqlExtractExpr extract = new MySqlExtractExpr();
         extract.setValue(args.get(0).toExpression());
-        extract.setUnit(int_type);
+        extract.setUnit(intType);
         return extract;
     }
 
@@ -205,6 +205,6 @@ public class ItemExtract extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemExtract(newArgs.get(0), int_type);
+        return new ItemExtract(newArgs.get(0), intType);
     }
 }

@@ -54,7 +54,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
         ltime.hour = ((hour < 0 ? -hour : hour));
         ltime.minute = minute;
         ltime.second = scdquot;
-        ltime.second_part = scdrem;
+        ltime.secondPart = scdrem;
         return false;
     }
 

@@ -15,8 +15,8 @@ import java.util.List;
 
 
 public class ItemFuncIf extends ItemFunc {
-    ItemResult cached_result_type;
-    FieldTypes cached_field_type;
+    ItemResult cachedResultType;
+    FieldTypes cachedFieldType;
 
     public ItemFuncIf(List<Item> args) {
         super(args);
@@ -29,12 +29,12 @@ public class ItemFuncIf extends ItemFunc {
 
     @Override
     public final ItemResult resultType() {
-        return cached_result_type;
+        return cachedResultType;
     }
 
     @Override
     public final FieldTypes fieldType() {
-        return cached_field_type;
+        return cachedFieldType;
     }
 
     @Override
@@ -54,7 +54,7 @@ public class ItemFuncIf extends ItemFunc {
             maybeNull = true;
             // If both arguments are NULL, make resulting type BINARY(0).
             if (args.get(2).type() == ItemType.NULL_ITEM)
-                cached_field_type = FieldTypes.MYSQL_TYPE_STRING;
+                cachedFieldType = FieldTypes.MYSQL_TYPE_STRING;
             return;
         }
         if (args.get(2).type() == ItemType.NULL_ITEM) {
@@ -62,8 +62,8 @@ public class ItemFuncIf extends ItemFunc {
             maybeNull = true;
             return;
         }
-        cached_result_type = MySQLcom.agg_result_type(args, 1, 2);
-        cached_field_type = MySQLcom.agg_field_type(args, 1, 2);
+        cachedResultType = MySQLcom.agg_result_type(args, 1, 2);
+        cachedFieldType = MySQLcom.agg_field_type(args, 1, 2);
         maybeNull = args.get(1).maybeNull || args.get(2).maybeNull;
         decimals = Math.max(args.get(1).decimals, args.get(2).decimals);
     }
@@ -125,8 +125,8 @@ public class ItemFuncIf extends ItemFunc {
     }
 
     private void cache_type_info(Item source) {
-        cached_field_type = source.fieldType();
-        cached_result_type = source.resultType();
+        cachedFieldType = source.fieldType();
+        cachedResultType = source.resultType();
         decimals = source.decimals;
         maxLength = source.maxLength;
         maybeNull = source.maybeNull;

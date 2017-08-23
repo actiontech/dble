@@ -13,12 +13,12 @@ import java.util.List;
 
 
 public class ItemFuncBinary extends ItemStrFunc {
-    private int cast_length;
+    private int castLength;
 
     public ItemFuncBinary(Item a, int length_arg) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.cast_length = length_arg;
+        this.castLength = length_arg;
     }
 
     @Override
@@ -35,14 +35,14 @@ public class ItemFuncBinary extends ItemStrFunc {
             return null;
         }
         nullValue = false;
-        if (cast_length != -1 && cast_length < res.length())
-            res = res.substring(0, cast_length);
+        if (castLength != -1 && castLength < res.length())
+            res = res.substring(0, castLength);
         return res;
     }
 
     @Override
     public void fixLengthAndDec() {
-        fixCharLength(cast_length >= 0 ? cast_length : args.get(0).maxLength);
+        fixCharLength(castLength >= 0 ? castLength : args.get(0).maxLength);
     }
 
     @Override
@@ -50,8 +50,8 @@ public class ItemFuncBinary extends ItemStrFunc {
         SQLCastExpr cast = new SQLCastExpr();
         cast.setExpr(args.get(0).toExpression());
         SQLDataTypeImpl dataType = new SQLDataTypeImpl("BINARY");
-        if (cast_length >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(cast_length));
+        if (castLength >= 0) {
+            dataType.addArgument(new SQLIntegerExpr(castLength));
         }
         cast.setDataType(dataType);
         return cast;
@@ -64,6 +64,6 @@ public class ItemFuncBinary extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBinary(newArgs.get(0), cast_length);
+        return new ItemFuncBinary(newArgs.get(0), castLength);
     }
 }

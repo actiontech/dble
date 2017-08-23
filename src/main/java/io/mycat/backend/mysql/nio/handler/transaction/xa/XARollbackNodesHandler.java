@@ -43,7 +43,7 @@ import io.mycat.server.NonBlockingSession;
  */
 public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private static int ROLLBACK_TIMES = 5;
-    private int try_rollback_times = 0;
+    private int tryRollbackTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     protected byte[] sendData = OkPacket.OK;
 
@@ -53,7 +53,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void clearResources() {
-        try_rollback_times = 0;
+        tryRollbackTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
     }
@@ -367,7 +367,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             MySQLConnection errConn = session.releaseExcept(session.getXaState());
             if (errConn != null) {
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
-                if (++try_rollback_times < ROLLBACK_TIMES) {
+                if (++tryRollbackTimes < ROLLBACK_TIMES) {
                     // 多试几次
                     rollback();
                 } else {

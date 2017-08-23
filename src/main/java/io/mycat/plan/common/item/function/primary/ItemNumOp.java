@@ -37,14 +37,14 @@ public abstract class ItemNumOp extends ItemFuncNumhybrid {
             assert (!args.get(0).isTemporal() || !args.get(1).isTemporal());
             countRealLength();
             maxLength = floatLength(decimals);
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
         } else if (r0 == ItemResult.DECIMAL_RESULT || r1 == ItemResult.DECIMAL_RESULT) {
-            hybrid_type = ItemResult.DECIMAL_RESULT;
+            hybridType = ItemResult.DECIMAL_RESULT;
             result_precision();
         } else {
             assert (r0 == ItemResult.INT_RESULT && r1 == ItemResult.INT_RESULT);
             decimals = 0;
-            hybrid_type = ItemResult.INT_RESULT;
+            hybridType = ItemResult.INT_RESULT;
             result_precision();
         }
     }

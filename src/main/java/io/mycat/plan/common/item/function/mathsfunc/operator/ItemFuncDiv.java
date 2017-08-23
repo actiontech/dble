@@ -18,7 +18,7 @@ public class ItemFuncDiv extends ItemNumOp {
     /**
      * 默认的bigdecimal的长度，正确的方式应该是从mysql自身的配置获取
      */
-    private int prec_increment = 4;
+    private int precIncrement = 4;
 
     public ItemFuncDiv(Item a, Item b) {
         super(a, b);
@@ -32,8 +32,8 @@ public class ItemFuncDiv extends ItemNumOp {
     @Override
     public void fixLengthAndDec() {
         super.fixLengthAndDec();
-        if (hybrid_type == ItemResult.REAL_RESULT) {
-            decimals = Math.max(args.get(0).decimals, args.get(1).decimals) + prec_increment;
+        if (hybridType == ItemResult.REAL_RESULT) {
+            decimals = Math.max(args.get(0).decimals, args.get(1).decimals) + precIncrement;
             decimals = Math.min(decimals, NOT_FIXED_DEC);
             int tmp = floatLength(decimals);
             if (decimals == NOT_FIXED_DEC)
@@ -42,11 +42,11 @@ public class ItemFuncDiv extends ItemNumOp {
                 maxLength = args.get(0).maxLength - args.get(1).decimals + decimals;
                 maxLength = Math.min(maxLength, tmp);
             }
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
-            hybrid_type = ItemResult.DECIMAL_RESULT;
+        } else if (hybridType == ItemResult.INT_RESULT) {
+            hybridType = ItemResult.DECIMAL_RESULT;
             result_precision();
 
-        } else if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        } else if (hybridType == ItemResult.DECIMAL_RESULT) {
             result_precision();
 
 
@@ -90,7 +90,7 @@ public class ItemFuncDiv extends ItemNumOp {
 
     @Override
     public void result_precision() {
-        decimals = Math.min(args.get(0).decimals + prec_increment, DECIMAL_MAX_SCALE);
+        decimals = Math.min(args.get(0).decimals + precIncrement, DECIMAL_MAX_SCALE);
     }
 
     @Override

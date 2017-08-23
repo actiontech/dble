@@ -43,13 +43,13 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConsistencyHelper.class);
     private MySQLConsistencyChecker heartbeat;
     private volatile SQLJob sqlJob;
-    private int RETRY_TIMES = 5;
+    private int retryTimes = 5;
     private AtomicInteger retryTime = new AtomicInteger();
 
     public MySQLConsistencyHelper(MySQLConsistencyChecker heartbeat, SQLJob sqlJob) {
         this.heartbeat = heartbeat;
         this.sqlJob = sqlJob;
-        this.retryTime.set(RETRY_TIMES);
+        this.retryTime.set(retryTimes);
     }
 
     public MySQLConsistencyHelper(MySQLConsistencyChecker heartbeat,
@@ -59,7 +59,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
         if (retryTime > 0 && retryTime < 10)
             this.retryTime.set(retryTime);
         else
-            this.retryTime.set(RETRY_TIMES);
+            this.retryTime.set(retryTimes);
     }
 
     @Override

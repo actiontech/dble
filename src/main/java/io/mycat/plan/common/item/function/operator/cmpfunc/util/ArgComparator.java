@@ -21,7 +21,7 @@ public class ArgComparator {
     double precision = 0.0;
     /* Fields used in DATE/DATETIME comparison. */
 //    FieldTypes atype, btype; // Types of a and b items
-    boolean is_nulls_eq; // TRUE <=> compare for the EQUAL_FUNC
+    boolean isNullsEq; // TRUE <=> compare for the EQUAL_FUNC
     boolean setNull = true; // TRUE <=> set owner->null_value
     // when one of arguments is NULL.
     GetValueFunc getValueAFunc; // get_value_a_func name
@@ -45,7 +45,7 @@ public class ArgComparator {
             getValueAFunc = new GetDatetimeValue();
         } else
             return false;
-        is_nulls_eq = isOwnerEqualFunc();
+        isNullsEq = isOwnerEqualFunc();
         func = new CompareDatetime();
         setcmpcontextfordatetime();
         return true;
@@ -141,7 +141,7 @@ public class ArgComparator {
         if (canCompareAsDates(a, b, constvalue)) {
 //            atype = a.fieldType();
 //            btype = b.fieldType();
-            is_nulls_eq = isOwnerEqualFunc();
+            isNullsEq = isOwnerEqualFunc();
             func = new CompareDatetime();
             getValueAFunc = new GetDatetimeValue();
             getValueBFunc = new GetDatetimeValue();
@@ -149,7 +149,7 @@ public class ArgComparator {
             return 0;
         } else if (type == ItemResult.STRING_RESULT && a.fieldType() == FieldTypes.MYSQL_TYPE_TIME
                 && b.fieldType() == FieldTypes.MYSQL_TYPE_TIME) {
-            is_nulls_eq = isOwnerEqualFunc();
+            isNullsEq = isOwnerEqualFunc();
             func = new CompareDatetime();
             getValueAFunc = new GetTimeValue();
             getValueBFunc = new GetTimeValue();
@@ -185,7 +185,7 @@ public class ArgComparator {
         b = a2;
 //        atype = a.fieldType();
 //        btype = b.fieldType();
-        is_nulls_eq = false;
+        isNullsEq = false;
         func = new CompareDatetime();
         getValueAFunc = new GetDatetimeValue();
         getValueBFunc = new GetDatetimeValue();
@@ -561,7 +561,7 @@ public class ArgComparator {
 
             /* Get DATE/DATETIME/TIME value of the 'a' item. */
             aValue = ac.getValueAFunc.get(ac.a, ac.b, aIsNull);
-            if (!ac.is_nulls_eq && aIsNull.get()) {
+            if (!ac.isNullsEq && aIsNull.get()) {
                 if (ac.setNull && ac.owner != null)
                     ac.owner.nullValue = (true);
                 return -1;
@@ -571,8 +571,8 @@ public class ArgComparator {
             bValue = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
                 if (ac.setNull)
-                    ac.owner.nullValue = (ac.is_nulls_eq ? false : true);
-                return ac.is_nulls_eq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
+                    ac.owner.nullValue = (ac.isNullsEq ? false : true);
+                return ac.isNullsEq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
             }
 
             /* Here we have two not-NULL values. */
@@ -580,7 +580,7 @@ public class ArgComparator {
                 ac.owner.nullValue = (false);
 
             /* Compare values. */
-            if (ac.is_nulls_eq)
+            if (ac.isNullsEq)
                 return aValue == (bValue) ? 1 : 0;
             return aValue < bValue ? -1 : (aValue > bValue ? 1 : 0);
         }

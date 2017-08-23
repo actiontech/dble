@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UserStat {
 
-    private long SQL_SLOW_TIME = 100;
+    private long sqlSlowTime = 100;
 
     private String user;
 
@@ -102,7 +102,7 @@ public class UserStat {
 
 
     public void setSlowTime(long time) {
-        this.SQL_SLOW_TIME = time;
+        this.sqlSlowTime = time;
         this.sqlRecorder.clear();
     }
 
@@ -159,7 +159,7 @@ public class UserStat {
 
         //慢查询记录
         long executeTime = endTime - startTime;
-        if (executeTime >= SQL_SLOW_TIME) {
+        if (executeTime >= sqlSlowTime) {
             SQLRecord record = new SQLRecord();
             record.executeTime = executeTime;
             record.statement = sql;

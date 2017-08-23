@@ -32,7 +32,7 @@ public class ItemFuncNowUtc extends ItemDatetimeFunc {
         ltime.hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
         ltime.minute = cal.get(java.util.Calendar.MINUTE);
         ltime.second = cal.get(java.util.Calendar.SECOND);
-        ltime.second_part = cal.get(java.util.Calendar.MILLISECOND) * 1000;
+        ltime.secondPart = cal.get(java.util.Calendar.MILLISECOND) * 1000;
         return false;
     }
 

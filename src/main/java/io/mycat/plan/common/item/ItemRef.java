@@ -23,13 +23,13 @@ public class ItemRef extends Item {
     ;
 
     private Item ref;
-    private String table_alias = null;
-    private String field_alias = null;
+    private String tableAlias = null;
+    private String fieldAlias = null;
 
     public ItemRef(Item ref, String table_alias, String field_alias) {
         this.ref = ref;
-        this.table_alias = table_alias;
-        this.field_alias = field_alias;
+        this.tableAlias = table_alias;
+        this.fieldAlias = field_alias;
     }
 
     @Override
@@ -114,18 +114,18 @@ public class ItemRef extends Item {
     @Override
     public void makeField(FieldPacket tmpFp) {
         ref.makeField(tmpFp);
-        if (field_alias != null) {
+        if (fieldAlias != null) {
             tmpFp.orgName = tmpFp.name;
             try {
-                tmpFp.name = field_alias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                tmpFp.name = fieldAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
             } catch (UnsupportedEncodingException e) {
                 LOGGER.warn("parse string exception!", e);
             }
         }
-        if (table_alias != null) {
+        if (tableAlias != null) {
             tmpFp.orgTable = tmpFp.table;
             try {
-                tmpFp.table = table_alias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                tmpFp.table = tableAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
             } catch (UnsupportedEncodingException e) {
                 LOGGER.warn("parse string exception!", e);
             }

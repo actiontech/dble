@@ -54,17 +54,17 @@ public class MycatConfig {
 
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
-    private volatile FirewallConfig _firewall;
+    private volatile FirewallConfig firewall2;
     private volatile Map<String, UserConfig> users;
-    private volatile Map<String, UserConfig> _users;
+    private volatile Map<String, UserConfig> users2;
     private volatile Map<String, SchemaConfig> schemas;
-    private volatile Map<String, SchemaConfig> _schemas;
+    private volatile Map<String, SchemaConfig> schemas2;
     private volatile Map<String, PhysicalDBNode> dataNodes;
-    private volatile Map<String, PhysicalDBNode> _dataNodes;
+    private volatile Map<String, PhysicalDBNode> dataNodes2;
     private volatile Map<String, PhysicalDBPool> dataHosts;
-    private volatile Map<String, PhysicalDBPool> _dataHosts;
+    private volatile Map<String, PhysicalDBPool> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
-    private volatile Map<ERTable, Set<ERTable>> _erRelations;
+    private volatile Map<ERTable, Set<ERTable>> erRelations2;
     private long reloadTime;
     private long rollbackTime;
     private int status;
@@ -142,7 +142,7 @@ public class MycatConfig {
     }
 
     public Map<String, UserConfig> getBackupUsers() {
-        return _users;
+        return users2;
     }
 
     public Map<String, SchemaConfig> getSchemas() {
@@ -150,7 +150,7 @@ public class MycatConfig {
     }
 
     public Map<String, SchemaConfig> getBackupSchemas() {
-        return _schemas;
+        return schemas2;
     }
 
     public Map<String, PhysicalDBNode> getDataNodes() {
@@ -168,7 +168,7 @@ public class MycatConfig {
     }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
-        return _dataNodes;
+        return dataNodes2;
     }
 
     public Map<String, PhysicalDBPool> getDataHosts() {
@@ -176,7 +176,7 @@ public class MycatConfig {
     }
 
     public Map<String, PhysicalDBPool> getBackupDataHosts() {
-        return _dataHosts;
+        return dataHosts2;
     }
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
@@ -184,7 +184,7 @@ public class MycatConfig {
     }
 
     public Map<ERTable, Set<ERTable>> getBackupErRelations() {
-        return _erRelations;
+        return erRelations2;
     }
 
     public FirewallConfig getFirewall() {
@@ -192,7 +192,7 @@ public class MycatConfig {
     }
 
     public FirewallConfig getBackupFirewall() {
-        return _firewall;
+        return firewall2;
     }
 
     public ReentrantLock getLock() {
@@ -218,8 +218,8 @@ public class MycatConfig {
     }
 
     public boolean canRollback() {
-        if (_users == null || _schemas == null || _dataNodes == null || _dataHosts == null
-                || _firewall == null || status == ROLLBACK) {
+        if (users2 == null || schemas2 == null || dataNodes2 == null || dataHosts2 == null
+                || firewall2 == null || status == ROLLBACK) {
             return false;
         } else {
             return true;
@@ -351,14 +351,14 @@ public class MycatConfig {
                         }
                     }
                 }
-                this._dataNodes = this.dataNodes;
-                this._dataHosts = this.dataHosts;
+                this.dataNodes2 = this.dataNodes;
+                this.dataHosts2 = this.dataHosts;
             }
 
-            this._users = this.users;
-            this._schemas = this.schemas;
-            this._firewall = this.firewall;
-            this._erRelations = this.erRelations;
+            this.users2 = this.users;
+            this.schemas2 = this.schemas;
+            this.firewall2 = this.firewall;
+            this.erRelations2 = this.erRelations;
 //            comment BY huqing.yan and will reopen later
 //            if (!isLoadAll) {
 //                DsDiff diff = dsdiff(newDataHosts);

@@ -19,7 +19,7 @@ import java.math.BigInteger;
 public abstract class FieldNum extends Field {
 
     protected BigInteger intValue = null;
-    protected String zeroptr_str = null;
+    protected String zeroptrStr = null;
 
     public FieldNum(String name, String table, int charsetIndex, int field_length, int decimals, long flags) {
         super(name, table, charsetIndex, field_length, decimals, flags);
@@ -38,7 +38,7 @@ public abstract class FieldNum extends Field {
     @Override
     public String valStr() {
         internalJob();
-        return isNull() ? null : zeroptr_str;
+        return isNull() ? null : zeroptrStr;
     }
 
     @Override
@@ -86,7 +86,7 @@ public abstract class FieldNum extends Field {
                     res = "0" + res;
                 }
             }
-        zeroptr_str = res;
+        zeroptrStr = res;
 
         /** -- 计算出intValue -- **/
 

@@ -23,7 +23,7 @@ public class ItemFuncGroupConcat extends ItemSum {
     protected StringBuilder resultSb;
     protected String seperator;
     private List<Order> orders;
-    protected boolean always_null;// 如果参数存在null时
+    protected boolean alwaysNull;// 如果参数存在null时
 
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String is_separator,
                                boolean isPushDown, List<Field> fields) {
@@ -31,7 +31,7 @@ public class ItemFuncGroupConcat extends ItemSum {
         this.orders = orders;
         seperator = is_separator;
         this.resultSb = new StringBuilder();
-        this.always_null = false;
+        this.alwaysNull = false;
         setDistinct(distinct);
     }
 
@@ -78,7 +78,7 @@ public class ItemFuncGroupConcat extends ItemSum {
 
     @Override
     public boolean add(RowDataPacket row, Object tranObject) {
-        if (always_null)
+        if (alwaysNull)
             return false;
         StringBuilder rowStr = new StringBuilder();
         for (int i = 0; i < getArgCount(); i++) {
@@ -97,12 +97,12 @@ public class ItemFuncGroupConcat extends ItemSum {
 
     @Override
     public boolean setup() {
-        always_null = false;
+        alwaysNull = false;
         for (int i = 0; i < getArgCount(); i++) {
             Item item = args.get(i);
             if (item.canValued()) {
                 if (item.isNull()) {
-                    always_null = true;
+                    alwaysNull = true;
                     return false;
                 }
             }

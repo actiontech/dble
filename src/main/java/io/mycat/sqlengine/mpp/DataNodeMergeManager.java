@@ -291,7 +291,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     nulpack = true;
                     break;
                 }
-                if (pack == END_FLAG_PACK) {
+                if (pack == endFlagPack) {
                     /**
                      * 最后一个节点datenode发送了row eof packet说明了整个
                      * 分片数据全部接收完成，进而将结果集全部发给你Mycat 客户端

@@ -169,8 +169,8 @@ public final class SystemConfig {
      * 以保证在On Heap上大结果集计算时情况，能快速响应其他
      * 连接操作。
      */
-    private String XARecoveryLogBaseDir;
-    private String XARecoveryLogBaseName;
+    private String xaRecoveryLogBaseDir;
+    private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
     private String transactionLogBaseName;
     private int transactionRatateSize;
@@ -219,8 +219,8 @@ public final class SystemConfig {
         this.useOffHeapForMerge = 1;
         this.memoryPageSize = MEMORY_PAGE_SIZE;
         this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
-        this.XARecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
-        this.XARecoveryLogBaseName = "tmlog";
+        this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
+        this.xaRecoveryLogBaseName = "tmlog";
         this.transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + DEFAULT_TRANSACTION_BASE_DIR;
         this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
         this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
@@ -328,21 +328,21 @@ public final class SystemConfig {
     }
 
     public String getXARecoveryLogBaseDir() {
-        return XARecoveryLogBaseDir;
+        return xaRecoveryLogBaseDir;
     }
 
     @SuppressWarnings("unused")
     public void setXARecoveryLogBaseDir(String XARecoveryLogBaseDir) {
-        this.XARecoveryLogBaseDir = XARecoveryLogBaseDir;
+        this.xaRecoveryLogBaseDir = XARecoveryLogBaseDir;
     }
 
     public String getXARecoveryLogBaseName() {
-        return XARecoveryLogBaseName;
+        return xaRecoveryLogBaseName;
     }
 
     @SuppressWarnings("unused")
     public void setXARecoveryLogBaseName(String XARecoveryLogBaseName) {
-        this.XARecoveryLogBaseName = XARecoveryLogBaseName;
+        this.xaRecoveryLogBaseName = XARecoveryLogBaseName;
     }
 
     public int getUseGlobleTableCheck() {

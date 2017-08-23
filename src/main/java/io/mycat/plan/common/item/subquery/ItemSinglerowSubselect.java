@@ -19,7 +19,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
     /* 记录row item相关的fields值 */
     private List<Field> fields;
     private Item value;
-    private boolean no_rows;
+    private boolean noRows;
 
     public ItemSinglerowSubselect(String currentDb, SQLSelectQuery query) {
         super(currentDb, query);
@@ -39,7 +39,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigDecimal valReal() {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.valReal();
         } else {
@@ -50,7 +50,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigInteger valInt() {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.valInt();
         } else {
@@ -61,7 +61,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public String valStr() {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.valStr();
         } else {
@@ -72,7 +72,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigDecimal valDecimal() {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.valDecimal();
         } else {
@@ -83,7 +83,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.getDate(ltime, fuzzydate);
         } else {
@@ -94,7 +94,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean getTime(MySQLTime ltime) {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.getTime(ltime);
         } else {
@@ -105,7 +105,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean valBool() {
-        if (!no_rows && !execute() && !value.nullValue) {
+        if (!noRows && !execute() && !value.nullValue) {
             nullValue = false;
             return value.valBool();
         } else {

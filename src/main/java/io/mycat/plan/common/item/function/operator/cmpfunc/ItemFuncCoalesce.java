@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
-    protected FieldTypes cached_field_type;
+    protected FieldTypes cachedFieldType;
 
     public ItemFuncCoalesce(List<Item> args) {
         super(args);
@@ -35,16 +35,16 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
     @Override
     public void fixLengthAndDec() {
-        cached_field_type = MySQLcom.agg_field_type(args, 0, args.size());
-        hybrid_type = MySQLcom.agg_result_type(args, 0, args.size());
-        if (hybrid_type == ItemResult.STRING_RESULT) {
-        } else if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        cachedFieldType = MySQLcom.agg_field_type(args, 0, args.size());
+        hybridType = MySQLcom.agg_result_type(args, 0, args.size());
+        if (hybridType == ItemResult.STRING_RESULT) {
+        } else if (hybridType == ItemResult.DECIMAL_RESULT) {
             countDecimalLength();
 
-        } else if (hybrid_type == ItemResult.REAL_RESULT) {
+        } else if (hybridType == ItemResult.REAL_RESULT) {
             countRealLength();
 
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
+        } else if (hybridType == ItemResult.INT_RESULT) {
             decimals = 0;
 
         } else {
@@ -124,12 +124,12 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
     @Override
     public ItemResult resultType() {
-        return hybrid_type;
+        return hybridType;
     }
 
     @Override
     public FieldTypes fieldType() {
-        return cached_field_type;
+        return cachedFieldType;
     }
 
 }

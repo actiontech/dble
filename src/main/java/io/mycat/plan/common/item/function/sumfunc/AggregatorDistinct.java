@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 
 public class AggregatorDistinct extends Aggregator {
-    private boolean endup_done = false;
+    private boolean endupDone = false;
     private final ResultStore distinctRows;
     private Field field = null;
 
@@ -42,12 +42,12 @@ public class AggregatorDistinct extends Aggregator {
      */
     @Override
     public boolean setup() {
-        endup_done = false;
-        if (item_sum.setup())
+        endupDone = false;
+        if (itemSum.setup())
             return true;
         // TODO see item_sum.cc for more
         FieldPacket tmp = new FieldPacket();
-        item_sum.getArg(0).makeField(tmp);
+        itemSum.getArg(0).makeField(tmp);
         field = Field.getFieldItem(tmp.name, tmp.table, tmp.type, tmp.charsetIndex, (int) tmp.length, tmp.decimals,
                 tmp.flags);
         return false;
@@ -55,13 +55,13 @@ public class AggregatorDistinct extends Aggregator {
 
     @Override
     public void clear() {
-        endup_done = false;
+        endupDone = false;
         distinctRows.clear();
-        if (item_sum.sumType() == ItemSum.Sumfunctype.COUNT_FUNC
-                || item_sum.sumType() == ItemSum.Sumfunctype.COUNT_DISTINCT_FUNC) {
+        if (itemSum.sumType() == ItemSum.Sumfunctype.COUNT_FUNC
+                || itemSum.sumType() == ItemSum.Sumfunctype.COUNT_DISTINCT_FUNC) {
 
         } else {
-            item_sum.nullValue = true;
+            itemSum.nullValue = true;
         }
     }
 
@@ -76,42 +76,42 @@ public class AggregatorDistinct extends Aggregator {
 
     @Override
     public void endup() {
-        if (endup_done)
+        if (endupDone)
             return;
-        item_sum.clear();
+        itemSum.clear();
         if (distinctRows != null) {
             distinctRows.done();
-            if (!endup_done) {
-                use_distinct_values = true;
+            if (!endupDone) {
+                useDistinctValues = true;
                 RowDataPacket row = null;
                 while ((row = distinctRows.next()) != null) {
                     // @bug1072 see arg_is_null()
-                    FieldUtil.initFields(item_sum.sourceFields, row.fieldValues);
-                    field.setPtr(item_sum.getArg(0).getRowPacketByte());
-                    if (item_sum.isPushDown)
-                        item_sum.pushDownAdd(row);
+                    FieldUtil.initFields(itemSum.sourceFields, row.fieldValues);
+                    field.setPtr(itemSum.getArg(0).getRowPacketByte());
+                    if (itemSum.isPushDown)
+                        itemSum.pushDownAdd(row);
                     else
-                        item_sum.add(row, null);
+                        itemSum.add(row, null);
                 }
-                use_distinct_values = false;
+                useDistinctValues = false;
             }
-            endup_done = true;
+            endupDone = true;
         }
     }
 
     @Override
     public BigDecimal arg_val_decimal() {
-        return use_distinct_values ? field.valDecimal() : item_sum.getArg(0).valDecimal();
+        return useDistinctValues ? field.valDecimal() : itemSum.getArg(0).valDecimal();
     }
 
     @Override
     public BigDecimal arg_val_real() {
-        return use_distinct_values ? field.valReal() : item_sum.getArg(0).valReal();
+        return useDistinctValues ? field.valReal() : itemSum.getArg(0).valReal();
     }
 
     @Override
     public boolean arg_is_null() {
-        return use_distinct_values ? field.isNull() : item_sum.getArg(0).nullValue;
+        return useDistinctValues ? field.isNull() : itemSum.getArg(0).nullValue;
     }
 
 }

@@ -63,7 +63,7 @@ public class ItemFuncTimediff extends ItemTimeFunc {
                 return nullValue = true;
         }
 
-        if (lTime1.time_type != lTime2.time_type) {
+        if (lTime1.timeType != lTime2.timeType) {
             return nullValue = true;// Incompatible types
         }
         if (lTime1.neg != lTime2.neg)

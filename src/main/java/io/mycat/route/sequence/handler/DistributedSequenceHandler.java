@@ -92,7 +92,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
 
     private final ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
     private ScheduledExecutorService leaderExecutor;
-    private final long SELF_CHECK_PERIOD = 10L;
+    private final long selfCheckPeriod = 10L;
 
     public static DistributedSequenceHandler getInstance() {
         return DistributedSequenceHandler.instance;
@@ -165,7 +165,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         };
-        timerExecutor.scheduleAtFixedRate(runnable, 1L, SELF_CHECK_PERIOD, TimeUnit.SECONDS);
+        timerExecutor.scheduleAtFixedRate(runnable, 1L, selfCheckPeriod, TimeUnit.SECONDS);
     }
 
     @Override

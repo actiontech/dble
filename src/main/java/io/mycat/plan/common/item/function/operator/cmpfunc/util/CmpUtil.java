@@ -42,8 +42,8 @@ public class CmpUtil {
         boolean value;
         MySQLTimeStatus status = new MySQLTimeStatus();
         if (!MyTime.str_to_datetime(str, str.length(), l_time, MyTime.TIME_FUZZY_DATE, status)
-                && (l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME
-                || l_time.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
+                && (l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME
+                || l_time.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
             /*
              * Do not return yet, we may still want to throw a
              * "trailing garbage" warning.

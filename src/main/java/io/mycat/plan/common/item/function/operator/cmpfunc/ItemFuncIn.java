@@ -13,8 +13,8 @@ import java.util.List;
 
 
 public class ItemFuncIn extends ItemFuncOptNeg {
-    private ItemResult left_result_type;
-    private boolean have_null = false;
+    private ItemResult leftResultType;
+    private boolean haveNull = false;
 
     /**
      * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
@@ -23,7 +23,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
      */
     public ItemFuncIn(List<Item> args, boolean isNegation) {
         super(args, isNegation);
-        left_result_type = args.get(0).resultType();
+        leftResultType = args.get(0).resultType();
     }
 
     @Override
@@ -34,7 +34,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
     @Override
     public void fixLengthAndDec() {
         for (int i = 1; i < args.size(); i++) {
-            args.get(i).cmpContext = MySQLcom.item_cmp_type(left_result_type, args.get(i).resultType());
+            args.get(i).cmpContext = MySQLcom.item_cmp_type(leftResultType, args.get(i).resultType());
         }
         maxLength = 1;
     }
@@ -47,11 +47,11 @@ public class ItemFuncIn extends ItemFuncOptNeg {
         if (nullValue = left.type() == ItemType.NULL_ITEM) {
             return BigInteger.ZERO;
         }
-        have_null = false;
+        haveNull = false;
         for (int i = 1; i < args.size(); i++) {
             Item right = args.get(i);
             if (right.type() == ItemType.NULL_ITEM) {
-                have_null = true;
+                haveNull = true;
                 continue;
             }
             if (nullValue = left.nullValue)
@@ -60,9 +60,9 @@ public class ItemFuncIn extends ItemFuncOptNeg {
             cmp.setCmpFunc(this, left, right, false);
             if (cmp.compare() == 0 && !right.nullValue)
                 return !negated ? BigInteger.ONE : BigInteger.ZERO;
-            have_null |= right.isNull();
+            haveNull |= right.isNull();
         }
-        nullValue = have_null;
+        nullValue = haveNull;
         return (!nullValue && negated) ? BigInteger.ONE : BigInteger.ZERO;
     }
 

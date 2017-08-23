@@ -18,10 +18,10 @@ import java.util.List;
 
 public class ItemFuncCase extends ItemFunc {
 
-    int first_expr_num, else_expr_num;
-    ItemResult cached_result_type;
+    int firstExprNum, elseExprNum;
+    ItemResult cachedResultType;
     int ncases;
-    FieldTypes cached_field_type;
+    FieldTypes cachedFieldType;
 
     /**
      * @param args
@@ -31,9 +31,9 @@ public class ItemFuncCase extends ItemFunc {
     public ItemFuncCase(List<Item> args, int ncases, int first_expr_num, int else_expr_num) {
         super(args);
         this.ncases = ncases;
-        this.first_expr_num = first_expr_num;
-        this.else_expr_num = else_expr_num;
-        this.cached_result_type = ItemResult.INT_RESULT;
+        this.firstExprNum = first_expr_num;
+        this.elseExprNum = else_expr_num;
+        this.cachedResultType = ItemResult.INT_RESULT;
     }
 
     @Override
@@ -52,20 +52,20 @@ public class ItemFuncCase extends ItemFunc {
 
         for (nagg = 0; nagg < ncases / 2; nagg++)
             agg.add(args.get(nagg * 2 + 1));
-        if (else_expr_num != -1)
-            agg.add(args.get(else_expr_num));
-        cached_field_type = MySQLcom.agg_field_type(agg, 0, agg.size());
-        cached_result_type = MySQLcom.agg_result_type(agg, 0, agg.size());
+        if (elseExprNum != -1)
+            agg.add(args.get(elseExprNum));
+        cachedFieldType = MySQLcom.agg_field_type(agg, 0, agg.size());
+        cachedResultType = MySQLcom.agg_result_type(agg, 0, agg.size());
     }
 
     @Override
     public ItemResult resultType() {
-        return cached_result_type;
+        return cachedResultType;
     }
 
     @Override
     public FieldTypes fieldType() {
-        return cached_field_type;
+        return cachedFieldType;
     }
 
     @Override
@@ -161,7 +161,7 @@ public class ItemFuncCase extends ItemFunc {
      * failed
      */
     private Item findItem() {
-        if (first_expr_num == -1) {
+        if (firstExprNum == -1) {
             for (int i = 0; i < ncases; i += 2) {
                 // No expression between CASE and the first WHEN
                 if (args.get(i).valBool())
@@ -170,9 +170,9 @@ public class ItemFuncCase extends ItemFunc {
             }
         } else {
             /* Compare every WHEN argument with it and return the first match */
-            Item leftCmpItem = args.get(first_expr_num);
+            Item leftCmpItem = args.get(firstExprNum);
             if (leftCmpItem.isNull() || leftCmpItem.type() == ItemType.NULL_ITEM) {
-                return else_expr_num != -1 ? args.get(else_expr_num) : null;
+                return elseExprNum != -1 ? args.get(elseExprNum) : null;
             }
             for (int i = 0; i < ncases; i += 2) {
                 if (args.get(i).type() == ItemType.NULL_ITEM)
@@ -185,7 +185,7 @@ public class ItemFuncCase extends ItemFunc {
             }
         }
         // No, WHEN clauses all missed, return ELSE expression
-        return else_expr_num != -1 ? args.get(else_expr_num) : null;
+        return elseExprNum != -1 ? args.get(elseExprNum) : null;
     }
 
     // @Override
@@ -206,11 +206,11 @@ public class ItemFuncCase extends ItemFunc {
             SQLCaseExpr.Item item = new SQLCaseExpr.Item(exprCond, exprValue);
             caseExpr.addItem(item);
         }
-        if (first_expr_num > 0) {
-            caseExpr.setValueExpr(exprList.get(first_expr_num));
+        if (firstExprNum > 0) {
+            caseExpr.setValueExpr(exprList.get(firstExprNum));
         }
-        if (else_expr_num > 0) {
-            caseExpr.setElseExpr(exprList.get(else_expr_num));
+        if (elseExprNum > 0) {
+            caseExpr.setElseExpr(exprList.get(elseExprNum));
         }
         return caseExpr;
     }
@@ -222,6 +222,6 @@ public class ItemFuncCase extends ItemFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncCase(newArgs, ncases, first_expr_num, else_expr_num);
+        return new ItemFuncCase(newArgs, ncases, firstExprNum, elseExprNum);
     }
 }

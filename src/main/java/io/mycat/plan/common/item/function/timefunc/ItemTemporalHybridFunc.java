@@ -20,7 +20,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
         super(args);
     }
 
-    protected FieldTypes cached_field_type; // TIME, DATE, DATETIME or
+    protected FieldTypes cachedFieldType; // TIME, DATE, DATETIME or
     // STRING
 
     /**
@@ -40,7 +40,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
 
     @Override
     public FieldTypes fieldType() {
-        return cached_field_type;
+        return cachedFieldType;
     }
 
     @Override
@@ -55,15 +55,15 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
 
     @Override
     public BigDecimal valDecimal() {
-        if (cached_field_type == FieldTypes.MYSQL_TYPE_TIME)
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME)
             return valDecimalFromTime();
-        else if (cached_field_type == FieldTypes.MYSQL_TYPE_DATETIME)
+        else if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME)
             return valDecimalFromDate();
         else {
             MySQLTime ltime = new MySQLTime();
             val_datetime(ltime, MyTime.TIME_FUZZY_DATE);
             return nullValue ? BigDecimal.ZERO
-                    : ltime.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2my_decimal(ltime)
+                    : ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ? MyTime.time2my_decimal(ltime)
                     : MyTime.date2my_decimal(ltime);
         }
     }
@@ -74,8 +74,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
 
         if (val_datetime(ltime, MyTime.TIME_FUZZY_DATE))
             return null;
-        String res = MyTime.my_TIME_to_str(ltime, cached_field_type == FieldTypes.MYSQL_TYPE_STRING
-                ? (ltime.second_part != 0 ? MyTime.DATETIME_MAX_DECIMALS : 0) : decimals);
+        String res = MyTime.my_TIME_to_str(ltime, cachedFieldType == FieldTypes.MYSQL_TYPE_STRING
+                ? (ltime.secondPart != 0 ? MyTime.DATETIME_MAX_DECIMALS : 0) : decimals);
 
         if (res == null)
             nullValue = true;
@@ -89,8 +89,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
             assert (nullValue == true);
             return true;
         }
-        if (cached_field_type == FieldTypes.MYSQL_TYPE_TIME
-                || tm.time_type == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
+                || tm.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.time_to_datetime(tm, ltime);
         else
             ltime = tm;
@@ -103,8 +103,8 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
             assert (nullValue == true);
             return true;
         }
-        if (cached_field_type == FieldTypes.MYSQL_TYPE_TIME
-                && ltime.time_type != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
+        if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME
+                && ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.datetime_to_time(ltime);
         return false;
     }

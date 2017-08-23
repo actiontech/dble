@@ -34,8 +34,8 @@ import java.util.List;
  */
 
 public class ItemSumVariance extends ItemSumNum {
-    public ItemResult hybrid_type;
-    public double recurrence_m, recurrence_s; /* Used in recurrence relation. */
+    public ItemResult hybridType;
+    public double recurrenceM, recurrenceS; /* Used in recurrence relation. */
     public long count = 0;
     public int sample;
 
@@ -77,7 +77,7 @@ public class ItemSumVariance extends ItemSumNum {
     @Override
     public void fixLengthAndDec() {
         maybeNull = nullValue = true;
-        hybrid_type = ItemResult.REAL_RESULT;
+        hybridType = ItemResult.REAL_RESULT;
         decimals = NOT_FIXED_DEC;
         maxLength = floatLength(decimals);
     }
@@ -125,12 +125,12 @@ public class ItemSumVariance extends ItemSumNum {
             sumAi2 += nr * nr;
             // end add
             if (!args.get(0).nullValue) {
-                DoublePtr rM = new DoublePtr(recurrence_m);
-                DoublePtr rS = new DoublePtr(recurrence_s);
+                DoublePtr rM = new DoublePtr(recurrenceM);
+                DoublePtr rS = new DoublePtr(recurrenceS);
                 LongPtr countPtr = new LongPtr(count);
                 varianceFpRecurrenceNext(rM, rS, countPtr, nr);
-                recurrence_m = rM.get();
-                recurrence_s = rS.get();
+                recurrenceM = rM.get();
+                recurrenceS = rS.get();
                 count = countPtr.get();
             }
         }
@@ -178,7 +178,7 @@ public class ItemSumVariance extends ItemSumNum {
 
             nullValue = false;
             if (!useTransObj) {
-                double db = varianceFpRecurrenceResult(recurrence_s, count, sample != 0);
+                double db = varianceFpRecurrenceResult(recurrenceS, count, sample != 0);
                 return BigDecimal.valueOf(db);
             } else {
                 double db = (sumAi2 - sumA * sumA / count) / (count - sample);

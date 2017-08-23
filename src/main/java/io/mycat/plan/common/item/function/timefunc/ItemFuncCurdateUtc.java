@@ -24,7 +24,7 @@ public class ItemFuncCurdateUtc extends ItemDateFunc {
         ltime.year = cal.get(java.util.Calendar.YEAR);
         ltime.month = cal.get(java.util.Calendar.MONTH) + 1;
         ltime.day = cal.get(java.util.Calendar.DAY_OF_MONTH) + 1;
-        ltime.hour = ltime.minute = ltime.second = ltime.second_part = 0;
+        ltime.hour = ltime.minute = ltime.second = ltime.secondPart = 0;
         return false;
     }
 

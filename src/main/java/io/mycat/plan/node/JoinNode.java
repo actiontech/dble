@@ -75,7 +75,7 @@ public class JoinNode extends PlanNode {
     /**
      * 虚拟化一个节点可以被ER关联的key代表
      */
-    protected List<ERTable> ERkeys = new ArrayList<ERTable>();
+    protected List<ERTable> erKeys = new ArrayList<ERTable>();
 
     protected Strategy strategy = Strategy.SORTMERGE;
 
@@ -409,7 +409,7 @@ public class JoinNode extends PlanNode {
     }
 
     public List<ERTable> getERkeys() {
-        return this.ERkeys;
+        return this.erKeys;
     }
 
     @Override

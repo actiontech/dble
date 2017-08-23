@@ -26,7 +26,7 @@ public class ItemFuncFromDays extends ItemDateFunc {
         long value = args.get(0).valInt().longValue();
         if ((nullValue = args.get(0).nullValue))
             return true;
-        ltime.set_zero_time(ltime.time_type);
+        ltime.set_zero_time(ltime.timeType);
         LongPtr lpyear = new LongPtr(0);
         LongPtr lpmonth = new LongPtr(0);
         LongPtr lpday = new LongPtr(0);
@@ -39,7 +39,7 @@ public class ItemFuncFromDays extends ItemDateFunc {
                 && (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
             return true;
 
-        ltime.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
+        ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
         return false;
     }
 

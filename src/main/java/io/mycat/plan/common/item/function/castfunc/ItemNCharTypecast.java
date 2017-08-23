@@ -13,12 +13,12 @@ import java.util.List;
 
 
 public class ItemNCharTypecast extends ItemStrFunc {
-    private int cast_length;
+    private int castLength;
 
     public ItemNCharTypecast(Item a, int length_arg) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.cast_length = length_arg;
+        this.castLength = length_arg;
     }
 
     @Override
@@ -28,12 +28,12 @@ public class ItemNCharTypecast extends ItemStrFunc {
 
     @Override
     public void fixLengthAndDec() {
-        fixCharLength(cast_length >= 0 ? cast_length : args.get(0).maxLength);
+        fixCharLength(castLength >= 0 ? castLength : args.get(0).maxLength);
     }
 
     @Override
     public String valStr() {
-        assert (fixed == true && cast_length >= 0);
+        assert (fixed == true && castLength >= 0);
 
         String res = null;
         if ((res = args.get(0).valStr()) == null) {
@@ -41,8 +41,8 @@ public class ItemNCharTypecast extends ItemStrFunc {
             return null;
         }
         nullValue = false;
-        if (cast_length < res.length())
-            res = res.substring(0, cast_length);
+        if (castLength < res.length())
+            res = res.substring(0, castLength);
         return res;
     }
 
@@ -51,8 +51,8 @@ public class ItemNCharTypecast extends ItemStrFunc {
         SQLCastExpr cast = new SQLCastExpr();
         cast.setExpr(args.get(0).toExpression());
         SQLDataTypeImpl dataType = new SQLDataTypeImpl("NCAHR");
-        if (cast_length >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(cast_length));
+        if (castLength >= 0) {
+            dataType.addArgument(new SQLIntegerExpr(castLength));
         }
         cast.setDataType(dataType);
 
@@ -66,6 +66,6 @@ public class ItemNCharTypecast extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemNCharTypecast(newArgs.get(0), cast_length);
+        return new ItemNCharTypecast(newArgs.get(0), castLength);
     }
 }

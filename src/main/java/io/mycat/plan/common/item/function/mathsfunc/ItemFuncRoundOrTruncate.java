@@ -48,7 +48,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
 
     @Override
     public BigDecimal decimalOp() {
-        hybrid_type = ItemResult.DECIMAL_RESULT;
+        hybridType = ItemResult.DECIMAL_RESULT;
         if (args.get(0).isNull() || args.get(1).isNull()) {
             this.nullValue = true;
             return null;
@@ -73,23 +73,23 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         if (args.get(0).decimals == NOT_FIXED_DEC) {
             decimals = Math.min(decimalsToSet, NOT_FIXED_DEC);
             maxLength = floatLength(decimals);
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
             return;
         }
 
         ItemResult i = args.get(0).resultType();
         if (i == ItemResult.REAL_RESULT || i == ItemResult.STRING_RESULT) {
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
             decimals = Math.min(decimalsToSet, NOT_FIXED_DEC);
             maxLength = floatLength(decimals);
 
         } else if (i == ItemResult.INT_RESULT) {/* Here we can keep INT_RESULT */
-            hybrid_type = ItemResult.INT_RESULT;
+            hybridType = ItemResult.INT_RESULT;
             decimals = 0;
 
         /* fall through */
         } else if (i == ItemResult.DECIMAL_RESULT) {
-            hybrid_type = ItemResult.DECIMAL_RESULT;
+            hybridType = ItemResult.DECIMAL_RESULT;
             decimalsToSet = Math.min(DECIMAL_MAX_SCALE, decimalsToSet);
             decimals = Math.min(decimalsToSet, DECIMAL_MAX_SCALE);
         } else {

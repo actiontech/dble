@@ -14,16 +14,16 @@ import java.util.List;
  * 类型不定的函数，参数是混合类型可能
  */
 public abstract class ItemFuncNumhybrid extends ItemFunc {
-    protected ItemResult hybrid_type;
+    protected ItemResult hybridType;
 
     public ItemFuncNumhybrid(List<Item> args) {
         super(args);
-        hybrid_type = ItemResult.REAL_RESULT;
+        hybridType = ItemResult.REAL_RESULT;
     }
 
     @Override
     public ItemResult resultType() {
-        return hybrid_type;
+        return hybridType;
     }
 
     @Override
@@ -41,16 +41,16 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 
     @Override
     public BigDecimal valReal() {
-        if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        if (hybridType == ItemResult.DECIMAL_RESULT) {
             BigDecimal val = decimalOp();
             if (val == null)
                 return BigDecimal.ZERO; // null is setreturn val;
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
+        } else if (hybridType == ItemResult.INT_RESULT) {
             BigInteger result = intOp();
             return new BigDecimal(result);
-        } else if (hybrid_type == ItemResult.REAL_RESULT) {
+        } else if (hybridType == ItemResult.REAL_RESULT) {
             return realOp();
-        } else if (hybrid_type == ItemResult.STRING_RESULT) {
+        } else if (hybridType == ItemResult.STRING_RESULT) {
             FieldTypes i = fieldType();
             if (i == FieldTypes.MYSQL_TYPE_TIME || i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
                 return valRealFromDecimal();
@@ -73,16 +73,16 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 
     @Override
     public BigInteger valInt() {
-        if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        if (hybridType == ItemResult.DECIMAL_RESULT) {
             BigDecimal val = decimalOp();
             if (val == null)
                 return BigInteger.ZERO;
             return val.toBigInteger();
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
+        } else if (hybridType == ItemResult.INT_RESULT) {
             return intOp();
-        } else if (hybrid_type == ItemResult.REAL_RESULT) {
+        } else if (hybridType == ItemResult.REAL_RESULT) {
             return realOp().toBigInteger();
-        } else if (hybrid_type == ItemResult.STRING_RESULT) {
+        } else if (hybridType == ItemResult.STRING_RESULT) {
             FieldTypes i = fieldType();
             if (i == FieldTypes.MYSQL_TYPE_DATE) {
                 return new BigDecimal(valIntFromDate()).toBigInteger();
@@ -108,16 +108,16 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
     @Override
     public BigDecimal valDecimal() {
         BigDecimal val = null;
-        if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        if (hybridType == ItemResult.DECIMAL_RESULT) {
             val = decimalOp();
 
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
+        } else if (hybridType == ItemResult.INT_RESULT) {
             BigInteger result = intOp();
             val = new BigDecimal(result);
-        } else if (hybrid_type == ItemResult.REAL_RESULT) {
+        } else if (hybridType == ItemResult.REAL_RESULT) {
             BigDecimal result = realOp();
             val = result;
-        } else if (hybrid_type == ItemResult.STRING_RESULT) {
+        } else if (hybridType == ItemResult.STRING_RESULT) {
             FieldTypes i = fieldType();
             if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
                 return valDecimalFromDate();
@@ -141,21 +141,21 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
     @Override
     public String valStr() {
         String str = null;
-        if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        if (hybridType == ItemResult.DECIMAL_RESULT) {
             BigDecimal val = decimalOp();
             if (val == null)
                 return null; // null is setstr = val.toString();
-        } else if (hybrid_type == ItemResult.INT_RESULT) {
+        } else if (hybridType == ItemResult.INT_RESULT) {
             BigInteger nr = intOp();
             if (nullValue)
                 return null; /* purecov: inspected */
             str = nr.toString();
-        } else if (hybrid_type == ItemResult.REAL_RESULT) {
+        } else if (hybridType == ItemResult.REAL_RESULT) {
             BigDecimal nr = realOp();
             if (nullValue)
                 return null; /* purecov: inspected */
             str = nr.toString();
-        } else if (hybrid_type == ItemResult.STRING_RESULT) {
+        } else if (hybridType == ItemResult.STRING_RESULT) {
             FieldTypes i = fieldType();
             if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
                 return valStringFromDatetime();

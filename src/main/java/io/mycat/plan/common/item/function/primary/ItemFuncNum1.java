@@ -23,10 +23,10 @@ public abstract class ItemFuncNum1 extends ItemFuncNumhybrid {
 
     @Override
     public void findNumType() {
-        ItemResult i = hybrid_type = args.get(0).resultType();
+        ItemResult i = hybridType = args.get(0).resultType();
         if (i == ItemResult.INT_RESULT) {
         } else if (i == ItemResult.STRING_RESULT || i == ItemResult.REAL_RESULT) {
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
             maxLength = floatLength(decimals);
 
         } else if (i == ItemResult.DECIMAL_RESULT) {

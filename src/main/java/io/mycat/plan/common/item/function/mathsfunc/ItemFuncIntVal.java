@@ -19,16 +19,16 @@ public abstract class ItemFuncIntVal extends ItemFuncNum1 {
 
     @Override
     public void findNumType() {
-        ItemResult i = hybrid_type = args.get(0).resultType();
+        ItemResult i = hybridType = args.get(0).resultType();
         if (i == ItemResult.STRING_RESULT || i == ItemResult.REAL_RESULT) {
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
             maxLength = floatLength(decimals);
 
         } else if (i == ItemResult.INT_RESULT) {
-            hybrid_type = ItemResult.INT_RESULT;
+            hybridType = ItemResult.INT_RESULT;
 
         } else if (i == ItemResult.DECIMAL_RESULT) {
-            hybrid_type = ItemResult.DECIMAL_RESULT;
+            hybridType = ItemResult.DECIMAL_RESULT;
 
         } else {
             assert (false);

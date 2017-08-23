@@ -16,15 +16,15 @@ import java.util.List;
 
 
 public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
-    private ItemResultPtr cmp_type = new ItemResultPtr(null);
+    private ItemResultPtr cmpType = new ItemResultPtr(null);
     /* TRUE <=> arguments will be compared as dates. */
-    boolean compare_as_dates_with_strings;
-    boolean compare_as_temporal_dates;
-    boolean compare_as_temporal_times;
+    boolean compareAsDatesWithStrings;
+    boolean compareAsTemporalDates;
+    boolean compareAsTemporalTimes;
 
     /* Comparators used for DATE/DATETIME comparison. */
-    ArgComparator ge_cmp = new ArgComparator();
-    ArgComparator le_cmp = new ArgComparator();
+    ArgComparator geCmp = new ArgComparator();
+    ArgComparator leCmp = new ArgComparator();
 
     /**
      * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
@@ -48,13 +48,13 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 
     @Override
     public BigInteger valInt() {
-        if (compare_as_dates_with_strings) {
+        if (compareAsDatesWithStrings) {
             int geRes, leRes;
 
-            geRes = ge_cmp.compare();
+            geRes = geCmp.compare();
             if ((nullValue = args.get(0).isNull()))
                 return BigInteger.ZERO;
-            leRes = le_cmp.compare();
+            leRes = leCmp.compare();
 
             if (!args.get(1).isNull() && !args.get(2).isNull())
                 return ((geRes >= 0 && leRes <= 0)) != negated ? BigInteger.ONE : BigInteger.ZERO;
@@ -63,7 +63,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             } else {
                 nullValue = geRes < 0;
             }
-        } else if (cmp_type.get() == ItemResult.STRING_RESULT) {
+        } else if (cmpType.get() == ItemResult.STRING_RESULT) {
             String value, a, b;
             value = args.get(0).valStr();
             if (nullValue = args.get(0).isNull())
@@ -82,16 +82,16 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
                 // Set to not null if false range.
                 nullValue = value.compareTo(a) >= 0;
             }
-        } else if (cmp_type.get() == ItemResult.INT_RESULT) {
+        } else if (cmpType.get() == ItemResult.INT_RESULT) {
             long a, b, value;
-            value = compare_as_temporal_times ? args.get(0).valTimeTemporal()
-                    : compare_as_temporal_dates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
+            value = compareAsTemporalTimes ? args.get(0).valTimeTemporal()
+                    : compareAsTemporalDates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
             if (nullValue = args.get(0).isNull())
                 return BigInteger.ZERO; /* purecov: inspected */
-            if (compare_as_temporal_times) {
+            if (compareAsTemporalTimes) {
                 a = args.get(1).valTimeTemporal();
                 b = args.get(2).valTimeTemporal();
-            } else if (compare_as_temporal_dates) {
+            } else if (compareAsTemporalDates) {
                 a = args.get(1).valDateTemporal();
                 b = args.get(2).valDateTemporal();
             } else {
@@ -107,7 +107,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             } else {
                 nullValue = value >= a;
             }
-        } else if (cmp_type.get() == ItemResult.DECIMAL_RESULT) {
+        } else if (cmpType.get() == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
             BigDecimal aDec, bDec;
             if (nullValue = args.get(0).isNull())
@@ -157,22 +157,22 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
         int i;
         int datetimeItemsFound = 0;
         int timeItemsFound = 0;
-        compare_as_dates_with_strings = false;
-        compare_as_temporal_times = compare_as_temporal_dates = false;
+        compareAsDatesWithStrings = false;
+        compareAsTemporalTimes = compareAsTemporalDates = false;
         /*
          * As some compare functions are generated after sql_yacc, we have to
          * check for out of memory conditions here
          */
         if (args.get(0) == null || args.get(1) == null || args.get(2) == null)
             return;
-        if (CmpUtil.agg_cmp_type(cmp_type, args, 3) != 0)
+        if (CmpUtil.agg_cmp_type(cmpType, args, 3) != 0)
             return;
         /*
          * Detect the comparison of DATE/DATETIME items. At least one of items
          * should be a DATE/DATETIME item and other items should return the
          * STRING result.
          */
-        if (cmp_type.get() == ItemResult.STRING_RESULT) {
+        if (cmpType.get() == ItemResult.STRING_RESULT) {
             for (i = 0; i < 3; i++) {
                 if (args.get(i).isTemporalWithDate())
                     datetimeItemsFound++;
@@ -184,24 +184,24 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
         if (datetimeItemsFound + timeItemsFound == 3) {
             if (timeItemsFound == 3) {
                 // All items are TIME
-                cmp_type.set(ItemResult.INT_RESULT);
-                compare_as_temporal_times = true;
+                cmpType.set(ItemResult.INT_RESULT);
+                compareAsTemporalTimes = true;
             } else {
                 /*
                  * There is at least one DATE or DATETIME item, all other items
                  * are DATE, DATETIME or TIME.
                  */
-                cmp_type.set(ItemResult.INT_RESULT);
-                compare_as_temporal_dates = true;
+                cmpType.set(ItemResult.INT_RESULT);
+                compareAsTemporalDates = true;
             }
         } else if (datetimeItemsFound > 0) {
             /*
              * There is at least one DATE or DATETIME item. All other items are
              * DATE, DATETIME or strings.
              */
-            compare_as_dates_with_strings = true;
-            ge_cmp.setDatetimeCmpFunc(this, args.get(0), args.get(1));
-            le_cmp.setDatetimeCmpFunc(this, args.get(0), args.get(2));
+            compareAsDatesWithStrings = true;
+            geCmp.setDatetimeCmpFunc(this, args.get(0), args.get(1));
+            leCmp.setDatetimeCmpFunc(this, args.get(0), args.get(2));
         } else if (args.get(0).type().equals(ItemType.FIELD_ITEM)
 //                 &&thd->lex->sql_command != SQLCOM_CREATE_VIEW &&
 //                        thd->lex->sql_command != SQLCOM_SHOW_CREATE)

@@ -7,11 +7,11 @@ import java.math.BigDecimal;
  * and used in other calls.
  */
 public class Timeval {
-    public long tv_sec; /* seconds */
-    public long tv_usec; /* and microseconds */
+    public long tvSec; /* seconds */
+    public long tvUsec; /* and microseconds */
 
     public Timeval() {
-        tv_sec = tv_usec = 0;
+        tvSec = tvUsec = 0;
     }
 
     /**
@@ -21,8 +21,8 @@ public class Timeval {
      * @return
      */
     public BigDecimal timeval2my_decimal() {
-        BigDecimal intpart = BigDecimal.valueOf(tv_sec);
-        BigDecimal frac = BigDecimal.valueOf(tv_usec / 1000000.0);
+        BigDecimal intpart = BigDecimal.valueOf(tvSec);
+        BigDecimal frac = BigDecimal.valueOf(tvUsec / 1000000.0);
         return intpart.add(frac);
     }
 
@@ -35,6 +35,6 @@ public class Timeval {
      * @return The length of the result string.
      */
     public String my_timeval_to_str() {
-        return tv_sec + "." + tv_usec;
+        return tvSec + "." + tvUsec;
     }
 };

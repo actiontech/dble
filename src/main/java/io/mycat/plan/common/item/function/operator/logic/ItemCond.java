@@ -9,7 +9,7 @@ import java.util.List;
 
 
 public abstract class ItemCond extends ItemBoolFunc {
-    protected boolean abort_on_null = true;
+    protected boolean abortOnNull = true;
     List<Item> list;
 
     public ItemCond(List<Item> args) {

@@ -20,7 +20,7 @@ public class ItemSumSum extends ItemSumNum {
         setDistinct(distinct);
     }
 
-    protected ItemResult hybrid_type;
+    protected ItemResult hybridType;
     protected BigDecimal sum;
 
     @Override
@@ -29,7 +29,7 @@ public class ItemSumSum extends ItemSumNum {
         decimals = args.get(0).decimals;
         ItemResult i = args.get(0).numericContextResultType();
         if (i == ItemResult.REAL_RESULT) {
-            hybrid_type = ItemResult.REAL_RESULT;
+            hybridType = ItemResult.REAL_RESULT;
             sum = BigDecimal.ZERO;
 
         } else if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT) {
@@ -79,7 +79,7 @@ public class ItemSumSum extends ItemSumNum {
     public boolean add(RowDataPacket row, Object transObj) {
         if (transObj != null) {
             AggData data = (AggData) transObj;
-            if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+            if (hybridType == ItemResult.DECIMAL_RESULT) {
                 final BigDecimal val = data.bd;
                 if (!data.isNull) {
                     sum = sum.add(val);
@@ -91,7 +91,7 @@ public class ItemSumSum extends ItemSumNum {
                     nullValue = false;
             }
         } else {
-            if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+            if (hybridType == ItemResult.DECIMAL_RESULT) {
                 final BigDecimal val = aggr.arg_val_decimal();
                 if (!aggr.arg_is_null()) {
                     sum = sum.add(val);
@@ -111,7 +111,7 @@ public class ItemSumSum extends ItemSumNum {
      */
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
-        if (hybrid_type == ItemResult.DECIMAL_RESULT) {
+        if (hybridType == ItemResult.DECIMAL_RESULT) {
             final BigDecimal val = aggr.arg_val_decimal();
             if (!aggr.arg_is_null()) {
                 sum = sum.add(val);
@@ -135,7 +135,7 @@ public class ItemSumSum extends ItemSumNum {
 
     @Override
     public ItemResult resultType() {
-        return hybrid_type;
+        return hybridType;
     }
 
     @Override

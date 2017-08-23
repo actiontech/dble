@@ -12,7 +12,7 @@ public abstract class Aggregator {
      * Item_sum descendant.
      */
     /* the aggregate function class to act on */
-    protected ItemSum item_sum;
+    protected ItemSum itemSum;
 
     /**
      * When feeding back the data in endup() from Unique/temp table back to
@@ -22,11 +22,11 @@ public abstract class Aggregator {
      * <byte[]> rowBytes) methods to take the data from the Unique instead by
      * calling the relevant val_..() method
      */
-    protected boolean use_distinct_values;
+    protected boolean useDistinctValues;
 
     public Aggregator(ItemSum arg) {
-        item_sum = (arg);
-        use_distinct_values = (false);
+        itemSum = (arg);
+        useDistinctValues = (false);
     }
 
     public enum AggregatorType {

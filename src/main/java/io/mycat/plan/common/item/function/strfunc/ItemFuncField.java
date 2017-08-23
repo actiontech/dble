@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ItemFuncField extends ItemIntFunc {
 
-    ItemResult cmp_type;
+    ItemResult cmpType;
 
     public ItemFuncField(List<Item> args) {
         super(args);
@@ -24,7 +24,7 @@ public class ItemFuncField extends ItemIntFunc {
 
     @Override
     public BigInteger valInt() {
-        if (cmp_type == ItemResult.STRING_RESULT) {
+        if (cmpType == ItemResult.STRING_RESULT) {
             String field;
             if ((field = args.get(0).valStr()) == null)
                 return BigInteger.ZERO;
@@ -33,7 +33,7 @@ public class ItemFuncField extends ItemIntFunc {
                 if (tmpValue != null && field.compareTo(tmpValue) == 0)
                     return BigInteger.valueOf(i);
             }
-        } else if (cmp_type == ItemResult.INT_RESULT) {
+        } else if (cmpType == ItemResult.INT_RESULT) {
             long val = args.get(0).valInt().longValue();
             if (args.get(0).nullValue)
                 return BigInteger.ZERO;
@@ -41,7 +41,7 @@ public class ItemFuncField extends ItemIntFunc {
                 if (val == args.get(i).valInt().longValue() && !args.get(i).nullValue)
                     return BigInteger.valueOf(i);
             }
-        } else if (cmp_type == ItemResult.DECIMAL_RESULT) {
+        } else if (cmpType == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
             if (args.get(0).nullValue)
                 return BigInteger.ZERO;
@@ -66,9 +66,9 @@ public class ItemFuncField extends ItemIntFunc {
     public void fixLengthAndDec() {
         maybeNull = false;
         maxLength = 3;
-        cmp_type = args.get(0).resultType();
+        cmpType = args.get(0).resultType();
         for (int i = 1; i < args.size(); i++)
-            cmp_type = MySQLcom.item_cmp_type(cmp_type, args.get(i).resultType());
+            cmpType = MySQLcom.item_cmp_type(cmpType, args.get(i).resultType());
     }
 
     @Override

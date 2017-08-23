@@ -17,7 +17,7 @@ import io.mycat.util.StringUtil;
 
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static int COMMIT_TIMES = 5;
-    private int try_commit_times = 0;
+    private int tryCommitTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     protected byte[] sendData = OkPacket.OK;
 
@@ -27,7 +27,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void clearResources() {
-        try_commit_times = 0;
+        tryCommitTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
     }
@@ -288,7 +288,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
             if (errConn != null) {
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
-                if (++try_commit_times < COMMIT_TIMES) {
+                if (++tryCommitTimes < COMMIT_TIMES) {
                     // 多试几次
                     commit();
                 } else {

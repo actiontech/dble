@@ -15,13 +15,13 @@ import java.util.List;
 
 
 public class ItemCharTypecast extends ItemStrFunc {
-    private int cast_length;
+    private int castLength;
     private String charSetName;
 
     public ItemCharTypecast(Item a, int length_arg, String charSetName) {
         super(new ArrayList<Item>());
         args.add(a);
-        this.cast_length = length_arg;
+        this.castLength = length_arg;
         this.charSetName = charSetName;
     }
 
@@ -32,12 +32,12 @@ public class ItemCharTypecast extends ItemStrFunc {
 
     @Override
     public void fixLengthAndDec() {
-        fixCharLength(cast_length >= 0 ? cast_length : args.get(0).maxLength);
+        fixCharLength(castLength >= 0 ? castLength : args.get(0).maxLength);
     }
 
     @Override
     public String valStr() {
-        assert (fixed == true && cast_length >= 0);
+        assert (fixed == true && castLength >= 0);
 
         String res = null;
         if ((res = args.get(0).valStr()) == null) {
@@ -45,8 +45,8 @@ public class ItemCharTypecast extends ItemStrFunc {
             return null;
         }
         nullValue = false;
-        if (cast_length < res.length()) {
-            res = res.substring(0, cast_length);
+        if (castLength < res.length()) {
+            res = res.substring(0, castLength);
         }
         if (charSetName != null) {
             try {
@@ -66,8 +66,8 @@ public class ItemCharTypecast extends ItemStrFunc {
         cast.setExpr(args.get(0).toExpression());
         SQLCharacterDataType dataType = new SQLCharacterDataType(SQLCharacterDataType.CHAR_TYPE_CHAR);
         cast.setDataType(dataType);
-        if (cast_length >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(cast_length));
+        if (castLength >= 0) {
+            dataType.addArgument(new SQLIntegerExpr(castLength));
         }
         if (charSetName != null) {
             dataType.setName(charSetName);
@@ -83,6 +83,6 @@ public class ItemCharTypecast extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemCharTypecast(newArgs.get(0), cast_length, charSetName);
+        return new ItemCharTypecast(newArgs.get(0), castLength, charSetName);
     }
 }

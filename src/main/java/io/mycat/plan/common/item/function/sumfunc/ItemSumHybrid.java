@@ -14,18 +14,18 @@ import java.util.List;
 public abstract class ItemSumHybrid extends ItemSum {
 
     protected Field value;
-    protected ItemResult hybrid_type;
-    protected FieldTypes hybrid_field_type;
-    protected int cmp_sign;
-    protected boolean was_values;// Set if we have found at least one row (for
+    protected ItemResult hybridType;
+    protected FieldTypes hybridFieldType;
+    protected int cmpSign;
+    protected boolean wasValues;// Set if we have found at least one row (for
     // max/min only)
 
     public ItemSumHybrid(List<Item> args, int sign, boolean isPushDown, List<Field> fields) {
         super(args, isPushDown, fields);
-        hybrid_field_type = FieldTypes.MYSQL_TYPE_LONGLONG;
-        hybrid_type = ItemResult.INT_RESULT;
-        cmp_sign = sign;
-        was_values = true;
+        hybridFieldType = FieldTypes.MYSQL_TYPE_LONGLONG;
+        hybridType = ItemResult.INT_RESULT;
+        cmpSign = sign;
+        wasValues = true;
     }
 
     @Override
@@ -40,7 +40,7 @@ public abstract class ItemSumHybrid extends ItemSum {
         value = Field.getFieldItem(funcName(), null, item.fieldType().numberValue(), item.charsetIndex,
                 item.maxLength, item.decimals, (item.maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG));
 
-        ItemResult i = hybrid_type = item.resultType();
+        ItemResult i = hybridType = item.resultType();
         if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT || i == ItemResult.STRING_RESULT) {
             maxLength = item.maxLength;
 
@@ -57,7 +57,7 @@ public abstract class ItemSumHybrid extends ItemSum {
         maybeNull = true;
         nullValue = true;
         fixLengthAndDec();
-        hybrid_field_type = item.fieldType();
+        hybridFieldType = item.fieldType();
 
         fixed = true;
         return false;
@@ -150,12 +150,12 @@ public abstract class ItemSumHybrid extends ItemSum {
 
     @Override
     public ItemResult resultType() {
-        return hybrid_type;
+        return hybridType;
     }
 
     @Override
     public FieldTypes fieldType() {
-        return hybrid_field_type;
+        return hybridFieldType;
     }
 
     @Override
@@ -168,16 +168,16 @@ public abstract class ItemSumHybrid extends ItemSum {
          * no_rows_in_result() set it to FALSE if was not results found. If some
          * results found it will be left unchanged.
          */
-        was_values = true;
+        wasValues = true;
     }
 
     public boolean any_value() {
-        return was_values;
+        return wasValues;
     }
 
     @Override
     public void noRowsInResult() {
-        was_values = false;
+        wasValues = false;
         clear();
     }
 

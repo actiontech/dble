@@ -10,11 +10,11 @@ import java.util.List;
 
 public abstract class ItemSumBit extends ItemSumInt {
 
-    protected BigInteger reset_bits, bits;
+    protected BigInteger resetBits, bits;
 
     public ItemSumBit(List<Item> item_par, long reset_arg, boolean isPushDown, List<Field> fields) {
         super(item_par, isPushDown, fields);
-        reset_bits = BigInteger.valueOf(reset_arg);
+        resetBits = BigInteger.valueOf(reset_arg);
         bits = BigInteger.valueOf(reset_arg);
     }
 
@@ -24,7 +24,7 @@ public abstract class ItemSumBit extends ItemSumInt {
 
     @Override
     public void clear() {
-        bits = reset_bits;
+        bits = resetBits;
     }
 
     @Override
@@ -41,7 +41,7 @@ public abstract class ItemSumBit extends ItemSumInt {
 
     @Override
     public void cleanup() {
-        bits = reset_bits;
+        bits = resetBits;
         super.cleanup();
     }
 

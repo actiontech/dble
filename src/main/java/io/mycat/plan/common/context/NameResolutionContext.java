@@ -8,7 +8,7 @@ public class NameResolutionContext {
      * The name resolution context to search in when an Item cannot be resolved
      * in this context (the context of an outer select)
      */
-    NameResolutionContext outer_context;
+    NameResolutionContext outerContext;
 
     private PlanNode planNode;
 
@@ -17,11 +17,11 @@ public class NameResolutionContext {
     private boolean selectFirst = false;
 
     public NameResolutionContext getOuter_context() {
-        return outer_context;
+        return outerContext;
     }
 
     public void setOuter_context(NameResolutionContext outer_context) {
-        this.outer_context = outer_context;
+        this.outerContext = outer_context;
     }
 
     public PlanNode getPlanNode() {

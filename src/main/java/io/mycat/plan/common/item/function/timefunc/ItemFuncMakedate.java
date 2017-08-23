@@ -54,8 +54,8 @@ public class ItemFuncMakedate extends ItemDateFunc {
             ltime.month = lpmonth.get();
             ltime.day = lpday.get();
             ltime.neg = false;
-            ltime.hour = ltime.minute = ltime.second = ltime.second_part = 0;
-            ltime.time_type = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
+            ltime.hour = ltime.minute = ltime.second = ltime.secondPart = 0;
+            ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
             return false;
         }
         nullValue = true;

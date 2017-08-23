@@ -41,7 +41,7 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
         long sec = (seconds % 3600);
         ltime.minute = sec / 60;
         ltime.second = sec % 60;
-        ltime.second_part = microseconds;
+        ltime.secondPart = microseconds;
         return false;
     }
 

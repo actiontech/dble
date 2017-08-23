@@ -59,11 +59,11 @@ public class UserSqlRWStat {
     private long lastExecuteTime;
 
 
-    private int time_zone_offset = 0;
-    private int one_hour = 3600 * 1000;
+    private int timeZoneOffset = 0;
+    private int oneHour = 3600 * 1000;
 
     public UserSqlRWStat() {
-        this.time_zone_offset = TimeZone.getDefault().getRawOffset();
+        this.timeZoneOffset = TimeZone.getDefault().getRawOffset();
     }
 
     public void reset() {
@@ -111,11 +111,11 @@ public class UserSqlRWStat {
         }
 
         //SQL执行所在的时间区间
-        long hour0 = endTime / (24L * (long) one_hour) * (24L * (long) one_hour) - (long) time_zone_offset;
-        long hour06 = hour0 + 6L * (long) one_hour - 1L;
-        long hour13 = hour0 + 13L * (long) one_hour - 1L;
-        long hour18 = hour0 + 18L * (long) one_hour - 1L;
-        long hour22 = hour0 + 22L * (long) one_hour - 1L;
+        long hour0 = endTime / (24L * (long) oneHour) * (24L * (long) oneHour) - (long) timeZoneOffset;
+        long hour06 = hour0 + 6L * (long) oneHour - 1L;
+        long hour13 = hour0 + 13L * (long) oneHour - 1L;
+        long hour18 = hour0 + 18L * (long) oneHour - 1L;
+        long hour22 = hour0 + 22L * (long) oneHour - 1L;
 
         if (endTime <= hour06 || endTime > hour22) {
             this.executeHistogram.record(6);

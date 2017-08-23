@@ -37,7 +37,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     /**
      * 分片结束包
      */
-    public PackWraper END_FLAG_PACK = new PackWraper();
+    public PackWraper endFlagPack = new PackWraper();
 
 
     /**
@@ -121,7 +121,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     public abstract void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldCount) throws IOException;
 
     public void outputMergeResult(NonBlockingSession session, byte[] eof) {
-        addPack(END_FLAG_PACK);
+        addPack(endFlagPack);
     }
 
     public RouteResultset getRrs() {

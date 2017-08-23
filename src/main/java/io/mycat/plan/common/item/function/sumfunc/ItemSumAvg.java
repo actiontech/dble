@@ -118,7 +118,7 @@ public class ItemSumAvg extends ItemSumSum {
     public String valStr() {
         if (aggr != null)
             aggr.endup();
-        if (hybrid_type == ItemResult.DECIMAL_RESULT)
+        if (hybridType == ItemResult.DECIMAL_RESULT)
             return valStringFromDecimal();
         return valStringFromReal();
     }

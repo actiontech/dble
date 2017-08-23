@@ -24,8 +24,8 @@ public class ItemFuncUnixTimestamp extends ItemTimevalFunc {
     @Override
     public boolean val_timeval(Timeval tm) {
         if (getArgCount() == 0) {
-            tm.tv_sec = java.util.Calendar.getInstance().getTimeInMillis() / 1000;
-            tm.tv_usec = 0;
+            tm.tvSec = java.util.Calendar.getInstance().getTimeInMillis() / 1000;
+            tm.tvUsec = 0;
             return false; // no args: null_value is set in constructor and is
             // always 0.
         }

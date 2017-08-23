@@ -197,7 +197,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
                     break;
                 }
                 // eof: handling eof pack and exit
-                if (pack == END_FLAG_PACK) {
+                if (pack == endFlagPack) {
 
 
                     final int warningCount = 0;

@@ -6,4 +6,5 @@
 
 <suppressions>
     <suppress checks=".*" files="StructureMeta.java"/>
+    <suppress checks="Indentation" files="MyTime.java"/>
 </suppressions>

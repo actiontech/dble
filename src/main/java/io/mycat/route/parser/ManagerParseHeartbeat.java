@@ -99,8 +99,7 @@ public final class ManagerParseHeartbeat {
             char c6 = s.charAt(++offset);
             //char c11 = s.charAt(++offset);
             if ((c1 == 'W' || c1 == 'w') && (c2 == 'H' || c2 == 'h') && (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'R' || c4 == 'r') && (c5 == 'E' || c5 == 'e') && (c6 == ' ')
-                    ) {
+                    (c4 == 'R' || c4 == 'r') && (c5 == 'E' || c5 == 'e') && (c6 == ' ')) {
                 offset = ManagerParseShow.trim(++offset, s);
                 char c7 = s.charAt(offset);
                 char c8 = s.charAt(++offset);

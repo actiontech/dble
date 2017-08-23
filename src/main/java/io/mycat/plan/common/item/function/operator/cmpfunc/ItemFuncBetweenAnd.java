@@ -200,10 +200,7 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             compareAsDatesWithStrings = true;
             geCmp.setDatetimeCmpFunc(this, args.get(0), args.get(1));
             leCmp.setDatetimeCmpFunc(this, args.get(0), args.get(2));
-        } else if (args.get(0).type().equals(ItemType.FIELD_ITEM)
-//                 &&thd->lex->sql_command != SQLCOM_CREATE_VIEW &&
-//                        thd->lex->sql_command != SQLCOM_SHOW_CREATE)
-                ) {
+        } else if (args.get(0).type().equals(ItemType.FIELD_ITEM)) {
             //in fact ,it will not reach here
             throw new RuntimeException("not supportted yet!");
         }

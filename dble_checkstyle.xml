@@ -131,13 +131,13 @@
 
         <!-- Miscellaneous other checks. -->
         <module name="ArrayTypeStyle"/>
-        <!--<module name="UpperEll"/>-->
-        <!--<module name="AvoidEscapedUnicodeCharacters"/>-->
+        <module name="UpperEll"/>
+        <module name="AvoidEscapedUnicodeCharacters"/>
 
         <!--<module name="UncommentedMain"/>-->
-        <!--<module name="Indentation">-->
-        <!--<property name="arrayInitIndent" value="8"/>-->
-        <!--</module>-->
+        <module name="Indentation">
+            <property name="arrayInitIndent" value="8"/>
+        </module>
         <!--<module name="OuterTypeFilename"/>-->
         <!--<module name="CommentsIndentation"/>-->
     </module>

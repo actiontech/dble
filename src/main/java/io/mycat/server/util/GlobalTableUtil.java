@@ -166,8 +166,7 @@ public final class GlobalTableUtil {
      * @param list
      * @return
      */
-    public static List<SQLQueryResult<Map<String, String>>>
-    finished(List<SQLQueryResult<Map<String, String>>> list) {
+    public static List<SQLQueryResult<Map<String, String>>> finished(List<SQLQueryResult<Map<String, String>>> list) {
         LOCK.lock();
         try {
             //[{"dataNode":"db3","result":{"inner_col_exist":"id,_mycat_op_time"},"success":true,"tableName":"COMPANY"}]

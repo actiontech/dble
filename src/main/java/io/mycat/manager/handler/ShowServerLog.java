@@ -154,8 +154,7 @@ public final class ShowServerLog {
                 if (curLine >= start && curLine <= end && (
                         (pattern != null && pattern.matcher(line).find()) ||
                                 (pattern == null && key == null) ||
-                                (key != null && line.toLowerCase().contains(key))
-                )) {
+                                (key != null && line.toLowerCase().contains(key)))) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode(curLine + "->" + line,
                             c.getCharset()));

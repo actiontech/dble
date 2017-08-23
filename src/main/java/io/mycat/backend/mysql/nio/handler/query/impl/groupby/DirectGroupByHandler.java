@@ -225,8 +225,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             sendSums.add(sum);
         }
         prepareSumAggregators(sendSums, true);
-        while ((row = groupLocalResult.next()) != null)// group函数已经在row中被计算过了
-        {
+        while ((row = groupLocalResult.next()) != null) /* group函数已经在row中被计算过了 */ {
             if (sendGroupRowPacket(conn, row, sendSums))
                 break;
         }

@@ -219,8 +219,7 @@ public class ArgComparator {
      */
     public static boolean canCompareAsDates(Item a, Item b, LongPtr constvalue) {
         if (a.isTemporalWithDate()) {
-            if (b.isTemporalWithDate())// date[time] + date
-            {
+            if (b.isTemporalWithDate()) /* date[time] + date */ {
                 return true;
             } else if (b.resultType() == ItemResult.STRING_RESULT) { // date[time]
                 //
@@ -228,10 +227,9 @@ public class ArgComparator {
                 return !getDateFromConst(a, b, constvalue);
             } else
                 return false;
-        } else if (b.isTemporalWithDate() && a.resultType() == ItemResult.STRING_RESULT) // string
-        //
-        // date[time]
-        {
+        } else if (b.isTemporalWithDate() && a.resultType() == ItemResult.STRING_RESULT) { // string
+            //
+            // date[time]
             return !getDateFromConst(b, a, constvalue);
         } else
             return false; // No date[time] items found

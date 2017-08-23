@@ -249,8 +249,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        if ((isForce && isHasStoreToFile) || tempByteBuffrSize > 200 * 1024 * 1024)    //超过200M 存文件
-        {
+        if ((isForce && isHasStoreToFile) || tempByteBuffrSize > 200 * 1024 * 1024) { //超过200M 存文件
             FileOutputStream channel = null;
             try {
                 File file = new File(tempFile);
@@ -466,8 +465,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             newLoadData.setLocal(true);
             LoadData loadData1 = entry.getValue();
             //  if (isHasStoreToFile)
-            if (loadData1.getFileName() != null)//此处判断是否有保存分库load的临时文件dn1.txt/dn2.txt，不是判断是否有clientTemp.txt
-            {
+            if (loadData1.getFileName() != null) {
+                //此处判断是否有保存分库load的临时文件dn1.txt/dn2.txt，不是判断是否有clientTemp.txt
                 newLoadData.setFileName(loadData1.getFileName());
             } else {
                 newLoadData.setData(loadData1.getData());

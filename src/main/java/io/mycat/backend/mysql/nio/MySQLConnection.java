@@ -341,9 +341,7 @@ public class MySQLConnection extends BackendAIOConnection {
             return false;
         }
 
-        private void updateConnectionInfo(MySQLConnection conn)
-
-        {
+        private void updateConnectionInfo(MySQLConnection conn) {
             if (schema != null) {
                 conn.schema = schema;
                 conn.oldSchema = conn.schema;

@@ -330,10 +330,7 @@ public class MyTime {
                 }
                 continue;
             }
-            while (strindex != end && (Ctype.isPunct(chars[strindex]) || Ctype.spaceChar(chars[strindex])))
-            // (my_ispunct(&my_charset_latin1,*str) ||
-            // my_isspace(&my_charset_latin1,*str)))
-            {
+            while (strindex != end && (Ctype.isPunct(chars[strindex]) || Ctype.spaceChar(chars[strindex]))) {
                 if (Ctype.spaceChar(chars[strindex])) {
                     if ((allowSpace & (1 << i)) == 0) {
                         status.warnings = MYSQL_TIME_WARN_TRUNCATED;

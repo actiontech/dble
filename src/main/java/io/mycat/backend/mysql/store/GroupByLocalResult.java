@@ -80,8 +80,7 @@ public class GroupByLocalResult extends LocalResult {
                 return;
             int index = rows.indexOf(row);
             int increSize = 0;
-            if (index >= 0)// find
-            {
+            if (index >= 0)/* found */ {
                 RowDataPacket oldRow = rows.get(index);
                 int oldRowSizeBefore = getRowMemory(oldRow);
                 onFoundRow(oldRow, row);

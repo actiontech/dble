@@ -13,7 +13,7 @@ import io.mycat.plan.common.item.function.operator.cmpfunc.*;
 import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;
 import io.mycat.plan.common.item.function.operator.controlfunc.ItemFuncNullif;
 import io.mycat.plan.common.item.function.strfunc.*;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TRIM_TYPE_ENUM;
+import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TrimTypeEnum;
 import io.mycat.plan.common.item.function.timefunc.*;
 import io.mycat.plan.common.time.MyTime;
 
@@ -183,7 +183,7 @@ public class ItemCreate {
         nativFuncs.put("LOG2", new ItemFuncLog2(null));
         nativFuncs.put("LOWER", new ItemFuncLower(null));
         nativFuncs.put("LPAD", new ItemFuncLpad(null));
-        nativFuncs.put("LTRIM", new ItemFuncTrim(null, TRIM_TYPE_ENUM.LTRIM));
+        nativFuncs.put("LTRIM", new ItemFuncTrim(null, TrimTypeEnum.LTRIM));
         nativFuncs.put("MAKE_SET", new ItemFuncMakeSet(null));
         nativFuncs.put("MAKEDATE", new ItemFuncMakedate(null));
         nativFuncs.put("MAKETIME", new ItemFuncMaketime(null));
@@ -211,7 +211,7 @@ public class ItemCreate {
         nativFuncs.put("RIGHT", new ItemFuncRight(null));
         nativFuncs.put("ROUND", new ItemFuncRound(null));
         nativFuncs.put("RPAD", new ItemFuncRpad(null));
-        nativFuncs.put("RTRIM", new ItemFuncTrim(null, TRIM_TYPE_ENUM.RTRIM));
+        nativFuncs.put("RTRIM", new ItemFuncTrim(null, TrimTypeEnum.RTRIM));
         nativFuncs.put("SEC_TO_TIME", new ItemFuncSecToTime(null));
         nativFuncs.put("SECOND", new ItemFuncSecond(null));
         nativFuncs.put("SIGN", new ItemFuncSign(null));

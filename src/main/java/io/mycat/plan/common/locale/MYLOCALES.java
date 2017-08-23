@@ -9,7 +9,7 @@ import io.mycat.plan.common.typelib.TYPELIB;
  * @author ActionTech
  */
 public class MYLOCALES {
-    enum err_msgs_index {
+    enum ErrMsgsIndex {
         en_US, cs_CZ, da_DK, nl_NL, et_EE, fr_FR, de_DE, el_GR, hu_HU, it_IT, ja_JP, ko_KR, no_NO, nn_NO, pl_PL, pt_PT, ro_RO, ru_RU, sr_RS, sk_SK, es_ES, sv_SE, uk_UA
     }
 
@@ -55,7 +55,7 @@ public class MYLOCALES {
                      */
             ',', /* thousands_sep en_US */
             new String(new byte[]{3, 3}), /* grouping en_US */
-            GLOBAL_ERRMSGS[err_msgs_index.en_US.ordinal()]);
+            GLOBAL_ERRMSGS[ErrMsgsIndex.en_US.ordinal()]);
     /***** LOCALE END en_US *****/
 
 }

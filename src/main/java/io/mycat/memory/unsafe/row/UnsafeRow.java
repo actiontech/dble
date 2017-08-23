@@ -22,7 +22,7 @@ import io.mycat.backend.mysql.BufferUtil;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.ByteArrayMethods;
 import io.mycat.memory.unsafe.bitset.BitSetMethods;
-import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
+import io.mycat.memory.unsafe.hash.Murmur3OfX86And32Bit;
 import io.mycat.memory.unsafe.types.UTF8String;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.MySQLPacket;
@@ -376,7 +376,7 @@ public final class UnsafeRow extends MySQLPacket {
 
     @Override
     public int hashCode() {
-        return Murmur3_x86_32.hashUnsafeWords(baseObject, baseOffset, sizeInBytes, 42);
+        return Murmur3OfX86And32Bit.hashUnsafeWords(baseObject, baseOffset, sizeInBytes, 42);
     }
 
     @Override

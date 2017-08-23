@@ -22,7 +22,7 @@ import com.google.common.io.Closeables;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.ByteArrayMethods;
 import io.mycat.memory.unsafe.array.LongArray;
-import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
+import io.mycat.memory.unsafe.hash.Murmur3OfX86And32Bit;
 import io.mycat.memory.unsafe.memory.MemoryBlock;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.memory.mm.MemoryConsumer;
@@ -440,7 +440,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
      */
     public Location lookup(Object keyBase, long keyOffset, int keyLength) {
         safeLookup(keyBase, keyOffset, keyLength, loc,
-                Murmur3_x86_32.hashUnsafeWords(keyBase, keyOffset, keyLength, 42));
+                Murmur3OfX86And32Bit.hashUnsafeWords(keyBase, keyOffset, keyLength, 42));
         return loc;
     }
 

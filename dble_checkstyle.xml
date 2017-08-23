@@ -36,7 +36,7 @@
         <module name="PackageName"/>
         <module name="ParameterName"/>
         <module name="StaticVariableName"/>
-        <!--<module name="TypeName"/>-->
+        <module name="TypeName"/>
         <!--<module name="AbbreviationAsWordInName"/>-->
         <!--<module name="ClassTypeParameterName"/>-->
         <!--<module name="MethodTypeParameterName"/>-->

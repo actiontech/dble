@@ -23,7 +23,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.array.ByteArrayMethods;
-import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
+import io.mycat.memory.unsafe.hash.Murmur3OfX86And32Bit;
 
 import javax.annotation.Nonnull;
 import java.io.Externalizable;
@@ -931,7 +931,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
 
     @Override
     public int hashCode() {
-        return Murmur3_x86_32.hashUnsafeBytes(base, offset, numBytes, 42);
+        return Murmur3OfX86And32Bit.hashUnsafeBytes(base, offset, numBytes, 42);
     }
 
     /**

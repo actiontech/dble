@@ -19,7 +19,7 @@ import io.mycat.util.StringUtil;
 import java.util.*;
 
 public class MetaHelper {
-    public static enum INDEX_TYPE {
+    public static enum IndexType {
         PRI, UNI, MUL
     }
 
@@ -40,19 +40,19 @@ public class MetaHelper {
                 tmBuilder.addColumns(cmBuilder.build());
             } else if (tableElement instanceof MySqlPrimaryKey) {
                 MySqlPrimaryKey primaryKey = (MySqlPrimaryKey) tableElement;
-                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, INDEX_TYPE.PRI, primaryKey.getColumns()));
+                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, IndexType.PRI, primaryKey.getColumns()));
             } else if (tableElement instanceof MySqlUnique) {
                 MySqlUnique unique = (MySqlUnique) tableElement;
                 String indexName = genIndexName(unique.getName(), unique.getColumns(), indexNames);
-                tmBuilder.addUniIndex(makeIndexMeta(indexName, INDEX_TYPE.UNI, unique.getColumns()));
+                tmBuilder.addUniIndex(makeIndexMeta(indexName, IndexType.UNI, unique.getColumns()));
             } else if (tableElement instanceof MySqlTableIndex) {
                 MySqlTableIndex index = (MySqlTableIndex) tableElement;
                 String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
-                tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
+                tmBuilder.addIndex(makeIndexMeta(indexName, IndexType.MUL, index.getColumns()));
             } else if (tableElement instanceof MySqlKey) {
                 MySqlKey index = (MySqlKey) tableElement;
                 String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
-                tmBuilder.addIndex(makeIndexMeta(indexName, INDEX_TYPE.MUL, index.getColumns()));
+                tmBuilder.addIndex(makeIndexMeta(indexName, IndexType.MUL, index.getColumns()));
             } else {
                 // ignore
             }
@@ -86,7 +86,7 @@ public class MetaHelper {
      * @param columnExprs
      * @return
      */
-    public static IndexMeta makeIndexMeta(String indexName, INDEX_TYPE indexType, List<SQLExpr> columnExprs) {
+    public static IndexMeta makeIndexMeta(String indexName, IndexType indexType, List<SQLExpr> columnExprs) {
         IndexMeta.Builder indexBuilder = IndexMeta.newBuilder();
         indexBuilder.setName(StringUtil.removeBackQuote(indexName));
         indexBuilder.setType(indexType.toString());
@@ -116,11 +116,11 @@ public class MetaHelper {
             } else if (constraint instanceof SQLNullConstraint) {
                 cmBuilder.setCanNull(true);
             } else if (constraint instanceof SQLColumnPrimaryKey) {
-                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, INDEX_TYPE.PRI, new ArrayList<SQLExpr>(Arrays.asList(column.getName()))));
+                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, IndexType.PRI, new ArrayList<SQLExpr>(Arrays.asList(column.getName()))));
             } else if (constraint instanceof SQLColumnUniqueKey) {
                 List<SQLExpr> columnExprs = new ArrayList<SQLExpr>(Arrays.asList(column.getName()));
                 String indexName = genIndexName(null, columnExprs, indexNames);
-                tmBuilder.addUniIndex(makeIndexMeta(indexName, INDEX_TYPE.UNI, columnExprs));
+                tmBuilder.addUniIndex(makeIndexMeta(indexName, IndexType.UNI, columnExprs));
             }
         }
         if (column.getDefaultExpr() != null) {

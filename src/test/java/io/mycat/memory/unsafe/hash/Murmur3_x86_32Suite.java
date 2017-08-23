@@ -32,7 +32,7 @@ import java.util.Set;
  */
 public class Murmur3_x86_32Suite {
 
-    private static final Murmur3_x86_32 hasher = new Murmur3_x86_32(0);
+    private static final Murmur3OfX86And32Bit hasher = new Murmur3OfX86And32Bit(0);
 
     @Test
     public void testKnownIntegerInputs() {

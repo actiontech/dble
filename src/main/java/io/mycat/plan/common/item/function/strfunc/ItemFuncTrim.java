@@ -12,22 +12,22 @@ import java.util.List;
 
 
 public class ItemFuncTrim extends ItemStrFunc {
-    public enum TRIM_TYPE_ENUM {
+    public enum TrimTypeEnum {
         DEFAULT, BOTH, LEADING, TRAILING, LTRIM, RTRIM
     }
 
-    private TRIM_TYPE_ENUM mTrimMode;
+    private TrimTypeEnum mTrimMode;
     private boolean mTrimLeading;
     private boolean mTrimTrailing;
 
-    public ItemFuncTrim(Item a, Item b, TRIM_TYPE_ENUM tm) {
+    public ItemFuncTrim(Item a, Item b, TrimTypeEnum tm) {
         super(a, b);
         this.mTrimMode = tm;
         mTrimLeading = trimLeading();
         mTrimTrailing = trimTrailing();
     }
 
-    public ItemFuncTrim(Item a, TRIM_TYPE_ENUM tm) {
+    public ItemFuncTrim(Item a, TrimTypeEnum tm) {
         super(a);
         this.mTrimMode = tm;
         mTrimLeading = trimLeading();
@@ -35,28 +35,28 @@ public class ItemFuncTrim extends ItemStrFunc {
     }
 
     private final boolean trimLeading() {
-        return mTrimMode == TRIM_TYPE_ENUM.DEFAULT || mTrimMode == TRIM_TYPE_ENUM.BOTH || mTrimMode == TRIM_TYPE_ENUM.LEADING
-                || mTrimMode == TRIM_TYPE_ENUM.LTRIM;
+        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.LEADING
+                || mTrimMode == TrimTypeEnum.LTRIM;
     }
 
     private final boolean trimTrailing() {
-        return mTrimMode == TRIM_TYPE_ENUM.DEFAULT || mTrimMode == TRIM_TYPE_ENUM.BOTH || mTrimMode == TRIM_TYPE_ENUM.TRAILING
-                || mTrimMode == TRIM_TYPE_ENUM.RTRIM;
+        return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.TRAILING
+                || mTrimMode == TrimTypeEnum.RTRIM;
     }
 
     @Override
     public final String funcName() {
-        if (mTrimMode == TRIM_TYPE_ENUM.DEFAULT) {
+        if (mTrimMode == TrimTypeEnum.DEFAULT) {
             return "TRIM";
-        } else if (mTrimMode == TRIM_TYPE_ENUM.BOTH) {
+        } else if (mTrimMode == TrimTypeEnum.BOTH) {
             return "TRIM";
-        } else if (mTrimMode == TRIM_TYPE_ENUM.LEADING) {
+        } else if (mTrimMode == TrimTypeEnum.LEADING) {
             return "LTRIM";
-        } else if (mTrimMode == TRIM_TYPE_ENUM.TRAILING) {
+        } else if (mTrimMode == TrimTypeEnum.TRAILING) {
             return "RTRIM";
-        } else if (mTrimMode == TRIM_TYPE_ENUM.LTRIM) {
+        } else if (mTrimMode == TrimTypeEnum.LTRIM) {
             return "LTRIM";
-        } else if (mTrimMode == TRIM_TYPE_ENUM.RTRIM) {
+        } else if (mTrimMode == TrimTypeEnum.RTRIM) {
             return "RTRIM";
         }
         return null;
@@ -89,11 +89,11 @@ public class ItemFuncTrim extends ItemStrFunc {
     @Override
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
-        if (mTrimMode == TRIM_TYPE_ENUM.LTRIM) {
+        if (mTrimMode == TrimTypeEnum.LTRIM) {
             method.setMethodName("LTRIM");
             method.addParameter(args.get(0).toExpression());
 
-        } else if (mTrimMode == TRIM_TYPE_ENUM.RTRIM) {
+        } else if (mTrimMode == TrimTypeEnum.RTRIM) {
             method.setMethodName("RTRIM");
             method.addParameter(args.get(0).toExpression());
 
@@ -103,7 +103,7 @@ public class ItemFuncTrim extends ItemStrFunc {
             if (this.getArgCount() > 1) {
                 method.putAttribute(ItemFuncKeyWord.FROM, args.get(1).toExpression());
             }
-            if (mTrimMode != TRIM_TYPE_ENUM.DEFAULT) {
+            if (mTrimMode != TrimTypeEnum.DEFAULT) {
                 method.putAttribute(ItemFuncKeyWord.TRIM_TYPE, mTrimMode.toString());
             }
         }

@@ -17,7 +17,7 @@ import java.math.BigInteger;
 public class ArgComparator {
     private Item a, b;
     private ItemFunc owner;
-    private argCmpFunc func; // compare function name,在mysql源代码中为函数指针
+    private ArgCmpFunc func; // compare function name,在mysql源代码中为函数指针
     double precision = 0.0;
     /* Fields used in DATE/DATETIME comparison. */
 //    FieldTypes atype, btype; // Types of a and b items
@@ -237,7 +237,7 @@ public class ArgComparator {
             return false;// No date[time] items found
     }
 
-    private static argCmpFunc[][] comparatorMatrix = {{new CompareString(), new CompareEString()},
+    private static ArgCmpFunc[][] comparatorMatrix = {{new CompareString(), new CompareEString()},
             {new CompareReal(), new CompareEReal()}, {new CompareIntSigned(), new CompareEInt()},
             {new CompareRow(), new CompareERow()}, {new CompareDecimal(), new CompareEDecimal()}};
 
@@ -253,11 +253,11 @@ public class ArgComparator {
      *
      * @author ActionTech
      */
-    private static interface argCmpFunc {
+    private static interface ArgCmpFunc {
         int compare(ArgComparator ac);
     }
 
-    private static class CompareString implements argCmpFunc {
+    private static class CompareString implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -276,7 +276,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareBinaryString implements argCmpFunc {
+    private static class CompareBinaryString implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -300,7 +300,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareReal implements argCmpFunc {
+    private static class CompareReal implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -324,7 +324,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareDecimal implements argCmpFunc {
+    private static class CompareDecimal implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -343,7 +343,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareIntSigned implements argCmpFunc {
+    private static class CompareIntSigned implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -369,7 +369,7 @@ public class ArgComparator {
     /**
      * Compare arguments using numeric packed temporal representation.
      */
-    private static class CompareTimePacked implements argCmpFunc {
+    private static class CompareTimePacked implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -401,7 +401,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareETimePacked implements argCmpFunc {
+    private static class CompareETimePacked implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -413,7 +413,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareRow implements argCmpFunc {
+    private static class CompareRow implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -422,7 +422,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareEString implements argCmpFunc {
+    private static class CompareEString implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -435,7 +435,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareEBinaryString implements argCmpFunc {
+    private static class CompareEBinaryString implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -449,7 +449,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareEReal implements argCmpFunc {
+    private static class CompareEReal implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -461,7 +461,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareEDecimal implements argCmpFunc {
+    private static class CompareEDecimal implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -473,7 +473,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareEInt implements argCmpFunc {
+    private static class CompareEInt implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -485,7 +485,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareERow implements argCmpFunc {
+    private static class CompareERow implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -494,7 +494,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareRealFixed implements argCmpFunc {
+    private static class CompareRealFixed implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -523,7 +523,7 @@ public class ArgComparator {
         }
     }
 
-    private static class CompareERealFixed implements argCmpFunc {
+    private static class CompareERealFixed implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {
@@ -551,7 +551,7 @@ public class ArgComparator {
      *
      * @author ActionTech
      */
-    private static class CompareDatetime implements argCmpFunc {
+    private static class CompareDatetime implements ArgCmpFunc {
 
         @Override
         public int compare(ArgComparator ac) {

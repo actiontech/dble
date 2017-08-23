@@ -16,7 +16,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class ItemRef extends Item {
-    public enum Ref_Type {
+    public enum RefType {
         REF, DIRECT_REF, VIEW_REF, OUTER_REF, AGGREGATE_REF
     }
 

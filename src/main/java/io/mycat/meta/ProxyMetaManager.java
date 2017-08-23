@@ -28,7 +28,7 @@ import io.mycat.meta.protocol.StructureMeta.IndexMeta;
 import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.meta.table.AbstractTableMetaHandler;
 import io.mycat.meta.table.MetaHelper;
-import io.mycat.meta.table.MetaHelper.INDEX_TYPE;
+import io.mycat.meta.table.MetaHelper.IndexType;
 import io.mycat.meta.table.SchemaMetaHandler;
 import io.mycat.meta.table.TableMetaCheckHandler;
 import io.mycat.server.util.SchemaUtil;
@@ -621,7 +621,7 @@ public class ProxyMetaManager {
                     SQLConstraint constraint = addConstraint.getConstraint();
                     if (constraint instanceof MySqlPrimaryKey) {
                         MySqlPrimaryKey primaryKey = (MySqlPrimaryKey) constraint;
-                        IndexMeta indexMeta = MetaHelper.makeIndexMeta(MetaHelper.PRIMARY, MetaHelper.INDEX_TYPE.PRI, primaryKey.getColumns());
+                        IndexMeta indexMeta = MetaHelper.makeIndexMeta(MetaHelper.PRIMARY, IndexType.PRI, primaryKey.getColumns());
                         tmBuilder.setPrimary(indexMeta);
                     } else {// NOT SUPPORT
                     }
@@ -704,9 +704,9 @@ public class ProxyMetaManager {
                 String indexName = StringUtil.removeBackQuote(statement.getName().getSimpleName());
                 TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
                 if (statement.getType() == null) {
-                    addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, itemsToColumns(statement.getItems()));
+                    addIndex(indexName, tmBuilder, IndexType.MUL, itemsToColumns(statement.getItems()));
                 } else if (statement.getType().equals("UNIQUE")) {
-                    addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, itemsToColumns(statement.getItems()));
+                    addIndex(indexName, tmBuilder, IndexType.UNI, itemsToColumns(statement.getItems()));
                 }
             } catch (Exception e) {
                 LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
@@ -727,9 +727,9 @@ public class ProxyMetaManager {
         List<SQLExpr> columnExprs = itemsToColumns(addIndex.getItems());
         String indexName = MetaHelper.genIndexName(addIndex.getName(), columnExprs, indexNames);
         if (addIndex.isUnique()) {
-            addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.UNI, columnExprs);
+            addIndex(indexName, tmBuilder, IndexType.UNI, columnExprs);
         } else {
-            addIndex(indexName, tmBuilder, MetaHelper.INDEX_TYPE.MUL, columnExprs);
+            addIndex(indexName, tmBuilder, IndexType.MUL, columnExprs);
         }
     }
 
@@ -741,7 +741,7 @@ public class ProxyMetaManager {
         return columnExprs;
     }
 
-    private void addIndex(String indexName, TableMeta.Builder tmBuilder, INDEX_TYPE indexType, List<SQLExpr> columnExprs) {
+    private void addIndex(String indexName, TableMeta.Builder tmBuilder, IndexType indexType, List<SQLExpr> columnExprs) {
 
         IndexMeta indexMeta = MetaHelper.makeIndexMeta(indexName, indexType, columnExprs);
         tmBuilder.addIndex(indexMeta);

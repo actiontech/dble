@@ -19,7 +19,7 @@ package io.mycat.memory.unsafe.map;
 
 import io.mycat.memory.unsafe.KVIterator;
 import io.mycat.memory.unsafe.Platform;
-import io.mycat.memory.unsafe.hash.Murmur3_x86_32;
+import io.mycat.memory.unsafe.hash.Murmur3OfX86And32Bit;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
@@ -103,13 +103,13 @@ public final class UnsafeFixedWidthAggregationMap {
     public UnsafeRow getAggregationBufferFromUnsafeRow(UnsafeRow key) {
 
         return getAggregationBufferFromUnsafeRow(key,
-                Murmur3_x86_32.hashUnsafeWords(key.getBaseObject(), key.getBaseOffset(),
+                Murmur3OfX86And32Bit.hashUnsafeWords(key.getBaseObject(), key.getBaseOffset(),
                         key.getSizeInBytes(), SEED));
     }
 
     public boolean put(UnsafeRow key, UnsafeRow value) {
 
-        int hash = Murmur3_x86_32.hashUnsafeWords(key.getBaseObject(),
+        int hash = Murmur3OfX86And32Bit.hashUnsafeWords(key.getBaseObject(),
                 key.getBaseOffset(), key.getSizeInBytes(), SEED);
 
         // Probe our map using the serialized key
@@ -141,7 +141,7 @@ public final class UnsafeFixedWidthAggregationMap {
 
     public boolean find(UnsafeRow key) {
 
-        int hash = Murmur3_x86_32.hashUnsafeWords(key.getBaseObject(), key.getBaseOffset(), key.getSizeInBytes(), 42);
+        int hash = Murmur3OfX86And32Bit.hashUnsafeWords(key.getBaseObject(), key.getBaseOffset(), key.getSizeInBytes(), 42);
         // Probe our map using the serialized key
         final BytesToBytesMap.Location loc = map.lookup(key.getBaseObject(),
                 key.getBaseOffset(), key.getSizeInBytes(), hash);

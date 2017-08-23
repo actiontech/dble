@@ -39,7 +39,7 @@ import io.mycat.plan.common.item.function.operator.logic.ItemFuncXor;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncChar;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncOrd;
 import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim;
-import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TRIM_TYPE_ENUM;
+import io.mycat.plan.common.item.function.strfunc.ItemFuncTrim.TrimTypeEnum;
 import io.mycat.plan.common.item.function.sumfunc.*;
 import io.mycat.plan.common.item.function.timefunc.ItemDateAddInterval;
 import io.mycat.plan.common.item.function.timefunc.ItemExtract;
@@ -475,12 +475,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (funcName) {
             case "TRIM":
                 if (attributes == null) {
-                    item = new ItemFuncTrim(args.get(0), TRIM_TYPE_ENUM.DEFAULT);
+                    item = new ItemFuncTrim(args.get(0), TrimTypeEnum.DEFAULT);
                 } else {
-                    TRIM_TYPE_ENUM trimType = TRIM_TYPE_ENUM.DEFAULT;
+                    TrimTypeEnum trimType = TrimTypeEnum.DEFAULT;
                     String type = (String) attributes.get(ItemFuncKeyWord.TRIM_TYPE);
                     if (type != null) {
-                        trimType = TRIM_TYPE_ENUM.valueOf(type);
+                        trimType = TrimTypeEnum.valueOf(type);
                     }
                     if (attributes.get(ItemFuncKeyWord.FROM) == null) {
                         item = new ItemFuncTrim(args.get(0), trimType);

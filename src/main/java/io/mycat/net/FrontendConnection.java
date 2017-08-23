@@ -525,7 +525,7 @@ public abstract class FrontendConnection extends AbstractConnection {
                 append(",schema=").append(schema).append(']').toString();
     }
 
-    private static final byte[] encodeString(String src, String charset) {
+    private static byte[] encodeString(String src, String charset) {
         if (src == null) {
             return null;
         }

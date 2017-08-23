@@ -166,7 +166,7 @@ public abstract class Field {
 
     public abstract BigDecimal valDecimal();
 
-    public abstract int compareTo(final Field other);
+    public abstract int compareTo(Field other);
 
     public abstract int compare(byte[] v1, byte[] v2);
 

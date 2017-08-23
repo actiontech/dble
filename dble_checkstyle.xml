@@ -75,7 +75,7 @@
 
         <!-- Modifier Checks. -->
         <module name="ModifierOrder"/>
-        <!--<module name="RedundantModifier"/>-->
+        <module name="RedundantModifier"/>
 
         <!-- Checks for blocks. -->
         <!--<module name="EmptyBlock">-->

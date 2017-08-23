@@ -14,7 +14,7 @@ import java.sql.SQLSyntaxErrorException;
  * @author wang.dw
  */
 public interface RouteStrategy {
-    public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
+    SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
 
     RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, String charset, ServerConnection sc, LayerCachePool cachePool)
             throws SQLException;

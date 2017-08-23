@@ -4,11 +4,11 @@ import java.util.Collection;
 
 public interface MinHeap<E> extends Collection<E> {
 
-    public E poll();
+    E poll();
 
-    public E peak();
+    E peak();
 
-    public void replaceTop(E e);
+    void replaceTop(E e);
 
-    public E find(E e);
+    E find(E e);
 }

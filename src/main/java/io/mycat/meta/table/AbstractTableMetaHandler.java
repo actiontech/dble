@@ -67,7 +67,7 @@ public abstract class AbstractTableMetaHandler {
         private String dataNode;
         private long version;
 
-        public MySQLTableStructureListener(String dataNode, long version) {
+        MySQLTableStructureListener(String dataNode, long version) {
             this.dataNode = dataNode;
             this.version = version;
         }

@@ -313,7 +313,7 @@ public class MySQLMessage {
 
     private static final ThreadLocal<Calendar> LOCAL_CALENDAR = new ThreadLocal<Calendar>();
 
-    private static final Calendar getLocalCalendar() {
+    private static Calendar getLocalCalendar() {
         Calendar cal = LOCAL_CALENDAR.get();
         if (cal == null) {
             cal = Calendar.getInstance();

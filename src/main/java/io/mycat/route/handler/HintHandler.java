@@ -13,8 +13,8 @@ import java.util.Map;
  */
 public interface HintHandler {
 
-    public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String realSQL, String charset, ServerConnection sc,
-                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+    RouteResultset route(SchemaConfig schema,
+                         int sqlType, String realSQL, String charset, ServerConnection sc,
+                         LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException;
 }

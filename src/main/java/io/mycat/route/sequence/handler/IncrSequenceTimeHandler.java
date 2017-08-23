@@ -77,7 +77,7 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
         private final long workerId;
         private final long datacenterId;
 
-        public IdWorker(long workerId, long datacenterId) {
+        IdWorker(long workerId, long datacenterId) {
             if (workerId > MAX_WORKER_ID || workerId < 0) {
                 throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", MAX_WORKER_ID));
             }

@@ -41,7 +41,7 @@ public interface ResponseHandler {
      * @param e
      * @param conn
      */
-    public void connectionError(Throwable e, BackendConnection conn);
+    void connectionError(Throwable e, BackendConnection conn);
 
     /**
      * 已获得有效连接的响应处理

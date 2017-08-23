@@ -27,7 +27,7 @@ public class ItemSumMin extends ItemSumHybrid {
         public byte[] ptr;
         public boolean isNull = false;
 
-        public AggData(byte[] ptr, boolean isNull) {
+        AggData(byte[] ptr, boolean isNull) {
             this.ptr = ptr;
             this.isNull = isNull;
         }

@@ -21,7 +21,7 @@ public interface ParseXmlServiceInf<T> {
      * @return
      * @创建日期 2016年9月16日
      */
-    public void parseToXmlWrite(T data, String outputPath, String dataName);
+    void parseToXmlWrite(T data, String outputPath, String dataName);
 
     /**
      * 将指定的xml转换为javabean对象
@@ -31,6 +31,6 @@ public interface ParseXmlServiceInf<T> {
      * @return
      * @创建日期 2016年9月16日
      */
-    public T parseXmlToBean(String path);
+    T parseXmlToBean(String path);
 
 }

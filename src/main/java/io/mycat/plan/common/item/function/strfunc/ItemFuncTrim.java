@@ -34,12 +34,12 @@ public class ItemFuncTrim extends ItemStrFunc {
         mTrimTrailing = trimTrailing();
     }
 
-    private final boolean trimLeading() {
+    private boolean trimLeading() {
         return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.LEADING ||
                 mTrimMode == TrimTypeEnum.LTRIM;
     }
 
-    private final boolean trimTrailing() {
+    private boolean trimTrailing() {
         return mTrimMode == TrimTypeEnum.DEFAULT || mTrimMode == TrimTypeEnum.BOTH || mTrimMode == TrimTypeEnum.TRAILING ||
                 mTrimMode == TrimTypeEnum.RTRIM;
     }

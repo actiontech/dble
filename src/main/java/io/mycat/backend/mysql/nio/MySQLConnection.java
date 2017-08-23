@@ -318,9 +318,9 @@ public class MySQLConnection extends BackendAIOConnection {
         private final Boolean autocommit;
         private final AtomicInteger synCmdCount;
 
-        public StatusSync(String schema,
-                          Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
-                          int synCount) {
+        StatusSync(String schema,
+                   Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
+                   int synCount) {
             super();
             this.schema = schema;
             this.charsetIndex = charsetIndex;

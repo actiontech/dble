@@ -502,7 +502,7 @@ public class ERJoinChooser {
         public PlanNode tn; // 该joinkey属于哪个treenode
         public ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
 
-        public JoinKeyInfo(Item key) {
+        JoinKeyInfo(Item key) {
             this.key = key;
             tn = null;
             cm = null;

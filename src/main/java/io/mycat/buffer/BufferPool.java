@@ -13,17 +13,17 @@ import java.util.concurrent.ConcurrentMap;
 public interface BufferPool {
     ByteBuffer allocate();
 
-    public ByteBuffer allocate(int size);
+    ByteBuffer allocate(int size);
 
-    public void recycle(ByteBuffer theBuf);
+    void recycle(ByteBuffer theBuf);
 
-    public long capacity();
+    long capacity();
 
-    public long size();
+    long size();
 
-    public int getSharedOptsCount();
+    int getSharedOptsCount();
 
-    public int getChunkSize();
+    int getChunkSize();
 
-    public ConcurrentMap<Long, Long> getNetDirectMemoryUsage();
+    ConcurrentMap<Long, Long> getNetDirectMemoryUsage();
 }

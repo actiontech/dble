@@ -30,6 +30,6 @@ package io.mycat.route.sequence.handler;
  */
 public interface SequenceHandler {
 
-    public long nextId(String prefixName);
+    long nextId(String prefixName);
 
 }

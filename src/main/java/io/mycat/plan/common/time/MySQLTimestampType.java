@@ -6,7 +6,7 @@ public enum MySQLTimestampType {
             1), MYSQL_TIMESTAMP_TIME(2);
     private int i;
 
-    private MySQLTimestampType(int i) {
+    MySQLTimestampType(int i) {
         this.i = i;
     }
 

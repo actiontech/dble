@@ -393,7 +393,7 @@ public class MycatConfig {
         public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
         public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
 
-        public DsDiff() {
+        DsDiff() {
             deled = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
             added = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
         }

@@ -61,7 +61,7 @@ public class ItemSumVariance extends ItemSumNum {
         public double sumA;
         public long count;
 
-        public AggData(double sumAi2, double sumA, long count) {
+        AggData(double sumAi2, double sumA, long count) {
             this.sumAi2 = sumAi2;
             this.sumA = sumA;
             this.count = count;

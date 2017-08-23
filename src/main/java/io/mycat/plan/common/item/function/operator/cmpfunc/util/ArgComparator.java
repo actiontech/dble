@@ -253,7 +253,7 @@ public class ArgComparator {
      *
      * @author ActionTech
      */
-    private static interface ArgCmpFunc {
+    private interface ArgCmpFunc {
         int compare(ArgComparator ac);
     }
 

@@ -89,7 +89,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
         RowDataPacket row;
         ResultDiskTape tape;
 
-        public TapeItem(RowDataPacket row, ResultDiskTape tape) {
+        TapeItem(RowDataPacket row, ResultDiskTape tape) {
             this.row = row;
             this.tape = tape;
         }
@@ -111,7 +111,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
         int readBufferOffset;
         ByteBuffer readBuffer;
 
-        public ResultDiskTape(BufferPool pool, FileStore file, int fieldCount) {
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount) {
             this.pool = pool;
             this.file = file;
             this.fieldCount = fieldCount;

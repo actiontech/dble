@@ -117,7 +117,7 @@ public class FieldDictionary {
         private Integer depth;
         private int order;
 
-        public FieldKey(String fieldName, Class<?> declaringClass, int order) {
+        FieldKey(String fieldName, Class<?> declaringClass, int order) {
             this.fieldName = fieldName;
             this.declaringClass = declaringClass;
             this.order = order;

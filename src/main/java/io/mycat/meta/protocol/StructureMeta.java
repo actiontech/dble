@@ -112,7 +112,7 @@ public final class StructureMeta {
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
+        public com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -177,7 +177,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
         }
@@ -348,7 +348,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public final boolean isInitialized() {
+        public boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -506,7 +506,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.IndexMeta)
                 io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
             }
@@ -627,7 +627,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public final boolean isInitialized() {
+            public boolean isInitialized() {
                 if (!hasName()) {
 
                     return false;
@@ -1144,7 +1144,7 @@ public final class StructureMeta {
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
+        public com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -1239,7 +1239,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
         }
@@ -1588,7 +1588,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public final boolean isInitialized() {
+        public boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -1783,7 +1783,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.ColumnMeta)
                 io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
             }
@@ -1963,7 +1963,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public final boolean isInitialized() {
+            public boolean isInitialized() {
                 if (!hasName()) {
 
                     return false;
@@ -2846,7 +2846,7 @@ public final class StructureMeta {
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
+        public com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -2970,7 +2970,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
         }
@@ -3365,7 +3365,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public final boolean isInitialized() {
+        public boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -3582,7 +3582,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.TableMeta)
                 io.mycat.meta.protocol.StructureMeta.TableMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
             }
@@ -3875,7 +3875,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public final boolean isInitialized() {
+            public boolean isInitialized() {
                 for (int i = 0; i < getColumnsCount(); i++) {
                     if (!getColumns(i).isInitialized()) {
 

@@ -58,7 +58,7 @@ public enum TxState {
     TX_PREPARING_STATE(12);
     private int value = 0;
 
-    private TxState(int value) {
+    TxState(int value) {
         this.value = value;
     }
 

@@ -77,7 +77,7 @@ class TimSort<K, B> {
 
     private final SortDataFormat<K, B> s;
 
-    public TimSort(SortDataFormat<K, B> sortDataFormat) {
+    TimSort(SortDataFormat<K, B> sortDataFormat) {
         this.s = sortDataFormat;
     }
 

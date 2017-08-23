@@ -395,7 +395,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
     }
 
-    private final void writeNotSend(ByteBuffer buffer) {
+    private void writeNotSend(ByteBuffer buffer) {
         if (isSupportCompress()) {
             ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
             writeQueue.offer(newBuffer);

@@ -33,7 +33,7 @@ public interface ClosableConnection {
 
     boolean isClosed();
 
-    public void idleCheck();
+    void idleCheck();
 
     long getStartupTime();
 

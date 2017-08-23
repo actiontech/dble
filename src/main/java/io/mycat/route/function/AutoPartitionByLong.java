@@ -189,7 +189,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         public final long valueStart;
         public final long valueEnd;
 
-        public LongRange(int nodeIndx, long valueStart, long valueEnd) {
+        LongRange(int nodeIndx, long valueStart, long valueEnd) {
             super();
             this.nodeIndx = nodeIndx;
             this.valueStart = valueStart;

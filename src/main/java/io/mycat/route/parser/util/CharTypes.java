@@ -50,7 +50,7 @@ public class CharTypes {
         return c >= '0' && c <= '9';
     }
 
-    private static final  boolean[] IDENTIFIER_FLAGS = new boolean[256];
+    private static final boolean[] IDENTIFIER_FLAGS = new boolean[256];
 
     static {
         for (char c = 0; c < IDENTIFIER_FLAGS.length; ++c) {
@@ -71,7 +71,7 @@ public class CharTypes {
         return c > IDENTIFIER_FLAGS.length || IDENTIFIER_FLAGS[c];
     }
 
-    private static final  boolean[] WHITESPACE_FLAGS = new boolean[256];
+    private static final boolean[] WHITESPACE_FLAGS = new boolean[256];
 
     static {
         WHITESPACE_FLAGS[' '] = true;

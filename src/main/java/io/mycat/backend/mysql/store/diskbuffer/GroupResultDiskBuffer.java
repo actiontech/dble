@@ -112,7 +112,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
         private final int orgFieldCount;
         private final int sumSize;
 
-        public GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize) {
+        GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize) {
             super(pool, file, sumSize + fieldCount);
             this.orgFieldCount = fieldCount;
             this.sumSize = sumSize;

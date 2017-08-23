@@ -53,11 +53,11 @@ public final class NIOReactor {
         this.reactorR = new RW();
     }
 
-    final void startup() {
+    void startup() {
         new Thread(reactorR, name + "-RW").start();
     }
 
-    final void postRegister(AbstractConnection c) {
+    void postRegister(AbstractConnection c) {
         reactorR.registerQueue.offer(c);
         reactorR.selector.wakeup();
     }

@@ -551,7 +551,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         private RBTNode<E> right;
         private RBTNode<E> parent;
 
-        public RBTNode(int index, boolean color, E value) {
+        RBTNode(int index, boolean color, E value) {
             this.index = index;
             this.color = color;
             this.value = value;

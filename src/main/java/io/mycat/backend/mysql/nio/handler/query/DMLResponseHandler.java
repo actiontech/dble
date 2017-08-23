@@ -5,7 +5,7 @@ import io.mycat.backend.mysql.nio.handler.ResponseHandler;
 import java.util.Set;
 
 public interface DMLResponseHandler extends ResponseHandler {
-    public enum HandlerType {
+    enum HandlerType {
         DIRECT, TEMPTABLE, BASESEL, REFRESHFP, MERGE, JOIN, WHERE, GROUPBY, HAVING, ORDERBY, LIMIT, UNION, DISTINCT, SENDMAKER, FINAL
     }
 

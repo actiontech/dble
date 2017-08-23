@@ -521,7 +521,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
         private RBTNode<E> right;
         private RBTNode<E> parent;
 
-        public RBTNode(boolean color, E value) {
+        RBTNode(boolean color, E value) {
             this.color = color;
             this.value = value;
         }

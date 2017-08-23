@@ -43,7 +43,7 @@ public class ItemSumAvg extends ItemSumSum {
         private static final long serialVersionUID = -1831762635995954526L;
         public long count;
 
-        public AvgAggData(BigDecimal sum, long count, boolean isNull) {
+        AvgAggData(BigDecimal sum, long count, boolean isNull) {
             super(sum, isNull);
             this.count = count;
         }

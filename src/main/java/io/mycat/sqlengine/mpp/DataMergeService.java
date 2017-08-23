@@ -54,7 +54,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
     private RowDataSorter sorter;
     private RowDataPacketGrouper grouper;
     private Map<String, LinkedList<RowDataPacket>> result = new HashMap<String, LinkedList<RowDataPacket>>();
-    private static Logger LOGGER = Logger.getLogger(DataMergeService.class);
+    private static final Logger LOGGER = Logger.getLogger(DataMergeService.class);
     private ConcurrentMap<String, Boolean> canDiscard = new ConcurrentHashMap<String, Boolean>();
 
     public DataMergeService(MultiNodeQueryHandler handler, RouteResultset rrs) {

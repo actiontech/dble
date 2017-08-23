@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * Created by huqing.yan on 2017/7/19.
  */
 public class ShowColumns {
-    private static String COLUMNS_PAT = "^\\s*(show)" +
+    private static final String COLUMNS_PAT = "^\\s*(show)" +
             "(\\s+full)?" +
             "(\\s+(columns|fields))" +
             "(\\s+(from|in)\\s+([a-zA-Z_0-9.]+))" +

@@ -16,7 +16,7 @@ import io.mycat.server.NonBlockingSession;
 import io.mycat.util.StringUtil;
 
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
-    private static int COMMIT_TIMES = 5;
+    private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     protected byte[] sendData = OkPacket.OK;

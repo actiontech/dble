@@ -43,7 +43,7 @@ public class JavaUtils {
      */
     public static final long DEFAULT_DRIVER_MEM_MB = 1024;
 
-    private static int MAX_DIR_CREATION_ATTEMPTS = 10;
+    private static final int MAX_DIR_CREATION_ATTEMPTS = 10;
 
     /**
      * Closes the given object, ignoring IOExceptions.

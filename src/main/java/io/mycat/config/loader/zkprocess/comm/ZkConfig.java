@@ -40,7 +40,7 @@ public class ZkConfig {
      *
      * @字段说明 ZKCFGINSTANCE
      */
-    private static ZkConfig ZKCFGINSTANCE = new ZkConfig();
+    private static ZkConfig zkCfgInstance = new ZkConfig();
 
 
     /**
@@ -48,20 +48,20 @@ public class ZkConfig {
      *
      * @字段说明 ZKPROPERTIES
      */
-    private static Properties ZKPROPERTIES = null;
+    private static Properties zkProperties = null;
 
     static {
-        ZKPROPERTIES = loadMyidPropersites();
+        zkProperties = loadMyidPropersites();
     }
 
 
     public String getZkURL() {
-        return ZKPROPERTIES == null ? null : ZKPROPERTIES.getProperty(ZkParamCfg.ZK_CFG_URL.getKey());
+        return zkProperties == null ? null : zkProperties.getProperty(ZkParamCfg.ZK_CFG_URL.getKey());
     }
 
     public void initZk() {
         try {
-            if (ZKPROPERTIES != null && Boolean.parseBoolean(ZKPROPERTIES.getProperty(ZkParamCfg.ZK_CFG_FLAG.getKey()))) {
+            if (zkProperties != null && Boolean.parseBoolean(zkProperties.getProperty(ZkParamCfg.ZK_CFG_FLAG.getKey()))) {
                 ZktoXmlMain.loadZktoFile();
             }
         } catch (Exception e) {
@@ -78,7 +78,7 @@ public class ZkConfig {
      */
     public static ZkConfig getInstance() {
 
-        return ZKCFGINSTANCE;
+        return zkCfgInstance;
     }
 
     /**
@@ -90,8 +90,8 @@ public class ZkConfig {
      * @创建日期 2016年9月15日
      */
     public String getValue(ZkParamCfg param) {
-        if (ZKPROPERTIES != null && null != param) {
-            return ZKPROPERTIES.getProperty(param.getKey());
+        if (zkProperties != null && null != param) {
+            return zkProperties.getProperty(param.getKey());
         }
 
         return null;

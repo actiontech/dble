@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class ItemCreate {
     private Map<String, ItemFunc> nativFuncs = new HashMap<>();
-    private static ItemCreate _instance = null;
+    private static ItemCreate instance = null;
 
     protected ItemCreate() {
         nativFuncs.put("ABS", new ItemFuncAbs(null));
@@ -251,9 +251,9 @@ public class ItemCreate {
     }
 
     public static synchronized ItemCreate getInstance() {
-        if (_instance == null)
-            _instance = new ItemCreate();
-        return _instance;
+        if (instance == null)
+            instance = new ItemCreate();
+        return instance;
     }
 
     public boolean isNativeFunc(String funcName) {

@@ -9,7 +9,7 @@ import java.util.List;
 
 
 public class ItemFuncLog2 extends ItemDecFunc {
-    private static double M_LN2 = Math.log(2);
+    private static final double M_LN2 = Math.log(2);
 
     public ItemFuncLog2(List<Item> args) {
         super(args);

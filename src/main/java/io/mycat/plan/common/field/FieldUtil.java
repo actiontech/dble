@@ -181,8 +181,8 @@ public class FieldUtil {
      * following #defines describe that gap and how to canculate number of
      * fields and index of field in thia array.
      */
-    private static int FIELDTYPE_TEAR_FROM = (FieldTypes.MYSQL_TYPE_BIT.numberValue() + 1);
-    private static int FIELDTYPE_TEAR_TO = (FieldTypes.MYSQL_TYPE_NEWDECIMAL.numberValue() - 1);
+    private static final int FIELDTYPE_TEAR_FROM = (FieldTypes.MYSQL_TYPE_BIT.numberValue() + 1);
+    private static final int FIELDTYPE_TEAR_TO = (FieldTypes.MYSQL_TYPE_NEWDECIMAL.numberValue() - 1);
 
     // private static int FIELDTYPE_NUM = (FIELDTYPE_TEAR_FROM + (255 -
     // FIELDTYPE_TEAR_TO));
@@ -195,10 +195,10 @@ public class FieldUtil {
     }
 
     public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {
-        return field_types_merge_rules[fieldType2Index(a)][fieldType2Index(b)];
+        return FIELD_TYPES_MERGE_RULES[fieldType2Index(a)][fieldType2Index(b)];
     }
 
-    private static FieldTypes[][] field_types_merge_rules = new FieldTypes[][]{
+    private static final FieldTypes[][] FIELD_TYPES_MERGE_RULES = new FieldTypes[][]{
             /* enum_field_types.MYSQL_TYPE_DECIMAL -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL

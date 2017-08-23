@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
  * This map supports a maximum of 2 billion keys.
  */
 public final class UnsafeFixedWidthAggregationMap {
-    private static Logger LOGGER = Logger.getLogger(UnsafeFixedWidthAggregationMap.class);
+    private static final Logger LOGGER = Logger.getLogger(UnsafeFixedWidthAggregationMap.class);
 
     /**
      * An empty aggregation buffer, encoded in UnsafeRow format. When inserting a new key into the

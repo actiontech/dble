@@ -42,7 +42,7 @@ import io.mycat.server.NonBlockingSession;
  * @author mycat
  */
 public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
-    private static int ROLLBACK_TIMES = 5;
+    private static final int ROLLBACK_TIMES = 5;
     private int tryRollbackTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     protected byte[] sendData = OkPacket.OK;

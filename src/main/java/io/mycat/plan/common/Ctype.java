@@ -10,7 +10,7 @@ public class Ctype {
     public static final int MY_B = 64; /* Blank */
     public static final int MY_X = 128; /* heXadecimal digit */
 
-    private static byte ctype_latin1[] = {0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 32, 32, 32, 32,
+    private static byte ctypeLatin1[] = {0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 40, 40, 40, 40, 40, 32, 32, 32, 32,
             32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 72, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
             16, 16, 16, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132, (byte) 132,
             (byte) 132, (byte) 132, 16, 16, 16, 16, 16, 16, 16, (byte) 129, (byte) 129, (byte) 129, (byte) 129,
@@ -26,22 +26,22 @@ public class Ctype {
     public static boolean isDigit( // String charset,
                                    char c) {
         int index = (int) c + 1;
-        return (ctype_latin1[index] & MY_NMR) != 0;
+        return (ctypeLatin1[index] & MY_NMR) != 0;
     }
 
     public static boolean myIsAlpha(char c) {
         int index = (int) c + 1;
-        return (ctype_latin1[index] & (MY_U | MY_L)) != 0;
+        return (ctypeLatin1[index] & (MY_U | MY_L)) != 0;
     }
 
     public static boolean spaceChar(char c) {
         int index = (int) c + 1;
-        return (ctype_latin1[index] & MY_SPC) != 0;
+        return (ctypeLatin1[index] & MY_SPC) != 0;
     }
 
     public static boolean isPunct(char c) {
         int index = (int) c + 1;
-        return (ctype_latin1[index] & MY_PNT) != 0;
+        return (ctypeLatin1[index] & MY_PNT) != 0;
     }
 
 

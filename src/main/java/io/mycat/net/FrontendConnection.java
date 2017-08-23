@@ -425,7 +425,7 @@ public abstract class FrontendConnection extends AbstractConnection {
                 HandshakeV10Packet hs = new HandshakeV10Packet();
                 hs.packetId = 0;
                 hs.protocolVersion = Versions.PROTOCOL_VERSION;
-                hs.serverVersion = Versions.SERVER_VERSION;
+                hs.serverVersion = Versions.serverVersion;
                 hs.threadId = id;
                 hs.seed = rand1;
                 hs.serverCapabilities = getServerCapabilities();
@@ -437,7 +437,7 @@ public abstract class FrontendConnection extends AbstractConnection {
                 HandshakePacket hs = new HandshakePacket();
                 hs.packetId = 0;
                 hs.protocolVersion = Versions.PROTOCOL_VERSION;
-                hs.serverVersion = Versions.SERVER_VERSION;
+                hs.serverVersion = Versions.serverVersion;
                 hs.threadId = id;
                 hs.seed = rand1;
                 hs.serverCapabilities = getServerCapabilities();

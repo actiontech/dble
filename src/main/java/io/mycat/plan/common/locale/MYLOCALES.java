@@ -15,7 +15,7 @@ public class MYLOCALES {
 
     ;
 
-    static MYLOCALEERRMSGS global_errmsgs[] = {new MYLOCALEERRMSGS("english", null),
+    static final MYLOCALEERRMSGS GLOBAL_ERRMSGS[] = {new MYLOCALEERRMSGS("english", null),
             new MYLOCALEERRMSGS("czech", null), new MYLOCALEERRMSGS("danish", null),
             new MYLOCALEERRMSGS("dutch", null), new MYLOCALEERRMSGS("estonian", null),
             new MYLOCALEERRMSGS("french", null), new MYLOCALEERRMSGS("german", null),
@@ -32,30 +32,30 @@ public class MYLOCALES {
     public static final String NULL_S = MySQLcom.NULLS;
 
     /***** LOCALE BEGIN en_US: English - United States *****/
-    static String my_locale_month_names_en_US[] = {"January", "February", "March", "April", "May", "June", "July",
+    static final String MY_LOCALE_MONTH_NAMES_EN_US[] = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December", NULL_S};
-    static String my_locale_ab_month_names_en_US[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+    static final String MY_LOCALE_AB_MONTH_NAMES_EN_US[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
             "Oct", "Nov", "Dec", NULL_S};
-    static String my_locale_day_names_en_US[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+    static final String MY_LOCALE_DAY_NAMES_EN_US[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
             "Sunday", NULL_S};
-    static String my_locale_ab_day_names_en_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
-    static TYPELIB my_locale_typelib_month_names_en_US = new TYPELIB(my_locale_month_names_en_US.length - 1, "",
-            my_locale_month_names_en_US, null);
-    static TYPELIB my_locale_typelib_ab_month_names_en_US = new TYPELIB(my_locale_ab_month_names_en_US.length - 1, "",
-            my_locale_ab_month_names_en_US, null);
-    static TYPELIB my_locale_typelib_day_names_en_US = new TYPELIB((my_locale_day_names_en_US.length) - 1, "",
-            my_locale_day_names_en_US, null);
-    static TYPELIB my_locale_typelib_ab_day_names_en_US = new TYPELIB((my_locale_ab_day_names_en_US.length) - 1, "",
-            my_locale_ab_day_names_en_US, null);
+    static final String MY_LOCALE_AB_DAY_NAMES_EN_US[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", NULL_S};
+    static final TYPELIB MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US = new TYPELIB(MY_LOCALE_MONTH_NAMES_EN_US.length - 1, "",
+            MY_LOCALE_MONTH_NAMES_EN_US, null);
+    static final TYPELIB MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US = new TYPELIB(MY_LOCALE_AB_MONTH_NAMES_EN_US.length - 1, "",
+            MY_LOCALE_AB_MONTH_NAMES_EN_US, null);
+    static final TYPELIB MY_LOCALE_TYPELIB_DAY_NAMES_EN_US = new TYPELIB((MY_LOCALE_DAY_NAMES_EN_US.length) - 1, "",
+            MY_LOCALE_DAY_NAMES_EN_US, null);
+    static final TYPELIB MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US = new TYPELIB((MY_LOCALE_AB_DAY_NAMES_EN_US.length) - 1, "",
+            MY_LOCALE_AB_DAY_NAMES_EN_US, null);
     public static final MYLOCALE MY_LOCALE_EN_US = new MYLOCALE(0, "en_US", "English - United States", true,
-            my_locale_typelib_month_names_en_US, my_locale_typelib_ab_month_names_en_US,
-            my_locale_typelib_day_names_en_US, my_locale_typelib_ab_day_names_en_US, 9, 9,
+            MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US,
+            MY_LOCALE_TYPELIB_DAY_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US, 9, 9,
             '.', /*
                      * decimal point en_US
                      */
             ',', /* thousands_sep en_US */
             new String(new byte[]{3, 3}), /* grouping en_US */
-            global_errmsgs[err_msgs_index.en_US.ordinal()]);
+            GLOBAL_ERRMSGS[err_msgs_index.en_US.ordinal()]);
     /***** LOCALE END en_US *****/
 
 }

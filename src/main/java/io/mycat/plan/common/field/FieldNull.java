@@ -7,10 +7,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class FieldNull extends FieldStr {
-    private static FieldNull _instance = new FieldNull("NULL", "", 63, 0, 0, 0);
+    private static FieldNull instance = new FieldNull("NULL", "", 63, 0, 0, 0);
 
     public static FieldNull getInstance() {
-        return _instance;
+        return instance;
     }
 
     FieldNull(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {

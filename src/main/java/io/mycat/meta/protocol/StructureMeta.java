@@ -184,12 +184,12 @@ public final class StructureMeta {
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable
                     .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.IndexMeta.class, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder.class);
         }
 
-        public static com.google.protobuf.Parser<IndexMeta> PARSER =
+        public static final com.google.protobuf.Parser<IndexMeta> PARSER =
                 new com.google.protobuf.AbstractParser<IndexMeta>() {
                     public IndexMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -516,7 +516,7 @@ public final class StructureMeta {
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable
                         .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.IndexMeta.class, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder.class);
             }
@@ -1249,12 +1249,12 @@ public final class StructureMeta {
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable
+            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable
                     .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.ColumnMeta.class, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder.class);
         }
 
-        public static com.google.protobuf.Parser<ColumnMeta> PARSER =
+        public static final com.google.protobuf.Parser<ColumnMeta> PARSER =
                 new com.google.protobuf.AbstractParser<ColumnMeta>() {
                     public ColumnMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -1803,7 +1803,7 @@ public final class StructureMeta {
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable
+                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable
                         .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.ColumnMeta.class, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder.class);
             }
@@ -2990,12 +2990,12 @@ public final class StructureMeta {
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable
+            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable
                     .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.TableMeta.class, io.mycat.meta.protocol.StructureMeta.TableMeta.Builder.class);
         }
 
-        public static com.google.protobuf.Parser<TableMeta> PARSER =
+        public static final com.google.protobuf.Parser<TableMeta> PARSER =
                 new com.google.protobuf.AbstractParser<TableMeta>() {
                     public TableMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -3613,7 +3613,7 @@ public final class StructureMeta {
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable
+                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable
                         .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.TableMeta.class, io.mycat.meta.protocol.StructureMeta.TableMeta.Builder.class);
             }
@@ -5307,17 +5307,17 @@ public final class StructureMeta {
             INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable;
+            internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable;
     private static final com.google.protobuf.Descriptors.Descriptor
             INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable;
+            internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable;
     private static final com.google.protobuf.Descriptors.Descriptor
             INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable;
+            internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable;
 
     public static com.google.protobuf.Descriptors.FileDescriptor
     getDescriptor() {
@@ -5362,19 +5362,19 @@ public final class StructureMeta {
                         }, assigner);
         INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR =
                 getDescriptor().getMessageTypes().get(0);
-        internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable = new
+        internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR,
                 new java.lang.String[]{"Name", "Type", "Columns",});
         INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR =
                 getDescriptor().getMessageTypes().get(1);
-        internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable = new
+        internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR,
                 new java.lang.String[]{"Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname",});
         INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR =
                 getDescriptor().getMessageTypes().get(2);
-        internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable = new
+        internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
                 INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR,
                 new java.lang.String[]{"TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index",});

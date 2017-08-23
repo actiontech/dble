@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  * Created by huqing.yan on 2017/7/20.
  */
 public class ShowCreateStmtInfo {
-    private static String TABLE_PAT = "^\\s*(show)" +
+    private static final String TABLE_PAT = "^\\s*(show)" +
             "(\\s+full)?" +
             "(\\s+tables)" +
             "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +

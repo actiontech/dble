@@ -73,13 +73,13 @@ public class MyTime {
 
     public final static long LONG_MAX = MySQLcom.getUnsignedLong(Integer.MAX_VALUE).longValue();
 
-    static char time_separator = ':';
+    static final char TIME_SEPARATOR = ':';
 
     /* Position for YYYY-DD-MM HH-MM-DD.FFFFFF AM in default format */
 
-    private static int internal_format_positions[] = {0, 1, 2, 3, 4, 5, 6, 255};
+    private final static int INTERNAL_FORMAT_POSITIONS[] = {0, 1, 2, 3, 4, 5, 6, 255};
 
-    public static int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
+    public final static int DAYS_IN_MONTH[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
 
     public static final String[] MONTH_NAMES = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December"};
@@ -136,7 +136,7 @@ public class MyTime {
                 wasCut.set(MYSQL_TIME_WARN_ZERO_IN_DATE);
                 return true;
             } else if (((flags & TIME_INVALID_DATES) == 0 && ltime.month != 0
-                    && ltime.day > days_in_month[(int) ltime.month - 1]
+                    && ltime.day > DAYS_IN_MONTH[(int) ltime.month - 1]
                     && (ltime.month != 2 || calcDaysInYear(ltime.year) != 366 || ltime.day != 29))) {
                 wasCut.set(MYSQL_TIME_WARN_OUT_OF_RANGE);
                 return true;
@@ -220,7 +220,7 @@ public class MyTime {
          * This has to be changed if want to activate different timestamp
      * formats
      */
-        formatPosition = internal_format_positions;
+        formatPosition = INTERNAL_FORMAT_POSITIONS;
 
     /*
      * Calculate number of digits in first part. If length= 8 or >= 14 then
@@ -237,7 +237,7 @@ public class MyTime {
             yearLength = (digits == 4 || digits == 8 || digits >= 14) ? 4 : 2;
             fieldLength = yearLength;
             isInternalFormat = true;
-            formatPosition = internal_format_positions;
+            formatPosition = INTERNAL_FORMAT_POSITIONS;
         } else {
             if (formatPosition[0] >= 3) /* If year is after HHMMDD */ {
     /*
@@ -396,7 +396,7 @@ public class MyTime {
             fracLen = dateLen[fracPos];
             status.fractionalDigits = fracLen;
             if (fracLen < 6)
-                date[(int) fracPos] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - fracLen];
+                date[(int) fracPos] *= MySQLcom.LOG_10_INT[DATETIME_MAX_DECIMALS - fracLen];
             lTime.secondPart = date[fracPos];
 
             if (formatPosition[7] != 255) {
@@ -415,7 +415,7 @@ public class MyTime {
             lTime.minute = date[4];
             lTime.second = date[5];
             if (dateLen[6] < 6)
-                date[6] *= MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - dateLen[6]];
+                date[6] *= MySQLcom.LOG_10_INT[DATETIME_MAX_DECIMALS - dateLen[6]];
             lTime.secondPart = date[6];
             status.fractionalDigits = dateLen[6];
         }
@@ -541,7 +541,7 @@ public class MyTime {
                 && Ctype.isDigit(chars[pos])) { /* Found days part */
             date[0] = value;
             state = 1; /* Assume next is hours */
-        } else if ((end - pos) > 1 && chars[pos] == time_separator && Ctype.isDigit(chars[pos + 1])) {
+        } else if ((end - pos) > 1 && chars[pos] == TIME_SEPARATOR && Ctype.isDigit(chars[pos + 1])) {
             date[0] = 0; /* Assume we found hours */
             date[1] = value;
             state = 2;
@@ -561,7 +561,7 @@ public class MyTime {
                 for (value = 0; pos != end && Ctype.isDigit(chars[pos]); pos++)
                     value = value * 10L + (long) (chars[pos] - '0');
                 date[state++] = value;
-                if (state == 4 || (end - pos) < 2 || chars[pos] != time_separator || !Ctype.isDigit(chars[pos + 1]))
+                if (state == 4 || (end - pos) < 2 || chars[pos] != TIME_SEPARATOR || !Ctype.isDigit(chars[pos + 1]))
                     break;
                 pos++; /* Skip time_separator (':') */
             }
@@ -591,7 +591,7 @@ public class MyTime {
             if (fieldLength >= 0) {
                 status.fractionalDigits = DATETIME_MAX_DECIMALS - fieldLength;
                 if (fieldLength > 0)
-                    value *= (long) MySQLcom.log_10_int[fieldLength];
+                    value *= (long) MySQLcom.LOG_10_INT[fieldLength];
             } else {
     /* Scan digits left after microseconds */
                 status.fractionalDigits = 6;
@@ -613,7 +613,7 @@ public class MyTime {
                 && (end - pos) > 2 && Ctype.isDigit(chars[pos + 2]))))
             return true;
 
-        if (internal_format_positions[7] != 255) {
+        if (INTERNAL_FORMAT_POSITIONS[7] != 255) {
     /* Read a possible AM/PM */
             while (pos != end && Ctype.spaceChar(chars[pos]))
                 pos++;
@@ -1117,7 +1117,7 @@ public class MyTime {
     /*-------------------------Sql_time.h(其它类型向MySqlTime转换)start----------------------------*/
 
     /* Rounding functions */
-    private static long[] msec_round_add = new long[]{500000000, 50000000, 5000000, 500000, 50000, 5000, 0};
+    private static final long[] MSEC_ROUND_ADD = new long[]{500000000, 50000000, 5000000, 500000, 50000, 5000, 0};
 
     /**
      * Convert decimal value to datetime value with a warning.
@@ -1162,7 +1162,7 @@ public class MyTime {
      */
     public static boolean myTimeRound(MySQLTime ltime, int dec) {
     /* Add half away from zero */
-        boolean rc = timeAddNanosecondsWithRound(ltime, msec_round_add[dec]);
+        boolean rc = timeAddNanosecondsWithRound(ltime, MSEC_ROUND_ADD[dec]);
     /* Truncate non-significant digits */
         myTimeTrunc(ltime, dec);
         return rc;
@@ -1178,7 +1178,7 @@ public class MyTime {
     public static boolean myDatetimeRound(MySQLTime ltime, int dec) {
         assert (dec <= DATETIME_MAX_DECIMALS);
     /* Add half away from zero */
-        boolean rc = datetimeAddNanosecondsWithRound(ltime, msec_round_add[dec]);
+        boolean rc = datetimeAddNanosecondsWithRound(ltime, MSEC_ROUND_ADD[dec]);
     /* Truncate non-significant digits */
         myTimeTrunc(ltime, dec);
         return rc;
@@ -1270,8 +1270,8 @@ public class MyTime {
             ltime.year = (period / 12);
             ltime.month = (period % 12L) + 1;
     /* Adjust day if the new month doesn't have enough days */
-            if (ltime.day > days_in_month[(int) ltime.month - 1]) {
-                ltime.day = days_in_month[(int) ltime.month - 1];
+            if (ltime.day > DAYS_IN_MONTH[(int) ltime.month - 1]) {
+                ltime.day = DAYS_IN_MONTH[(int) ltime.month - 1];
                 if (ltime.month == 2 && calcDaysInYear(ltime.year) == 366)
                     ltime.day++; // Leap-year
             }
@@ -1706,7 +1706,7 @@ public class MyTime {
             }
             retMonth.set(1);
             ;
-            for (monthPos = 0; dayOfYear > days_in_month[monthPos]; dayOfYear -= days_in_month[monthPos++], retMonth
+            for (monthPos = 0; dayOfYear > DAYS_IN_MONTH[monthPos]; dayOfYear -= DAYS_IN_MONTH[monthPos++], retMonth
                     .incre())
                 ;
             retYear.set(year);
@@ -1937,7 +1937,7 @@ public class MyTime {
     }
 
     private static long myTimeFractionRemainder(long nr, int decimals) {
-        return nr % (long) MySQLcom.log_10_int[DATETIME_MAX_DECIMALS - decimals];
+        return nr % (long) MySQLcom.LOG_10_INT[DATETIME_MAX_DECIMALS - decimals];
     }
 
     /*
@@ -2390,7 +2390,7 @@ public class MyTime {
                         lTime.secondPart = MySQLcom.myStrtoll10(valcs, val, tmp, error).intValue();
                         fracPart = 6 - (int) (tmp - val);
                         if (fracPart > 0)
-                            lTime.secondPart *= MySQLcom.log_10_int[fracPart];
+                            lTime.secondPart *= MySQLcom.LOG_10_INT[fracPart];
                         val = tmp;
                         break;
 

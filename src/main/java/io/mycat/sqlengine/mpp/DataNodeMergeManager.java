@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
-    private static Logger LOGGER = Logger.getLogger(DataNodeMergeManager.class);
+    private static final Logger LOGGER = Logger.getLogger(DataNodeMergeManager.class);
 
 
     /**

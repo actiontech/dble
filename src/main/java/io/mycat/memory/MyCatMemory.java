@@ -24,7 +24,7 @@ import org.apache.log4j.Logger;
  */
 
 public class MyCatMemory {
-    private static Logger LOGGER = Logger.getLogger(MyCatMemory.class);
+    private static final Logger LOGGER = Logger.getLogger(MyCatMemory.class);
 
     public final static double DIRECT_SAFETY_FRACTION = 0.7;
     private final long resultSetBufferSize;

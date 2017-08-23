@@ -98,7 +98,7 @@ public class ArgComparator {
 
     public int setCompareFunc(ItemFunc ownerarg, ItemResult type) {
         owner = ownerarg;
-        func = comparator_matrix[type.ordinal()][isOwnerEqualFunc() == true ? 1 : 0];
+        func = comparatorMatrix[type.ordinal()][isOwnerEqualFunc() == true ? 1 : 0];
         if (type == ItemResult.ROW_RESULT) {// 未实现
             return 1;
         } else if (type == ItemResult.STRING_RESULT) {
@@ -237,7 +237,7 @@ public class ArgComparator {
             return false;// No date[time] items found
     }
 
-    private static argCmpFunc[][] comparator_matrix = {{new CompareString(), new CompareEString()},
+    private static argCmpFunc[][] comparatorMatrix = {{new CompareString(), new CompareEString()},
             {new CompareReal(), new CompareEReal()}, {new CompareIntSigned(), new CompareEInt()},
             {new CompareRow(), new CompareERow()}, {new CompareDecimal(), new CompareEDecimal()}};
 

@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractDataNodeMerge implements Runnable {
 
-
-    private static Logger LOGGER = Logger.getLogger(AbstractDataNodeMerge.class);
+    private static final Logger LOGGER = Logger.getLogger(AbstractDataNodeMerge.class);
     /**
      * row 有多少col
      */

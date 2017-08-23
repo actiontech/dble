@@ -70,7 +70,7 @@ public class SelectVersionComment {
         // write rows
         byte packetId = EOF.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(Versions.VERSION_COMMENT);
+        row.add(Versions.versionComment);
         row.packetId = ++packetId;
         buffer = row.write(buffer, c, true);
 

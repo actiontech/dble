@@ -29,10 +29,10 @@ package io.mycat.util;
  * @author mycat
  */
 public class TimeUtil {
-    private static volatile long CURRENT_TIME = System.currentTimeMillis();
+    private static volatile long currentTime = System.currentTimeMillis();
 
     public static final long currentTimeMillis() {
-        return CURRENT_TIME;
+        return currentTime;
     }
 
     public static final long currentTimeNanos() {
@@ -40,7 +40,7 @@ public class TimeUtil {
     }
 
     public static final void update() {
-        CURRENT_TIME = System.currentTimeMillis();
+        currentTime = System.currentTimeMillis();
     }
 
 }

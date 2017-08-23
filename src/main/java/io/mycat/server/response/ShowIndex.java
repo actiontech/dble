@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * Created by huqing.yan on 2017/7/19.
  */
 public class ShowIndex {
-    private static String INDEX_PAT = "^\\s*(show)" +
+    private static final String INDEX_PAT = "^\\s*(show)" +
             "(\\s+(index|indexes|keys))" +
             "(\\s+(from|in)\\s+([a-zA-Z_0-9.]+))" +
             "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +

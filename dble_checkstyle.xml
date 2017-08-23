@@ -96,10 +96,9 @@
         <module name="SimplifyBooleanReturn"/>
         <module name="ArrayTrailingComma"/>
         <module name="VariableDeclarationUsageDistance"/>
-        <!--<module name="SuperFinalize"/>-->
-        <!--<module name="SuperClone"/>-->
-        <!--<module name="StringLiteralEquality"/>-->
-        <!--<module name="OuterTypeNumber"/>-->
+        <module name="SuperFinalize"/>
+        <module name="StringLiteralEquality"/>
+        <module name="OuterTypeNumber"/>
         <!--<module name="PackageDeclaration"/>-->
         <!--<module name="DefaultComesLast"/>-->
         <!--<module name="FallThrough"/>-->

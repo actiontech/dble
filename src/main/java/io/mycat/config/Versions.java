@@ -28,10 +28,14 @@ package io.mycat.config;
  */
 public abstract class Versions {
 
-    /**协议版本**/
+    /**
+     * 协议版本
+     **/
     public static final byte PROTOCOL_VERSION = 10;
 
-    /**服务器版本**/
+    /**
+     * 服务器版本
+     **/
     public static byte[] serverVersion = "5.6.29-mycat-2.17.08.0-dev-20170823175354".getBytes();
     public static byte[] versionComment = "MyCat Server (OpenCloundDB)".getBytes();
     public static final String ANNOTATION_NAME = "mycat:";

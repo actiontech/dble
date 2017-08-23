@@ -429,7 +429,3 @@ public final class ShowServerLog {
     }
 }
 
-class PackageBufINf {
-    public byte packetId;
-    public ByteBuffer buffer;
-}

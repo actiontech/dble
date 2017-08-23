@@ -2,10 +2,8 @@ package io.mycat.net;
 
 import io.mycat.util.TimeUtil;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AIOSocketWR extends SocketWR {
@@ -137,57 +135,4 @@ public class AIOSocketWR extends SocketWR {
     }
 }
 
-class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
 
-    @Override
-    public void completed(final Integer result, final AIOSocketWR wr) {
-        try {
-
-            wr.writing.set(false);
-
-            if (result >= 0) {
-                wr.onWriteFinished(result);
-            } else {
-                wr.con.close("write erro " + result);
-            }
-        } catch (Exception e) {
-            AbstractConnection.LOGGER.warn("caught aio process err:", e);
-        }
-
-    }
-
-    @Override
-    public void failed(Throwable exc, AIOSocketWR wr) {
-        wr.writing.set(false);
-        wr.con.close("write failed " + exc);
-    }
-
-}
-
-
-class AIOReadHandler implements CompletionHandler<Integer, AIOSocketWR> {
-    @Override
-    public void completed(final Integer i, final AIOSocketWR wr) {
-        // con.getProcessor().getExecutor().execute(new Runnable() {
-        // public void run() {
-        if (i > 0) {
-            try {
-                wr.con.onReadData(i);
-                wr.con.asynRead();
-            } catch (IOException e) {
-                wr.con.close("handle err:" + e);
-            }
-        } else if (i == -1) {
-            // System.out.println("read -1 xxxxxxxxx "+con);
-            wr.con.close("client closed");
-        }
-        // }
-        // });
-    }
-
-    @Override
-    public void failed(Throwable exc, AIOSocketWR wr) {
-        wr.con.close(exc.toString());
-
-    }
-}

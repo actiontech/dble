@@ -78,7 +78,7 @@ public class ItemFuncDiv extends ItemNumOp {
             return new BigDecimal(0);
         if ((this.nullValue = args.get(1).isNull()))
             return new BigDecimal(0);
-        
+
         final BigDecimal val2 = args.get(1).valDecimal();
         if (val2.compareTo(BigDecimal.ZERO) == 0) {
             signalDivideByNull();

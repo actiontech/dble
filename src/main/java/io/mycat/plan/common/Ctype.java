@@ -23,8 +23,7 @@ public class Ctype {
             2, 2, 2, 2, 2, 2, 2, 16, 2, 2, 2, 2, 2, 2, 2, 2};
 
 
-    public static boolean isDigit( // String charset,
-                                   char c) {
+    public static boolean isDigit(char c) {
         int index = (int) c + 1;
         return (ctypeLatin1[index] & MY_NMR) != 0;
     }

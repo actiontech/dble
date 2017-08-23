@@ -65,7 +65,7 @@
         <module name="OperatorWrap">
             <property name="option" value="eol"/>
         </module>
-        <!--<module name="ParenPad"/>-->
+        <module name="ParenPad"/>
         <!--<module name="TypecastParenPad"/>-->
         <!--<module name="WhitespaceAfter"/>-->
         <!--<module name="WhitespaceAround"/>-->

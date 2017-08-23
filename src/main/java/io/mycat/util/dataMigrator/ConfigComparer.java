@@ -30,10 +30,10 @@ public class ConfigComparer {
      * schema2=all
      * ...
      */
-    private final static String TABLES_FILE = "/migrateTables.properties";
-    private final static String NEW_SCHEMA = "/newSchema.xml";
-    private final static String NEW_RULE = "/newRule.xml";
-    private final static String DN_INDEX_FILE = "/dnindex.properties";
+    private static final String TABLES_FILE = "/migrateTables.properties";
+    private static final String NEW_SCHEMA = "/newSchema.xml";
+    private static final String NEW_RULE = "/newRule.xml";
+    private static final String DN_INDEX_FILE = "/dnindex.properties";
 
     private SchemaLoader oldLoader;
     private SchemaLoader newLoader;

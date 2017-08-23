@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author zhuam
  */
 public class QueryConditionAnalyzer implements QueryResultListener {
-    private final static long MAX_QUERY_MAP_SIZE = 100000;
+    private static final long MAX_QUERY_MAP_SIZE = 100000;
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryConditionAnalyzer.class);
 
     private String tableName = null;
@@ -49,7 +49,7 @@ public class QueryConditionAnalyzer implements QueryResultListener {
 
     private SQLParser sqlParser = new SQLParser();
 
-    private final static QueryConditionAnalyzer INSTANCE = new QueryConditionAnalyzer();
+    private static final QueryConditionAnalyzer INSTANCE = new QueryConditionAnalyzer();
 
     private QueryConditionAnalyzer() {
     }

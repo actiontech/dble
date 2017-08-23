@@ -77,8 +77,8 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private ThreadLocal<Long> threadLastTime = new ThreadLocal<>();
     private ThreadLocal<Long> threadID = new ThreadLocal<>();
     private long nextID = 0L;
-    private final static String PATH = KVPathUtil.getSequencesPath();
-    private final static String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
+    private static final String PATH = KVPathUtil.getSequencesPath();
+    private static final String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
 
     private int mark[];
     private volatile boolean isLeader = false;

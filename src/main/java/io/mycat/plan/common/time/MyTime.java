@@ -19,67 +19,67 @@ public class MyTime {
     private static final DateTimeFormat TIME_24_HRS_FORMAT = new DateTimeFormat("%H:%i:%S");
 
     /* Flags to strToDatetime and numberToDatetime */
-    public final static int TIME_FUZZY_DATE = 1;
-    public final static int TIME_DATETIME_ONLY = 2;
-    public final static int TIME_NO_NSEC_ROUNDING = 4;
-    public final static int TIME_NO_DATE_FRAC_WARN = 8;
+    public static final int TIME_FUZZY_DATE = 1;
+    public static final int TIME_DATETIME_ONLY = 2;
+    public static final int TIME_NO_NSEC_ROUNDING = 4;
+    public static final int TIME_NO_DATE_FRAC_WARN = 8;
 
-    public final static int DATETIME_MAX_DECIMALS = 6;
+    public static final int DATETIME_MAX_DECIMALS = 6;
 
-    public final static int MAX_DATE_PARTS = 8;
-    public final static int MAX_DATE_WIDTH = 10;
-    public final static int MAX_TIME_WIDTH = 10;
-    public final static int MAX_DATETIME_WIDTH = 19;
+    public static final int MAX_DATE_PARTS = 8;
+    public static final int MAX_DATE_WIDTH = 10;
+    public static final int MAX_TIME_WIDTH = 10;
+    public static final int MAX_DATETIME_WIDTH = 19;
     /*
      * -DDDDDD
      * HH:MM:SS.######
      */
-    public final static int MAX_TIME_FULL_WIDTH = 23;
+    public static final int MAX_TIME_FULL_WIDTH = 23;
     /*
      * YYYY-MM-DD
      * HH:MM:SS.######
      * AM
      */
-    public final static int MAX_DATETIME_FULL_WIDTH = 29;
-    public final static int MAX_DATE_STRING_REP_LENGTH = 30;
+    public static final int MAX_DATETIME_FULL_WIDTH = 29;
+    public static final int MAX_DATE_STRING_REP_LENGTH = 30;
 
-    public final static int TIME_MAX_HOUR = 838;
-    public final static int TIME_MAX_MINUTE = 59;
-    public final static int TIME_MAX_SECOND = 59;
+    public static final int TIME_MAX_HOUR = 838;
+    public static final int TIME_MAX_MINUTE = 59;
+    public static final int TIME_MAX_SECOND = 59;
 
-    public final static int MAX_DAY_NUMBER = 3652424;
+    public static final int MAX_DAY_NUMBER = 3652424;
 
-    public final static int SECONDS_IN_24H = 86400;
+    public static final int SECONDS_IN_24H = 86400;
 
-    public final static int TIME_MAX_VALUE = (TIME_MAX_HOUR * 10000 + TIME_MAX_MINUTE * 100 + TIME_MAX_SECOND);
+    public static final int TIME_MAX_VALUE = (TIME_MAX_HOUR * 10000 + TIME_MAX_MINUTE * 100 + TIME_MAX_SECOND);
 
-    public final static long TIME_MAX_VALUE_SECONDS = (TIME_MAX_HOUR * 3600L + TIME_MAX_MINUTE * 60L + TIME_MAX_SECOND);
+    public static final long TIME_MAX_VALUE_SECONDS = (TIME_MAX_HOUR * 3600L + TIME_MAX_MINUTE * 60L + TIME_MAX_SECOND);
 
     /* Must be same as MODE_NO_ZERO_IN_DATE */
-    public final static long TIME_NO_ZERO_IN_DATE = (65536L * 2 * 2 * 2 * 2 * 2 * 2 * 2);
+    public static final long TIME_NO_ZERO_IN_DATE = (65536L * 2 * 2 * 2 * 2 * 2 * 2 * 2);
     /* Must be same as MODE_NO_ZERO_DATE */
-    public final static long TIME_NO_ZERO_DATE = (TIME_NO_ZERO_IN_DATE * 2);
-    public final static long TIME_INVALID_DATES = (TIME_NO_ZERO_DATE * 2);
+    public static final long TIME_NO_ZERO_DATE = (TIME_NO_ZERO_IN_DATE * 2);
+    public static final long TIME_INVALID_DATES = (TIME_NO_ZERO_DATE * 2);
 
     /* Conversion warnings */
-    public final static int MYSQL_TIME_WARN_TRUNCATED = 1;
-    public final static int MYSQL_TIME_WARN_OUT_OF_RANGE = 2;
-    public final static int MYSQL_TIME_WARN_INVALID_TIMESTAMP = 4;
-    public final static int MYSQL_TIME_WARN_ZERO_DATE = 8;
-    public final static int MYSQL_TIME_NOTE_TRUNCATED = 16;
-    public final static int MYSQL_TIME_WARN_ZERO_IN_DATE = 32;
+    public static final int MYSQL_TIME_WARN_TRUNCATED = 1;
+    public static final int MYSQL_TIME_WARN_OUT_OF_RANGE = 2;
+    public static final int MYSQL_TIME_WARN_INVALID_TIMESTAMP = 4;
+    public static final int MYSQL_TIME_WARN_ZERO_DATE = 8;
+    public static final int MYSQL_TIME_NOTE_TRUNCATED = 16;
+    public static final int MYSQL_TIME_WARN_ZERO_IN_DATE = 32;
 
-    public final static int YY_PART_YEAR = 70;
+    public static final int YY_PART_YEAR = 70;
 
-    public final static long LONG_MAX = MySQLcom.getUnsignedLong(Integer.MAX_VALUE).longValue();
+    public static final long LONG_MAX = MySQLcom.getUnsignedLong(Integer.MAX_VALUE).longValue();
 
     static final char TIME_SEPARATOR = ':';
 
     /* Position for YYYY-DD-MM HH-MM-DD.FFFFFF AM in default format */
 
-    private final static int INTERNAL_FORMAT_POSITIONS[] = {0, 1, 2, 3, 4, 5, 6, 255};
+    private static final int INTERNAL_FORMAT_POSITIONS[] = {0, 1, 2, 3, 4, 5, 6, 255};
 
-    public final static int DAYS_IN_MONTH[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
+    public static final int DAYS_IN_MONTH[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0};
 
     public static final String[] MONTH_NAMES = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December"};

@@ -49,7 +49,7 @@ public class ReplaceableStringBuilder {
         return sb.toString();
     }
 
-    public final static class Element {
+    public static final class Element {
         private final StringBuilder sb;
         private StringPtr repString;
 

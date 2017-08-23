@@ -70,11 +70,11 @@
         <module name="WhitespaceAfter"/>
         <module name="WhitespaceAround"/>
         <module name="SeparatorWrap"/>
-        <!--<module name="NoLineWrap"/>-->
-        <!--<module name="EmptyForInitializerPad"/>-->
+        <module name="NoLineWrap"/>
+        <module name="EmptyForInitializerPad"/>
 
         <!-- Modifier Checks. -->
-        <!--<module name="ModifierOrder"/>-->
+        <module name="ModifierOrder"/>
         <!--<module name="RedundantModifier"/>-->
 
         <!-- Checks for blocks. -->

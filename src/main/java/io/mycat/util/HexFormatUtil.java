@@ -28,7 +28,7 @@ package io.mycat.util;
  */
 public final class HexFormatUtil {
 
-    private final static char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     public static String bytesToHexString(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];

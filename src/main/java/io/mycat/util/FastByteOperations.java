@@ -64,16 +64,16 @@ public class FastByteOperations {
     }
 
     public interface ByteOperations {
-        abstract public int compare(byte[] buffer1, int offset1, int length1,
+        public abstract int compare(byte[] buffer1, int offset1, int length1,
                                     byte[] buffer2, int offset2, int length2);
 
-        abstract public int compare(ByteBuffer buffer1, byte[] buffer2, int offset2, int length2);
+        public abstract int compare(ByteBuffer buffer1, byte[] buffer2, int offset2, int length2);
 
-        abstract public int compare(ByteBuffer buffer1, ByteBuffer buffer2);
+        public abstract int compare(ByteBuffer buffer1, ByteBuffer buffer2);
 
-        abstract public void copy(ByteBuffer src, int srcPosition, byte[] trg, int trgPosition, int length);
+        public abstract void copy(ByteBuffer src, int srcPosition, byte[] trg, int trgPosition, int length);
 
-        abstract public void copy(ByteBuffer src, int srcPosition, ByteBuffer trg, int trgPosition, int length);
+        public abstract void copy(ByteBuffer src, int srcPosition, ByteBuffer trg, int trgPosition, int length);
     }
 
     /**

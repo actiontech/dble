@@ -14,7 +14,7 @@ public class UserStatAnalyzer implements QueryResultListener {
 
     private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<String, UserStat>();
 
-    private final static UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
+    private static final UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
 
     private UserStatAnalyzer() {
     }

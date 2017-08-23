@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 
 public final class Platform {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(Platform.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Platform.class);
     private static final Pattern MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN =
             Pattern.compile("\\s*-XX:MaxDirectMemorySize\\s*=\\s*([0-9]+)\\s*([kKmMgG]?)\\s*$");
     private static final Unsafe UNSAFE;

@@ -50,7 +50,7 @@ public class MycatPrivileges implements FrontendPrivileges {
     private static final Logger ALARM = LoggerFactory.getLogger("alarm");
 
     private boolean check = false;
-    private final static ThreadLocal<WallProvider> CONTEXT_LOCAL = new ThreadLocal<WallProvider>();
+    private static final ThreadLocal<WallProvider> CONTEXT_LOCAL = new ThreadLocal<WallProvider>();
 
     public static MycatPrivileges instance() {
         return instance;

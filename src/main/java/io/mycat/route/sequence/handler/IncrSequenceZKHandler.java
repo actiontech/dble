@@ -59,10 +59,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceHandler.class);
-    private final static String PATH = KVPathUtil.getSequencesIncrPath() + "/";
-    private final static String LOCK = "/lock";
-    private final static String SEQ = "/seq";
-    private final static IncrSequenceZKHandler INSTANCE = new IncrSequenceZKHandler();
+    private static final String PATH = KVPathUtil.getSequencesIncrPath() + "/";
+    private static final String LOCK = "/lock";
+    private static final String SEQ = "/seq";
+    private static final IncrSequenceZKHandler INSTANCE = new IncrSequenceZKHandler();
 
     public static IncrSequenceZKHandler getInstance() {
         return INSTANCE;

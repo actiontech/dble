@@ -53,7 +53,7 @@ public final class UnsafeFixedWidthAggregationMap {
 
     private final boolean enablePerfMetrics;
 
-    private final static int SEED = 42;
+    private static final int SEED = 42;
 
     /**
      * @return true if UnsafeFixedWidthAggregationMap supports aggregation buffers with the given

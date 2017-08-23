@@ -28,7 +28,7 @@ package io.mycat.queue;
  */
 public final class Queue<T> {
 
-    private final static int MIN_SHRINK_SIZE = 1024;
+    private static final int MIN_SHRINK_SIZE = 1024;
 
     private T[] items;
     private int count = 0;

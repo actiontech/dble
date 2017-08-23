@@ -49,8 +49,8 @@ import java.util.Map;
  */
 @SuppressWarnings("unchecked")
 public class XMLRuleLoader {
-    private final static String DEFAULT_DTD = "/rule.dtd";
-    private final static String DEFAULT_XML = "/rule.xml";
+    private static final String DEFAULT_DTD = "/rule.dtd";
+    private static final String DEFAULT_XML = "/rule.xml";
 
     private final Map<String, TableRuleConfig> tableRules;
     // private final Set<RuleConfig> rules;

@@ -57,8 +57,8 @@ public final class SystemConfig {
     private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
     private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512 * 1024 * 4;
     private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private final static String MEMORY_PAGE_SIZE = "1m";
-    private final static String SPILLS_FILE_BUFFER_SIZE = "2K";
+    private static final String MEMORY_PAGE_SIZE = "1m";
+    private static final String SPILLS_FILE_BUFFER_SIZE = "2K";
     private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1000L;

@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SubQueryPreProcessor {
-    private final static String AUTONAME = "autosubgenrated0";
-    private final static String AUTOALIAS = "autoalias_";
+    private static final String AUTONAME = "autosubgenrated0";
+    private static final String AUTOALIAS = "autoalias_";
 
     public static PlanNode optimize(PlanNode qtn) {
         MergeHavingFilter.optimize(qtn);

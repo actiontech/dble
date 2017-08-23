@@ -49,27 +49,27 @@ public class IncrSequenceTimeHandler implements SequenceHandler {
      * 64位ID (30(毫秒)+5(机器ID)+5(业务编码)+12(重复累加)+12(毫秒))
      */
     static class IdWorker {
-        private final static long TWEPOCH = 1288834974657L;
-        private final static long TIMESTAMP_LOW_BITS = 12L;
-        private final static long TIMESTAMP_LOW_MASK = 0xFFF;
+        private static final long TWEPOCH = 1288834974657L;
+        private static final long TIMESTAMP_LOW_BITS = 12L;
+        private static final long TIMESTAMP_LOW_MASK = 0xFFF;
 
         // 机器标识位数
-        private final static long WORKER_ID_BITS = 5L;
+        private static final long WORKER_ID_BITS = 5L;
         // 数据中心标识位数
-        private final static long DATACENTER_ID_BITS = 5L;
+        private static final long DATACENTER_ID_BITS = 5L;
         // 机器ID最大值 31
-        private final static long MAX_WORKER_ID = -1L ^ (-1L << WORKER_ID_BITS);
+        private static final long MAX_WORKER_ID = -1L ^ (-1L << WORKER_ID_BITS);
         // 数据中心ID最大值 31
-        private final static long MAX_DATACENTER_ID = -1L ^ (-1L << DATACENTER_ID_BITS);
+        private static final long MAX_DATACENTER_ID = -1L ^ (-1L << DATACENTER_ID_BITS);
         // 毫秒内自增位
-        private final static long SEQUENCE_BITS = 12L;
+        private static final long SEQUENCE_BITS = 12L;
 
-        private final static long SEQUENCE_SHIFT = TIMESTAMP_LOW_BITS;
-        private final static long WORKER_ID_SHIFT = SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
-        private final static long DATACENTER_ID_SHIFT = WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
-        private final static long TIMESTAMP_HIGH_SHIFT = DATACENTER_ID_BITS + WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
+        private static final long SEQUENCE_SHIFT = TIMESTAMP_LOW_BITS;
+        private static final long WORKER_ID_SHIFT = SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
+        private static final long DATACENTER_ID_SHIFT = WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
+        private static final long TIMESTAMP_HIGH_SHIFT = DATACENTER_ID_BITS + WORKER_ID_BITS + SEQUENCE_BITS + TIMESTAMP_LOW_BITS;
 
-        private final static long SEQUENCE_MASK = -1L ^ (-1L << SEQUENCE_BITS);
+        private static final long SEQUENCE_MASK = -1L ^ (-1L << SEQUENCE_BITS);
 
         private static long lastTimestamp = -1L;
 

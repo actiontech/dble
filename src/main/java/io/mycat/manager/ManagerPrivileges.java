@@ -31,7 +31,7 @@ import io.mycat.config.model.UserConfig;
 /**
  * @author mycat
  */
-public class ManagerPrivileges extends MycatPrivileges {
+public final class ManagerPrivileges extends MycatPrivileges {
     /**
      * 无需每次建立连接都new实例。
      */

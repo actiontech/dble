@@ -5,7 +5,7 @@ import java.text.MessageFormat;
 import java.util.Properties;
 
 
-public class TmpFileException extends RuntimeException {
+public final class TmpFileException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     private static final Properties MESSAGES = new Properties();
 

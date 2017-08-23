@@ -3,7 +3,7 @@ package io.mycat.route.handler;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HintHandlerFactory {
+public final class HintHandlerFactory {
 
     private static volatile boolean isInit = false;
 

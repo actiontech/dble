@@ -8,7 +8,7 @@ import io.mycat.route.impl.DruidMycatRouteStrategy;
  *
  * @author wang.dw
  */
-public class RouteStrategyFactory {
+public final class RouteStrategyFactory {
     private static RouteStrategy defaultStrategy = new DruidMycatRouteStrategy();
 
     private RouteStrategyFactory() {

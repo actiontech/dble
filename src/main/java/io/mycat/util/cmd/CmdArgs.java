@@ -9,7 +9,7 @@ import java.util.Map;
  *
  * @author me
  */
-public class CmdArgs {
+public final class CmdArgs {
     private static final CmdArgs CMD_ARGS = new CmdArgs();
 
     private Map<String, String> args;

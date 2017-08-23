@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
-public class IncrSequenceTimeHandler implements SequenceHandler {
+public final class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
 
     private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";

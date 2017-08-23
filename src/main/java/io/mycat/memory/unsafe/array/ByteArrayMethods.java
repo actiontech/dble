@@ -20,7 +20,7 @@ package io.mycat.memory.unsafe.array;
 
 import io.mycat.memory.unsafe.Platform;
 
-public class ByteArrayMethods {
+public final class ByteArrayMethods {
 
     private ByteArrayMethods() {
         // Private constructor, since this class only contains static methods.

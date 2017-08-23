@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class FileCounter {
+public final class FileCounter {
     private static final Logger LOGGER = Logger.getLogger(FileCounter.class);
     private static FileCounter fileCounter = new FileCounter();
 

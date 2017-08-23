@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author zhuam
  */
-public class TableStatAnalyzer implements QueryResultListener {
+public final class TableStatAnalyzer implements QueryResultListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TableStatAnalyzer.class);
 

@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @author Ben
  */
-public class UserStatAnalyzer implements QueryResultListener {
+public final class UserStatAnalyzer implements QueryResultListener {
 
     private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<String, UserStat>();
 

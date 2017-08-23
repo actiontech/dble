@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 /**
  * Convenience class to extract hardware specifics of the computer executing this class
  */
-public class Hardware {
+public final class Hardware {
 
     private static final Logger LOG = LoggerFactory.getLogger(Hardware.class);
 

@@ -324,7 +324,7 @@ class TimSort<K, B> {
         return n + r;
     }
 
-    private class SortState {
+    private final class SortState {
 
         /**
          * The Buffer being sorted.

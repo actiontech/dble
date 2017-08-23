@@ -78,7 +78,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author mycat
  */
-public class MycatServer {
+public final class MycatServer {
 
     public static final String NAME = "MyCat_";
     private static final long TIME_UPDATE_PERIOD = 20L;
@@ -119,7 +119,7 @@ public class MycatServer {
     private final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
 
-    public static final MycatServer getInstance() {
+    public static MycatServer getInstance() {
         return INSTANCE;
     }
 

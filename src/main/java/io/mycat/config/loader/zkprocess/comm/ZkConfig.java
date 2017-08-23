@@ -22,7 +22,7 @@ import java.util.Properties;
  * 文件描述：TODO
  * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
  */
-public class ZkConfig {
+public final class ZkConfig {
     /**
      * 日志信息
      *

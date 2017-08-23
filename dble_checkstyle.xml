@@ -144,4 +144,7 @@
     </module>
 
     <module name="UniqueProperties"/>
+    <module name="SuppressionFilter">
+        <property name="file" value="dble_checkstyle_suppression.xml" />
+    </module>
 </module>

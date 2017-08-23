@@ -99,20 +99,20 @@ public final class StructureMeta {
             this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
         }
 
-        private static final IndexMeta DEFAULT_INSTANCE;
+        private static final IndexMeta defaultInstance;
 
         public static IndexMeta getDefaultInstance() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         public IndexMeta getDefaultInstanceForType() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public com.google.protobuf.UnknownFieldSet
+        public final com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -122,7 +122,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutableBitfield0 = 0;
+            int mutable_bitField0_ = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -133,6 +133,13 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -147,18 +154,11 @@ public final class StructureMeta {
                         }
                         case 26: {
                             com.google.protobuf.ByteString bs = input.readBytes();
-                            if (!((mutableBitfield0 & 0x00000004) == 0x00000004)) {
+                            if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
                                 columns_ = new com.google.protobuf.LazyStringArrayList();
-                                mutableBitfield0 |= 0x00000004;
+                                mutable_bitField0_ |= 0x00000004;
                             }
                             columns_.add(bs);
-                            break;
-                        }
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
                             break;
                         }
                     }
@@ -169,7 +169,7 @@ public final class StructureMeta {
                 throw new com.google.protobuf.InvalidProtocolBufferException(
                         e.getMessage()).setUnfinishedMessage(this);
             } finally {
-                if (((mutableBitfield0 & 0x00000004) == 0x00000004)) {
+                if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
                     columns_ = columns_.getUnmodifiableView();
                 }
                 this.unknownFields = unknownFields.build();
@@ -177,19 +177,19 @@ public final class StructureMeta {
             }
         }
 
-        public static com.google.protobuf.Descriptors.Descriptor
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-            return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable.
-                    ensureFieldAccessorsInitialized(
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.IndexMeta.class, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder.class);
         }
 
-        public static final com.google.protobuf.Parser<IndexMeta> PARSER =
+        public static com.google.protobuf.Parser<IndexMeta> PARSER =
                 new com.google.protobuf.AbstractParser<IndexMeta>() {
                     public IndexMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -348,7 +348,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public boolean isInitialized() {
+        public final boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -388,15 +388,18 @@ public final class StructureMeta {
 
             size = 0;
             if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(1, getNameBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(1, getNameBytes());
             }
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(2, getTypeBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(2, getTypeBytes());
             }
             {
                 int dataSize = 0;
                 for (int i = 0; i < columns_.size(); i++) {
-                    dataSize += com.google.protobuf.CodedOutputStream.computeBytesSizeNoTag(columns_.getByteString(i));
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeBytesSizeNoTag(columns_.getByteString(i));
                 }
                 size += dataSize;
                 size += 1 * getColumnsList().size();
@@ -506,15 +509,15 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.IndexMeta)
                 io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder {
-            public static com.google.protobuf.Descriptors.Descriptor
+            public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
             }
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable.
-                        ensureFieldAccessorsInitialized(
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.IndexMeta.class, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder.class);
             }
 
@@ -531,7 +534,6 @@ public final class StructureMeta {
 
             private void maybeForceBuilderInitialization() {
                 if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-                    //do nothing
                 }
             }
 
@@ -556,7 +558,7 @@ public final class StructureMeta {
 
             public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
             }
 
             public io.mycat.meta.protocol.StructureMeta.IndexMeta getDefaultInstanceForType() {
@@ -573,14 +575,14 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.IndexMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.IndexMeta result = new io.mycat.meta.protocol.StructureMeta.IndexMeta(this);
-                int fromBitField0 = bitField0_;
-                int toBitfield0 = 0;
-                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
-                    toBitfield0 |= 0x00000001;
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
                 }
                 result.name_ = name_;
-                if (((fromBitField0 & 0x00000002) == 0x00000002)) {
-                    toBitfield0 |= 0x00000002;
+                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+                    to_bitField0_ |= 0x00000002;
                 }
                 result.type_ = type_;
                 if (((bitField0_ & 0x00000004) == 0x00000004)) {
@@ -588,7 +590,7 @@ public final class StructureMeta {
                     bitField0_ = (bitField0_ & ~0x00000004);
                 }
                 result.columns_ = columns_;
-                result.bitField0_ = toBitfield0;
+                result.bitField0_ = to_bitField0_;
                 onBuilt();
                 return result;
             }
@@ -628,7 +630,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public boolean isInitialized() {
+            public final boolean isInitialized() {
                 if (!hasName()) {
 
                     return false;
@@ -955,8 +957,8 @@ public final class StructureMeta {
         }
 
         static {
-            DEFAULT_INSTANCE = new IndexMeta(true);
-            DEFAULT_INSTANCE.initFields();
+            defaultInstance = new IndexMeta(true);
+            defaultInstance.initFields();
         }
 
         // @@protoc_insertion_point(class_scope:io.mycat.meta.protocol.IndexMeta)
@@ -1132,20 +1134,20 @@ public final class StructureMeta {
             this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
         }
 
-        private static final ColumnMeta DEFAULT_INSTANCE;
+        private static final ColumnMeta defaultInstance;
 
         public static ColumnMeta getDefaultInstance() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         public ColumnMeta getDefaultInstanceForType() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public com.google.protobuf.UnknownFieldSet
+        public final com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -1155,7 +1157,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutableBitfield0 = 0;
+            int mutable_bitField0_ = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -1166,6 +1168,13 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -1220,13 +1229,6 @@ public final class StructureMeta {
                             charsetname_ = bs;
                             break;
                         }
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
-                            break;
-                        }
                     }
                 }
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -1240,19 +1242,19 @@ public final class StructureMeta {
             }
         }
 
-        public static com.google.protobuf.Descriptors.Descriptor
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-            return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable.
-                    ensureFieldAccessorsInitialized(
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.ColumnMeta.class, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder.class);
         }
 
-        public static final com.google.protobuf.Parser<ColumnMeta> PARSER =
+        public static com.google.protobuf.Parser<ColumnMeta> PARSER =
                 new com.google.protobuf.AbstractParser<ColumnMeta>() {
                     public ColumnMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -1589,7 +1591,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public boolean isInitialized() {
+        public final boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -1650,34 +1652,44 @@ public final class StructureMeta {
 
             size = 0;
             if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(1, getNameBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(1, getNameBytes());
             }
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(2, getDataTypeBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(2, getDataTypeBytes());
             }
             if (((bitField0_ & 0x00000004) == 0x00000004)) {
-                size += com.google.protobuf.CodedOutputStream.computeBoolSize(3, isUnsigned_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBoolSize(3, isUnsigned_);
             }
             if (((bitField0_ & 0x00000008) == 0x00000008)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt32Size(4, length_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(4, length_);
             }
             if (((bitField0_ & 0x00000010) == 0x00000010)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt32Size(5, precision_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(5, precision_);
             }
             if (((bitField0_ & 0x00000020) == 0x00000020)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt32Size(6, scale_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(6, scale_);
             }
             if (((bitField0_ & 0x00000040) == 0x00000040)) {
-                size += com.google.protobuf.CodedOutputStream.computeBoolSize(7, canNull_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBoolSize(7, canNull_);
             }
             if (((bitField0_ & 0x00000080) == 0x00000080)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(8, getSdefaultBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(8, getSdefaultBytes());
             }
             if (((bitField0_ & 0x00000100) == 0x00000100)) {
-                size += com.google.protobuf.CodedOutputStream.computeBoolSize(9, autoIncre_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBoolSize(9, autoIncre_);
             }
             if (((bitField0_ & 0x00000200) == 0x00000200)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(10, getCharsetnameBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(10, getCharsetnameBytes());
             }
             size += getUnknownFields().getSerializedSize();
             memoizedSerializedSize = size;
@@ -1784,15 +1796,15 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.ColumnMeta)
                 io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder {
-            public static com.google.protobuf.Descriptors.Descriptor
+            public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
             }
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable.
-                        ensureFieldAccessorsInitialized(
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.ColumnMeta.class, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder.class);
             }
 
@@ -1809,7 +1821,6 @@ public final class StructureMeta {
 
             private void maybeForceBuilderInitialization() {
                 if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-                    //do nothing
                 }
             }
 
@@ -1848,7 +1859,7 @@ public final class StructureMeta {
 
             public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
             }
 
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta getDefaultInstanceForType() {
@@ -1865,49 +1876,49 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.ColumnMeta result = new io.mycat.meta.protocol.StructureMeta.ColumnMeta(this);
-                int fromBitField0 = bitField0_;
-                int toBitfield0 = 0;
-                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
-                    toBitfield0 |= 0x00000001;
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
                 }
                 result.name_ = name_;
-                if (((fromBitField0 & 0x00000002) == 0x00000002)) {
-                    toBitfield0 |= 0x00000002;
+                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+                    to_bitField0_ |= 0x00000002;
                 }
                 result.dataType_ = dataType_;
-                if (((fromBitField0 & 0x00000004) == 0x00000004)) {
-                    toBitfield0 |= 0x00000004;
+                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+                    to_bitField0_ |= 0x00000004;
                 }
                 result.isUnsigned_ = isUnsigned_;
-                if (((fromBitField0 & 0x00000008) == 0x00000008)) {
-                    toBitfield0 |= 0x00000008;
+                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+                    to_bitField0_ |= 0x00000008;
                 }
                 result.length_ = length_;
-                if (((fromBitField0 & 0x00000010) == 0x00000010)) {
-                    toBitfield0 |= 0x00000010;
+                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+                    to_bitField0_ |= 0x00000010;
                 }
                 result.precision_ = precision_;
-                if (((fromBitField0 & 0x00000020) == 0x00000020)) {
-                    toBitfield0 |= 0x00000020;
+                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+                    to_bitField0_ |= 0x00000020;
                 }
                 result.scale_ = scale_;
-                if (((fromBitField0 & 0x00000040) == 0x00000040)) {
-                    toBitfield0 |= 0x00000040;
+                if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+                    to_bitField0_ |= 0x00000040;
                 }
                 result.canNull_ = canNull_;
-                if (((fromBitField0 & 0x00000080) == 0x00000080)) {
-                    toBitfield0 |= 0x00000080;
+                if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+                    to_bitField0_ |= 0x00000080;
                 }
                 result.sdefault_ = sdefault_;
-                if (((fromBitField0 & 0x00000100) == 0x00000100)) {
-                    toBitfield0 |= 0x00000100;
+                if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+                    to_bitField0_ |= 0x00000100;
                 }
                 result.autoIncre_ = autoIncre_;
-                if (((fromBitField0 & 0x00000200) == 0x00000200)) {
-                    toBitfield0 |= 0x00000200;
+                if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+                    to_bitField0_ |= 0x00000200;
                 }
                 result.charsetname_ = charsetname_;
-                result.bitField0_ = toBitfield0;
+                result.bitField0_ = to_bitField0_;
                 onBuilt();
                 return result;
             }
@@ -1965,7 +1976,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public boolean isInitialized() {
+            public final boolean isInitialized() {
                 if (!hasName()) {
 
                     return false;
@@ -2593,8 +2604,8 @@ public final class StructureMeta {
         }
 
         static {
-            DEFAULT_INSTANCE = new ColumnMeta(true);
-            DEFAULT_INSTANCE.initFields();
+            defaultInstance = new ColumnMeta(true);
+            defaultInstance.initFields();
         }
 
         // @@protoc_insertion_point(class_scope:io.mycat.meta.protocol.ColumnMeta)
@@ -2835,20 +2846,20 @@ public final class StructureMeta {
             this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
         }
 
-        private static final TableMeta DEFAULT_INSTANCE;
+        private static final TableMeta defaultInstance;
 
         public static TableMeta getDefaultInstance() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         public TableMeta getDefaultInstanceForType() {
-            return DEFAULT_INSTANCE;
+            return defaultInstance;
         }
 
         private final com.google.protobuf.UnknownFieldSet unknownFields;
 
         @java.lang.Override
-        public com.google.protobuf.UnknownFieldSet
+        public final com.google.protobuf.UnknownFieldSet
         getUnknownFields() {
             return this.unknownFields;
         }
@@ -2858,7 +2869,7 @@ public final class StructureMeta {
                 com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
             initFields();
-            int mutableBitfield0 = 0;
+            int mutable_bitField0_ = 0;
             com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -2869,6 +2880,13 @@ public final class StructureMeta {
                         case 0:
                             done = true;
                             break;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
                         case 10: {
                             com.google.protobuf.ByteString bs = input.readBytes();
                             bitField0_ |= 0x00000001;
@@ -2876,9 +2894,9 @@ public final class StructureMeta {
                             break;
                         }
                         case 18: {
-                            if (!((mutableBitfield0 & 0x00000002) == 0x00000002)) {
+                            if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
                                 columns_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.ColumnMeta>();
-                                mutableBitfield0 |= 0x00000002;
+                                mutable_bitField0_ |= 0x00000002;
                             }
                             columns_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.ColumnMeta.PARSER, extensionRegistry));
                             break;
@@ -2928,26 +2946,19 @@ public final class StructureMeta {
                             break;
                         }
                         case 82: {
-                            if (!((mutableBitfield0 & 0x00000200) == 0x00000200)) {
+                            if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
                                 uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
-                                mutableBitfield0 |= 0x00000200;
+                                mutable_bitField0_ |= 0x00000200;
                             }
                             uniIndex_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
                             break;
                         }
                         case 90: {
-                            if (!((mutableBitfield0 & 0x00000400) == 0x00000400)) {
+                            if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
                                 index_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
-                                mutableBitfield0 |= 0x00000400;
+                                mutable_bitField0_ |= 0x00000400;
                             }
                             index_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
-                            break;
-                        }
-                        default: {
-                            if (!parseUnknownField(input, unknownFields,
-                                    extensionRegistry, tag)) {
-                                done = true;
-                            }
                             break;
                         }
                     }
@@ -2958,13 +2969,13 @@ public final class StructureMeta {
                 throw new com.google.protobuf.InvalidProtocolBufferException(
                         e.getMessage()).setUnfinishedMessage(this);
             } finally {
-                if (((mutableBitfield0 & 0x00000002) == 0x00000002)) {
+                if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
                     columns_ = java.util.Collections.unmodifiableList(columns_);
                 }
-                if (((mutableBitfield0 & 0x00000200) == 0x00000200)) {
+                if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
                     uniIndex_ = java.util.Collections.unmodifiableList(uniIndex_);
                 }
-                if (((mutableBitfield0 & 0x00000400) == 0x00000400)) {
+                if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
                     index_ = java.util.Collections.unmodifiableList(index_);
                 }
                 this.unknownFields = unknownFields.build();
@@ -2972,19 +2983,19 @@ public final class StructureMeta {
             }
         }
 
-        public static com.google.protobuf.Descriptors.Descriptor
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-            return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-            return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable.
-                    ensureFieldAccessorsInitialized(
+            return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
                             io.mycat.meta.protocol.StructureMeta.TableMeta.class, io.mycat.meta.protocol.StructureMeta.TableMeta.Builder.class);
         }
 
-        public static final com.google.protobuf.Parser<TableMeta> PARSER =
+        public static com.google.protobuf.Parser<TableMeta> PARSER =
                 new com.google.protobuf.AbstractParser<TableMeta>() {
                     public TableMeta parsePartialFrom(
                             com.google.protobuf.CodedInputStream input,
@@ -3367,7 +3378,7 @@ public final class StructureMeta {
 
         private byte memoizedIsInitialized = -1;
 
-        public boolean isInitialized() {
+        public final boolean isInitialized() {
             byte isInitialized = memoizedIsInitialized;
             if (isInitialized == 1) return true;
             if (isInitialized == 0) return false;
@@ -3447,37 +3458,48 @@ public final class StructureMeta {
 
             size = 0;
             if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(1, getTableNameBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(1, getTableNameBytes());
             }
             for (int i = 0; i < columns_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream.computeMessageSize(2, columns_.get(i));
+                size += com.google.protobuf.CodedOutputStream
+                        .computeMessageSize(2, columns_.get(i));
             }
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                size += com.google.protobuf.CodedOutputStream.computeBoolSize(3, isView_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBoolSize(3, isView_);
             }
             if (((bitField0_ & 0x00000004) == 0x00000004)) {
-                size += com.google.protobuf.CodedOutputStream.computeBytesSize(4, getCreateSqlBytes());
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(4, getCreateSqlBytes());
             }
             if (((bitField0_ & 0x00000008) == 0x00000008)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt64Size(5, version_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt64Size(5, version_);
             }
             if (((bitField0_ & 0x00000010) == 0x00000010)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt64Size(6, aiOffset_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt64Size(6, aiOffset_);
             }
             if (((bitField0_ & 0x00000020) == 0x00000020)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt32Size(7, type_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(7, type_);
             }
             if (((bitField0_ & 0x00000040) == 0x00000040)) {
-                size += com.google.protobuf.CodedOutputStream.computeInt32Size(8, aiColPos_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(8, aiColPos_);
             }
             if (((bitField0_ & 0x00000080) == 0x00000080)) {
-                size += com.google.protobuf.CodedOutputStream.computeMessageSize(9, primary_);
+                size += com.google.protobuf.CodedOutputStream
+                        .computeMessageSize(9, primary_);
             }
             for (int i = 0; i < uniIndex_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream.computeMessageSize(10, uniIndex_.get(i));
+                size += com.google.protobuf.CodedOutputStream
+                        .computeMessageSize(10, uniIndex_.get(i));
             }
             for (int i = 0; i < index_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream.computeMessageSize(11, index_.get(i));
+                size += com.google.protobuf.CodedOutputStream
+                        .computeMessageSize(11, index_.get(i));
             }
             size += getUnknownFields().getSerializedSize();
             memoizedSerializedSize = size;
@@ -3584,15 +3606,15 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.TableMeta)
                 io.mycat.meta.protocol.StructureMeta.TableMetaOrBuilder {
-            public static com.google.protobuf.Descriptors.Descriptor
+            public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
             }
 
             protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-                return io.mycat.meta.protocol.StructureMeta.internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable.
-                        ensureFieldAccessorsInitialized(
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
                                 io.mycat.meta.protocol.StructureMeta.TableMeta.class, io.mycat.meta.protocol.StructureMeta.TableMeta.Builder.class);
             }
 
@@ -3669,7 +3691,7 @@ public final class StructureMeta {
 
             public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-                return io.mycat.meta.protocol.StructureMeta.INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
+                return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
             }
 
             public io.mycat.meta.protocol.StructureMeta.TableMeta getDefaultInstanceForType() {
@@ -3686,10 +3708,10 @@ public final class StructureMeta {
 
             public io.mycat.meta.protocol.StructureMeta.TableMeta buildPartial() {
                 io.mycat.meta.protocol.StructureMeta.TableMeta result = new io.mycat.meta.protocol.StructureMeta.TableMeta(this);
-                int fromBitField0 = bitField0_;
-                int toBitfield0 = 0;
-                if (((fromBitField0 & 0x00000001) == 0x00000001)) {
-                    toBitfield0 |= 0x00000001;
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
                 }
                 result.tableName_ = tableName_;
                 if (columnsBuilder_ == null) {
@@ -3701,32 +3723,32 @@ public final class StructureMeta {
                 } else {
                     result.columns_ = columnsBuilder_.build();
                 }
-                if (((fromBitField0 & 0x00000004) == 0x00000004)) {
-                    toBitfield0 |= 0x00000002;
+                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+                    to_bitField0_ |= 0x00000002;
                 }
                 result.isView_ = isView_;
-                if (((fromBitField0 & 0x00000008) == 0x00000008)) {
-                    toBitfield0 |= 0x00000004;
+                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+                    to_bitField0_ |= 0x00000004;
                 }
                 result.createSql_ = createSql_;
-                if (((fromBitField0 & 0x00000010) == 0x00000010)) {
-                    toBitfield0 |= 0x00000008;
+                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+                    to_bitField0_ |= 0x00000008;
                 }
                 result.version_ = version_;
-                if (((fromBitField0 & 0x00000020) == 0x00000020)) {
-                    toBitfield0 |= 0x00000010;
+                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+                    to_bitField0_ |= 0x00000010;
                 }
                 result.aiOffset_ = aiOffset_;
-                if (((fromBitField0 & 0x00000040) == 0x00000040)) {
-                    toBitfield0 |= 0x00000020;
+                if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+                    to_bitField0_ |= 0x00000020;
                 }
                 result.type_ = type_;
-                if (((fromBitField0 & 0x00000080) == 0x00000080)) {
-                    toBitfield0 |= 0x00000040;
+                if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+                    to_bitField0_ |= 0x00000040;
                 }
                 result.aiColPos_ = aiColPos_;
-                if (((fromBitField0 & 0x00000100) == 0x00000100)) {
-                    toBitfield0 |= 0x00000080;
+                if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+                    to_bitField0_ |= 0x00000080;
                 }
                 if (primaryBuilder_ == null) {
                     result.primary_ = primary_;
@@ -3751,7 +3773,7 @@ public final class StructureMeta {
                 } else {
                     result.index_ = indexBuilder_.build();
                 }
-                result.bitField0_ = toBitfield0;
+                result.bitField0_ = to_bitField0_;
                 onBuilt();
                 return result;
             }
@@ -3877,7 +3899,7 @@ public final class StructureMeta {
                 return this;
             }
 
-            public boolean isInitialized() {
+            public final boolean isInitialized() {
                 for (int i = 0; i < getColumnsCount(); i++) {
                     if (!getColumns(i).isInitialized()) {
 
@@ -5274,28 +5296,28 @@ public final class StructureMeta {
         }
 
         static {
-            DEFAULT_INSTANCE = new TableMeta(true);
-            DEFAULT_INSTANCE.initFields();
+            defaultInstance = new TableMeta(true);
+            defaultInstance.initFields();
         }
 
         // @@protoc_insertion_point(class_scope:io.mycat.meta.protocol.TableMeta)
     }
 
     private static final com.google.protobuf.Descriptors.Descriptor
-            INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR;
+            internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable;
+            internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable;
     private static final com.google.protobuf.Descriptors.Descriptor
-            INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR;
+            internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable;
+            internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable;
     private static final com.google.protobuf.Descriptors.Descriptor
-            INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR;
+            internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
     private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable;
+            internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable;
 
     public static com.google.protobuf.Descriptors.FileDescriptor
     getDescriptor() {
@@ -5324,7 +5346,7 @@ public final class StructureMeta {
                         "\0223\n\010uniIndex\030\n \003(\0132!.io.mycat.meta.proto" +
                         "col.IndexMeta\0220\n\005index\030\013 \003(\0132!.io.mycat." +
                         "meta.protocol.IndexMetaB)\n\026io.mycat.meta" +
-                        ".protocolB\rStructureMetaH\001",
+                        ".protocolB\rStructureMetaH\001"
         };
         com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
                 new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5334,28 +5356,28 @@ public final class StructureMeta {
                         return null;
                     }
                 };
-        com.google.protobuf.Descriptors.FileDescriptor.
-                internalBuildGeneratedFileFrom(descriptorData,
+        com.google.protobuf.Descriptors.FileDescriptor
+                .internalBuildGeneratedFileFrom(descriptorData,
                         new com.google.protobuf.Descriptors.FileDescriptor[]{
                         }, assigner);
-        INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR =
+        internal_static_io_mycat_meta_protocol_IndexMeta_descriptor =
                 getDescriptor().getMessageTypes().get(0);
-        internalStaticIoMycatMetaProtocolIndexMetaFieldAccessorTable = new
+        internal_static_io_mycat_meta_protocol_IndexMeta_fieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-                INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_INDEX_META_DESCRIPTOR,
-                new java.lang.String[]{"Name", "Type", "Columns"});
-        INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR =
+                internal_static_io_mycat_meta_protocol_IndexMeta_descriptor,
+                new java.lang.String[]{"Name", "Type", "Columns",});
+        internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor =
                 getDescriptor().getMessageTypes().get(1);
-        internalStaticIoMycatMetaProtocolColumnMetaFieldAccessorTable = new
+        internal_static_io_mycat_meta_protocol_ColumnMeta_fieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-                INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_COLUMN_META_DESCRIPTOR,
-                new java.lang.String[]{"Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname"});
-        INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR =
+                internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor,
+                new java.lang.String[]{"Name", "DataType", "IsUnsigned", "Length", "Precision", "Scale", "CanNull", "Sdefault", "AutoIncre", "Charsetname",});
+        internal_static_io_mycat_meta_protocol_TableMeta_descriptor =
                 getDescriptor().getMessageTypes().get(2);
-        internalStaticIoMycatMetaProtocolTableMetaFieldAccessorTable = new
+        internal_static_io_mycat_meta_protocol_TableMeta_fieldAccessorTable = new
                 com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-                INTERNAL_STATIC_IO_MYCAT_META_PROTOCOL_TABLE_META_DESCRIPTOR,
-                new java.lang.String[]{"TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index"});
+                internal_static_io_mycat_meta_protocol_TableMeta_descriptor,
+                new java.lang.String[]{"TableName", "Columns", "IsView", "CreateSql", "Version", "AiOffset", "Type", "AiColPos", "Primary", "UniIndex", "Index",});
     }
 
     // @@protoc_insertion_point(outer_class_scope)

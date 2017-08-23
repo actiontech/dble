@@ -561,7 +561,7 @@ public abstract class AbstractConnection implements NIOConnection {
             }
 
             boolean closed = !channel.isOpen();
-            if (closed == false) {
+            if (!closed) {
                 LOGGER.warn("close socket of connnection failed " + this);
             }
         }

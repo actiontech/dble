@@ -58,7 +58,7 @@ public abstract class Item {
 
     public boolean fixFields() {
         // We do not check fields which are fixed during construction
-        assert (fixed == false || basicConstItem());
+        assert (!fixed || basicConstItem());
         fixed = true;
         return false;
     }
@@ -763,7 +763,7 @@ public abstract class Item {
             String tmp = valStr();
             MySQLTimeStatus status = new MySQLTimeStatus();
             // Nanosecond rounding is not needed, for performance purposes
-            if (tmp != null && MyTime.strToTime(tmp, tmp.length(), ltime, status) == false)
+            if (tmp != null && !MyTime.strToTime(tmp, tmp.length(), ltime, status))
                 return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);

@@ -33,7 +33,7 @@ public class ItemNCharTypecast extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        assert (fixed == true && castLength >= 0);
+        assert (fixed && castLength >= 0);
 
         String res = null;
         if ((res = args.get(0).valStr()) == null) {

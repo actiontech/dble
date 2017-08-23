@@ -33,7 +33,7 @@ public class ItemFuncAbs extends ItemFuncNum1 {
     @Override
     public BigDecimal decimalOp() {
         BigDecimal bd = args.get(0).valDecimal();
-        if (nullValue = args.get(0).isNull() != true)
+        if (nullValue = !args.get(0).isNull())
             return bd.abs();
         return null;
     }

@@ -68,7 +68,7 @@ public class SequenceVal {
     }
 
     public long nextValue() {
-        if (successFetched == false) {
+        if (!successFetched) {
             throw new java.lang.RuntimeException(
                     "sequnce fetched failed  from db ");
         }

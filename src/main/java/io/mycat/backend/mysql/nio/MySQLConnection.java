@@ -408,7 +408,7 @@ public class MySQLConnection extends BackendAIOConnection {
         boolean conAutoComit = this.autocommit;
         String conSchema = this.schema;
         int xaSyn = 0;
-        if (expectAutocommit == false && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
+        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
             // clientTxIsoLation = Isolations.SERIALIZABLE;
             xaCmd = "XA START " + xaTxID + ';';
             this.xaStatus = TxState.TX_STARTED_STATE;
@@ -554,7 +554,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     public void release() {
-        if (metaDataSyned == false) { // indicate connection not normalfinished
+        if (!metaDataSyned) { // indicate connection not normalfinished
             // ,and
             // we can't know it's syn status ,so
             // close

@@ -320,7 +320,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     public void debugCommitDelay() {
         try {
-            if (LOGGER.isDebugEnabled() == true) {
+            if (LOGGER.isDebugEnabled()) {
                 long delayTime = 0;
                 String xaStatus = "";
                 //before the prepare command

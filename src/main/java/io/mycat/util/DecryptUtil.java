@@ -58,7 +58,7 @@ public class DecryptUtil {
                     flag = true;
                     return passwrods[2];
                 }
-                if (flag == false) {
+                if (!flag) {
                     throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
                 }
             } catch (Exception e2) {
@@ -78,7 +78,7 @@ public class DecryptUtil {
                 if ("1".equals(passwrods[0]) && host.equals(passwrods[1]) && user.equals(passwrods[2])) {
                     return passwrods[3];
                 }
-                if (flag == false) {
+                if (!flag) {
                     throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
                 }
             } catch (Exception e2) {

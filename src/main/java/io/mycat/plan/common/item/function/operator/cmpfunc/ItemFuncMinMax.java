@@ -246,7 +246,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
-        assert (fixed == true);
+        assert (fixed);
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
             cmpDatetimes(result);
@@ -272,7 +272,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
 
     @Override
     public boolean getTime(MySQLTime ltime) {
-        assert (fixed == true);
+        assert (fixed);
         if (compareAsDates) {
             LongPtr result = new LongPtr(0);
             cmpDatetimes(result);

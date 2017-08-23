@@ -169,7 +169,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         } finally {
             lock.unlock();
         }
-        if (finished == false) {
+        if (!finished) {
             finished = this.decrementCountBy(1);
         }
         if (error == null) {

@@ -101,7 +101,7 @@ public class DirectByteBufferPool implements BufferPool {
         DirectBuffer parentBuf = (DirectBuffer) thisNavBuf.attachment();
         int startChunk = (int) ((thisNavBuf.address() - parentBuf.address()) / this.chunkSize);
         for (int i = 0; i < allPages.length; i++) {
-            if ((recycled = allPages[i].recycleBuffer((ByteBuffer) parentBuf, startChunk, chunkCount) == true)) {
+            if ((recycled = allPages[i].recycleBuffer((ByteBuffer) parentBuf, startChunk, chunkCount))) {
                 break;
             }
         }
@@ -110,7 +110,7 @@ public class DirectByteBufferPool implements BufferPool {
         if (memoryUsage.containsKey(threadId)) {
             memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
         }
-        if (recycled == false) {
+        if (!recycled) {
             LOGGER.warn("warning ,not recycled buffer " + theBuf);
         }
     }

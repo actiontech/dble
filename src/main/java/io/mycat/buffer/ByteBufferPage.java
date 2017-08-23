@@ -32,7 +32,7 @@ public class ByteBufferPage {
         int contiueCount = 0;
         try {
             for (int i = 0; i < chunkCount; i++) {
-                if (chunkAllocateTrack.get(i) == false) {
+                if (!chunkAllocateTrack.get(i)) {
                     if (startChunk == -1) {
                         startChunk = i;
                         contiueCount = 1;

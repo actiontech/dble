@@ -49,7 +49,7 @@ public class ManagerPrivileges extends MycatPrivileges {
         MycatConfig config = MycatServer.getInstance().getConfig();
         UserConfig rUser = config.getUsers().get(user);
         // Manager privilege must be assign explicitly
-        if (rUser == null || rUser.isManager() == false)
+        if (rUser == null || !rUser.isManager())
             return false;
 
         return true;

@@ -416,7 +416,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     public void debugRollbackDelay() {
         try {
-            if (LOGGER.isDebugEnabled() == true && System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) != null) {
+            if (LOGGER.isDebugEnabled() && System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) != null) {
                 long delayTime = System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) == null ?
                         0 : Long.parseLong(System.getProperty(SystemConfig.XA_ROLLBACK_DELAY)) * 1000;
                 LOGGER.debug("before xa rollback sleep time = " + delayTime);

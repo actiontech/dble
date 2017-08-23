@@ -744,7 +744,7 @@ public class PhysicalDBPool {
             if (isAlive(theSource)) { // write node is active
                 if (includeWriteNode) {
                     boolean isCurWriteNode = (i == curActive);
-                    if (isCurWriteNode && includeCurWriteNode == false) {
+                    if (isCurWriteNode && !includeCurWriteNode) {
                         // not include cur active source
                     } else if (filterWithSlaveThreshold && theSource.isSalveOrRead()) {
                         boolean selected = canSelectAsReadNode(theSource);

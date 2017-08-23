@@ -83,9 +83,9 @@ public class FilterPreProcessor {
                     continue;
                 if (sub.canValued()) {
                     boolean value = sub.valBool();
-                    if (value == true && !isAnd)
+                    if (value && !isAnd)
                         return new ItemInt(1);
-                    if (value == false && isAnd)
+                    if (!value && isAnd)
                         return new ItemInt(0);
                 } else {
                     newSubFilters.add(sub);

@@ -165,7 +165,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 
     @Override
     public boolean getDate(MySQLTime ltime, long flags) {
-        assert (fixed == true);
+        assert (fixed);
         FieldTypes i = fieldType();
         if (i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
             return dateOp(ltime, flags);
@@ -178,7 +178,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
 
     @Override
     public boolean getTime(MySQLTime ltime) {
-        assert (fixed == true);
+        assert (fixed);
         FieldTypes i = fieldType();
         if (i == FieldTypes.MYSQL_TYPE_TIME) {
             return timeOp(ltime);

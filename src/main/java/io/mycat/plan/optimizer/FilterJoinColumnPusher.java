@@ -42,7 +42,7 @@ public class FilterJoinColumnPusher {
             List<Item> splits = FilterUtils.splitFilter(filterInWhere);
             List<Item> nonJoinFilter = new ArrayList<Item>();
             for (Item filter : splits) {
-                if (isPossibleERJoinColumnFilter(qtn, filter) == false) {
+                if (!isPossibleERJoinColumnFilter(qtn, filter)) {
                     nonJoinFilter.add(filter);
                 } else {
                     dnfNodeToPush.add((ItemFuncEqual) filter);

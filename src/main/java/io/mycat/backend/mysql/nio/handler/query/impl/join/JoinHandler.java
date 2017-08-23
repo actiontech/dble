@@ -267,7 +267,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     }
                     if (otherJoinOnItem != null) {
                         HandlerTool.initFields(joinRowFields, rowPacket.fieldValues);
-                        if (otherJoinOnItem.valBool() == false)
+                        if (!otherJoinOnItem.valBool())
                             continue;
                     }
                     matchCount++;

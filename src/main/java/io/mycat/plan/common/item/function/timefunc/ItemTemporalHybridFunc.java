@@ -86,7 +86,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         MySQLTime tm = new MySQLTime();
         if (valDatetime(tm, fuzzydate)) {
-            assert (nullValue == true);
+            assert (nullValue);
             return true;
         }
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME ||
@@ -100,7 +100,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
     @Override
     public boolean getTime(MySQLTime ltime) {
         if (valDatetime(ltime, MyTime.TIME_FUZZY_DATE)) {
-            assert (nullValue == true);
+            assert (nullValue);
             return true;
         }
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_TIME &&

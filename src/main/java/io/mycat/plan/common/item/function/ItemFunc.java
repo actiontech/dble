@@ -120,7 +120,7 @@ public abstract class ItemFunc extends Item {
     }
 
     public boolean hasTimestampArgs() {
-        assert (fixed == true);
+        assert (fixed);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
                 if (arg.type() == ItemType.FIELD_ITEM && arg.fieldType() == FieldTypes.MYSQL_TYPE_TIMESTAMP)
@@ -130,7 +130,7 @@ public abstract class ItemFunc extends Item {
     }
 
     public boolean hasDateArgs() {
-        assert (fixed == true);
+        assert (fixed);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
                 if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_DATE ||
@@ -141,7 +141,7 @@ public abstract class ItemFunc extends Item {
     }
 
     public boolean hasTimeArgs() {
-        assert (fixed == true);
+        assert (fixed);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
                 if (arg.type() == ItemType.FIELD_ITEM && (arg.fieldType() == FieldTypes.MYSQL_TYPE_TIME ||
@@ -152,7 +152,7 @@ public abstract class ItemFunc extends Item {
     }
 
     public boolean hasDatetimeArgs() {
-        assert (fixed == true);
+        assert (fixed);
         if (args != null && args.size() > 0)
             for (Item arg : args) {
                 if (arg.type() == ItemType.FIELD_ITEM && arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME)

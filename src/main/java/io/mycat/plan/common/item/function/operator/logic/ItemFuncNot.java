@@ -37,7 +37,7 @@ public class ItemFuncNot extends ItemBoolFunc {
     public BigInteger valInt() {
         boolean value = args.get(0).valBool();
         this.nullValue = args.get(0).isNull();
-        return ((!this.nullValue && value == false) ? BigInteger.ONE : BigInteger.ZERO);
+        return ((!this.nullValue && !value) ? BigInteger.ONE : BigInteger.ZERO);
     }
 
     @Override

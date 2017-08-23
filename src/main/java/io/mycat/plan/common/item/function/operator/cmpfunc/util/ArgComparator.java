@@ -98,7 +98,7 @@ public class ArgComparator {
 
     public int setCompareFunc(ItemFunc ownerarg, ItemResult type) {
         owner = ownerarg;
-        func = comparatorMatrix[type.ordinal()][isOwnerEqualFunc() == true ? 1 : 0];
+        func = comparatorMatrix[type.ordinal()][isOwnerEqualFunc() ? 1 : 0];
         if (type == ItemResult.ROW_RESULT) { // 未实现
             return 1;
         } else if (type == ItemResult.STRING_RESULT) {

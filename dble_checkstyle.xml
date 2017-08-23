@@ -92,7 +92,7 @@
         <module name="EqualsHashCode"/>
         <module name="IllegalInstantiation"/>
         <module name="MissingSwitchDefault"/>
-        <!--<module name="SimplifyBooleanExpression"/>-->
+        <module name="SimplifyBooleanExpression"/>
         <!--<module name="SimplifyBooleanReturn"/>-->
         <!--<module name="ArrayTrailingComma"/>-->
         <!--<module name="VariableDeclarationUsageDistance"/>-->

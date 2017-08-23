@@ -16,7 +16,7 @@ public class HeapItem {
     }
 
     public boolean isNullItem() {
-        if (row == null && isNull == true)
+        if (row == null && isNull)
             return true;
         return false;
     }

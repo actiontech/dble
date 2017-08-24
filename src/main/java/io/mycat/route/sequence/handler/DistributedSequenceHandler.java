@@ -284,7 +284,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private int nextFree() {
         for (int i = 0; i < mark.length; i++) {
             if (i == 1) {
-        /* myself, please check in takeLeadership(): this.instanceId = 1; */
+                /* myself, please check in takeLeadership(): this.instanceId = 1; */
                 continue;
             }
             if (mark[i] != 1) {

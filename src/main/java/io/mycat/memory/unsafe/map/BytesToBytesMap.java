@@ -904,12 +904,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
                 recordsInPage--;
                 return loc;
             } else {
-
-
                 assert (reader != null);
-//        if(reader == null)
-//          return null;
-
                 if (!reader.hasNext()) {
                     advanceToNextPage();
                 }

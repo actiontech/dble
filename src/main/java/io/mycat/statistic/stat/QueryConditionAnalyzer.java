@@ -41,8 +41,6 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
     private String tableName = null;
     private String columnName = null;
 
-    // column value -> count
-//    private final HashMap<Object, Long> map = new HashMap<Object, Long>();
     private final Map<Object, AtomicLong> map = new ConcurrentHashMap<>();
 
     private ReentrantLock lock = new ReentrantLock();
@@ -188,26 +186,4 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
             return values;
         }
     }
-
-   /* -----------------------------------------------------------------
-    public static void main(String arg[]) {
-
-        String sql = "SELECT `fnum`, `forg`, `fdst`, `airline`, `ftype` , `ports_of_call`, "
-                    "`scheduled_deptime`, `scheduled_arrtime`, `actual_deptime`, `actual_arrtime`, "
-                    "`flight_status_code` FROM dynamic "
-                    "WHERE `fnum` = 'CA123'  AND `forg` = 'PEK'  AND `fdst` = 'SHA' "
-                    "AND `scheduled_deptime` BETWEEN 1212121 AND 232323233 "
-                    "AND `fservice` = 'J' AND `fcategory` = 1 "
-                    "AND `share_execute_flag` = 1 ORDER BY scheduled_deptime";
-
-        QueryResult qr = new QueryResult("zhuam", ServerParse.SELECT, sql, 0);
-
-        QueryConditionAnalyzer analyzer = QueryConditionAnalyzer.getInstance();
-        analyzer.setTableColumnFilter("dynamic&fnum");
-        analyzer.onQuery(qr);
-
-        List<Map.Entry<Object, Long>> list = analyzer.getValues();
-        System.out.println( list );
-     }
-    */
 }

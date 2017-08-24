@@ -144,7 +144,7 @@
             <property name="arrayInitIndent" value="8"/>
         </module>
         <module name="OuterTypeFilename"/>
-        <!--<module name="CommentsIndentation"/>-->
+        <module name="CommentsIndentation"/>
     </module>
 
     <module name="UniqueProperties"/>

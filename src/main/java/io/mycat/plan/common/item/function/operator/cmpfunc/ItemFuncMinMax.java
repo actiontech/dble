@@ -347,10 +347,10 @@ public abstract class ItemFuncMinMax extends ItemFunc {
     }
 
     public ItemResult castToIntType() {
-    /*
-     * make CAST(LEAST_OR_GREATEST(datetime_expr, varchar_expr)) return a
-     * number in format "YYYMMDDhhmmss".
-     */
+        /*
+         * make CAST(LEAST_OR_GREATEST(datetime_expr, varchar_expr)) return a
+         * number in format "YYYMMDDhhmmss".
+         */
         return compareAsDates ? ItemResult.INT_RESULT : resultType();
     }
 }

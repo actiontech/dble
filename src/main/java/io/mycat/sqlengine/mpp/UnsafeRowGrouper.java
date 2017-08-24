@@ -185,7 +185,7 @@ public class UnsafeRowGrouper {
                     groupKey.setDouble(i, 0);
                     break;
                 case ColMeta.COL_TYPE_NEWDECIMAL:
-//                        groupKey.setDouble(i, 0);
+                    //groupKey.setDouble(i, 0);
                     unsafeRowWriter.write(i, new BigDecimal(0L));
                     break;
                 case ColMeta.COL_TYPE_LONGLONG:
@@ -238,7 +238,7 @@ public class UnsafeRowGrouper {
                     emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
                     break;
                 case ColMeta.COL_TYPE_NEWDECIMAL:
-//                        emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
+                    //emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
                     unsafeRowWriter.write(curColMeta.colIndex, new BigDecimal(0L));
                     break;
                 default:
@@ -500,8 +500,7 @@ public class UnsafeRowGrouper {
                                 BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//                        key.setDouble(i,
-//                                BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+                        //key.setDouble(i, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         unsafeRowWriter.write(i,
                                 new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
                         break;
@@ -569,7 +568,7 @@ public class UnsafeRowGrouper {
 
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//                        value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+                        //value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         unsafeRowWriter.write(curColMeta.colIndex,
                                 new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
                         break;
@@ -664,7 +663,7 @@ public class UnsafeRowGrouper {
                             toRow.setDouble(index, BytesTools.getDouble(result));
                             break;
                         case ColMeta.COL_TYPE_NEWDECIMAL:
-//                           toRow.setDouble(index,BytesTools.getDouble(result));
+                            //toRow.setDouble(index,BytesTools.getDouble(result));
                             toRow.updateDecimal(index, new BigDecimal(new String(result)));
                             break;
                         default:
@@ -758,8 +757,8 @@ public class UnsafeRowGrouper {
                         avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-//                        avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
-//                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
+                        //avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
+                        //avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
                         int scale = merg.colMeta.decimals;
                         BigDecimal sumDecimal = toRow.getDecimal(avgSumIndex, scale);
                         avgSum = sumDecimal == null ? null : sumDecimal.toString().getBytes();
@@ -794,7 +793,7 @@ public class UnsafeRowGrouper {
                             toRow.setDouble(avgSumIndex, ByteUtil.getDouble(result));
                             break;
                         case ColMeta.COL_TYPE_NEWDECIMAL:
-//                          toRow.setDouble(avgSumIndex,ByteUtil.getDouble(result));
+                            //toRow.setDouble(avgSumIndex,ByteUtil.getDouble(result));
                             toRow.updateDecimal(avgSumIndex, new BigDecimal(new String(result)));
                             break;
                         default:

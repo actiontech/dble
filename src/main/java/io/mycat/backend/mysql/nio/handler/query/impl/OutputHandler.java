@@ -63,9 +63,9 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = source.writeToBuffer(ok, buffer);
                 if (hasNext) {
                     source.write(buffer);
-//                    source.excuteNext(packetId, false);
+                    //source.excuteNext(packetId, false);
                 } else {
-//                    source.excuteNext(packetId, false);
+                    //source.excuteNext(packetId, false);
                     source.write(buffer);
                 }
             }
@@ -82,7 +82,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
-//            session.getSource().excuteNext(packetId, true);
+            //session.getSource().excuteNext(packetId, true);
             session.getSource().write(buffer);
         } finally {
             lock.unlock();
@@ -168,9 +168,9 @@ public class OutputHandler extends BaseDMLHandler {
             buffer = source.writeToBuffer(eof, buffer);
             if (hasNext) {
                 source.write(buffer);
-//                source.excuteNext(packetId, false);
+                //source.excuteNext(packetId, false);
             } else {
-//                source.excuteNext(packetId, false);
+                //source.excuteNext(packetId, false);
                 source.write(buffer);
             }
         } finally {
@@ -219,7 +219,7 @@ public class OutputHandler extends BaseDMLHandler {
                 error.message = "unknown error".getBytes();
             }
             error.packetId = ++packetId;
-//            session.getSource().excuteNext(packetId, true);
+            //session.getSource().excuteNext(packetId, true);
             session.getSource().write(error.toBytes());
         } finally {
             lock.unlock();

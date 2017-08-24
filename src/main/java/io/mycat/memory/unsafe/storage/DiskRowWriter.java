@@ -214,9 +214,9 @@ public class DiskRowWriter extends OutputStream {
      */
     public void recordWritten() throws IOException {
         numRecordsWritten += 1;
-//writeMetrics.incRecordsWritten(1)
+        //writeMetrics.incRecordsWritten(1)
 
-// TODO: call updateBytesWritten() less frequently.
+        //TODO: call updateBytesWritten() less frequently.
         if (numRecordsWritten % 32 == 0) {
             updateBytesWritten();
         }

@@ -43,30 +43,6 @@ public class AIOSocketWR extends SocketWR {
 
     }
 
-//    public  int flushChannel(final AsynchronousSocketChannel channel,
-//                             final ByteBuffer bb, final long writeTimeout)
-//    {
-//
-//        if (!bb.hasRemaining())
-//        {
-//            return 0;
-//        }
-//        int nWrite = bb.limit();
-//        try
-//        {
-//            while (bb.hasRemaining())
-//            {
-//                channel.write(bb).get(writeTimeout, TimeUnit.SECONDS);
-//            }
-//        } catch (Exception ie)
-//        {
-//            con.close("write failed " + ie);
-//
-//        }
-//        return nWrite;
-//    }
-
-
     /**
      * return true ,means no more data
      *

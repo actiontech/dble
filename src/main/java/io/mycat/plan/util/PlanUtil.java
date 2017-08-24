@@ -347,16 +347,4 @@ public final class PlanUtil {
             return true;
         }
     }
-
-
-//    public static boolean existPartiTable(PlanNode tn) {
-//        boolean existNumParti = false;
-//        for (TableNode table : tn.getReferedTableNodes()) {
-//            if (table.isPartitioned()) {
-//                existNumParti = true;
-//                break;
-//            }
-//        }
-//        return existNumParti;
-//    }
 }

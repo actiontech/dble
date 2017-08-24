@@ -33,11 +33,11 @@ public class HintMasterDBHandler implements HintHandler {
                                 ServerConnection sc, LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
-//        LOGGER.debug("realSQL: " + realSQL); // select * from travelrecord limit 1
-//        LOGGER.debug("sqlType: " + sqlType); // 7
-//        LOGGER.debug("schema.getName(): " + schema.getName()); // TESTDB
-//        LOGGER.debug("schema.getName(): " + schema.getDataNode()); // null
-//        LOGGER.debug("hintSQLValue: " + hintSQLValue); // master/slave
+        //LOGGER.debug("realSQL: " + realSQL); // select * from travelrecord limit 1
+        //LOGGER.debug("sqlType: " + sqlType); // 7
+        //LOGGER.debug("schema.getName(): " + schema.getName()); // TESTDB
+        //LOGGER.debug("schema.getName(): " + schema.getDataNode()); // null
+        //LOGGER.debug("hintSQLValue: " + hintSQLValue); // master/slave
 
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
                 schema, sqlType, realSQL, charset, sc, cachePool);
@@ -52,12 +52,6 @@ public class HintMasterDBHandler implements HintHandler {
                 isRouteToMaster = true;
             }
             if (hintSQLValue.trim().equalsIgnoreCase("slave")) {
-//                if(rrs.getCanRunInReadDB() != null && !rrs.getCanRunInReadDB()){
-//                    isRouteToMaster = null;
-//                    LOGGER.warn(realSQL + " can not run in slave.");
-//                }else{
-//                    isRouteToMaster = false;
-//                }
                 if (sqlType == ServerParse.DELETE || sqlType == ServerParse.INSERT ||
                         sqlType == ServerParse.REPLACE || sqlType == ServerParse.UPDATE ||
                         sqlType == ServerParse.DDL) {

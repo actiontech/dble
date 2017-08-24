@@ -510,28 +510,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 end = results.size();
             }
 
-//            // 对于不需要排序的语句,返回的数据只有rrs.getLimitSize()
-//            if (rrs.getOrderByCols() == null) {
-//                end = results.size();
-//                start = 0;
-//            }
             if (end > results.size()) {
                 end = results.size();
             }
-
-//            for (int i = start; i < end; i++) {
-//                RowDataPacket row = results.get(i);
-//                if( prepared ) {
-//                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-//                    binRowDataPk.read(fieldPackets, row);
-//                    binRowDataPk.packetId = ++packetId;
-//                    //binRowDataPk.write(source);
-//                    buffer = binRowDataPk.write(buffer, session.getSource(), true);
-//                } else {
-//                    row.packetId = ++packetId;
-//                    buffer = row.write(buffer, source, true);
-//                }
-//            }
 
             if (prepared) {
                 for (int i = start; i < end; i++) {

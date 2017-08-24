@@ -47,9 +47,9 @@ public class DataNodeFileManager {
     // The content of subDirs is immutable but the content of subDirs(i) is mutable. And the content
     // of subDirs(i) is protected by the lock of subDirs(i)
     // private val shutdownHook ;
-  /* Create one local directory for each path mentioned in spark.local.dir; then, inside this
-   * directory, create multiple subdirectories that we will hash files into, in order to avoid
-   * having really large inodes at the top level. */
+    /* Create one local directory for each path mentioned in spark.local.dir; then, inside this
+     * directory, create multiple subdirectories that we will hash files into, in order to avoid
+     * having really large inodes at the top level. */
 
     private List<File> localDirs;
     private int subDirsPerLocalDir;

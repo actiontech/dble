@@ -152,20 +152,4 @@ public class PhysicalDBNode {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }
     }
-//    public void getConnection(String schema,boolean autoCommit, RouteResultsetNode rrs,
-//            ResponseHandler handler, Object attachment) throws Exception {
-//        checkRequest(schema);
-//        if (dbPool.isInitSuccess()) {
-//            if (rrs.canRunnINReadDB(autoCommit)) {
-//                dbPool.getRWBanlanceCon(schema,autoCommit, handler, attachment,
-//                        this.database);
-//            } else {
-//                dbPool.getSource().getConnection(schema,autoCommit, handler, attachment);
-//            }
-//
-//        } else {
-//            throw new IllegalArgumentException("Invalid DataSource:"
-//                    + dbPool.getActiveIndex());
-//        }
-//    }
 }

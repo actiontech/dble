@@ -202,165 +202,7 @@ public class ProxyMetaManager {
     private TableMeta getTableMeta(String schema, String tbName) {
         return catalogs.get(schema).getTableMeta(tbName);
     }
-//    public TableMeta removeTableMetaNosync(String schema, String tbName) {
-//        SchemaMeta schemaMeta = catalogs.remove(schema);
-//        if (schemaMeta == null) {
-//            return null;
-//        }
-//        return schemaMeta.dropTable(tbName);
 
-//    }
-//    public void createView(String schema, String viewName, String createSql, List<String> columns, PlanNode selectNode,
-//            ViewCreateMode mode, boolean writeToZk) {
-//        if (!checkDbExists(schema)) {
-//            throw new MySQLOutPutException(1049, "42000", String.format("Unknown database '%s'", schema));
-//        }
-//        SchemaMeta schemaMeta = getSchema(schema);
-//        if (mode == ViewCreateMode.VIEW_CREATE_NEW && schemaMeta.getViewMeta(viewName) != null)
-//            throw new MySQLOutPutException(1050, "42S01", String.format("Table '%s' already exists", viewName));
-//        if (mode == ViewCreateMode.VIEW_ALTER && schemaMeta.getViewMeta(viewName) == null)
-//            throw new MySQLOutPutException(1146, "42S02", String.format("Table '%s' doesn't exist", viewName));
-//        // see mysql_create_view.cc for more check to do
-//        selectNode.setUpFields();
-//        selectNode = SubQueryPreProcessor.optimize(selectNode);
-//        /* view list (list of view fields names) */
-//        if (columns != null && columns.size() > 0) {
-//            List<Item> sels = selectNode.getColumnsSelected();
-//            if (sels.size() != columns.size()) {
-//                throw new MySQLOutPutException(1353, "HY000",
-//                        String.format("View's SELECT and view's field list have different column counts"));
-//            }
-//            for (int index = 0; index < columns.size(); index++) {
-//                Item sel = sels.get(index);
-//                String columnName = columns.get(index);
-//                if (!StringUtils.equals(sel.getItemName(), columnName))
-//                    sel.setAlias(columnName);
-//            }
-//        }
-//        ViewMeta vm = new ViewMeta(new ViewNode(schema, viewName, selectNode, createSql));
-//        String path = DATA_ROOT_PATH + "/" + schema + "/view/" + viewName;
-//        byte[] data = null;
-//        try {
-//            data = createSql.getBytes("UTF-8");
-//        } catch (UnsupportedEncodingException e) {
-//            // ignore
-//        }
-//        if (writeToZk) {
-//            switch (mode) {
-//            case VIEW_CREATE_NEW:
-//                zkClientDao.create(path, data, CreateMode.PERSISTENT);
-//                break;
-//            case VIEW_CREATE_OR_REPLACE:
-//                if (!zkClientDao.exists(path)) {
-//                    zkClientDao.create(path, data, CreateMode.PERSISTENT);
-//                } else {
-//                    zkClientDao.writeData(path, data);
-//                }
-//                break;
-//            default:
-//                zkClientDao.writeData(path, data);
-//                break;
-//            }
-//        }
-//        schemaMeta.addViewMeta(viewName, vm);
-
-//    }
-//    @Override
-//    public void dropView(List<Pair<String, String>> views, boolean ifExists) {
-//        StringBuilder unknownTable = new StringBuilder();
-//        boolean isFirst = true;
-//        for (Pair<String, String> view : views) {
-//            String schema = view.getKey();
-//            String viewName = view.getValue();
-//            if (!containsView(schema, viewName) && ifExists == false) {
-//                if (isFirst) {
-//                    isFirst = false;
-//                } else {
-//                    unknownTable.append(",");
-//                }
-//                unknownTable.append(SqlMaker.getFullName(schema, viewName));
-//            } else {
-//                SchemaMeta schemaMeta = getSchema(schema);
-//                String path = DATA_ROOT_PATH + "/" + schema + "/view/" + viewName;
-//                schemaMeta.dropView(viewName);
-//                zkClientDao.delete(path);
-//            }
-//
-//        }
-//        if (unknownTable.length() > 0) {
-//            throw new MySQLOutPutException(1051, "42S02", String.format("Unknown table '%s'", unknownTable.toString()));
-//        }
-//    }
-//
-//    public boolean containsViewNoSync(String schema, String viewName) {
-//        SchemaMeta schemaMeta = this.catalogs.get(schema);
-//        if (schemaMeta == null)
-//            return false;
-//        return schemaMeta.containsView(viewName);
-//    }
-//
-//    public boolean containsView(String schema, String viewName) {
-//        if (!checkDbExists(schema)) {
-//            return false;
-//        } else {
-//            String path = DATA_ROOT_PATH + "/" + schema + "/view/" + viewName;
-//            boolean zkExisted = zkClientDao.exists(path);
-//            boolean rst = getSchema(schema).containsView(viewName);
-//            if (zkExisted != rst) {
-//                if (zkExisted) {
-//                    try {
-//                        byte[] data = zkClientDao.readData(path);
-//                        String sql = new String(data, "UTF-8");
-//                        compileView(schema, sql);
-//                    } catch (UnsupportedEncodingException e) {
-//                        // ignore
-//                    }
-//                } else {
-//                    getSchema(schema).dropView(viewName);
-//                }
-//            }
-//            return zkExisted;
-//        }
-//    }
-//
-//    public void compileView(String schema, String sql) {
-//        try {
-//            SQLStatement stmt = new SQLParserDelegate().parse(sql);
-//            MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(schema);
-//            visitor.setWriteToZk(false);
-//            stmt.accept(visitor);
-//        } catch (Exception e) {
-//            logger.debug("compile view for [" + sql + "] error:", e);
-//        }
-//    }
-//
-//    /**
-//     * need call contains first
-//     *
-//     * @param user
-//     * @param schema
-//     * @param viewName
-//     * @return
-//     */
-//    public String getViewSQL(String schema, String viewName) {
-//        SchemaMeta schemaMeta = getSchema(schema);
-//        if (schemaMeta == null)
-//            return null;
-//        ViewMeta viewMeta = schemaMeta.getViewMeta(viewName);
-//        if (viewMeta == null)
-//            return null;
-//        return viewMeta.getCreateSql();
-//    }
-//
-//    @Override
-//    public ViewNode getView(String schema, String viewName) {
-//        if (!containsViewNoSync(schema, viewName))
-//            return null;
-//        SchemaMeta schemaMeta = getSchema(schema);
-//        ViewMeta vm = schemaMeta.getViewMeta(viewName);
-//        return vm.getViewNode();
-
-//    }
 
     private Set<String> getSelfNodes(MycatConfig config) {
         Set<String> selfNode = null;
@@ -556,44 +398,6 @@ public class ProxyMetaManager {
         }
     }
 
-//
-//    private synchronized void truncateTable(String schema, DDLTruncateTableStatement ast) {
-//        String table = ast.getTable().getIdTextUnescape();
-//        TableMeta tbMeta = getTableMeta(schema, table);
-//        if (tbMeta == null)
-//            return;
-//        TableMeta.Builder tmBuilder = tbMeta.toBuilder();
-//        long version = System.currentTimeMillis();
-//        tmBuilder.setVersion(version);
-//        tbMeta = tmBuilder.build();
-//        if (ProxyServer.getInstance().removeSequence(schema, table)) {
-//            long offset = tbMeta.getAiOffset();
-//            ProxyServer.getInstance().addSequence(schema, table, offset);
-//        }
-//        if (!standalone) {
-//            String path = DATA_ROOT_PATH + "/" + schema + "/table/" + table;
-//            zkClientDao.writeData(path, tbMeta.toByteArray());
-//        }
-//        addTable(schema, tbMeta);
-//    }
-//
-
-
-//
-//    public void renameTable(String schema, DDLRenameTableStatement ast) {
-//        for (Pair<Identifier, Identifier> pair : ast.getList()) {
-//            String orgSchema = schema;
-//            String newSchema = schema;
-//            if (pair.getKey().getParent() != null)
-//                orgSchema = pair.getKey().getParent().getIdTextUnescape();
-//            if (pair.getValue().getParent() != null)
-//                newSchema = pair.getValue().getParent().getIdTextUnescape();
-//            String orgTable = pair.getKey().getIdTextUnescape();
-//            String newTable = pair.getValue().getIdTextUnescape();
-//            renameTable(orgSchema, orgTable, newSchema, newTable);
-//        }
-//    }
-
     private void alterTable(String schema, String sql, SQLAlterTableStatement alterStatement, boolean isSuccess, boolean needNotifyOther) {
         SchemaInfo schemaInfo = getSchemaInfo(schema, alterStatement.getTableSource());
         try {
@@ -646,15 +450,6 @@ public class ProxyMetaManager {
                 }
             }
             tmBuilder.clearColumns().addAllColumns(cols);
-//            long offset = -1;
-//            if (ast.getTableOptions() != null && ast.getTableOptions().getAutoIncrement() != null) {
-//                Object obj = ast.getTableOptions().getAutoIncrement()
-//                        .evaluation(ExprEvaluationUtil.getEvaluationParameters());
-//                if (obj instanceof Number) {
-//                    offset = ((Number) obj).longValue();
-//                }
-//                tmBuilder.setAiOffset(offset);
-//            }
             if (autoColumnIndex != -1) {
                 tmBuilder.setAiColPos(autoColumnIndex);
             }
@@ -801,21 +596,6 @@ public class ProxyMetaManager {
         }
         return false;
     }
-//    private void renameTable(String orgSchema, String orgTable, String newSchema, String newTable) {
-//        TableMeta orgTbMeta = removeTableMetaNosync(orgSchema, orgTable);
-//        if (orgTbMeta == null)
-//            return;
-//        List<ColumnMeta> orgCols = orgTbMeta.getAllColumnsList();
-//        List<ColumnMeta> newCols = new ArrayList<ColumnMeta>();
-//        for (ColumnMeta orgCol : orgCols) {
-//            ColumnMeta.Builder cmBuilder = orgCol.toBuilder();
-//            cmBuilder.setTableName(newTable);
-//            newCols.add(cmBuilder.build());
-//        }
-//        TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
-//        tmBuilder.setCatalog(newSchema).setTableName(newTable).clearAllColumns().addAllAllColumns(newCols);
-//        addTable(newSchema, tmBuilder.build());
-//    }
 
     private int addColumn(TableMeta.Builder tmBuilder, List<ColumnMeta> columnMetas, SQLAlterTableAddColumn addColumn, Set<String> indexNames) {
         int autoColumnIndex = -1;

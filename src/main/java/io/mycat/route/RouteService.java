@@ -77,15 +77,11 @@ public class RouteService {
 
         /*!mycat: sql = select name from aa */
         /*!mycat: schema = test */
-//      boolean isMatchOldHint = stmt.startsWith(OLD_MYCAT_HINT);
-//      boolean isMatchNewHint = stmt.startsWith(NEW_MYCAT_HINT);
-//        if (isMatchOldHint || isMatchNewHint ) {
         int hintLength = RouteService.isHintSql(stmt);
         if (hintLength != -1) {
             int endPos = stmt.indexOf("*/");
             if (endPos > 0) {
                 // 用!mycat:内部的语句来做路由分析
-//                int hintLength = isMatchOldHint ? OLD_MYCAT_HINT.length() : NEW_MYCAT_HINT.length();
                 String hint = stmt.substring(hintLength, endPos).trim();
 
                 String hintSplit = "=";

@@ -194,7 +194,6 @@ public final class SubQueryPreProcessor {
                 if (queryAlias == null)
                     queryAlias = qtn.query.getSubAlias();
                 result.query.setAlias(queryAlias);
-//                refreshItemTable(leftColumn, queryAlias);
             }
             result.query.setUpFields();
             return result;

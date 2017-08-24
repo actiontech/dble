@@ -51,13 +51,11 @@ public final class CompareUtil {
     }
 
     public static int compareLong(long l, long r) {
-//          System.out.println(l + "      " +  r);
         return Long.compare(l, r);
 
     }
 
     public static int compareString(String l, String r) {
-//          return compareStringForChinese(l,r);
         if (l == null) {
             return -1;
         } else if (r == null) {

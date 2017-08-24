@@ -57,6 +57,6 @@ public final class MyLocales {
             ',', /* thousands_sep en_US */
             new String(new byte[]{3, 3}), /* grouping en_US */
             GLOBAL_ERRMSGS[ErrMsgsIndex.en_US.ordinal()]);
-    /***** LOCALE END en_US *****/
+            /***** LOCALE END en_US *****/
 
 }

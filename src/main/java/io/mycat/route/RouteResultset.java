@@ -231,21 +231,18 @@ public final class RouteResultset implements Serializable {
     public void setHasAggrColumn(boolean hasAggrColumn) {
         if (hasAggrColumn) {
             createSQLMergeIfNull().setHasAggrColumn(true);
-//            this.setNeedOptimizer(true);
         }
     }
 
     public void setGroupByCols(String[] groupByCols) {
         if (groupByCols != null && groupByCols.length > 0) {
             createSQLMergeIfNull().setGroupByCols(groupByCols);
-//            this.setNeedOptimizer(true);
         }
     }
 
     public void setMergeCols(Map<String, Integer> mergeCols) {
         if (mergeCols != null && !mergeCols.isEmpty()) {
             createSQLMergeIfNull().setMergeCols(mergeCols);
-//            this.setNeedOptimizer(true);
         }
 
     }

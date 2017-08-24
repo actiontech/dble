@@ -361,12 +361,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
             binRowDataPk.read(fieldPackets, rowDataPk);
             binRowDataPk.packetId = rowDataPk.packetId;
-//            binRowDataPk.write(session.getSource());
-            /*
-             * [fix bug] : 这里不能直接将包写到前端连接,
-             * 因为在fieldEofResponse()方法结束后buffer还没写出,
-             * 所以这里应该将包数据顺序写入buffer(如果buffer满了就写出),然后再将buffer写出
-             */
             buffer = binRowDataPk.write(buffer, session.getSource(), true);
         } else {
             buffer = session.getSource().writeToBuffer(row, allocBuffer());

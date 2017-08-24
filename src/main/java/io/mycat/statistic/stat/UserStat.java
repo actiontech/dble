@@ -53,11 +53,6 @@ public class UserStat {
      * 大结果集记录
      */
     private SqlResultSizeRecorder sqlResultSizeRecorder = null;
-
-    /**
-     * 读写锁
-     */
-//    private ReentrantReadWriteLock lock  = new ReentrantReadWriteLock();
     public UserStat(String user) {
         super();
 
@@ -154,8 +149,6 @@ public class UserStat {
         }
         //-----------------------------------------------------
 
-//        this.lock.writeLock().lock();
-//        try {
 
         //慢查询记录
         long executeTime = endTime - startTime;
@@ -186,10 +179,6 @@ public class UserStat {
         if (rseultSetSize >= MycatServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
             this.sqlResultSizeRecorder.addSql(sql, rseultSetSize);
         }
-
-//        } finally {
-//            this.lock.writeLock().unlock();
-//        }
 
         //after
         //-----------------------------------------------------

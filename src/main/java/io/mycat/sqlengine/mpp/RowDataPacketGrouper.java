@@ -81,37 +81,37 @@ public class RowDataPacketGrouper {
             RowDataPacket rowDataPacket = it.next();
             switch (havingCols.getOperator()) {
                 case "=":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (eq(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
                     break;
                 case ">":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (gt(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
                     break;
                 case "<":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (lt(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
                     break;
                 case ">=":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (gt(rowDataPacket.fieldValues.get(index), right, colType) && eq(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
                     break;
                 case "<=":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (lt(rowDataPacket.fieldValues.get(index), right, colType) && eq(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
                     break;
                 case "!=":
-                /* Add parameter of colType, Modified by winbill. 20160312. */
+                    /* Add parameter of colType, Modified by winbill. 20160312. */
                     if (neq(rowDataPacket.fieldValues.get(index), right, colType)) {
                         it.remove();
                     }
@@ -128,22 +128,18 @@ public class RowDataPacketGrouper {
      * Modified by winbill. 20160312.
      */
     private boolean lt(byte[] l, byte[] r, final int colType) {
-//        return -1 != ByteUtil.compareNumberByte(l, r);
         return -1 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean gt(byte[] l, byte[] r, final int colType) {
-//        return 1 != ByteUtil.compareNumberByte(l, r, havingCol);
         return 1 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean eq(byte[] l, byte[] r, final int colType) {
-//        return 0 != ByteUtil.compareNumberByte(l, r, havingCol);
         return 0 != RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
     private boolean neq(byte[] l, byte[] r, final int colType) {
-//        return 0 == ByteUtil.compareNumberByte(l, r, havingCol);
         return 0 == RowDataPacketGrouper.compareObject(l, r, colType);
     }
 
@@ -231,8 +227,6 @@ public class RowDataPacketGrouper {
                         merg.colMeta.colType, merg.mergeType);
                 if (result != null) {
                     toRow.fieldValues.set(merg.colMeta.avgSumIndex, result);
-//                    toRow.fieldValues.remove(merg.colMeta.avgCountIndex) ;
-//                    toRow.fieldCount=toRow.fieldCount-1;
                     rmIndexSet.add(merg.colMeta.avgCountIndex);
                 }
             }

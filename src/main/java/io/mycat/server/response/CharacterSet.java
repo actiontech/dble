@@ -48,17 +48,7 @@ public final class CharacterSet {
     private static final Logger LOGGER = LoggerFactory.getLogger(CharacterSet.class);
 
     public static void response(String stmt, ServerConnection c, int rs) {
-    /* TODO: completely charsets support
-
-       Currently, we don't support setting single nature of the character set.
-       When these statements are used, we justly give a caution.
-       Maybe, we implement completely charsets in future. By then, regain here.
-    */
-//        if (true) {
-//            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Unsupported statement, please use 'SET NAMES xxx'");
-//            return;
-//        }
-
+        /* TODO: completely charsets support */
         if (-1 == stmt.indexOf(',')) {
             /* 单个属性 */
             oneSetResponse(stmt, c, rs);

@@ -347,7 +347,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_FLOAT -> */
+            /* enum_field_types.MYSQL_TYPE_FLOAT -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -390,7 +390,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_DOUBLE -> */
+            /* enum_field_types.MYSQL_TYPE_DOUBLE -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -433,7 +433,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_NULL -> */
+            /* enum_field_types.MYSQL_TYPE_NULL -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -476,7 +476,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_GEOMETRY},
-    /* enum_field_types.MYSQL_TYPE_TIMESTAMP -> */
+            /* enum_field_types.MYSQL_TYPE_TIMESTAMP -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -519,7 +519,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_LONGLONG -> */
+            /* enum_field_types.MYSQL_TYPE_LONGLONG -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -562,7 +562,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_INT24 -> */
+            /* enum_field_types.MYSQL_TYPE_INT24 -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -605,7 +605,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_DATE -> */
+            /* enum_field_types.MYSQL_TYPE_DATE -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -648,7 +648,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_TIME -> */
+            /* enum_field_types.MYSQL_TYPE_TIME -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -691,7 +691,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_DATETIME -> */
+            /* enum_field_types.MYSQL_TYPE_DATETIME -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -734,7 +734,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_YEAR -> */
+            /* enum_field_types.MYSQL_TYPE_YEAR -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -777,7 +777,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_NEWDATE -> */
+            /* enum_field_types.MYSQL_TYPE_NEWDATE -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -820,7 +820,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_VARCHAR -> */
+            /* enum_field_types.MYSQL_TYPE_VARCHAR -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -863,7 +863,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_BIT -> */
+            /* enum_field_types.MYSQL_TYPE_BIT -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -906,7 +906,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_NEWDECIMAL -> */
+            /* enum_field_types.MYSQL_TYPE_NEWDECIMAL -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -949,7 +949,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_ENUM -> */
+            /* enum_field_types.MYSQL_TYPE_ENUM -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -992,7 +992,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_SET -> */
+            /* enum_field_types.MYSQL_TYPE_SET -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1035,7 +1035,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_TINY_BLOB -> */
+            /* enum_field_types.MYSQL_TYPE_TINY_BLOB -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1078,7 +1078,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_TINY_BLOB, FieldTypes.MYSQL_TYPE_TINY_BLOB},
-    /* enum_field_types.MYSQL_TYPE_MEDIUM_BLOB -> */
+            /* enum_field_types.MYSQL_TYPE_MEDIUM_BLOB -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1121,7 +1121,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_MEDIUM_BLOB, FieldTypes.MYSQL_TYPE_MEDIUM_BLOB},
-    /* enum_field_types.MYSQL_TYPE_LONG_BLOB -> */
+            /* enum_field_types.MYSQL_TYPE_LONG_BLOB -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1164,7 +1164,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_LONG_BLOB, FieldTypes.MYSQL_TYPE_LONG_BLOB},
-    /* enum_field_types.MYSQL_TYPE_BLOB -> */
+            /* enum_field_types.MYSQL_TYPE_BLOB -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1207,7 +1207,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_BLOB, FieldTypes.MYSQL_TYPE_BLOB},
-    /* enum_field_types.MYSQL_TYPE_VAR_STRING -> */
+            /* enum_field_types.MYSQL_TYPE_VAR_STRING -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1250,7 +1250,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR},
-    /* enum_field_types.MYSQL_TYPE_STRING -> */
+            /* enum_field_types.MYSQL_TYPE_STRING -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY
@@ -1293,7 +1293,7 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_STRING},
-    /* enum_field_types.MYSQL_TYPE_GEOMETRY -> */
+            /* enum_field_types.MYSQL_TYPE_GEOMETRY -> */
             {
                     // enum_field_types.MYSQL_TYPE_DECIMAL
                     // enum_field_types.MYSQL_TYPE_TINY

@@ -284,8 +284,6 @@ public class DataNodeMemoryManager {
         page.pageNumber = pageNumber;
         pageTable[pageNumber] = page;
 
-//    logger.info("Allocate page number " + pageNumber + " ("+ acquired +" bytes)");
-
         return page;
     }
 

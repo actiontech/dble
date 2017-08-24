@@ -291,7 +291,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
-            /* It is impossible arriving here, because we set limit to 0 */
+        /* It is impossible arriving here, because we set limit to 0 */
         return errorRepsponsed.get();
     }
 

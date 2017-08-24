@@ -37,7 +37,7 @@ public class MysqlDataIO implements DataIO {
         String pwd = dn.getPwd();
         String db = dn.getDb();
 
-//        String loadData ="?mysql -h? -P? -u? -p? -D? --local-infile=1 -e \"load data local infile '?' replace into table ? CHARACTER SET '?' FIELDS TERMINATED BY ','  LINES TERMINATED BY '\\r\\n'\"";
+        //String loadData ="?mysql -h? -P? -u? -p? -D? --local-infile=1 -e \"load data local infile '?' replace into table ? CHARACTER SET '?' FIELDS TERMINATED BY ','  LINES TERMINATED BY '\\r\\n'\"";
         String loadData = "?mysql -h? -P? -u? -p? -D?  -f --default-character-set=? -e \"source ?\"";
         loadData = DataMigratorUtil.paramsAssignment(loadData, "?", mysqlBin, ip, port, user, pwd, db, charset, file.getAbsolutePath());
         LOGGER.info(table.getSchemaAndTableName() + " " + loadData);
@@ -65,8 +65,7 @@ public class MysqlDataIO implements DataIO {
         String pwd = dn.getPwd();
         String db = dn.getDb();
 
-//        String mysqlDump = "?mysqldump -h? -P? -u? -p? ? ?  --no-create-info --default-character-set=? "
-//                + "--add-locks=false --tab='?' --fields-terminated-by=',' --lines-terminated-by='\\r\\n' --where='? in(?)'";
+        //String mysqlDump = "?mysqldump -h? -P? -u? -p? ? ?  --no-create-info --default-character-set=? --add-locks=false --tab='?' --fields-terminated-by=',' --lines-terminated-by='\\r\\n' --where='? in(?)'";
         //由于mysqldump导出csv格式文件只能导出到本地，暂时替换成导出insert形式的文件
         String mysqlDump = "?mysqldump -h? -P? -u? -p? ? ?  --compact --no-create-info --default-character-set=? --add-locks=false --where=\"? in (#)\" --result-file=\"?\"";
 

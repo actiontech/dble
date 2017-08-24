@@ -14,9 +14,6 @@ public abstract class ItemSumNum extends ItemSum {
     public ItemSumNum(List<Item> args, boolean isPushDown, List<Field> fields) {
         super(args, isPushDown, fields);
     }
-//
-//    /* 是否已经被计算过 */
-//    boolean is_evaluated;
 
     @Override
     public boolean fixFields() {

@@ -73,7 +73,7 @@ public final class ShowIndex {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, stmt);
                 return;
             }
-//            show index with where :druid has a bug ：no where
+            //show index with where :druid has a bug ：no where
             if (changeSQL && whereIndex > 0 && !sql.toString().toLowerCase().contains("where")) {
                 sql.append(" ");
                 sql.append(strWhere);

@@ -29,8 +29,6 @@ public class SequenceVal {
         return nexVal < this.maxSegValue;
     }
 
-//    FetchMySQLSequnceHandler seqHandler;
-
     public void setCurValue(long newValue) {
         curVal.set(newValue);
         successFetched = true;

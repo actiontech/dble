@@ -17,10 +17,7 @@ Item_func_notbetween and Item_func_in, Item_func_notin.
 public abstract class ItemFuncOptNeg extends ItemIntFunc {
 
     public boolean negated = false; /* <=> the item represents NOT <func> */
-//    public boolean pred_level = false; /*
-//                                         * <=> [NOT] <func> is used on a
-//                                         * predicate level
-//                                         */
+    //public boolean pred_level = false; /* <=> [NOT] <func> is used on a  predicate level */
 
     public ItemFuncOptNeg(List<Item> args, boolean isNegation) {
         super(args);

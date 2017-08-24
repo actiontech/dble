@@ -198,28 +198,4 @@ public final class TableStatAnalyzer implements QueryResultListener {
         }
     }
 
-
-/*    public static void main(String[] args) {
-
-        List<String> sqls = new ArrayList<String>();
-
-        sqls.add( "SELECT id, name, age FROM v1select1 a LEFT OUTER JOIN v1select2 b ON  a.id = b.id WHERE a.name = 12 ");
-        sqls.add( "insert into v1user_insert(id, name) values(1,3)");
-        sqls.add( "delete from v1user_delete where id= 2");
-        sqls.add( "update v1user_update set id=2 where id=3");
-        sqls.add( "select ename,deptno,sal from v1user_subquery1 where deptno=(select deptno from v1user_subquery2 where loc='NEW YORK')");
-        sqls.add( "replace into v1user_insert(id, name) values(1,3)");
-        sqls.add( "select * from v1xx where id=3 group by zz");
-        sqls.add( "select * from v1yy where xx=3 limit 0,3");
-        sqls.add( "SELECT * FROM (SELECT * FROM posts ORDER BY dateline DESC) GROUP BY  tid ORDER BY dateline DESC LIMIT 10");
-
-        for(String sql: sqls) {
-            List<String> tables = TableStatAnalyzer.getInstance().sqlParser.parseTableNames(sql);
-            for(String t: tables) {
-                System.out.println( t );
-            }
-        }
-    }
-    */
-
 }

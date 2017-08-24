@@ -204,10 +204,10 @@ public final class ReloadConfig {
          */
         MycatConfig config = MycatServer.getInstance().getConfig();
 
-    /* 2.1 、老的 dataSource 继续承接新建请求， 此处什么也不需要做 */
+        /* 2.1 、老的 dataSource 继续承接新建请求， 此处什么也不需要做 */
         boolean isReloadStatusOK = true;
 
-    /* 2.2、新的 dataHosts 初始化 */
+        /* 2.2、新的 dataHosts 初始化 */
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
             String hostName = dbPool.getHostName();
             // 设置 schemas
@@ -232,16 +232,14 @@ public final class ReloadConfig {
             }
         }
 
-    /*
-     *  TODO： 确认初始化情况
-     *
-     *  新的 dataHosts 是否初始化成功
-     */
+        /*
+         *  新的 dataHosts 是否初始化成功
+         */
         if (isReloadStatusOK) {
-    /* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
+            /* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, true);
 
-    /* 2.4、 处理旧的资源 */
+            /* 2.4、 处理旧的资源 */
             LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
             // 清除前一次 reload 转移出去的 old Cons
@@ -292,7 +290,7 @@ public final class ReloadConfig {
     }
 
     public static void reload() throws Exception {
-    /* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
+        /* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
         ConfigInitializer loader;
         try {
             loader = new ConfigInitializer(false);
@@ -306,9 +304,9 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
         FirewallConfig firewall = loader.getFirewall();
 
-    /* 2、在老的配置上， 应用新的配置 */
+        /* 2、在老的配置上， 应用新的配置 */
         MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, false);
-    /* 3、清理缓存 */
+        /* 3、清理缓存 */
         MycatServer.getInstance().getCacheService().clearCache();
 
         if (!loader.isDataHostWithoutWH()) {

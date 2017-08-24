@@ -700,10 +700,10 @@ public final class ServerParse {
                 case 'T':
                 case 't':
                     if (stmt.length() > ++offset) {
-//支持一下语句
-//  /*!mycat: sql=SELECT * FROM test where id=99 */set @pin=1;
-//                    call p_test(@pin,@pout);
-//                    select @pout;
+                        //support QUERY like this
+                        //  /*!mycat: sql=SELECT * FROM test where id=99 */set @pin=1;
+                        //  call p_test(@pin,@pout);
+                        //  select @pout;
                         if (stmt.startsWith("/*!" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*#" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*" + Versions.ANNOTATION_NAME)) {
                             Matcher matcher = CALL_PATTERN.matcher(stmt);
                             if (matcher.find()) {

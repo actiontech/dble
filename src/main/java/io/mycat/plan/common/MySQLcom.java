@@ -310,9 +310,7 @@ public final class MySQLcom {
 
     public static void memcpy(byte[] aPtr, int aStart, byte[] bPtr) {
         assert (aPtr.length - aStart + 1 == bPtr.length);
-        for (int i = 0; i < bPtr.length; i++) {
-            aPtr[aStart + i] = bPtr[i];
-        }
+        System.arraycopy(bPtr, 0, aPtr, aStart, bPtr.length);
     }
 
     /**

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 public final class ShowColumns {
     private ShowColumns() {
     }
+
     private static final String COLUMNS_PAT = "^\\s*(show)" +
             "(\\s+full)?" +
             "(\\s+(columns|fields))" +

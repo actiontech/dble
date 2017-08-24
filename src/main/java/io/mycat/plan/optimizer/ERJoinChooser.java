@@ -526,6 +526,7 @@ public class ERJoinChooser {
             return true;
         }
     }
+
     private Item nodeHasSelectable(PlanNode child, Item sel) {
         if (sel instanceof ItemField) {
             return nodeHasColumn(child, (ItemField) sel);

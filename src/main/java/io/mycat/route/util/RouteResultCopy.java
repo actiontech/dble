@@ -35,6 +35,7 @@ import io.mycat.route.RouteResultsetNode;
 public final class RouteResultCopy {
     private RouteResultCopy() {
     }
+
     public static RouteResultsetNode rrnCopy(RouteResultsetNode node, int sqlType, String stmt) {
         RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
         nn.setRunOnSlave(node.getRunOnSlave());

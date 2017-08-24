@@ -85,11 +85,12 @@ public class UnsafeRowGrouper {
         this.sortColumnsByIndex = columns != null ? toSortColumnsByIndex(columns, columToIndx) : null;
         this.groupKeyfieldCount = columns != null ? columns.length : 0;
         this.valuefieldCount = columToIndx != null ? columToIndx.size() : 0;
+
+        LOGGER.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
+
         MyCatMemory serverMemory = MycatServer.getInstance().getServerMemory();
         MemoryManager memoryManager = serverMemory.getResultMergeMemoryManager();
         MycatPropertyConf conf = serverMemory.getConf();
-
-        LOGGER.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
 
         initGroupKey();
         initEmptyValueKey();

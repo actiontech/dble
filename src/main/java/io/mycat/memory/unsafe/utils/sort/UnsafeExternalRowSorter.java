@@ -238,6 +238,7 @@ public final class UnsafeExternalRowSorter {
         private final UnsafeRow row1;
         private final UnsafeRow row2;
         private final StructType schema;
+
         RowComparator(StructType schema) {
 
             assert schema.length() >= 0;

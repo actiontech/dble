@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class XAStateLog {
     private XAStateLog() {
     }
+
     public static final Logger LOGGER = LoggerFactory.getLogger(XAStateLog.class);
     private static final Repository FILE_REPOSITORY;
 

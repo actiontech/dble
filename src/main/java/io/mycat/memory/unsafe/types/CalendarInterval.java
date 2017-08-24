@@ -232,6 +232,8 @@ public final class CalendarInterval implements Serializable {
                         result = new CalendarInterval(0, micros);
                         break;
                     }
+                    default:
+                        break;
                 }
             } catch (Exception e) {
                 throw new IllegalArgumentException("Error parsing interval string: " + e.getMessage(), e);

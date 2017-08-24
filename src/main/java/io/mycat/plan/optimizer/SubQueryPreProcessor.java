@@ -24,6 +24,7 @@ import java.util.List;
 public final class SubQueryPreProcessor {
     private SubQueryPreProcessor() {
     }
+
     private static final String AUTONAME = "autosubgenrated0";
     private static final String AUTOALIAS = "autoalias_";
 

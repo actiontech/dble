@@ -36,6 +36,7 @@ import java.io.UnsupportedEncodingException;
 public final class PacketUtil {
     private PacketUtil() {
     }
+
     private static final String UTF8 = "utf8";
 
     public static ResultSetHeaderPacket getHeader(int fieldCount) {

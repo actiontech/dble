@@ -36,6 +36,7 @@ import io.mycat.server.parser.ServerParseStart;
 public final class StartHandler {
     private StartHandler() {
     }
+
     public static void handle(String stmt, ServerConnection c, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
             case ServerParseStart.TRANSACTION:

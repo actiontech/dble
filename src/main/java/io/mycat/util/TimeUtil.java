@@ -31,6 +31,7 @@ package io.mycat.util;
 public final class TimeUtil {
     private TimeUtil() {
     }
+
     private static volatile long currentTime = System.currentTimeMillis();
 
     public static long currentTimeMillis() {

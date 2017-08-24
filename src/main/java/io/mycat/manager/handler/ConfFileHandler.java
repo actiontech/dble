@@ -146,6 +146,8 @@ public final class ConfFileHandler {
                             confDir, "rule.dtd")));
                 }
                 break;
+            default:
+                break;
         }
         ConfigUtil.getDocument(dtdStream, new ByteArrayInputStream(data));
     }

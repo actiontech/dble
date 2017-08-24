@@ -31,6 +31,7 @@ import java.util.Map;
 public final class SchemaUtil {
     private SchemaUtil() {
     }
+
     public static final String MYSQL_SCHEMA = "mysql";
     public static final String INFORMATION_SCHEMA = "information_schema";
     public static final String TABLE_PROC = "proc";

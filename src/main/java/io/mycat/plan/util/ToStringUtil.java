@@ -8,6 +8,7 @@ import java.util.List;
 public final class ToStringUtil {
     private ToStringUtil() {
     }
+
     /**
      * add tab like <[ ]>
      *

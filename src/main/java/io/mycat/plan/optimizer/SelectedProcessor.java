@@ -22,6 +22,7 @@ import java.util.*;
 public final class SelectedProcessor {
     private SelectedProcessor() {
     }
+
     public static PlanNode optimize(PlanNode qtn) {
         qtn = pushSelected(qtn, new HashSet<Item>());
         return qtn;

@@ -10,6 +10,7 @@ import java.util.List;
 public final class MergeHavingFilter {
     private MergeHavingFilter() {
     }
+
     /**
      * 将having中可合并的条件合并到where
      *

@@ -366,6 +366,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
         pageCursor = 4;
         return true;
     }
+
     @Override
     public long spill(long size, MemoryConsumer trigger) throws IOException {
         if (trigger != this && destructiveIterator != null) {

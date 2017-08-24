@@ -134,6 +134,7 @@ public class ItemSumVariance extends ItemSumNum {
 
         return false;
     }
+
     // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     @Override
     public BigDecimal valReal() {

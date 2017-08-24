@@ -15,6 +15,7 @@ import io.mycat.server.util.SchemaUtil;
 public final class ShowCreateTable {
     private ShowCreateTable() {
     }
+
     public static void response(ServerConnection c, String stmt) {
         try {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);

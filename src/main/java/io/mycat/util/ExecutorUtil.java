@@ -33,7 +33,7 @@ public final class ExecutorUtil {
     private ExecutorUtil() {
     }
 
-    public static  NameableExecutor createFixed(String name, int size) {
+    public static NameableExecutor createFixed(String name, int size) {
         return createFixed(name, size, true);
     }
 
@@ -42,7 +42,7 @@ public final class ExecutorUtil {
         return new NameableExecutor(name, size, size, Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>(), factory);
     }
 
-    public static  NameableExecutor createCached(String name, int size) {
+    public static NameableExecutor createCached(String name, int size) {
         return createCached(name, size, true);
     }
 

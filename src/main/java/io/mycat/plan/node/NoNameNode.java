@@ -5,7 +5,10 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.util.ToStringUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * 匿名表，比如select 1,only exists selecteditems

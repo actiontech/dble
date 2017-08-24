@@ -402,6 +402,7 @@ public final class ByteBufferUtil {
         int diff = value.remaining() - prefix.remaining();
         return prefix.equals(value.duplicate().limit(value.remaining() - diff));
     }
+
     /**
      * trims size of bytebuffer to exactly number of bytes in it, to do not hold too much memory
      */

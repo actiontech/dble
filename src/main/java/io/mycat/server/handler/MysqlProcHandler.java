@@ -32,6 +32,7 @@ import io.mycat.server.ServerConnection;
 public final class MysqlProcHandler {
     private MysqlProcHandler() {
     }
+
     private static final int FIELD_COUNT = 2;
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
 

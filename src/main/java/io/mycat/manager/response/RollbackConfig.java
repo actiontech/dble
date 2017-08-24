@@ -58,6 +58,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class RollbackConfig {
     private RollbackConfig() {
     }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RollbackConfig.class);
 
     public static void execute(ManagerConnection c) {

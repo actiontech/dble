@@ -21,6 +21,7 @@ import java.util.*;
 public final class MetaHelper {
     private MetaHelper() {
     }
+
     public enum IndexType {
         PRI, UNI, MUL
     }

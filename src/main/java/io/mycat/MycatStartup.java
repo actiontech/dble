@@ -39,6 +39,7 @@ import java.util.Date;
 public final class MycatStartup {
     private MycatStartup() {
     }
+
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatStartup.class);
 

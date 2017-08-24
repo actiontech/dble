@@ -427,7 +427,6 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
 
-
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         if (capacity > buffer.remaining()) {
             if (writeSocketIfFull) {

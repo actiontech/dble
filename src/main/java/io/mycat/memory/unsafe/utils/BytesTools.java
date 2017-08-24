@@ -789,7 +789,6 @@ public final class BytesTools {
     }
 
 
-
     /**
      * @param t operands
      * @return Array of byte arrays made from passed array of Text
@@ -911,10 +910,11 @@ public final class BytesTools {
     /**
      * Split passed range.  Expensive operation relatively.  Uses BigInteger math.
      * Useful splitting ranges for MapReduce jobs.
-     * @param a Beginning of range
-     * @param b End of range
+     *
+     * @param a   Beginning of range
+     * @param b   End of range
      * @param num Number of times to split range.  Pass 1 if you want to split
-     * the range in two; i.e. one split.
+     *            the range in two; i.e. one split.
      * @return Array of dividing values
      */
     interface Comparer<T> {

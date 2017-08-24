@@ -15,6 +15,7 @@ import java.util.Set;
 public final class MyOptimizer {
     private MyOptimizer() {
     }
+
     public static PlanNode optimize(PlanNode node) {
 
         try {

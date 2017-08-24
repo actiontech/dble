@@ -12,6 +12,7 @@ import java.util.Map;
 public final class ReloadSqlSlowTime {
     private ReloadSqlSlowTime() {
     }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c, long time) {

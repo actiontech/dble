@@ -7,7 +7,6 @@ import io.mycat.memory.unsafe.utils.BytesTools;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
 
-import javax.annotation.Nonnull;
 import java.io.UnsupportedEncodingException;
 
 /**

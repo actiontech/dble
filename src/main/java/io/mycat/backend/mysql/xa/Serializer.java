@@ -6,6 +6,7 @@ package io.mycat.backend.mysql.xa;
 public final class Serializer {
     private Serializer() {
     }
+
     private static final String PROPERTY_SEPARATOR = ",";
     private static final String QUOTE = "\"";
     private static final String END_ARRAY = "]";

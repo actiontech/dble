@@ -8,6 +8,7 @@ import io.mycat.plan.util.PlanUtil;
 public final class JoinStrategyProcessor {
     private JoinStrategyProcessor() {
     }
+
     public static PlanNode optimize(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
             return qtn;

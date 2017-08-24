@@ -2,7 +2,6 @@ package io.mycat.backend.mysql.xa;
 
 import io.mycat.server.NonBlockingSession;
 
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

@@ -17,6 +17,7 @@ import java.math.BigInteger;
 public final class MyTime {
     private MyTime() {
     }
+
     private static final DateTimeFormat TIME_AMPM_FORMAT = new DateTimeFormat("%I:%i:%S %p");
     private static final DateTimeFormat TIME_24_HRS_FORMAT = new DateTimeFormat("%H:%i:%S");
 
@@ -1080,6 +1081,7 @@ public final class MyTime {
     public static String myDateToStr(MySQLTime mysqlTime) {
         return String.format("%04d-%02d-%02d", mysqlTime.year, mysqlTime.month, mysqlTime.day);
     }
+
     /**
      * Print a datetime value with an optional fractional part.
      *
@@ -2492,8 +2494,7 @@ public final class MyTime {
                         return true;
                     }
                 }
-                if (error.get()) // Error from MySql_com.myStrtoll10
-                {
+                if (error.get()) { // Error from MySql_com.myStrtoll10
                     // logger.warn
                     return true;
                 }

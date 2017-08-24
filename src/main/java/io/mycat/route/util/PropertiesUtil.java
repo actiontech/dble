@@ -19,6 +19,7 @@ import static io.mycat.route.sequence.handler.IncrSequenceHandler.*;
 public final class PropertiesUtil {
     private PropertiesUtil() {
     }
+
     public static Properties loadProps(String propsFile) {
         Properties props = new Properties();
         InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile);

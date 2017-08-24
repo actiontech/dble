@@ -34,6 +34,7 @@ import java.io.OutputStream;
 public final class StreamUtil {
     private StreamUtil() {
     }
+
     private static final long NULL_LENGTH = -1;
     private static final byte[] EMPTY_BYTES = new byte[0];
 

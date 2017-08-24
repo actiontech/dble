@@ -6,7 +6,6 @@ package io.mycat.plan.common.item.subquery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 public class ItemMaxminSubselect extends ItemSinglerowSubselect {
-    private boolean max;
 
     /**
      * @param currentDb
@@ -14,7 +13,7 @@ public class ItemMaxminSubselect extends ItemSinglerowSubselect {
      */
     public ItemMaxminSubselect(String currentDb, SQLSelectQuery query, boolean max) {
         super(currentDb, query);
-        this.max = max;
+        boolean max1 = max;
     }
 
 }

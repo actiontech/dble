@@ -11,11 +11,9 @@ public final class CacheUtil {
     private static final int DIMENSION_1 = 1024 * 1024;
     private static final int DIMENSION_2 = 6;
 
-    private static long[][] longs;
-
     public static void main(String[] args) throws Exception {
         Thread.sleep(10000);
-        longs = new long[DIMENSION_1][];
+        long[][] longs = new long[DIMENSION_1][];
         for (int i = 0; i < DIMENSION_1; i++) {
             longs[i] = new long[DIMENSION_2];
             for (int j = 0; j < DIMENSION_2; j++) {

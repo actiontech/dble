@@ -9,8 +9,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @CreateTime 2016年1月19日
  */
 public class MemSizeController {
-    // 如果剩余空间小于当前最小剩余空间时，也认为整个size控制器已经到达极限
-    private static long minLeft = 32;
     // 当前内存大小
     private AtomicLong size;
     private long maxSize;
@@ -31,6 +29,7 @@ public class MemSizeController {
             long current = size.get();
             long next = current + incre;
             if (size.compareAndSet(current, next)) {
+                long minLeft = 32;
                 return next + minLeft < maxSize;
             }
         }

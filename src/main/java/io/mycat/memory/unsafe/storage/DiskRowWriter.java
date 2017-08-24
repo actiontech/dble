@@ -43,7 +43,6 @@ public class DiskRowWriter extends OutputStream {
     private SerializationStream objOut = null;
     private boolean initialized = false;
     private boolean hasBeenClosed = false;
-    private boolean commitAndCloseHasBeenCalled = false;
 
     /**
      * Cursors used to represent positions in the file.
@@ -61,7 +60,6 @@ public class DiskRowWriter extends OutputStream {
      * xxxxx: Existing contents of the file.
      */
     private long initialPosition = 0;
-    private long finalPosition = -1;
     private long reportedPosition = 0;
 
     /**
@@ -73,14 +71,9 @@ public class DiskRowWriter extends OutputStream {
     private File file;
     private SerializerInstance serializerInstance;
     private int bufferSize;
-    private OutputStream compressStream;
     private boolean syncWrites;
     // These write metrics concurrently shared with other active DiskBlockObjectWriters who
     // are themselves performing writes. All updates must be relative.
-    /**
-     * ShuffleWriteMetrics  writeMetrics,
-     */
-    private ConnectionId blockId;
 
 
     public DiskRowWriter(
@@ -94,9 +87,12 @@ public class DiskRowWriter extends OutputStream {
         this.file = file;
         this.serializerInstance = serializerInstance;
         this.bufferSize = bufferSize;
-        this.compressStream = compressStream;
+        OutputStream compressStream1 = compressStream;
         this.syncWrites = syncWrites;
-        this.blockId = blockId;
+        /*
+      ShuffleWriteMetrics  writeMetrics,
+     */
+        ConnectionId blockId1 = blockId;
         initialPosition = file.length();
         reportedPosition = initialPosition;
     }
@@ -152,6 +148,7 @@ public class DiskRowWriter extends OutputStream {
      * Flush the partial writes and commit them as a single atomic block.
      */
     public void commitAndClose() throws IOException {
+        long finalPosition = -1;
         if (initialized) {
             // NOTE: Because Kryo doesn’t flush the underlying stream we explicitly flush both the
             // serializer stream and the lower level stream.
@@ -164,7 +161,7 @@ public class DiskRowWriter extends OutputStream {
         } else {
             finalPosition = file.length();
         }
-        commitAndCloseHasBeenCalled = true;
+        boolean commitAndCloseHasBeenCalled = true;
     }
 
 

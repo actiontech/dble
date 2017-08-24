@@ -42,7 +42,6 @@ public final class UnsafeSorterSpillWriter {
     private final ConnectionId conId;
     private final int numRecordsToWrite;
     private DiskRowWriter writer;
-    private DataNodeFileManager diskBlockManager;
     private int numRecordsSpilled = 0;
 
     public UnsafeSorterSpillWriter(
@@ -50,7 +49,7 @@ public final class UnsafeSorterSpillWriter {
             int fileBufferSize,
             int numRecordsToWrite) throws IOException {
 
-        this.diskBlockManager = blockManager.diskBlockManager();
+        DataNodeFileManager diskBlockManager = blockManager.diskBlockManager();
         this.conId = diskBlockManager.createTempLocalBlock();
         this.file = diskBlockManager.getFile(this.conId);
 

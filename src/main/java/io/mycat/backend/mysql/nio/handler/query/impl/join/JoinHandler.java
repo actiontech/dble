@@ -49,7 +49,6 @@ public class JoinHandler extends OwnThreadDMLHandler {
     private List<Field> joinRowFields;
     private Item otherJoinOn;
     private Item otherJoinOnItem;
-    private int queueSize;
     // @bug 1208
     private String charset = "UTF-8";
     // prevent multi thread rowresponse
@@ -62,7 +61,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         this.isLeftJoin = isLeftJoin;
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
-        this.queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
+        int queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
         this.leftQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
         this.rightQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
         this.leftFieldPackets = new ArrayList<FieldPacket>();

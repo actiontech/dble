@@ -23,13 +23,6 @@ import java.util.List;
  * @author ActionTech
  */
 public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
-    private final Logger logger = Logger.getLogger(GroupResultDiskBuffer.class);
-    /**
-     * store the origin row fields,(already contains the item_sum fields in
-     * rowpackets we should calculate the item_sums again when next() is
-     * called!)
-     */
-    private final List<Field> fields;
 
     private final List<ItemSum> sums;
 
@@ -44,13 +37,19 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
     public GroupResultDiskBuffer(BufferPool pool, int fieldsCount, RowDataComparator cmp, List<FieldPacket> packets,
                                  List<ItemSum> sumFunctions, boolean isAllPushDown, String charset) {
         super(pool, fieldsCount, cmp);
-        this.fields = HandlerTool.createFields(packets);
+        /*
+      store the origin row fields,(already contains the item_sum fields in
+      rowpackets we should calculate the item_sums again when next() is
+      called!)
+     */
+        List<Field> fields = HandlerTool.createFields(packets);
         this.sums = new ArrayList<ItemSum>();
         for (ItemSum sumFunc : sumFunctions) {
-            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, this.fields, 0, isAllPushDown,
+            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, fields, 0, isAllPushDown,
                     HandlerType.GROUPBY, charset));
             this.sums.add(sum);
         }
+        Logger logger = Logger.getLogger(GroupResultDiskBuffer.class);
         logger.info("prepare_sum_aggregators");
         prepareSumAggregators(this.sums, true);
     }

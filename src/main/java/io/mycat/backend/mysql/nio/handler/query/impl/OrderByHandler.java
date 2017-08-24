@@ -23,17 +23,15 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(OrderByHandler.class);
 
     private List<Order> orders;
-    private RowDataComparator cmp = null;
     private BlockingQueue<RowDataPacket> queue;
     /* 排序对象，支持缓存、文件系统 */
     private LocalResult localResult;
     private BufferPool pool;
-    private int queueSize;
 
     public OrderByHandler(long id, NonBlockingSession session, List<Order> orders) {
         super(id, session);
         this.orders = orders;
-        this.queueSize = MycatServer.getInstance().getConfig().getSystem().getOrderByQueueSize();
+        int queueSize = MycatServer.getInstance().getConfig().getSystem().getOrderByQueueSize();
         this.queue = new LinkedBlockingDeque<RowDataPacket>(queueSize);
     }
 
@@ -51,7 +49,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             this.pool = MycatServer.getInstance().getBufferPool();
 
         this.fieldPackets = fieldPackets;
-        cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type(), conn.getCharset());
+        RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type(), conn.getCharset());
         localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, conn.getCharset()).
                 setMemSizeController(session.getOrderBufferMC());
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);

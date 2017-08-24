@@ -57,17 +57,11 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long incrementBits = 6L;
     private final long timestampBits = 39L;
 
-    private final long timestampMask = (1L << timestampBits) - 1L;
-
     private final long incrementShift = timestampBits;
     private final long clusterIdShift = incrementShift + incrementBits;
     private final long instanceIdShift = clusterIdShift + clusterIdBits;
-    private final long threadIdShift = instanceIdShift + instanceIdBits;
 
-    private final long maxIncrement = 1L << incrementBits;
-    private final long maxThreadId = 1L << threadIdBits;
     private final long maxinstanceId = 1L << instanceIdBits;
-    private final long maxclusterId = 1L << clusterIdBits;
 
     private volatile long instanceId;
     private long clusterId;
@@ -91,7 +85,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
 
     private final ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
     private ScheduledExecutorService leaderExecutor;
-    private final long selfCheckPeriod = 10L;
 
     public static DistributedSequenceHandler getInstance() {
         return DistributedSequenceHandler.instance;
@@ -115,6 +108,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             this.ready = true;
         }
         this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
+        long maxclusterId = 1L << clusterIdBits;
         if (clusterId > maxclusterId || clusterId < 0) {
             throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", clusterId));
         }
@@ -164,6 +158,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         };
+        long selfCheckPeriod = 10L;
         timerExecutor.scheduleAtFixedRate(runnable, 1L, selfCheckPeriod, TimeUnit.SECONDS);
     }
 
@@ -189,6 +184,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             threadID.set(getNextThreadID());
         }
         long a = threadInc.get();
+        long maxIncrement = 1L << incrementBits;
         if ((a + 1L) >= maxIncrement) {
             if (threadLastTime.get() == time) {
                 time = blockUntilNextMillis(time);
@@ -198,6 +194,9 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             threadInc.set(a + 1L);
         }
         threadLastTime.set(time);
+        long maxThreadId = 1L << threadIdBits;
+        long threadIdShift = instanceIdShift + instanceIdBits;
+        long timestampMask = (1L << timestampBits) - 1L;
         return (((threadID.get() % maxThreadId) << threadIdShift)) | (instanceId << instanceIdShift) |
                 (clusterId << clusterIdShift) | (a << incrementShift) | (time & timestampMask);
     }

@@ -17,7 +17,6 @@ import java.util.List;
 
 public class ItemAllanySubselect extends ItemSubselect {
     private boolean isAll;
-    private Item leftOprand;
 
     /**
      * @param currentDb
@@ -25,7 +24,7 @@ public class ItemAllanySubselect extends ItemSubselect {
      */
     public ItemAllanySubselect(String currentDb, Item left, SQLSelectQuery query, boolean all) {
         super(currentDb, query);
-        this.leftOprand = left;
+        Item leftOprand = left;
         this.isAll = all;
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support!");
     }

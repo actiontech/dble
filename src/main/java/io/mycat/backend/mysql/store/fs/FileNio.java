@@ -16,13 +16,12 @@ class FileNio extends FileBase {
 
     private final String name;
     private final FileChannel channel;
-    private RandomAccessFile file;
     private long fileLength;
     private long pos;
 
     FileNio(String fileName, String mode) throws IOException {
         this.name = fileName;
-        this.file = new RandomAccessFile(fileName, mode);
+        RandomAccessFile file = new RandomAccessFile(fileName, mode);
         this.channel = file.getChannel();
         this.fileLength = MycatServer.getInstance().getConfig().getSystem().getMappedFileSize();
         this.pos = 0;

@@ -35,9 +35,6 @@ public class ConfigComparer {
     private static final String NEW_RULE = "/newRule.xml";
     private static final String DN_INDEX_FILE = "/dnindex.properties";
 
-    private SchemaLoader oldLoader;
-    private SchemaLoader newLoader;
-
     private Map<String, DataHostConfig> oldDataHosts;
     private Map<String, DataNodeConfig> oldDataNodes;
     private Map<String, SchemaConfig> oldSchemas;
@@ -66,7 +63,7 @@ public class ConfigComparer {
 
     private void loadOldConfig() {
         try {
-            oldLoader = new XMLSchemaLoader();
+            SchemaLoader oldLoader = new XMLSchemaLoader();
             oldDataHosts = oldLoader.getDataHosts();
             oldDataNodes = oldLoader.getDataNodes();
             oldSchemas = oldLoader.getSchemas();
@@ -78,7 +75,7 @@ public class ConfigComparer {
 
     private void loadNewConfig() {
         try {
-            newLoader = new XMLSchemaLoader(NEW_SCHEMA, NEW_RULE);
+            SchemaLoader newLoader = new XMLSchemaLoader(NEW_SCHEMA, NEW_RULE);
             newDataHosts = newLoader.getDataHosts();
             newDataNodes = newLoader.getDataNodes();
             newSchemas = newLoader.getSchemas();

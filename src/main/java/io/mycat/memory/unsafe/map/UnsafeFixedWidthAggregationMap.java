@@ -51,8 +51,6 @@ public final class UnsafeFixedWidthAggregationMap {
      */
     private final UnsafeRow currentAggregationBuffer;
 
-    private final boolean enablePerfMetrics;
-
     private static final int SEED = 42;
 
     /**
@@ -87,7 +85,7 @@ public final class UnsafeFixedWidthAggregationMap {
         this.currentAggregationBuffer = new UnsafeRow(aggregationBufferSchema.length());
         this.groupingKeySchema = groupingKeySchema;
         this.map = new BytesToBytesMap(dataNodeMemoryManager, initialCapacity, pageSizeBytes, enablePerfMetrics);
-        this.enablePerfMetrics = enablePerfMetrics;
+        boolean enablePerfMetrics1 = enablePerfMetrics;
         this.emptyAggregationBuffer = emptyAggregationBuffer.getBytes();
     }
 

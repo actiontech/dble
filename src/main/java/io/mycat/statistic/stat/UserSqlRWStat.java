@@ -60,7 +60,6 @@ public class UserSqlRWStat {
 
 
     private int timeZoneOffset = 0;
-    private int oneHour = 3600 * 1000;
 
     public UserSqlRWStat() {
         this.timeZoneOffset = TimeZone.getDefault().getRawOffset();
@@ -111,6 +110,7 @@ public class UserSqlRWStat {
         }
 
         //SQL执行所在的时间区间
+        int oneHour = 3600 * 1000;
         long hour0 = endTime / (24L * (long) oneHour) * (24L * (long) oneHour) - (long) timeZoneOffset;
         long hour06 = hour0 + 6L * (long) oneHour - 1L;
         long hour13 = hour0 + 13L * (long) oneHour - 1L;

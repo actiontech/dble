@@ -23,36 +23,31 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
     /* 用来存放左右原始数据值的容器，item计算前更新 */
     private List<Field> leftFields;
     private List<Field> rightFields;
-    /* 左右compare的item对象 */
-    private List<Item> leftCmpItems;
-    private List<Item> rightCmpItems;
     /* 左右排序规则，必定相同，所以只保留一份 */
     private List<ArgComparator> cmptors;
     private List<Boolean> ascs;
-    private HandlerType type;
-    private boolean isAllPushDown;
 
     public TwoTableComparator(List<FieldPacket> fps1, List<FieldPacket> fps2, List<Order> leftOrders,
                               List<Order> rightOrders, boolean isAllPushDown, HandlerType type, String charset) {
-        this.isAllPushDown = isAllPushDown;
-        this.type = type;
+        boolean isAllPushDown1 = isAllPushDown;
+        HandlerType type1 = type;
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
         ascs = new ArrayList<Boolean>();
         for (Order order : leftOrders) {
             ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC ? true : false);
         }
-        leftCmpItems = new ArrayList<Item>();
-        rightCmpItems = new ArrayList<Item>();
+        List<Item> leftCmpItems = new ArrayList<Item>();
+        List<Item> rightCmpItems = new ArrayList<Item>();
         cmptors = new ArrayList<ArgComparator>();
         for (int index = 0; index < ascs.size(); index++) {
             Order leftOrder = leftOrders.get(index);
             Order rightOrder = rightOrders.get(index);
-            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, this.isAllPushDown, this.type,
+            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown1, type1,
                     charset);
             leftCmpItems.add(leftCmpItem);
-            Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, this.isAllPushDown,
-                    this.type, charset);
+            Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown1,
+                    type1, charset);
             rightCmpItems.add(rightCmpItem);
             ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
             cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);

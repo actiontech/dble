@@ -81,7 +81,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected volatile boolean terminated;
     private boolean prepared;
     private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
-    private int isOffHeapuseOffHeapForMerge = 1;
     private ErrorPacket err;
     private List<BackendConnection> errConnection;
 
@@ -99,7 +98,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.rrs = rrs;
-        isOffHeapuseOffHeapForMerge = MycatServer.getInstance().
+        int isOffHeapuseOffHeapForMerge = MycatServer.getInstance().
                 getConfig().getSystem().getUseOffHeapForMerge();
         if (ServerParse.SELECT == sqlType && rrs.needMerge()) {
             /**

@@ -17,7 +17,6 @@ public class HandlerBuilder {
 
     private PlanNode node;
     private NonBlockingSession session;
-    private OutputHandler fh;
     private Set<RouteResultsetNode> rrsNodes = new HashSet<RouteResultsetNode>();
 
     public HandlerBuilder(PlanNode node, NonBlockingSession session) {
@@ -59,7 +58,7 @@ public class HandlerBuilder {
     public void build(boolean hasNext) throws Exception {
         final long startTime = System.nanoTime();
         DMLResponseHandler endHandler = buildNode(session, node);
-        fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
+        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);
         long endTime = System.nanoTime();

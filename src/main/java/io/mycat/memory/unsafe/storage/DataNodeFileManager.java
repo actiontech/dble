@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class DataNodeFileManager {
     private static final Logger LOG = LoggerFactory.getLogger(DataNodeFileManager.class);
-    private MycatPropertyConf conf;
     private boolean deleteFilesOnStop;
     /**
      * TODO 操作完成之后，需要删除临时文件
@@ -60,7 +59,7 @@ public class DataNodeFileManager {
 
     public DataNodeFileManager(MycatPropertyConf conf, boolean deleteFilesOnStop) throws IOException {
 
-        this.conf = conf;
+        MycatPropertyConf conf1 = conf;
         this.deleteFilesOnStop = deleteFilesOnStop;
 
 

@@ -22,9 +22,7 @@ import java.util.List;
 public class DistinctHandler extends BaseDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(DistinctHandler.class);
 
-    private List<Field> sourceFields;
     private LocalResult localResult;
-    private RowDataComparator cmptor;
     private List<Order> fixedOrders;
     private BufferPool pool;
     /* if distincts is null, distinct the total row */
@@ -55,7 +53,7 @@ public class DistinctHandler extends BaseDMLHandler {
         if (this.pool == null)
             this.pool = MycatServer.getInstance().getBufferPool();
         this.fieldPackets = fieldPackets;
-        this.sourceFields = HandlerTool.createFields(this.fieldPackets);
+        List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         if (this.distincts == null) {
             // 比如show tables这种语句
             this.distincts = new ArrayList<Item>();
@@ -67,8 +65,8 @@ public class DistinctHandler extends BaseDMLHandler {
         List<Order> orders = this.fixedOrders;
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distincts);
-        cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type(), conn.getCharset());
-        localResult = new DistinctLocalResult(pool, this.sourceFields.size(), cmptor, conn.getCharset()).
+        RowDataComparator cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type(), conn.getCharset());
+        localResult = new DistinctLocalResult(pool, sourceFields.size(), cmptor, conn.getCharset()).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }

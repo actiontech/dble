@@ -14,12 +14,10 @@ import java.io.UnsupportedEncodingException;
  * Created by zagnix on 2016/6/20.
  */
 public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
-    @Nonnull
-    private final StructType schema;
     private final ColMeta colMeta;
 
     public RowPrefixComputer(StructType schema) {
-        this.schema = schema;
+        StructType schema1 = schema;
         /**
          * 通过计算得到排序关键词的第一个在行的索引下标
          */

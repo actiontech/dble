@@ -44,22 +44,16 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     private List<Order> groupBys;
     private List<ItemSum> referedSumFunctions;
 
-    private RowDataComparator cmptor;
     private BufferPool pool;
     private LocalResult groupLocalResult;
     private AtomicBoolean groupStart = new AtomicBoolean(false);
 
-    /* 所有的sum函数集合 */
-    private List<Field> sourceFields = new ArrayList<Field>();
     private List<ItemSum> sums = new ArrayList<ItemSum>();
 
     private AtomicBoolean hasFirstRow = new AtomicBoolean(false);
 
-    /* 下发到localresult中的ISelectable */
-    private List<ItemSum> localResultReferedSums;
     /* 下发到localresult中的fieldPackets */
     private List<FieldPacket> localResultFps;
-    private int queueSize;
 
     private BlockingQueue<RowDataPacket> outQueue;
     int bucketSize = 10;
@@ -74,7 +68,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         super(id, session);
         this.groupBys = groupBys;
         this.referedSumFunctions = referedSumFunctions;
-        this.queueSize = MycatServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+        int queueSize = MycatServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queue = new LinkedBlockingQueue<RowDataPacket>(queueSize);
         this.outQueue = new LinkedBlockingQueue<RowDataPacket>(queueSize);
         this.buckets = new ArrayList<GroupByBucket>();
@@ -94,10 +88,10 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             this.pool = MycatServer.getInstance().getBufferPool();
 
         this.fieldPackets = fieldPackets;
-        this.sourceFields = HandlerTool.createFields(this.fieldPackets);
+        List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         for (int index = 0; index < referedSumFunctions.size(); index++) {
             ItemSum sumFunc = referedSumFunctions.get(index);
-            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, this.sourceFields, 0, this.isAllPushDown(),
+            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
                     this.type(), conn.getCharset()));
             sums.add(sum);
         }
@@ -107,8 +101,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         sendGroupFieldPackets((MySQLConnection) conn);
         // localresult中的row为DGRowPacket，比原始的rowdatapacket增加了聚合结果对象
         localResultFps = this.fieldPackets;
-        localResultReferedSums = referedSumFunctions;
-        cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type(),
+        List<ItemSum> localResultReferedSums = referedSumFunctions;
+        RowDataComparator cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type(),
                 conn.getCharset());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), cmptor, localResultFps,
                 localResultReferedSums, this.isAllPushDown(), conn.getCharset()).

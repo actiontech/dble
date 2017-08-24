@@ -47,8 +47,6 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     protected final ReentrantLock lock = new ReentrantLock();
     final Condition condition = lock.newCondition();
 
-    private final long validateTime = 2;
-
 
     public void doHeartBeat(BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
@@ -59,6 +57,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             conn.setResponseHandler(this);
             MySQLConnection mcon = (MySQLConnection) conn;
             mcon.write(mcon.writeToBuffer(PingPacket.PING, mcon.allocate()));
+            long validateTime = 2;
             if (!condition.await(validateTime, TimeUnit.SECONDS)) {
                 //if the thread be waked up by timer than close the connection
                 conn.close("heartbeat timeout ");

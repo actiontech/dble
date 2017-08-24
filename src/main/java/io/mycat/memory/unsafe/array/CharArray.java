@@ -11,7 +11,6 @@ import io.mycat.memory.unsafe.memory.mm.MemoryConsumer;
  */
 public class CharArray {
     private static final long WIDTH = 2;
-    private final MemoryConsumer memoryConsumer;
 
     private final MemoryBlock memory;
     private final Object baseObj;
@@ -25,7 +24,7 @@ public class CharArray {
         this.baseObj = memory.getBaseObject();
         this.baseOffset = memory.getBaseOffset();
         this.length = memory.size() / WIDTH;
-        this.memoryConsumer = memoryConsumer;
+        MemoryConsumer memoryConsumer1 = memoryConsumer;
     }
 
 

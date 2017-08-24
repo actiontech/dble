@@ -27,7 +27,6 @@ class FileNioMapped extends FileBase {
     private RandomAccessFile file;
     private MappedByteBuffer mapped;
     private long fileLength;
-    private boolean nioLoadMapped = false;
     /**
      * The position within the file. Can't use the position of the mapped buffer
      * because it doesn't support seeking past the end of the file.
@@ -118,6 +117,7 @@ class FileNioMapped extends FileBase {
         if (limit < fileLength || capacity < fileLength) {
             throw new IOException("Unable to map: length=" + limit + " capacity=" + capacity + " length=" + fileLength);
         }
+        boolean nioLoadMapped = false;
         if (nioLoadMapped) {
             mapped.load();
         }

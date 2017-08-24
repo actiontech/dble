@@ -263,10 +263,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         return null;
     }
 
-    private UnsafeRow unsafeRow = null;
-    private BufferHolder bufferHolder = null;
-    private UnsafeRowWriter unsafeRowWriter = null;
-
     @Override
     public void run() {
 
@@ -346,9 +342,9 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     break;
                 }
 
-                unsafeRow = new UnsafeRow(fieldCount);
-                bufferHolder = new BufferHolder(unsafeRow, 0);
-                unsafeRowWriter = new UnsafeRowWriter(bufferHolder, fieldCount);
+                UnsafeRow unsafeRow = new UnsafeRow(fieldCount);
+                BufferHolder bufferHolder = new BufferHolder(unsafeRow, 0);
+                UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder, fieldCount);
                 bufferHolder.reset();
 
                 /**

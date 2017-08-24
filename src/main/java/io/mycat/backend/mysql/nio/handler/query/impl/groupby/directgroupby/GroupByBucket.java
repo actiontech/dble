@@ -17,7 +17,6 @@ public class GroupByBucket extends GroupByLocalResult {
     // 进行groupby的输入来源
     private BlockingQueue<RowDataPacket> inData;
     private BlockingQueue<RowDataPacket> outData;
-    private Thread thread;
 
     public GroupByBucket(BlockingQueue<RowDataPacket> sourceData, BlockingQueue<RowDataPacket> outData,
                          BufferPool pool, int fieldsCount, RowDataComparator groupCmp,
@@ -33,7 +32,7 @@ public class GroupByBucket extends GroupByLocalResult {
      * 开启一个新的线程进行Group by工作
      */
     public void start() {
-        thread = new Thread(new Runnable() {
+        Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {

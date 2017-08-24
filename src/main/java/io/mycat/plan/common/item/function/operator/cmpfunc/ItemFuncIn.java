@@ -14,7 +14,6 @@ import java.util.List;
 
 public class ItemFuncIn extends ItemFuncOptNeg {
     private ItemResult leftResultType;
-    private boolean haveNull = false;
 
     /**
      * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
@@ -47,7 +46,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
         if (nullValue = left.type() == ItemType.NULL_ITEM) {
             return BigInteger.ZERO;
         }
-        haveNull = false;
+        boolean haveNull = false;
         for (int i = 1; i < args.size(); i++) {
             Item right = args.get(i);
             if (right.type() == ItemType.NULL_ITEM) {

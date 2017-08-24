@@ -34,8 +34,6 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     private RowDataComparator cmptor;
 
-    /* 所有的sum函数集合 */
-    private List<Field> sourceFields = new ArrayList<Field>();
     private List<ItemSum> sums = new ArrayList<ItemSum>();
 
     /* group组的原始rowpacket，目前保留第一条数据的值 */
@@ -80,10 +78,10 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         if (this.pool == null)
             this.pool = MycatServer.getInstance().getBufferPool();
         this.fieldPackets = fieldPackets;
-        this.sourceFields = HandlerTool.createFields(this.fieldPackets);
+        List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         for (int index = 0; index < referedSumFunctions.size(); index++) {
             ItemSum sumFunc = referedSumFunctions.get(index);
-            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, this.sourceFields, 0, this.isAllPushDown(),
+            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
                     this.type(), conn.getCharset()));
             sums.add(sum);
         }

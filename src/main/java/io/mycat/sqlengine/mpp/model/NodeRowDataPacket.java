@@ -9,7 +9,6 @@ import java.util.List;
 public class NodeRowDataPacket {
 
     private RouteResultsetNode node;
-    private long trimTotal = 0;
 
     private int trimSize = 0;
 
@@ -31,13 +30,13 @@ public class NodeRowDataPacket {
     }
 
     public long loadTrimTotal() {
-        this.trimTotal = 0;
+        long trimTotal = 0;
         for (RangRowDataPacket packet : trimRangRDPacketList) {
             if (packet.isTrim()) {
-                this.trimTotal += packet.allSize();
+                trimTotal += packet.allSize();
             }
         }
-        return this.trimTotal;
+        return trimTotal;
     }
 
     public long loadNotTrimTotal() {

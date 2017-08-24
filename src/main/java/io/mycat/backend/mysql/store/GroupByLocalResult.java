@@ -31,12 +31,6 @@ public class GroupByLocalResult extends LocalResult {
     private List<FieldPacket> fieldPackets;
     private List<ItemSum> sumFunctions;
     private boolean isAllPushDown;
-    /**
-     * store the origin row fields,(already contains the item_sum fields in
-     * rowpackets we should calculate the item_sums again when next() is
-     * called!)
-     */
-    private final List<Field> fields;
     private final List<ItemSum> sums;
 
     /**
@@ -61,10 +55,15 @@ public class GroupByLocalResult extends LocalResult {
         this.isAllPushDown = isAllPushDown;
         this.rows = new RBTreeList<RowDataPacket>(initialCapacity, groupCmp);
         /* init item_sums */
-        this.fields = HandlerTool.createFields(fieldPackets);
+        /*
+      store the origin row fields,(already contains the item_sum fields in
+      rowpackets we should calculate the item_sums again when next() is
+      called!)
+     */
+        List<Field> fields = HandlerTool.createFields(fieldPackets);
         this.sums = new ArrayList<ItemSum>();
         for (ItemSum sumFunc : sumFunctions) {
-            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, this.fields, 0, this.isAllPushDown,
+            ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, fields, 0, this.isAllPushDown,
                     HandlerType.GROUPBY, charset));
             this.sums.add(sum);
         }

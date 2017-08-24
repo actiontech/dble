@@ -16,7 +16,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class ItemExistsSubselect extends ItemSubselect {
-    private boolean isNot;
 
     /**
      * @param currentDb
@@ -24,7 +23,7 @@ public class ItemExistsSubselect extends ItemSubselect {
      */
     public ItemExistsSubselect(String currentDb, SQLSelectQuery query, boolean isNot) {
         super(currentDb, query);
-        this.isNot = isNot;
+        boolean isNot1 = isNot;
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support!");
     }
 

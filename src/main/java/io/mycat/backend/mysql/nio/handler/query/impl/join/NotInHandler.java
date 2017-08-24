@@ -35,14 +35,13 @@ public class NotInHandler extends OwnThreadDMLHandler {
     private RowDataComparator leftCmptor;
     private RowDataComparator rightCmptor;
     private AtomicBoolean fieldSent = new AtomicBoolean(false);
-    private int queueSize;
     private String charset = "UTF-8";
 
     public NotInHandler(long id, NonBlockingSession session, List<Order> leftOrder, List<Order> rightOrder) {
         super(id, session);
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
-        this.queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
+        int queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
         this.leftQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
         this.rightQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
         this.leftFieldPackets = new ArrayList<FieldPacket>();

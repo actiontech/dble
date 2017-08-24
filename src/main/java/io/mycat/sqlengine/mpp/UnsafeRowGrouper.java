@@ -62,10 +62,8 @@ public class UnsafeRowGrouper {
     private final Map<String, ColMeta> columToIndx;
     private final MergeCol[] mergCols;
     private String[] sortColumnsByIndex = null;
-    private final String[] columns;
     private boolean isMergAvg = false;
     private HavingCols havingCols;
-    private UnsafeRow groupKey = null;
     private UnsafeRow valueKey = null;
     private BufferHolder bufferHolder = null;
     private UnsafeRowWriter unsafeRowWriter = null;
@@ -74,9 +72,6 @@ public class UnsafeRowGrouper {
     private StructType groupKeySchema;
     private StructType aggBufferSchema;
     private UnsafeRow emptyAggregationBuffer;
-    private final MyCatMemory serverMemory;
-    private final MemoryManager memoryManager;
-    private final MycatPropertyConf conf;
 
     public UnsafeRowGrouper(Map<String, ColMeta> columToIndx, String[] columns, MergeCol[] mergCols, HavingCols havingCols) {
         super();
@@ -84,15 +79,15 @@ public class UnsafeRowGrouper {
         assert columToIndx != null;
         assert mergCols != null;
         this.columToIndx = columToIndx;
-        this.columns = columns;
+        String[] columns1 = columns;
         this.mergCols = mergCols;
         this.havingCols = havingCols;
         this.sortColumnsByIndex = columns != null ? toSortColumnsByIndex(columns, columToIndx) : null;
         this.groupKeyfieldCount = columns != null ? columns.length : 0;
         this.valuefieldCount = columToIndx != null ? columToIndx.size() : 0;
-        this.serverMemory = MycatServer.getInstance().getServerMemory();
-        this.memoryManager = serverMemory.getResultMergeMemoryManager();
-        this.conf = serverMemory.getConf();
+        MyCatMemory serverMemory = MycatServer.getInstance().getServerMemory();
+        MemoryManager memoryManager = serverMemory.getResultMergeMemoryManager();
+        MycatPropertyConf conf = serverMemory.getConf();
 
         LOGGER.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
 
@@ -159,7 +154,7 @@ public class UnsafeRowGrouper {
          */
         Map<String, ColMeta> groupcolMetaMap = new HashMap<String, ColMeta>(this.groupKeyfieldCount);
 
-        groupKey = new UnsafeRow(this.groupKeyfieldCount);
+        UnsafeRow groupKey = new UnsafeRow(this.groupKeyfieldCount);
         bufferHolder = new BufferHolder(groupKey, 0);
         unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyfieldCount);
         bufferHolder.reset();

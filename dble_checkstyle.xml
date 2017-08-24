@@ -104,8 +104,8 @@
         <module name="FallThrough"/>
         <module name="CovariantEquals"/>
         <!--<module name="HiddenField">-->
-        <!--<property name="ignoreSetter" value="true"/>-->
-        <!--<property name="ignoreConstructorParameter" value="true"/>-->
+            <!--<property name="ignoreSetter" value="true"/>-->
+            <!--<property name="ignoreConstructorParameter" value="true"/>-->
         <!--</module>-->
 
         <!-- Checks for class design. -->
@@ -128,6 +128,9 @@
         <!--</module>-->
 
         <!-- Checks for metrics. -->
+        <!--<module name="CyclomaticComplexity">-->
+            <!--<property name="switchBlockAsSingleDecisionPoint" value="true"/>-->
+        <!--</module>-->
 
         <!-- Miscellaneous other checks. -->
         <module name="ArrayTypeStyle"/>
@@ -138,7 +141,7 @@
         <module name="Indentation">
             <property name="arrayInitIndent" value="8"/>
         </module>
-        <!--<module name="OuterTypeFilename"/>-->
+        <module name="OuterTypeFilename"/>
         <!--<module name="CommentsIndentation"/>-->
     </module>
 

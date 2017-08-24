@@ -181,7 +181,7 @@ public class ERJoinChooser {
         ret.setSubQuery(jn.isSubQuery());
         ret.setSql(jn.getSql());
         ret.setUpFields();
-        return (JoinNode) ret;
+        return ret;
     }
 
     /**

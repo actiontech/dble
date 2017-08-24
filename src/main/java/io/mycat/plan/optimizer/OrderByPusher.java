@@ -84,9 +84,9 @@ public final class OrderByPusher {
             tryPushOrderToChild(query, getOrderBysGroupFirst(query), query.getChild());
         }
 
-        for (PlanNode child : ((PlanNode) qtn).getChildren()) {
+        for (PlanNode child : qtn.getChildren()) {
             if (child instanceof PlanNode) {
-                pushOrderBy((PlanNode) child);
+                pushOrderBy(child);
             }
         }
 

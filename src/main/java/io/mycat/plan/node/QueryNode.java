@@ -40,7 +40,7 @@ public class QueryNode extends PlanNode {
 
     @Override
     public QueryNode copy() {
-        QueryNode newTableNode = new QueryNode((PlanNode) this.getChild().copy());
+        QueryNode newTableNode = new QueryNode(this.getChild().copy());
         this.copySelfTo(newTableNode);
         return newTableNode;
     }

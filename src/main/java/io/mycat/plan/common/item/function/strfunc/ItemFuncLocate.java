@@ -25,7 +25,7 @@ public class ItemFuncLocate extends ItemIntFunc {
         String str = args.get(1).valStr();
         int pos = -1;
         if (args.size() == 3) {
-            pos = (int) args.get(2).valInt().intValue();
+            pos = args.get(2).valInt().intValue();
         }
         if (args.get(0).isNull() || args.get(1).isNull()) {
             this.nullValue = true;

@@ -48,7 +48,7 @@ public final class FilterJoinColumnPusher {
                 if (!isPossibleERJoinColumnFilter(qtn, filter)) {
                     nonJoinFilter.add(filter);
                 } else {
-                    dnfNodeToPush.add((ItemFuncEqual) filter);
+                    dnfNodeToPush.add(filter);
                 }
             }
             if (nonJoinFilter.size() != splits.size()) {

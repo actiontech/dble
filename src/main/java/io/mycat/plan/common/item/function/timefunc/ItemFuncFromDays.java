@@ -30,7 +30,7 @@ public class ItemFuncFromDays extends ItemDateFunc {
         LongPtr lpyear = new LongPtr(0);
         LongPtr lpmonth = new LongPtr(0);
         LongPtr lpday = new LongPtr(0);
-        MyTime.getDateFromDaynr((long) value, lpyear, lpmonth, lpday);
+        MyTime.getDateFromDaynr(value, lpyear, lpmonth, lpday);
         ltime.year = lpyear.get();
         ltime.month = lpmonth.get();
         ltime.day = lpday.get();

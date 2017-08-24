@@ -44,7 +44,7 @@ public final class FilterPreProcessor {
             jn.setOtherJoinOnFilter(processFilter(jn.getOtherJoinOnFilter()));
         }
         for (PlanNode child : qtn.getChildren()) {
-            preProcess((PlanNode) child);
+            preProcess(child);
         }
         return qtn;
     }
@@ -175,8 +175,8 @@ public final class FilterPreProcessor {
                     if (subFilter == null)
                         continue;
                     if (subFilter instanceof ItemFuncEqual) {
-                        Item a = ((ItemFuncEqual) subFilter).arguments().get(0);
-                        Item b = ((ItemFuncEqual) subFilter).arguments().get(1);
+                        Item a = subFilter.arguments().get(0);
+                        Item b = subFilter.arguments().get(1);
                         if (!a.canValued() && b.canValued()) {
                             if (!inMap.containsKey(a))
                                 inMap.put(a, new HashSet<Item>());

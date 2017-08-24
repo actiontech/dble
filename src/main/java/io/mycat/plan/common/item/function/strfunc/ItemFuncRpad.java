@@ -27,7 +27,7 @@ public class ItemFuncRpad extends ItemStrFunc {
             return EMPTY;
         }
         if (count < str.length()) {
-            return str.substring(0, (int) count);
+            return str.substring(0, count);
         }
         int padLen = pad.length();
         if (padLen <= 0) {
@@ -41,7 +41,7 @@ public class ItemFuncRpad extends ItemStrFunc {
             count -= padLen;
         }
         if (count > 0) {
-            sb.append(pad.substring(0, (int) count));
+            sb.append(pad.substring(0, count));
         }
         return sb.toString();
     }

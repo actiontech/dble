@@ -33,7 +33,7 @@ public class ViewNode extends QueryNode {
     }
 
     public QueryNode toQueryNode() {
-        QueryNode newNode = new QueryNode((PlanNode) this.getChild().copy());
+        QueryNode newNode = new QueryNode(this.getChild().copy());
         this.copySelfTo(newNode);
         return newNode;
     }
@@ -77,7 +77,7 @@ public class ViewNode extends QueryNode {
 
     @Override
     public ViewNode copy() {
-        PlanNode selCopy = (PlanNode) this.getChild().copy();
+        PlanNode selCopy = this.getChild().copy();
         return new ViewNode(catalog, viewname, selCopy, createSql);
     }
 

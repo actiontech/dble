@@ -397,8 +397,8 @@ public class JoinNode extends PlanNode {
         for (Item bf : joinFilter) {
             newJoinNode.addJoinFilter((ItemFuncEqual) bf.cloneStruct());
         }
-        newJoinNode.setLeftNode((PlanNode) this.getLeftNode().copy());
-        newJoinNode.setRightNode((PlanNode) this.getRightNode().copy());
+        newJoinNode.setLeftNode(this.getLeftNode().copy());
+        newJoinNode.setRightNode(this.getRightNode().copy());
         newJoinNode.setNeedOptimizeJoinOrder(this.isNeedOptimizeJoinOrder());
         newJoinNode.leftOuter = this.leftOuter;
         newJoinNode.rightOuter = this.rightOuter;

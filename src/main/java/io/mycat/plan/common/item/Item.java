@@ -471,17 +471,17 @@ public abstract class Item {
 
     protected long valIntFromDate() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, 1) ? 0L : (long) MyTime.timeToUlonglongDate(ltime);
+        return getDate(ltime, 1) ? 0L : MyTime.timeToUlonglongDate(ltime);
     }
 
     protected long valIntFromDatetime() {
         MySQLTime ltime = new MySQLTime();
-        return getDate(ltime, 1) ? 0L : (long) MyTime.timeToUlonglongDatetimeRound(ltime);
+        return getDate(ltime, 1) ? 0L : MyTime.timeToUlonglongDatetimeRound(ltime);
     }
 
     protected long valIntFromTime() {
         MySQLTime ltime = new MySQLTime();
-        return getTime(ltime) ? 0L : (long) MyTime.timeToUlonglongTimeRound(ltime);
+        return getTime(ltime) ? 0L : MyTime.timeToUlonglongTimeRound(ltime);
     }
 
     protected BigDecimal valRealFromDecimal() {

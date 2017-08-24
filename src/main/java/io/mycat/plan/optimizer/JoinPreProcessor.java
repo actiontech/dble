@@ -22,7 +22,7 @@ public final class JoinPreProcessor {
      */
     private static PlanNode findAndChangeRightJoinToLeftJoin(PlanNode qtn) {
         for (PlanNode child : qtn.getChildren()) {
-            findAndChangeRightJoinToLeftJoin((PlanNode) child);
+            findAndChangeRightJoinToLeftJoin(child);
         }
 
         if (qtn instanceof JoinNode && ((JoinNode) qtn).isRightOuterJoin()) {

@@ -175,7 +175,7 @@ public class FieldUtil {
         fieldType = realTypeToType(fieldType);
         assert (fieldType.numberValue() < FIELDTYPE_TEAR_FROM || fieldType.numberValue() > FIELDTYPE_TEAR_TO);
         return (fieldType.numberValue() < FIELDTYPE_TEAR_FROM ? fieldType.numberValue() :
-                ((int) FIELDTYPE_TEAR_FROM) + (fieldType.numberValue() - FIELDTYPE_TEAR_TO) - 1);
+                FIELDTYPE_TEAR_FROM + (fieldType.numberValue() - FIELDTYPE_TEAR_TO) - 1);
     }
 
     public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {

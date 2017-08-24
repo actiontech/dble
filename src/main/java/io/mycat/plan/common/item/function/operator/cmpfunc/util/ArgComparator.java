@@ -288,7 +288,7 @@ public class ArgComparator {
                     int res1Len = res1b.length;
                     int res2Len = res2b.length;
                     int cmp = MySQLcom.memcmp(res1b, res2b, Math.min(res1Len, res2Len));
-                    return cmp != 0 ? cmp : (int) (res1Len - res2Len);
+                    return cmp != 0 ? cmp : res1Len - res2Len;
                 }
             }
             if (ac.setNull)

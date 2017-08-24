@@ -98,7 +98,7 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
             return true;
         }
 
-        long days = (long) (seconds.get() / MyTime.SECONDS_IN_24H);
+        long days = seconds.get() / MyTime.SECONDS_IN_24H;
 
         MyTime.calcTimeFromSec(time, seconds.get() % MyTime.SECONDS_IN_24H, microseconds.get());
 

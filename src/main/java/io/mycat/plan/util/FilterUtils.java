@@ -63,7 +63,7 @@ public final class FilterUtils {
             if (filter == null)
                 continue;
             if (filter.type() == ItemType.COND_ITEM && ((ItemCond) filter).functype() == Functype.COND_AND_FUNC) {
-                subFilters.addAll(((ItemCond) filter).arguments());
+                subFilters.addAll(filter.arguments());
             } else
                 subFilters.add(filter);
         }
@@ -94,7 +94,7 @@ public final class FilterUtils {
             if (filter == null)
                 continue;
             if (filter.type() == ItemType.COND_ITEM && ((ItemCond) filter).functype() == Functype.COND_OR_FUNC) {
-                subFilters.addAll(((ItemCond) filter).arguments());
+                subFilters.addAll(filter.arguments());
             } else
                 subFilters.add(filter);
         }

@@ -40,7 +40,7 @@ public final class SubQueryPreProcessor {
     private static PlanNode findComparisonsSubQueryToJoinNode(PlanNode qtn) {
         for (int i = 0; i < qtn.getChildren().size(); i++) {
             PlanNode child = qtn.getChildren().get(i);
-            qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode((PlanNode) child));
+            qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode(child));
         }
 
         SubQueryAndFilter find = new SubQueryAndFilter();
@@ -182,7 +182,7 @@ public final class SubQueryPreProcessor {
                     //equal or in
                     joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
                 }
-                ((JoinNode) result.query).query(joinFilter);
+                result.query.query(joinFilter);
                 result.filter = joinFilter;
             }
             if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {

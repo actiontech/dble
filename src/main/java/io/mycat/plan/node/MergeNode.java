@@ -109,7 +109,7 @@ public class MergeNode extends PlanNode {
         this.copySelfTo(newMergeNode);
         newMergeNode.setUnion(union);
         for (PlanNode child : children) {
-            newMergeNode.addChild((PlanNode) child.copy());
+            newMergeNode.addChild(child.copy());
         }
         return newMergeNode;
     }

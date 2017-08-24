@@ -394,7 +394,7 @@ public final class MyTime {
             fracLen = dateLen[fracPos];
             status.fractionalDigits = fracLen;
             if (fracLen < 6)
-                date[(int) fracPos] *= MySQLcom.LOG_10_INT[DATETIME_MAX_DECIMALS - fracLen];
+                date[fracPos] *= MySQLcom.LOG_10_INT[DATETIME_MAX_DECIMALS - fracLen];
             lTime.secondPart = date[fracPos];
 
             if (formatPosition[7] != 255) {
@@ -535,7 +535,7 @@ public final class MyTime {
 
         int state = 0;
         boolean gotofractional = false;
-        if ((int) (end - pos) > 1 && pos != endOfDays && Ctype.isDigit(chars[pos])) { /* Found days part */
+        if (end - pos > 1 && pos != endOfDays && Ctype.isDigit(chars[pos])) { /* Found days part */
             date[0] = value;
             state = 1; /* Assume next is hours */
         } else if ((end - pos) > 1 && chars[pos] == TIME_SEPARATOR && Ctype.isDigit(chars[pos + 1])) {
@@ -588,11 +588,11 @@ public final class MyTime {
             if (fieldLength >= 0) {
                 status.fractionalDigits = DATETIME_MAX_DECIMALS - fieldLength;
                 if (fieldLength > 0)
-                    value *= (long) MySQLcom.LOG_10_INT[fieldLength];
+                    value *= MySQLcom.LOG_10_INT[fieldLength];
             } else {
     /* Scan digits left after microseconds */
                 status.fractionalDigits = 6;
-                status.nanoseconds = 100 * (int) (chars[pos - 1] - '0');
+                status.nanoseconds = 100 * (chars[pos - 1] - '0');
                 for (; pos != end && Ctype.isDigit(chars[pos]); pos++) {
                     //block
                 }
@@ -751,13 +751,13 @@ public final class MyTime {
      * @return
      */
     private static long numberToDatetimeOk(long nr, MySQLTime timeRes, long flags, LongPtr wasCut) {
-        long part1 = (long) (nr / (1000000L));
+        long part1 = nr / (1000000L);
         timeRes.year = (int) (part1 / 10000L);
         part1 %= 10000L;
         timeRes.month = (int) part1 / 100;
         timeRes.day = (int) part1 % 100;
 
-        long part2 = (long) (nr - (long) part1 * (1000000L));
+        long part2 = nr - part1 * (1000000L);
         timeRes.hour = (int) (part2 / 10000L);
         part2 %= 10000L;
         timeRes.minute = (int) part2 / 100;
@@ -814,16 +814,16 @@ public final class MyTime {
     }
 
     public static long timeToUlonglongDatetime(final MySQLTime myTime) {
-        return ((long) (myTime.year * 10000L + myTime.month * 100 + myTime.day) * (1000000) +
-                (long) (myTime.hour * 10000L + myTime.minute * 100L + myTime.second));
+        return ((myTime.year * 10000L + myTime.month * 100 + myTime.day) * (1000000) +
+                myTime.hour * 10000L + myTime.minute * 100L + myTime.second);
     }
 
     public static long timeToUlonglongDate(final MySQLTime myTime) {
-        return (long) (myTime.year * 10000L + myTime.month * 100L + myTime.day);
+        return myTime.year * 10000L + myTime.month * 100L + myTime.day;
     }
 
     public static long timeToUlonglongTime(final MySQLTime myTime) {
-        return (long) (myTime.hour * 10000L + myTime.minute * 100L + myTime.second);
+        return myTime.hour * 10000L + myTime.minute * 100L + myTime.second;
     }
 
     public static long timeToUlonglong(final MySQLTime myTime) {
@@ -1045,9 +1045,9 @@ public final class MyTime {
             y--;
         else
             delsum -= (long) ((int) month * 4 + 23) / 10;
-        int temp = (int) ((y / 100 + 1) * 3) / 4;
-        assert (delsum + (int) y / 4 - temp >= 0);
-        return (delsum + (int) y / 4 - temp);
+        int temp = (y / 100 + 1) * 3 / 4;
+        assert (delsum + y / 4 - temp >= 0);
+        return (delsum + y / 4 - temp);
     } /* calc_daynr */
     /* Calc days in one year. works with 0 <= year <= 99 */
 
@@ -1225,7 +1225,7 @@ public final class MyTime {
             microseconds = microseconds % 1000000L;
 
             long sec = ((ltime.day - 1) * 3600 * 24L + ltime.hour * 3600 + ltime.minute * 60 + ltime.second +
-                    sign * (long) (interval.day * 3600 * 24L + interval.hour * 3600 + interval.minute * (60) + interval.second)) +
+                    sign * (interval.day * 3600 * 24L + interval.hour * 3600 + interval.minute * (60) + interval.second)) +
                     extraSec;
             if (microseconds < 0) {
                 microseconds += (1000000L);
@@ -1248,32 +1248,32 @@ public final class MyTime {
             LongPtr ptrYear = new LongPtr(ltime.year);
             LongPtr ptrMonth = new LongPtr(ltime.month);
             LongPtr ptrDay = new LongPtr(ltime.day);
-            getDateFromDaynr((long) daynr, ptrYear, ptrMonth, ptrDay);
+            getDateFromDaynr(daynr, ptrYear, ptrMonth, ptrDay);
             ltime.year = ptrYear.get();
             ltime.month = ptrMonth.get();
             ltime.day = ptrDay.get();
         } else if (intType == MySqlIntervalUnit.DAY || intType == MySqlIntervalUnit.WEEK) {
-            period = (calcDaynr(ltime.year, ltime.month, ltime.day) + sign * (long) interval.day);
+            period = (calcDaynr(ltime.year, ltime.month, ltime.day) + sign * interval.day);
     /* Daynumber from year 0 to 9999-12-31 */
             if (period > MAX_DAY_NUMBER)
                 return true;
             LongPtr ptrYear = new LongPtr(ltime.year);
             LongPtr ptrMonth = new LongPtr(ltime.month);
             LongPtr ptrDay = new LongPtr(ltime.day);
-            getDateFromDaynr((long) period, ptrYear, ptrMonth, ptrDay);
+            getDateFromDaynr(period, ptrYear, ptrMonth, ptrDay);
             ltime.year = ptrYear.get();
             ltime.month = ptrMonth.get();
             ltime.day = ptrDay.get();
 
         } else if (intType == MySqlIntervalUnit.YEAR) {
-            ltime.year += sign * (long) interval.year;
+            ltime.year += sign * interval.year;
             if (ltime.year >= 10000)
                 return true;
             if (ltime.month == 2 && ltime.day == 29 && calcDaysInYear(ltime.year) != 366)
                 ltime.day = 28; // Was leap-year
 
         } else if (intType == MySqlIntervalUnit.YEAR_MONTH || intType == MySqlIntervalUnit.QUARTER || intType == MySqlIntervalUnit.MONTH) {
-            period = (ltime.year * 12 + sign * (long) interval.year * 12 + ltime.month - 1 + sign * (long) interval.month);
+            period = (ltime.year * 12 + sign * interval.year * 12 + ltime.month - 1 + sign * interval.month);
             if (period >= 120000L)
                 return true;
             ltime.year = (period / 12);

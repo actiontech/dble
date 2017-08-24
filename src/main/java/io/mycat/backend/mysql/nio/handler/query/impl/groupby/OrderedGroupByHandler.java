@@ -119,7 +119,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                 originRp = rowPacket;
                 initSumFunctions(sums, rowPacket);
             } else {
-                boolean sameGroupRow = this.groupBys.size() == 0 ? true : (cmptor.compare(originRp, rowPacket) == 0);
+                boolean sameGroupRow = this.groupBys.size() == 0 || (cmptor.compare(originRp, rowPacket) == 0);
                 if (!sameGroupRow) {
                     // 需要将这一组数据发送出去
                     sendGroupRowPacket((MySQLConnection) conn);

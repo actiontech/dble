@@ -158,7 +158,7 @@ abstract class BaseHandlerBuilder {
         }
         /* need groupby handler */
         if (nodeHasGroupBy(node)) {
-            boolean needOrderBy = (node.getGroupBys().size() > 0) ? isOrderNeeded(node, node.getGroupBys()) : false;
+            boolean needOrderBy = (node.getGroupBys().size() > 0) && isOrderNeeded(node, node.getGroupBys());
             boolean canDirectGroupBy = true;
             List<ItemSum> sumRefs = new ArrayList<ItemSum>();
             for (ItemSum funRef : node.sumFuncs) {

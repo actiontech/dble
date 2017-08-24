@@ -32,7 +32,7 @@ public abstract class FieldTemporaWithDate extends FieldTemporal {
     @Override
     public boolean getTime(MySQLTime time) {
         internalJob();
-        return isNull() ? true : getDate(time, MyTime.TIME_FUZZY_DATE);
+        return isNull() || getDate(time, MyTime.TIME_FUZZY_DATE);
     }
 
     @Override

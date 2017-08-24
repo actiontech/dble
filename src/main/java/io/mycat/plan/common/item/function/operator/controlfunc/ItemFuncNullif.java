@@ -71,7 +71,7 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
 
     @Override
     public boolean isNull() {
-        return (nullValue = (cmp.compare() == 0 ? true : args.get(0).nullValue));
+        return (nullValue = (cmp.compare() == 0 || args.get(0).nullValue));
     }
 
     @Override

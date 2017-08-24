@@ -15,7 +15,7 @@ public final class ToStringUtil {
      * @return
      */
     public static String getTab(int count) {
-        StringBuffer tab = new StringBuffer();
+        StringBuilder tab = new StringBuilder();
         for (int i = 0; i < count; i++)
             tab.append("    ");
         return tab.toString();

@@ -283,7 +283,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             cal.set(Calendar.DATE, 0);
 
             //表名改写
-            StringBuffer tableNameBuffer = new StringBuffer();
+            StringBuilder tableNameBuffer = new StringBuilder();
             int mmEndIdx = Integer.parseInt(params[3]);
             for (int mmIdx = 0; mmIdx <= mmEndIdx; mmIdx++) {
                 tableNameBuffer.append(tableNameElement);
@@ -312,7 +312,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
             //表名改写
             int ddEndIdx = Integer.parseInt(params[4]);
-            StringBuffer tableNameBuffer = new StringBuffer();
+            StringBuilder tableNameBuffer = new StringBuilder();
             for (int ddIdx = 0; ddIdx <= ddEndIdx; ddIdx++) {
                 tableNameBuffer.append(tableNameElement);
                 tableNameBuffer.append(yyyyMMddSDF.format(cal.getTime()));

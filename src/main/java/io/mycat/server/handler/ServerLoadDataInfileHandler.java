@@ -527,7 +527,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private String escaped(String input) {
-        StringBuffer output = new StringBuffer();
+        StringBuilder output = new StringBuilder();
         char[] x = input.toCharArray();
         for (int i = 0; i < x.length; i++) {
             if (x[i] == '\\' && i < x.length - 1) {

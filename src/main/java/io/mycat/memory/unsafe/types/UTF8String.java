@@ -413,7 +413,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
     }
 
     private UTF8String toTitleCaseSlow() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String s = toString();
         sb.append(s);
         sb.setCharAt(0, Character.toTitleCase(sb.charAt(0)));

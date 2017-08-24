@@ -366,7 +366,7 @@ public final class StringUtil {
         if (bytes == null || bytes.length == 0) {
             return "";
         }
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for (byte byt : bytes) {
             buffer.append((char) byt);
         }
@@ -413,7 +413,7 @@ public final class StringUtil {
         if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0) || (max == 0)) {
             return text;
         }
-        StringBuffer buf = new StringBuffer(text.length());
+        StringBuilder buf = new StringBuilder(text.length());
         int start = 0;
         int end = 0;
         while ((end = text.indexOf(repl, start)) != -1) {

@@ -146,7 +146,7 @@ public class DailyRotateLogStore {
     }
 
     private String buildRollFileName(int index) {
-        StringBuffer buf = new StringBuffer(prefix);
+        StringBuilder buf = new StringBuilder(prefix);
         buf.append('_');
         buf.append(dateString);
         buf.append('.');

@@ -371,7 +371,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     // 多试几次
                     rollback();
                 } else {
-                    StringBuffer closeReason = new StringBuffer("ROLLBCAK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
+                    StringBuilder closeReason = new StringBuilder("ROLLBCAK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
                     if (error != null) {
                         closeReason.append(", the ERROR is ");
                         closeReason.append(error);

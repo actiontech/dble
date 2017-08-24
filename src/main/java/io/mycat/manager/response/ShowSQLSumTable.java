@@ -117,8 +117,8 @@ public final class ShowSQLSumTable {
 
         String table = tableStat.getTable();
 
-        StringBuffer relaTableNameBuffer = new StringBuffer();
-        StringBuffer relaTableCountBuffer = new StringBuffer();
+        StringBuilder relaTableNameBuffer = new StringBuilder();
+        StringBuilder relaTableCountBuffer = new StringBuilder();
         List<TableStat.RelaTable> relaTables = tableStat.getRelaTables();
         if (!relaTables.isEmpty()) {
 

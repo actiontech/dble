@@ -447,9 +447,8 @@ public class RBTMinHeap<E> implements MinHeap<E> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        Iterator<?> e = c.iterator();
-        while (e.hasNext())
-            if (!contains(e.next()))
+        for (Object aC : c)
+            if (!contains(aC))
                 return false;
         return true;
     }
@@ -457,9 +456,8 @@ public class RBTMinHeap<E> implements MinHeap<E> {
     @Override
     public boolean addAll(Collection<? extends E> c) {
         boolean modified = false;
-        Iterator<? extends E> e = c.iterator();
-        while (e.hasNext()) {
-            if (add(e.next()))
+        for (E aC : c) {
+            if (add(aC))
                 modified = true;
         }
         return modified;

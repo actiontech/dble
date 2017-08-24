@@ -234,9 +234,7 @@ public class DataMigrator {
         ExecutorService executor = new ThreadPoolExecutor(margs.getThreadCount(), margs.getThreadCount(),
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
-        Iterator<Entry<File, DataNode>> it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<File, DataNode> et = it.next();
+        for (Entry<File, DataNode> et : map.entrySet()) {
             File f = et.getKey();
             DataNode srcDn = et.getValue();
             executor.execute(new DataClearRunner(table, srcDn, f));

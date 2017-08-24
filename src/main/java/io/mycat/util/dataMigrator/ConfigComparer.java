@@ -96,9 +96,7 @@ public class ConfigComparer {
         } catch (Exception e) {
             throw new ConfigException("tablesFile.properties read fail!");
         }
-        Iterator<Entry<Object, Object>> it = pro.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<Object, Object> entry = it.next();
+        for (Entry<Object, Object> entry : pro.entrySet()) {
             String schemaName = entry.getKey().toString();
             String tables = entry.getValue().toString();
             loadMigratorTables(schemaName, getTables(tables));

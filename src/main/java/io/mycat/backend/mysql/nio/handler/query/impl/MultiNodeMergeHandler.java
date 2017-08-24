@@ -251,9 +251,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     @Override
     protected void terminateThread() throws Exception {
-        Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iter = this.queues.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iter.next();
+        for (Entry<MySQLConnection, BlockingQueue<HeapItem>> entry : this.queues.entrySet()) {
             // add EOF to signal atoMerge thread
             entry.getValue().clear();
             entry.getValue().put(new HeapItem(null, null, entry.getKey()));

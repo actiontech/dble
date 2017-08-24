@@ -32,9 +32,7 @@ public class XASessionCheck {
     }
 
     private void checkCommitSession() {
-        Iterator<NonBlockingSession> itertor = commitSession.values().iterator();
-        while (itertor.hasNext()) {
-            NonBlockingSession session = itertor.next();
+        for (NonBlockingSession session : commitSession.values()) {
             if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
                 this.commitSession.remove(session.getSource().getId());
                 session.commit();
@@ -43,9 +41,7 @@ public class XASessionCheck {
     }
 
     private void checkRollbackSession() {
-        Iterator<NonBlockingSession> itertor = rollbackSession.values().iterator();
-        while (itertor.hasNext()) {
-            NonBlockingSession session = itertor.next();
+        for (NonBlockingSession session : rollbackSession.values()) {
             this.rollbackSession.remove(session.getSource().getId());
             session.rollback();
         }

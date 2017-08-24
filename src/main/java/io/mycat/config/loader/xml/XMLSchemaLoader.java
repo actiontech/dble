@@ -224,9 +224,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         if (schemaFuncNodeER == null) {
             return;
         }
-        Iterator<Entry<String, Set<ERTable>>> iterator = schemaFuncNodeER.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Entry<String, Set<ERTable>> entry = iterator.next();
+        for (Entry<String, Set<ERTable>> entry : schemaFuncNodeER.entrySet()) {
             String key = entry.getKey();
             if (funcNodeERMap == null) {
                 funcNodeERMap = new HashMap<String, Set<ERTable>>();

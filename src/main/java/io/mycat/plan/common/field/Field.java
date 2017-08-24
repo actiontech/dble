@@ -25,7 +25,7 @@ public abstract class Field {
                     (table == null || table.length == 0) ? null : new String(table, charset), type, charsetIndex,
                     fieldLength, decimals, flags);
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("parser error ,charset :" + charset.toString());
+            throw new RuntimeException("parser error ,charset :" + charset);
         }
     }
 

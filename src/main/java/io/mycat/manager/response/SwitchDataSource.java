@@ -50,7 +50,7 @@ public final class SwitchDataSource {
             PhysicalDBPool dn = dns.get(key);
             if (dn != null) {
                 int m = dn.getActiveIndex();
-                int n = (idx == null) ? dn.next(m) : idx.intValue();
+                int n = (idx == null) ? dn.next(m) : idx;
                 if (dn.switchSource(n, false, "MANAGER")) {
                     ++count;
                 }

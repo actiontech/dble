@@ -67,7 +67,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
             return nextId(prefixName);
         }
         updateCurIDVal(prefixName, nextId);
-        return nextId.longValue();
+        return nextId;
 
     }
 }

@@ -5,10 +5,7 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.util.ToStringUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * 匿名表，比如select 1,only exists selecteditems
@@ -28,7 +25,7 @@ public class NoNameNode extends PlanNode {
         this.catalog = catalog;
         this.sql = sql;
         SchemaConfig schema = MycatServer.getInstance().getConfig().getSchemas().get(catalog);
-        this.setNoshardNode(new HashSet<>(Arrays.asList(schema.getMetaDataNode())));
+        this.setNoshardNode(new HashSet<>(Collections.singletonList(schema.getMetaDataNode())));
     }
 
     @Override

@@ -118,9 +118,9 @@ public final class MetaHelper {
             } else if (constraint instanceof SQLNullConstraint) {
                 cmBuilder.setCanNull(true);
             } else if (constraint instanceof SQLColumnPrimaryKey) {
-                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, IndexType.PRI, new ArrayList<SQLExpr>(Arrays.asList(column.getName()))));
+                tmBuilder.setPrimary(makeIndexMeta(PRIMARY, IndexType.PRI, new ArrayList<SQLExpr>(Collections.singletonList(column.getName()))));
             } else if (constraint instanceof SQLColumnUniqueKey) {
-                List<SQLExpr> columnExprs = new ArrayList<SQLExpr>(Arrays.asList(column.getName()));
+                List<SQLExpr> columnExprs = new ArrayList<SQLExpr>(Collections.singletonList(column.getName()));
                 String indexName = genIndexName(null, columnExprs, indexNames);
                 tmBuilder.addUniIndex(makeIndexMeta(indexName, IndexType.UNI, columnExprs));
             }

@@ -143,8 +143,8 @@ public class FilePathDisk extends FilePath {
             String[] files = f.list();
             if (files != null) {
                 String base = f.getCanonicalPath();
-                for (int i = 0, len = files.length; i < len; i++) {
-                    list.add(getPath(base + files[i]));
+                for (String file : files) {
+                    list.add(getPath(base + file));
                 }
             }
             return list;

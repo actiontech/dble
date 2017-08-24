@@ -267,8 +267,7 @@ public class ERJoinChooser {
         for (List<JoinKeyInfo> selList : selLists) {
             JoinKeyInfo jkit0 = null;
             JoinKeyInfo jkit1 = null;
-            for (int i = 0; i < selList.size(); i++) {
-                JoinKeyInfo jki = selList.get(i);
+            for (JoinKeyInfo jki : selList) {
                 if (jki.tn == t0) {
                     jkit0 = jki;
                 } else if (jki.tn == t1) {

@@ -100,8 +100,8 @@ public class DirectByteBufferPool implements BufferPool {
         int chunkCount = theBuf.capacity() / chunkSize;
         DirectBuffer parentBuf = (DirectBuffer) thisNavBuf.attachment();
         int startChunk = (int) ((thisNavBuf.address() - parentBuf.address()) / this.chunkSize);
-        for (int i = 0; i < allPages.length; i++) {
-            if ((recycled = allPages[i].recycleBuffer((ByteBuffer) parentBuf, startChunk, chunkCount))) {
+        for (ByteBufferPage allPage : allPages) {
+            if ((recycled = allPage.recycleBuffer((ByteBuffer) parentBuf, startChunk, chunkCount))) {
                 break;
             }
         }

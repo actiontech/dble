@@ -137,9 +137,9 @@ public class DefaultDruidParser implements DruidParser {
     private List<RouteCalculateUnit> buildRouteCalculateUnits(Map<String, String> tableAliasMap, List<List<Condition>> conditionList) {
         List<RouteCalculateUnit> retList = new ArrayList<RouteCalculateUnit>();
         //遍历condition ，找分片字段
-        for (int i = 0; i < conditionList.size(); i++) {
+        for (List<Condition> aConditionList : conditionList) {
             RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-            for (Condition condition : conditionList.get(i)) {
+            for (Condition condition : aConditionList) {
                 List<Object> values = condition.getValues();
                 if (values.size() == 0) {
                     continue;

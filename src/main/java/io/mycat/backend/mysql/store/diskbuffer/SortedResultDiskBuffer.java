@@ -132,8 +132,8 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
             heap = new ArrayMinHeap<TapeItem>(tapes.size(), this.heapCmp);
         heap.clear();
         // init heap
-        for (int i = 0; i < tapes.size(); i++) {
-            heap.add(new TapeItem(tapes.get(i).nextRow(), tapes.get(i)));
+        for (ResultDiskTape tape : tapes) {
+            heap.add(new TapeItem(tape.nextRow(), tape));
         }
     }
 

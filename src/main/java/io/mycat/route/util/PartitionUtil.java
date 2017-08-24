@@ -60,11 +60,11 @@ public final class PartitionUtil implements Serializable {
         if (count == null || length == null || (count.length != length.length)) {
             throw new RuntimeException("error,check your scope & scopeLength definition.");
         }
-        for (int i = 0; i < count.length; i++) {
-            if (count[i] <= 0) {
+        for (int aCount : count) {
+            if (aCount <= 0) {
                 throw new RuntimeException("error,check your scope at least 1.");
             }
-            segmentLength += count[i];
+            segmentLength += aCount;
         }
         int[] ai = new int[segmentLength + 1];
 

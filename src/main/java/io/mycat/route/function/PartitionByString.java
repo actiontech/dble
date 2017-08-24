@@ -125,8 +125,8 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
     @Override
     public int getPartitionNum() {
         int nPartition = 0;
-        for (int i = 0; i < count.length; i++) {
-            nPartition += count[i];
+        for (int aCount : count) {
+            nPartition += aCount;
         }
         return nPartition;
     }

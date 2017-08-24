@@ -24,14 +24,14 @@ public class RowDataCmp implements Comparator<RowDataPacket> {
         int len = tmp.length;
         //依次比较order by语句上的多个排序字段的值
         int type = OrderCol.COL_ORDER_TYPE_ASC;
-        for (int i = 0; i < len; i++) {
-            int colIndex = tmp[i].colMeta.colIndex;
+        for (OrderCol aTmp : tmp) {
+            int colIndex = aTmp.colMeta.colIndex;
             byte[] left = o1.fieldValues.get(colIndex);
             byte[] right = o2.fieldValues.get(colIndex);
-            if (tmp[i].orderType == type) {
-                cmp = RowDataPacketSorter.compareObject(left, right, tmp[i]);
+            if (aTmp.orderType == type) {
+                cmp = RowDataPacketSorter.compareObject(left, right, aTmp);
             } else {
-                cmp = RowDataPacketSorter.compareObject(right, left, tmp[i]);
+                cmp = RowDataPacketSorter.compareObject(right, left, aTmp);
             }
             if (cmp != 0) {
                 return cmp;

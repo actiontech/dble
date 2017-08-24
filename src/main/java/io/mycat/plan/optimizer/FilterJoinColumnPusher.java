@@ -114,8 +114,8 @@ public final class FilterJoinColumnPusher {
 
         } else if (i == PlanNode.PlanNodeType.MERGE) {
             List<PlanNode> children = qtn.getChildren();
-            for (int index = 0; index < children.size(); index++) {
-                pushFilter(children.get(index), new ArrayList<Item>());
+            for (PlanNode aChildren : children) {
+                pushFilter(aChildren, new ArrayList<Item>());
             }
 
         }

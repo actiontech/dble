@@ -195,12 +195,12 @@ public abstract class ItemFunc extends Item {
         int length = 0;
         decimals = 0;
         maxLength = 0;
-        for (int i = 0; i < args.size(); i++) {
+        for (Item arg : args) {
             if (decimals != NOT_FIXED_DEC) {
-                decimals = Math.max(decimals, args.get(i).decimals);
-                length = Math.max(length, args.get(i).maxLength - args.get(i).decimals);
+                decimals = Math.max(decimals, arg.decimals);
+                length = Math.max(length, arg.maxLength - arg.decimals);
             }
-            maxLength = Math.max(maxLength, args.get(i).maxLength);
+            maxLength = Math.max(maxLength, arg.maxLength);
         }
         if (decimals != NOT_FIXED_DEC) {
             maxLength = length;
@@ -220,9 +220,9 @@ public abstract class ItemFunc extends Item {
     public void countDecimalLength() {
         int maxIntPart = 0;
         decimals = 0;
-        for (int i = 0; i < args.size(); i++) {
-            decimals = Math.max(decimals, args.get(i).decimals);
-            maxIntPart = Math.max(maxIntPart, args.get(i).decimalIntPart());
+        for (Item arg : args) {
+            decimals = Math.max(decimals, arg.decimals);
+            maxIntPart = Math.max(maxIntPart, arg.decimalIntPart());
         }
         int precision = maxIntPart + decimals;
         maxLength = precision;

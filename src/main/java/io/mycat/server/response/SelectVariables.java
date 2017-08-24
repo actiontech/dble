@@ -60,8 +60,7 @@ public final class SelectVariables {
         int i = 0;
         byte packetId = 0;
         header.packetId = ++packetId;
-        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
-            String s = splitVar.get(i1);
+        for (String s : splitVar) {
             fields[i] = PacketUtil.getField(s, Fields.FIELD_TYPE_VAR_STRING);
             fields[i++].packetId = ++packetId;
         }
@@ -87,8 +86,7 @@ public final class SelectVariables {
         //byte packetId = eof.packetId;
 
         RowDataPacket row = new RowDataPacket(fieldCount);
-        for (int i1 = 0, splitVarSize = splitVar.size(); i1 < splitVarSize; i1++) {
-            String s = splitVar.get(i1);
+        for (String s : splitVar) {
             String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
             row.add(value.getBytes());
 

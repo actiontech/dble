@@ -680,10 +680,10 @@ public class PhysicalDBPool {
                 int offset = random.nextInt(totalWeight);
 
                 // 并确定随机值落在哪个片断上
-                for (int i = 0; i < length; i++) {
-                    offset -= okSources.get(i).getConfig().getWeight();
+                for (PhysicalDatasource okSource : okSources) {
+                    offset -= okSource.getConfig().getWeight();
                     if (offset < 0) {
-                        return okSources.get(i);
+                        return okSource;
                     }
                 }
             }

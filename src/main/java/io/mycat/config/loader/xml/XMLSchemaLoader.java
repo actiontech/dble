@@ -398,8 +398,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
             }
 
-            for (int j = 0; j < tableNames.length; j++) {
-                String tableName = tableNames[j];
+            for (String tableName : tableNames) {
                 TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
                         dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
                 checkDataNodeExists(table.getDataNodes());
@@ -607,10 +606,8 @@ public class XMLSchemaLoader implements SchemaLoader {
      */
     private List<String[]> mergerHostDatabase(String[] hostStrings, String[] databases) {
         List<String[]> mhdList = new ArrayList<>();
-        for (int i = 0; i < hostStrings.length; i++) {
-            String hostString = hostStrings[i];
-            for (int i1 = 0; i1 < databases.length; i1++) {
-                String database = databases[i1];
+        for (String hostString : hostStrings) {
+            for (String database : databases) {
                 String[] hd = new String[2];
                 hd[0] = hostString;
                 hd[1] = database;

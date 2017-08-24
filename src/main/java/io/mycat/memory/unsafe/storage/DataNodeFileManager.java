@@ -140,12 +140,12 @@ public class DataNodeFileManager {
 
         String[] rdir = rootDirs.split(",");
         List<File> dirs = new ArrayList<File>();
-        for (int i = 0; i < rdir.length; i++) {
+        for (String aRdir : rdir) {
             try {
-                File localDir = JavaUtils.createDirectory(rdir[i], "datenode");
+                File localDir = JavaUtils.createDirectory(aRdir, "datenode");
                 dirs.add(localDir);
             } catch (Exception e) {
-                LOG.error("Failed to create local dir in " + rdir[i] + ". Ignoring this directory.");
+                LOG.error("Failed to create local dir in " + aRdir + ". Ignoring this directory.");
             }
         }
 

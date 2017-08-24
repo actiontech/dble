@@ -33,8 +33,8 @@ public class ItemFuncOrd extends ItemIntFunc {
         try {
             byte[] bytes = new String(leftmost).getBytes(CharsetUtil.getJavaCharset(mysqlCharset));
             long res = 0L;
-            for (int i = 0; i < bytes.length; i++) {
-                res = (bytes[i] < 0 ? bytes[i] + 256 : bytes[i]) + res * 256L;
+            for (byte aByte : bytes) {
+                res = (aByte < 0 ? aByte + 256 : aByte) + res * 256L;
             }
             return BigInteger.valueOf(res);
         } catch (UnsupportedEncodingException e) {

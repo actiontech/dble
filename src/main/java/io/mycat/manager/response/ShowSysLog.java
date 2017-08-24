@@ -65,8 +65,7 @@ public final class ShowSysLog {
         String[] lines = getLinesByLogFile(filename, numLines);
 
         boolean linesIsEmpty = true;
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
+        for (String line : lines) {
             if (line != null) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode(line.substring(0, 19), c.getCharset()));

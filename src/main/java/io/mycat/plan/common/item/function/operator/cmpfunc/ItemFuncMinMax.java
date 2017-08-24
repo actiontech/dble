@@ -309,16 +309,16 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         maxLength = 0;
         cmpType = args.get(0).temporalWithDateAsNumberResultType();
 
-        for (int i = 0; i < args.size(); i++) {
-            maxLength = Math.max(maxLength, args.get(i).maxLength);
-            decimals = Math.max(decimals, args.get(i).decimals);
-            cmpType = MySQLcom.itemCmpType(cmpType, args.get(i).temporalWithDateAsNumberResultType());
-            if (args.get(i).resultType() == ItemResult.STRING_RESULT)
+        for (Item arg : args) {
+            maxLength = Math.max(maxLength, arg.maxLength);
+            decimals = Math.max(decimals, arg.decimals);
+            cmpType = MySQLcom.itemCmpType(cmpType, arg.temporalWithDateAsNumberResultType());
+            if (arg.resultType() == ItemResult.STRING_RESULT)
                 stringArgCount++;
-            if (args.get(i).resultType() != ItemResult.ROW_RESULT && args.get(i).isTemporalWithDate()) {
+            if (arg.resultType() != ItemResult.ROW_RESULT && arg.isTemporalWithDate()) {
                 datetimeFound = true;
-                if (datetimeItem == null || args.get(i).fieldType() == FieldTypes.MYSQL_TYPE_DATETIME)
-                    datetimeItem = args.get(i);
+                if (datetimeItem == null || arg.fieldType() == FieldTypes.MYSQL_TYPE_DATETIME)
+                    datetimeItem = arg;
             }
         }
 

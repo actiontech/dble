@@ -127,10 +127,10 @@ public class ConfigComparer {
         Map<String, TableConfig> newTables = DataMigratorUtil.getValueIgnoreCase(newSchemas, schemaName).getTables();
         if (tables.length > 0) {
             //指定schema下的表进行迁移
-            for (int i = 0; i < tables.length; i++) {
-                TableConfig oldTable = DataMigratorUtil.getValueIgnoreCase(oldTables, tables[i]);
-                TableConfig newTable = DataMigratorUtil.getValueIgnoreCase(newTables, tables[i]);
-                loadMigratorTable(oldTable, newTable, schemaName, tables[i]);
+            for (String table : tables) {
+                TableConfig oldTable = DataMigratorUtil.getValueIgnoreCase(oldTables, table);
+                TableConfig newTable = DataMigratorUtil.getValueIgnoreCase(newTables, table);
+                loadMigratorTable(oldTable, newTable, schemaName, table);
             }
         } else {
             //迁移schema下所有的表

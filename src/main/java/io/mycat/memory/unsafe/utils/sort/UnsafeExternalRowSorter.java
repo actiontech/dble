@@ -175,8 +175,8 @@ public final class UnsafeExternalRowSorter {
 
         UnsafeRowsMerger unsafeRowsMerger = new UnsafeRowsMerger(recordComparator, prefixComparator, list.size());
 
-        for (int i = 0; i < list.size(); i++) {
-            unsafeRowsMerger.addSpillIfNotEmpty(list.get(i));
+        for (UnsafeSorterIterator aList : list) {
+            unsafeRowsMerger.addSpillIfNotEmpty(aList);
         }
 
         try {
@@ -264,8 +264,8 @@ public final class UnsafeExternalRowSorter {
 
             int type = OrderCol.COL_ORDER_TYPE_ASC; /**升序*/
 
-            for (int i = 0; i < len; i++) {
-                int colIndex = orderCols[i].colMeta.colIndex;
+            for (OrderCol orderCol : orderCols) {
+                int colIndex = orderCol.colMeta.colIndex;
                 /**取出一行数据中的列值，进行大小比对*/
                 byte[] left = null;
                 byte[] right = null;
@@ -286,10 +286,10 @@ public final class UnsafeExternalRowSorter {
                     right[0] = UnsafeRow.NULL_MARK;
                 }
 
-                if (orderCols[i].orderType == type) {
-                    cmp = RowDataPacketSorter.compareObject(left, right, orderCols[i]);
+                if (orderCol.orderType == type) {
+                    cmp = RowDataPacketSorter.compareObject(left, right, orderCol);
                 } else {
-                    cmp = RowDataPacketSorter.compareObject(right, left, orderCols[i]);
+                    cmp = RowDataPacketSorter.compareObject(right, left, orderCol);
                 }
                 if (cmp != 0)
                     return cmp;

@@ -727,9 +727,9 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
     public static UTF8String concat(UTF8String... inputs) {
         // Compute the total length of the result.
         int totalLength = 0;
-        for (int i = 0; i < inputs.length; i++) {
-            if (inputs[i] != null) {
-                totalLength += inputs[i].numBytes;
+        for (UTF8String input1 : inputs) {
+            if (input1 != null) {
+                totalLength += input1.numBytes;
             } else {
                 return null;
             }
@@ -738,10 +738,10 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
         // Allocate a new byte array, and copy the inputs one by one into it.
         final byte[] result = new byte[totalLength];
         int offset = 0;
-        for (int i = 0; i < inputs.length; i++) {
-            int len = inputs[i].numBytes;
+        for (UTF8String input : inputs) {
+            int len = input.numBytes;
             Platform.copyMemory(
-                    inputs[i].base, inputs[i].offset,
+                    input.base, input.offset,
                     result, Platform.BYTE_ARRAY_OFFSET + offset,
                     len);
             offset += len;
@@ -760,9 +760,9 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
 
         int numInputBytes = 0;  // total number of bytes from the inputs
         int numInputs = 0;      // number of non-null inputs
-        for (int i = 0; i < inputs.length; i++) {
-            if (inputs[i] != null) {
-                numInputBytes += inputs[i].numBytes;
+        for (UTF8String input : inputs) {
+            if (input != null) {
+                numInputBytes += input.numBytes;
                 numInputs++;
             }
         }

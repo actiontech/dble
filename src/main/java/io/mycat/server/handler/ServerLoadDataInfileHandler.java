@@ -323,8 +323,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
                     RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
                     int i = 0;
-                    for (Iterator<RouteResultsetNode> iterator = nodeSet.iterator(); iterator.hasNext(); ) {
-                        nodes[i] = (RouteResultsetNode) iterator.next();
+                    for (RouteResultsetNode aNodeSet : nodeSet) {
+                        nodes[i] = aNodeSet;
                         i++;
                     }
 
@@ -802,8 +802,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         File[] fileList = fileDirToDel.listFiles();
         if (fileList != null) {
-            for (int i = 0; i < fileList.length; i++) {
-                File file = fileList[i];
+            for (File file : fileList) {
                 if (file.isFile() && file.exists()) {
                     boolean delete = file.delete();
                 } else if (file.isDirectory()) {

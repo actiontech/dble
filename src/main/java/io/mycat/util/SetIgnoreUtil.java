@@ -29,8 +29,8 @@ public final class SetIgnoreUtil {
                 "(?i)set (sql_safe_updates)",
         };
 
-        for (int i = 0; i < ignores.length; ++i) {
-            ptrnIgnoreList.add(Pattern.compile(ignores[i]));
+        for (String ignore : ignores) {
+            ptrnIgnoreList.add(Pattern.compile(ignore));
         }
     }
 

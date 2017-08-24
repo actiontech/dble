@@ -287,8 +287,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
-        for (int i = 0, len = fields.size(); i < len; ++i) {
-            byte[] field = fields.get(i);
+        for (byte[] field : fields) {
             this.netOutBytes += field.length;
         }
 

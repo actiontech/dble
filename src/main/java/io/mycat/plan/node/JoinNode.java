@@ -227,8 +227,7 @@ public class JoinNode extends PlanNode {
      */
     private void buildJoinKeys(boolean clearName) {
         List<Item> otherJoinOnFilters = new ArrayList<Item>(getJoinFilter().size());
-        for (int index = 0; index < joinFilter.size(); index++) {
-            ItemFuncEqual bf = joinFilter.get(index);
+        for (ItemFuncEqual bf : joinFilter) {
             if (clearName)
                 bf.setItemName(null);
             boolean isJoinKey = PlanUtil.isJoinKey(bf, this);

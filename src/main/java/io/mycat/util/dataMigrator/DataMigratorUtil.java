@@ -179,8 +179,8 @@ public final class DataMigratorUtil {
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                boolean success = deleteDir(new File(dir, children[i]));
+            for (String aChildren : children) {
+                boolean success = deleteDir(new File(dir, aChildren));
                 if (!success) {
                     return false;
                 }
@@ -307,8 +307,7 @@ public final class DataMigratorUtil {
 
         List<String> changeList = new ArrayList<>();
         //调整内容
-        for (int i = 0; i < mergeList.size(); i++) {
-            String content = mergeList.get(i);
+        for (String content : mergeList) {
             if (content.trim().length() >= maxLength) {
                 String[] str = content.split(mark);
                 String key = str[0];
@@ -334,9 +333,9 @@ public final class DataMigratorUtil {
         }
 
         //拼接内容
-        for (int i = 0; i < changeList.size(); i++) {
+        for (String aChangeList : changeList) {
             StringBuilder contentSb = new StringBuilder(" |");
-            String content = changeList.get(i);
+            String content = aChangeList;
             contentSb.append(content);
             int length = maxLength - content.length();
             for (int j = 0; j < length; j++) {

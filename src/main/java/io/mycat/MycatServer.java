@@ -893,12 +893,11 @@ public final class MycatServer {
         // fetch the recovery log
         CoordinatorLogEntry[] coordinatorLogEntries = getCoordinatorLogEntries();
         // init into in memory cached
-        for (int i = 0; i < coordinatorLogEntries.length; i++) {
-            genXidSeq(coordinatorLogEntries[i].getId());
-            XAStateLog.flushMemoryRepository(coordinatorLogEntries[i].getId(), coordinatorLogEntries[i]);
+        for (CoordinatorLogEntry coordinatorLogEntry1 : coordinatorLogEntries) {
+            genXidSeq(coordinatorLogEntry1.getId());
+            XAStateLog.flushMemoryRepository(coordinatorLogEntry1.getId(), coordinatorLogEntry1);
         }
-        for (int i = 0; i < coordinatorLogEntries.length; i++) {
-            CoordinatorLogEntry coordinatorLogEntry = coordinatorLogEntries[i];
+        for (CoordinatorLogEntry coordinatorLogEntry : coordinatorLogEntries) {
             boolean needRollback = false;
             boolean needCommit = false;
             StringBuilder xacmd = new StringBuilder();

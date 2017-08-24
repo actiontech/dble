@@ -59,8 +59,7 @@ public final class ParameterMapping {
             InvocationTargetException {
         //获取用于导出clazz这个JavaBean的所有属性的PropertyDescriptor
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
-        for (int i = 0; i < pds.length; i++) {
-            PropertyDescriptor pd = pds[i];
+        for (PropertyDescriptor pd : pds) {
             Object obj = parameter.get(pd.getName());
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
@@ -133,9 +132,9 @@ public final class ParameterMapping {
                 pds = beanInfo.getPropertyDescriptors();
                 list = new ArrayList<PropertyDescriptor>();
                 //加载每一个类型不为空的property
-                for (int i = 0; i < pds.length; i++) {
-                    if (null != pds[i].getPropertyType()) {
-                        list.add(pds[i]);
+                for (PropertyDescriptor pd : pds) {
+                    if (null != pd.getPropertyType()) {
+                        list.add(pd);
                     }
                 }
                 pds2 = new PropertyDescriptor[list.size()];

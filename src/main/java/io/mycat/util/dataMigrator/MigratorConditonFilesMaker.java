@@ -75,8 +75,7 @@ public class MigratorConditonFilesMaker implements Runnable {
                     return;
                 }
                 flushData(false);
-                for (int i = 0, l = list.size(); i < l; i++) {
-                    Map<String, Object> sf = list.get(i);
+                for (Map<String, Object> sf : list) {
                     String filedVal = sf.get(column).toString();
                     Integer newIndex = alg.calculate(filedVal);
                     total++;

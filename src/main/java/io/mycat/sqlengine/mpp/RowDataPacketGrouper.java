@@ -321,9 +321,9 @@ public class RowDataPacketGrouper {
             // column
             return true;
         }
-        for (int i = 0; i < groupColumnIndexs.length; i++) {
-            if (!Arrays.equals(newRow.fieldValues.get(groupColumnIndexs[i]),
-                    existRow.fieldValues.get(groupColumnIndexs[i]))) {
+        for (int groupColumnIndex : groupColumnIndexs) {
+            if (!Arrays.equals(newRow.fieldValues.get(groupColumnIndex),
+                    existRow.fieldValues.get(groupColumnIndex))) {
                 return false;
             }
 

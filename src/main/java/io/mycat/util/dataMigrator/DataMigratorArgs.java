@@ -121,8 +121,8 @@ public class DataMigratorArgs {
         if (result.contains("*")) {
             String[] arr = result.split("\\*");
             int j = 1;
-            for (int i = 0; i < arr.length; i++) {
-                j *= Integer.valueOf(arr[i]);
+            for (String anArr : arr) {
+                j *= Integer.valueOf(anArr);
             }
             return j;
         }

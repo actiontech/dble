@@ -257,14 +257,14 @@ public final class SplitUtil {
     public static String[] split(String src, char fi, char se, char th, char left, char right) {
         List<String> list = new LinkedList<String>();
         String[] pools = split(src, fi, true);
-        for (int i = 0; i < pools.length; i++) {
-            if (pools[i].indexOf(se) == -1) {
-                list.add(pools[i]);
+        for (String pool : pools) {
+            if (pool.indexOf(se) == -1) {
+                list.add(pool);
                 continue;
             }
-            String[] s = split(pools[i], se, th, left, right);
-            for (int j = 0; j < s.length; j++) {
-                list.add(s[j]);
+            String[] s = split(pool, se, th, left, right);
+            for (String value : s) {
+                list.add(value);
             }
         }
         return list.toArray(new String[list.size()]);

@@ -92,9 +92,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
         }
         List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 
-        for (int i = 0; i < fields.size(); i++) {
+        for (byte[] field1 : fields) {
             FieldPacket field = new FieldPacket();
-            field.read(fields.get(i));
+            field.read(field1);
             fieldPackets.add(field);
         }
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);

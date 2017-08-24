@@ -65,8 +65,7 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
                 ++size;
                 return true;
             default:
-                for (int i = 0; i < list.size(); ++i) {
-                    E e1 = list.get(i);
+                for (E e1 : list) {
                     if (isEquals(e1, e)) {
                         return false;
                     }

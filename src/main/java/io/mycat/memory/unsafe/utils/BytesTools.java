@@ -776,14 +776,14 @@ public final class BytesTools {
      */
     public static byte[] add(final byte[][] arrays) {
         int length = 0;
-        for (int i = 0; i < arrays.length; i++) {
-            length += arrays[i].length;
+        for (byte[] array1 : arrays) {
+            length += array1.length;
         }
         byte[] result = new byte[length];
         int index = 0;
-        for (int i = 0; i < arrays.length; i++) {
-            System.arraycopy(arrays[i], 0, result, index, arrays[i].length);
-            index += arrays[i].length;
+        for (byte[] array : arrays) {
+            System.arraycopy(array, 0, result, index, array.length);
+            index += array.length;
         }
         return result;
     }

@@ -3,6 +3,8 @@
 
 package io.mycat.meta.protocol;
 
+import com.google.protobuf.CodedOutputStream;
+
 public final class StructureMeta {
     private StructureMeta() {
     }
@@ -3409,8 +3411,8 @@ public final class StructureMeta {
             if (((bitField0_ & 0x00000001) == 0x00000001)) {
                 output.writeBytes(1, getTableNameBytes());
             }
-            for (int i = 0; i < columns_.size(); i++) {
-                output.writeMessage(2, columns_.get(i));
+            for (ColumnMeta aColumns_ : columns_) {
+                output.writeMessage(2, aColumns_);
             }
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
                 output.writeBool(3, isView_);
@@ -3433,11 +3435,11 @@ public final class StructureMeta {
             if (((bitField0_ & 0x00000080) == 0x00000080)) {
                 output.writeMessage(9, primary_);
             }
-            for (int i = 0; i < uniIndex_.size(); i++) {
-                output.writeMessage(10, uniIndex_.get(i));
+            for (IndexMeta anUniIndex_ : uniIndex_) {
+                output.writeMessage(10, anUniIndex_);
             }
-            for (int i = 0; i < index_.size(); i++) {
-                output.writeMessage(11, index_.get(i));
+            for (IndexMeta anIndex_ : index_) {
+                output.writeMessage(11, anIndex_);
             }
             getUnknownFields().writeTo(output);
         }
@@ -3453,9 +3455,9 @@ public final class StructureMeta {
                 size += com.google.protobuf.CodedOutputStream
                         .computeBytesSize(1, getTableNameBytes());
             }
-            for (int i = 0; i < columns_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream
-                        .computeMessageSize(2, columns_.get(i));
+            for (ColumnMeta aColumns_ : columns_) {
+                size += CodedOutputStream
+                        .computeMessageSize(2, aColumns_);
             }
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
                 size += com.google.protobuf.CodedOutputStream
@@ -3485,13 +3487,13 @@ public final class StructureMeta {
                 size += com.google.protobuf.CodedOutputStream
                         .computeMessageSize(9, primary_);
             }
-            for (int i = 0; i < uniIndex_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream
-                        .computeMessageSize(10, uniIndex_.get(i));
+            for (IndexMeta anUniIndex_ : uniIndex_) {
+                size += CodedOutputStream
+                        .computeMessageSize(10, anUniIndex_);
             }
-            for (int i = 0; i < index_.size(); i++) {
-                size += com.google.protobuf.CodedOutputStream
-                        .computeMessageSize(11, index_.get(i));
+            for (IndexMeta anIndex_ : index_) {
+                size += CodedOutputStream
+                        .computeMessageSize(11, anIndex_);
             }
             size += getUnknownFields().getSerializedSize();
             memoizedSerializedSize = size;

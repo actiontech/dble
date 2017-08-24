@@ -523,8 +523,8 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (whereUnit.getSubWhereUnit().size() > 1) {
                 List<List<Condition>> mergedConditionList = getMergedConditionList(whereUnit.getSubWhereUnit());
                 if (whereUnit.getOutConditions().size() > 0) {
-                    for (int i = 0; i < mergedConditionList.size(); i++) {
-                        mergedConditionList.get(i).addAll(whereUnit.getOutConditions());
+                    for (List<Condition> aMergedConditionList : mergedConditionList) {
+                        aMergedConditionList.addAll(whereUnit.getOutConditions());
                     }
                 }
                 whereUnit.setConditionList(mergedConditionList);
@@ -574,11 +574,11 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         List<List<Condition>> retList = new ArrayList<List<Condition>>();
-        for (int i = 0; i < list1.size(); i++) {
-            for (int j = 0; j < list2.size(); j++) {
+        for (List<Condition> aList1 : list1) {
+            for (List<Condition> aList2 : list2) {
                 List<Condition> listTmp = new ArrayList<Condition>();
-                listTmp.addAll(list1.get(i));
-                listTmp.addAll(list2.get(j));
+                listTmp.addAll(aList1);
+                listTmp.addAll(aList2);
                 retList.add(listTmp);
             }
         }

@@ -112,13 +112,13 @@ public class UnsafeRowGrouper {
         Map<String, Integer> map = new HashMap<String, Integer>();
 
         ColMeta curColMeta;
-        for (int i = 0; i < columns.length; i++) {
-            curColMeta = columToIndx.get(columns[i].toUpperCase());
+        for (String column : columns) {
+            curColMeta = columToIndx.get(column.toUpperCase());
             if (curColMeta == null) {
                 throw new IllegalArgumentException(
-                        "all columns in group by clause should be in the selected column list.!" + columns[i]);
+                        "all columns in group by clause should be in the selected column list.!" + column);
             }
-            map.put(columns[i], curColMeta.colIndex);
+            map.put(column, curColMeta.colIndex);
         }
 
 

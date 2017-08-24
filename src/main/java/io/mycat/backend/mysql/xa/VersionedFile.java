@@ -54,8 +54,8 @@ public class VersionedFile {
             }
         });
         if (names != null) {
-            for (int i = 0; i < names.length; i++) {
-                long sfx = extractVersion(names[i]);
+            for (String name : names) {
+                long sfx = extractVersion(name);
                 if (version < 0 || sfx < version)
                     version = sfx;
             }

@@ -42,12 +42,12 @@ public class ReflectionProvider {
     public Object newInstance(Class<?> type) {
         try {
             Constructor<?>[] c = type.getDeclaredConstructors();
-            for (int i = 0; i < c.length; i++) {
-                if (c[i].getParameterTypes().length == 0) {
-                    if (!Modifier.isPublic(c[i].getModifiers())) {
-                        c[i].setAccessible(true);
+            for (Constructor<?> aC : c) {
+                if (aC.getParameterTypes().length == 0) {
+                    if (!Modifier.isPublic(aC.getModifiers())) {
+                        aC.setAccessible(true);
                     }
-                    return c[i].newInstance(new Object[0]);
+                    return aC.newInstance(new Object[0]);
                 }
             }
             if (Serializable.class.isAssignableFrom(type)) {

@@ -89,8 +89,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
-        for (int index = 0; index < referedSumFunctions.size(); index++) {
-            ItemSum sumFunc = referedSumFunctions.get(index);
+        for (ItemSum sumFunc : referedSumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
                     this.type(), conn.getCharset()));
             sums.add(sum);
@@ -126,8 +125,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      */
     private List<FieldPacket> sendGroupFieldPackets(MySQLConnection conn) {
         List<FieldPacket> newFps = new ArrayList<FieldPacket>();
-        for (int i = 0; i < sums.size(); i++) {
-            Item sum = sums.get(i);
+        for (ItemSum sum1 : sums) {
+            Item sum = sum1;
             FieldPacket tmpfp = new FieldPacket();
             sum.makeField(tmpfp);
             newFps.add(tmpfp);
@@ -214,8 +213,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         RowDataPacket row = null;
         List<Field> localFields = HandlerTool.createFields(localResultFps);
         List<ItemSum> sendSums = new ArrayList<ItemSum>();
-        for (int i = 0; i < referedSumFunctions.size(); i++) {
-            ItemSum selSum = referedSumFunctions.get(i);
+        for (ItemSum selSum : referedSumFunctions) {
             ItemSum sum = (ItemSum) HandlerTool.createItem(selSum, localFields, 0, false, HandlerType.GROUPBY,
                     conn.getCharset());
             sendSums.add(sum);
@@ -238,8 +236,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
          * 由于整个语句下发，所以最后生成的rowpacket顺序为
          * count(*){groupbyhandler生成的},count(*){下发到各个节点的，不是真实的值}
          */
-        for (int i = 0; i < sendSums.size(); i++) {
-            byte[] tmpb = sendSums.get(i).getRowPacketByte();
+        for (ItemSum sendSum : sendSums) {
+            byte[] tmpb = sendSum.getRowPacketByte();
             newRp.add(tmpb);
         }
         for (int i = 0; i < row.fieldCount; i++) {
@@ -253,8 +251,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      */
     private void sendNoRowGroupRowPacket(MySQLConnection conn) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
-        for (int i = 0; i < this.sums.size(); i++) {
-            ItemSum sum = this.sums.get(i);
+        for (ItemSum sum : this.sums) {
             sum.noRowsInResult();
             byte[] tmpb = sum.getRowPacketByte();
             newRp.add(tmpb);

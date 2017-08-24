@@ -92,12 +92,12 @@ public final class MetaHelper {
         IndexMeta.Builder indexBuilder = IndexMeta.newBuilder();
         indexBuilder.setName(StringUtil.removeBackQuote(indexName));
         indexBuilder.setType(indexType.toString());
-        for (int i = 0; i < columnExprs.size(); i++) {
-            if (columnExprs.get(i) instanceof SQLIdentifierExpr) {
-                SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(i);
+        for (SQLExpr columnExpr : columnExprs) {
+            if (columnExpr instanceof SQLIdentifierExpr) {
+                SQLIdentifierExpr column = (SQLIdentifierExpr) columnExpr;
                 indexBuilder.addColumns(StringUtil.removeBackQuote(column.getName()));
-            } else if (columnExprs.get(i) instanceof MySqlOrderingExpr) {
-                MySqlOrderingExpr column = (MySqlOrderingExpr) columnExprs.get(i);
+            } else if (columnExpr instanceof MySqlOrderingExpr) {
+                MySqlOrderingExpr column = (MySqlOrderingExpr) columnExpr;
                 if (column.getExpr() instanceof SQLIdentifierExpr) {
                     indexBuilder.addColumns(StringUtil.removeBackQuote(((SQLIdentifierExpr) column.getExpr()).getName()));
                 } else if (column.getExpr() instanceof SQLMethodInvokeExpr) {

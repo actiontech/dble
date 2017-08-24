@@ -574,8 +574,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         this.netOutBytes += header.length;
         this.netOutBytes += eof.length;
-        for (int i = 0, len = fields.size(); i < len; ++i) {
-            byte[] field = fields.get(i);
+        for (byte[] field : fields) {
             this.netOutBytes += field.length;
         }
 

@@ -432,9 +432,9 @@ public class MycatConfig {
                     //ignore error
                 }
 
-                for (int i = 0; i < killed.size(); i++) {
-                    if (killed.get(i).getActiveCount() != 0) {
-                        killed.get(i).clearConsByDying();
+                for (PhysicalDatasource aKilled : killed) {
+                    if (aKilled.getActiveCount() != 0) {
+                        aKilled.clearConsByDying();
                     }
                 }
             }

@@ -182,8 +182,8 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     private int getParamCount(String sql) {
         char[] cArr = sql.toCharArray();
         int count = 0;
-        for (int i = 0; i < cArr.length; i++) {
-            if (cArr[i] == '?') {
+        for (char aCArr : cArr) {
+            if (aCArr == '?') {
                 count++;
             }
         }

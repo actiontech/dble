@@ -21,8 +21,8 @@ public final class CmdArgs {
 
     public static CmdArgs getInstance(String[] args) {
         Map<String, String> cmdArgs = CmdArgs.CMD_ARGS.args;
-        for (int i = 0, l = args.length; i < l; i++) {
-            String arg = args[i].trim();
+        for (String arg1 : args) {
+            String arg = arg1.trim();
             int split = arg.indexOf('=');
             cmdArgs.put(arg.substring(1, split), arg.substring(split + 1));
         }

@@ -28,8 +28,7 @@ public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
             return;
         }
         if (errConnection != null && errConnection.size() > 0) {
-            for (int i = 0; i < nodes.length; i++) {
-                RouteResultsetNode node = nodes[i];
+            for (RouteResultsetNode node : nodes) {
                 final BackendConnection conn = session.getTarget(node);
                 if (errConnection.contains(conn)) {
                     session.getTargetMap().remove(node);

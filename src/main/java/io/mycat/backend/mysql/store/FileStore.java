@@ -86,8 +86,7 @@ public class FileStore {
     public void delete() {
         if (!this.fileNames.isEmpty()) {
             try {
-                for (int i = 0; i < this.fileNames.size(); i++) {
-                    String fileName = fileNames.get(i);
+                for (String fileName : this.fileNames) {
                     FileUtils.tryDelete(fileName);
                 }
             } finally {

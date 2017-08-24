@@ -184,12 +184,9 @@ public class DiskRowWriter extends OutputStream {
                 close();
             }
 
-            FileOutputStream truncateStream = new FileOutputStream(file, true);
-            try {
+            try (FileOutputStream truncateStream = new FileOutputStream(file, true)) {
                 truncateStream.getChannel().truncate(initialPosition);
                 return file;
-            } finally {
-                truncateStream.close();
             }
         } catch (Exception e) {
             LOG.error(e.getMessage());

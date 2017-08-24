@@ -52,8 +52,8 @@ public class HeartbeatRecorder {
     private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
 
     public HeartbeatRecorder() {
-        this.records = new ConcurrentLinkedQueue<Record>();
-        this.recordsAll = new ConcurrentLinkedQueue<Record>();
+        this.records = new ConcurrentLinkedQueue<>();
+        this.recordsAll = new ConcurrentLinkedQueue<>();
     }
 
     public String get() {

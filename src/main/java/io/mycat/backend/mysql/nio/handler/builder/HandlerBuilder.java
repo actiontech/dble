@@ -17,7 +17,7 @@ public class HandlerBuilder {
 
     private PlanNode node;
     private NonBlockingSession session;
-    private Set<RouteResultsetNode> rrsNodes = new HashSet<RouteResultsetNode>();
+    private Set<RouteResultsetNode> rrsNodes = new HashSet<>();
 
     public HandlerBuilder(PlanNode node, NonBlockingSession session) {
         this.node = node;

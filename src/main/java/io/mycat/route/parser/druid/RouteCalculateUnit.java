@@ -17,7 +17,7 @@ import java.util.Set;
  * @copyright wonhigh.cn
  */
 public class RouteCalculateUnit {
-    private Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<String, Map<String, Set<ColumnRoutePair>>>();
+    private Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<>();
 
     public Map<String, Map<String, Set<ColumnRoutePair>>> getTablesAndConditions() {
         return tablesAndConditions;
@@ -32,7 +32,7 @@ public class RouteCalculateUnit {
         }
 
         if (tableColumnsMap == null) {
-            tableColumnsMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
+            tableColumnsMap = new LinkedHashMap<>();
             tablesAndConditions.put(tableName, tableColumnsMap);
         }
 
@@ -40,7 +40,7 @@ public class RouteCalculateUnit {
         Set<ColumnRoutePair> columValues = tableColumnsMap.get(uperColName);
 
         if (columValues == null) {
-            columValues = new LinkedHashSet<ColumnRoutePair>();
+            columValues = new LinkedHashSet<>();
             tablesAndConditions.get(tableName).put(uperColName, columValues);
         }
 

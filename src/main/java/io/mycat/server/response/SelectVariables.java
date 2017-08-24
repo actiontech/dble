@@ -123,7 +123,7 @@ public final class SelectVariables {
     }
 
 
-    private static final Map<String, String> VARIABLES = new HashMap<String, String>();
+    private static final Map<String, String> VARIABLES = new HashMap<>();
 
     static {
         VARIABLES.put("@@character_set_client", "utf8");

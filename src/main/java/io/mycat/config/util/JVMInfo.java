@@ -37,7 +37,7 @@ public class JVMInfo {
     private static final float MAJOR_JAVA_VERSION = getMajorJavaVersion(System.getProperty("java.specification.version"));
 
     private ReflectionProvider reflectionProvider;
-    private Map<String, Class<?>> loaderCache = new HashMap<String, Class<?>>();
+    private Map<String, Class<?>> loaderCache = new HashMap<>();
 
     static {
         boolean reverse = false;

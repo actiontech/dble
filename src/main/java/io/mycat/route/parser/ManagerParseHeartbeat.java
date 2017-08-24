@@ -85,7 +85,7 @@ public final class ManagerParseHeartbeat {
         int offset = stmt.indexOf("@@");
         String s = stmt.substring(++offset + " heartbeat.detail".length());
         if (StringUtil.isEmpty(s)) {
-            return new Pair<String, String>("name", "");
+            return new Pair<>("name", "");
         }
         char c = s.charAt(0);
         offset = 0;
@@ -113,14 +113,14 @@ public final class ManagerParseHeartbeat {
                         String name = s.substring(offset).trim();
                         if (!name.contains(" ") && !name.contains("\r") && !name.contains("\n") &&
                                 !name.contains("\t")) {
-                            return new Pair<String, String>("name", name);
+                            return new Pair<>("name", name);
                         }
                     }
                 }
 
             }
         }
-        return new Pair<String, String>("name", "");
+        return new Pair<>("name", "");
     }
 
 }

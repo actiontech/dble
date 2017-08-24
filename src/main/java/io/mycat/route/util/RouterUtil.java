@@ -136,7 +136,7 @@ public final class RouterUtil {
             druidParser.getCtx().addRouteCalculateUnit(routeCalculateUnit);
         }
 
-        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool);
             if (rrsTmp != null) {
@@ -449,7 +449,7 @@ public final class RouterUtil {
 
     public static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, TableConfig tc,
                                                        Set<ColumnRoutePair> colRoutePairSet) throws SQLNonTransientException {
-        Set<String> retNodeSet = new LinkedHashSet<String>();
+        Set<String> retNodeSet = new LinkedHashSet<>();
         if (tc.getDirectRouteTC() != null) {
             Set<String> nodeSet = ruleCalculate(tc.getDirectRouteTC(), colRoutePairSet);
             if (nodeSet.isEmpty()) {
@@ -467,7 +467,7 @@ public final class RouterUtil {
     }
 
     public static Set<String> ruleCalculate(TableConfig tc, Set<ColumnRoutePair> colRoutePairSet) {
-        Set<String> routeNodeSet = new LinkedHashSet<String>();
+        Set<String> routeNodeSet = new LinkedHashSet<>();
         String col = tc.getRule().getColumn();
         RuleConfig rule = tc.getRule();
         AbstractPartitionAlgorithm algorithm = rule.getRuleAlgorithm();
@@ -527,7 +527,7 @@ public final class RouterUtil {
          * 多表 一定是ER关系的以及global* normal表, global* er表的join
          */
         //每个表对应的路由映射 <table,datanodes>
-        Map<String, Set<String>> tablesRouteMap = new HashMap<String, Set<String>>();
+        Map<String, Set<String>> tablesRouteMap = new HashMap<>();
 
         //分库解析信息不为空
         Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
@@ -548,7 +548,7 @@ public final class RouterUtil {
             }
         }
 
-        Set<String> retNodesSet = new HashSet<String>();
+        Set<String> retNodesSet = new HashSet<>();
         boolean isFirstAdd = true;
         for (Map.Entry<String, Set<String>> entry : tablesRouteMap.entrySet()) {
             if (entry.getValue() == null || entry.getValue().size() == 0) {
@@ -607,7 +607,7 @@ public final class RouterUtil {
                 return routeToMultiNode(rrs.isCacheAble(), rrs, tc.getDataNodes());
             } else {
                 //每个表对应的路由映射
-                Map<String, Set<String>> tablesRouteMap = new HashMap<String, Set<String>>();
+                Map<String, Set<String>> tablesRouteMap = new HashMap<>();
                 if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
                     RouterUtil.findRouteWithcConditionsForTables(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, cachePool, isSelect, true);
                     if (rrs.isFinishedRoute()) {

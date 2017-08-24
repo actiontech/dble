@@ -67,7 +67,7 @@ public final class KillConnection {
         String ids = stmt.substring(offset).trim();
         if (ids.length() > 0) {
             String[] idList = SplitUtil.split(ids, ',', true);
-            List<FrontendConnection> fcList = new ArrayList<FrontendConnection>(idList.length);
+            List<FrontendConnection> fcList = new ArrayList<>(idList.length);
             NIOProcessor[] processors = MycatServer.getInstance().getProcessors();
             for (String id : idList) {
                 long value = 0;

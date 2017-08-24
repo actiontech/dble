@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author mycat
  */
 public class FrontendCommandHandler implements NIOHandler {
-    protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<byte[]>();
+    protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
     protected final CommandCount commands;

@@ -145,7 +145,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 throw new RuntimeException("can't find class resource file " + mapFile);
             }
             in = new BufferedReader(new InputStreamReader(fin));
-            LinkedList<LongRange> longRangeList = new LinkedList<LongRange>();
+            LinkedList<LongRange> longRangeList = new LinkedList<>();
 
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();

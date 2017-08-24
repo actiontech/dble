@@ -38,7 +38,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
 
     public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp) {
         super(pool, columnCount);
-        tapes = new ArrayList<ResultDiskTape>();
+        tapes = new ArrayList<>();
         this.comparator = cmp;
         this.heapCmp = new Comparator<TapeItem>() {
             @Override
@@ -129,7 +129,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
 
     protected void resetHeap() {
         if (heap == null)
-            heap = new ArrayMinHeap<TapeItem>(tapes.size(), this.heapCmp);
+            heap = new ArrayMinHeap<>(tapes.size(), this.heapCmp);
         heap.clear();
         // init heap
         for (ResultDiskTape tape : tapes) {

@@ -49,7 +49,7 @@ public class TempTableHandler extends BaseDMLHandler {
         this.maxPartSize = MycatServer.getInstance().getConfig().getSystem().getNestLoopRowsSize();
         this.maxConnSize = MycatServer.getInstance().getConfig().getSystem().getNestLoopConnSize();
         this.sourceSel = sourceSel;
-        this.valueSet = new HashSet<String>();
+        this.valueSet = new HashSet<>();
     }
 
     @Override

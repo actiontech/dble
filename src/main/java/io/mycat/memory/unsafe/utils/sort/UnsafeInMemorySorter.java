@@ -96,7 +96,7 @@ public final class UnsafeInMemorySorter {
         this.initialSize = array.size();
 
         if (recordComparator != null) {
-            this.sorter = new Sorter<RecordPointerAndKeyPrefix, LongArray>(UnsafeSortDataFormat.INSTANCE);
+            this.sorter = new Sorter<>(UnsafeSortDataFormat.INSTANCE);
 
             this.sortComparator = new SortComparator(recordComparator, prefixComparator, memoryManager);
 

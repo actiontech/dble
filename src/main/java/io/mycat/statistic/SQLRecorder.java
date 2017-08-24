@@ -44,7 +44,7 @@ public final class SQLRecorder {
     }
 
     public List<SQLRecord> getRecords() {
-        List<SQLRecord> keyList = new ArrayList<SQLRecord>(records);
+        List<SQLRecord> keyList = new ArrayList<>(records);
         return keyList;
     }
 
@@ -60,7 +60,7 @@ public final class SQLRecorder {
     public void recycle() {
         if (records.size() > count) {
             SortedSet<SQLRecord> records2 = new ConcurrentSkipListSet<>();
-            List<SQLRecord> keyList = new ArrayList<SQLRecord>(records);
+            List<SQLRecord> keyList = new ArrayList<>(records);
             int i = 0;
             for (SQLRecord key : keyList) {
                 if (i == count) {

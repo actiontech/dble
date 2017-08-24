@@ -12,8 +12,8 @@ public class NodeRowDataPacket {
 
     private int trimSize = 0;
 
-    private List<RangRowDataPacket> trimRangRDPacketList = new ArrayList<RangRowDataPacket>();
-    private List<RangRowDataPacket> rangRDPacketList = new ArrayList<RangRowDataPacket>();
+    private List<RangRowDataPacket> trimRangRDPacketList = new ArrayList<>();
+    private List<RangRowDataPacket> rangRDPacketList = new ArrayList<>();
 
     public NodeRowDataPacket(RouteResultsetNode node, int trimSize) {
         this.node = node;
@@ -109,7 +109,7 @@ public class NodeRowDataPacket {
     }
 
     public List<RowDataPacket> loadData() {
-        List<RowDataPacket> result = new ArrayList<RowDataPacket>();
+        List<RowDataPacket> result = new ArrayList<>();
         for (RangRowDataPacket packet : rangRDPacketList) {
             result.addAll(packet.getRowDataPacketList());
         }

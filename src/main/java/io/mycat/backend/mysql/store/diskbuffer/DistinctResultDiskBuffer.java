@@ -60,7 +60,7 @@ public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {
     @Override
     protected void resetHeap() {
         if (heap == null)
-            this.heap = new RBTMinHeap<TapeItem>(this.heapCmp);
+            this.heap = new RBTMinHeap<>(this.heapCmp);
         heap.clear();
         for (ResultDiskTape tape : tapes) {
             addToHeap(tape);

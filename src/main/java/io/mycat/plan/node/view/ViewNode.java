@@ -48,7 +48,7 @@ public class ViewNode extends QueryNode {
      * @return
      */
     public List<ColumnMeta> getColumns() {
-        List<ColumnMeta> cols = new ArrayList<ColumnMeta>();
+        List<ColumnMeta> cols = new ArrayList<>();
         for (Item sel : getColumnsSelected()) {
             String cn = sel.getAlias() == null ? sel.getItemName() : sel.getAlias();
             ColumnMeta.Builder cmBuilder = ColumnMeta.newBuilder();
@@ -64,7 +64,7 @@ public class ViewNode extends QueryNode {
      * @return
      */
     public List<String> getReferedTables() {
-        List<String> tls = new ArrayList<String>();
+        List<String> tls = new ArrayList<>();
         for (TableNode tn : this.getReferedTableNodes()) {
             tls.add(tn.getTableName());
         }

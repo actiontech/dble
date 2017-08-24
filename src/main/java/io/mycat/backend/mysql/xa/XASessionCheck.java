@@ -11,8 +11,8 @@ public class XASessionCheck {
     private final ConcurrentMap<Long, NonBlockingSession> rollbackSession;
 
     public XASessionCheck() {
-        commitSession = new ConcurrentHashMap<Long, NonBlockingSession>();
-        rollbackSession = new ConcurrentHashMap<Long, NonBlockingSession>();
+        commitSession = new ConcurrentHashMap<>();
+        rollbackSession = new ConcurrentHashMap<>();
     }
 
     public void addCommitSession(NonBlockingSession s) {

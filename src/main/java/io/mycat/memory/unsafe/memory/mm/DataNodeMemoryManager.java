@@ -115,7 +115,7 @@ public class DataNodeMemoryManager {
         this.tungstenMemoryMode = memoryManager.tungstenMemoryMode();
         this.memoryManager = memoryManager;
         this.connectionAttemptId = connectionAttemptId;
-        this.consumers = new HashSet<MemoryConsumer>();
+        this.consumers = new HashSet<>();
     }
 
     /**

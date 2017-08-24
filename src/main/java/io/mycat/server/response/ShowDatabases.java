@@ -81,7 +81,7 @@ public final class ShowDatabases {
         Map<String, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
         if (user != null) {
-            TreeSet<String> schemaSet = new TreeSet<String>();
+            TreeSet<String> schemaSet = new TreeSet<>();
             Set<String> schemaList = user.getSchemas();
             if (schemaList == null || schemaList.size() == 0) {
                 schemaSet.addAll(conf.getSchemas().keySet());

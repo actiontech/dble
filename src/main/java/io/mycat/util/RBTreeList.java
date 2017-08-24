@@ -35,7 +35,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         ensureCapacity(size + 1); // Increments modCount!!
         int index = size++;
         elementData[index] = e;
-        RBTNode<E> node = new RBTNode<E>(index, BLACK, e);
+        RBTNode<E> node = new RBTNode<>(index, BLACK, e);
         insert(node);
         return true;
     }
@@ -48,7 +48,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         ensureCapacity(size + 1); // Increments modCount!!
         System.arraycopy(elementData, index, elementData, index + 1, size - index);
         elementData[index] = element;
-        RBTNode<E> node = new RBTNode<E>(index, BLACK, element);
+        RBTNode<E> node = new RBTNode<>(index, BLACK, element);
         insert(node);
         size++;
     }
@@ -214,7 +214,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         elementData[index] = element;
         RBTNode<E> oldNode = find(oldValue);
         delete(oldNode);
-        RBTNode<E> newNode = new RBTNode<E>(index, BLACK, element);
+        RBTNode<E> newNode = new RBTNode<>(index, BLACK, element);
         insert(newNode);
         return oldValue;
     }
@@ -473,7 +473,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         System.arraycopy(a, 0, elementData, index, numNew);
         for (int i = 0; i < a.length; i++) {
             int idx = index + i;
-            RBTNode<E> node = new RBTNode<E>(idx, BLACK, (E) a[i]);
+            RBTNode<E> node = new RBTNode<>(idx, BLACK, (E) a[i]);
             insert(node);
         }
         size += numNew;
@@ -488,7 +488,7 @@ public class RBTreeList<E> extends AbstractList<E> {
         System.arraycopy(a, 0, elementData, size, numNew);
         for (int i = 0; i < a.length; i++) {
             int idx = size + i;
-            RBTNode<E> node = new RBTNode<E>(idx, BLACK, (E) a[i]);
+            RBTNode<E> node = new RBTNode<>(idx, BLACK, (E) a[i]);
             insert(node);
         }
         size += numNew;
@@ -533,7 +533,7 @@ public class RBTreeList<E> extends AbstractList<E> {
     }
 
     private Object[] inOrder() {
-        List<E> list = new ArrayList<E>(size);
+        List<E> list = new ArrayList<>(size);
         inOrder(root, list);
         return list.toArray();
     }

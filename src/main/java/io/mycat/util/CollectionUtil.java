@@ -42,7 +42,7 @@ public final class CollectionUtil {
         if (intersect == null || orig.isEmpty()) {
             return Collections.emptySet();
         }
-        Set<Object> set = new HashSet<Object>(orig.size());
+        Set<Object> set = new HashSet<>(orig.size());
         for (Object p : orig) {
             if (intersect.contains(p)) {
                 set.add(p);

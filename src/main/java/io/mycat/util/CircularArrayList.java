@@ -35,7 +35,7 @@ public class CircularArrayList<E>
 
     public CircularArrayList(int capacity) {
         n = capacity + 1;
-        buf = new ArrayList<E>(Collections.nCopies(n, (E) null));
+        buf = new ArrayList<>(Collections.nCopies(n, (E) null));
     }
 
     public int capacity() {

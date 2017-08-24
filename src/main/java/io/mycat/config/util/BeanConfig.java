@@ -37,7 +37,7 @@ public class BeanConfig implements Cloneable {
 
     private String name;
     private String className;
-    private Map<String, Object> params = new HashMap<String, Object>();
+    private Map<String, Object> params = new HashMap<>();
 
     public String getName() {
         return name;

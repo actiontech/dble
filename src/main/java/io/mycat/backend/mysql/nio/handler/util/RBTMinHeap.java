@@ -89,7 +89,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
     }
 
     private Object[] inOrder() {
-        List<E> list = new ArrayList<E>(size);
+        List<E> list = new ArrayList<>(size);
         inOrder(root, list);
         return list.toArray();
     }
@@ -97,7 +97,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
     @Override
     public boolean add(E e) {
         size++;
-        RBTNode<E> node = new RBTNode<E>(BLACK, e);
+        RBTNode<E> node = new RBTNode<>(BLACK, e);
         insert(node);
         return true;
     }
@@ -280,7 +280,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
         // delete minNode
         delete(minNode);
         // add minNode
-        RBTNode<E> node = new RBTNode<E>(BLACK, e);
+        RBTNode<E> node = new RBTNode<>(BLACK, e);
         insert(node);
     }
 

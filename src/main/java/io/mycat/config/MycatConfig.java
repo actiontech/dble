@@ -158,7 +158,7 @@ public class MycatConfig {
     }
 
     public String[] getDataNodeSchemasOfDataHost(String dataHost) {
-        ArrayList<String> schemas = new ArrayList<String>(30);
+        ArrayList<String> schemas = new ArrayList<>(30);
         for (PhysicalDBNode dn : dataNodes.values()) {
             if (dn.getDbPool().getHostName().equals(dataHost)) {
                 schemas.add(dn.getDatabase());
@@ -244,11 +244,11 @@ public class MycatConfig {
             Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
             Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
             Map<Integer, ArrayList<PhysicalDatasource>> idel =
-                    new HashMap<Integer, ArrayList<PhysicalDatasource>>(2);
+                    new HashMap<>(2);
             boolean haveOne = false;
             for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
                 boolean doadd = false;
-                ArrayList<PhysicalDatasource> del = new ArrayList<PhysicalDatasource>();
+                ArrayList<PhysicalDatasource> del = new ArrayList<>();
                 for (PhysicalDatasource ods : oentry.getValue()) {
                     boolean dodel = true;
                     for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
@@ -288,11 +288,11 @@ public class MycatConfig {
             Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
             Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
             Map<Integer, ArrayList<PhysicalDatasource>> iadd =
-                    new HashMap<Integer, ArrayList<PhysicalDatasource>>(2);
+                    new HashMap<>(2);
             boolean haveOne = false;
             for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
                 boolean doadd = false;
-                ArrayList<PhysicalDatasource> add = new ArrayList<PhysicalDatasource>();
+                ArrayList<PhysicalDatasource> add = new ArrayList<>();
                 for (PhysicalDatasource nds : nentry.getValue()) {
                     boolean isExist = false;
                     for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
@@ -390,8 +390,8 @@ public class MycatConfig {
         public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
 
         DsDiff() {
-            deled = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
-            added = new HashMap<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>>(2);
+            deled = new HashMap<>(2);
+            added = new HashMap<>(2);
         }
 
         public void apply() {
@@ -415,7 +415,7 @@ public class MycatConfig {
             }
 
             // sleep
-            ArrayList<PhysicalDatasource> killed = new ArrayList<PhysicalDatasource>(2);
+            ArrayList<PhysicalDatasource> killed = new ArrayList<>(2);
             for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : deled.entrySet()) {
                 for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
                     for (int i = 0; i < llentry.getValue().size(); i++) {

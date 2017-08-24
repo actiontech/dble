@@ -124,7 +124,7 @@ public final class ShowHeartbeat {
     }
 
     private static List<RowDataPacket> getRows() {
-        List<RowDataPacket> list = new LinkedList<RowDataPacket>();
+        List<RowDataPacket> list = new LinkedList<>();
         MycatConfig conf = MycatServer.getInstance().getConfig();
         // host nodes
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();

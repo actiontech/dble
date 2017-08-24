@@ -19,7 +19,7 @@ public class SchemaMeta {
      */
 //    private final Map<String, IndexMeta> indexMetas;
     public SchemaMeta() {
-        this.tableMetas = new ConcurrentHashMap<String, TableMeta>();
+        this.tableMetas = new ConcurrentHashMap<>();
 //        this.viewMetas = new ConcurrentHashMap<String, ViewMeta>();
 //        this.indexMetas = new ConcurrentHashMap<String, IndexMeta>();
     }

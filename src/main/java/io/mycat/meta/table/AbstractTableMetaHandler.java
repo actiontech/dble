@@ -100,7 +100,7 @@ public abstract class AbstractTableMetaHandler {
                     if (dataNodeTableStructureSQLMap.size() > 1) {
                         // Through the SQL is different, the table Structure may still same.
                         // for example: autoIncreament number
-                        Set<TableMeta> tableMetas = new HashSet<TableMeta>();
+                        Set<TableMeta> tableMetas = new HashSet<>();
                         for (String sql : dataNodeTableStructureSQLMap.keySet()) {
                             tableMeta = initTableMeta(tbConfig.getName(), sql, version);
                             tableMetas.add(tableMeta);

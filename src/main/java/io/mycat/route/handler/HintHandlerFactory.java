@@ -8,7 +8,7 @@ public final class HintHandlerFactory {
     private static volatile boolean isInit = false;
 
     //sql注释的类型处理handler 集合，现在支持两种类型的处理：sql,schema
-    private static Map<String, HintHandler> hintHandlerMap = new HashMap<String, HintHandler>();
+    private static Map<String, HintHandler> hintHandlerMap = new HashMap<>();
 
     private HintHandlerFactory() {
     }

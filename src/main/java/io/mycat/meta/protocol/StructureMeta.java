@@ -2889,7 +2889,7 @@ public final class StructureMeta {
                         }
                         case 18: {
                             if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                                columns_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.ColumnMeta>();
+                                columns_ = new java.util.ArrayList<>();
                                 mutable_bitField0_ |= 0x00000002;
                             }
                             columns_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.ColumnMeta.PARSER, extensionRegistry));
@@ -2941,7 +2941,7 @@ public final class StructureMeta {
                         }
                         case 82: {
                             if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
-                                uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
+                                uniIndex_ = new java.util.ArrayList<>();
                                 mutable_bitField0_ |= 0x00000200;
                             }
                             uniIndex_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
@@ -2949,7 +2949,7 @@ public final class StructureMeta {
                         }
                         case 90: {
                             if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
-                                index_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>();
+                                index_ = new java.util.ArrayList<>();
                                 mutable_bitField0_ |= 0x00000400;
                             }
                             index_.add(input.readMessage(io.mycat.meta.protocol.StructureMeta.IndexMeta.PARSER, extensionRegistry));
@@ -4052,7 +4052,7 @@ public final class StructureMeta {
 
             private void ensureColumnsIsMutable() {
                 if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-                    columns_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.ColumnMeta>(columns_);
+                    columns_ = new java.util.ArrayList<>(columns_);
                     bitField0_ |= 0x00000002;
                 }
             }
@@ -4368,8 +4368,7 @@ public final class StructureMeta {
                     io.mycat.meta.protocol.StructureMeta.ColumnMeta, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder, io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder>
             getColumnsFieldBuilder() {
                 if (columnsBuilder_ == null) {
-                    columnsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                            io.mycat.meta.protocol.StructureMeta.ColumnMeta, io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder, io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder>(
+                    columnsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<>(
                             columns_,
                             ((bitField0_ & 0x00000002) == 0x00000002),
                             getParentForChildren(),
@@ -4756,8 +4755,7 @@ public final class StructureMeta {
                     io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>
             getPrimaryFieldBuilder() {
                 if (primaryBuilder_ == null) {
-                    primaryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-                            io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>(
+                    primaryBuilder_ = new com.google.protobuf.SingleFieldBuilder<>(
                             getPrimary(),
                             getParentForChildren(),
                             isClean());
@@ -4771,7 +4769,7 @@ public final class StructureMeta {
 
             private void ensureUniIndexIsMutable() {
                 if (!((bitField0_ & 0x00000200) == 0x00000200)) {
-                    uniIndex_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>(uniIndex_);
+                    uniIndex_ = new java.util.ArrayList<>(uniIndex_);
                     bitField0_ |= 0x00000200;
                 }
             }
@@ -5015,8 +5013,7 @@ public final class StructureMeta {
                     io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>
             getUniIndexFieldBuilder() {
                 if (uniIndexBuilder_ == null) {
-                    uniIndexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                            io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>(
+                    uniIndexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<>(
                             uniIndex_,
                             ((bitField0_ & 0x00000200) == 0x00000200),
                             getParentForChildren(),
@@ -5031,7 +5028,7 @@ public final class StructureMeta {
 
             private void ensureIndexIsMutable() {
                 if (!((bitField0_ & 0x00000400) == 0x00000400)) {
-                    index_ = new java.util.ArrayList<io.mycat.meta.protocol.StructureMeta.IndexMeta>(index_);
+                    index_ = new java.util.ArrayList<>(index_);
                     bitField0_ |= 0x00000400;
                 }
             }
@@ -5275,8 +5272,7 @@ public final class StructureMeta {
                     io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>
             getIndexFieldBuilder() {
                 if (indexBuilder_ == null) {
-                    indexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                            io.mycat.meta.protocol.StructureMeta.IndexMeta, io.mycat.meta.protocol.StructureMeta.IndexMeta.Builder, io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder>(
+                    indexBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<>(
                             index_,
                             ((bitField0_ & 0x00000400) == 0x00000400),
                             getParentForChildren(),

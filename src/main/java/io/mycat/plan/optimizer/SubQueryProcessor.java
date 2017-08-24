@@ -109,7 +109,7 @@ public final class SubQueryProcessor {
 
     private static List<Item> mergeSelect(PlanNode parent, PlanNode child) {
         List<Item> pSels = parent.getColumnsSelected();
-        List<Item> cNewSels = new ArrayList<Item>();
+        List<Item> cNewSels = new ArrayList<>();
         for (Item pSel : pSels) {
             Item pSel0 = PlanUtil.pushDownItem(parent, pSel, true);
             String selName = pSel.getAlias();
@@ -135,7 +135,7 @@ public final class SubQueryProcessor {
 
     private static void mergeGroupBy(PlanNode parent, PlanNode child) {
         List<Order> pGroups = parent.getGroupBys();
-        List<Order> cGroups = new ArrayList<Order>();
+        List<Order> cGroups = new ArrayList<>();
         for (Order pGroup : pGroups) {
             Item col = pGroup.getItem();
             Item col0 = PlanUtil.pushDownItem(parent, col);
@@ -154,7 +154,7 @@ public final class SubQueryProcessor {
 
     private static void mergeOrderBy(PlanNode parent, PlanNode child) {
         List<Order> pOrders = parent.getOrderBys();
-        List<Order> cOrders = new ArrayList<Order>();
+        List<Order> cOrders = new ArrayList<>();
         for (Order pOrder : pOrders) {
             Item col = pOrder.getItem();
             Item col0 = PlanUtil.pushDownItem(parent, col, true);

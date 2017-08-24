@@ -29,8 +29,8 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private String notSupportMsg = null;
     private boolean hasSubQuery = false;
     private boolean hasOrCondition = false;
-    private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<WhereUnit>();
-    private List<WhereUnit> storedwhereUnits = new CopyOnWriteArrayList<WhereUnit>();
+    private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
+    private List<WhereUnit> storedwhereUnits = new CopyOnWriteArrayList<>();
 
     private void reset() {
         this.conditions.clear();
@@ -466,10 +466,10 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * @param whereUnitList
      */
     private void loopFindSubWhereUnit(List<WhereUnit> whereUnitList) {
-        List<WhereUnit> subWhereUnits = new ArrayList<WhereUnit>();
+        List<WhereUnit> subWhereUnits = new ArrayList<>();
         for (WhereUnit whereUnit : whereUnitList) {
             if (whereUnit.getSplitedExprList().size() > 0) {
-                List<SQLExpr> removeSplitedList = new ArrayList<SQLExpr>();
+                List<SQLExpr> removeSplitedList = new ArrayList<>();
                 for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
                     reset();
                     if (isExprHasOr(sqlExpr)) {
@@ -500,7 +500,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private List<List<Condition>> mergedConditions() {
         if (storedwhereUnits.size() == 0) {
-            return new ArrayList<List<Condition>>();
+            return new ArrayList<>();
         }
         for (WhereUnit whereUnit : storedwhereUnits) {
             mergeOneWhereUnit(whereUnit);
@@ -547,7 +547,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * @return
      */
     private List<List<Condition>> getMergedConditionList(List<WhereUnit> whereUnitList) {
-        List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
+        List<List<Condition>> mergedConditionList = new ArrayList<>();
         if (whereUnitList.size() == 0) {
             return mergedConditionList;
         }
@@ -573,7 +573,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
             return list1;
         }
 
-        List<List<Condition>> retList = new ArrayList<List<Condition>>();
+        List<List<Condition>> retList = new ArrayList<>();
         for (List<Condition> aList1 : list1) {
             for (List<Condition> aList2 : list2) {
                 List<Condition> listTmp = new ArrayList<Condition>();
@@ -586,15 +586,15 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private void getConditionsFromWhereUnit(WhereUnit whereUnit) {
-        List<List<Condition>> retList = new ArrayList<List<Condition>>();
+        List<List<Condition>> retList = new ArrayList<>();
         //or语句外层的条件:如where condition1 and (condition2 or condition3),condition1就会在外层条件中,因为之前提取
-        List<Condition> outSideCondition = new ArrayList<Condition>();
+        List<Condition> outSideCondition = new ArrayList<>();
 //        stashOutSideConditions();
         outSideCondition.addAll(conditions);
         this.conditions.clear();
         for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
             sqlExpr.accept(this);
-            List<Condition> conditions = new ArrayList<Condition>();
+            List<Condition> conditions = new ArrayList<>();
             conditions.addAll(getConditions());
             conditions.addAll(outSideCondition);
             retList.add(conditions);

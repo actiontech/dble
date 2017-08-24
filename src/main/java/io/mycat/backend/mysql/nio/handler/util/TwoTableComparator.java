@@ -33,13 +33,13 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
         HandlerType type1 = type;
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
-        ascs = new ArrayList<Boolean>();
+        ascs = new ArrayList<>();
         for (Order order : leftOrders) {
             ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
         }
-        List<Item> leftCmpItems = new ArrayList<Item>();
-        List<Item> rightCmpItems = new ArrayList<Item>();
-        cmptors = new ArrayList<ArgComparator>();
+        List<Item> leftCmpItems = new ArrayList<>();
+        List<Item> rightCmpItems = new ArrayList<>();
+        cmptors = new ArrayList<>();
         for (int index = 0; index < ascs.size(); index++) {
             Order leftOrder = leftOrders.get(index);
             Order rightOrder = rightOrders.get(index);

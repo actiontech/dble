@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author mycat
  */
 public abstract class BackendAsyncHandler implements NIOHandler {
-    protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<byte[]>();
+    protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean isHandling = new AtomicBoolean(false);
 
     protected void offerData(byte[] data, Executor executor) {

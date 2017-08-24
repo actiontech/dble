@@ -18,7 +18,7 @@ public final class QueryResultDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryResultDispatcher.class);
 
-    private static List<QueryResultListener> listeners = new CopyOnWriteArrayList<QueryResultListener>();
+    private static List<QueryResultListener> listeners = new CopyOnWriteArrayList<>();
 
     // 初始化强制加载
     static {

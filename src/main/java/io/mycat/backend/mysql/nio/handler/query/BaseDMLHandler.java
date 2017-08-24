@@ -24,7 +24,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     /**
      * 从上一层hangdler接受到的fieldpackets集合
      */
-    protected List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
+    protected List<FieldPacket> fieldPackets = new ArrayList<>();
     protected BaseDMLHandler nextHandler = null;
     protected boolean isLeft = false;
     protected NonBlockingSession session;

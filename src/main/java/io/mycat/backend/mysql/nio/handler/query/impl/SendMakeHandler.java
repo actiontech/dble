@@ -36,7 +36,7 @@ public class SendMakeHandler extends BaseDMLHandler {
         super(id, session);
         lock = new ReentrantLock();
         this.sels = sels;
-        this.selItems = new ArrayList<Item>();
+        this.selItems = new ArrayList<>();
         this.tbAlias = tableAlias;
     }
 
@@ -67,7 +67,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                 }
                 this.selItems.add(tmpItem);
             }
-            List<FieldPacket> newFieldPackets = new ArrayList<FieldPacket>();
+            List<FieldPacket> newFieldPackets = new ArrayList<>();
             for (Item selItem : this.selItems) {
                 FieldPacket tmpFp = new FieldPacket();
                 selItem.makeField(tmpFp);

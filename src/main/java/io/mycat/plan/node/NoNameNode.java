@@ -45,7 +45,7 @@ public class NoNameNode extends PlanNode {
 
     @Override
     public List<TableNode> getReferedTableNodes() {
-        return new ArrayList<TableNode>();
+        return new ArrayList<>();
     }
 
     public String getCatalog() {

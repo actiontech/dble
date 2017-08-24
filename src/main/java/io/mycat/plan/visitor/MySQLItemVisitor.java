@@ -192,14 +192,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case PG_And:
             case BooleanAnd:
-                List<Item> argsAnd = new ArrayList<Item>();
+                List<Item> argsAnd = new ArrayList<>();
                 argsAnd.add(itemLeft);
                 argsAnd.add(itemRight);
                 item = new ItemCondAnd(argsAnd);
                 break;
             case Concat:
             case BooleanOr:
-                List<Item> argsOr = new ArrayList<Item>();
+                List<Item> argsOr = new ArrayList<>();
                 argsOr.add(itemLeft);
                 argsOr.add(itemRight);
                 item = new ItemCondOr(argsOr);
@@ -287,7 +287,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInListExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        List<Item> args = new ArrayList<Item>();
+        List<Item> args = new ArrayList<>();
         args.add(left);
         args.addAll(visitExprList(x.getTargetList()));
         item = new ItemFuncIn(args, isNeg);
@@ -322,7 +322,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLCaseExpr x) {
         List<SQLCaseExpr.Item> whenlists = x.getItems();
-        ArrayList<Item> args = new ArrayList<Item>();
+        ArrayList<Item> args = new ArrayList<>();
         int ncases, firstExprNum = -1, elseExprNum = -1;
         for (SQLCaseExpr.Item when : whenlists) {
             args.add(getItem(when.getConditionExpr()));
@@ -450,7 +450,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 SQLOrderBy orderExpr = (SQLOrderBy) x.getAttribute(ItemFuncKeyWord.ORDER_BY);
                 List<Order> orderList = null;
                 if (orderExpr != null) {
-                    orderList = new ArrayList<Order>();
+                    orderList = new ArrayList<>();
                     for (SQLSelectOrderByItem orderItem : orderExpr.getItems()) {
                         Order order = new Order(getItem(orderItem.getExpr()), orderItem.getType());
                         orderList.add(order);
@@ -697,7 +697,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private List<Integer> changeExprListToInt(List<SQLExpr> exprList) {
-        List<Integer> args = new ArrayList<Integer>();
+        List<Integer> args = new ArrayList<>();
         for (SQLExpr expr : exprList) {
             Number num = ((SQLNumericLiteralExpr) expr).getNumber();
             args.add(num.intValue());
@@ -706,7 +706,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private List<Item> visitExprList(List<SQLExpr> exprList) {
-        List<Item> args = new ArrayList<Item>();
+        List<Item> args = new ArrayList<>();
         for (SQLExpr expr : exprList) {
             args.add(getItem(expr));
         }

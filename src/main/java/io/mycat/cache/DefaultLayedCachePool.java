@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DefaultLayedCachePool implements LayerCachePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLayedCachePool.class);
-    protected Map<String, CachePool> allCaches = new HashMap<String, CachePool>();
+    protected Map<String, CachePool> allCaches = new HashMap<>();
     protected final ReentrantLock lock = new ReentrantLock();
     protected int defaultCacheSize;
     protected int defaulExpiredSeconds;
@@ -139,7 +139,7 @@ public class DefaultLayedCachePool implements LayerCachePool {
 
     @Override
     public Map<String, CacheStatic> getAllCacheStatic() {
-        Map<String, CacheStatic> results = new HashMap<String, CacheStatic>(this.allCaches.size());
+        Map<String, CacheStatic> results = new HashMap<>(this.allCaches.size());
         for (Map.Entry<String, CachePool> entry : allCaches.entrySet()) {
             results.put(entry.getKey(), entry.getValue().getCacheStatic());
         }

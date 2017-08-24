@@ -79,7 +79,7 @@ public class IntMinHeap {
     }
 
     public static void main(String[] args) {
-        Set<Integer> set = new HashSet<Integer>();
+        Set<Integer> set = new HashSet<>();
         int dataCount = 30;
         Random rd = new Random();
         int bound = dataCount * 3;

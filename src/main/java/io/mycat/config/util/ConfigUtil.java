@@ -107,7 +107,7 @@ public final class ConfigUtil {
     }
 
     public static Map<String, Object> loadAttributes(Element e) {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         NamedNodeMap nm = e.getAttributes();
         for (int j = 0; j < nm.getLength(); j++) {
             Node n = nm.item(j);
@@ -138,7 +138,7 @@ public final class ConfigUtil {
      * @return key-value property键值对
      */
     public static Map<String, Object> loadElements(Element parent) {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         NodeList children = parent.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node node = children.item(i);

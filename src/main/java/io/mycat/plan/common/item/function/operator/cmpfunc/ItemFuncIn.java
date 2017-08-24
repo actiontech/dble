@@ -68,7 +68,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
     @Override
     public SQLExpr toExpression() {
         SQLInListExpr in = new SQLInListExpr(args.get(0).toExpression(), this.negated);
-        List<SQLExpr> targetList = new ArrayList<SQLExpr>();
+        List<SQLExpr> targetList = new ArrayList<>();
         int index = 0;
         for (Item item : args) {
             if (index != 0) {

@@ -18,7 +18,7 @@ public final class MergeHavingFilter {
     public static void optimize(PlanNode qtn) {
         if (qtn.getHavingFilter() != null) {
             List<Item> subFilters = FilterUtils.splitFilter(qtn.getHavingFilter());
-            List<Item> canMergeSubs = new ArrayList<Item>();
+            List<Item> canMergeSubs = new ArrayList<>();
             for (Item subFilter : subFilters) {
                 if (!subFilter.withSumFunc) {
                     canMergeSubs.add(subFilter);

@@ -108,7 +108,7 @@ public final class GlobalTableUtil {
                             if (pds instanceof MySQLDataSource) {
                                 ArrayList<PhysicalDBNode> nodes = executedMap.get(pds.getName());
                                 if (nodes == null) {
-                                    nodes = new ArrayList<PhysicalDBNode>();
+                                    nodes = new ArrayList<>();
                                 }
                                 nodes.add(dBnode);
                                 executedMap.put(pds.getName(), nodes);

@@ -80,7 +80,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private long netOutBytes;
     protected volatile boolean terminated;
     private boolean prepared;
-    private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
+    private List<FieldPacket> fieldPackets = new ArrayList<>();
     private ErrorPacket err;
     private List<BackendConnection> errConnection;
 
@@ -222,7 +222,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 terminated = true;
             }
             if (errConnection == null) {
-                errConnection = new ArrayList<BackendConnection>();
+                errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
             if (--nodeCount <= 0) {
@@ -249,7 +249,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 terminated = true;
             }
             if (errConnection == null) {
-                errConnection = new ArrayList<BackendConnection>();
+                errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
             if (--nodeCount <= 0) {
@@ -629,7 +629,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 primaryKey = items[1];
             }
 
-            Map<String, ColMeta> columToIndx = new HashMap<String, ColMeta>(
+            Map<String, ColMeta> columToIndx = new HashMap<>(
                     fieldCount);
 
             for (int i = 0, len = fieldCount; i < len; ++i) {

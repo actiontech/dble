@@ -44,8 +44,8 @@ import java.util.Properties;
 public class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
 
-    private final Map<String, CachePoolFactory> poolFactorys = new HashMap<String, CachePoolFactory>();
-    private final Map<String, CachePool> allPools = new HashMap<String, CachePool>();
+    private final Map<String, CachePoolFactory> poolFactorys = new HashMap<>();
+    private final Map<String, CachePool> allPools = new HashMap<>();
 
     public CacheService(boolean isLowerCaseTableNames) {
         // load cache pool defined

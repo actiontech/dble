@@ -160,7 +160,7 @@ abstract class BaseHandlerBuilder {
         if (nodeHasGroupBy(node)) {
             boolean needOrderBy = (node.getGroupBys().size() > 0) && isOrderNeeded(node, node.getGroupBys());
             boolean canDirectGroupBy = true;
-            List<ItemSum> sumRefs = new ArrayList<ItemSum>();
+            List<ItemSum> sumRefs = new ArrayList<>();
             for (ItemSum funRef : node.sumFuncs) {
                 if (funRef.hasWithDistinct() || funRef.sumType().equals(Sumfunctype.GROUP_CONCAT_FUNC))
                     canDirectGroupBy = false;
@@ -279,7 +279,7 @@ abstract class BaseHandlerBuilder {
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
         // 记录orderBys中前面出现的onCondition列,如jn.onCond = (t1.id=t2.id),
         // orderBys为t1.id,t2.id,t1.name，则onOrders = {t1.id,t2.id};
-        List<Order> onOrders = new ArrayList<Order>();
+        List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
         List<Order> rightOnOrders = jn.getRightJoinOnOrders();
         for (Order orderBy : orderBys) {
@@ -334,8 +334,8 @@ abstract class BaseHandlerBuilder {
      * @return
      */
     private List<Order> mergeOrderBy(List<Item> columnsSelected, List<Order> orderBys) {
-        List<Integer> orderIndexes = new ArrayList<Integer>();
-        List<Order> newOrderByList = new ArrayList<Order>();
+        List<Integer> orderIndexes = new ArrayList<>();
+        List<Order> newOrderByList = new ArrayList<>();
         for (Order orderBy : orderBys) {
             Item column = orderBy.getItem();
             int index = columnsSelected.indexOf(column);

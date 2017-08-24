@@ -23,7 +23,7 @@ public abstract class MysqlVisitor {
     // mysql支持的最长列长度
     protected static final int MAX_COL_LENGTH = 255;
     // 记录sel name和push name之间的映射关系
-    protected Map<String, String> pushNameMap = new HashMap<String, String>();
+    protected Map<String, String> pushNameMap = new HashMap<>();
     protected boolean isTopQuery = false;
     protected PlanNode query;
     protected long randomIndex = 0L;

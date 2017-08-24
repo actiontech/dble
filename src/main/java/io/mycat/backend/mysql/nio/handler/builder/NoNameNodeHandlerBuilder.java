@@ -29,7 +29,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public List<DMLResponseHandler> buildPre() {
-        return new ArrayList<DMLResponseHandler>();
+        return new ArrayList<>();
     }
 
     @Override

@@ -34,7 +34,7 @@ public class MergeNode extends PlanNode {
 
     // 记录union字段名称以及对应index的map
     public Map<String, Integer> getColIndexs() {
-        Map<String, Integer> colIndexs = new HashMap<String, Integer>();
+        Map<String, Integer> colIndexs = new HashMap<>();
         for (int index = 0; index < getColumnsSelected().size(); index++) {
             String name = getColumnsSelected().get(index).getItemName();
             colIndexs.put(name, index);

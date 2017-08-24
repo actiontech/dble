@@ -25,7 +25,7 @@ public final class FilterUtils {
     public static List<Item> splitFilter(Item filter) {
         if (filter == null)
             throw new RuntimeException("check filter before split");
-        List<Item> filterList = new ArrayList<Item>();
+        List<Item> filterList = new ArrayList<>();
         if (filter.type() == ItemType.COND_ITEM) {
             ItemCond cond = (ItemCond) filter;
             if (cond.functype() == Functype.COND_AND_FUNC) {
@@ -58,7 +58,7 @@ public final class FilterUtils {
     public static Item and(List<Item> filters) {
         if (filters == null || filters.isEmpty())
             return null;
-        List<Item> subFilters = new ArrayList<Item>();
+        List<Item> subFilters = new ArrayList<>();
         for (Item filter : filters) {
             if (filter == null)
                 continue;
@@ -80,7 +80,7 @@ public final class FilterUtils {
      * 创建and条件
      */
     public static Item and(Item root, Item o) {
-        List<Item> list = new ArrayList<Item>();
+        List<Item> list = new ArrayList<>();
         list.add(root);
         list.add(o);
         return and(list);
@@ -89,7 +89,7 @@ public final class FilterUtils {
     public static Item or(List<Item> filters) {
         if (filters == null)
             return null;
-        List<Item> subFilters = new ArrayList<Item>();
+        List<Item> subFilters = new ArrayList<>();
         for (Item filter : filters) {
             if (filter == null)
                 continue;
@@ -111,7 +111,7 @@ public final class FilterUtils {
      * 创建or条件
      */
     public static Item or(Item root, Item o) {
-        List<Item> list = new ArrayList<Item>();
+        List<Item> list = new ArrayList<>();
         list.add(root);
         list.add(o);
         return or(list);

@@ -71,8 +71,8 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     public ServerPrepareHandler(ServerConnection source) {
         this.source = source;
         this.pstmtId = 0L;
-        this.pstmtForSql = new HashMap<String, PreparedStatement>();
-        this.pstmtForId = new HashMap<Long, PreparedStatement>();
+        this.pstmtForSql = new HashMap<>();
+        this.pstmtForId = new HashMap<>();
     }
 
     @Override

@@ -194,7 +194,7 @@ public class ConfigInitializer {
     public void testConnection() {
         // 实际链路的连接测试
         if (this.dataNodes != null && this.dataHosts != null) {
-            Map<String, Boolean> map = new HashMap<String, Boolean>();
+            Map<String, Boolean> map = new HashMap<>();
             for (PhysicalDBNode dataNode : dataNodes.values()) {
                 String database = dataNode.getDatabase();
                 PhysicalDBPool pool = dataNode.getDbPool();
@@ -261,7 +261,7 @@ public class ConfigInitializer {
     private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
         Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
         //根据DataHost建立PhysicalDBPool，其实就是实际数据库连接池，每个DataHost对应一个PhysicalDBPool
-        Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(nodeConfs.size());
+        Map<String, PhysicalDBPool> nodes = new HashMap<>(nodeConfs.size());
         for (DataHostConfig conf : nodeConfs.values()) {
             //建立PhysicalDBPool
             PhysicalDBPool pool = getPhysicalDBPool(conf);
@@ -286,7 +286,7 @@ public class ConfigInitializer {
         //针对所有写节点创建PhysicalDatasource
         PhysicalDatasource[] writeSources = createDataSource(conf, conf.getWriteHosts(), false);
         Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
-        Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(readHostsMap.size());
+        Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<>(readHostsMap.size());
         //对于每个读节点建立key为writeHost下标, value为readHost的PhysicalDatasource[]的哈希表
         for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
             PhysicalDatasource[] readSources = createDataSource(conf, entry.getValue(), true);
@@ -299,7 +299,7 @@ public class ConfigInitializer {
 
     private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {
         Map<String, DataNodeConfig> nodeConfs = schemaLoader.getDataNodes();
-        Map<String, PhysicalDBNode> nodes = new HashMap<String, PhysicalDBNode>(nodeConfs.size());
+        Map<String, PhysicalDBNode> nodes = new HashMap<>(nodeConfs.size());
         for (DataNodeConfig conf : nodeConfs.values()) {
             PhysicalDBPool pool = this.dataHosts.get(conf.getDataHost());
             if (pool == null) {

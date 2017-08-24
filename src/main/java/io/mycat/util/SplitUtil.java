@@ -48,7 +48,7 @@ public final class SplitUtil {
         if (length == 0) {
             return EMPTY_STRING_ARRAY;
         }
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         String[] p = split(src, c1, true);
         if (p.length > 1) {
             String[] scope = split(p[1], c2, true);
@@ -75,7 +75,7 @@ public final class SplitUtil {
         if (length == 0) {
             return EMPTY_STRING_ARRAY;
         }
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         int i = 0;
         int start = 0;
         boolean match = false;
@@ -105,7 +105,7 @@ public final class SplitUtil {
         if (length == 0) {
             return EMPTY_STRING_ARRAY;
         }
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         int i = 0;
         int start = 0;
         boolean match = false;
@@ -147,7 +147,7 @@ public final class SplitUtil {
         if (length == 0) {
             return EMPTY_STRING_ARRAY;
         }
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         int sizePlus1 = 1;
         int i = 0;
         int start = 0;
@@ -225,7 +225,7 @@ public final class SplitUtil {
         if (length == 0) {
             return EMPTY_STRING_ARRAY;
         }
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         if (src.indexOf(c1) == -1) {
             list.add(src.trim());
         } else {
@@ -255,7 +255,7 @@ public final class SplitUtil {
     }
 
     public static String[] split(String src, char fi, char se, char th, char left, char right) {
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         String[] pools = split(src, fi, true);
         for (String pool : pools) {
             if (pool.indexOf(se) == -1) {

@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public final class UserStatAnalyzer implements QueryResultListener {
 
-    private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<String, UserStat>();
+    private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<>();
 
     private static final UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
 
@@ -53,13 +53,13 @@ public final class UserStatAnalyzer implements QueryResultListener {
     }
 
     public Map<String, UserStat> getUserStatMap() {
-        Map<String, UserStat> map = new LinkedHashMap<String, UserStat>(userStatMap.size());
+        Map<String, UserStat> map = new LinkedHashMap<>(userStatMap.size());
         map.putAll(userStatMap);
         return map;
     }
 
     public void reset() {
-        userStatMap = new LinkedHashMap<String, UserStat>();
+        userStatMap = new LinkedHashMap<>();
     }
 
 }

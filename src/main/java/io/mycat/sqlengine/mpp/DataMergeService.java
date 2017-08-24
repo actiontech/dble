@@ -53,9 +53,9 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
     private RowDataSorter sorter;
     private RowDataPacketGrouper grouper;
-    private Map<String, LinkedList<RowDataPacket>> result = new HashMap<String, LinkedList<RowDataPacket>>();
+    private Map<String, LinkedList<RowDataPacket>> result = new HashMap<>();
     private static final Logger LOGGER = Logger.getLogger(DataMergeService.class);
-    private ConcurrentMap<String, Boolean> canDiscard = new ConcurrentHashMap<String, Boolean>();
+    private ConcurrentMap<String, Boolean> canDiscard = new ConcurrentHashMap<>();
 
     public DataMergeService(MultiNodeQueryHandler handler, RouteResultset rrs) {
         super(handler, rrs);
@@ -94,7 +94,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
         }
 
         if (rrs.isHasAggrColumn()) {
-            List<MergeCol> mergCols = new LinkedList<MergeCol>();
+            List<MergeCol> mergCols = new LinkedList<>();
             Map<String, Integer> mergeColsMap = rrs.getMergeCols();
 
 
@@ -267,7 +267,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
         //no grouper and sorter
         if (tmpResult == null) {
-            tmpResult = new LinkedList<RowDataPacket>();
+            tmpResult = new LinkedList<>();
             for (RouteResultsetNode node : rrs.getNodes()) {
                 tmpResult.addAll(result.get(node.getName()));
             }

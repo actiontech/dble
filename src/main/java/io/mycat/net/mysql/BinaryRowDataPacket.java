@@ -57,7 +57,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     public void read(List<FieldPacket> fieldPackets, UnsafeRow unsafeRow) {
         this.fieldPackets = fieldPackets;
         this.fieldCount = unsafeRow.numFields();
-        this.fieldValues = new ArrayList<byte[]>(fieldCount);
+        this.fieldValues = new ArrayList<>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
         for (int i = 0; i < this.fieldCount; i++) {
@@ -81,7 +81,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     public void read(List<FieldPacket> fieldPackets, RowDataPacket rowDataPk) {
         this.fieldPackets = fieldPackets;
         this.fieldCount = rowDataPk.fieldCount;
-        this.fieldValues = new ArrayList<byte[]>(fieldCount);
+        this.fieldValues = new ArrayList<>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
         List<byte[]> fieldValues = rowDataPk.fieldValues;

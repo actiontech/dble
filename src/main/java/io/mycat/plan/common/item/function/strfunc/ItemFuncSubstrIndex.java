@@ -29,7 +29,7 @@ public class ItemFuncSubstrIndex extends ItemStrFunc {
 
         int delimLen = delim.length();
 
-        List<String> subs = new ArrayList<String>();
+        List<String> subs = new ArrayList<>();
         while (true) {
             int index = str.indexOf(delim);
             if (index < 0) {

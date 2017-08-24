@@ -27,7 +27,7 @@ public class Shard<S> { // S类封装了机器节点的信息 ，如name、passw
     }
 
     private void init() { // 初始化一致性hash环
-        nodes = new TreeMap<Long, S>();
+        nodes = new TreeMap<>();
         for (int i = 0; i != shards.size(); ++i) { // 每个真实机器节点都需要关联虚拟节点
             final S shardInfo = shards.get(i);
 

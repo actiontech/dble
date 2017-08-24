@@ -86,7 +86,7 @@ public class TableNode extends PlanNode {
 
     @Override
     protected void dealStarColumn() {
-        List<Item> newSels = new ArrayList<Item>();
+        List<Item> newSels = new ArrayList<>();
         for (Item sel : columnsSelected) {
             if (!sel.isWild())
                 newSels.add(sel);

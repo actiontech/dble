@@ -38,7 +38,7 @@ public class RowDataPacketSorter {
     private static final Logger LOGGER = LoggerFactory.getLogger(RowDataPacketSorter.class);
     protected final OrderCol[] orderCols;
 
-    private Collection<RowDataPacket> sorted = new ConcurrentLinkedQueue<RowDataPacket>();
+    private Collection<RowDataPacket> sorted = new ConcurrentLinkedQueue<>();
     private RowDataPacket[] array, resultTemp;
     private int p1, pr, p2;
 

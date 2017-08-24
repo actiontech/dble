@@ -36,17 +36,17 @@ public abstract class PlanNode {
     /**
      * select查询中的列
      */
-    protected List<Item> columnsSelected = new ArrayList<Item>();
+    protected List<Item> columnsSelected = new ArrayList<>();
 
     /**
      * 显式的由查询接口指定的orderBy，注意需要保证顺序
      */
-    protected List<Order> orderBys = new LinkedList<Order>();
+    protected List<Order> orderBys = new LinkedList<>();
 
     /**
      * 显式的由查询接口指定的group by，注意需要保证顺序
      */
-    protected List<Order> groups = new LinkedList<Order>();
+    protected List<Order> groups = new LinkedList<>();
 
     /**
      * having条件
@@ -61,7 +61,7 @@ public abstract class PlanNode {
     /**
      * 子节点
      */
-    protected List<PlanNode> children = new ArrayList<PlanNode>();
+    protected List<PlanNode> children = new ArrayList<>();
 
     /**
      * 从哪里开始
@@ -101,19 +101,19 @@ public abstract class PlanNode {
     /**
      * 聚合函数集合
      */
-    public HashSet<ItemSum> sumFuncs = new HashSet<ItemSum>();
+    public HashSet<ItemSum> sumFuncs = new HashSet<>();
 
     /**
      * 子查询集合
      */
-    public List<ItemSubselect> subSelects = new ArrayList<ItemSubselect>();
+    public List<ItemSubselect> subSelects = new ArrayList<>();
 
-    protected List<TableNode> referedTableNodes = new ArrayList<TableNode>();
+    protected List<TableNode> referedTableNodes = new ArrayList<>();
 
     // inner field -> child field
-    protected Map<NamedField, NamedField> innerFields = new LinkedHashMap<NamedField, NamedField>();
+    protected Map<NamedField, NamedField> innerFields = new LinkedHashMap<>();
 
-    protected Map<NamedField, Item> outerFields = new LinkedHashMap<NamedField, Item>();
+    protected Map<NamedField, Item> outerFields = new LinkedHashMap<>();
 
     protected NameResolutionContext nameContext;
 
@@ -133,12 +133,12 @@ public abstract class PlanNode {
             new CacheLoader<PlanNode, List<Item>>() {
                 @Override
                 public List<Item> load(PlanNode tn) {
-                    return new ArrayList<Item>();
+                    return new ArrayList<>();
                 }
             });
 
 
-    private List<Item> columnsReferList = new ArrayList<Item>();
+    private List<Item> columnsReferList = new ArrayList<>();
 
     private boolean existUnPushDownGroup = false;
 
@@ -384,7 +384,7 @@ public abstract class PlanNode {
     }
 
     protected void dealStarColumn() {
-        List<Item> newSels = new ArrayList<Item>();
+        List<Item> newSels = new ArrayList<>();
         for (Item selItem : columnsSelected) {
             if (selItem.isWild()) {
                 ItemField wildField = (ItemField) selItem;

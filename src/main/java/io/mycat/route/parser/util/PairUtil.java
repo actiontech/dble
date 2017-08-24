@@ -44,9 +44,9 @@ public final class PairUtil {
         if (ind < 0) {
             int i = Integer.parseInt(slice.trim());
             if (i >= 0) {
-                return new Pair<Integer, Integer>(0, i);
+                return new Pair<>(0, i);
             } else {
-                return new Pair<Integer, Integer>(i, 0);
+                return new Pair<>(i, 0);
             }
         }
         String left = slice.substring(0, ind).trim();
@@ -62,7 +62,7 @@ public final class PairUtil {
         } else {
             end = Integer.parseInt(right);
         }
-        return new Pair<Integer, Integer>(start, end);
+        return new Pair<>(start, end);
     }
 
     /**
@@ -79,22 +79,22 @@ public final class PairUtil {
         }
         int length = src.length();
         if (length == 0) {
-            return new Pair<String, Integer>("", DEFAULT_INDEX);
+            return new Pair<>("", DEFAULT_INDEX);
         }
         if (src.charAt(length - 1) != r) {
-            return new Pair<String, Integer>(src, DEFAULT_INDEX);
+            return new Pair<>(src, DEFAULT_INDEX);
         }
         int offset = src.lastIndexOf(l);
         if (offset == -1) {
-            return new Pair<String, Integer>(src, DEFAULT_INDEX);
+            return new Pair<>(src, DEFAULT_INDEX);
         }
         int index = DEFAULT_INDEX;
         try {
             index = Integer.parseInt(src.substring(offset + 1, length - 1));
         } catch (NumberFormatException e) {
-            return new Pair<String, Integer>(src, DEFAULT_INDEX);
+            return new Pair<>(src, DEFAULT_INDEX);
         }
-        return new Pair<String, Integer>(src.substring(0, offset), index);
+        return new Pair<>(src.substring(0, offset), index);
     }
 
 }

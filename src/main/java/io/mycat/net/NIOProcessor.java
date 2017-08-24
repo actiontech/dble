@@ -61,7 +61,7 @@ public final class NIOProcessor {
 
     // TODO: add by zhuam
     // reload @@config_all 后, 老的backends  全部移往 backends_old, 待检测任务进行销毁
-    public static final ConcurrentLinkedQueue<BackendConnection> BACKENDS_OLD = new ConcurrentLinkedQueue<BackendConnection>();
+    public static final ConcurrentLinkedQueue<BackendConnection> BACKENDS_OLD = new ConcurrentLinkedQueue<>();
 
     //前端已连接数
     private AtomicInteger frontendsLength = new AtomicInteger(0);
@@ -71,8 +71,8 @@ public final class NIOProcessor {
         this.name = name;
         this.bufferPool = bufferPool;
         this.executor = executor;
-        this.frontends = new ConcurrentHashMap<Long, FrontendConnection>();
-        this.backends = new ConcurrentHashMap<Long, BackendConnection>();
+        this.frontends = new ConcurrentHashMap<>();
+        this.backends = new ConcurrentHashMap<>();
         this.commands = new CommandCount();
     }
 

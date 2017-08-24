@@ -55,7 +55,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
 
                 //关联表提取
                 String masterTable = null;
-                List<String> relaTables = new ArrayList<String>();
+                List<String> relaTables = new ArrayList<>();
 
                 List<String> tables = sqlParser.parseTableNames(sql);
                 for (int i = 0; i < tables.size(); i++) {
@@ -98,7 +98,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
     }
 
     public Map<String, TableStat> getTableStatMap() {
-        Map<String, TableStat> map = new LinkedHashMap<String, TableStat>(tableStatMap.size());
+        Map<String, TableStat> map = new LinkedHashMap<>(tableStatMap.size());
         map.putAll(tableStatMap);
         return map;
     }
@@ -149,7 +149,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
          * 解析 SQL table name
          */
         public List<String> parseTableNames(String sql) {
-            final List<String> tables = new ArrayList<String>();
+            final List<String> tables = new ArrayList<>();
             try {
 
                 SQLStatement stmt = parseStmt(sql);

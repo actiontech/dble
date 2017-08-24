@@ -45,7 +45,7 @@ public final class ParameterMapping {
     private ParameterMapping() {
     }
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
-    private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<Class<?>, PropertyDescriptor[]>();
+    private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
 
     /**
      * 将property键值对赋值组装到object中
@@ -75,7 +75,7 @@ public final class ParameterMapping {
             } else if (obj instanceof BeanConfig) {
                 value = createBean((BeanConfig) obj);
             } else if (obj instanceof BeanConfig[]) {
-                List<Object> list = new ArrayList<Object>();
+                List<Object> list = new ArrayList<>();
                 for (BeanConfig beanconfig : (BeanConfig[]) obj) {
                     list.add(createBean(beanconfig));
                 }
@@ -130,7 +130,7 @@ public final class ParameterMapping {
             try {
                 BeanInfo beanInfo = Introspector.getBeanInfo(clazz);
                 pds = beanInfo.getPropertyDescriptors();
-                list = new ArrayList<PropertyDescriptor>();
+                list = new ArrayList<>();
                 //加载每一个类型不为空的property
                 for (PropertyDescriptor pd : pds) {
                     if (null != pd.getPropertyType()) {

@@ -592,7 +592,7 @@ public final class MysqlDefs {
         }
     }
 
-    private static Map<String, Integer> mysqlToJdbcTypesMap = new HashMap<String, Integer>();
+    private static Map<String, Integer> mysqlToJdbcTypesMap = new HashMap<>();
 
     static {
         mysqlToJdbcTypesMap.put("BIT", mysqlToJavaType(FIELD_TYPE_BIT));

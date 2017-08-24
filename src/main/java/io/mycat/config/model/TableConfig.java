@@ -91,7 +91,7 @@ public class TableConfig {
         if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
-        dataNodes = new ArrayList<String>(theDataNodes.length);
+        dataNodes = new ArrayList<>(theDataNodes.length);
         for (String dn : theDataNodes) {
             dataNodes.add(dn);
         }

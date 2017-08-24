@@ -124,7 +124,7 @@ public final class ShowHeartbeatDetail {
     }
 
     private static List<RowDataPacket> getRows(String name, String charset) {
-        List<RowDataPacket> list = new LinkedList<RowDataPacket>();
+        List<RowDataPacket> list = new LinkedList<>();
         MycatConfig conf = MycatServer.getInstance().getConfig();
         String ip = "";
         int port = 0;

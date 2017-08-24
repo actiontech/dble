@@ -79,7 +79,7 @@ public class DefaultDruidParser implements DruidParser {
         if (visitor.getNotSupportMsg() != null) {
             throw new SQLNonTransientException(visitor.getNotSupportMsg());
         }
-        List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
+        List<List<Condition>> mergedConditionList = new ArrayList<>();
         if (visitor.hasOrCondition()) {
             // 根据or拆分
             mergedConditionList = visitor.splitConditions();
@@ -95,7 +95,7 @@ public class DefaultDruidParser implements DruidParser {
         if (originTableAliasMap == null) {
             return null;
         }
-        Map<String, String> tableAliasMap = new HashMap<String, String>();
+        Map<String, String> tableAliasMap = new HashMap<>();
         tableAliasMap.putAll(originTableAliasMap);
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
@@ -135,7 +135,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
     private List<RouteCalculateUnit> buildRouteCalculateUnits(Map<String, String> tableAliasMap, List<List<Condition>> conditionList) {
-        List<RouteCalculateUnit> retList = new ArrayList<RouteCalculateUnit>();
+        List<RouteCalculateUnit> retList = new ArrayList<>();
         //遍历condition ，找分片字段
         for (List<Condition> aConditionList : conditionList) {
             RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();

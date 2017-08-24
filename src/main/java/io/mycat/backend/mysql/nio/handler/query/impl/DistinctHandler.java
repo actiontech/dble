@@ -56,7 +56,7 @@ public class DistinctHandler extends BaseDMLHandler {
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         if (this.distincts == null) {
             // 比如show tables这种语句
-            this.distincts = new ArrayList<Item>();
+            this.distincts = new ArrayList<>();
             for (FieldPacket fp : this.fieldPackets) {
                 Item sel = HandlerTool.createItemField(fp);
                 this.distincts.add(sel);

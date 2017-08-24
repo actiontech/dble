@@ -45,10 +45,10 @@ public class JoinNode extends PlanNode {
     }
 
     // sort-merge-join时左节点的排序属性
-    private List<Order> leftJoinOnOrders = new ArrayList<Order>();
+    private List<Order> leftJoinOnOrders = new ArrayList<>();
     private boolean isLeftOrderMatch = false;
     // sort-merge-join时右节点的排序属性
-    private List<Order> rightJoinOnOrders = new ArrayList<Order>();
+    private List<Order> rightJoinOnOrders = new ArrayList<>();
     private boolean isRightOrderMatch = false;
 
     private List<String> usingFields;
@@ -75,7 +75,7 @@ public class JoinNode extends PlanNode {
     /**
      * 虚拟化一个节点可以被ER关联的key代表
      */
-    protected List<ERTable> erKeys = new ArrayList<ERTable>();
+    protected List<ERTable> erKeys = new ArrayList<>();
 
     protected Strategy strategy = Strategy.SORTMERGE;
 
@@ -83,7 +83,7 @@ public class JoinNode extends PlanNode {
         this.leftOuter = false;
         this.rightOuter = false;
         this.needOptimizeJoinOrder = true;
-        this.joinFilter = new ArrayList<ItemFuncEqual>();
+        this.joinFilter = new ArrayList<>();
     }
 
     public JoinNode(PlanNode left, PlanNode right) {
@@ -226,7 +226,7 @@ public class JoinNode extends PlanNode {
      * @param clearName if true:clear filter's itemname,else keep
      */
     private void buildJoinKeys(boolean clearName) {
-        List<Item> otherJoinOnFilters = new ArrayList<Item>(getJoinFilter().size());
+        List<Item> otherJoinOnFilters = new ArrayList<>(getJoinFilter().size());
         for (ItemFuncEqual bf : joinFilter) {
             if (clearName)
                 bf.setItemName(null);
@@ -240,7 +240,7 @@ public class JoinNode extends PlanNode {
     }
 
     public List<Item> getLeftKeys() {
-        List<Item> leftKeys = new ArrayList<Item>(this.getJoinFilter().size());
+        List<Item> leftKeys = new ArrayList<>(this.getJoinFilter().size());
         for (ItemFuncEqual f : this.getJoinFilter()) {
             leftKeys.add(f.arguments().get(0));
         }
@@ -248,7 +248,7 @@ public class JoinNode extends PlanNode {
     }
 
     public List<Item> getRightKeys() {
-        List<Item> rightKeys = new ArrayList<Item>(this.getJoinFilter().size());
+        List<Item> rightKeys = new ArrayList<>(this.getJoinFilter().size());
         for (ItemFuncEqual f : this.getJoinFilter()) {
             rightKeys.add(f.arguments().get(1));
         }

@@ -14,7 +14,7 @@ public abstract class ItemCond extends ItemBoolFunc {
 
     public ItemCond(List<Item> args) {
         super(args);
-        list = new ArrayList<Item>();
+        list = new ArrayList<>();
         list.addAll(args);
     }
 

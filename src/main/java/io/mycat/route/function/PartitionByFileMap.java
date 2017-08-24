@@ -107,7 +107,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
     @Override
     public int getPartitionNum() {
-        Set<Integer> set = new HashSet<Integer>(app2Partition.values());
+        Set<Integer> set = new HashSet<>(app2Partition.values());
         int count = set.size();
         return count;
     }
@@ -123,7 +123,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
             }
             in = new BufferedReader(new InputStreamReader(fin));
 
-            app2Partition = new HashMap<Object, Integer>();
+            app2Partition = new HashMap<>();
 
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();

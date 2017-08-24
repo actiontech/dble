@@ -82,7 +82,7 @@ public final class FilterPusher {
     }
 
     private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
-        List<Item> subHavingList = new ArrayList<Item>();
+        List<Item> subHavingList = new ArrayList<>();
         for (Item filter : dnfNodeToPush) {
             if (filter.withSumFunc) {
                 subHavingList.add(filter);
@@ -116,11 +116,11 @@ public final class FilterPusher {
             ((QueryNode) qtn).setChild(child);
         } else if (qtn.type() == PlanNodeType.JOIN) {
             JoinNode jn = (JoinNode) qtn;
-            List<Item> dnfNodetoPushToLeft = new LinkedList<Item>();
-            List<Item> dnfNodetoPushToRight = new LinkedList<Item>();
-            List<Item> leftCopyedPushFilters = new LinkedList<Item>();
-            List<Item> rightCopyedPushFilters = new LinkedList<Item>();
-            List<Item> dnfNodeToCurrent = new LinkedList<Item>();
+            List<Item> dnfNodetoPushToLeft = new LinkedList<>();
+            List<Item> dnfNodetoPushToRight = new LinkedList<>();
+            List<Item> leftCopyedPushFilters = new LinkedList<>();
+            List<Item> rightCopyedPushFilters = new LinkedList<>();
+            List<Item> dnfNodeToCurrent = new LinkedList<>();
 
             PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
             for (Item filter : dnfNodeToPush) {
@@ -216,7 +216,7 @@ public final class FilterPusher {
             JoinNode jn = (JoinNode) qtn;
             Item otherJoinOn = jn.getOtherJoinOnFilter();
             if (jn.isLeftOuterJoin() && otherJoinOn != null) {
-                List<Item> pushToRightNode = new ArrayList<Item>();
+                List<Item> pushToRightNode = new ArrayList<>();
                 List<Item> splitedFilters = FilterUtils.splitFilter(otherJoinOn);
                 for (Item filter : splitedFilters) {
                     if (filter.getReferTables().isEmpty())
@@ -235,8 +235,8 @@ public final class FilterPusher {
                     Item newOtherJoinOn = FilterUtils.and(splitedFilters);
                     jn.setOtherJoinOnFilter(newOtherJoinOn);
                     refreshPdFilters(jn, pushToRightNode);
-                    List<Item> subHavingList = new ArrayList<Item>();
-                    List<Item> subWhereList = new ArrayList<Item>();
+                    List<Item> subHavingList = new ArrayList<>();
+                    List<Item> subWhereList = new ArrayList<>();
                     for (Item filter : pushToRightNode) {
                         if (filter.withSumFunc) {
                             subHavingList.add(filter);
@@ -264,7 +264,7 @@ public final class FilterPusher {
      * @param otherColumns
      */
     private static List<Item> copyFilterToJoinOnColumns(List<Item> dnf, List<Item> qnColumns, List<Item> otherColumns) {
-        List<Item> newIFilterToPush = new LinkedList<Item>();
+        List<Item> newIFilterToPush = new LinkedList<>();
         for (Item filter : dnf) {
             Item newFilter = copyFilterToJoinOnColumns(filter, qnColumns, otherColumns);
             if (newFilter != null)

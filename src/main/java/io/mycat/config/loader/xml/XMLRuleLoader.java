@@ -59,9 +59,9 @@ public class XMLRuleLoader {
     public XMLRuleLoader(String ruleFile) {
         // this.rules = new HashSet<RuleConfig>();
         //rule名 -> rule
-        this.tableRules = new HashMap<String, TableRuleConfig>();
+        this.tableRules = new HashMap<>();
         //function名 -> 具体分片算法
-        this.functions = new HashMap<String, AbstractPartitionAlgorithm>();
+        this.functions = new HashMap<>();
         load(DEFAULT_DTD, ruleFile == null ? DEFAULT_XML : ruleFile);
     }
 

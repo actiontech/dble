@@ -812,7 +812,7 @@ public abstract class Item {
     public final HashSet<PlanNode> getReferTables() {
         // so if we don't use this method all the time, refertables is null
         if (referTables == null)
-            referTables = new HashSet<PlanNode>(2);
+            referTables = new HashSet<>(2);
         return referTables;
     }
 
@@ -871,7 +871,7 @@ public abstract class Item {
     protected final List<SQLExpr> toExpressionList(List<Item> args) {
         if (args == null)
             return null;
-        List<SQLExpr> newList = new ArrayList<SQLExpr>();
+        List<SQLExpr> newList = new ArrayList<>();
         for (Item item : args) {
             newList.add(item.toExpression());
         }
@@ -881,7 +881,7 @@ public abstract class Item {
     protected final List<Item> cloneStructList(List<Item> args) {
         if (args == null)
             return null;
-        List<Item> newList = new ArrayList<Item>();
+        List<Item> newList = new ArrayList<>();
         for (Item toClone : args) {
             newList.add(toClone.cloneStruct());
         }

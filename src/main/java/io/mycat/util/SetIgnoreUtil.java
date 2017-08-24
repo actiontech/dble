@@ -16,7 +16,7 @@ public final class SetIgnoreUtil {
     private SetIgnoreUtil() {
     }
 
-    private static List<Pattern> ptrnIgnoreList = new ArrayList<Pattern>();
+    private static List<Pattern> ptrnIgnoreList = new ArrayList<>();
 
     static {
 

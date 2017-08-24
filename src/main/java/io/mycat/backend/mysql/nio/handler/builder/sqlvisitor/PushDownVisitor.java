@@ -25,7 +25,7 @@ public class PushDownVisitor extends MysqlVisitor {
     public PushDownVisitor(PlanNode pushDownQuery, boolean isTopQuery) {
         super(pushDownQuery, isTopQuery);
         this.existUnPushDownGroup = pushDownQuery.existUnPushDownGroup();
-        pushDownOrderBy = new ArrayList<Order>();
+        pushDownOrderBy = new ArrayList<>();
     }
 
     public void visit() {

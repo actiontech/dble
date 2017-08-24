@@ -31,7 +31,7 @@ public abstract class LocalResult implements ResultStore {
     protected MemSizeController bufferMC;
 
     public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset) {
-        this.rows = new ArrayList<RowDataPacket>(initialCapacity);
+        this.rows = new ArrayList<>(initialCapacity);
         this.fieldsCount = fieldsCount;
         this.pool = pool;
         init();

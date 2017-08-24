@@ -158,7 +158,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 terminated = true;
             }
             if (errConnection == null) {
-                errConnection = new ArrayList<BackendConnection>();
+                errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
             if (!conn.syncAndExcute()) {
@@ -187,7 +187,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 terminated = true;
             }
             if (errConnection == null) {
-                errConnection = new ArrayList<BackendConnection>();
+                errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
             if (!conn.syncAndExcute()) {

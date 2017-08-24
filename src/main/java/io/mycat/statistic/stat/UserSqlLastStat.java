@@ -19,7 +19,7 @@ public class UserSqlLastStat {
     }
 
     public List<SqlLast> getSqls() {
-        List<SqlLast> keyList = new ArrayList<SqlLast>(sqls);
+        List<SqlLast> keyList = new ArrayList<>(sqls);
         return keyList;
     }
 
@@ -39,7 +39,7 @@ public class UserSqlLastStat {
     public void recycle() {
         if (sqls.size() > MAX_RECORDS) {
             SortedSet<SqlLast> sqls2 = new ConcurrentSkipListSet<>();
-            List<SqlLast> keyList = new ArrayList<SqlLast>(sqls);
+            List<SqlLast> keyList = new ArrayList<>(sqls);
             int i = 0;
             for (SqlLast key : keyList) {
                 if (i == MAX_RECORDS) {

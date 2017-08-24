@@ -61,7 +61,7 @@ public abstract class AbstractConnection implements NIOConnection {
     protected volatile ByteBuffer readBuffer;
     protected volatile ByteBuffer writeBuffer;
 
-    protected final ConcurrentLinkedQueue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<ByteBuffer>();
+    protected final ConcurrentLinkedQueue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
 
     protected volatile int readBufferOffset;
     protected long lastLargeMessageTime;
@@ -73,8 +73,8 @@ public abstract class AbstractConnection implements NIOConnection {
     protected long netOutBytes;
 
     protected volatile boolean isSupportCompress = false;
-    protected final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<byte[]>();
-    protected final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<byte[]>();
+    protected final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+    protected final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
 
     private long idleTimeout;
 

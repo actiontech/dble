@@ -90,7 +90,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (fieldCounts == -1) {
             fieldCounts = fields.size();
         }
-        List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
+        List<FieldPacket> fieldPackets = new ArrayList<>();
 
         for (byte[] field1 : fields) {
             FieldPacket field = new FieldPacket();

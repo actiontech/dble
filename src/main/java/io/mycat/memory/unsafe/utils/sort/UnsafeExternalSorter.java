@@ -48,9 +48,9 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
      * this might not be necessary if we maintained a pool of re-usable pages in the DataNodeMemoryManager
      * itself).
      */
-    private final LinkedList<MemoryBlock> allocatedPages = new LinkedList<MemoryBlock>();
+    private final LinkedList<MemoryBlock> allocatedPages = new LinkedList<>();
 
-    private final LinkedList<UnsafeSorterSpillWriter> spillWriters = new LinkedList<UnsafeSorterSpillWriter>();
+    private final LinkedList<UnsafeSorterSpillWriter> spillWriters = new LinkedList<>();
 
     // These variables are reset after spilling:
     @Nullable
@@ -551,7 +551,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
              * 读取器反序列化到UnsafeSorterIterator中，然后到添加到queue队列中
              * UnsafeSorterSpillReader也是UnsafeSorterIterator的子类
              */
-            LinkedList<UnsafeSorterIterator> queue = new LinkedList<UnsafeSorterIterator>();
+            LinkedList<UnsafeSorterIterator> queue = new LinkedList<>();
             for (UnsafeSorterSpillWriter spillWriter : spillWriters) {
                 queue.add(spillWriter.getReader(serializerManager));
             }

@@ -63,7 +63,7 @@ public class UserSqlHighStat {
         if (sqlFrequencyMap.size() > CAPACITY_SIZE) {
             Map<String, SqlFrequency> sqlFrequencyMap2 = new ConcurrentHashMap<>();
             SortedSet<SqlFrequency> sqlFrequencySortedSet = new TreeSet<>(this.sqlFrequencyMap.values());
-            List<SqlFrequency> keyList = new ArrayList<SqlFrequency>(sqlFrequencySortedSet);
+            List<SqlFrequency> keyList = new ArrayList<>(sqlFrequencySortedSet);
             int i = 0;
             for (SqlFrequency key : keyList) {
                 if (i == CAPACITY_SIZE) {

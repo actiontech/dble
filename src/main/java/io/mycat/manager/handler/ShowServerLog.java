@@ -204,7 +204,7 @@ public final class ShowServerLog {
         File file = getLogFile(DEFAULT_LOGFILE);
         BufferedReader br = null;
         int totalLines = 0;
-        CircularArrayList<String> queue = new CircularArrayList<String>(50);
+        CircularArrayList<String> queue = new CircularArrayList<>(50);
         try {
             br = new BufferedReader(new FileReader(file));
             String line = null;
@@ -269,7 +269,7 @@ public final class ShowServerLog {
      */
     public static Map<String, String> getCondPair(String sql) {
         try {
-            HashMap<String, String> map = new HashMap<String, String>();
+            HashMap<String, String> map = new HashMap<>();
             int offset = ManagerParseShow.trim(0, sql);
             //sql拿到之后起头先过滤空格
             char c1 = sql.charAt(offset);

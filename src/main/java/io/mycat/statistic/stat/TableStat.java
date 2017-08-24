@@ -29,7 +29,7 @@ public class TableStat implements Comparable<TableStat> {
     private final AtomicLong wCount = new AtomicLong(0);
 
     // 关联表
-    private final ConcurrentMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<String, RelaTable>();
+    private final ConcurrentMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<>();
 
     /**
      * 最后执行时间
@@ -97,7 +97,7 @@ public class TableStat implements Comparable<TableStat> {
     }
 
     public List<RelaTable> getRelaTables() {
-        List<RelaTable> tables = new ArrayList<RelaTable>();
+        List<RelaTable> tables = new ArrayList<>();
         tables.addAll(this.relaTableMap.values());
         return tables;
     }

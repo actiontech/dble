@@ -95,7 +95,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         }
 
         if (rrs.isHasAggrColumn()) {
-            List<MergeCol> mergCols = new LinkedList<MergeCol>();
+            List<MergeCol> mergCols = new LinkedList<>();
             Map<String, Integer> mergeColsMap = rrs.getMergeCols();
 
             if (mergeColsMap != null) {

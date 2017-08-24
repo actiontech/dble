@@ -42,7 +42,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     /**
      * rowData缓存队列
      */
-    protected BlockingQueue<PackWraper> packs = new LinkedBlockingQueue<PackWraper>();
+    protected BlockingQueue<PackWraper> packs = new LinkedBlockingQueue<>();
 
     /**
      * 标志业务线程是否启动了？

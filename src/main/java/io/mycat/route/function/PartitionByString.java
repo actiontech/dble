@@ -72,9 +72,9 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         if (ind < 0) {
             int i = Integer.parseInt(slice.trim());
             if (i >= 0) {
-                return new Pair<Integer, Integer>(0, i);
+                return new Pair<>(0, i);
             } else {
-                return new Pair<Integer, Integer>(i, 0);
+                return new Pair<>(i, 0);
             }
         }
         String left = slice.substring(0, ind).trim();
@@ -90,7 +90,7 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         } else {
             end = Integer.parseInt(right);
         }
-        return new Pair<Integer, Integer>(start, end);
+        return new Pair<>(start, end);
     }
 
     @Override

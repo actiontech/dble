@@ -104,7 +104,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     private Integer[] calcType1(long begin, long end) {
-        HashSet<Integer> ids = new HashSet<Integer>();
+        HashSet<Integer> ids = new HashSet<>();
 
         calcAux(ids, begin, end);
 
@@ -112,7 +112,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     private Integer[] calcType2(long begin, long end) {
-        HashSet<Integer> ids = new HashSet<Integer>();
+        HashSet<Integer> ids = new HashSet<>();
 
         calcAux(ids, begin, patternValue);
         calcAux(ids, 0, end);
@@ -190,8 +190,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
                 throw new RuntimeException("can't find class resource file " + mapFile);
             }
             in = new BufferedReader(new InputStreamReader(fin));
-            LinkedList<LongRange> longRangeList = new LinkedList<LongRange>();
-            HashSet<Integer> ids = new HashSet<Integer>();
+            LinkedList<LongRange> longRangeList = new LinkedList<>();
+            HashSet<Integer> ids = new HashSet<>();
 
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();

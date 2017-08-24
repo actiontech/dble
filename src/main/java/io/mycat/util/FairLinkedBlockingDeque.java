@@ -135,7 +135,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         if (count >= capacity)
             return false;
         Node<E> f = first;
-        Node<E> x = new Node<E>(e, null, f);
+        Node<E> x = new Node<>(e, null, f);
         first = x;
         if (last == null)
             last = x;
@@ -154,7 +154,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         if (count >= capacity)
             return false;
         Node<E> l = last;
-        Node<E> x = new Node<E>(e, l, null);
+        Node<E> x = new Node<>(e, l, null);
         last = x;
         if (first == null)
             first = x;

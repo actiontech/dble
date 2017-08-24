@@ -53,7 +53,7 @@ public class PreparedStatement {
         this.columnsNumber = columnsNumber;
         this.parametersNumber = parametersNumber;
         this.parametersType = new int[parametersNumber];
-        this.longDataMap = new HashMap<Long, ByteArrayOutputStream>();
+        this.longDataMap = new HashMap<>();
     }
 
     public long getId() {

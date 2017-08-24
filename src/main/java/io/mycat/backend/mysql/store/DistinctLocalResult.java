@@ -27,7 +27,7 @@ public class DistinctLocalResult extends LocalResult {
                                String charset) {
         super(initialCapacity, fieldsCount, pool, charset);
         this.distinctCmp = distinctCmp;
-        this.rows = new RBTreeList<RowDataPacket>(initialCapacity, distinctCmp);
+        this.rows = new RBTreeList<>(initialCapacity, distinctCmp);
     }
 
     public DistinctLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset) {

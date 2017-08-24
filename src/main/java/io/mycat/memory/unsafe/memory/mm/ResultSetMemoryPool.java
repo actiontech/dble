@@ -43,7 +43,7 @@ public class ResultSetMemoryPool extends MemoryPool {
     /**
      * Map from taskAttemptId -> memory consumption in bytes
      */
-    private ConcurrentMap<Long, Long> memoryForConnection = new ConcurrentHashMap<Long, Long>();
+    private ConcurrentMap<Long, Long> memoryForConnection = new ConcurrentHashMap<>();
 
     @Override
     protected long memoryUsed() {

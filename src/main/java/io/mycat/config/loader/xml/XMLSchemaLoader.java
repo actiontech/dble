@@ -71,9 +71,9 @@ public class XMLSchemaLoader implements SchemaLoader {
         this.tableRules = ruleLoader.getTableRules();
         //释放ruleLoader
         ruleLoader = null;
-        this.dataHosts = new HashMap<String, DataHostConfig>();
-        this.dataNodes = new HashMap<String, DataNodeConfig>();
-        this.schemas = new HashMap<String, SchemaConfig>();
+        this.dataHosts = new HashMap<>();
+        this.dataNodes = new HashMap<>();
+        this.schemas = new HashMap<>();
         this.lowerCaseNames = lowerCaseNames;
         //读取加载schema配置
         this.load(DEFAULT_DTD, schemaFile == null ? DEFAULT_XML : schemaFile);
@@ -166,7 +166,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             //校验检查并添加dataNode
             if (dataNode != null && !dataNode.isEmpty()) {
-                List<String> dataNodeLst = new ArrayList<String>(1);
+                List<String> dataNodeLst = new ArrayList<>(1);
                 dataNodeLst.add(dataNode);
                 checkDataNodeExists(dataNodeLst);
             } else {
@@ -206,7 +206,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             for (ERTable erTable : entry.getValue()) {
                 if (erRelations == null) {
-                    erRelations = new HashMap<ERTable, Set<ERTable>>();
+                    erRelations = new HashMap<>();
                 }
                 Set<ERTable> relations = erRelations.get(erTable);
                 if (relations == null) {
@@ -227,7 +227,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         for (Entry<String, Set<ERTable>> entry : schemaFuncNodeER.entrySet()) {
             String key = entry.getKey();
             if (funcNodeERMap == null) {
-                funcNodeERMap = new HashMap<String, Set<ERTable>>();
+                funcNodeERMap = new HashMap<>();
             }
             if (!funcNodeERMap.containsKey(key)) {
                 funcNodeERMap.put(key, entry.getValue());
@@ -245,7 +245,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             return;
         }
         if (erRelations == null) {
-            erRelations = new HashMap<ERTable, Set<ERTable>>();
+            erRelations = new HashMap<>();
         }
         erRelations.putAll(schemaFkERMap);
         schemaFkERMap = null;
@@ -433,7 +433,7 @@ public class XMLSchemaLoader implements SchemaLoader {
      * @param theDataNodes
      */
     private void distributeDataNodes(ArrayList<String> theDataNodes) {
-        Map<String, ArrayList<String>> newDataNodeMap = new HashMap<String, ArrayList<String>>(dataHosts.size());
+        Map<String, ArrayList<String>> newDataNodeMap = new HashMap<>(dataHosts.size());
         for (String dn : theDataNodes) {
             DataNodeConfig dnConf = dataNodes.get(dn);
             String host = dnConf.getDataHost();
@@ -443,7 +443,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             newDataNodeMap.put(host, hostDns);
         }
 
-        ArrayList<String> result = new ArrayList<String>(theDataNodes.size());
+        ArrayList<String> result = new ArrayList<>(theDataNodes.size());
         boolean hasData = true;
         while (hasData) {
             hasData = false;
@@ -710,7 +710,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             //读取writeHost
             NodeList writeNodes = element.getElementsByTagName("writeHost");
             DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
-            Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<Integer, DBHostConfig[]>(2);
+            Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
             for (int w = 0; w < writeDbConfs.length; w++) {
                 Element writeNode = (Element) writeNodes.item(w);
                 writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);

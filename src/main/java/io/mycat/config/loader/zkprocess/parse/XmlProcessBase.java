@@ -66,7 +66,7 @@ public class XmlProcessBase {
      * @字段说明 parseXmlClass
      */
     @SuppressWarnings("rawtypes")
-    public List<Class> parseXmlClass = new ArrayList<Class>();
+    public List<Class> parseXmlClass = new ArrayList<>();
 
     /**
      * 添加转换的class信息

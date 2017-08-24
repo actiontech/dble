@@ -109,7 +109,7 @@ public class UnsafeRowGrouper {
 
     private String[] toSortColumnsByIndex(String[] columns, Map<String, ColMeta> columToIndx) {
 
-        Map<String, Integer> map = new HashMap<String, Integer>();
+        Map<String, Integer> map = new HashMap<>();
 
         ColMeta curColMeta;
         for (String column : columns) {
@@ -124,8 +124,7 @@ public class UnsafeRowGrouper {
 
         String[] sortColumnsByIndex = new String[map.size()];
 
-        List<Map.Entry<String, Integer>> entryList = new ArrayList<
-                Map.Entry<String, Integer>>(
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(
                 map.entrySet());
 
         Collections.sort(entryList, new Comparator<Map.Entry<String, Integer>>() {
@@ -152,7 +151,7 @@ public class UnsafeRowGrouper {
         /**
          * 构造groupKey
          */
-        Map<String, ColMeta> groupcolMetaMap = new HashMap<String, ColMeta>(this.groupKeyfieldCount);
+        Map<String, ColMeta> groupcolMetaMap = new HashMap<>(this.groupKeyfieldCount);
 
         UnsafeRow groupKey = new UnsafeRow(this.groupKeyfieldCount);
         bufferHolder = new BufferHolder(groupKey, 0);

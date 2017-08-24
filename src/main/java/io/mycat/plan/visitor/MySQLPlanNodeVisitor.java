@@ -267,7 +267,7 @@ public class MySQLPlanNodeVisitor {
     }
 
     private List<Item> handleSelectItems(List<SQLSelectItem> items) {
-        List<Item> selectItems = new ArrayList<Item>();
+        List<Item> selectItems = new ArrayList<>();
         for (SQLSelectItem item : items) {
             SQLExpr expr = item.getExpr();
             if (expr instanceof SQLQueryExpr)
@@ -372,7 +372,7 @@ public class MySQLPlanNodeVisitor {
     }
 
     private List<String> getUsingFields(List<SQLExpr> using) {
-        List<String> fds = new ArrayList<String>(using.size());
+        List<String> fds = new ArrayList<>(using.size());
         for (SQLExpr us : using) {
             fds.add(StringUtil.removeBackQuote(us.toString().toLowerCase()));
         }

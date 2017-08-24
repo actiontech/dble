@@ -70,7 +70,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
     /**
      * A linked list for tracking all allocated data pages so that we can free all of our memory.
      */
-    private final LinkedList<MemoryBlock> dataPages = new LinkedList<MemoryBlock>();
+    private final LinkedList<MemoryBlock> dataPages = new LinkedList<>();
 
     /**
      * The data page that will be used to store keys and values for new hashtable entries. When this
@@ -170,7 +170,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
     private final DataNodeDiskManager blockManager;
     private final SerializerManager serializerManager;
     private volatile MapIterator destructiveIterator = null;
-    private LinkedList<UnsafeSorterSpillWriter> spillWriters = new LinkedList<UnsafeSorterSpillWriter>();
+    private LinkedList<UnsafeSorterSpillWriter> spillWriters = new LinkedList<>();
 
     public BytesToBytesMap(
             DataNodeMemoryManager dataNodeMemoryManager,

@@ -64,7 +64,7 @@ public final class ShowSysParam {
 
         SystemConfig sysConfig = MycatServer.getInstance().getConfig().getSystem();
 
-        List<String> paramValues = new ArrayList<String>();
+        List<String> paramValues = new ArrayList<>();
         paramValues.add(sysConfig.getProcessors() + "");
         paramValues.add(sysConfig.getBufferPoolChunkSize() + "B");
         paramValues.add(sysConfig.getBufferPoolPageSize() + "B");

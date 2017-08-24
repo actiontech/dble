@@ -20,7 +20,7 @@ class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     protected List<DMLResponseHandler> buildPre() {
-        List<DMLResponseHandler> pres = new ArrayList<DMLResponseHandler>();
+        List<DMLResponseHandler> pres = new ArrayList<>();
         for (PlanNode child : node.getChildren()) {
             DMLResponseHandler ch = hBuilder.buildNode(session, child);
             pres.add(ch);

@@ -40,7 +40,7 @@ public class UserSqlLargeStat {
     public void recycle() {
         if (sqls.size() > count) {
             SortedSet<SqlLarge> sqls2 = new ConcurrentSkipListSet<>();
-            List<SqlLarge> keyList = new ArrayList<SqlLarge>(sqls);
+            List<SqlLarge> keyList = new ArrayList<>(sqls);
             int i = 0;
             for (SqlLarge key : keyList) {
                 if (i == count) {

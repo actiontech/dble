@@ -40,9 +40,9 @@ public class FileStore {
      */
     public FileStore(String name, String mode) {
         this.name = name;
-        this.fileNames = new ArrayList<String>();
-        this.files = new ArrayList<FileChannel>();
-        this.locks = new ArrayList<FileLock>();
+        this.fileNames = new ArrayList<>();
+        this.files = new ArrayList<>();
+        this.locks = new ArrayList<>();
         this.mode = mode;
         this.mappedFileSize = MycatServer.getInstance().getConfig().getSystem().getMappedFileSize();
         try {

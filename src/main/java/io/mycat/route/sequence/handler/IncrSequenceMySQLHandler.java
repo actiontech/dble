@@ -16,7 +16,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
-    protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<String, String>();
+    protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequnceHandler mysqlSeqFetcher = new FetchMySQLSequnceHandler();
     private static final IncrSequenceMySQLHandler INSTANCE = new IncrSequenceMySQLHandler();
 
@@ -56,7 +56,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     /**
      * save sequence -> curval
      */
-    private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<String, SequenceVal>();
+    private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<>();
 
     @Override
     public long nextId(String seqName) {

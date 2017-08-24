@@ -80,7 +80,7 @@ class FileNioMapped extends FileBase {
         }
 
         if (useSystemGc) {
-            WeakReference<MappedByteBuffer> bufferWeakRef = new WeakReference<MappedByteBuffer>(mapped);
+            WeakReference<MappedByteBuffer> bufferWeakRef = new WeakReference<>(mapped);
             mapped = null;
             long start = System.currentTimeMillis();
             while (bufferWeakRef.get() != null) {

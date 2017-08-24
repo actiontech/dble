@@ -9,7 +9,7 @@ public class RangRowDataPacket {
     public static final int DATA_TYPE_ALL = 100;
     public static final int DATA_TYPE_TRIM = 200;
     private int dataType = DATA_TYPE_ALL;
-    private List<RowDataPacket> rowDataPacketList = new ArrayList<RowDataPacket>();
+    private List<RowDataPacket> rowDataPacketList = new ArrayList<>();
 
     private int trimCount = 0;
 

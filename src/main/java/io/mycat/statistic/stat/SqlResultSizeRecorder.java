@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class SqlResultSizeRecorder {
 
-    private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<String, SqlResultSet>();
+    private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<>();
 
 
     public void addSql(String sql, int resultSetSize) {

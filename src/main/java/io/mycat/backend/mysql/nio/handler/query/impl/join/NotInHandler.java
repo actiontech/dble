@@ -42,10 +42,10 @@ public class NotInHandler extends OwnThreadDMLHandler {
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
         int queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
-        this.leftQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
-        this.rightQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
-        this.leftFieldPackets = new ArrayList<FieldPacket>();
-        this.rightFieldPackets = new ArrayList<FieldPacket>();
+        this.leftQueue = new FairLinkedBlockingDeque<>(queueSize);
+        this.rightQueue = new FairLinkedBlockingDeque<>(queueSize);
+        this.leftFieldPackets = new ArrayList<>();
+        this.rightFieldPackets = new ArrayList<>();
     }
 
     @Override

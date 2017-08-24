@@ -13,7 +13,7 @@ public class UserPrivilegesConfig {
 
     private boolean check = false;
 
-    private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<String, SchemaPrivilege>();
+    private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<>();
 
     public boolean isCheck() {
         return check;
@@ -39,7 +39,7 @@ public class UserPrivilegesConfig {
 
         private int[] dml = new int[]{0, 0, 0, 0};
 
-        private Map<String, TablePrivilege> tablePrivileges = new HashMap<String, TablePrivilege>();
+        private Map<String, TablePrivilege> tablePrivileges = new HashMap<>();
 
 
         public int[] getDml() {

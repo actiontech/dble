@@ -117,7 +117,7 @@ public final class ShowDataNode {
         byte packetId = EOF.packetId;
         MycatConfig conf = MycatServer.getInstance().getConfig();
         Map<String, PhysicalDBNode> dataNodes = conf.getDataNodes();
-        List<String> keys = new ArrayList<String>();
+        List<String> keys = new ArrayList<>();
         if (StringUtil.isEmpty(name)) {
             keys.addAll(dataNodes.keySet());
         } else {

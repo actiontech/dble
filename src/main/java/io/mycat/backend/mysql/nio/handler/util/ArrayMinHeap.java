@@ -314,7 +314,7 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
                     cursor--;
                 else {
                     if (forgetMeNot == null)
-                        forgetMeNot = new ArrayDeque<E>();
+                        forgetMeNot = new ArrayDeque<>();
                     forgetMeNot.add(moved);
                 }
             } else if (lastRetElt != null) {

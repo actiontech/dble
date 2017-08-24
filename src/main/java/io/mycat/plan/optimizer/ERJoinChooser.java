@@ -29,20 +29,20 @@ public class ERJoinChooser {
      * t1.name=t3.name and t1.id=t3.id 则 sel[0]: t1.id,t2.id,t3.id sel[1]:
      * t1.name,t3.name
      */
-    private List<ArrayList<JoinKeyInfo>> selLists = new ArrayList<ArrayList<JoinKeyInfo>>();
+    private List<ArrayList<JoinKeyInfo>> selLists = new ArrayList<>();
 
     // 当前正在对selLists的那一行做er尝试
     private int trySelListIndex = 0;
 
-    private List<PlanNode> joinUnits = new ArrayList<PlanNode>();
+    private List<PlanNode> joinUnits = new ArrayList<>();
 
     // global表
-    private List<PlanNode> globals = new ArrayList<PlanNode>();
+    private List<PlanNode> globals = new ArrayList<>();
 
     // 生成的若干的er joinnode
-    private List<JoinNode> makedERJnList = new ArrayList<JoinNode>();
+    private List<JoinNode> makedERJnList = new ArrayList<>();
 
-    private List<Item> otherJoinOns = new ArrayList<Item>();
+    private List<Item> otherJoinOns = new ArrayList<>();
 
     private JoinNode jn = null;
 
@@ -148,7 +148,7 @@ public class ERJoinChooser {
             // 未发现er关系join
             return jn;
 
-        List<PlanNode> others = new ArrayList<PlanNode>();
+        List<PlanNode> others = new ArrayList<>();
         // makedErJnList放在前面，这样可以和ER进行join
         others.addAll(makedERJnList);
         others.addAll(joinUnits);
@@ -190,7 +190,7 @@ public class ERJoinChooser {
      * @return
      */
     private JoinNode tryMakeERJoin(List<JoinKeyInfo> selList) {
-        List<JoinKeyInfo> erKeys = new ArrayList<JoinKeyInfo>();
+        List<JoinKeyInfo> erKeys = new ArrayList<>();
         for (int i = 0; i < selList.size(); i++) {
             JoinKeyInfo jki = selList.get(i);
             if (jki.cm == null)
@@ -263,7 +263,7 @@ public class ERJoinChooser {
      * @return
      */
     private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList) {
-        List<ItemFuncEqual> filters = new ArrayList<ItemFuncEqual>();
+        List<ItemFuncEqual> filters = new ArrayList<>();
         for (List<JoinKeyInfo> selList : selLists) {
             JoinKeyInfo jkit0 = null;
             JoinKeyInfo jkit1 = null;
@@ -432,7 +432,7 @@ public class ERJoinChooser {
                 return;
             }
         }
-        ArrayList<JoinKeyInfo> equalSelectables = new ArrayList<JoinKeyInfo>();
+        ArrayList<JoinKeyInfo> equalSelectables = new ArrayList<>();
         equalSelectables.add(jiLeft);
         equalSelectables.add(jiRight);
         selLists.add(equalSelectables);

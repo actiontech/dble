@@ -64,7 +64,7 @@ public class RowDataPacket extends MySQLPacket {
 
     public RowDataPacket(int fieldCount) {
         this.fieldCount = fieldCount;
-        this.fieldValues = new ArrayList<byte[]>(fieldCount);
+        this.fieldValues = new ArrayList<>(fieldCount);
     }
 
     public void add(byte[] value) {

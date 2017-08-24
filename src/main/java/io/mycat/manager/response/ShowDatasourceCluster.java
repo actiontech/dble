@@ -154,7 +154,7 @@ public final class ShowDatasourceCluster {
     }
 
     private static List<RowDataPacket> getRows(String charset) {
-        List<RowDataPacket> list = new LinkedList<RowDataPacket>();
+        List<RowDataPacket> list = new LinkedList<>();
         MycatConfig conf = MycatServer.getInstance().getConfig();
         // host nodes
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();

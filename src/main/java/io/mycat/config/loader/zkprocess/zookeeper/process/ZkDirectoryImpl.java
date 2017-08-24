@@ -24,7 +24,7 @@ public class ZkDirectoryImpl implements DiretoryInf {
      *
      * @字段说明 subordinateInfo
      */
-    private List<Object> subordinateInfoList = new ArrayList<Object>();
+    private List<Object> subordinateInfoList = new ArrayList<>();
 
     /**
      * 节点的名称信息

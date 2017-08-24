@@ -57,11 +57,11 @@ public final class ManagerParseSwitch {
         int p1 = s.lastIndexOf(':');
         if (p1 == -1) {
             String[] src = SplitUtil.split(s, ',', '$', '-', '[', ']');
-            return new Pair<String[], Integer>(src, null);
+            return new Pair<>(src, null);
         } else {
             String[] src = SplitUtil.split(s, ':', true);
             String[] src1 = SplitUtil.split(src[0], ',', '$', '-', '[', ']');
-            return new Pair<String[], Integer>(src1, Integer.valueOf(src[1]));
+            return new Pair<>(src1, Integer.valueOf(src[1]));
         }
     }
 

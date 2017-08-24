@@ -48,7 +48,7 @@ public class ConfigComparer {
     private Properties dnIndexProps;
 
     //此类主要目的是通过加载新旧配置文件来获取表迁移信息，migratorTables就是最终要获取的迁移信息集合
-    private List<TableMigrateInfo> migratorTables = new ArrayList<TableMigrateInfo>();
+    private List<TableMigrateInfo> migratorTables = new ArrayList<>();
 
     public ConfigComparer(boolean isAwaysUseMaster) throws Exception {
         this.isAwaysUseMaster = isAwaysUseMaster;
@@ -183,7 +183,7 @@ public class ConfigComparer {
 
     //获取拆分表对应节点列表,具体到实例地址、库
     private List<DataNode> getDataNodes(TableConfig tableConfig, Map<String, DataNodeConfig> dnConfig, Map<String, DataHostConfig> dhConfig) {
-        List<DataNode> dataNodes = new ArrayList<DataNode>();
+        List<DataNode> dataNodes = new ArrayList<>();
         //TO-DO
         ArrayList<String> dataNodeNames = tableConfig.getDataNodes();
         int i = 0;

@@ -65,7 +65,7 @@ public final class HandlerTool {
     }
 
     public static List<Field> createFields(List<FieldPacket> fps) {
-        List<Field> ret = new ArrayList<Field>();
+        List<Field> ret = new ArrayList<>();
         for (FieldPacket fp : fps) {
             Field field = createField(fp);
             ret.add(field);
@@ -159,7 +159,7 @@ public final class HandlerTool {
         String colName = sumfun.getItemName();
         String pdName = sumfun.getPushDownName();
         Item ret = null;
-        List<Item> args = new ArrayList<Item>();
+        List<Item> args = new ArrayList<>();
         if (funName.equalsIgnoreCase("AVG")) {
             String colNameSum = colName.replace(funName + "(", "SUM(");
             String colNameCount = colName.replace(funName + "(", "COUNT(");
@@ -208,7 +208,7 @@ public final class HandlerTool {
     protected static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
                                                  HandlerType type, String charset) {
         ItemFunc ret = null;
-        List<Item> args = new ArrayList<Item>();
+        List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
             Item newArg = null;
@@ -237,7 +237,7 @@ public final class HandlerTool {
     private static ItemSum createSumItem(ItemSum f, List<Field> fields, int startIndex, boolean allPushDown,
                                          HandlerType type, String charset) {
         ItemSum ret = null;
-        List<Item> args = new ArrayList<Item>();
+        List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
             Item newArg = null;
@@ -303,7 +303,7 @@ public final class HandlerTool {
      * @return
      */
     public static List<Order> makeOrder(List<Item> sels) {
-        List<Order> orders = new ArrayList<Order>();
+        List<Order> orders = new ArrayList<>();
         for (Item sel : sels) {
             Order order = new Order(sel, SQLOrderingSpecification.ASC);
             orders.add(order);

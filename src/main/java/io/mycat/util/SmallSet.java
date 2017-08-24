@@ -59,7 +59,7 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
                 if (isEquals(e, single)) {
                     return false;
                 }
-                list = new ArrayList<E>(initSize);
+                list = new ArrayList<>(initSize);
                 list.add(single);
                 list.add(e);
                 ++size;

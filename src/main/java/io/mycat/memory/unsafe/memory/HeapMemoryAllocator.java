@@ -34,7 +34,7 @@ public class HeapMemoryAllocator implements MemoryAllocator {
 
     @GuardedBy("this")
     private final Map<Long, LinkedList<WeakReference<MemoryBlock>>> bufferPoolsBySize =
-            new HashMap<Long, LinkedList<WeakReference<MemoryBlock>>>();
+            new HashMap<>();
 
     private static final int POOLING_THRESHOLD_BYTES = 1024 * 1024;
 
@@ -76,10 +76,10 @@ public class HeapMemoryAllocator implements MemoryAllocator {
             synchronized (this) {
                 LinkedList<WeakReference<MemoryBlock>> pool = bufferPoolsBySize.get(size);
                 if (pool == null) {
-                    pool = new LinkedList<WeakReference<MemoryBlock>>();
+                    pool = new LinkedList<>();
                     bufferPoolsBySize.put(size, pool);
                 }
-                pool.add(new WeakReference<MemoryBlock>(memory));
+                pool.add(new WeakReference<>(memory));
             }
         } else {
             // Do nothing

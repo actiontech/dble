@@ -76,7 +76,7 @@ public final class MyOptimizer {
                 isContainGlobal = true;
                 if (isAllGlobal) {
                     if (dataNodes == null) {
-                        dataNodes = new HashSet<String>();
+                        dataNodes = new HashSet<>();
                         dataNodes.addAll(tn.getNoshardNode());
                     } else {
                         dataNodes.retainAll(tn.getNoshardNode());

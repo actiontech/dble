@@ -65,11 +65,11 @@ public class DataNodeFileManager {
 
         subDirsPerLocalDir = conf.getInt("server.diskStore.subDirectories", 64);
         localDirs = createLocalDirs(conf);
-        subDirs = new ConcurrentHashMap<Integer, ArrayList<File>>(localDirs.size());
+        subDirs = new ConcurrentHashMap<>(localDirs.size());
 
 
         for (int i = 0; i < localDirs.size(); i++) {
-            ArrayList<File> list = new ArrayList<File>(subDirsPerLocalDir);
+            ArrayList<File> list = new ArrayList<>(subDirsPerLocalDir);
 
             for (int j = 0; j < subDirsPerLocalDir; j++) {
                 list.add(i, null);
@@ -139,7 +139,7 @@ public class DataNodeFileManager {
         String rootDirs = conf.getString("server.local.dirs", "datanode");
 
         String[] rdir = rootDirs.split(",");
-        List<File> dirs = new ArrayList<File>();
+        List<File> dirs = new ArrayList<>();
         for (String aRdir : rdir) {
             try {
                 File localDir = JavaUtils.createDirectory(aRdir, "datenode");

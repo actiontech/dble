@@ -43,7 +43,7 @@ public class ItemFuncCase extends ItemFunc {
 
     @Override
     public void fixLengthAndDec() {
-        List<Item> agg = new ArrayList<Item>();
+        List<Item> agg = new ArrayList<>();
         int nagg;
         /*
          * Aggregate all THEN and ELSE expression types and collations when

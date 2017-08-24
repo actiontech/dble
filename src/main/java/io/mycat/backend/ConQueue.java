@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ConQueue {
-    private final ConcurrentLinkedQueue<BackendConnection> autoCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
-    private final ConcurrentLinkedQueue<BackendConnection> manCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
+    private final ConcurrentLinkedQueue<BackendConnection> autoCommitCons = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<BackendConnection> manCommitCons = new ConcurrentLinkedQueue<>();
     private long executeCount;
 
     public BackendConnection takeIdleCon(boolean autoCommit) {
@@ -52,7 +52,7 @@ public class ConQueue {
     }
 
     public ArrayList<BackendConnection> getIdleConsToClose(int count) {
-        ArrayList<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(count);
+        ArrayList<BackendConnection> readyCloseCons = new ArrayList<>(count);
 
         while (!manCommitCons.isEmpty() && readyCloseCons.size() < count) {
             BackendConnection theCon = manCommitCons.poll();
@@ -72,7 +72,7 @@ public class ConQueue {
     }
 
     public ArrayList<BackendConnection> getIdleConsToClose() {
-        ArrayList<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(
+        ArrayList<BackendConnection> readyCloseCons = new ArrayList<>(
                 autoCommitCons.size() + manCommitCons.size());
         while (!manCommitCons.isEmpty()) {
             BackendConnection theCon = manCommitCons.poll();

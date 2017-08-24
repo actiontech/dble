@@ -20,7 +20,7 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public List<DMLResponseHandler> buildPre() {
-        List<DMLResponseHandler> pres = new ArrayList<DMLResponseHandler>();
+        List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode subNode = node.getChild();
         DMLResponseHandler subHandler = hBuilder.buildNode(session, subNode);
         pres.add(subHandler);

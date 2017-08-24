@@ -98,7 +98,7 @@ public class UnionHandler extends BaseDMLHandler {
      * @param fieldPackets2
      */
     private List<FieldPacket> unionFieldPackets(List<FieldPacket> fieldPackets, List<FieldPacket> fieldPackets2) {
-        List<FieldPacket> newFps = new ArrayList<FieldPacket>();
+        List<FieldPacket> newFps = new ArrayList<>();
         for (int i = 0; i < fieldPackets.size(); i++) {
             FieldPacket fp1 = fieldPackets.get(i);
             FieldPacket fp2 = fieldPackets2.get(i);

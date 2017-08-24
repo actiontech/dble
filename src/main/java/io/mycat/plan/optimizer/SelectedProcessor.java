@@ -99,8 +99,8 @@ public final class SelectedProcessor {
 
     private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child, List<Item> selList) {
         // oldselectable->newselectbable
-        HashMap<Item, Item> oldNewMap = new HashMap<Item, Item>();
-        HashMap<Item, Item> oldKeyKeyMap = new HashMap<Item, Item>();
+        HashMap<Item, Item> oldNewMap = new HashMap<>();
+        HashMap<Item, Item> oldKeyKeyMap = new HashMap<>();
         for (Item sel : selList) {
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {
@@ -128,7 +128,7 @@ public final class SelectedProcessor {
         List<Item> mergeSelects = null;
         if (toPushColumns.isEmpty()) {
             // 不修改merge的select属性
-            mergeSelects = new ArrayList<Item>();
+            mergeSelects = new ArrayList<>();
             merge.setComeInFields(mergeSelects);
             mergeSelects.addAll(merge.getColumnsSelected());
         } else {
@@ -150,7 +150,7 @@ public final class SelectedProcessor {
             mergePushOrderBy(orderSel, mergeSelects);
         }
         // 将mergeselect中的内容下推到child中去
-        List<List<Item>> allChildPushs = new ArrayList<List<Item>>(toPushColumns.size());
+        List<List<Item>> allChildPushs = new ArrayList<>(toPushColumns.size());
         for (Item toPush : mergeSelects) {
             // union的order by必须从selects中直接查找
             if (toPush.getPushDownName() == null && !toPush.type().equals(ItemType.FIELD_ITEM))

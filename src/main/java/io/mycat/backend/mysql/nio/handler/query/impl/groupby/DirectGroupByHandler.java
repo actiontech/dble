@@ -48,7 +48,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     private LocalResult groupLocalResult;
     private AtomicBoolean groupStart = new AtomicBoolean(false);
 
-    private List<ItemSum> sums = new ArrayList<ItemSum>();
+    private List<ItemSum> sums = new ArrayList<>();
 
     private AtomicBoolean hasFirstRow = new AtomicBoolean(false);
 
@@ -69,9 +69,9 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         this.groupBys = groupBys;
         this.referedSumFunctions = referedSumFunctions;
         int queueSize = MycatServer.getInstance().getConfig().getSystem().getMergeQueueSize();
-        this.queue = new LinkedBlockingQueue<RowDataPacket>(queueSize);
-        this.outQueue = new LinkedBlockingQueue<RowDataPacket>(queueSize);
-        this.buckets = new ArrayList<GroupByBucket>();
+        this.queue = new LinkedBlockingQueue<>(queueSize);
+        this.outQueue = new LinkedBlockingQueue<>(queueSize);
+        this.buckets = new ArrayList<>();
     }
 
     @Override
@@ -124,7 +124,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      * 生成新的fieldPackets，包括生成的聚合函数以及原始的fieldpackets
      */
     private List<FieldPacket> sendGroupFieldPackets(MySQLConnection conn) {
-        List<FieldPacket> newFps = new ArrayList<FieldPacket>();
+        List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
             FieldPacket tmpfp = new FieldPacket();
@@ -212,7 +212,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         groupLocalResult.done();
         RowDataPacket row = null;
         List<Field> localFields = HandlerTool.createFields(localResultFps);
-        List<ItemSum> sendSums = new ArrayList<ItemSum>();
+        List<ItemSum> sendSums = new ArrayList<>();
         for (ItemSum selSum : referedSumFunctions) {
             ItemSum sum = (ItemSum) HandlerTool.createItem(selSum, localFields, 0, false, HandlerType.GROUPBY,
                     conn.getCharset());

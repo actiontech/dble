@@ -105,8 +105,8 @@ public final class ShowHelp {
         return row;
     }
 
-    private static final Map<String, String> HELPS = new LinkedHashMap<String, String>();
-    private static final List<String> KEYS = new LinkedList<String>();
+    private static final Map<String, String> HELPS = new LinkedHashMap<>();
+    private static final List<String> KEYS = new LinkedList<>();
 
     static {
         // show

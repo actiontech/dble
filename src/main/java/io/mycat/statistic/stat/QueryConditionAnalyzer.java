@@ -122,7 +122,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
     }
 
     public List<Map.Entry<Object, AtomicLong>> getValues() {
-        List<Map.Entry<Object, AtomicLong>> list = new ArrayList<Map.Entry<Object, AtomicLong>>(map.entrySet());
+        List<Map.Entry<Object, AtomicLong>> list = new ArrayList<>(map.entrySet());
         return list;
     }
 
@@ -161,7 +161,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
 
             if (sql != null && tableName != null && columnName != null) {
 
-                values = new ArrayList<Object>();
+                values = new ArrayList<>();
 
                 MySqlStatementParser parser = new MySqlStatementParser(sql);
                 SQLStatement stmt = parser.parseStatement();

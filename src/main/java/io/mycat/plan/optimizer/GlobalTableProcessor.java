@@ -35,7 +35,7 @@ public final class GlobalTableProcessor {
         if (PlanUtil.isERNode(tn)) {
             // 是erjoin，只能算一个unglobaltable
             tn.setUnGlobalTableCount(1);
-            Set<String> newSet = new HashSet<String>();
+            Set<String> newSet = new HashSet<>();
             newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
             tn.setNoshardNode(newSet);
         } else {
@@ -44,7 +44,7 @@ public final class GlobalTableProcessor {
                 if (tnChild != null) {
                     if (tn.getNoshardNode() == null) {
                         if (tnChild.getNoshardNode() != null) {
-                            Set<String> parentSet = new HashSet<String>();
+                            Set<String> parentSet = new HashSet<>();
                             parentSet.addAll(tnChild.getNoshardNode());
                             tn.setNoshardNode(parentSet);
                         }
@@ -109,7 +109,7 @@ public final class GlobalTableProcessor {
             global = right;
             noraml = left;
         }
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         result.addAll(global.getNoshardNode());
         Set<String> normalSet = noraml.getNoshardNode();
         result.retainAll(normalSet);

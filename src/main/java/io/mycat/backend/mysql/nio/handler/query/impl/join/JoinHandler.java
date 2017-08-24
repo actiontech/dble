@@ -62,10 +62,10 @@ public class JoinHandler extends OwnThreadDMLHandler {
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
         int queueSize = MycatServer.getInstance().getConfig().getSystem().getJoinQueueSize();
-        this.leftQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
-        this.rightQueue = new FairLinkedBlockingDeque<LocalResult>(queueSize);
-        this.leftFieldPackets = new ArrayList<FieldPacket>();
-        this.rightFieldPackets = new ArrayList<FieldPacket>();
+        this.leftQueue = new FairLinkedBlockingDeque<>(queueSize);
+        this.rightQueue = new FairLinkedBlockingDeque<>(queueSize);
+        this.leftFieldPackets = new ArrayList<>();
+        this.rightFieldPackets = new ArrayList<>();
         this.otherJoinOn = otherJoinOn;
     }
 
@@ -93,7 +93,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         }
         if (!fieldSent.compareAndSet(false, true)) {
             this.charset = conn.getCharset();
-            List<FieldPacket> newFieldPacket = new ArrayList<FieldPacket>();
+            List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
             newFieldPacket.addAll(rightFieldPackets);
             nextHandler.fieldEofResponse(null, null, newFieldPacket, null, this.isLeft, conn);

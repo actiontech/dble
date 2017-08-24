@@ -34,7 +34,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     private RowDataComparator cmptor;
 
-    private List<ItemSum> sums = new ArrayList<ItemSum>();
+    private List<ItemSum> sums = new ArrayList<>();
 
     /* group组的原始rowpacket，目前保留第一条数据的值 */
     private RowDataPacket originRp = null;
@@ -61,7 +61,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         super(id, session);
         this.groupBys = groupBys;
         this.referedSumFunctions = referedSumFunctions;
-        this.distinctStores = new ArrayList<ResultStore>();
+        this.distinctStores = new ArrayList<>();
     }
 
     @Override
@@ -95,7 +95,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      * 生成新的fieldPackets，包括生成的聚合函数以及原始的fieldpackets
      */
     private void sendGroupFieldPackets(BackendConnection conn) {
-        List<FieldPacket> newFps = new ArrayList<FieldPacket>();
+        List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
             FieldPacket tmpfp = new FieldPacket();

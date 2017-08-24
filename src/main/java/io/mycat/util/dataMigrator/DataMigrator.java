@@ -180,7 +180,7 @@ public class DataMigrator {
 
         //打印最终迁移结果信息
         String title = "migrate result";
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         for (TableMigrateInfo table : migrateTables) {
             String resultMessage = table.isError() ? "fail! reason: " + table.getErrMessage() : "success";
             result.put(table.getSchemaAndTableName(), resultMessage);

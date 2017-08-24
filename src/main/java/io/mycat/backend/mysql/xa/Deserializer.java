@@ -23,7 +23,7 @@ public final class Deserializer {
     private static final String OBJECT_END = "}";
 
     private static List<String> tokenize(String content) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         int endObject = content.indexOf(OBJECT_END);
         while (endObject > 0) {
             String object = content.substring(0, endObject + 1);
@@ -78,7 +78,7 @@ public final class Deserializer {
     }
 
     private static Map<String, String> extractHeader(String coordinatorLogEntryStr) {
-        Map<String, String> header = new HashMap<String, String>(2);
+        Map<String, String> header = new HashMap<>(2);
         String[] attributes = coordinatorLogEntryStr.split(",");
         for (String attribute : attributes) {
             String[] pair = attribute.split(":");
@@ -91,7 +91,7 @@ public final class Deserializer {
                                                                    String participantLogEntry) {
         participantLogEntry = participantLogEntry.replaceAll("\\{", "").replaceAll("\\}", "");
 
-        Map<String, String> content = new HashMap<String, String>(5);
+        Map<String, String> content = new HashMap<>(5);
         String[] attributes = participantLogEntry.split(",");
         for (String attribute : attributes) {
             String[] pair = attribute.split(":");

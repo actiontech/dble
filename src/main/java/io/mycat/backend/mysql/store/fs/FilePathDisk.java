@@ -137,7 +137,7 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public List<FilePath> newDirectoryStream() {
-        ArrayList<FilePath> list = new ArrayList<FilePath>();
+        ArrayList<FilePath> list = new ArrayList<>();
         File f = new File(name);
         try {
             String[] files = f.list();

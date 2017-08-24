@@ -56,7 +56,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public List<DMLResponseHandler> buildPre() {
-        List<DMLResponseHandler> pres = new ArrayList<DMLResponseHandler>();
+        List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode left = node.getLeftNode();
         PlanNode right = node.getRightNode();
         if (node.getStrategy() == JoinNode.Strategy.NESTLOOP) {
@@ -155,13 +155,13 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         int partSize = 0;
         for (String value : valueSet) {
             if (partList == null)
-                partList = new ArrayList<Item>();
+                partList = new ArrayList<>();
             if (value == null) { // is null will never join
                 continue;
             } else {
                 partList.add(new ItemString(value));
                 if (++partSize >= maxPartSize) {
-                    List<Item> argList = new ArrayList<Item>();
+                    List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
                     ItemFuncIn inFilter = new ItemFuncIn(argList, false);
@@ -172,7 +172,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             }
         }
         if (partSize > 0) {
-            List<Item> argList = new ArrayList<Item>();
+            List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
             ItemFuncIn inFilter = new ItemFuncIn(argList, false);

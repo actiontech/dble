@@ -104,8 +104,8 @@ public final class OrderByPusher {
      */
     private static boolean getJoinColumnOrders(List<ItemFuncEqual> joinOnFilters, List<Order> leftOnOrders,
                                                List<Order> rightOnOrders, List<Order> implicitOrders) {
-        List<Item> leftOnSels = new ArrayList<Item>();
-        List<Item> rightOnSels = new ArrayList<Item>();
+        List<Item> leftOnSels = new ArrayList<>();
+        List<Item> rightOnSels = new ArrayList<>();
         for (ItemFuncEqual bf : joinOnFilters) {
             leftOnSels.add(bf.arguments().get(0));
             rightOnSels.add(bf.arguments().get(1));
@@ -115,7 +115,7 @@ public final class OrderByPusher {
         if (implicitOrders.size() < leftOnSels.size())
             canMatch = false;
         else {
-            Map<Integer, SQLOrderingSpecification> foundOnIndexs = new LinkedHashMap<Integer, SQLOrderingSpecification>();
+            Map<Integer, SQLOrderingSpecification> foundOnIndexs = new LinkedHashMap<>();
             for (Order orderby : implicitOrders) {
                 Item orderSel = orderby.getItem();
                 int index = -1;
@@ -191,7 +191,7 @@ public final class OrderByPusher {
      */
     private static void buildImplicitOrderBys(PlanNode node) {
         // 如果用户没指定order by，则显示index的order by
-        List<Order> newOrderBys = new ArrayList<Order>();
+        List<Order> newOrderBys = new ArrayList<>();
         if (!node.getOrderBys().isEmpty()) {
             if (!node.getGroupBys().isEmpty()) {
                 // 首先以order by的顺序，查找group by中对应的字段

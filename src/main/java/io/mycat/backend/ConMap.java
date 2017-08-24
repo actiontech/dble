@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ConMap {
     // key--schema
-    private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<String, ConQueue>();
+    private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<>();
 
     public ConQueue getSchemaConQueue(String schema) {
         ConQueue queue = items.get(schema);

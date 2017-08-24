@@ -29,9 +29,9 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                              String charset) {
         sourceFields = HandlerTool.createFields(fps);
         if (orders != null && orders.size() > 0) {
-            ascs = new ArrayList<Boolean>();
-            cmpFields = new ArrayList<Field>();
-            cmpItems = new ArrayList<Item>();
+            ascs = new ArrayList<>();
+            cmpFields = new ArrayList<>();
+            cmpItems = new ArrayList<>();
             for (Order order : orders) {
                 Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type, charset);
                 cmpItems.add(cmpItem);

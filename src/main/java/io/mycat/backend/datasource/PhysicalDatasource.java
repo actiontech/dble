@@ -239,7 +239,7 @@ public abstract class PhysicalDatasource {
 
 
     private void closeByDyingAll() {
-        List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(this.getIdleCount());
+        List<BackendConnection> readyCloseCons = new ArrayList<>(this.getIdleCount());
 
         for (ConQueue queue : conMap.getAllConQueue()) {
             readyCloseCons.addAll(queue.getIdleConsToClose());
@@ -262,7 +262,7 @@ public abstract class PhysicalDatasource {
 
     private void closeByIdleMany(int ildeCloseCount) {
         LOGGER.info("too many ilde cons ,close some for datasouce  " + name);
-        List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(ildeCloseCount);
+        List<BackendConnection> readyCloseCons = new ArrayList<>(ildeCloseCount);
 
         for (ConQueue queue : conMap.getAllConQueue()) {
             readyCloseCons.addAll(queue.getIdleConsToClose(ildeCloseCount));

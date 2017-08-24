@@ -46,7 +46,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
                                  List<Order> orderBys) {
         super(id, session);
-        this.exeHandlers = new ArrayList<BaseSelectHandler>();
+        this.exeHandlers = new ArrayList<>();
         this.lock = new ReentrantLock();
         if (route.length == 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "can not execute empty rrss!");
@@ -59,7 +59,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         this.orderBys = orderBys;
         this.queueSize = MycatServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.isEasyMerge = route.length == 1 || (orderBys == null || orderBys.size() == 0);
-        this.queues = new ConcurrentHashMap<MySQLConnection, BlockingQueue<HeapItem>>();
+        this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
     }
 
@@ -110,7 +110,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 MySQLConnection exeConn = exeHandler.initConnection();
                 if (exeConn != null) {
                     exeConn.setComplexQuery(true);
-                    BlockingQueue<HeapItem> queue = new LinkedBlockingQueue<HeapItem>(queueSize);
+                    BlockingQueue<HeapItem> queue = new LinkedBlockingQueue<>(queueSize);
                     queues.put(exeConn, queue);
                     exeHandler.execute(exeConn);
                 }
@@ -197,7 +197,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     @Override
     protected void ownThreadJob(Object... objects) {
         try {
-            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<HeapItem>(new Comparator<HeapItem>() {
+            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>(new Comparator<HeapItem>() {
 
                 @Override
                 public int compare(HeapItem o1, HeapItem o2) {
@@ -313,11 +313,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     private String getRoutesSql(RouteResultsetNode[] route) {
         StringBuilder sb = new StringBuilder();
         sb.append('{');
-        Map<String, List<RouteResultsetNode>> sqlMap = new HashMap<String, List<RouteResultsetNode>>();
+        Map<String, List<RouteResultsetNode>> sqlMap = new HashMap<>();
         for (RouteResultsetNode rrss : route) {
             String sql = rrss.getStatement();
             if (!sqlMap.containsKey(sql)) {
-                List<RouteResultsetNode> rrssList = new ArrayList<RouteResultsetNode>();
+                List<RouteResultsetNode> rrssList = new ArrayList<>();
                 rrssList.add(rrss);
                 sqlMap.put(sql, rrssList);
             } else {

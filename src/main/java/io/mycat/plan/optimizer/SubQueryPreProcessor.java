@@ -138,13 +138,13 @@ public final class SubQueryPreProcessor {
             qtn.query.setSql(null);
             result.query.select(newSelects);
             if (!qtn.query.getOrderBys().isEmpty()) {
-                List<Order> orderBys = new ArrayList<Order>();
+                List<Order> orderBys = new ArrayList<>();
                 orderBys.addAll(qtn.query.getOrderBys());
                 result.query.setOrderBys(orderBys);
                 qtn.query.getOrderBys().clear();
             }
             if (!qtn.query.getGroupBys().isEmpty()) {
-                List<Order> groupBys = new ArrayList<Order>();
+                List<Order> groupBys = new ArrayList<>();
                 groupBys.addAll(qtn.query.getGroupBys());
                 result.query.setGroupBys(groupBys);
                 qtn.query.getGroupBys().clear();

@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class InMemoryRepository implements Repository {
 
-    private Map<String, CoordinatorLogEntry> storage = new ConcurrentHashMap<String, CoordinatorLogEntry>();
+    private Map<String, CoordinatorLogEntry> storage = new ConcurrentHashMap<>();
     private ReentrantLock lock = new ReentrantLock();
 
     public ReentrantLock getLock() {

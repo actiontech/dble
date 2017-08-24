@@ -29,7 +29,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public List<DMLResponseHandler> buildPre() {
-        return new ArrayList<DMLResponseHandler>();
+        return new ArrayList<>();
     }
 
     @Override
@@ -53,7 +53,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             if (filters == null || filters.isEmpty())
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "unexpected exception!");
-            List<RouteResultsetNode> rrssList = new ArrayList<RouteResultsetNode>();
+            List<RouteResultsetNode> rrssList = new ArrayList<>();
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
             if (tableConfig == null || tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE) {
                 for (Item filter : filters) {

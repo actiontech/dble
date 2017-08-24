@@ -77,8 +77,8 @@ public class FieldDictionary {
         if (!nameCache.containsKey(clsName)) {
             synchronized (keyCache) {
                 if (!nameCache.containsKey(clsName)) { // double check
-                    final Map<String, Field> keyedByFieldName = new HashMap<String, Field>();
-                    final Map<FieldKey, Field> keyedByFieldKey = new OrderRetainingMap<FieldKey, Field>();
+                    final Map<String, Field> keyedByFieldName = new HashMap<>();
+                    final Map<FieldKey, Field> keyedByFieldKey = new OrderRetainingMap<>();
                     while (!Object.class.equals(cls)) {
                         Field[] fields = cls.getDeclaredFields();
                         if (JVMInfo.reverseFieldDefinition()) {

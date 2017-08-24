@@ -103,7 +103,7 @@ public class NonBlockingSession implements Session {
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
-        this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(2, 1f);
+        this.target = new ConcurrentHashMap<>(2, 1f);
         this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
         this.orderBufferMC = new MemSizeController(4 * 1024 * 1024);
         this.otherBufferMC = new MemSizeController(4 * 1024 * 1024);
@@ -586,7 +586,7 @@ public class NonBlockingSession implements Session {
             if (c != null) {
                 if (!hooked) {
                     hooked = true;
-                    killees = new HashMap<RouteResultsetNode, BackendConnection>();
+                    killees = new HashMap<>();
                     count = new AtomicInteger(0);
                 }
                 killees.put(entry.getKey(), c);

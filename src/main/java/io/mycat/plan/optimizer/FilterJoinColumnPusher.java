@@ -43,7 +43,7 @@ public final class FilterJoinColumnPusher {
         //left/right join: where filter can't be push to child
         if (filterInWhere != null && (!(qtn.type() == PlanNode.PlanNodeType.JOIN) || ((JoinNode) qtn).isInnerJoin())) {
             List<Item> splits = FilterUtils.splitFilter(filterInWhere);
-            List<Item> nonJoinFilter = new ArrayList<Item>();
+            List<Item> nonJoinFilter = new ArrayList<>();
             for (Item filter : splits) {
                 if (!isPossibleERJoinColumnFilter(qtn, filter)) {
                     nonJoinFilter.add(filter);
@@ -72,9 +72,9 @@ public final class FilterJoinColumnPusher {
                 return qtn;
             }
             // 无法完成下推的filters
-            List<Item> dnfNodeToCurrent = new LinkedList<Item>();
-            List<Item> dnfNodetoPushToLeft = new LinkedList<Item>();
-            List<Item> dnfNodetoPushToRight = new LinkedList<Item>();
+            List<Item> dnfNodeToCurrent = new LinkedList<>();
+            List<Item> dnfNodetoPushToLeft = new LinkedList<>();
+            List<Item> dnfNodetoPushToRight = new LinkedList<>();
             for (Item filter : dnfNodeToPush) {
                 if (PlanUtil.canPush(filter, jn.getLeftNode(), jn)) {
                     dnfNodetoPushToLeft.add(filter);

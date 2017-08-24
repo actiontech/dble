@@ -311,7 +311,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(), parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
                 try {
-                    SortedSet<RouteResultsetNode> nodeSet = new TreeSet<RouteResultsetNode>();
+                    SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
                     for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
                         RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache);
                         if (rrsTmp != null) {

@@ -53,8 +53,8 @@ public class DataSourceSyncRecorder {
     private int switchType = 2;
 
     public DataSourceSyncRecorder() {
-        this.records = new HashMap<String, String>();
-        this.asynRecords = new LinkedList<Record>();
+        this.records = new HashMap<>();
+        this.asynRecords = new LinkedList<>();
     }
 
     public String get() {

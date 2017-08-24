@@ -79,7 +79,7 @@ public final class FilterPreProcessor {
                 cond.arguments().set(index, shortedsub);
             }
             boolean isAnd = cond.functype().equals(Functype.COND_AND_FUNC);
-            List<Item> newSubFilters = new ArrayList<Item>();
+            List<Item> newSubFilters = new ArrayList<>();
             for (Item sub : cond.arguments()) {
                 if (sub == null)
                     continue;
@@ -134,7 +134,7 @@ public final class FilterPreProcessor {
             }
         } else if (root instanceof ItemCond) {
             ItemCond condfun = (ItemCond) root;
-            List<Item> newArgs = new ArrayList<Item>();
+            List<Item> newArgs = new ArrayList<>();
             for (Item arg : condfun.arguments()) {
                 Item newArg = processOneFilter(arg);
                 if (newArg != null)
@@ -168,8 +168,8 @@ public final class FilterPreProcessor {
             } else {
                 // or
                 ItemCondOr orFilter = (ItemCondOr) filter;
-                HashMap<Item, Set<Item>> inMap = new HashMap<Item, Set<Item>>();
-                List<Item> newSubFilterList = new ArrayList<Item>();
+                HashMap<Item, Set<Item>> inMap = new HashMap<>();
+                List<Item> newSubFilterList = new ArrayList<>();
                 for (int index = 0; index < orFilter.getArgCount(); index++) {
                     Item subFilter = orFilter.arguments().get(index);
                     if (subFilter == null)
@@ -188,7 +188,7 @@ public final class FilterPreProcessor {
                     }
                 }
                 for (Map.Entry<Item, Set<Item>> entry : inMap.entrySet()) {
-                    List<Item> args = new ArrayList<Item>();
+                    List<Item> args = new ArrayList<>();
                     args.add(entry.getKey());
                     args.addAll(entry.getValue());
                     ItemFuncIn inItem = new ItemFuncIn(args, false);

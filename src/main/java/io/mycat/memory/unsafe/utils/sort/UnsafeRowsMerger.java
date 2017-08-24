@@ -34,7 +34,7 @@ public final class UnsafeRowsMerger {
          * 使用优先级队列实现多个Spill File 合并排序,并且支持已经排序内存记录
          * 重新写入一个排序文件中。
          */
-        priorityQueue = new PriorityQueue<UnsafeSorterIterator>(numSpills, comparator);
+        priorityQueue = new PriorityQueue<>(numSpills, comparator);
     }
 
     /**

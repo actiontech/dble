@@ -36,19 +36,19 @@ public class WhereUnit {
      */
     private SQLBinaryOpExpr canSplitExpr;
 
-    private List<SQLExpr> splitedExprList = new ArrayList<SQLExpr>();
+    private List<SQLExpr> splitedExprList = new ArrayList<>();
 
-    private List<List<Condition>> conditionList = new ArrayList<List<Condition>>();
+    private List<List<Condition>> conditionList = new ArrayList<>();
 
     /**
      * whereExpr并不是一个where的全部，有部分条件在outConditions
      */
-    private List<Condition> outConditions = new ArrayList<Condition>();
+    private List<Condition> outConditions = new ArrayList<>();
 
     /**
      * 按照or拆分后的条件片段中可能还有or语句，这样的片段实际上是嵌套的or语句，将其作为内层子whereUnit，不管嵌套多少层，循环处理
      */
-    private List<WhereUnit> subWhereUnits = new ArrayList<WhereUnit>();
+    private List<WhereUnit> subWhereUnits = new ArrayList<>();
 
     private boolean finishedParse = false;
 

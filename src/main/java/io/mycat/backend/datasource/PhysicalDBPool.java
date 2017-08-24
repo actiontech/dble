@@ -96,7 +96,7 @@ public class PhysicalDBPool {
     }
 
     private Collection<PhysicalDatasource> genAllDataSources() {
-        LinkedList<PhysicalDatasource> allSources = new LinkedList<PhysicalDatasource>();
+        LinkedList<PhysicalDatasource> allSources = new LinkedList<>();
         for (PhysicalDatasource ds : writeSources) {
             if (ds != null) {
                 allSources.add(ds);
@@ -381,7 +381,7 @@ public class PhysicalDBPool {
         LOGGER.info("init backend myqsl source ,create connections total " + initSize + " for " + ds.getName() +
                 " index :" + index);
 
-        CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<BackendConnection>();
+        CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<>();
         GetConnectionHandler getConHandler = new GetConnectionHandler(list, initSize);
         // long start = System.currentTimeMillis();
         // long timeOut = start + 5000 * 1000L;
@@ -735,7 +735,7 @@ public class PhysicalDBPool {
             adjustLock.readLock().unlock();
         }
 
-        ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>(all.size());
+        ArrayList<PhysicalDatasource> okSources = new ArrayList<>(all.size());
 
         for (int i = 0; i < this.writeSources.length; i++) {
             PhysicalDatasource theSource = writeSources[i];

@@ -13,7 +13,7 @@ public class ReplaceableStringBuilder {
     private List<Element> elements;
 
     public ReplaceableStringBuilder() {
-        elements = new ArrayList<Element>();
+        elements = new ArrayList<>();
     }
 
     public Element getCurrentElement() {

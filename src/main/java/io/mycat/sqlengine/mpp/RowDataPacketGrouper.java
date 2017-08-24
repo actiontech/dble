@@ -222,7 +222,7 @@ public class RowDataPacketGrouper {
             return;
         }
 
-        Set<Integer> rmIndexSet = new HashSet<Integer>();
+        Set<Integer> rmIndexSet = new HashSet<>();
         for (MergeCol merg : mergCols) {
             if (merg.mergeType == MergeCol.MERGE_AVG) {
                 byte[] result = mertFields(

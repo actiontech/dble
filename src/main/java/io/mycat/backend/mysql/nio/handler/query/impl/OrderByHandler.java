@@ -32,7 +32,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         super(id, session);
         this.orders = orders;
         int queueSize = MycatServer.getInstance().getConfig().getSystem().getOrderByQueueSize();
-        this.queue = new LinkedBlockingDeque<RowDataPacket>(queueSize);
+        this.queue = new LinkedBlockingDeque<>(queueSize);
     }
 
     @Override

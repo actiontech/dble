@@ -103,7 +103,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
                     default:
                         resultStatus = RESULT_STATUS_HEADER;
                         header = data;
-                        fields = new ArrayList<byte[]>((int) ByteUtil.readLength(data,
+                        fields = new ArrayList<>((int) ByteUtil.readLength(data,
                                 4));
                 }
                 break;

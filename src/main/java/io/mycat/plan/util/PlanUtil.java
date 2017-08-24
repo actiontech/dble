@@ -53,7 +53,7 @@ public final class PlanUtil {
         if (coutField == null)
             return null;
         else if (node.type() == PlanNodeType.TABLE) {
-            return new Pair<TableNode, ItemField>((TableNode) node, column);
+            return new Pair<>((TableNode) node, column);
         } else {
             PlanNode referNode = column.getReferTables().iterator().next();
             Item cSel = referNode.getOuterFields().get(coutField);
@@ -210,7 +210,7 @@ public final class PlanUtil {
         if (dnfNode.isEmpty()) {
             return;
         }
-        List<Item> joinFilters = new LinkedList<Item>();
+        List<Item> joinFilters = new LinkedList<>();
         for (Item subItem : dnfNode) { // 一定是简单条件
             if (subItem.type().equals(ItemType.FUNC_ITEM) || subItem.type().equals(ItemType.COND_ITEM)) {
                 ItemFunc sub = (ItemFunc) subItem;
@@ -253,7 +253,7 @@ public final class PlanUtil {
     public static List<Item> getPushItemsToUnionChild(MergeNode mn, Item toPush, Map<String, Integer> colIndexs) {
         if (toPush == null)
             return null;
-        List<Item> pusheds = new ArrayList<Item>();
+        List<Item> pusheds = new ArrayList<>();
         for (int i = 0; i < mn.getChildren().size(); i++) {
             Item pushed = pushItemToUnionChild(toPush, colIndexs, mn.getChildren().get(i).getColumnsSelected());
             pusheds.add(pushed);
@@ -316,7 +316,7 @@ public final class PlanUtil {
      * @return
      */
     public static List<Order> getPushDownOrders(PlanNode node, List<Order> orders) {
-        List<Order> pushOrders = new ArrayList<Order>();
+        List<Order> pushOrders = new ArrayList<>();
         for (Order order : orders) {
             Item newSel = pushDownItem(node, order.getItem());
             Order newOrder = new Order(newSel, order.getSortOrder());

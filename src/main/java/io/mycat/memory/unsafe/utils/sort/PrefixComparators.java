@@ -126,7 +126,7 @@ public class PrefixComparators {
 
         @Override
         public int compare(long a, long b) {
-            return (a < b) ? -1 : (a > b) ? 1 : 0;
+            return Long.compare(a, b);
         }
     }
 
@@ -143,7 +143,7 @@ public class PrefixComparators {
 
         @Override
         public int compare(long b, long a) {
-            return (a < b) ? -1 : (a > b) ? 1 : 0;
+            return Long.compare(a, b);
         }
     }
 }

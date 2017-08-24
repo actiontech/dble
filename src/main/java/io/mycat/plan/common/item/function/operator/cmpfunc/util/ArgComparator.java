@@ -309,11 +309,7 @@ public class ArgComparator {
                 if (!(ac.b.isNull())) {
                     if (ac.setNull && ac.owner != null)
                         ac.owner.nullValue = (false);
-                    if (val1.compareTo(val2) < 0)
-                        return -1;
-                    if (val1.compareTo(val2) == 0)
-                        return 0;
-                    return 1;
+                    return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
             if (ac.setNull)
@@ -351,11 +347,7 @@ public class ArgComparator {
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
                         ac.owner.nullValue = (false);
-                    if (val1.compareTo(val2) < 0)
-                        return -1;
-                    if (val1.compareTo(val2) == 0)
-                        return 0;
-                    return 1;
+                    return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
             if (ac.setNull)
@@ -390,7 +382,7 @@ public class ArgComparator {
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
                         ac.owner.nullValue = (false);
-                    return val1 < val2 ? -1 : val1 > val2 ? 1 : 0;
+                    return Long.compare(val1, val2);
                 }
             }
             if (ac.setNull)
@@ -579,7 +571,7 @@ public class ArgComparator {
             /* Compare values. */
             if (ac.isNullsEq)
                 return aValue == (bValue) ? 1 : 0;
-            return aValue < bValue ? -1 : (aValue > bValue ? 1 : 0);
+            return Long.compare(aValue, bValue);
         }
     }
 

@@ -34,49 +34,25 @@ public final class CompareUtil {
 
     public static int compareInt(int l, int r) {
 
-        if (l > r) {
-            return 1;
-        } else if (l < r) {
-            return -1;
-        } else {
-            return 0;
-        }
+        return Integer.compare(l, r);
 
     }
 
     public static int compareDouble(double l, double r) {
 
-        if (l > r) {
-            return 1;
-        } else if (l < r) {
-            return -1;
-        } else {
-            return 0;
-        }
+        return Double.compare(l, r);
 
     }
 
     public static int compareFloat(float l, float r) {
 
-        if (l > r) {
-            return 1;
-        } else if (l < r) {
-            return -1;
-        } else {
-            return 0;
-        }
+        return Float.compare(l, r);
 
     }
 
     public static int compareLong(long l, long r) {
 //          System.out.println(l + "      " +  r);
-        if (l > r) {
-            return 1;
-        } else if (l < r) {
-            return -1;
-        } else {
-            return 0;
-        }
+        return Long.compare(l, r);
 
     }
 
@@ -92,13 +68,7 @@ public final class CompareUtil {
 
     public static int compareChar(char l, char r) {
 
-        if (l > r) {
-            return 1;
-        } else if (l < r) {
-            return -1;
-        } else {
-            return 0;
-        }
+        return Character.compare(l, r);
 
     }
 

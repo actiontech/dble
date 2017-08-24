@@ -437,7 +437,7 @@ public final class ManagerParseShow {
                                 return OTHER;
                             }
                             String name = stmt.substring(offset).trim();
-                            if (name.length() > 0 && name.indexOf(" ") == -1) {
+                            if (name.length() > 0 && !name.contains(" ")) {
                                 return DATASOURCE_SYNC_DETAIL;
                             }
                         }

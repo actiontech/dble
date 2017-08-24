@@ -79,23 +79,23 @@ public class JVMInfo {
     }
 
     private static boolean isSun() {
-        return System.getProperty("java.vm.vendor").indexOf("Sun") != -1;
+        return System.getProperty("java.vm.vendor").contains("Sun");
     }
 
     private static boolean isApple() {
-        return System.getProperty("java.vm.vendor").indexOf("Apple") != -1;
+        return System.getProperty("java.vm.vendor").contains("Apple");
     }
 
     private static boolean isHPUX() {
-        return System.getProperty("java.vm.vendor").indexOf("Hewlett-Packard Company") != -1;
+        return System.getProperty("java.vm.vendor").contains("Hewlett-Packard Company");
     }
 
     private static boolean isIBM() {
-        return System.getProperty("java.vm.vendor").indexOf("IBM") != -1;
+        return System.getProperty("java.vm.vendor").contains("IBM");
     }
 
     private static boolean isBlackdown() {
-        return System.getProperty("java.vm.vendor").indexOf("Blackdown") != -1;
+        return System.getProperty("java.vm.vendor").contains("Blackdown");
     }
 
     /*
@@ -105,7 +105,7 @@ public class JVMInfo {
      */
     private static boolean isBEAWithUnsafeSupport() {
         // This property should be "BEA Systems, Inc."
-        if (System.getProperty("java.vm.vendor").indexOf("BEA") != -1) {
+        if (System.getProperty("java.vm.vendor").contains("BEA")) {
 
             /*
              * Recent 1.4.2 and 5.0 versions of JRockit have a java.vm.version

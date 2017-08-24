@@ -108,10 +108,10 @@ public class DefaultDruidParser implements DruidParser {
                     value = value.toLowerCase();
                 }
             }
-            if (key != null && key.indexOf("`") >= 0) {
+            if (key != null && key.contains("`")) {
                 key = key.replaceAll("`", "");
             }
-            if (value != null && value.indexOf("`") >= 0) {
+            if (value != null && value.contains("`")) {
                 value = value.replaceAll("`", "");
             }
             // 表名前面带database的，去掉

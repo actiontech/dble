@@ -196,7 +196,7 @@ public final class GlobalTableUtil {
                             LOGGER.warn(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
                         } finally {
                             if (columnsList == null ||
-                                    columnsList.indexOf(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN) == -1) {
+                                    !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                                 LOGGER.warn(map.getDataNode() + "." + map.getTableName() +
                                         " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.");
                             } else {

@@ -111,8 +111,8 @@ public final class ManagerParseHeartbeat {
                     if (s.charAt(offset) == '=') {
                         offset = ManagerParseShow.trim(++offset, s);
                         String name = s.substring(offset).trim();
-                        if (name.indexOf(" ") == -1 && name.indexOf("\r") == -1 && name.indexOf("\n") == -1 &&
-                                name.indexOf("\t") == -1) {
+                        if (!name.contains(" ") && !name.contains("\r") && !name.contains("\n") &&
+                                !name.contains("\t")) {
                             return new Pair<String, String>("name", name);
                         }
                     }

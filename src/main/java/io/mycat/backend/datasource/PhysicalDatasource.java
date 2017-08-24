@@ -199,7 +199,7 @@ public abstract class PhysicalDatasource {
         if ((createCount > 0) && (idleCons + activeCons < size)) {
             createByIdleLitte(idleCons, createCount);
         } else if (idleCons > hostConfig.getMinCon()) {
-            closeByIdleMany(idleCons - hostConfig.getMinCon());
+            closeByIdleMany(idleCons - hostConfig.getMinCon(), idleCons);
         } else {
             int activeCount = this.getActiveCount();
             if (activeCount > size) {
@@ -257,15 +257,12 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    private void closeByIdleMany(int ildeCloseCount) {
-        LOGGER.info("too many ilde cons ,close some for datasouce  " + name);
-        List<BackendConnection> readyCloseCons = new ArrayList<>(ildeCloseCount);
-
+    private void closeByIdleMany(int ildeCloseCount, int idleCons) {
+        LOGGER.info("too many ilde cons ,close some for datasouce  " + name + " want close :" + ildeCloseCount + " total idle " + idleCons);
+        List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(ildeCloseCount);
         for (ConQueue queue : conMap.getAllConQueue()) {
-            readyCloseCons.addAll(queue.getIdleConsToClose(ildeCloseCount));
-            if (readyCloseCons.size() >= ildeCloseCount) {
-                break;
-            }
+            int closeNumber = (queue.getManCommitCons().size() + queue.getAutoCommitCons().size()) * ildeCloseCount / idleCons;
+            readyCloseCons.addAll(queue.getIdleConsToClose(closeNumber));
         }
 
         for (BackendConnection idleCon : readyCloseCons) {

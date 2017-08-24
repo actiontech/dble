@@ -1887,7 +1887,6 @@ public final class MyTime {
         ltime.minute = 0;
         ltime.hour++;
 
-        ret:
     /*
      * We can get '838:59:59.000001' at this point, which is bigger than the
      * maximum possible value '838:59:59.000000'. Checking only "hour > 838"
@@ -2312,20 +2311,16 @@ public final class MyTime {
                         val = tmp;
                         break;
                     case 'M':
-                        if ((lTime.month = MySQLcom.checkWord(MONTH_NAMES, valcs, val, valEnd)) <= 0)
-                            err:
-                                    {
-                                        // logger.warn
-                                        return true;
-                                    }
+                        if ((lTime.month = MySQLcom.checkWord(MONTH_NAMES, valcs, val, valEnd)) <= 0) {
+                            // logger.warn
+                            return true;
+                        }
                         break;
                     case 'b':
-                        if ((lTime.month = MySQLcom.checkWord(AB_MONTH_NAMES, valcs, val, valEnd)) <= 0)
-                            err:
-                                    {
-                                        // logger.warn
-                                        return true;
-                                    }
+                        if ((lTime.month = MySQLcom.checkWord(AB_MONTH_NAMES, valcs, val, valEnd)) <= 0) {
+                            // logger.warn
+                            return true;
+                        }
                         break;
     /* Day */
                     case 'd':
@@ -2383,16 +2378,13 @@ public final class MyTime {
 
     /* AM / PM */
                     case 'p':
-                        if (valLen < 2 || !usaTime)
-                            err:
-                                    {
-                                        // logger.warn
-                                        return true;
-                                    }
+                        if (valLen < 2 || !usaTime) {
+                            // logger.warn
+                            return true;
+                        }
                         if (new String(valcs, val, 2).compareTo("PM") == 0)
                             daypart = 12;
                         else if (new String(valcs, val, 2).compareTo("AM") == 0) {
-                            err:
                             {
                                 // logger.warn
                                 return true;
@@ -2404,7 +2396,6 @@ public final class MyTime {
     /* Exotic things */
                     case 'W':
                         if ((weekday = MySQLcom.checkWord(DAY_NAMES, valcs, val, valEnd)) <= 0) {
-                            err:
                             {
                                 // logger.warn
                                 return true;
@@ -2413,7 +2404,6 @@ public final class MyTime {
                         break;
                     case 'a':
                         if ((weekday = MySQLcom.checkWord(AB_DAY_NAMES, valcs, val, valEnd)) <= 0) {
-                            err:
                             {
                                 // logger.warn
                                 return true;
@@ -2423,7 +2413,6 @@ public final class MyTime {
                     case 'w':
                         tmp = val + 1;
                         if ((weekday = MySQLcom.myStrtoll10(valcs, val, tmp, error).intValue()) < 0 || weekday >= 7) {
-                            err:
                             {
                                 // logger.warn
                                 return true;
@@ -2450,7 +2439,6 @@ public final class MyTime {
                         tmp = val + Math.min(valLen, 2);
                         if ((weekNumber = MySQLcom.myStrtoll10(valcs, val, tmp, error).intValue()) < 0 ||
                                 (strictWeekNumber && weekNumber == 0) || weekNumber > 53) {
-                            err:
                             {
                                 // logger.warn
                                 return true;
@@ -2499,48 +2487,39 @@ public final class MyTime {
                         while (val < valEnd && Ctype.isDigit(valcs[val]))
                             val++;
                         break;
-                    default:
-                        err:
-                        {
-                            // logger.warn
-                            return true;
-                        }
+                    default: {
+                        // logger.warn
+                        return true;
+                    }
                 }
                 if (error.get()) // Error from MySql_com.myStrtoll10
-                    err:
-                            {
-                                // logger.warn
-                                return true;
-                            }
+                {
+                    // logger.warn
+                    return true;
+                }
             } else if (!Ctype.spaceChar(ptrcs[ptr])) {
-                if (valcs[val] != ptrcs[ptr])
-                    err:
-                            {
-                                // logger.warn
-                                return true;
-                            }
+                if (valcs[val] != ptrcs[ptr]) {
+                    // logger.warn
+                    return true;
+                }
                 val++;
             }
         }
         if (usaTime) {
-            if (lTime.hour > 12 || lTime.hour < 1)
-                err:
-                        {
-                            // logger.warn
-                            return true;
-                        }
+            if (lTime.hour > 12 || lTime.hour < 1) {
+                // logger.warn
+                return true;
+            }
             lTime.hour = lTime.hour % 12 + daypart;
         }
 
         if (yearday > 0) {
             long days;
             days = calcDaynr(lTime.year, 1L, 1L) + yearday - 1;
-            if (days <= 0 || days > MAX_DAY_NUMBER)
-                err:
-                        {
-                            // logger.warn
-                            return true;
-                        }
+            if (days <= 0 || days > MAX_DAY_NUMBER) {
+                // logger.warn
+                return true;
+            }
             LongPtr yPtr = new LongPtr(lTime.year);
             LongPtr mPtr = new LongPtr(lTime.month);
             LongPtr dPtr = new LongPtr(lTime.day);
@@ -2560,12 +2539,10 @@ public final class MyTime {
      */
             if ((strictWeekNumber && (strictWeekNumberYear < 0 ||
                     strictWeekNumberYearType != sundayFirstNFirstWeekNonIso)) ||
-                    (!strictWeekNumber && strictWeekNumberYear >= 0))
-                err:
-                        {
-                            // logger.warn
-                            return true;
-                        }
+                    (!strictWeekNumber && strictWeekNumberYear >= 0)) {
+                // logger.warn
+                return true;
+            }
 
     /* Number of days since year 0 till 1st Jan of this year */
             days = (int) calcDaynr((strictWeekNumber ? strictWeekNumberYear : lTime.year), 1, 1);
@@ -2583,12 +2560,10 @@ public final class MyTime {
                 days += ((weekdayB <= 3) ? 0 : 7) - weekdayB + (weekNumber - 1) * 7 + (weekday - 1);
             }
 
-            if (days <= 0 || days > MAX_DAY_NUMBER)
-                err:
-                        {
-                            // logger.warn
-                            return true;
-                        }
+            if (days <= 0 || days > MAX_DAY_NUMBER) {
+                // logger.warn
+                return true;
+            }
             LongPtr yPtr = new LongPtr(lTime.year);
             LongPtr mPtr = new LongPtr(lTime.month);
             LongPtr dPtr = new LongPtr(lTime.day);
@@ -2598,12 +2573,10 @@ public final class MyTime {
             lTime.day = dPtr.get();
         }
 
-        if (lTime.month > 12 || lTime.day > 31 || lTime.hour > 23 || lTime.minute > 59 || lTime.second > 59)
-            err:
-                    {
-                        // logger.warn
-                        return true;
-                    }
+        if (lTime.month > 12 || lTime.day > 31 || lTime.hour > 23 || lTime.minute > 59 || lTime.second > 59) {
+            // logger.warn
+            return true;
+        }
 
         if (val != valEnd) {
             do {

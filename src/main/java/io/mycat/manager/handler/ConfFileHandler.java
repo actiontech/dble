@@ -123,25 +123,29 @@ public final class ConfFileHandler {
             throws ParserConfigurationException, SAXException, IOException {
         InputStream dtdStream = new ByteArrayInputStream(new byte[0]);
         File confDir = new File(SystemConfig.getHomePath(), "conf");
-        if (xmlFileName.equals("schema.xml")) {
-            dtdStream = ResourceUtil.getResourceAsStream("/schema.dtd");
-            if (dtdStream == null) {
-                dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                        confDir, "schema.dtd")));
-            }
+        switch (xmlFileName) {
+            case "schema.xml":
+                dtdStream = ResourceUtil.getResourceAsStream("/schema.dtd");
+                if (dtdStream == null) {
+                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, "schema.dtd")));
+                }
 
-        } else if (xmlFileName.equals("server.xml")) {
-            dtdStream = ResourceUtil.getResourceAsStream("/server.dtd");
-            if (dtdStream == null) {
-                dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                        confDir, "server.dtd")));
-            }
-        } else if (xmlFileName.equals("rule.xml")) {
-            dtdStream = ResourceUtil.getResourceAsStream("/rule.dtd");
-            if (dtdStream == null) {
-                dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                        confDir, "rule.dtd")));
-            }
+                break;
+            case "server.xml":
+                dtdStream = ResourceUtil.getResourceAsStream("/server.dtd");
+                if (dtdStream == null) {
+                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, "server.dtd")));
+                }
+                break;
+            case "rule.xml":
+                dtdStream = ResourceUtil.getResourceAsStream("/rule.dtd");
+                if (dtdStream == null) {
+                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, "rule.dtd")));
+                }
+                break;
         }
         ConfigUtil.getDocument(dtdStream, new ByteArrayInputStream(data));
     }

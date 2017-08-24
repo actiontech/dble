@@ -655,43 +655,52 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         CastType castType = new CastType();
         String upType = dataTypeImpl.getName().toUpperCase();
         List<Integer> args = changeExprListToInt(dataTypeImpl.getArguments());
-        if (upType.equals("BINARY")) {
-            castType.target = CastTarget.ITEM_CAST_BINARY;
-            if (args.size() > 0) {
-                castType.length = args.get(0);
-            }
-        } else if (upType.equals("DATE")) {
-            castType.target = CastTarget.ITEM_CAST_DATE;
-        } else if (upType.equals("DATETIME")) {
-            castType.target = CastTarget.ITEM_CAST_DATETIME;
-            if (args.size() > 0) {
-                castType.length = args.get(0);
-            }
-        } else if (upType.equals("DECIMAL")) {
-            castType.target = CastTarget.ITEM_CAST_DECIMAL;
-            if (args.size() > 0) {
-                castType.length = args.get(0);
-            }
-            if (args.size() > 1) {
-                castType.dec = args.get(1);
-            }
-        } else if (upType.equals("NCHAR")) {
-            castType.target = CastTarget.ITEM_CAST_NCHAR;
-            if (args.size() > 0) {
-                castType.length = args.get(0);
-            }
-        } else if (upType.equals("SIGNED")) {
-            castType.target = CastTarget.ITEM_CAST_SIGNED_INT;
-        } else if (upType.equals("UNSIGNED")) {
-            castType.target = CastTarget.ITEM_CAST_UNSIGNED_INT;
-        } else if (upType.equals("TIME")) {
-            castType.target = CastTarget.ITEM_CAST_TIME;
-            if (args.size() > 0) {
-                castType.length = args.get(0);
-            }
-        } else {
-            // not support SIGNED INT /UNSIGNED INT/JSON
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported cast as:" + upType);
+        switch (upType) {
+            case "BINARY":
+                castType.target = CastTarget.ITEM_CAST_BINARY;
+                if (args.size() > 0) {
+                    castType.length = args.get(0);
+                }
+                break;
+            case "DATE":
+                castType.target = CastTarget.ITEM_CAST_DATE;
+                break;
+            case "DATETIME":
+                castType.target = CastTarget.ITEM_CAST_DATETIME;
+                if (args.size() > 0) {
+                    castType.length = args.get(0);
+                }
+                break;
+            case "DECIMAL":
+                castType.target = CastTarget.ITEM_CAST_DECIMAL;
+                if (args.size() > 0) {
+                    castType.length = args.get(0);
+                }
+                if (args.size() > 1) {
+                    castType.dec = args.get(1);
+                }
+                break;
+            case "NCHAR":
+                castType.target = CastTarget.ITEM_CAST_NCHAR;
+                if (args.size() > 0) {
+                    castType.length = args.get(0);
+                }
+                break;
+            case "SIGNED":
+                castType.target = CastTarget.ITEM_CAST_SIGNED_INT;
+                break;
+            case "UNSIGNED":
+                castType.target = CastTarget.ITEM_CAST_UNSIGNED_INT;
+                break;
+            case "TIME":
+                castType.target = CastTarget.ITEM_CAST_TIME;
+                if (args.size() > 0) {
+                    castType.length = args.get(0);
+                }
+                break;
+            default:
+                // not support SIGNED INT /UNSIGNED INT/JSON
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported cast as:" + upType);
         }
         return castType;
     }

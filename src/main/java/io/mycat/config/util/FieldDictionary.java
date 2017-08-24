@@ -128,7 +128,7 @@ public class FieldDictionary {
                 c = c.getSuperclass();
             }
             //不用构造器创建Integer，用静态方法节省时间和空间，因为depth是不可变变量
-            depth = Integer.valueOf(i);
+            depth = i;
         }
 
         @Override

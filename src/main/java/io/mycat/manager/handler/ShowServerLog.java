@@ -113,7 +113,7 @@ public final class ShowServerLog {
             String[] limtArry = limitStr.split("\\s|,");
             int start = Integer.parseInt(limtArry[0]);
             int page = Integer.parseInt(limtArry[1]);
-            int end = Integer.valueOf(start + page);
+            int end = start + page;
             String key = condPairMap.get("key");
             String regex = condPairMap.get("regex");
             bufInf = showLogRange(c, buffer, packetId, key, regex, start, end,

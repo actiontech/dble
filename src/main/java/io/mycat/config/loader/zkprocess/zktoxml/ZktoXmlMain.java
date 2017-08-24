@@ -40,11 +40,6 @@ public final class ZktoXmlMain {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
 
-    public static void main(String[] args) throws Exception {
-        loadZktoFile();
-        System.out.println("ZktoXmlMain Finished");
-    }
-
     /**
      * 将zk数据放到到本地
      * 方法描述

@@ -99,21 +99,4 @@ public final class ResultSetUtil {
 
         return b;
     }
-
-    public static void main(String[] args) throws Exception {
-        // byte[] byt =
-        // fromHex("20 00 00 02 03 64 65 66 00 00 00 0A 40 40 73 71 6C 5F 6D 6F 64 65 00 0C 21 00 BA 00 00 00 FD 01 00 1F 00 00");
-        // MysqlPacketBuffer buffer = new MysqlPacketBuffer(byt);
-        // /*
-        // * ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
-        // * packet.init(buffer);
-        // */
-        // FieldPacket[] fields = new FieldPacket[(int) 1];
-        // for (int i = 0; i < 1; i++) {
-        // fields[i] = new FieldPacket();
-        // fields[i].init(buffer);
-        // }
-        // System.out.println(1 | 0200);
-
-    }
 }

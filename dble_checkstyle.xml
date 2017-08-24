@@ -137,7 +137,9 @@
         <module name="UpperEll"/>
         <module name="AvoidEscapedUnicodeCharacters"/>
 
-        <!--<module name="UncommentedMain"/>-->
+        <module name="UncommentedMain">
+            <property name="excludedClasses" value="(io\.mycat\.MycatStartup)|(io\.mycat\.config\.loader\.zkprocess\.xmltozk\.XmltoZkMain)|(io\.mycat\.util\.DecryptUtil)|(io\.mycat\.util\.dataMigrator\.DataMigrator)"/>
+        </module>
         <module name="Indentation">
             <property name="arrayInitIndent" value="8"/>
         </module>

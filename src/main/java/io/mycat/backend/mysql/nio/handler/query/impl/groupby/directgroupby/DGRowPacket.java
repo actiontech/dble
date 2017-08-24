@@ -127,27 +127,4 @@ public class DGRowPacket extends RowDataPacket {
     public String getPacketInfo() {
         return "Direct Groupby RowData Packet";
     }
-
-    public static void main(String[] args) {
-        DGRowPacket row = new DGRowPacket(2, 2);
-        row.add(new byte[1]);
-        row.add(new byte[1]);
-        row.setSumTran(0, 1, 4);
-        row.setSumTran(1, 2.2, 8);
-        byte[] bb = row.toBytes();
-        RowDataPacket rp = new RowDataPacket(4);
-        rp.read(bb);
-        DGRowPacket dgRow = new DGRowPacket(2, 2);
-        for (int i = 0; i < 2; i++) {
-            byte[] b = rp.getValue(i);
-            if (b != null) {
-                Object obj = SerializationUtils.deserialize(b);
-                dgRow.setSumTran(i, obj, 4);
-            }
-        }
-        for (int i = 2; i < 4; i++) {
-            dgRow.add(rp.getValue(i));
-        }
-    }
-
 }

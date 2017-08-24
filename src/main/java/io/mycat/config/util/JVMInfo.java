@@ -165,8 +165,4 @@ public class JVMInfo {
         return REVERSE_FIELD_ORDER;
     }
 
-    public static void main(String[] args) {
-        System.out.println(MAJOR_JAVA_VERSION);
-    }
-
 }

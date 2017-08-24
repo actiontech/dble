@@ -63,14 +63,6 @@ public class FieldUtil {
         }
     }
 
-    public static void main(String[] args) {
-        String s1 = "-1234";
-        String s2 = "1234";
-        byte[] b1 = s1.getBytes();
-        byte[] b2 = s2.getBytes();
-        System.out.println(compareIntUsingStringBytes(b1, b2));
-    }
-
     public int getEnumPackLength(int elements) {
         return elements < 256 ? 1 : 2;
     }

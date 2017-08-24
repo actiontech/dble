@@ -1,13 +1,8 @@
 package io.mycat.config.loader.zkprocess.parse;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import io.mycat.config.loader.zkprocess.entity.Schemas;
-import io.mycat.config.loader.zkprocess.entity.schema.datanode.DataNode;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * json数据与实体类的类的信息
@@ -74,55 +69,5 @@ public class JsonProcessBase {
         T result = this.gson.fromJson(json, classinfo);
 
         return result;
-    }
-
-    public static void main(String[] args) {
-
-        DataNode datanode = new DataNode();
-
-        datanode.setDatabase("db1");
-        datanode.setDataHost("os1");
-        datanode.setName("dn1");
-
-        JsonProcessBase jsonParse = new JsonProcessBase();
-
-        String jsonStr = jsonParse.toJsonFromBean(datanode);
-
-        System.out.println("单对象当前的json:" + jsonStr);
-
-        // 转换实体
-        DataNode node = jsonParse.toBeanformJson(jsonStr, DataNode.class);
-
-        System.out.println("单对象:" + node);
-
-        List<DataNode> listNode = new ArrayList<>();
-
-        listNode.add(datanode);
-        listNode.add(datanode);
-
-        String listJson = jsonParse.toJsonFromBean(listNode);
-
-        System.out.println("当前集合的json:" + listJson);
-
-        // 转换为集合的bean
-        Type parseType = new TypeToken<List<DataNode>>() {
-        }.getType();
-        List<DataNode> list = jsonParse.toBeanformJson(listJson, parseType);
-
-        System.out.println("集合对象:" + list);
-
-        // 复杂对象的转换
-        Schemas schema = new Schemas();
-        schema.setDataNode(listNode);
-
-        String jsonMultStr = jsonParse.toJsonFromBean(schema);
-
-        System.out.println("复杂单对象当前的json:" + jsonMultStr);
-
-        // 转换实体
-        Schemas nodeMult = jsonParse.toBeanformJson(jsonMultStr, Schemas.class);
-
-        System.out.println("复杂单对象:" + nodeMult);
-
     }
 }

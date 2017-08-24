@@ -36,7 +36,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -213,14 +212,5 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         }
         paraValMap.put(prefixName + KEY_CUR_NAME, val + "");
         return true;
-    }
-
-    public static void main(String[] args) throws UnsupportedEncodingException {
-        IncrSequenceZKHandler incrSequenceZKHandler = new IncrSequenceZKHandler();
-        incrSequenceZKHandler.load(false);
-        int i = 30;
-        while (i-- >= 0) {
-            System.out.println(incrSequenceZKHandler.nextId("`testdb`.`ORDER`"));
-        }
     }
 }

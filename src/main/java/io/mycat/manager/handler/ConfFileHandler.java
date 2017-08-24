@@ -325,19 +325,4 @@ public final class ConfFileHandler {
         bufINf.packetId = packetId;
         return bufINf;
     }
-
-    public static void main(String[] args) {
-        String stmt = "FILE @@UPLOAD test.xml 1234567890";
-        int index = stmt.indexOf(' ', UPLOAD_CMD.length());
-        int index2 = stmt.indexOf(' ', index + 1);
-        if (index <= 0 || index2 <= 0 || index + 1 > stmt.length() ||
-                index2 + 1 > stmt.length()) {
-            System.out.println("valid ....");
-        } else {
-            String fileName = stmt.substring(index + 1, index2);
-            String content = stmt.substring(index2 + 1).trim();
-            System.out.println(fileName + " content:" + content);
-        }
-    }
-
 }

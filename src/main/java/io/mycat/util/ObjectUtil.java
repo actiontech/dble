@@ -102,7 +102,7 @@ public final class ObjectUtil {
             return false;
         }
 
-        Class<? extends Object> clazz = array1.getClass();
+        Class<?> clazz = array1.getClass();
 
         if (!clazz.equals(array2.getClass())) {
             return false;
@@ -253,8 +253,8 @@ public final class ObjectUtil {
 
 
     public static void copyProperties(Object fromObj, Object toObj) {
-        Class<? extends Object> fromClass = fromObj.getClass();
-        Class<? extends Object> toClass = toObj.getClass();
+        Class<?> fromClass = fromObj.getClass();
+        Class<?> toClass = toObj.getClass();
 
         try {
             BeanInfo fromBean = Introspector.getBeanInfo(fromClass);

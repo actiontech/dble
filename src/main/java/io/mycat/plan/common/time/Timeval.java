@@ -37,4 +37,4 @@ public class Timeval {
     public String myTimevalToStr() {
         return tvSec + "." + tvUsec;
     }
-};
+}

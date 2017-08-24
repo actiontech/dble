@@ -55,8 +55,6 @@ public abstract class ItemSum extends ItemResultField {
         COUNT_FUNC, COUNT_DISTINCT_FUNC, SUM_FUNC, SUM_DISTINCT_FUNC, AVG_FUNC, AVG_DISTINCT_FUNC, MIN_FUNC, MAX_FUNC, STD_FUNC, VARIANCE_FUNC, SUM_BIT_FUNC, UDF_SUM_FUNC, GROUP_CONCAT_FUNC
     }
 
-    ;
-
     public void markAsSumFunc() {
         withSumFunc = true;
     }
@@ -112,8 +110,6 @@ public abstract class ItemSum extends ItemResultField {
         aggregatorClear();
         return aggregatorAdd(row, transObj);
     }
-
-    ;
 
     /**
      * 局部聚合生成的中间结果(transitional)
@@ -199,8 +195,6 @@ public abstract class ItemSum extends ItemResultField {
     public boolean aggregatorAdd(RowDataPacket row, Object transObj) {
         return aggr.add(row, transObj);
     }
-
-    ;
 
     /* stores the declared DISTINCT flag (from the parser) */
     public void setDistinct(boolean distinct) {

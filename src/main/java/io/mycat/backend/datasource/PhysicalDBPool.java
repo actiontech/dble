@@ -511,8 +511,6 @@ public class PhysicalDBPool {
         }
     }
 
-    ;
-
     public Collection<PhysicalDatasource> getAllDataSources() {
         return this.allDs;
     }

@@ -40,4 +40,4 @@ public class MyLocale {
         this.grouping = groupingPar;
         this.errmsgs = errmsgsPar;
     }
-};
+}

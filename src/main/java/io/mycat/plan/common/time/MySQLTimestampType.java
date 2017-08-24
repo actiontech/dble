@@ -20,4 +20,4 @@ public enum MySQLTimestampType {
     public String toString() {
         return String.valueOf(i);
     }
-};
+}

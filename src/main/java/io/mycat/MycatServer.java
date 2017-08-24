@@ -565,7 +565,6 @@ public final class MycatServer {
                 });
             }
 
-            ;
         };
     }
 
@@ -600,7 +599,6 @@ public final class MycatServer {
                 }
             }
 
-            ;
         };
     }
 

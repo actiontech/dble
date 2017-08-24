@@ -199,8 +199,6 @@ public class MycatPrivileges implements FrontendPrivileges {
         INSERT, UPDATE, SELECT, DELETE
     }
 
-    ;
-
     // 审计SQL权限
     public static boolean checkPrivilege(ServerConnection source, String schema, String tableName, Checktype chekctype) {
         MycatConfig conf = MycatServer.getInstance().getConfig();

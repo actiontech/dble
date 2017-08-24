@@ -35,7 +35,7 @@ public final class CollectionUtil {
     /**
      * @param orig if null, return intersect
      */
-    public static Set<? extends Object> intersectSet(Set<? extends Object> orig, Set<? extends Object> intersect) {
+    public static Set<?> intersectSet(Set<?> orig, Set<?> intersect) {
         if (orig == null) {
             return intersect;
         }

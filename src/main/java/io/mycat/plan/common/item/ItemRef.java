@@ -20,8 +20,6 @@ public class ItemRef extends Item {
         REF, DIRECT_REF, VIEW_REF, OUTER_REF, AGGREGATE_REF
     }
 
-    ;
-
     private Item ref;
     private String tableAlias = null;
     private String fieldAlias = null;

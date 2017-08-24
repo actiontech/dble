@@ -33,8 +33,6 @@ public abstract class Aggregator {
         SIMPLE_AGGREGATOR, DISTINCT_AGGREGATOR
     }
 
-    ;
-
     public abstract AggregatorType aggrType();
 
     /**

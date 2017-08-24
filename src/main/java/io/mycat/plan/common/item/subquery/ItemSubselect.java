@@ -23,8 +23,6 @@ public abstract class ItemSubselect extends ItemResultField {
         UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
     }
 
-    ;
-
     public SubSelectType substype() {
         return SubSelectType.UNKNOWN_SUBS;
     }

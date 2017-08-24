@@ -55,7 +55,7 @@ public final class ParameterMapping {
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    public static void mapping(Object object, Map<String, ? extends Object> parameter) throws IllegalAccessException,
+    public static void mapping(Object object, Map<String, ?> parameter) throws IllegalAccessException,
             InvocationTargetException {
         //获取用于导出clazz这个JavaBean的所有属性的PropertyDescriptor
         PropertyDescriptor[] pds = getDescriptors(object.getClass());

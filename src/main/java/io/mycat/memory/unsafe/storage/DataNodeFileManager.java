@@ -110,7 +110,7 @@ public class DataNodeFileManager {
             if (file != null) {
                 LOG.warn(file.getName() + " exist !");
             } else {
-                file = new File(localDirs.get(dirId), String.format(String.valueOf(subDirId)));
+                file = new File(localDirs.get(dirId), String.valueOf(subDirId));
                 if (!file.exists() && !file.mkdir()) {
                     throw new IOException("Failed to create local dir in $newDir.");
                 }

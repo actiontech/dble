@@ -43,14 +43,14 @@ public class UserSqlRWStat {
      * <p>
      * 10毫秒内、 10 - 200毫秒内、 1秒内、 超过 1秒
      */
-    private final Histogram timeHistogram = new Histogram(new long[]{10, 200, 1000, 2000});
+    private final Histogram timeHistogram = new Histogram(10, 200, 1000, 2000);
 
     /**
      * 执行所在时段
      * <p>
      * 22-06 夜间、 06-13 上午、 13-18下午、 18-22 晚间
      */
-    private final Histogram executeHistogram = new Histogram(new long[]{6, 13, 18, 22});
+    private final Histogram executeHistogram = new Histogram(6, 13, 18, 22);
 
     /**
      * 最后执行时间

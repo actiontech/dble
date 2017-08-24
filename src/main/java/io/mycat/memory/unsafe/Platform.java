@@ -97,7 +97,7 @@ public final class Platform {
         Class t;
         try {
             t = Class.forName("sun.misc.VM", true, getSystemClassLoader());
-            Method runtimeClass = t.getDeclaredMethod("maxDirectMemory", new Class[0]);
+            Method runtimeClass = t.getDeclaredMethod("maxDirectMemory");
             maxDirectMemory = ((Number) runtimeClass.invoke((Object) null, new Object[0])).longValue();
         } catch (Throwable var8) {
             //ignore error
@@ -109,7 +109,7 @@ public final class Platform {
             try {
                 t = Class.forName("java.lang.management.ManagementFactory", true, getSystemClassLoader());
                 Class var10 = Class.forName("java.lang.management.RuntimeMXBean", true, getSystemClassLoader());
-                Object runtime = t.getDeclaredMethod("getRuntimeMXBean", new Class[0]).invoke((Object) null, new Object[0]);
+                Object runtime = t.getDeclaredMethod("getRuntimeMXBean", new Class[0]).invoke((Object) null);
                 List vmArgs = (List) var10.getDeclaredMethod("getInputArguments", new Class[0]).invoke(runtime, new Object[0]);
 
                 label41:

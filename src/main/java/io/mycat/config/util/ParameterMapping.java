@@ -85,7 +85,7 @@ public final class ParameterMapping {
             if (cls != null && value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
-                    method.invoke(object, new Object[]{value});
+                    method.invoke(object, value);
                 }
             }
         }
@@ -171,8 +171,8 @@ public final class ParameterMapping {
                 (cls.equals(Integer.class)) || (cls.equals(Long.class)) || (cls.equals(Float.class)) ||
                 (cls.equals(Double.class))) {
             try {
-                method = cls.getMethod("valueOf", new Class[]{String.class});
-                value = method.invoke(null, new Object[]{string});
+                method = cls.getMethod("valueOf", String.class);
+                value = method.invoke(null, string);
             } catch (Exception t) {
                 LOGGER.error("valueofError", t);
                 value = null;

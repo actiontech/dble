@@ -47,7 +47,7 @@ public class ReflectionProvider {
                     if (!Modifier.isPublic(aC.getModifiers())) {
                         aC.setAccessible(true);
                     }
-                    return aC.newInstance(new Object[0]);
+                    return aC.newInstance();
                 }
             }
             if (Serializable.class.isAssignableFrom(type)) {
@@ -98,8 +98,8 @@ public class ReflectionProvider {
 
     public void invokeMethod(Object object, String methodName, Object value, Class<?> definedIn) {
         try {
-            Method method = object.getClass().getMethod(methodName, new Class[]{value.getClass()});
-            method.invoke(object, new Object[]{value});
+            Method method = object.getClass().getMethod(methodName, value.getClass());
+            method.invoke(object, value);
         } catch (Exception e) {
             throw new ObjectAccessException("Could not invoke " + object.getClass() + "." + methodName, e);
         }

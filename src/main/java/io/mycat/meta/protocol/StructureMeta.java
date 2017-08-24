@@ -177,7 +177,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
         }
@@ -509,7 +509,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.IndexMeta)
                 io.mycat.meta.protocol.StructureMeta.IndexMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_IndexMeta_descriptor;
             }
@@ -1242,7 +1242,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
         }
@@ -1796,7 +1796,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.ColumnMeta)
                 io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_ColumnMeta_descriptor;
             }
@@ -2983,7 +2983,7 @@ public final class StructureMeta {
             }
         }
 
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
             return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
         }
@@ -3606,7 +3606,7 @@ public final class StructureMeta {
                 com.google.protobuf.GeneratedMessage.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:io.mycat.meta.protocol.TableMeta)
                 io.mycat.meta.protocol.StructureMeta.TableMetaOrBuilder {
-            public static final com.google.protobuf.Descriptors.Descriptor
+            public static com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
                 return io.mycat.meta.protocol.StructureMeta.internal_static_io_mycat_meta_protocol_TableMeta_descriptor;
             }

@@ -151,7 +151,7 @@ public class RowDataPacketGrouper {
      * Compare with the value of having column
      * winbill. 20160312.
      */
-    public static final int compareObject(byte[] left, byte[] right, final int colType) {
+    public static int compareObject(byte[] left, byte[] right, final int colType) {
         switch (colType) {
             case ColMeta.COL_TYPE_SHORT:
             case ColMeta.COL_TYPE_INT:

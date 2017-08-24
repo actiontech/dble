@@ -57,7 +57,7 @@ public class JVMInfo {
      * @param javaVersion the system property 'java.specification.version'
      * @return A float of the form 1.x
      */
-    public static final float getMajorJavaVersion(String javaVersion) {
+    public static float getMajorJavaVersion(String javaVersion) {
         try {
             return Float.parseFloat(javaVersion.substring(0, 3));
         } catch (NumberFormatException e) {

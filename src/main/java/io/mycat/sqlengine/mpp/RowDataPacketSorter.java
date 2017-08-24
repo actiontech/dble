@@ -157,11 +157,11 @@ public class RowDataPacketSorter {
         }
     }
 
-    public static final int compareObject(Object l, Object r, OrderCol orderCol) {
+    public static int compareObject(Object l, Object r, OrderCol orderCol) {
         return compareObject((byte[]) l, (byte[]) r, orderCol);
     }
 
-    public static final int compareObject(byte[] left, byte[] right, OrderCol orderCol) {
+    public static int compareObject(byte[] left, byte[] right, OrderCol orderCol) {
         int colType = orderCol.getColMeta().getColType();
         switch (colType) {
             case ColMeta.COL_TYPE_DECIMAL:

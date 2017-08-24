@@ -25,9 +25,7 @@ public abstract class ItemIdent extends Item {
 
     @Override
     public boolean isWild() {
-        if (StringUtils.equalsIgnoreCase(itemName, "*"))
-            return true;
-        return false;
+        return StringUtils.equalsIgnoreCase(itemName, "*");
     }
 
     @Override

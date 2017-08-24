@@ -37,9 +37,7 @@ public class ItemNull extends ItemBasicConstant {
             return true;
         if (obj == null)
             return false;
-        if (!(obj instanceof ItemNull))
-            return false;
-        return true;
+        return obj instanceof ItemNull;
     }
 
     @Override

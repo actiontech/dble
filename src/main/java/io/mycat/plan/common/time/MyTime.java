@@ -1917,10 +1917,7 @@ public final class MyTime {
         Interval interval = new Interval();
         interval.second = 1;
 
-        if (dateAddInterval(ltime, MySqlIntervalUnit.SECOND, interval)) {
-            return true;
-        }
-        return false;
+        return dateAddInterval(ltime, MySqlIntervalUnit.SECOND, interval);
     }
 
     private static void myTimeTrunc(MySQLTime ltime, int decimals) {

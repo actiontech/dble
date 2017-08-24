@@ -143,10 +143,8 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 
     @Override
     public boolean fixFields() {
-        if (super.fixFields())
-            return true;
+        return super.fixFields();
 
-        return false;
     }
 
     @Override

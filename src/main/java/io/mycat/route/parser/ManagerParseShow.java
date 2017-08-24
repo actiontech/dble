@@ -1515,9 +1515,6 @@ public final class ManagerParseShow {
 
 
     public static boolean isBoolean(String str) {
-        if ("false".equalsIgnoreCase(str) || "true".equalsIgnoreCase(str)) {
-            return true;
-        }
-        return false;
+        return "false".equalsIgnoreCase(str) || "true".equalsIgnoreCase(str);
     }
 }

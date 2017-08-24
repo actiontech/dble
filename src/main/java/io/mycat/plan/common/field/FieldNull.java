@@ -25,9 +25,7 @@ public class FieldNull extends FieldStr {
 
     @Override
     public boolean equals(final Field other, boolean binary) {
-        if (this == other)
-            return true;
-        return false;
+        return this == other;
     }
 
     @Override

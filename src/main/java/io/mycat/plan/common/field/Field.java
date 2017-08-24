@@ -190,9 +190,7 @@ public abstract class Field {
             return false;
         if (this == other)
             return true;
-        if (this.compareTo(other) == 0)
-            return true;
-        return false;
+        return this.compareTo(other) == 0;
     }
 
     @Override

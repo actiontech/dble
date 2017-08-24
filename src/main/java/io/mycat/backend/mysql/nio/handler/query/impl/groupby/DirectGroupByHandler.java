@@ -245,9 +245,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         for (int i = 0; i < row.fieldCount; i++) {
             newRp.add(row.getValue(i));
         }
-        if (nextHandler.rowResponse(null, newRp, this.isLeft, conn))
-            return true;
-        return false;
+        return nextHandler.rowResponse(null, newRp, this.isLeft, conn);
     }
 
     /**

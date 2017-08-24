@@ -551,9 +551,7 @@ public abstract class Item {
             return getDateFromDecimal(ltime, flags);
         } else if (i == ItemResult.INT_RESULT) {
             return getDateFromInt(ltime, flags);
-        } else if (i == ItemResult.STRING_RESULT || i == ItemResult.ROW_RESULT) {
-            assert (false);
-        }
+        } else assert i != ItemResult.STRING_RESULT && i != ItemResult.ROW_RESULT;
         return (nullValue = true); // Impossible result_type
     }
 
@@ -571,9 +569,7 @@ public abstract class Item {
             return getDateFromDecimal(ltime, fuzzydate);
         } else if (i == ItemResult.INT_RESULT) {
             return getDateFromInt(ltime, fuzzydate);
-        } else if (i == ItemResult.ROW_RESULT) {
-            assert (false);
-        }
+        } else assert i != ItemResult.ROW_RESULT;
         return (nullValue = true); // Impossible result_type
     }
 
@@ -658,9 +654,7 @@ public abstract class Item {
             return getTimeFromDecimal(ltime);
         } else if (i == ItemResult.INT_RESULT) {
             return getTimeFromInt(ltime);
-        } else if (i == ItemResult.STRING_RESULT || i == ItemResult.ROW_RESULT) {
-            assert (false);
-        }
+        } else assert i != ItemResult.STRING_RESULT && i != ItemResult.ROW_RESULT;
         return (nullValue = true); // Impossible result type
     }
 
@@ -678,9 +672,7 @@ public abstract class Item {
             return getTimeFromDecimal(ltime);
         } else if (i == ItemResult.INT_RESULT) {
             return getTimeFromInt(ltime);
-        } else if (i == ItemResult.ROW_RESULT) {
-            assert (false);
-        }
+        } else assert i != ItemResult.ROW_RESULT;
         return (nullValue = true); // Impossible result type
     }
 

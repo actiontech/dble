@@ -39,9 +39,6 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
         }
         TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
         //TODO: thread not safe
-        if (!oldTm.equals(tblMetaTmp) && oldTm.equals(tmManager.getSyncTableMeta(schema, tbName))) {
-            return true;
-        }
-        return false;
+        return !oldTm.equals(tblMetaTmp) && oldTm.equals(tmManager.getSyncTableMeta(schema, tbName));
     }
 }

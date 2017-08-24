@@ -110,10 +110,7 @@ public class DataMigratorArgs {
 
     public boolean isAwaysUseMaster() {
         String result = getString(IS_AWAYS_USE_MASTER);
-        if (null == result || result.isEmpty() || result.equals("true")) {
-            return true;
-        }
-        return false;
+        return null == result || result.isEmpty() || result.equals("true");
     }
 
     public int getCmdLength() {
@@ -150,9 +147,6 @@ public class DataMigratorArgs {
 
     public boolean isDeleteTempDir() {
         String result = getString(DELETE_TEMP_FILE_DIR);
-        if (null == result || result.isEmpty() || result.equals("true")) {
-            return true;
-        }
-        return false;
+        return null == result || result.isEmpty() || result.equals("true");
     }
 }

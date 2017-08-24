@@ -131,9 +131,7 @@ public final class PlanUtil {
             return true;
         if (sumFunc.hasWithDistinct())
             return true;
-        if (sumFunc.sumType() == Sumfunctype.UDF_SUM_FUNC)
-            return true;
-        return false;
+        return sumFunc.sumType() == Sumfunctype.UDF_SUM_FUNC;
     }
 
     public static Item pushDownItem(PlanNode node, Item sel) {

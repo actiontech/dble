@@ -147,11 +147,7 @@ public class FieldDictionary {
                 return false;
             }
 
-            if (fieldName != null ? !fieldName.equals(fieldKey.fieldName) : fieldKey.fieldName != null) {
-                return false;
-            }
-
-            return true;
+            return fieldName != null ? fieldName.equals(fieldKey.fieldName) : fieldKey.fieldName == null;
         }
 
         @Override

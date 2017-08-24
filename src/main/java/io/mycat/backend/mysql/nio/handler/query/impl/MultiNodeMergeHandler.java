@@ -58,11 +58,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         this.route = route;
         this.orderBys = orderBys;
         this.queueSize = MycatServer.getInstance().getConfig().getSystem().getMergeQueueSize();
-        if (route.length == 1 || (orderBys == null || orderBys.size() == 0)) {
-            this.isEasyMerge = true;
-        } else {
-            this.isEasyMerge = false;
-        }
+        this.isEasyMerge = route.length == 1 || (orderBys == null || orderBys.size() == 0);
         this.queues = new ConcurrentHashMap<MySQLConnection, BlockingQueue<HeapItem>>();
         this.merges.add(this);
     }

@@ -47,9 +47,7 @@ public class ParticipantLogEntry implements Serializable {
     }
 
     public boolean compareAddress(String host, int port, String schema) {
-        if (this.host.equals(host) && this.port == port && this.schema.equals(schema))
-            return true;
-        return false;
+        return this.host.equals(host) && this.port == port && this.schema.equals(schema);
     }
 
     @Override

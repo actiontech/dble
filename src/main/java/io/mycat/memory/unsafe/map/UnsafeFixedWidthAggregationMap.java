@@ -178,10 +178,7 @@ public final class UnsafeFixedWidthAggregationMap {
         final BytesToBytesMap.Location loc = map.lookup(key.getBaseObject(),
                 key.getBaseOffset(), key.getSizeInBytes(), hash);
 
-        if (!loc.isDefined()) {
-            return false;
-        }
-        return true;
+        return loc.isDefined();
     }
 
 

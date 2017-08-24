@@ -247,9 +247,7 @@ abstract class BaseHandlerBuilder {
 
     /*----------------------------- helper method -------------------*/
     private boolean isNestLoopStrategy(PlanNode node) {
-        if (node.type() == PlanNodeType.TABLE && node.getNestLoopFilters() != null)
-            return true;
-        return false;
+        return node.type() == PlanNodeType.TABLE && node.getNestLoopFilters() != null;
     }
 
     /**

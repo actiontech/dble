@@ -107,9 +107,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
                 ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE)
             MyTime.dateToDatetime(ltime);
 
-        if ((nullValue = MyTime.dateAddInterval(ltime, intType, interval)))
-            return true;
-        return false;
+        return (nullValue = MyTime.dateAddInterval(ltime, intType, interval));
     }
 
     private boolean getTimeInternal(MySQLTime ltime) {

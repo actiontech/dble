@@ -327,9 +327,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
     private boolean isJoinColumn(String column, SchemaConfig schema, String tableName) {
         Map<ERTable, Set<ERTable>> map = schema.getFkErRelations();
         ERTable key = new ERTable(schema.getName(), tableName, column);
-        if (map.containsKey(key)) {
-            return true;
-        }
-        return false;
+        return map.containsKey(key);
     }
 }

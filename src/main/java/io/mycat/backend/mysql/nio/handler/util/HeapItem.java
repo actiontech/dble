@@ -16,9 +16,7 @@ public class HeapItem {
     }
 
     public boolean isNullItem() {
-        if (row == null && isNull)
-            return true;
-        return false;
+        return row == null && isNull;
     }
 
     public HeapItem(byte[] row, RowDataPacket rdp, MySQLConnection index) {

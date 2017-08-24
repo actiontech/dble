@@ -907,12 +907,9 @@ public final class ServerParseSet {
         char c6 = stmt.charAt(++offset);
         char c7 = stmt.charAt(++offset);
         char c8 = stmt.charAt(++offset);
-        if ((c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a') &&
+        return (c1 == 'S' || c1 == 's') && (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l') && (c4 == 'A' || c4 == 'a') &&
                 (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') && (c7 == 'O' || c7 == 'o') &&
-                (c8 == 'N' || c8 == 'n')) {
-            return true;
-        }
-        return false;
+                (c8 == 'N' || c8 == 'n');
     }
 
     private static boolean isSession(String stmt, int offset) {
@@ -922,11 +919,8 @@ public final class ServerParseSet {
         char c4 = stmt.charAt(++offset);
         char c5 = stmt.charAt(++offset);
         char c6 = stmt.charAt(++offset);
-        if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i') &&
-                (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n')) {
-            return true;
-        }
-        return false;
+        return (c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'S' || c3 == 's') && (c4 == 'I' || c4 == 'i') &&
+                (c5 == 'O' || c5 == 'o') && (c6 == 'N' || c6 == 'n');
     }
 
 }

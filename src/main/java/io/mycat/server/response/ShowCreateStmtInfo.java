@@ -30,11 +30,7 @@ public class ShowCreateStmtInfo {
     public ShowCreateStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
-        if (ma.group(2) != null) {
-            isFull = true;
-        } else {
-            isFull = false;
-        }
+        isFull = ma.group(2) != null;
         schema = ma.group(6);
         cond = ma.group(7);
         like = ma.group(10);

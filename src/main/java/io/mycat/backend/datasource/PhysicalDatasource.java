@@ -175,10 +175,7 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isSalveOrRead() {
-        if (dbPool.isSlave(this) || this.readNode) {
-            return true;
-        }
-        return false;
+        return dbPool.isSlave(this) || this.readNode;
     }
 
     public void connectionHeatBeatCheck(long conHeartBeatPeriod) {

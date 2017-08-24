@@ -120,10 +120,7 @@ public final class SchemaUtil {
         SubQueryTableVisitor subQueryTableVisitor = new SubQueryTableVisitor();
         sqlExpr.accept(subQueryTableVisitor);
         SQLSelect sqlSelect = subQueryTableVisitor.getSQLSelect();
-        if (sqlSelect != null && !isNoSharding(source, sqlSelect.getQuery(), new SQLSelectStatement(sqlSelect), contextSchema, sqlSchema)) {
-            return false;
-        }
-        return true;
+        return sqlSelect == null || isNoSharding(source, sqlSelect.getQuery(), new SQLSelectStatement(sqlSelect), contextSchema, sqlSchema);
     }
 
     private static boolean isNoSharding(ServerConnection source, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, StringPtr sqlSchema)

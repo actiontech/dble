@@ -217,17 +217,11 @@ public final class GlobalTableUtil {
 
     public static boolean useGlobleTableCheck() {
         SystemConfig system = MycatServer.getInstance().getConfig().getSystem();
-        if (system != null && system.getUseGlobleTableCheck() == 1) {
-            return true;
-        }
-        return false;
+        return system != null && system.getUseGlobleTableCheck() == 1;
     }
 
     public static boolean isGlobalTable(SchemaConfig schemaConfig, String tableName) {
         TableConfig table = schemaConfig.getTables().get(tableName);
-        if (table != null && table.isGlobalTable()) {
-            return true;
-        }
-        return false;
+        return table != null && table.isGlobalTable();
     }
 }

@@ -113,9 +113,6 @@ public final class GlobalTableProcessor {
         result.addAll(global.getNoshardNode());
         Set<String> normalSet = noraml.getNoshardNode();
         result.retainAll(normalSet);
-        if (result.size() != normalSet.size()) {
-            return false;
-        }
-        return true;
+        return result.size() == normalSet.size();
     }
 }

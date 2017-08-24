@@ -713,10 +713,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean checkPartition(String sql) {
         Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)", Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sql);
-        if (m.find()) {
-            return true;
-        }
-        return false;
+        return m.find();
     }
 
 

@@ -635,11 +635,7 @@ public final class StructureMeta {
 
                     return false;
                 }
-                if (!hasType()) {
-
-                    return false;
-                }
-                return true;
+                return hasType();
             }
 
             public Builder mergeFrom(
@@ -1981,11 +1977,7 @@ public final class StructureMeta {
 
                     return false;
                 }
-                if (!hasDataType()) {
-
-                    return false;
-                }
-                return true;
+                return hasDataType();
             }
 
             public Builder mergeFrom(

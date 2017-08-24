@@ -74,11 +74,7 @@ public final class RouterUtil {
                 flag = true;
             } else if (indx1 >= 0 && indx2 < 0) {
                 flag = false;
-            } else if (indx2 < indx1) {
-                flag = true;
-            } else {
-                flag = false;
-            }
+            } else flag = indx2 < indx1;
             if (flag) {
                 result.append(stmt.substring(strtPos, indx2));
                 strtPos = indx2 + maySchema2.length();
@@ -106,11 +102,7 @@ public final class RouterUtil {
             if (sql.charAt(i) == '\'' && !skipChar) {
                 count++;
                 skipChar = false;
-            } else if (sql.charAt(i) == '\\') {
-                skipChar = true;
-            } else {
-                skipChar = false;
-            }
+            } else skipChar = sql.charAt(i) == '\\';
         }
         return count;
     }
@@ -170,10 +162,7 @@ public final class RouterUtil {
      * SELECT 语句
      */
     private static boolean isSelect(SQLStatement statement) {
-        if (statement instanceof SQLSelectStatement) {
-            return true;
-        }
-        return false;
+        return statement instanceof SQLSelectStatement;
     }
 
     public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
@@ -857,10 +846,7 @@ public final class RouterUtil {
         if (schemaConfig.isNoSharding()) {
             return true;
         }
-        if (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName)) {
-            return true;
-        }
-        return false;
+        return schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName);
     }
 
     /**
@@ -871,10 +857,7 @@ public final class RouterUtil {
      */
     public static boolean isConditionAlwaysTrue(SQLExpr expr) {
         Object o = WallVisitorUtils.getValue(expr);
-        if (Boolean.TRUE.equals(o)) {
-            return true;
-        }
-        return false;
+        return Boolean.TRUE.equals(o);
     }
 
     /**
@@ -885,9 +868,6 @@ public final class RouterUtil {
      */
     public static boolean isConditionAlwaysFalse(SQLExpr expr) {
         Object o = WallVisitorUtils.getValue(expr);
-        if (Boolean.FALSE.equals(o)) {
-            return true;
-        }
-        return false;
+        return Boolean.FALSE.equals(o);
     }
 }

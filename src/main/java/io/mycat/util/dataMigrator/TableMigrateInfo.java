@@ -48,11 +48,7 @@ public class TableMigrateInfo {
         this.newDataNodes = newDataNodes;
         this.newRuleAlgorithm = newRuleAlgorithm;
         this.column = column;
-        if (newDataNodes.size() > oldDataNodes.size()) {
-            isExpantion = true;
-        } else {
-            isExpantion = false;
-        }
+        isExpantion = newDataNodes.size() > oldDataNodes.size();
         dnMigrateSize = new TreeMap<>(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {

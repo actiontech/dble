@@ -180,10 +180,7 @@ public class ConfigComparer {
 
     //对比前后表数据节点分布是否一致
     private boolean isNeedMigrate(List<DataNode> oldDN, List<DataNode> newDN) {
-        if (oldDN.size() != newDN.size()) {
-            return true;
-        }
-        return false;
+        return oldDN.size() != newDN.size();
     }
 
     //获取拆分表对应节点列表,具体到实例地址、库

@@ -124,10 +124,7 @@ public final class ExpressionUtil {
         if (!isDNF(left)) {
             return false;
         }
-        if (!isDNF(right)) {
-            return false;
-        }
-        return true;
+        return isDNF(right);
     }
 
     private static boolean isLogicalExpression(SQLExpr expr) { //XOR?
@@ -135,9 +132,6 @@ public final class ExpressionUtil {
             return false;
         }
         SQLBinaryOpExpr binOpExpr = (SQLBinaryOpExpr) expr;
-        if (binOpExpr.getOperator() == SQLBinaryOperator.BooleanAnd || binOpExpr.getOperator() == SQLBinaryOperator.BooleanOr) {
-            return true;
-        }
-        return false;
+        return binOpExpr.getOperator() == SQLBinaryOperator.BooleanAnd || binOpExpr.getOperator() == SQLBinaryOperator.BooleanOr;
     }
 }

@@ -26,7 +26,7 @@ public class RangRowDataPacket {
     }
 
     public boolean isTrim() {
-        return dataType == DATA_TYPE_TRIM ? true : false;
+        return dataType == DATA_TYPE_TRIM;
     }
 
     public void leftHeadTail() {

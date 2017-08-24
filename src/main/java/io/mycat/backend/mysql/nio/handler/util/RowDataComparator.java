@@ -39,7 +39,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                 cmpItem.makeField(tmpFp);
                 Field cmpField = HandlerTool.createField(tmpFp);
                 cmpFields.add(cmpField);
-                ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC ? true : false);
+                ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
             }
         }
     }

@@ -568,7 +568,7 @@ public class ArgComparator {
             bValue = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
                 if (ac.setNull)
-                    ac.owner.nullValue = (ac.isNullsEq ? false : true);
+                    ac.owner.nullValue = (!ac.isNullsEq);
                 return ac.isNullsEq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
             }
 

@@ -35,7 +35,7 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
         this.rightFields = HandlerTool.createFields(fps2);
         ascs = new ArrayList<Boolean>();
         for (Order order : leftOrders) {
-            ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC ? true : false);
+            ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
         }
         List<Item> leftCmpItems = new ArrayList<Item>();
         List<Item> rightCmpItems = new ArrayList<Item>();

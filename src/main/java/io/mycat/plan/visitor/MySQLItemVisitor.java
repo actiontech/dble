@@ -432,7 +432,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         List<Item> args = visitExprList(x.getArguments());
         String funcName = x.getMethodName().toUpperCase();
         SQLAggregateOption option = x.getOption();
-        boolean isDistinct = option == null ? false : true;
+        boolean isDistinct = option != null;
         switch (funcName) {
             case "MAX":
                 item = new ItemSumMax(args, false, null);

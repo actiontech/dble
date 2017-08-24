@@ -516,7 +516,7 @@ public class ERJoinChooser {
 
     private boolean isGlobalTree(PlanNode tn) {
         if (tn instanceof TableNode) {
-            return tn.getUnGlobalTableCount() == 0 ? true : false;
+            return tn.getUnGlobalTableCount() == 0;
         } else if (tn.type() == PlanNodeType.NONAME) {
             return true;
         } else {

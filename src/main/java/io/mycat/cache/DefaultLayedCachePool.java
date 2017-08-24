@@ -47,7 +47,7 @@ public class DefaultLayedCachePool implements LayerCachePool {
         this.poolFactory = poolFactory;
         this.defaultCacheSize = defaultCacheSize;
         this.defaulExpiredSeconds = defaulExpiredSeconds;
-        this.hasDefaultCache = defaultCacheSize == 0 ? false : true;
+        this.hasDefaultCache = defaultCacheSize != 0;
     }
 
     private CachePool getCache(String cacheName) {

@@ -123,6 +123,6 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncAddTime(realArgs, isDate, sign == -1 ? true : false);
+        return new ItemFuncAddTime(realArgs, isDate, sign == -1);
     }
 }

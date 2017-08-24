@@ -38,7 +38,7 @@ public class DataClearRunner implements Runnable {
             long start = System.currentTimeMillis();
             con = DataMigratorUtil.getMysqlConnection(srcDn);
             if (tableInfo.isExpantion()) {
-                deleteDataDependFile(data, offset, con);
+                deleteDataDependFile(offset, con);
             } else {
                 //缩容，移除的节点直接truncate删除数据，非移除的节点按照临时文件的中值进行删除操作
                 List<DataNode> list = tableInfo.getRemovedDataNodes();
@@ -52,7 +52,7 @@ public class DataClearRunner implements Runnable {
                     String sql = "truncate " + tableInfo.getTableName();
                     JdbcUtils.execute(con, sql, new ArrayList<>());
                 } else {
-                    deleteDataDependFile(data, offset, con);
+                    deleteDataDependFile(offset, con);
                 }
             }
             long end = System.currentTimeMillis();
@@ -68,7 +68,8 @@ public class DataClearRunner implements Runnable {
         }
     }
 
-    private void deleteDataDependFile(String data, long offset, Connection con) throws IOException, SQLException {
+    private void deleteDataDependFile(long offset, Connection con) throws IOException, SQLException {
+        String data;
         while ((data = DataMigratorUtil.readData(tempFile, offset, DataMigrator.margs.getQueryPageSize())).length() > 0) {
             offset += data.getBytes().length;
             if (data.startsWith(",")) {

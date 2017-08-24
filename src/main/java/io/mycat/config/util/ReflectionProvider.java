@@ -56,9 +56,7 @@ public class ReflectionProvider {
                 throw new ObjectAccessException("Cannot construct " + type.getName() +
                         " as it does not have a no-args constructor");
             }
-        } catch (InstantiationException e) {
-            throw new ObjectAccessException("Cannot construct " + type.getName(), e);
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new ObjectAccessException("Cannot construct " + type.getName(), e);
         } catch (InvocationTargetException e) {
             if (e.getTargetException() instanceof RuntimeException) {
@@ -82,9 +80,7 @@ public class ReflectionProvider {
             try {
                 Object value = field.get(object);
                 visitor.visit(field.getName(), field.getType(), field.getDeclaringClass(), value);
-            } catch (IllegalArgumentException e) {
-                throw new ObjectAccessException("Could not get field " + field.getClass() + "." + field.getName(), e);
-            } catch (IllegalAccessException e) {
+            } catch (IllegalArgumentException | IllegalAccessException e) {
                 throw new ObjectAccessException("Could not get field " + field.getClass() + "." + field.getName(), e);
             }
         }
@@ -95,9 +91,7 @@ public class ReflectionProvider {
         validateFieldAccess(field);
         try {
             field.set(object, value);
-        } catch (IllegalArgumentException e) {
-            throw new ObjectAccessException("Could not set field " + field.getName() + "@" + object.getClass(), e);
-        } catch (IllegalAccessException e) {
+        } catch (IllegalArgumentException | IllegalAccessException e) {
             throw new ObjectAccessException("Could not set field " + field.getName() + "@" + object.getClass(), e);
         }
     }

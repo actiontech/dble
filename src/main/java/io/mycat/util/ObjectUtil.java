@@ -53,15 +53,9 @@ public final class ObjectUtil {
             if (field != null) {
                 return field.get(null);
             }
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException e) {
             //ignore error
             //LOGGER.error("getStaticFieldValue", e);
-        } catch (NoSuchFieldException e) {
-            //ignore error
-            // LOGGER.error("getStaticFieldValue", e);
-        } catch (IllegalAccessException e) {
-            //ignore error
-            //  LOGGER.error("getStaticFieldValue", e);
         }
         return null;
     }
@@ -75,9 +69,7 @@ public final class ObjectUtil {
             s.writeObject(object);
             ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b.toByteArray()));
             return ois.readObject();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
@@ -274,13 +266,7 @@ public final class ObjectUtil {
                 }
 
             }
-        } catch (IntrospectionException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
+        } catch (IntrospectionException | InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
             throw new RuntimeException(e);
         }
     }

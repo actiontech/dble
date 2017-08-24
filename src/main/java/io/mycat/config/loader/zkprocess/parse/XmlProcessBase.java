@@ -132,9 +132,7 @@ public class XmlProcessBase {
 
             marshaller.marshal(user, out);
 
-        } catch (JAXBException e) {
-            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
-        } catch (IOException e) {
+        } catch (JAXBException | IOException e) {
             LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         }
     }
@@ -174,9 +172,7 @@ public class XmlProcessBase {
 
             marshaller.marshal(user, out);
 
-        } catch (JAXBException e) {
-            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
-        } catch (IOException e) {
+        } catch (JAXBException | IOException e) {
             LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         }
     }

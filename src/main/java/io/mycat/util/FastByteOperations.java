@@ -135,11 +135,9 @@ public final class FastByteOperations {
                                 Field f = Unsafe.class.getDeclaredField("theUnsafe");
                                 f.setAccessible(true);
                                 return f.get(null);
-                            } catch (NoSuchFieldException e) {
+                            } catch (NoSuchFieldException | IllegalAccessException e) {
                                 // It doesn't matter what we throw;
                                 // it's swallowed in getBest().
-                                throw new Error();
-                            } catch (IllegalAccessException e) {
                                 throw new Error();
                             }
                         }

@@ -87,9 +87,7 @@ public class BeanConfig implements Cloneable {
         BeanConfig bc = null;
         try {
             bc = getClass().newInstance();
-        } catch (InstantiationException e) {
-            throw new ConfigException(e);
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new ConfigException(e);
         }
 //        if (bc == null) {

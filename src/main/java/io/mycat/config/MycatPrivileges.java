@@ -158,8 +158,8 @@ public class MycatPrivileges implements FrontendPrivileges {
         }
 
         if (!isPassed) {
-            ALARM.error(new StringBuilder().append(Alarms.FIREWALL_ATTACK).append("[host=").append(host).
-                    append(",user=").append(user).append(']').toString());
+            ALARM.error(Alarms.FIREWALL_ATTACK + "[host=" + host +
+                    ",user=" + user + ']');
             return false;
         }
         return true;

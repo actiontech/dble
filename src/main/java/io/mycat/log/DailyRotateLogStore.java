@@ -146,14 +146,13 @@ public class DailyRotateLogStore {
     }
 
     private String buildRollFileName(int index) {
-        StringBuilder buf = new StringBuilder(prefix);
-        buf.append('_');
-        buf.append(dateString);
-        buf.append('.');
-        buf.append(index);
-        buf.append('.');
-        buf.append(suffix);
-        return buf.toString();
+        String buf = prefix + '_' +
+                dateString +
+                '.' +
+                index +
+                '.' +
+                suffix;
+        return buf;
     }
 
     private long calculateNextCheckTime(Date now) {

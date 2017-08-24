@@ -50,13 +50,12 @@ public class TableRule implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("TableRule [rule=");
-        builder.append(rule);
-        builder.append(", name=");
-        builder.append(name);
-        builder.append("]");
-        return builder.toString();
+        String builder = "TableRule [rule=" +
+                rule +
+                ", name=" +
+                name +
+                "]";
+        return builder;
     }
 
 }

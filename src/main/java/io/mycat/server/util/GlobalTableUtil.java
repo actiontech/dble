@@ -71,9 +71,9 @@ public final class GlobalTableUtil {
             if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN))
                 return true;
         }
-        StringBuilder warnStr = new StringBuilder(schemaInfo.schema).append(".").append(schemaInfo.table).
-                append(" inner column: ").append(GLOBAL_TABLE_CHECK_COLUMN).append(" is not exist.");
-        LOGGER.warn(warnStr.toString());
+        String warnStr = schemaInfo.schema + "." + schemaInfo.table +
+                " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
+        LOGGER.warn(warnStr);
         return false; // tableName 全局表没有内部列
     }
 

@@ -52,7 +52,7 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         ManagerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(new StringBuilder().append(c).append(sql).toString());
+            LOGGER.debug(String.valueOf(c) + sql);
         }
         int rs = ManagerParse.parse(sql);
         switch (rs & 0xff) {

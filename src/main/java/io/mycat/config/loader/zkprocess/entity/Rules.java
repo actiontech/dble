@@ -52,13 +52,12 @@ public class Rules {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Rules [tableRule=");
-        builder.append(tableRule);
-        builder.append(", function=");
-        builder.append(function);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Rules [tableRule=" +
+                tableRule +
+                ", function=" +
+                function +
+                "]";
+        return builder;
     }
 
 

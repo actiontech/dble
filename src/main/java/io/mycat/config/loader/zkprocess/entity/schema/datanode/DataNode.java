@@ -57,15 +57,14 @@ public class DataNode implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("DataNode [name=");
-        builder.append(name);
-        builder.append(", dataHost=");
-        builder.append(dataHost);
-        builder.append(", database=");
-        builder.append(database);
-        builder.append("]");
-        return builder.toString();
+        String builder = "DataNode [name=" +
+                name +
+                ", dataHost=" +
+                dataHost +
+                ", database=" +
+                database +
+                "]";
+        return builder;
     }
 
 }

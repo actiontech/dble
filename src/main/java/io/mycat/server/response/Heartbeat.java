@@ -67,9 +67,9 @@ public final class Heartbeat {
     }
 
     private static String responseMessage(String action, ServerConnection c, long id) {
-        return new StringBuilder("RESPONSE:").append(action).append(", id=").append(id).append(", host=").
-                append(c.getHost()).append(", port=").append(c.getPort()).append(", time=").
-                append(TimeUtil.currentTimeMillis()).toString();
+        return "RESPONSE:" + action + ", id=" + id + ", host=" +
+                c.getHost() + ", port=" + c.getPort() + ", time=" +
+                TimeUtil.currentTimeMillis();
     }
 
 }

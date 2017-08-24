@@ -88,21 +88,20 @@ public class WriteHost {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("WriteHost [host=");
-        builder.append(host);
-        builder.append(", url=");
-        builder.append(url);
-        builder.append(", password=");
-        builder.append(password);
-        builder.append(", user=");
-        builder.append(user);
-        builder.append(", usingDecrypt=");
-        builder.append(usingDecrypt);
-        builder.append(", readHost=");
-        builder.append(readHost);
-        builder.append("]");
-        return builder.toString();
+        String builder = "WriteHost [host=" +
+                host +
+                ", url=" +
+                url +
+                ", password=" +
+                password +
+                ", user=" +
+                user +
+                ", usingDecrypt=" +
+                usingDecrypt +
+                ", readHost=" +
+                readHost +
+                "]";
+        return builder;
     }
 
 }

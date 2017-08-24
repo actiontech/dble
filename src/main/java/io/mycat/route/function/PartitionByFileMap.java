@@ -95,7 +95,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
             }
             return rst;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please check if the format satisfied.").toString(), e);
+            throw new IllegalArgumentException("columnValue:" + columnValue + " Please check if the format satisfied.", e);
         }
     }
 

@@ -46,13 +46,12 @@ public class Rule {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Rule [columns=");
-        builder.append(columns);
-        builder.append(", algorithm=");
-        builder.append(algorithm);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Rule [columns=" +
+                columns +
+                ", algorithm=" +
+                algorithm +
+                "]";
+        return builder;
     }
 
 }

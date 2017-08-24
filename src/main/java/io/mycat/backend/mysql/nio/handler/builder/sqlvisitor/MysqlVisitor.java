@@ -90,15 +90,11 @@ public abstract class MysqlVisitor {
 
     // 生成自定义的聚合函数别名
     public static String getMadeAggAlias(String aggFuncName) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("_$").append(aggFuncName).append("$_");
-        return builder.toString();
+        return "_$" + aggFuncName + "$_";
     }
 
     protected String getRandomAliasName() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("rpda_").append(randomIndex++);
-        return builder.toString();
+        return "rpda_" + randomIndex++;
     }
 
     /**

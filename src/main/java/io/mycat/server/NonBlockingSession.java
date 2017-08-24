@@ -190,7 +190,7 @@ public class NonBlockingSession implements Session {
                 singleNodeHandler.execute();
             } catch (Exception e) {
                 handleSpecial(rrs, source.getSchema(), false);
-                LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+                LOGGER.warn(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -210,7 +210,7 @@ public class NonBlockingSession implements Session {
                     multiNodeHandler.execute();
                 } catch (Exception e) {
                     handleSpecial(rrs, source.getSchema(), false);
-                    LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+                    LOGGER.warn(String.valueOf(source) + rrs, e);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (this.isPrepared()) {
@@ -222,7 +222,7 @@ public class NonBlockingSession implements Session {
                 try {
                     multiNodeDdlHandler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+                    LOGGER.warn(String.valueOf(source) + rrs, e);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
             }
@@ -235,16 +235,16 @@ public class NonBlockingSession implements Session {
         try {
             builder.build(false); //no next
         } catch (SQLSyntaxErrorException e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
 //            source.setCurrentSQL(null);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
 //            source.setCurrentSQL(null);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (Exception e) {
-            LOGGER.warn(new StringBuilder().append(source).append(" execute plan is : ").append(node).toString(), e);
+            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
 //            source.setCurrentSQL(null);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
@@ -399,7 +399,7 @@ public class NonBlockingSession implements Session {
         try {
             handler.execute();
         } catch (Exception e) {
-            LOGGER.warn(new StringBuilder().append(source).append(rrs).toString(), e);
+            LOGGER.warn(String.valueOf(source) + rrs, e);
             source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }
     }

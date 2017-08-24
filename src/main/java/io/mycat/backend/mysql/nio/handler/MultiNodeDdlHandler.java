@@ -270,7 +270,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     handler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(new StringBuilder().append(source).append(orirrs).toString(), e);
+                    LOGGER.warn(String.valueOf(source) + orirrs, e);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {

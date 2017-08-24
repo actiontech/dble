@@ -124,27 +124,26 @@ public class DataHost implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("DataHost [balance=");
-        builder.append(balance);
-        builder.append(", maxCon=");
-        builder.append(maxCon);
-        builder.append(", minCon=");
-        builder.append(minCon);
-        builder.append(", name=");
-        builder.append(name);
-        builder.append(", switchType=");
-        builder.append(switchType);
-        builder.append(", slaveThreshold=");
-        builder.append(slaveThreshold);
-        builder.append(", tempReadHostAvailable=");
-        builder.append(tempReadHostAvailable);
-        builder.append(", heartbeat=");
-        builder.append(heartbeat);
-        builder.append(", writeHost=");
-        builder.append(writeHost);
-        builder.append("]");
-        return builder.toString();
+        String builder = "DataHost [balance=" +
+                balance +
+                ", maxCon=" +
+                maxCon +
+                ", minCon=" +
+                minCon +
+                ", name=" +
+                name +
+                ", switchType=" +
+                switchType +
+                ", slaveThreshold=" +
+                slaveThreshold +
+                ", tempReadHostAvailable=" +
+                tempReadHostAvailable +
+                ", heartbeat=" +
+                heartbeat +
+                ", writeHost=" +
+                writeHost +
+                "]";
+        return builder;
     }
 
 }

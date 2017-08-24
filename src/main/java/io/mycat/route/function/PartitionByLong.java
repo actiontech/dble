@@ -65,7 +65,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
             long key = Long.parseLong(columnValue);
             return calculate(key);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(), e);
+            throw new IllegalArgumentException("columnValue:" + columnValue + " Please eliminate any quote and non number within it.", e);
         }
     }
 

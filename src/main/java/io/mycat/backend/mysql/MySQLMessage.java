@@ -308,7 +308,7 @@ public class MySQLMessage {
     }
 
     public String toString() {
-        return new StringBuilder().append(Arrays.toString(data)).toString();
+        return Arrays.toString(data);
     }
 
     private static final ThreadLocal<Calendar> LOCAL_CALENDAR = new ThreadLocal<>();

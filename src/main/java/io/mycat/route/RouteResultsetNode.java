@@ -164,11 +164,10 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        s.append(name);
-        s.append('{').append(statement).append('}');
-        s.append(".").append(multiplexNum.get());
-        return s.toString();
+        String s = name +
+                '{' + statement + '}' +
+                "." + multiplexNum.get();
+        return s;
     }
 
     public boolean isModifySQL() {

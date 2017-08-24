@@ -70,15 +70,14 @@ public class Schemas {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Schemas [schema=");
-        builder.append(schema);
-        builder.append(", dataNode=");
-        builder.append(dataNode);
-        builder.append(", dataHost=");
-        builder.append(dataHost);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Schemas [schema=" +
+                schema +
+                ", dataNode=" +
+                dataNode +
+                ", dataHost=" +
+                dataHost +
+                "]";
+        return builder;
     }
 
 }

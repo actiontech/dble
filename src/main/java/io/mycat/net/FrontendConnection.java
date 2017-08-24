@@ -293,7 +293,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(new StringBuilder().append(this).append(" ").append(sql).toString());
+            LOGGER.debug(String.valueOf(this) + " " + sql);
         }
 
         // 记录SQL
@@ -518,11 +518,11 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("[thread=").
-                append(Thread.currentThread().getName()).append(",class=").
-                append(getClass().getSimpleName()).append(",id=").append(id).
-                append(",host=").append(host).append(",port=").append(port).
-                append(",schema=").append(schema).append(']').toString();
+        return "[thread=" +
+                Thread.currentThread().getName() + ",class=" +
+                getClass().getSimpleName() + ",id=" + id +
+                ",host=" + host + ",port=" + port +
+                ",schema=" + schema + ']';
     }
 
     private static byte[] encodeString(String src, String charset) {

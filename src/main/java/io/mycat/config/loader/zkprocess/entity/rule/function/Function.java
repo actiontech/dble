@@ -71,15 +71,14 @@ public class Function implements Propertied, Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Function [name=");
-        builder.append(name);
-        builder.append(", clazz=");
-        builder.append(clazz);
-        builder.append(", property=");
-        builder.append(property);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Function [name=" +
+                name +
+                ", clazz=" +
+                clazz +
+                ", property=" +
+                property +
+                "]";
+        return builder;
     }
 
 

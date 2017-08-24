@@ -130,7 +130,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         LOGGER.warn(
-                new StringBuilder().append(conn.toString()).append("|connectionError()|").append(e.getMessage()).toString());
+                conn.toString() + "|connectionError()|" + e.getMessage());
         session.onQueryError(e.getMessage().getBytes());
     }
 

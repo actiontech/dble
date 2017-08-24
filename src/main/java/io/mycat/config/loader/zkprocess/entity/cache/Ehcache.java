@@ -77,17 +77,16 @@ public class Ehcache {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Ehcache [maxEntriesLocalHeap=");
-        builder.append(maxEntriesLocalHeap);
-        builder.append(", maxBytesLocalDisk=");
-        builder.append(maxBytesLocalDisk);
-        builder.append(", updateCheck=");
-        builder.append(updateCheck);
-        builder.append(", defaultCache=");
-        builder.append(defaultCache);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Ehcache [maxEntriesLocalHeap=" +
+                maxEntriesLocalHeap +
+                ", maxBytesLocalDisk=" +
+                maxBytesLocalDisk +
+                ", updateCheck=" +
+                updateCheck +
+                ", defaultCache=" +
+                defaultCache +
+                "]";
+        return builder;
     }
 
 }

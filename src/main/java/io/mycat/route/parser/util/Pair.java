@@ -48,9 +48,7 @@ public final class Pair<K, V> {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("(").append(key).append(", ").append(value).append(")");
-        return sb.toString();
+        return "(" + key + ", " + value + ")";
     }
 
     private static final int HASH_CONST = 37;

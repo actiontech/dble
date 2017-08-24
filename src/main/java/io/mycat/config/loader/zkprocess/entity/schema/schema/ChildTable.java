@@ -91,21 +91,20 @@ public class ChildTable implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ChildTable [name=");
-        builder.append(name);
-        builder.append(", joinKey=");
-        builder.append(joinKey);
-        builder.append(", parentKey=");
-        builder.append(parentKey);
-        builder.append(", primaryKey=");
-        builder.append(primaryKey);
-        builder.append(", autoIncrement=");
-        builder.append(autoIncrement);
-        builder.append(", childTable=");
-        builder.append(childTable);
-        builder.append("]");
-        return builder.toString();
+        String builder = "ChildTable [name=" +
+                name +
+                ", joinKey=" +
+                joinKey +
+                ", parentKey=" +
+                parentKey +
+                ", primaryKey=" +
+                primaryKey +
+                ", autoIncrement=" +
+                autoIncrement +
+                ", childTable=" +
+                childTable +
+                "]";
+        return builder;
     }
 
 }

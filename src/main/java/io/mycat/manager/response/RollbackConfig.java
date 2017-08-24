@@ -118,9 +118,7 @@ public final class RollbackConfig {
     }
 
     private static void writeOKResult(ManagerConnection c) {
-        StringBuilder s = new StringBuilder();
-        s.append(c).append("Rollback config success by manager");
-        LOGGER.info(s.toString());
+        LOGGER.info(String.valueOf(c) + "Rollback config success by manager");
         OkPacket ok = new OkPacket();
         ok.packetId = 1;
         ok.affectedRows = 1;

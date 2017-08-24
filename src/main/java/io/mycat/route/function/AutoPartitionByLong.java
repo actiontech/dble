@@ -72,7 +72,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
             }
             return rst;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(), e);
+            throw new IllegalArgumentException("columnValue:" + columnValue + " Please eliminate any quote and non number within it.", e);
         }
     }
 
@@ -96,7 +96,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 return true;
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue).append(" Please eliminate any quote and non number within it.").toString(), e);
+            throw new IllegalArgumentException("columnValue:" + columnValue + " Please eliminate any quote and non number within it.", e);
         }
         return false;
     }

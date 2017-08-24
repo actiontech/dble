@@ -52,9 +52,9 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.error(new StringBuilder().append("unexpected packet for ").append(conn).
-                append(" bound by ").append(session.getSource()).
-                append(": field's eof").toString());
+        LOGGER.error("unexpected packet for " + conn +
+                " bound by " + session.getSource() +
+                ": field's eof");
     }
 
     @Override
@@ -65,16 +65,16 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        LOGGER.error(new StringBuilder().append("unexpected packet for ").
-                append(conn).append(" bound by ").append(session.getSource()).
-                append(": field's eof").toString());
+        LOGGER.error("unexpected packet for " +
+                conn + " bound by " + session.getSource() +
+                ": field's eof");
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        LOGGER.error(new StringBuilder().append("unexpected packet for ").
-                append(conn).append(" bound by ").append(session.getSource()).
-                append(": field's eof").toString());
+        LOGGER.error("unexpected packet for " +
+                conn + " bound by " + session.getSource() +
+                ": field's eof");
         return false;
     }
 

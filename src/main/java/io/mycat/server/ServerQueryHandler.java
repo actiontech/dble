@@ -53,7 +53,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 
         ServerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(new StringBuilder().append(c).append(sql).toString());
+            LOGGER.debug(String.valueOf(c) + sql);
         }
         //
         int rs = ServerParse.parse(sql);
@@ -94,7 +94,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 break;
             //不支持KILL_Query
             case ServerParse.KILL_QUERY:
-                LOGGER.warn(new StringBuilder().append("Unsupported command:").append(sql).toString());
+                LOGGER.warn("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
                 break;
             case ServerParse.USE:
@@ -107,7 +107,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 RollBackHandler.handle(sql, c);
                 break;
             case ServerParse.HELP:
-                LOGGER.warn(new StringBuilder().append("Unsupported command:").append(sql).toString());
+                LOGGER.warn("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                 break;
             case ServerParse.MYSQL_CMD_COMMENT:
@@ -127,7 +127,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 break;
             default:
                 if (readOnly) {
-                    LOGGER.warn(new StringBuilder().append("User readonly:").append(sql).toString());
+                    LOGGER.warn("User readonly:" + sql);
                     c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User readonly");
                     break;
                 }

@@ -205,11 +205,10 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCount = this.getActiveCount();
             if (activeCount > size) {
-                StringBuilder s = new StringBuilder();
-                s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=").append(name);
-                s.append(",active=").append(activeCount);
-                s.append(",size=").append(size).append(']');
-                LOGGER.warn(s.toString());
+                String s = Alarms.DEFAULT + "DATASOURCE EXCEED [name=" + name +
+                        ",active=" + activeCount +
+                        ",size=" + size + ']';
+                LOGGER.warn(s);
             }
         }
     }

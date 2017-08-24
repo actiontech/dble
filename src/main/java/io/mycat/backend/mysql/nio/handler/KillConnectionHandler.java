@@ -54,7 +54,7 @@ public class KillConnectionHandler implements ResponseHandler {
         CommandPacket packet = new CommandPacket();
         packet.packetId = 0;
         packet.command = MySQLPacket.COM_QUERY;
-        packet.arg = new StringBuilder("KILL ").append(killee.getThreadId()).toString().getBytes();
+        packet.arg = ("KILL " + killee.getThreadId()).getBytes();
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         packet.write(mysqlCon);
     }
@@ -77,9 +77,9 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.warn(new StringBuilder().append("unexpected packet for ").
-                append(conn).append(" bound by ").append(session.getSource()).
-                append(": field's eof").toString());
+        LOGGER.warn("unexpected packet for " +
+                conn + " bound by " + session.getSource() +
+                ": field's eof");
         conn.quit();
         killee.close("killed");
     }

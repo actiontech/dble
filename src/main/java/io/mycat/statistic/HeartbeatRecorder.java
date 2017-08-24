@@ -57,7 +57,7 @@ public class HeartbeatRecorder {
     }
 
     public String get() {
-        return new StringBuilder().append(avg1).append(',').append(avg2).append(',').append(avg3).toString();
+        return String.valueOf(avg1) + ',' + avg2 + ',' + avg3;
     }
 
     public void set(long value) {

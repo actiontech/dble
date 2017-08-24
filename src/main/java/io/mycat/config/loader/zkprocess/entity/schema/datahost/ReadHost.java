@@ -37,11 +37,10 @@ public class ReadHost extends WriteHost {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ReadHost [weight=");
-        builder.append(weight);
-        builder.append("]");
-        return builder.toString();
+        String builder = "ReadHost [weight=" +
+                weight +
+                "]";
+        return builder;
     }
 
 }

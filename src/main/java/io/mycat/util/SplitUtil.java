@@ -56,7 +56,7 @@ public final class SplitUtil {
             int min = Integer.parseInt(scope[0]);
             int max = Integer.parseInt(scope[scope.length - 1]);
             for (int x = min; x <= max; x++) {
-                list.add(new StringBuilder(p[0]).append('[').append(x).append(']').toString());
+                list.add(p[0] + '[' + x + ']');
             }
         } else {
             list.add(p[0]);
@@ -236,15 +236,15 @@ public final class SplitUtil {
             int max = Integer.parseInt(scope[scope.length - 1]);
             if (c3 == '0') {
                 for (int x = min; x <= max; x++) {
-                    list.add(new StringBuilder(s[0]).append(x).toString());
+                    list.add(s[0] + x);
                 }
             } else if (c4 == '0') {
                 for (int x = min; x <= max; x++) {
-                    list.add(new StringBuilder(s[0]).append(c3).append(x).toString());
+                    list.add(s[0] + c3 + x);
                 }
             } else {
                 for (int x = min; x <= max; x++) {
-                    list.add(new StringBuilder(s[0]).append(c3).append(x).append(c4).toString());
+                    list.add(s[0] + c3 + x + c4);
                 }
             }
         }

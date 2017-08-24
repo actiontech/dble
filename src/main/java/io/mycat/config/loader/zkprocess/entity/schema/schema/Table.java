@@ -136,29 +136,28 @@ public class Table implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Table [name=");
-        builder.append(name);
-        builder.append(", nameSuffix=");
-        builder.append(nameSuffix);
-        builder.append(", dataNode=");
-        builder.append(dataNode);
-        builder.append(", rule=");
-        builder.append(rule);
-        builder.append(", ruleRequired=");
-        builder.append(ruleRequired);
-        builder.append(", primaryKey=");
-        builder.append(primaryKey);
-        builder.append(", autoIncrement=");
-        builder.append(autoIncrement);
-        builder.append(", needAddLimit=");
-        builder.append(needAddLimit);
-        builder.append(", type=");
-        builder.append(type);
-        builder.append(", childTable=");
-        builder.append(childTable);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Table [name=" +
+                name +
+                ", nameSuffix=" +
+                nameSuffix +
+                ", dataNode=" +
+                dataNode +
+                ", rule=" +
+                rule +
+                ", ruleRequired=" +
+                ruleRequired +
+                ", primaryKey=" +
+                primaryKey +
+                ", autoIncrement=" +
+                autoIncrement +
+                ", needAddLimit=" +
+                needAddLimit +
+                ", type=" +
+                type +
+                ", childTable=" +
+                childTable +
+                "]";
+        return builder;
     }
 
 }

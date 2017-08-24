@@ -45,11 +45,10 @@ public class System implements Propertied {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("System [property=");
-        builder.append(property);
-        builder.append("]");
-        return builder.toString();
+        String builder = "System [property=" +
+                property +
+                "]";
+        return builder;
     }
 
 }

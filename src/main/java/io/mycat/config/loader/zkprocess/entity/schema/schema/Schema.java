@@ -116,19 +116,18 @@ public class Schema implements Named {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Schema [name=");
-        builder.append(name);
-        builder.append(", checkSQLschema=");
-        builder.append(checkSQLschema);
-        builder.append(", sqlMaxLimit=");
-        builder.append(sqlMaxLimit);
-        builder.append(", dataNode=");
-        builder.append(dataNode);
-        builder.append(", table=");
-        builder.append(table);
-        builder.append("]");
-        return builder.toString();
+        String builder = "Schema [name=" +
+                name +
+                ", checkSQLschema=" +
+                checkSQLschema +
+                ", sqlMaxLimit=" +
+                sqlMaxLimit +
+                ", dataNode=" +
+                dataNode +
+                ", table=" +
+                table +
+                "]";
+        return builder;
     }
 
 }

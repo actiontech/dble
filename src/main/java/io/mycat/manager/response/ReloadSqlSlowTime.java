@@ -21,10 +21,7 @@ public final class ReloadSqlSlowTime {
             userStat.setSlowTime(time);
         }
 
-        StringBuilder s = new StringBuilder();
-        s.append(c).append("Reset show  @@sql.slow=" + time + " time success by manager");
-
-        LOGGER.warn(s.toString());
+        LOGGER.warn(String.valueOf(c) + "Reset show  @@sql.slow=" + time + " time success by manager");
 
         OkPacket ok = new OkPacket();
         ok.packetId = 1;

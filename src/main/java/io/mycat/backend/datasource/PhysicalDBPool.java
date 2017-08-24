@@ -361,9 +361,7 @@ public class PhysicalDBPool {
         }
 
         initSuccess = false;
-        StringBuilder s = new StringBuilder();
-        s.append(Alarms.DEFAULT).append(hostName).append(" init failure");
-        LOGGER.error(s.toString());
+        LOGGER.error(Alarms.DEFAULT + hostName + " init failure");
         return -1;
     }
 
@@ -372,7 +370,7 @@ public class PhysicalDBPool {
     }
 
     private String getMessage(int index, String info) {
-        return new StringBuilder().append(hostName).append(" index:").append(index).append(info).toString();
+        return hostName + " index:" + index + info;
     }
 
     private boolean initSource(int index, PhysicalDatasource ds) {
@@ -424,9 +422,7 @@ public class PhysicalDBPool {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                StringBuilder s = new StringBuilder();
-                s.append(Alarms.DEFAULT).append(hostName).append(" current dataSource is null!");
-                LOGGER.error(s.toString());
+                LOGGER.error(Alarms.DEFAULT + hostName + " current dataSource is null!");
             }
         }
     }

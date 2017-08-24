@@ -108,7 +108,7 @@ public final class CharacterSet {
 
         // check remaining
         for (int i = 1; i < sqlList.length; i++) {
-            String sql = new StringBuilder("set ").append(sqlList[i]).toString();
+            String sql = "set " + sqlList[i];
             if ((i + 1 == sqlList.length) && sql.endsWith(";")) {
                 /* 去掉末尾的 ‘;’ */
                 sql = sql.substring(0, sql.length() - 1);
@@ -151,10 +151,9 @@ public final class CharacterSet {
         if (charConnection.equalsIgnoreCase(charResult)) {
             setCharset(charConnection, c);
         } else {
-            StringBuilder sb = new StringBuilder();
-            sb.append("charset is not consistent:[connection=").append(charConnection);
-            sb.append(",results=").append(charResult).append(']');
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, sb.toString());
+            String sb = "charset is not consistent:[connection=" + charConnection +
+                    ",results=" + charResult + ']';
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, sb);
         }
     }
 

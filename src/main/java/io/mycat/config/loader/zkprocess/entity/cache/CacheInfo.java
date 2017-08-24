@@ -152,25 +152,24 @@ public class CacheInfo {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("CacheInfo [maxElementsInMemory=");
-        builder.append(maxElementsInMemory);
-        builder.append(", eternal=");
-        builder.append(eternal);
-        builder.append(", overflowToDisk=");
-        builder.append(overflowToDisk);
-        builder.append(", diskSpoolBufferSizeMB=");
-        builder.append(diskSpoolBufferSizeMB);
-        builder.append(", maxElementsOnDisk=");
-        builder.append(maxElementsOnDisk);
-        builder.append(", diskPersistent=");
-        builder.append(diskPersistent);
-        builder.append(", diskExpiryThreadIntervalSeconds=");
-        builder.append(diskExpiryThreadIntervalSeconds);
-        builder.append(", memoryStoreEvictionPolicy=");
-        builder.append(memoryStoreEvictionPolicy);
-        builder.append("]");
-        return builder.toString();
+        String builder = "CacheInfo [maxElementsInMemory=" +
+                maxElementsInMemory +
+                ", eternal=" +
+                eternal +
+                ", overflowToDisk=" +
+                overflowToDisk +
+                ", diskSpoolBufferSizeMB=" +
+                diskSpoolBufferSizeMB +
+                ", maxElementsOnDisk=" +
+                maxElementsOnDisk +
+                ", diskPersistent=" +
+                diskPersistent +
+                ", diskExpiryThreadIntervalSeconds=" +
+                diskExpiryThreadIntervalSeconds +
+                ", memoryStoreEvictionPolicy=" +
+                memoryStoreEvictionPolicy +
+                "]";
+        return builder;
     }
 
 }

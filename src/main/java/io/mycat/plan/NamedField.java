@@ -48,6 +48,6 @@ public class NamedField {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("table:").append(table).append(",name:").append(name).toString();
+        return "table:" + table + ",name:" + name;
     }
 }

@@ -26,10 +26,7 @@ package io.mycat.config.model;
 import io.mycat.config.model.rule.RuleConfig;
 import io.mycat.util.SplitUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -92,9 +89,7 @@ public class TableConfig {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
         dataNodes = new ArrayList<>(theDataNodes.length);
-        for (String dn : theDataNodes) {
-            dataNodes.add(dn);
-        }
+        Collections.addAll(dataNodes, theDataNodes);
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
         partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);

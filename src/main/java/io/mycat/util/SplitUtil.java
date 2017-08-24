@@ -24,6 +24,7 @@
 package io.mycat.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -263,9 +264,7 @@ public final class SplitUtil {
                 continue;
             }
             String[] s = split(pool, se, th, left, right);
-            for (String value : s) {
-                list.add(value);
-            }
+            Collections.addAll(list, s);
         }
         return list.toArray(new String[list.size()]);
     }

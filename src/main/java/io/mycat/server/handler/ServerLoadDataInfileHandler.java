@@ -315,9 +315,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
                         RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache);
                         if (rrsTmp != null) {
-                            for (RouteResultsetNode node : rrsTmp.getNodes()) {
-                                nodeSet.add(node);
-                            }
+                            Collections.addAll(nodeSet, rrsTmp.getNodes());
                         }
                     }
 

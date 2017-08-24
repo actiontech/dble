@@ -140,9 +140,7 @@ public final class RouterUtil {
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool);
             if (rrsTmp != null) {
-                for (RouteResultsetNode node : rrsTmp.getNodes()) {
-                    nodeSet.add(node);
-                }
+                Collections.addAll(nodeSet, rrsTmp.getNodes());
             }
         }
 

@@ -126,9 +126,9 @@ public class XMLServerLoader {
                 if (this.firewall.existsHost(host)) {
                     throw new ConfigException("host duplicated : " + host);
                 }
-                String[] users = userStr.split(",");
+                String[] arrayUsers = userStr.split(",");
                 List<UserConfig> userConfigs = new ArrayList<>();
-                for (String user : users) {
+                for (String user : arrayUsers) {
                     UserConfig uc = this.users.get(user);
                     if (null == uc) {
                         throw new ConfigException("[user: " + user + "] doesn't exist in [host: " + host + "]");

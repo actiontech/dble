@@ -97,7 +97,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
     public void execute() throws Exception {
-        final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             this.reset(rrs.getNodes().length);

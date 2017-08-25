@@ -122,11 +122,11 @@ public class ExecutePacket extends MySQLPacket {
         }
 
         // 设置参数类型和读取参数值
-        byte[] nullBitMap = this.nullBitMap;
+        byte[] bitMap = this.nullBitMap;
         for (int i = 0; i < parameterCount; i++) {
             BindValue bv = new BindValue();
             bv.type = pstmt.getParametersType()[i];
-            if ((nullBitMap[i / 8] & (1 << (i & 7))) != 0) {
+            if ((bitMap[i / 8] & (1 << (i & 7))) != 0) {
                 bv.isNull = true;
             } else {
                 BindValueUtil.read(mm, bv, charset);

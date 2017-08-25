@@ -42,22 +42,22 @@ public final class ZKUtils {
 
     private static CuratorFramework createConnection() {
         String url = ZkConfig.getInstance().getZkURL();
-        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(url, new ExponentialBackoffRetry(100, 6));
+        CuratorFramework framework = CuratorFrameworkFactory.newClient(url, new ExponentialBackoffRetry(100, 6));
         // start connection
-        curatorFramework.start();
+        framework.start();
         // wait 3 second to establish connect
         try {
-            curatorFramework.blockUntilConnected(3, TimeUnit.SECONDS);
-            if (curatorFramework.getZookeeperClient().isConnected()) {
+            framework.blockUntilConnected(3, TimeUnit.SECONDS);
+            if (framework.getZookeeperClient().isConnected()) {
                 LOGGER.info("CuratorFramework createConnection success");
-                return curatorFramework;
+                return framework;
             }
         } catch (InterruptedException ignored) {
             LOGGER.warn("CuratorFramework createConnection error", ignored);
             Thread.currentThread().interrupt();
         }
         // fail situation
-        curatorFramework.close();
+        framework.close();
         throw new RuntimeException("failed to connect to zookeeper service : " + url);
     }
 

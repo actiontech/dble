@@ -65,7 +65,6 @@ public class MySQLHeartbeat extends DBHeartbeat {
     }
 
     public long getTimeout() {
-        MySQLDetector detector = this.detector;
         if (detector == null) {
             return -1L;
         }
@@ -73,7 +72,6 @@ public class MySQLHeartbeat extends DBHeartbeat {
     }
 
     public String getLastActiveTime() {
-        MySQLDetector detector = this.detector;
         if (detector == null) {
             return null;
         }
@@ -83,25 +81,24 @@ public class MySQLHeartbeat extends DBHeartbeat {
     }
 
     public void start() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             isStop.compareAndSet(true, false);
             super.status = DBHeartbeat.OK_STATUS;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public void stop() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             if (isStop.compareAndSet(false, true)) {
                 if (isChecking.get()) {
                     // nothing
                 } else {
-                    MySQLDetector detector = this.detector;
                     if (detector != null) {
                         detector.quit();
                         isChecking.set(false);
@@ -109,7 +106,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                 }
             }
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -117,50 +114,47 @@ public class MySQLHeartbeat extends DBHeartbeat {
      * execute heart beat
      */
     public void heartbeat() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             if (isChecking.compareAndSet(false, true)) {
-                MySQLDetector detector = this.detector;
                 if (detector == null || detector.isQuit()) {
                     try {
                         detector = new MySQLDetector(this);
                         detector.heartbeat();
                     } catch (Exception e) {
                         LOGGER.warn(source.getConfig().toString(), e);
-                        setResult(ERROR_STATUS, detector, null);
+                        setResult(ERROR_STATUS, null);
                         return;
                     }
-                    this.detector = detector;
                 } else {
                     detector.heartbeat();
                 }
             } else {
-                MySQLDetector detector = this.detector;
                 if (detector != null) {
                     if (detector.isQuit()) {
                         isChecking.compareAndSet(true, false);
                     } else if (detector.isHeartbeatTimeout()) {
-                        setResult(TIMEOUT_STATUS, detector, null);
+                        setResult(TIMEOUT_STATUS, null);
                     }
                 }
             }
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
-    public void setResult(int result, MySQLDetector detector, String msg) {
+    public void setResult(int result, String msg) {
         this.isChecking.set(false);
         switch (result) {
             case OK_STATUS:
-                setOk(detector);
+                setOk();
                 break;
             case ERROR_STATUS:
-                setError(detector);
+                setError();
                 break;
             case TIMEOUT_STATUS:
-                setTimeout(detector);
+                setTimeout();
                 break;
             default:
                 break;
@@ -170,7 +164,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         }
     }
 
-    private void setOk(MySQLDetector detector) {
+    private void setOk() {
         switch (status) {
             case DBHeartbeat.TIMEOUT_STATUS:
                 this.status = DBHeartbeat.INIT_STATUS;
@@ -192,7 +186,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         }
     }
 
-    private void setError(MySQLDetector detector) {
+    private void setError() {
         // should continues check error status
         if (++errorCount < maxRetryCount) {
             if (detector != null && !detector.isQuit()) {
@@ -207,7 +201,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         }
     }
 
-    private void setTimeout(MySQLDetector detector) {
+    private void setTimeout() {
         this.isChecking.set(false);
         status = DBHeartbeat.TIMEOUT_STATUS;
     }

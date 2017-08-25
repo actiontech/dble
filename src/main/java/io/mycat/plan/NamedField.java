@@ -16,8 +16,8 @@ public class NamedField {
 
         //初始化hashCode
         int prime = 2;
-        int hashCode = table == null ? 0 : table.hashCode();
-        this.hashCode = hashCode * prime + (name == null ? 0 : name.toLowerCase().hashCode());
+        int hash = table == null ? 0 : table.hashCode();
+        this.hashCode = hash * prime + (name == null ? 0 : name.toLowerCase().hashCode());
     }
 
     @Override

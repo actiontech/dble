@@ -92,8 +92,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      */
     public FairLinkedBlockingDeque(Collection<? extends E> c) {
         this(Integer.MAX_VALUE);
-        final ReentrantLock lock = this.lock;
-        lock.lock(); // Never contended, but necessary for visibility
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock(); // Never contended, but necessary for visibility
         try {
             for (E e : c) {
                 if (e == null)
@@ -102,7 +102,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                     throw new IllegalStateException("Deque full");
             }
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -110,8 +110,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * wait until the queue's size >= size
      */
     public void waitUtilCount(int size) {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             while (count < size) {
                 try {
@@ -121,7 +121,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 }
             }
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -258,12 +258,12 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public boolean offerFirst(E e) {
         if (e == null)
             throw new NullPointerException();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return linkFirst(e);
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -275,8 +275,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         if (e == null)
             throw new NullPointerException();
         long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lockInterruptibly();
         try {
             while (!linkFirst(e)) {
                 if (nanos <= 0)
@@ -285,7 +285,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return true;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -295,12 +295,12 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public boolean offerLast(E e) {
         if (e == null)
             throw new NullPointerException();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return linkLast(e);
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -312,8 +312,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
         if (e == null)
             throw new NullPointerException();
         long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lockInterruptibly();
         try {
             while (!linkLast(e)) {
                 if (nanos <= 0)
@@ -322,7 +322,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return true;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -333,13 +333,13 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public void putFirst(E e) throws InterruptedException {
         if (e == null)
             throw new NullPointerException();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             while (!linkFirst(e))
                 notFull.await();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -350,13 +350,13 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public void putLast(E e) throws InterruptedException {
         if (e == null)
             throw new NullPointerException();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             while (!linkLast(e))
                 notFull.await();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -386,8 +386,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public E addOrReplaceLast(E e) throws InterruptedException {
         if (e == null)
             throw new NullPointerException();
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lockInterruptibly();
         try {
             boolean added = linkLast(e);
             if (!added) {
@@ -401,24 +401,24 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 return null;
             }
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E pollFirst() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return unlinkFirst();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E pollFirst(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lockInterruptibly();
         try {
             E x;
             while ((x = unlinkFirst()) == null) {
@@ -428,24 +428,24 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return x;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E pollLast() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return unlinkLast();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E pollLast(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lockInterruptibly();
         try {
             E x;
             while ((x = unlinkLast()) == null) {
@@ -455,33 +455,33 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return x;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E takeFirst() throws InterruptedException {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             E x;
             while ((x = unlinkFirst()) == null)
                 notEmpty.await();
             return x;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E takeLast() throws InterruptedException {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             E x;
             while ((x = unlinkLast()) == null)
                 notEmpty.await();
             return x;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -506,30 +506,30 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     }
 
     public E peekFirst() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return (first == null) ? null : first.item;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public E peekLast() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return (last == null) ? null : last.item;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public boolean removeFirstOccurrence(Object o) {
         if (o == null)
             return false;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             for (Node<E> p = first; p != null; p = p.next) {
                 if (o.equals(p.item)) {
@@ -539,15 +539,15 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return false;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public boolean removeLastOccurrence(Object o) {
         if (o == null)
             return false;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             for (Node<E> p = last; p != null; p = p.prev) {
                 if (o.equals(p.item)) {
@@ -557,7 +557,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return false;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -681,12 +681,12 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * element.
      */
     public int remainingCapacity() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return capacity - count;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -711,8 +711,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             throw new NullPointerException();
         if (c == this)
             throw new IllegalArgumentException();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             int n = Math.min(maxElements, count);
             for (int i = 0; i < n; i++) {
@@ -721,7 +721,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             }
             return n;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -750,12 +750,12 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * @return the number of elements in this deque
      */
     public int size() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return count;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -770,15 +770,15 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     public boolean contains(Object o) {
         if (o == null)
             return false;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             for (Node<E> p = first; p != null; p = p.next)
                 if (o.equals(p.item))
                     return true;
             return false;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -839,8 +839,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      */
     // @SuppressWarnings("unchecked")
     public Object[] toArray() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             Object[] a = new Object[count];
             int k = 0;
@@ -848,7 +848,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 a[k++] = p.item;
             return a;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -891,8 +891,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * @throws NullPointerException if the specified array is null
      */
     public <T> T[] toArray(T[] a) {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             if (a.length < count)
                 a = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), count);
@@ -904,17 +904,17 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 a[k] = null;
             return a;
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
     public String toString() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             return super.toString();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -923,8 +923,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * empty after this call returns.
      */
     public void clear() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             for (Node<E> f = first; f != null; ) {
                 f.item = null;
@@ -937,7 +937,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             count = 0;
             notFull.signalAll();
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -977,8 +977,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
      * <tt>Object</tt>) in the proper order, followed by a null
      */
     private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock reentrantLock = this.lock;
+        reentrantLock.lock();
         try {
             // Write out capacity and any hidden stuff
             s.defaultWriteObject();
@@ -988,7 +988,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
             // Use trailing null as sentinel
             s.writeObject(null);
         } finally {
-            lock.unlock();
+            reentrantLock.unlock();
         }
     }
 
@@ -1041,13 +1041,13 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
 
         AbstractItr() {
             // set to initial position
-            final ReentrantLock lock = FairLinkedBlockingDeque.this.lock;
-            lock.lock();
+            final ReentrantLock reentrantLock = FairLinkedBlockingDeque.this.lock;
+            reentrantLock.lock();
             try {
                 next = firstNode();
                 nextItem = (next == null) ? null : next.item;
             } finally {
-                lock.unlock();
+                reentrantLock.unlock();
             }
         }
 
@@ -1056,8 +1056,8 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
          */
 
         void advance() {
-            final ReentrantLock lock = FairLinkedBlockingDeque.this.lock;
-            lock.lock();
+            final ReentrantLock reentrantLock = FairLinkedBlockingDeque.this.lock;
+            reentrantLock.lock();
             try {
                 // assert next != null;
                 Node<E> s = nextNode(next);
@@ -1072,7 +1072,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 }
                 nextItem = (next == null) ? null : next.item;
             } finally {
-                lock.unlock();
+                reentrantLock.unlock();
             }
         }
 
@@ -1095,13 +1095,13 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
                 throw new IllegalStateException();
             lastRet = null;
 
-            final ReentrantLock lock = FairLinkedBlockingDeque.this.lock;
-            lock.lock();
+            final ReentrantLock reentrantLock = FairLinkedBlockingDeque.this.lock;
+            reentrantLock.lock();
             try {
                 if (n.item != null)
                     unlink(n);
             } finally {
-                lock.unlock();
+                reentrantLock.unlock();
             }
         }
     }

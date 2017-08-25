@@ -38,8 +38,8 @@ public class System implements Propertied {
     }
 
     @Override
-    public void addProperty(Property property) {
-        this.getProperty().add(property);
+    public void addProperty(Property prop) {
+        this.getProperty().add(prop);
     }
 
 

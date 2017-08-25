@@ -239,10 +239,10 @@ public class ItemField extends ItemIdent {
         if (context.isFindInSelect()) {
             // 尝试从selectlist中查找一次
             if (StringUtils.isEmpty(getTableName())) {
-                for (NamedField field : planNode.getOuterFields().keySet()) {
-                    if (StringUtils.equalsIgnoreCase(tmpFieldName, field.getName())) {
+                for (NamedField namedField : planNode.getOuterFields().keySet()) {
+                    if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                         if (column == null) {
-                            column = planNode.getOuterFields().get(field);
+                            column = planNode.getOuterFields().get(namedField);
                         } else
                             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "42S22", "duplicate column:" + this);
                     }
@@ -257,12 +257,12 @@ public class ItemField extends ItemIdent {
         }
         // find from inner fields
         if (StringUtils.isEmpty(getTableName())) {
-            for (NamedField field : planNode.getInnerFields().keySet()) {
-                if (StringUtils.equalsIgnoreCase(tmpFieldName, field.getName())) {
+            for (NamedField namedField : planNode.getInnerFields().keySet()) {
+                if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                     if (columnFromMeta == null) {
-                        tmpFieldTable = field.getTable();
+                        tmpFieldTable = namedField.getTable();
                         NamedField coutField = planNode.getInnerFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
-                        this.tableName = field.getTable();
+                        this.tableName = namedField.getTable();
                         getReferTables().clear();
                         this.getReferTables().add(coutField.planNode);
                         columnFromMeta = this;

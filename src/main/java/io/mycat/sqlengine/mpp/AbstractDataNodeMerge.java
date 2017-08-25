@@ -116,7 +116,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     @Override
     public abstract void run();
 
-    public abstract void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldCount) throws IOException;
+    public abstract void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldSize) throws IOException;
 
     public void outputMergeResult(NonBlockingSession session, byte[] eof) {
         addPack(endFlagPack);

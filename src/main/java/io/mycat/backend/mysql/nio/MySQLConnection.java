@@ -227,10 +227,9 @@ public class MySQLConnection extends BackendAIOConnection {
         this.threadId = threadId;
     }
 
-    public void setAuthenticated(boolean isAuthenticated) {
-        this.isAuthenticated = isAuthenticated;
+    public void setAuthenticated(boolean authenticated) {
+        isAuthenticated = authenticated;
     }
-
     public String getPassword() {
         return password;
     }
@@ -312,7 +311,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     public void execute(RouteResultsetNode rrn, ServerConnection sc,
-                        boolean autocommit) {
+                        boolean isAutoCommit) {
         if (!modifiedSQLExecuted && rrn.isModifySQL()) {
             modifiedSQLExecuted = true;
         }
@@ -323,7 +322,7 @@ public class MySQLConnection extends BackendAIOConnection {
         if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
             sc.setTxstart(true);
         }
-        synAndDoExecute(xaTxId, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), autocommit);
+        synAndDoExecute(xaTxId, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), isAutoCommit);
     }
 
     public String getConnXID(NonBlockingSession session) {

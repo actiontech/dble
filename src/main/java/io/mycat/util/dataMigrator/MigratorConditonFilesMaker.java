@@ -146,8 +146,8 @@ public class MigratorConditonFilesMaker implements Runnable {
                 files.remove(targetDn);
             }
         }
-        Map<String, String> map = tableInfo.getDnMigrateSize();
-        map.put(srcDn.getName() + "[" + total + "]", sizeList.toString());
+        Map<String, String> sizeMap = tableInfo.getDnMigrateSize();
+        sizeMap.put(srcDn.getName() + "[" + total + "]", sizeList.toString());
     }
 
     //将迁移字段值写入中间文件,数据超过1024或者要求强制才写入，避免重复打开关闭写入文件

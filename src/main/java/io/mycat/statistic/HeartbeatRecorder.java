@@ -89,21 +89,21 @@ public class HeartbeatRecorder {
      * 删除超过统计时间段的数据
      */
     private void remove(long time) {
-        final Queue<Record> records = this.records;
-        while (records.size() > 0) {
-            Record record = records.peek();
+        final Queue<Record> recordQueue = this.records;
+        while (recordQueue.size() > 0) {
+            Record record = recordQueue.peek();
             if (time >= record.time + AVG3_TIME) {
-                records.poll();
+                recordQueue.poll();
             } else {
                 break;
             }
         }
 
-        final Queue<Record> recordsAll = this.recordsAll;
-        while (recordsAll.size() > 0) {
-            Record record = recordsAll.peek();
+        final Queue<Record> recordsAllQueue = this.recordsAll;
+        while (recordsAllQueue.size() > 0) {
+            Record record = recordsAllQueue.peek();
             if (time >= record.time + SWAP_TIME) {
-                recordsAll.poll();
+                recordsAllQueue.poll();
             } else {
                 break;
             }

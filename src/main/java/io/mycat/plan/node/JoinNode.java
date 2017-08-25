@@ -40,8 +40,8 @@ public class JoinNode extends PlanNode {
         return isNotIn;
     }
 
-    public void setNotIn(boolean isNotIn) {
-        this.isNotIn = isNotIn;
+    public void setNotIn(boolean notIn) {
+        this.isNotIn = notIn;
     }
 
     // sort-merge-join时左节点的排序属性
@@ -375,9 +375,9 @@ public class JoinNode extends PlanNode {
         this.needOptimizeJoinOrder = needOptimizeJoinOrder;
     }
 
-    public JoinNode setLeftRightJoin(boolean leftOuter, boolean rightOuter) {
-        this.leftOuter = leftOuter;
-        this.rightOuter = rightOuter;
+    public JoinNode setLeftRightJoin(boolean left, boolean right) {
+        this.leftOuter = left;
+        this.rightOuter = right;
         return this;
     }
 
@@ -430,10 +430,10 @@ public class JoinNode extends PlanNode {
     }
 
     /**
-     * @param isLeftOrderMatch the isLeftOrderMatch to set
+     * @param leftOrderMatch the isLeftOrderMatch to set
      */
-    public void setLeftOrderMatch(boolean isLeftOrderMatch) {
-        this.isLeftOrderMatch = isLeftOrderMatch;
+    public void setLeftOrderMatch(boolean leftOrderMatch) {
+        this.isLeftOrderMatch = leftOrderMatch;
     }
 
     /**
@@ -444,10 +444,10 @@ public class JoinNode extends PlanNode {
     }
 
     /**
-     * @param isRightOrderMatch the isRightOrderMatch to set
+     * @param rightOrderMatch the isRightOrderMatch to set
      */
-    public void setRightOrderMatch(boolean isRightOrderMatch) {
-        this.isRightOrderMatch = isRightOrderMatch;
+    public void setRightOrderMatch(boolean rightOrderMatch) {
+        this.isRightOrderMatch = rightOrderMatch;
     }
 
     /**

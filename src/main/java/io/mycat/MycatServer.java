@@ -444,8 +444,8 @@ public final class MycatServer {
         //dataHost heartBeat  will be influence by dataHostWithoutWR
         scheduler.scheduleAtFixedRate(dataNodeHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getxaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getxaLogCleanPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
         //定期清理结果集排行榜，控制拒绝策略
         scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, system.getClearBigSqLResultSetMapMs(), TimeUnit.MILLISECONDS);
         if (system.getUseSqlStat() == 1) {
@@ -578,9 +578,9 @@ public final class MycatServer {
             @Override
             public void run() {
                 try {
-                    BufferPool bufferPool = getBufferPool();
-                    long bufferSize = bufferPool.size();
-                    long bufferCapacity = bufferPool.capacity();
+                    BufferPool pool = getBufferPool();
+                    long bufferSize = pool.size();
+                    long bufferCapacity = pool.capacity();
                     long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
                     if (bufferUsagePercent < config.getSystem().getBufferUsagePercent()) {
                         Map<String, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();

@@ -77,9 +77,7 @@ public class UserSqlRWStat {
         this.executeHistogram.reset();
     }
 
-    public void add(int sqlType, String sql, long executeTime, long netInBytes, long netOutBytes, long startTime, long endTime) {
-
-
+    public void add(int sqlType, String sql, long executeTime, long netIn, long netOut, long startTime, long endTime) {
         switch (sqlType) {
             case ServerParse.SELECT:
             case ServerParse.SHOW:
@@ -132,8 +130,8 @@ public class UserSqlRWStat {
 
         this.lastExecuteTime = endTime;
 
-        this.netInBytes.addAndGet(netInBytes);
-        this.netOutBytes.addAndGet(netOutBytes);
+        this.netInBytes.addAndGet(netIn);
+        this.netOutBytes.addAndGet(netOut);
     }
 
     public long getLastExecuteTime() {

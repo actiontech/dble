@@ -68,9 +68,9 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
     /**
      * @param columToIndx
-     * @param fieldCount
+     * @param fieldSize
      */
-    public void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldCount) {
+    public void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldSize) {
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("field metadata keys:" + columToIndx.keySet());
@@ -79,7 +79,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
 
         int[] groupColumnIndexs = null;
-        this.fieldCount = fieldCount;
+        this.fieldCount = fieldSize;
 
         if (rrs.getGroupByCols() != null) {
 
@@ -122,9 +122,9 @@ public class DataMergeService extends AbstractDataNodeMerge {
             // add no alias merg column
             for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
                 String colName = fieldEntry.getKey();
-                int result = MergeCol.tryParseAggCol(colName);
-                if (result != MergeCol.MERGE_UNSUPPORT && result != MergeCol.MERGE_NOMERGE) {
-                    mergCols.add(new MergeCol(fieldEntry.getValue(), result));
+                int mergeType = MergeCol.tryParseAggCol(colName);
+                if (mergeType != MergeCol.MERGE_UNSUPPORT && mergeType != MergeCol.MERGE_NOMERGE) {
+                    mergCols.add(new MergeCol(fieldEntry.getValue(), mergeType));
                 }
             }
 

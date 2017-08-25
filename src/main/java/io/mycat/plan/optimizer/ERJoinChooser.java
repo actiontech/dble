@@ -95,14 +95,14 @@ public class ERJoinChooser {
         return jn;
     }
 
-    private ERTable getLeftOutJoinChildER(JoinNode jn, PlanNode child, Item onItem) {
+    private ERTable getLeftOutJoinChildER(JoinNode joinNode, PlanNode child, Item onItem) {
         if (PlanUtil.existAggr(child))
             return null;
         else if (!PlanUtil.isERNode(child) && child.type() != PlanNodeType.TABLE)
             return null;
         if (onItem == null || !onItem.type().equals(ItemType.FIELD_ITEM))
             return null;
-        Pair<TableNode, ItemField> joinColumnInfo = PlanUtil.findColumnInTableLeaf((ItemField) onItem, jn);
+        Pair<TableNode, ItemField> joinColumnInfo = PlanUtil.findColumnInTableLeaf((ItemField) onItem, joinNode);
         if (joinColumnInfo == null)
             return null;
         TableNode tn = joinColumnInfo.getKey();
@@ -214,15 +214,15 @@ public class ERJoinChooser {
     private JoinNode makeERJoin(List<JoinKeyInfo> erKeys) {
         PlanNode t0 = erKeys.get(0).tn;
         PlanNode t1 = erKeys.get(1).tn;
-        JoinNode jn = new JoinNode(t0, t1);
-        List<ItemFuncEqual> joinFilter = makeJoinFilter(jn, t0, t1, true);
-        jn.setJoinFilter(joinFilter);
+        JoinNode joinNode = new JoinNode(t0, t1);
+        List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, t0, t1, true);
+        joinNode.setJoinFilter(joinFilter);
         for (int index = 2; index < erKeys.size(); index++) {
-            t0 = jn;
+            t0 = joinNode;
             t1 = erKeys.get(index).tn;
-            jn = new JoinNode(t0, t1);
-            joinFilter = makeJoinFilter(jn, t0, t1, true);
-            jn.setJoinFilter(joinFilter);
+            joinNode = new JoinNode(t0, t1);
+            joinFilter = makeJoinFilter(joinNode, t0, t1, true);
+            joinNode.setJoinFilter(joinFilter);
         }
         for (JoinKeyInfo jki : erKeys) {
             // remove join units
@@ -232,7 +232,7 @@ public class ERJoinChooser {
                     joinUnits.remove(index);
             }
         }
-        return jn;
+        return joinNode;
     }
 
     /**
@@ -245,10 +245,10 @@ public class ERJoinChooser {
         PlanNode ret = units.get(0);
         for (int i = 1; i < units.size(); i++) {
             PlanNode tni = units.get(i);
-            JoinNode jn = new JoinNode(ret, tni);
-            List<ItemFuncEqual> joinFilter = makeJoinFilter(jn, ret, tni, true);
-            jn.setJoinFilter(joinFilter);
-            ret = jn;
+            JoinNode joinNode = new JoinNode(ret, tni);
+            List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, ret, tni, true);
+            joinNode.setJoinFilter(joinFilter);
+            ret = joinNode;
         }
         return ret;
     }
@@ -294,22 +294,22 @@ public class ERJoinChooser {
         return filters;
     }
 
-    private PlanNode joinWithGlobal(PlanNode t, List<PlanNode> globals) {
+    private PlanNode joinWithGlobal(PlanNode t, List<PlanNode> globalList) {
         PlanNode newT = t;
-        while (globals.size() > 0) {
+        while (globalList.size() > 0) {
             boolean foundJoin = false;
-            for (int i = 0; i < globals.size(); i++) {
-                PlanNode global = globals.get(i);
+            for (int i = 0; i < globalList.size(); i++) {
+                PlanNode global = globalList.get(i);
                 // 尝试做他们的join
-                JoinNode jn = new JoinNode(newT, global);
-                List<ItemFuncEqual> jnFilter = makeJoinFilter(jn, newT, global, false);
+                JoinNode joinNode = new JoinNode(newT, global);
+                List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false);
                 // @如果没有可以join的join列，证明剩下的都是cross join
                 if (jnFilter.size() > 0 || selLists.size() == 0) { // 可以join
-                    replaceSelListReferedTn(newT, global, jn);
+                    replaceSelListReferedTn(newT, global, joinNode);
                     foundJoin = true;
-                    jn.setJoinFilter(jnFilter);
-                    globals.remove(i);
-                    newT = jn;
+                    joinNode.setJoinFilter(jnFilter);
+                    globalList.remove(i);
+                    newT = joinNode;
                     break;
                 }
             }
@@ -388,19 +388,19 @@ public class ERJoinChooser {
      *
      * @param node
      */
-    private void visitJoinOns(JoinNode jn) {
+    private void visitJoinOns(JoinNode joinNode) {
         for (PlanNode unit : joinUnits) {
             // 已经是最小节点
-            if (unit == jn) {
+            if (unit == joinNode) {
                 return;
             }
         }
 
-        for (ItemFuncEqual filter : jn.getJoinFilter()) {
+        for (ItemFuncEqual filter : joinNode.getJoinFilter()) {
             addJoinFilter(filter);
         }
 
-        for (PlanNode child : jn.getChildren()) {
+        for (PlanNode child : joinNode.getChildren()) {
             if ((!isUnit(child)) && (child.type().equals(PlanNodeType.JOIN))) {
                 // a join b on a.id=b.id and a.id+b.id=10 join c on
                 // a.id=c.id，将a.id+b.id提上来

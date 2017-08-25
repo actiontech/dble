@@ -24,8 +24,8 @@ public class ReferContext {
         return isPushDownNode;
     }
 
-    public void setPushDownNode(boolean isPushDownNode) {
-        this.isPushDownNode = isPushDownNode;
+    public void setPushDownNode(boolean pushDownNode) {
+        this.isPushDownNode = pushDownNode;
     }
 
 }

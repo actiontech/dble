@@ -134,8 +134,8 @@ public class MySQLMessage {
     }
 
     public long readLength() {
-        int length = data[position++] & 0xff;
-        switch (length) {
+        int size = data[position++] & 0xff;
+        switch (size) {
             case 251:
                 return NULL_LENGTH;
             case 252:
@@ -145,7 +145,7 @@ public class MySQLMessage {
             case 254:
                 return readLong();
             default:
-                return length;
+                return size;
         }
     }
 
@@ -160,10 +160,10 @@ public class MySQLMessage {
     }
 
 
-    public byte[] readBytes(int length) {
-        byte[] ab = new byte[length];
-        System.arraycopy(data, position, ab, 0, length);
-        position += length;
+    public byte[] readBytes(int size) {
+        byte[] ab = new byte[size];
+        System.arraycopy(data, position, ab, 0, size);
+        position += size;
         return ab;
     }
 
@@ -197,17 +197,17 @@ public class MySQLMessage {
     }
 
     public byte[] readBytesWithLength() {
-        int length = (int) readLength();
-        if (length == NULL_LENGTH) {
+        int size = (int) readLength();
+        if (size == NULL_LENGTH) {
             return null;
         }
-        if (length <= 0) {
+        if (size <= 0) {
             return EMPTY_BYTES;
         }
 
-        byte[] ab = new byte[length];
+        byte[] ab = new byte[size];
         System.arraycopy(data, position, ab, 0, ab.length);
-        position += length;
+        position += size;
         return ab;
     }
 
@@ -254,19 +254,19 @@ public class MySQLMessage {
     }
 
     public String readStringWithLength() {
-        int length = (int) readLength();
-        if (length <= 0) {
+        int size = (int) readLength();
+        if (size <= 0) {
             return null;
         }
-        String s = new String(data, position, length);
-        position += length;
+        String s = new String(data, position, size);
+        position += size;
         return s;
     }
 
     public String readStringWithLength(String charset) throws UnsupportedEncodingException {
-        int length = (int) readLength();
-        String s = new String(data, position, length, charset);
-        position += length;
+        int size = (int) readLength();
+        String s = new String(data, position, size, charset);
+        position += size;
         return s;
     }
 
@@ -281,14 +281,14 @@ public class MySQLMessage {
     }
 
     public java.util.Date readDate() {
-        byte length = read();
+        byte size = read();
         int year = readUB2();
         byte month = read();
         byte date = read();
         int hour = read();
         int minute = read();
         int second = read();
-        if (length == 11) {
+        if (size == 11) {
             long nanos = readUB4();
             Calendar cal = getLocalCalendar();
             cal.set(year, --month, date, hour, minute, second);

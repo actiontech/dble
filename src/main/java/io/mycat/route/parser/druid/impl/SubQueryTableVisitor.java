@@ -17,13 +17,11 @@ public class SubQueryTableVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLInSubQueryExpr x) {
-        SQLSelect sqlSelect = x.getSubQuery();
-        this.sqlSelect = sqlSelect;
+        this.sqlSelect = x.getSubQuery();
     }
 
     @Override
     public void endVisit(SQLQueryExpr x) {
-        SQLSelect sqlSelect = x.getSubQuery();
-        this.sqlSelect = sqlSelect;
+        this.sqlSelect = x.getSubQuery();
     }
 }

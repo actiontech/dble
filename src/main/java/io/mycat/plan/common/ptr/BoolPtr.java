@@ -11,7 +11,7 @@ public class BoolPtr {
         return b;
     }
 
-    public void set(boolean b) {
-        this.b = b;
+    public void set(boolean bool) {
+        this.b = bool;
     }
 }

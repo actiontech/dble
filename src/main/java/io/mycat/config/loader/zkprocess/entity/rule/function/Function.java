@@ -65,8 +65,8 @@ public class Function implements Propertied, Named {
     }
 
     @Override
-    public void addProperty(Property property) {
-        this.getProperty().add(property);
+    public void addProperty(Property prop) {
+        this.getProperty().add(prop);
     }
 
     @Override

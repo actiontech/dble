@@ -292,7 +292,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
      * <p>
      * This is a thread-safe version of `lookup`, could be used by multiple threads.
      */
-    public void safeLookup(Object keyBase, long keyOffset, int keyLength, Location loc, int hash) {
+    public void safeLookup(Object keyBase, long keyOffset, int keyLength, Location location, int hash) {
         assert (longArray != null);
 
         if (enablePerfMetrics) {
@@ -308,7 +308,7 @@ public final class BytesToBytesMap extends MemoryConsumer {
             }
             if (longArray.get(pos * 2) == 0) {
                 // This is a new key.
-                loc.with(pos, hash, false);
+                location.with(pos, hash, false);
 
                 return;
 
@@ -321,16 +321,16 @@ public final class BytesToBytesMap extends MemoryConsumer {
                  */
                 if ((int) (stored) == hash) {
                     // Full hash code matches.Let's compare the keys for equality.
-                    loc.with(pos, hash, true);
+                    location.with(pos, hash, true);
                     /**
                      * 比较key的值
                      */
-                    if (loc.getKeyLength() == keyLength) {
+                    if (location.getKeyLength() == keyLength) {
                         final boolean areEqual = ByteArrayMethods.arrayEquals(
                                 keyBase,
                                 keyOffset,
-                                loc.getKeyBase(),
-                                loc.getKeyOffset(),
+                                location.getKeyBase(),
+                                location.getKeyOffset(),
                                 keyLength
                         );
 
@@ -601,13 +601,13 @@ public final class BytesToBytesMap extends MemoryConsumer {
             valueLength = totalLength - keyLength - 4;
         }
 
-        private Location with(int pos, int keyHashcode, boolean isDefined) {
+        private Location with(int position, int keyHash, boolean defined) {
             assert (longArray != null);
-            this.pos = pos;
-            this.isDefined = isDefined;
-            this.keyHashcode = keyHashcode;
-            if (isDefined) {
-                final long fullKeyAddress = longArray.get(pos * 2);
+            this.pos = position;
+            this.isDefined = defined;
+            this.keyHashcode = keyHash;
+            if (defined) {
+                final long fullKeyAddress = longArray.get(position * 2);
                 updateAddressesAndSizes(fullKeyAddress);
             }
             return this;
@@ -941,15 +941,15 @@ public final class BytesToBytesMap extends MemoryConsumer {
 
                     Object base = block.getBaseObject();
                     long offset = block.getBaseOffset();
-                    int numRecords = Platform.getInt(base, offset);
+                    int recordsNums = Platform.getInt(base, offset);
                     offset += 4;
                     final UnsafeSorterSpillWriter writer =
-                            new UnsafeSorterSpillWriter(blockManager, 32 * 1024, numRecords);
-                    while (numRecords > 0) {
+                            new UnsafeSorterSpillWriter(blockManager, 32 * 1024, recordsNums);
+                    while (recordsNums > 0) {
                         int length = Platform.getInt(base, offset);
                         writer.write(base, offset + 4, length, 0);
                         offset += 4 + length + 8;
-                        numRecords--;
+                        recordsNums--;
                     }
                     writer.close();
                     spillWriters.add(writer);

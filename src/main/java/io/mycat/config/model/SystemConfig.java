@@ -159,15 +159,16 @@ public final class SystemConfig {
      * 写入到临时目录
      */
     private String dataNodeSortedTempDir;
+
     /*
-     * 该变量仅在Merge使用On Heap
-     * 内存方式时起作用，如果使用Off Heap内存方式
-     * 那么可以认为-Xmx就是系统预留内存。
-     * 在On Heap上给系统预留的内存，
-     * 主要供新小对象创建，JAVA简单数据结构使用
-     * 以保证在On Heap上大结果集计算时情况，能快速响应其他
-     * 连接操作。
-     */
+         * 该变量仅在Merge使用On Heap
+         * 内存方式时起作用，如果使用Off Heap内存方式
+         * 那么可以认为-Xmx就是系统预留内存。
+         * 在On Heap上给系统预留的内存，
+         * 主要供新小对象创建，JAVA简单数据结构使用
+         * 以保证在On Heap上大结果集计算时情况，能快速响应其他
+         * 连接操作。
+         */
     private String xaRecoveryLogBaseDir;
     private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
@@ -326,21 +327,20 @@ public final class SystemConfig {
         this.lowerCaseTableNames = lowerCaseTableNames;
     }
 
-    public String getXARecoveryLogBaseDir() {
+
+    public String getXaRecoveryLogBaseDir() {
         return xaRecoveryLogBaseDir;
     }
-
     @SuppressWarnings("unused")
-    public void setXARecoveryLogBaseDir(String xaRecoveryLogBaseDir) {
+    public void setXaRecoveryLogBaseDir(String xaRecoveryLogBaseDir) {
         this.xaRecoveryLogBaseDir = xaRecoveryLogBaseDir;
     }
 
-    public String getXARecoveryLogBaseName() {
+    public String getXaRecoveryLogBaseName() {
         return xaRecoveryLogBaseName;
     }
-
     @SuppressWarnings("unused")
-    public void setXARecoveryLogBaseName(String xaRecoveryLogBaseName) {
+    public void setXaRecoveryLogBaseName(String xaRecoveryLogBaseName) {
         this.xaRecoveryLogBaseName = xaRecoveryLogBaseName;
     }
 
@@ -533,21 +533,21 @@ public final class SystemConfig {
         this.processorCheckPeriod = processorCheckPeriod;
     }
 
-    public long getxaSessionCheckPeriod() {
+    public long getXaSessionCheckPeriod() {
         return xaSessionCheckPeriod;
     }
 
     @SuppressWarnings("unused")
-    public void setxaSessionCheckPeriod(long xaSessionCheckPeriod) {
+    public void setXaSessionCheckPeriod(long xaSessionCheckPeriod) {
         this.xaSessionCheckPeriod = xaSessionCheckPeriod;
     }
 
-    public long getxaLogCleanPeriod() {
+    public long getXaLogCleanPeriod() {
         return xaLogCleanPeriod;
     }
 
     @SuppressWarnings("unused")
-    public void setxaLogCleanPeriod(long xaLogCleanPeriod) {
+    public void setXaLogCleanPeriod(long xaLogCleanPeriod) {
         this.xaLogCleanPeriod = xaLogCleanPeriod;
     }
 

@@ -231,17 +231,17 @@ public class DataMigrator {
         if (table.isError()) {
             return;
         }
-        ExecutorService executor = new ThreadPoolExecutor(margs.getThreadCount(), margs.getThreadCount(),
+        ExecutorService executorService = new ThreadPoolExecutor(margs.getThreadCount(), margs.getThreadCount(),
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
         for (Entry<File, DataNode> et : map.entrySet()) {
             File f = et.getKey();
             DataNode srcDn = et.getValue();
-            executor.execute(new DataClearRunner(table, srcDn, f));
+            executorService.execute(new DataClearRunner(table, srcDn, f));
         }
-        executor.shutdown();
+        executorService.shutdown();
         while (true) {
-            if (executor.isTerminated()) {
+            if (executorService.isTerminated()) {
                 break;
             }
             try {

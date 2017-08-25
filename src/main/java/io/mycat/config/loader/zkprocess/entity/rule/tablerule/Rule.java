@@ -30,8 +30,8 @@ public class Rule {
         return columns;
     }
 
-    public Rule setColumns(String columns) {
-        this.columns = columns;
+    public Rule setColumns(String cols) {
+        this.columns = cols;
         return this;
     }
 
@@ -39,8 +39,8 @@ public class Rule {
         return algorithm;
     }
 
-    public Rule setAlgorithm(String algorithm) {
-        this.algorithm = algorithm;
+    public Rule setAlgorithm(String alg) {
+        this.algorithm = alg;
         return this;
     }
 

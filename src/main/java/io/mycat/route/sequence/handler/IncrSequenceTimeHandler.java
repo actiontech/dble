@@ -123,9 +123,9 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             return nextId;
         }
 
-        private long tilNextMillis(final long lastTimestamp) {
+        private long tilNextMillis(final long lastStamp) {
             long timestamp = this.timeGen();
-            while (timestamp <= lastTimestamp) {
+            while (timestamp <= lastStamp) {
                 timestamp = this.timeGen();
             }
             return timestamp;

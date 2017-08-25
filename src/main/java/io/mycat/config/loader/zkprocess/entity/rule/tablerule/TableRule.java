@@ -34,8 +34,8 @@ public class TableRule implements Named {
         return rule;
     }
 
-    public TableRule setRule(Rule rule) {
-        this.rule = rule;
+    public TableRule setRule(Rule tableRule) {
+        this.rule = tableRule;
         return this;
     }
 
@@ -43,8 +43,8 @@ public class TableRule implements Named {
         return name;
     }
 
-    public TableRule setName(String name) {
-        this.name = name;
+    public TableRule setName(String tableName) {
+        this.name = tableName;
         return this;
     }
 

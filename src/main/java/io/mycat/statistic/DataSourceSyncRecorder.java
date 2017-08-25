@@ -61,16 +61,16 @@ public class DataSourceSyncRecorder {
         return records.toString();
     }
 
-    public void set(Map<String, String> resultResult, int switchType) {
+    public void set(Map<String, String> resultResult, int switchtype) {
         try {
             long time = TimeUtil.currentTimeMillis();
-            this.switchType = switchType;
+            this.switchType = switchtype;
 
             remove(time);
 
             if (resultResult != null && !resultResult.isEmpty()) {
                 this.records = resultResult;
-                if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
+                if (switchtype == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
                     String sencords = resultResult.get("Seconds_Behind_Master");
                     long secondsBehindMaster = -1;
                     if (sencords != null) {
@@ -78,7 +78,7 @@ public class DataSourceSyncRecorder {
                     }
                     this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
                 }
-                if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
+                if (switchtype == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
                     double wsrepLocalRecvQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
                     this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecvQueueAvg));
                 }

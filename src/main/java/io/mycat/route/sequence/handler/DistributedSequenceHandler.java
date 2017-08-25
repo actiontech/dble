@@ -215,7 +215,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     }
 
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+    public void stateChanged(CuratorFramework framework, ConnectionState newState) {
         if (newState == ConnectionState.SUSPENDED || newState == ConnectionState.LOST) {
             this.isLeader = false;
             leaderExecutor.shutdownNow();

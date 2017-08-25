@@ -98,8 +98,8 @@ public class TableMigrateInfo {
 
     public void createTableToNewDataNodes() throws SQLException {
         if (this.isExpantion) {
-            List<DataNode> newDataNodes = getNewAddDataNodes();
-            for (DataNode dn : newDataNodes) {
+            List<DataNode> newAddDataNodes = getNewAddDataNodes();
+            for (DataNode dn : newAddDataNodes) {
                 DataMigratorUtil.createTable(dn, this.tableStructure);
             }
         }
@@ -215,8 +215,8 @@ public class TableMigrateInfo {
         return isError;
     }
 
-    public void setError(boolean isError) {
-        this.isError = isError;
+    public void setError(boolean error) {
+        this.isError = error;
     }
 
     public String getTableStructure() {

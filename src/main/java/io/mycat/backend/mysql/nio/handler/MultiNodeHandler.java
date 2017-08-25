@@ -93,13 +93,13 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 
-    public boolean clearIfSessionClosed(NonBlockingSession session) {
-        if (session.closed()) {
+    public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
+        if (nonBlockingSession.closed()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("session closed ,clear resources " + session);
+                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
             }
 
-            session.clearResources(true);
+            nonBlockingSession.clearResources(true);
             this.clearResources();
             return true;
         } else {

@@ -144,10 +144,10 @@ public class ServerConnection extends FrontendConnection {
     /**
      * 设置是否需要中断当前事务
      */
-    public void setTxInterrupt(String txInterrputMsg) {
+    public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
             txInterrupted = true;
-            this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + txInterrputMsg + "]";
+            this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
         }
     }
 
@@ -163,8 +163,8 @@ public class ServerConnection extends FrontendConnection {
         return isLocked;
     }
 
-    public void setLocked(boolean isLocked) {
-        this.isLocked = isLocked;
+    public void setLocked(boolean locked) {
+        this.isLocked = locked;
     }
 
     @Override

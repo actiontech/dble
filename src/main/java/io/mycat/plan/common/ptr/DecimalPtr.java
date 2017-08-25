@@ -13,7 +13,7 @@ public class DecimalPtr {
         return bd;
     }
 
-    public void set(BigDecimal bd) {
-        this.bd = bd;
+    public void set(BigDecimal bigDecimal) {
+        this.bd = bigDecimal;
     }
 }

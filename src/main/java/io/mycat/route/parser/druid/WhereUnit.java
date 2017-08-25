@@ -56,8 +56,8 @@ public class WhereUnit {
         return outConditions;
     }
 
-    public void addOutConditions(List<Condition> outConditions) {
-        this.outConditions.addAll(outConditions);
+    public void addOutConditions(List<Condition> conditions) {
+        this.outConditions.addAll(conditions);
     }
 
     public boolean isFinishedParse() {

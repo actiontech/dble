@@ -89,12 +89,12 @@ public final class NIOConnector extends Thread implements SocketConnector {
         }
     }
 
-    private void connect(Selector selector) {
+    private void connect(Selector finalSelector) {
         AbstractConnection c;
         while ((c = connectQueue.poll()) != null) {
             try {
                 SocketChannel channel = (SocketChannel) c.getChannel();
-                channel.register(selector, SelectionKey.OP_CONNECT, c);
+                channel.register(finalSelector, SelectionKey.OP_CONNECT, c);
                 channel.connect(new InetSocketAddress(c.host, c.port));
 
             } catch (Exception e) {

@@ -141,7 +141,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
                 }
                 heartbeat.getAsynRecorder().set(resultResult, switchType);
-                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
+                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
             } else if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS && source.getHostConfig().isShowClusterSql()) {
                 //String Variable_name = resultResult != null ? resultResult.get("Variable_name") : null;
                 String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null; // Primary
@@ -149,23 +149,23 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
                 if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
-                    heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
+                    heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
                 } else {
                     MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
                             heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
                             " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
                     );
                     heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, null);
+                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
                 }
                 heartbeat.getAsynRecorder().set(resultResult, switchType);
             } else {
-                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, this, null);
+                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
                 //监测数据库同步状态，在 switchType=-1或者1的情况下，也需要收集主从同步状态
                 heartbeat.getAsynRecorder().set(resultResult, switchType);
             }
         } else {
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, null);
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
         }
         lasstReveivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lasstReveivedQryTime - lastSendQryTime));

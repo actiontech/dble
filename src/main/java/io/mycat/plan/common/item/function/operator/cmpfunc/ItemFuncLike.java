@@ -63,17 +63,17 @@ public class ItemFuncLike extends ItemBoolFunc2 {
     public SQLExpr toExpression() {
         SQLExpr comparee = args.get(0).toExpression();
         SQLExpr pattern = args.get(1).toExpression();
-        SQLExpr escape = this.escape == null ? null : this.escape.toExpression();
+        SQLExpr escapeExpr = this.escape == null ? null : this.escape.toExpression();
         SQLBinaryOpExpr like = null;
         if (isNot) {
             like = new SQLBinaryOpExpr(comparee, SQLBinaryOperator.NotLike, pattern);
         } else {
             like = new SQLBinaryOpExpr(comparee, SQLBinaryOperator.Like, pattern);
         }
-        if (escape == null) {
+        if (escapeExpr == null) {
             return like;
         } else {
-            return new SQLBinaryOpExpr(like, SQLBinaryOperator.Escape, escape);
+            return new SQLBinaryOpExpr(like, SQLBinaryOperator.Escape, escapeExpr);
         }
     }
 

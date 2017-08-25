@@ -57,16 +57,16 @@ public class FieldBit extends Field {
             return 1;
         }
         FieldBit bOther = (FieldBit) other;
-        BigInteger intValue = this.valInt();
+        BigInteger intValue1 = this.valInt();
         BigInteger intValue2 = bOther.valInt();
-        if (intValue == null && intValue2 == null)
+        if (intValue1 == null && intValue2 == null)
             return 0;
         else if (intValue2 == null)
             return 1;
-        else if (intValue == null)
+        else if (intValue1 == null)
             return -1;
         else
-            return intValue.compareTo(intValue2);
+            return intValue1.compareTo(intValue2);
     }
 
     @Override

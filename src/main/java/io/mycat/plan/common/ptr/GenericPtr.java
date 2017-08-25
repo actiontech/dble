@@ -11,8 +11,8 @@ public class GenericPtr<T> {
         return value;
     }
 
-    public void set(T value) {
-        this.value = value;
+    public void set(T t) {
+        this.value = t;
     }
 
 }

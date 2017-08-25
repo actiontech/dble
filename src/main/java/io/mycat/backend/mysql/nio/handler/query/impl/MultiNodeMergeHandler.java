@@ -279,11 +279,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         return HandlerType.MERGE;
     }
 
-    private String getRoutesSql(RouteResultsetNode[] route) {
+    private String getRoutesSql(RouteResultsetNode[] nodes) {
         StringBuilder sb = new StringBuilder();
         sb.append('{');
         Map<String, List<RouteResultsetNode>> sqlMap = new HashMap<>();
-        for (RouteResultsetNode rrss : route) {
+        for (RouteResultsetNode rrss : nodes) {
             String sql = rrss.getStatement();
             if (!sqlMap.containsKey(sql)) {
                 List<RouteResultsetNode> rrssList = new ArrayList<>();

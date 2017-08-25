@@ -246,25 +246,25 @@ abstract class BaseHandlerBuilder {
     }
 
     /*----------------------------- helper method -------------------*/
-    private boolean isNestLoopStrategy(PlanNode node) {
-        return node.type() == PlanNodeType.TABLE && node.getNestLoopFilters() != null;
+    private boolean isNestLoopStrategy(PlanNode planNode) {
+        return planNode.type() == PlanNodeType.TABLE && planNode.getNestLoopFilters() != null;
     }
 
     /**
      * 是否需要对该node进行orderby排序
      * 如果该node的上一层handler返回的结果已经按照orderBys排序，则无需再次进行orderby
      *
-     * @param node
+     * @param planNode
      * @param orderBys
      * @return
      */
-    private boolean isOrderNeeded(PlanNode node, List<Order> orderBys) {
-        if (node instanceof TableNode || PlanUtil.isGlobalOrER(node))
+    private boolean isOrderNeeded(PlanNode planNode, List<Order> orderBys) {
+        if (planNode instanceof TableNode || PlanUtil.isGlobalOrER(planNode))
             return false;
-        else if (node instanceof JoinNode) {
-            return !isJoinNodeOrderMatch((JoinNode) node, orderBys);
-        } else if (node instanceof QueryNode) {
-            return !isQueryNodeOrderMatch((QueryNode) node, orderBys);
+        else if (planNode instanceof JoinNode) {
+            return !isJoinNodeOrderMatch((JoinNode) planNode, orderBys);
+        } else if (planNode instanceof QueryNode) {
+            return !isQueryNodeOrderMatch((QueryNode) planNode, orderBys);
         }
         return true;
     }
@@ -365,10 +365,10 @@ abstract class BaseHandlerBuilder {
 
     /*-----------------计算datasource相关start------------------*/
 
-    protected void buildMergeHandler(PlanNode node, RouteResultsetNode[] rrssArray) {
+    protected void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
         hBuilder.checkRRSs(rrssArray);
         MultiNodeMergeHandler mh = null;
-        List<Order> orderBys = node.getGroupBys().size() > 0 ? node.getGroupBys() : node.getOrderBys();
+        List<Order> orderBys = planNode.getGroupBys().size() > 0 ? planNode.getGroupBys() : planNode.getOrderBys();
 
         mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxstart(), session,
                 orderBys);

@@ -112,9 +112,9 @@ public class HintSQLHandler implements HintHandler {
                     parameter.setName(pName);
                     parameter.setParameterType(pType);
                     if (pName.startsWith("@")) {
-                        procedure.getParamterMap().put(pName, parameter);
+                        procedure.getParameterMap().put(pName, parameter);
                     } else {
-                        procedure.getParamterMap().put(String.valueOf(i1 + 1), parameter);
+                        procedure.getParameterMap().put(String.valueOf(i1 + 1), parameter);
                     }
 
 
@@ -127,7 +127,7 @@ public class HintSQLHandler implements HintHandler {
                 for (SQLAssignItem set : sets) {
                     String name = set.getTarget().toString();
                     SQLExpr value = set.getValue();
-                    ProcedureParameter parameter = procedure.getParamterMap().get(name);
+                    ProcedureParameter parameter = procedure.getParameterMap().get(name);
                     if (parameter != null) {
                         if (value instanceof SQLIntegerExpr) {
                             parameter.setValue(((SQLIntegerExpr) value).getNumber());
@@ -151,13 +151,13 @@ public class HintSQLHandler implements HintHandler {
             String listFieldsStr = (String) hintMap.get("list_fields");
             List<String> listFields = Splitter.on(",").trimResults().splitToList(listFieldsStr);
             for (String field : listFields) {
-                if (!procedure.getParamterMap().containsKey(field)) {
+                if (!procedure.getParameterMap().containsKey(field)) {
                     ProcedureParameter parameter = new ProcedureParameter();
                     parameter.setParameterType(ProcedureParameter.OUT);
                     parameter.setName(field);
                     parameter.setJdbcType(-10);
-                    parameter.setIndex(procedure.getParamterMap().size() + 1);
-                    procedure.getParamterMap().put(field, parameter);
+                    parameter.setIndex(procedure.getParameterMap().size() + 1);
+                    procedure.getParameterMap().put(field, parameter);
                 }
             }
             procedure.getListFields().addAll(listFields);

@@ -55,28 +55,28 @@ public class CompareLike {
         boolean lastAny = false;
         for (int i = 0; i < len; i++) {
             char c = p.charAt(i);
-            int type;
+            int patternType;
             if (escapeChar != null && escapeChar == c) {
                 if (i >= len - 1) {
                     // invalidPattern = true;
                     return;
                 }
                 c = p.charAt(++i);
-                type = MATCH;
+                patternType = MATCH;
                 lastAny = false;
             } else if (c == '%') {
                 if (lastAny) {
                     continue;
                 }
-                type = ANY;
+                patternType = ANY;
                 lastAny = true;
             } else if (c == '_') {
-                type = ONE;
+                patternType = ONE;
             } else {
-                type = MATCH;
+                patternType = MATCH;
                 lastAny = false;
             }
-            patternTypes[patternLength] = type;
+            patternTypes[patternLength] = patternType;
             patternChars[patternLength++] = c;
         }
         for (int i = 0; i < patternLength - 1; i++) {
@@ -92,8 +92,8 @@ public class CompareLike {
         if (patternTypes == null) {
             return false;
         }
-        for (int type : patternTypes) {
-            if (type != MATCH) {
+        for (int patternType : patternTypes) {
+            if (patternType != MATCH) {
                 return false;
             }
         }

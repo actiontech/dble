@@ -73,8 +73,8 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     public Integer[] calculateRange(String beginValue, String endValue) {
         long begin = Long.parseLong(beginValue);
         long end = Long.parseLong(endValue);
-        int length = partitionUtil.getPartitionLength();
-        if (end - begin >= length || begin > end) { //TODO: optimize begin > end
+        int partitionLength = partitionUtil.getPartitionLength();
+        if (end - begin >= partitionLength || begin > end) { //TODO: optimize begin > end
             return new Integer[0];
         }
         Integer beginNode = 0, endNode = 0;

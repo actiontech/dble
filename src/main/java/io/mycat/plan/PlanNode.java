@@ -445,8 +445,8 @@ public abstract class PlanNode {
         return limitFrom;
     }
 
-    public PlanNode setLimitFrom(long limitFrom) {
-        this.limitFrom = limitFrom;
+    public PlanNode setLimitFrom(long from) {
+        this.limitFrom = from;
         return this;
     }
 
@@ -454,8 +454,8 @@ public abstract class PlanNode {
         return limitTo;
     }
 
-    public PlanNode setLimitTo(long limitTo) {
-        this.limitTo = limitTo;
+    public PlanNode setLimitTo(long to) {
+        this.limitTo = to;
         return this;
     }
 
@@ -469,8 +469,8 @@ public abstract class PlanNode {
         return whereFilter;
     }
 
-    public PlanNode query(Item whereFilter) {
-        this.whereFilter = whereFilter;
+    public PlanNode query(Item where) {
+        this.whereFilter = where;
         return this;
     }
 
@@ -478,13 +478,13 @@ public abstract class PlanNode {
         return alias;
     }
 
-    public PlanNode alias(String alias) {
-        this.alias = alias;
+    public PlanNode alias(String aliasName) {
+        this.alias = aliasName;
         return this;
     }
 
-    public PlanNode subAlias(String alias) {
-        this.subAlias = alias;
+    public PlanNode subAlias(String subAliasName) {
+        this.subAlias = subAliasName;
         return this;
     }
 
@@ -492,8 +492,8 @@ public abstract class PlanNode {
         return this.groups;
     }
 
-    public PlanNode setGroupBys(List<Order> groups) {
-        this.groups = groups;
+    public PlanNode setGroupBys(List<Order> groupBys) {
+        this.groups = groupBys;
         return this;
     }
 
@@ -513,8 +513,8 @@ public abstract class PlanNode {
         return columnsSelected;
     }
 
-    public PlanNode setColumnsSelected(List<Item> columnsSelected) {
-        this.columnsSelected = columnsSelected;
+    public PlanNode setColumnsSelected(List<Item> columns) {
+        this.columnsSelected = columns;
         return this;
     }
 
@@ -564,13 +564,13 @@ public abstract class PlanNode {
         return subQuery;
     }
 
-    public PlanNode setSubQuery(boolean subQuery) {
-        this.subQuery = subQuery;
+    public PlanNode setSubQuery(boolean isSubQuery) {
+        this.subQuery = isSubQuery;
         return this;
     }
 
-    public PlanNode having(Item havingFilter) {
-        this.havingFilter = havingFilter;
+    public PlanNode having(Item having) {
+        this.havingFilter = having;
         return this;
     }
 
@@ -660,10 +660,10 @@ public abstract class PlanNode {
     }
 
     /**
-     * @param isDistinct the isDistinct to set
+     * @param distinct the isDistinct to set
      */
-    public void setDistinct(boolean isDistinct) {
-        this.isDistinct = isDistinct;
+    public void setDistinct(boolean distinct) {
+        this.isDistinct = distinct;
     }
 
     public String getSql() {

@@ -200,12 +200,12 @@ public class RowDataPacketGrouper {
         }
         for (MergeCol merg : mergCols) {
             if (merg.mergeType != MergeCol.MERGE_AVG) {
-                byte[] result = mertFields(
+                byte[] mergeValue = mertFields(
                         toRow.fieldValues.get(merg.colMeta.colIndex),
                         newRow.fieldValues.get(merg.colMeta.colIndex),
                         merg.colMeta.colType, merg.mergeType);
-                if (result != null) {
-                    toRow.fieldValues.set(merg.colMeta.colIndex, result);
+                if (mergeValue != null) {
+                    toRow.fieldValues.set(merg.colMeta.colIndex, mergeValue);
                 }
             }
         }
@@ -221,12 +221,12 @@ public class RowDataPacketGrouper {
         Set<Integer> rmIndexSet = new HashSet<>();
         for (MergeCol merg : mergCols) {
             if (merg.mergeType == MergeCol.MERGE_AVG) {
-                byte[] result = mertFields(
+                byte[] mergeValue = mertFields(
                         toRow.fieldValues.get(merg.colMeta.avgSumIndex),
                         toRow.fieldValues.get(merg.colMeta.avgCountIndex),
                         merg.colMeta.colType, merg.mergeType);
-                if (result != null) {
-                    toRow.fieldValues.set(merg.colMeta.avgSumIndex, result);
+                if (mergeValue != null) {
+                    toRow.fieldValues.set(merg.colMeta.avgSumIndex, mergeValue);
                     rmIndexSet.add(merg.colMeta.avgCountIndex);
                 }
             }

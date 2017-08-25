@@ -13,7 +13,7 @@ public class ItemResultPtr {
         return itemResult;
     }
 
-    public void set(ItemResult itemResult) {
-        this.itemResult = itemResult;
+    public void set(ItemResult result) {
+        this.itemResult = result;
     }
 }

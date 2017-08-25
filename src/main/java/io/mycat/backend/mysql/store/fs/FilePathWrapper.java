@@ -18,11 +18,11 @@ public abstract class FilePathWrapper extends FilePath {
     /**
      * Create a wrapped path instance for the given base path.
      *
-     * @param base the base path
+     * @param path the base path
      * @return the wrapped path
      */
-    public FilePathWrapper wrap(FilePath base) {
-        return base == null ? null : create(getPrefix() + base.name, base);
+    public FilePathWrapper wrap(FilePath path) {
+        return path == null ? null : create(getPrefix() + path.name, path);
     }
 
     @Override
@@ -40,11 +40,11 @@ public abstract class FilePathWrapper extends FilePath {
         return FilePath.get(path.substring(getScheme().length() + 1));
     }
 
-    private FilePathWrapper create(String path, FilePath base) {
+    private FilePathWrapper create(String path, FilePath filePath) {
         try {
             FilePathWrapper p = getClass().newInstance();
             p.name = path;
-            p.base = base;
+            p.base = filePath;
             return p;
         } catch (Exception e) {
             throw new IllegalArgumentException("Path: " + path, e);

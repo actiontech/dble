@@ -138,19 +138,19 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     @Override
-    public void start(String sql) {
+    public void start(String strSql) {
         clear();
-        this.sql = sql;
+        this.sql = strSql;
 
-        if (this.checkPartition(sql)) {
+        if (this.checkPartition(strSql)) {
             serverConnection.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
             clear();
             return;
         }
 
-        SQLStatementParser parser = new MySqlStatementParser(sql);
+        SQLStatementParser parser = new MySqlStatementParser(strSql);
         statement = (MySqlLoadDataInFileStatement) parser.parseStatement();
-        fileName = parseFileName(sql);
+        fileName = parseFileName(strSql);
         if (fileName == null) {
             serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
             clear();
@@ -278,13 +278,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private RouteResultset tryDirectRoute(String sql, String[] lineList) {
+    private RouteResultset tryDirectRoute(String strSql, String[] lineList) {
 
-        RouteResultset rrs = new RouteResultset(sql, ServerParse.INSERT);
+        RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
         if (tableConfig == null && schema.getDataNode() != null) {
             //走默认节点
-            RouteResultsetNode rrNode = new RouteResultsetNode(schema.getDataNode(), ServerParse.INSERT, sql);
+            RouteResultsetNode rrNode = new RouteResultsetNode(schema.getDataNode(), ServerParse.INSERT, strSql);
             rrs.setNodes(new RouteResultsetNode[]{rrNode});
             return rrs;
         } else if (tableConfig != null && tableConfig.isGlobalTable()) {
@@ -292,7 +292,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             RouteResultsetNode[] rrsNodes = new RouteResultsetNode[dataNodes.size()];
             for (int i = 0, dataNodesSize = dataNodes.size(); i < dataNodesSize; i++) {
                 String dataNode = dataNodes.get(i);
-                RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, sql);
+                RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, strSql);
                 rrsNodes[i] = rrNode;
             }
 
@@ -340,12 +340,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String tableName, String[] line, boolean toFile, String lineEnd) {
+    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) {
 
         RouteResultset rrs = tryDirectRoute(sql, line);
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
-            String insertSql = makeSimpleInsert(columns, line, tableName);
+            String insertSql = makeSimpleInsert(columns, line, table);
             rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
         }
 
@@ -418,22 +418,22 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     }
 
-    private String joinLine(List<String> data, LoadData loadData) {
+    private String joinLine(List<String> data, LoadData loaddata) {
         StringBuilder sb = new StringBuilder();
         for (String s : data) {
-            sb.append(s).append(loadData.getLineTerminatedBy());
+            sb.append(s).append(loaddata.getLineTerminatedBy());
         }
         return sb.toString();
     }
 
 
-    private String joinField(String[] src, LoadData loadData) {
+    private String joinField(String[] src, LoadData loaddata) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0, srcLength = src.length; i < srcLength; i++) {
             String s = src[i] != null ? src[i] : "";
             sb.append(s);
             if (i != srcLength - 1) {
-                sb.append(loadData.getFieldTerminatedBy());
+                sb.append(loaddata.getFieldTerminatedBy());
             }
         }
 
@@ -567,13 +567,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     @Override
-    public void end(byte packID) {
+    public void end(byte packid) {
         isStartLoadData = false;
-        this.packID = packID;
+        this.packID = packid;
         //load in data空包 结束
         saveByteOrToFile(null, true);
         List<SQLExpr> columns = statement.getColumns();
-        String tableName = statement.getTableName().getSimpleName();
+        String tableSimpleName = statement.getTableName().getSimpleName();
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
@@ -610,7 +610,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                        parseOneLine(columns, tableSimpleName, row, true, loadData.getLineTerminatedBy());
                     } else {
                         ignoreNumber--;
                     }
@@ -705,12 +705,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
      * check if the sql is contain the partition
      * if the sql contain the  partition word than stopped
      *
-     * @param sql
+     * @param strSql
      * @throws Exception
      */
-    private boolean checkPartition(String sql) {
+    private boolean checkPartition(String strSql) {
         Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)", Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(sql);
+        Matcher m = p.matcher(strSql);
         return m.find();
     }
 
@@ -719,17 +719,17 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
      * use a Regular Expression to replace the
      * "IGNORE    1234 LINES" to the " "
      *
-     * @param sql
+     * @param strSql
      * @return
      */
-    private String ignoreLinesDelete(String sql) {
+    private String ignoreLinesDelete(String strSql) {
         Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES", Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(sql);
+        Matcher m = p.matcher(strSql);
         StringBuffer sb = new StringBuffer();
         if (m.find()) {
             m.appendReplacement(sb, " ");
         } else {
-            return sql;
+            return strSql;
         }
         m.appendTail(sb);
         return sb.toString();

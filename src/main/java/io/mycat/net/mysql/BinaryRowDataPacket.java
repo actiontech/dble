@@ -51,18 +51,18 @@ public class BinaryRowDataPacket extends MySQLPacket {
      * 说明: 当开启<b>isOffHeapuseOffHeapForMerge</b>参数时,会使用UnsafeRow封装数据,
      * 因此需要从这个对象里面将数据封装成BinaryRowDataPacket
      *
-     * @param fieldPackets
+     * @param fields
      * @param unsafeRow
      */
-    public void read(List<FieldPacket> fieldPackets, UnsafeRow unsafeRow) {
-        this.fieldPackets = fieldPackets;
+    public void read(List<FieldPacket> fields, UnsafeRow unsafeRow) {
+        this.fieldPackets = fields;
         this.fieldCount = unsafeRow.numFields();
         this.fieldValues = new ArrayList<>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
         for (int i = 0; i < this.fieldCount; i++) {
             byte[] fv = unsafeRow.getBinary(i);
-            FieldPacket fieldPk = fieldPackets.get(i);
+            FieldPacket fieldPk = fields.get(i);
             if (fv == null) {
                 storeNullBitMap(i);
                 this.fieldValues.add(fv);
@@ -75,19 +75,19 @@ public class BinaryRowDataPacket extends MySQLPacket {
     /**
      * 从RowDataPacket转换成BinaryRowDataPacket
      *
-     * @param fieldPackets 字段包集合
+     * @param fields 字段包集合
      * @param rowDataPk    文本协议行数据包
      */
-    public void read(List<FieldPacket> fieldPackets, RowDataPacket rowDataPk) {
-        this.fieldPackets = fieldPackets;
+    public void read(List<FieldPacket> fields, RowDataPacket rowDataPk) {
+        this.fieldPackets = fields;
         this.fieldCount = rowDataPk.fieldCount;
         this.fieldValues = new ArrayList<>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
-        List<byte[]> fieldValues = rowDataPk.fieldValues;
+        List<byte[]> values = rowDataPk.fieldValues;
         for (int i = 0; i < fieldCount; i++) {
-            byte[] fv = fieldValues.get(i);
-            FieldPacket fieldPk = fieldPackets.get(i);
+            byte[] fv = values.get(i);
+            FieldPacket fieldPk = fields.get(i);
             if (fv == null) { // 字段值为null,根据协议规定存储nullBitMap
                 storeNullBitMap(i);
                 this.fieldValues.add(fv);

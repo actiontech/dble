@@ -134,7 +134,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     public void execute() throws Exception {
-        final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             this.reset(rrs.getNodes().length);
@@ -426,20 +425,20 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             ByteBuffer buffer = session.getSource().allocate();
-            final RouteResultset rrs = this.dataMergeSvr.getRrs();
+            final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
 
             /**
              * 处理limit语句的start 和 end位置，将正确的结果发送给
              * Mycat 客户端
              */
-            int start = rrs.getLimitStart();
-            int end = start + rrs.getLimitSize();
+            int start = routeResultset.getLimitStart();
+            int end = start + routeResultset.getLimitSize();
             int index = 0;
 
             if (start < 0)
                 start = 0;
 
-            if (rrs.getLimitSize() < 0)
+            if (routeResultset.getLimitSize() < 0)
                 end = Integer.MAX_VALUE;
 
             if (prepared) {
@@ -496,17 +495,17 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             ByteBuffer buffer = session.getSource().allocate();
-            final RouteResultset rrs = this.dataMergeSvr.getRrs();
+            final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
 
             // 处理limit语句
-            int start = rrs.getLimitStart();
-            int end = start + rrs.getLimitSize();
+            int start = routeResultset.getLimitStart();
+            int end = start + routeResultset.getLimitSize();
 
             if (start < 0) {
                 start = 0;
             }
 
-            if (rrs.getLimitSize() < 0) {
+            if (routeResultset.getLimitSize() < 0) {
                 end = results.size();
             }
 

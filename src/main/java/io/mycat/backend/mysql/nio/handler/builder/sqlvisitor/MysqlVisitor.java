@@ -51,14 +51,14 @@ public abstract class MysqlVisitor {
     public abstract void visit();
 
     /**
-     * @param query
+     * @param tableNode
      */
-    protected void buildTableName(TableNode query, StringBuilder sb) {
-        sb.append(" `").append(query.getPureName()).append("`");
-        String subAlias = query.getSubAlias();
+    protected void buildTableName(TableNode tableNode, StringBuilder sb) {
+        sb.append(" `").append(tableNode.getPureName()).append("`");
+        String subAlias = tableNode.getSubAlias();
         if (subAlias != null)
-            sb.append(" `").append(query.getSubAlias()).append("`");
-        List<SQLHint> hintList = query.getHintList();
+            sb.append(" `").append(tableNode.getSubAlias()).append("`");
+        List<SQLHint> hintList = tableNode.getHintList();
         if (hintList != null && !hintList.isEmpty()) {
             sb.append(' ');
             boolean isFirst = true;
@@ -74,11 +74,11 @@ public abstract class MysqlVisitor {
     }
 
     /* where修改为可替换的 */
-    protected void buildWhere(PlanNode query) {
+    protected void buildWhere(PlanNode planNode) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
         StringBuilder whereBuilder = new StringBuilder();
-        Item filter = query.getWhereFilter();
+        Item filter = planNode.getWhereFilter();
         if (filter != null) {
             String pdName = visitUnselPushDownName(filter, false);
             whereBuilder.append(" where ").append(pdName);

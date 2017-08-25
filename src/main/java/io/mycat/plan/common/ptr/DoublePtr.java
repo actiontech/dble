@@ -11,7 +11,7 @@ public class DoublePtr {
         return db;
     }
 
-    public void set(double db) {
-        this.db = db;
+    public void set(double v) {
+        this.db = v;
     }
 }

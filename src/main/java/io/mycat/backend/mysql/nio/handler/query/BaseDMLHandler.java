@@ -53,8 +53,8 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public void setLeft(boolean isLeft) {
-        this.isLeft = isLeft;
+    public void setLeft(boolean left) {
+        this.isLeft = left;
     }
 
     @Override

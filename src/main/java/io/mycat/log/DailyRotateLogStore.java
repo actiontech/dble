@@ -155,8 +155,8 @@ public class DailyRotateLogStore {
         return buf;
     }
 
-    private long calculateNextCheckTime(Date now) {
-        cal.setTime(now);
+    private long calculateNextCheckTime(Date date) {
+        cal.setTime(date);
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
         cal.set(Calendar.SECOND, 0);

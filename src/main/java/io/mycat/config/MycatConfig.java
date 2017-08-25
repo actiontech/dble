@@ -158,13 +158,13 @@ public class MycatConfig {
     }
 
     public String[] getDataNodeSchemasOfDataHost(String dataHost) {
-        ArrayList<String> schemas = new ArrayList<>(30);
+        ArrayList<String> schemaList = new ArrayList<>(30);
         for (PhysicalDBNode dn : dataNodes.values()) {
             if (dn.getDbPool().getHostName().equals(dataHost)) {
-                schemas.add(dn.getDatabase());
+                schemaList.add(dn.getDatabase());
             }
         }
-        return schemas.toArray(new String[schemas.size()]);
+        return schemaList.toArray(new String[schemaList.size()]);
     }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
@@ -222,11 +222,11 @@ public class MycatConfig {
                 firewall2 != null && status != ROLLBACK;
     }
 
-    public void rollback(Map<String, UserConfig> users, Map<String, SchemaConfig> schemas,
-                         Map<String, PhysicalDBNode> dataNodes, Map<String, PhysicalDBPool> dataHosts,
-                         Map<ERTable, Set<ERTable>> erRelations, FirewallConfig firewall) {
+    public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
+                         Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
+                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall) {
 
-        apply(users, schemas, dataNodes, dataHosts, erRelations, firewall, status == RELOAD_ALL);
+        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall, status == RELOAD_ALL);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
     }
@@ -331,8 +331,8 @@ public class MycatConfig {
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall,
                        boolean isLoadAll) {
-        final ReentrantReadWriteLock lock = MycatServer.getInstance().getConfLock();
-        lock.writeLock().lock();
+        final ReentrantReadWriteLock confLock = MycatServer.getInstance().getConfLock();
+        confLock.writeLock().lock();
         try {
             // old 处理
             // 1、停止老的数据源心跳
@@ -381,7 +381,7 @@ public class MycatConfig {
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
         } finally {
-            lock.writeLock().unlock();
+            confLock.writeLock().unlock();
         }
     }
 

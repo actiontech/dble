@@ -50,9 +50,9 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         this.listener = listener;
     }
 
-    public void connectionError(MySQLConnection source, Throwable e) {
+    public void connectionError(MySQLConnection c, Throwable e) {
         if (listener != null) {
-            listener.connectionError(e, source);
+            listener.connectionError(e, c);
         }
     }
 

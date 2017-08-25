@@ -131,33 +131,33 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
         /**
          * 去掉库名、去掉``
          *
-         * @param tableName
+         * @param table
          * @return
          */
-        private String fixName(String tableName) {
-            if (tableName != null) {
-                tableName = tableName.replace("`", "");
-                int dotIdx = tableName.indexOf(".");
+        private String fixName(String table) {
+            if (table != null) {
+                table = table.replace("`", "");
+                int dotIdx = table.indexOf(".");
                 if (dotIdx > 0) {
-                    tableName = tableName.substring(1 + dotIdx).trim();
+                    table = table.substring(1 + dotIdx).trim();
                 }
             }
-            return tableName;
+            return table;
         }
 
         /**
          * 解析 SQL 获取指定表及条件列的值
          *
          * @param sql
-         * @param tableName
+         * @param table
          * @param colnumName
          * @return
          */
-        public List<Object> parseConditionValues(String sql, String tableName, String colnumName) {
+        public List<Object> parseConditionValues(String sql, String table, String colnumName) {
 
             List<Object> values = null;
 
-            if (sql != null && tableName != null && columnName != null) {
+            if (sql != null && table != null && columnName != null) {
 
                 values = new ArrayList<>();
 
@@ -168,7 +168,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
                 stmt.accept(visitor);
 
                 String currentTable = visitor.getCurrentTable();
-                if (tableName.equalsIgnoreCase(currentTable)) {
+                if (table.equalsIgnoreCase(currentTable)) {
 
                     List<Condition> conditions = visitor.getConditions();
                     for (Condition condition : conditions) {

@@ -96,10 +96,10 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         }
     }
 
-    public void initializeZK(Properties props, String zkAddress) throws Exception {
+    public void initializeZK(Properties properties, String zkAddress) throws Exception {
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
-        this.props = props;
+        this.props = properties;
     }
 
     private void handle(String key) throws Exception {

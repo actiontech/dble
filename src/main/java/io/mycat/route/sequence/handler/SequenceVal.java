@@ -43,9 +43,9 @@ public class SequenceVal {
                         "sequnce not found in db table ");
             } else if (dbretVal != null) {
                 String[] items = dbretVal.split(",");
-                Long curVal = Long.parseLong(items[0]);
+                Long curValue = Long.parseLong(items[0]);
                 int span = Integer.parseInt(items[1]);
-                return new Long[]{curVal, curVal + span};
+                return new Long[]{curValue, curValue + span};
             } else {
                 try {
                     Thread.sleep(100);

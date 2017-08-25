@@ -106,32 +106,32 @@ public final class RouteResultset implements Serializable {
         return isLoadData;
     }
 
-    public void setLoadData(boolean isLoadData) {
-        this.isLoadData = isLoadData;
+    public void setLoadData(boolean loadData) {
+        this.isLoadData = loadData;
     }
 
     public boolean isFinishedExecute() {
         return isFinishedExecute;
     }
 
-    public void setFinishedExecute(boolean isFinishedExecute) {
-        this.isFinishedExecute = isFinishedExecute;
+    public void setFinishedExecute(boolean finishedExecute) {
+        this.isFinishedExecute = finishedExecute;
     }
 
     public boolean isFinishedRoute() {
         return isFinishedRoute || needOptimizer;
     }
 
-    public void setFinishedRoute(boolean isFinishedRoute) {
-        this.isFinishedRoute = isFinishedRoute;
+    public void setFinishedRoute(boolean finishedRoute) {
+        this.isFinishedRoute = finishedRoute;
     }
 
     public boolean isGlobalTable() {
         return globalTableFlag;
     }
 
-    public void setGlobalTable(boolean globalTableFlag) {
-        this.globalTableFlag = globalTableFlag;
+    public void setGlobalTable(boolean globalTable) {
+        this.globalTableFlag = globalTable;
     }
 
     public RouteResultset(String stmt, int sqlType) {

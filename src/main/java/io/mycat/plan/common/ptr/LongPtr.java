@@ -11,8 +11,8 @@ public class LongPtr {
         return l;
     }
 
-    public void set(long l) {
-        this.l = l;
+    public void set(long v) {
+        this.l = v;
     }
 
     public long decre() {

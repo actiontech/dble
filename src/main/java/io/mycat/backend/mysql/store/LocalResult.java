@@ -212,8 +212,8 @@ public abstract class LocalResult implements ResultStore {
         this.lastRow = null;
     }
 
-    public LocalResult setMemSizeController(MemSizeController bufferMC) {
-        this.bufferMC = bufferMC;
+    public LocalResult setMemSizeController(MemSizeController memSizeController) {
+        this.bufferMC = memSizeController;
         return this;
     }
 }

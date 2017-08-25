@@ -77,16 +77,16 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     public Integer[] calculateRange(String beginValue, String endValue) {
         SimpleDateFormat format = new SimpleDateFormat(this.dateFormat);
         try {
-            Date beginDate = format.parse(beginValue);
-            Date endDate = format.parse(endValue);
+            Date begin = format.parse(beginValue);
+            Date end = format.parse(endValue);
             Calendar cal = Calendar.getInstance();
             List<Integer> list = new ArrayList<>();
-            while (beginDate.getTime() <= endDate.getTime()) {
-                Integer nodeValue = this.calculate(format.format(beginDate));
+            while (begin.getTime() <= end.getTime()) {
+                Integer nodeValue = this.calculate(format.format(begin));
                 if (Collections.frequency(list, nodeValue) < 1) list.add(nodeValue);
-                cal.setTime(beginDate);
+                cal.setTime(begin);
                 cal.add(Calendar.DATE, 1);
-                beginDate = cal.getTime();
+                begin = cal.getTime();
             }
 
             Integer[] nodeArray = new Integer[list.size()];

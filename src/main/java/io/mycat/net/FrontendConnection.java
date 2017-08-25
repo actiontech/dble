@@ -61,6 +61,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected FrontendQueryHandler queryHandler;
     protected FrontendPrepareHandler prepareHandler;
     protected LoadDataInfileHandler loadDataInfileHandler;
+
     protected boolean isAccepted;
     protected boolean isAuthenticated;
 
@@ -110,8 +111,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.localPort = localPort;
     }
 
-    public void setAccepted(boolean isAccepted) {
-        this.isAccepted = isAccepted;
+    public void setAccepted(boolean accepted) {
+        isAccepted = accepted;
     }
 
     public void setProcessor(NIOProcessor processor) {
@@ -135,8 +136,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.prepareHandler = prepareHandler;
     }
 
-    public void setAuthenticated(boolean isAuthenticated) {
-        this.isAuthenticated = isAuthenticated;
+    public void setAuthenticated(boolean authenticated) {
+        this.isAuthenticated = authenticated;
     }
 
     public FrontendPrivileges getPrivileges() {
@@ -414,10 +415,10 @@ public abstract class FrontendConnection extends AbstractConnection {
             byte[] rand2 = RandomUtil.randomBytes(12);
 
             // 保存认证数据
-            byte[] seed = new byte[rand1.length + rand2.length];
-            System.arraycopy(rand1, 0, seed, 0, rand1.length);
-            System.arraycopy(rand2, 0, seed, rand1.length, rand2.length);
-            this.seed = seed;
+            byte[] rand = new byte[rand1.length + rand2.length];
+            System.arraycopy(rand1, 0, rand, 0, rand1.length);
+            System.arraycopy(rand2, 0, rand, rand1.length, rand2.length);
+            this.seed = rand;
 
             // 发送握手数据包
             boolean useHandshakeV10 = MycatServer.getInstance().getConfig().getSystem().getUseHandshakeV10() == 1;

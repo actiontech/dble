@@ -46,8 +46,8 @@ public class ParticipantLogEntry implements Serializable {
         this.txState = txState;
     }
 
-    public boolean compareAddress(String host, int port, String schema) {
-        return this.host.equals(host) && this.port == port && this.schema.equals(schema);
+    public boolean compareAddress(String hostName, int portNum, String schemaName) {
+        return this.host.equals(hostName) && this.port == portNum && this.schema.equals(schemaName);
     }
 
     @Override

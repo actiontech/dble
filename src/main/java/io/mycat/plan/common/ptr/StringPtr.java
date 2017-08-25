@@ -11,7 +11,7 @@ public class StringPtr {
         return s;
     }
 
-    public void set(String s) {
-        this.s = s;
+    public void set(String str) {
+        this.s = str;
     }
 }

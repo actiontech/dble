@@ -422,12 +422,12 @@ class TimSort<K, B> {
         /**
          * Pushes the specified run onto the pending-run stack.
          *
-         * @param runBase index of the first element in the run
-         * @param runLen  the number of elements in the run
+         * @param base index of the first element in the run
+         * @param len  the number of elements in the run
          */
-        private void pushRun(int runBase, int runLen) {
-            this.runBase[stackSize] = runBase;
-            this.runLen[stackSize] = runLen;
+        private void pushRun(int base, int len) {
+            this.runBase[stackSize] = base;
+            this.runLen[stackSize] = len;
             stackSize++;
         }
 
@@ -535,28 +535,28 @@ class TimSort<K, B> {
          * returns the index of the leftmost equal element.
          *
          * @param key  the key whose insertion point to search for
-         * @param a    the array in which to search
+         * @param search    the array in which to search
          * @param base the index of the first element in the range
          * @param len  the length of the range; must be > 0
          * @param hint the index at which to begin the search, 0 <= hint < n.
          *             The closer hint is to the result, the faster this method will run.
-         * @param c    the comparator used to order the range, and to search
+         * @param comparator    the comparator used to order the range, and to search
          * @return the int k,  0 <= k <= n such that a[b + k - 1] < key <= a[b + k],
          * pretending that a[b - 1] is minus infinity and a[b + n] is infinity.
          * In other words, key belongs at index b + k; or in other words,
          * the first k elements of a should precede key, and the last n - k
          * should follow it.
          */
-        private int gallopLeft(K key, B a, int base, int len, int hint, Comparator<? super K> c) {
+        private int gallopLeft(K key, B search, int base, int len, int hint, Comparator<? super K> comparator) {
             assert len > 0 && hint >= 0 && hint < len;
             int lastOfs = 0;
             int ofs = 1;
             K key0 = s.newKey();
 
-            if (c.compare(key, s.getKey(a, base + hint, key0)) > 0) {
+            if (comparator.compare(key, s.getKey(search, base + hint, key0)) > 0) {
                 // Gallop right until a[base+hint+lastOfs] < key <= a[base+hint+ofs]
                 int maxOfs = len - hint;
-                while (ofs < maxOfs && c.compare(key, s.getKey(a, base + hint + ofs, key0)) > 0) {
+                while (ofs < maxOfs && comparator.compare(key, s.getKey(search, base + hint + ofs, key0)) > 0) {
                     lastOfs = ofs;
                     ofs = (ofs << 1) + 1;
                     if (ofs <= 0)   // int overflow
@@ -571,7 +571,7 @@ class TimSort<K, B> {
             } else { // key <= a[base + hint]
                 // Gallop left until a[base+hint-ofs] < key <= a[base+hint-lastOfs]
                 final int maxOfs = hint + 1;
-                while (ofs < maxOfs && c.compare(key, s.getKey(a, base + hint - ofs, key0)) <= 0) {
+                while (ofs < maxOfs && comparator.compare(key, s.getKey(search, base + hint - ofs, key0)) <= 0) {
                     lastOfs = ofs;
                     ofs = (ofs << 1) + 1;
                     if (ofs <= 0)   // int overflow
@@ -581,9 +581,9 @@ class TimSort<K, B> {
                     ofs = maxOfs;
 
                 // Make offsets relative to base
-                int tmp = lastOfs;
+                int tmpValue = lastOfs;
                 lastOfs = hint - ofs;
-                ofs = hint - tmp;
+                ofs = hint - tmpValue;
             }
             assert -1 <= lastOfs && lastOfs < ofs && ofs <= len;
 
@@ -596,7 +596,7 @@ class TimSort<K, B> {
             while (lastOfs < ofs) {
                 int m = lastOfs + ((ofs - lastOfs) >>> 1);
 
-                if (c.compare(key, s.getKey(a, base + m, key0)) > 0)
+                if (comparator.compare(key, s.getKey(search, base + m, key0)) > 0)
                     lastOfs = m + 1;  // a[base + m] < key
                 else
                     ofs = m;          // key <= a[base + m]
@@ -610,25 +610,25 @@ class TimSort<K, B> {
          * key, gallopRight returns the index after the rightmost equal element.
          *
          * @param key  the key whose insertion point to search for
-         * @param a    the array in which to search
+         * @param search    the array in which to search
          * @param base the index of the first element in the range
          * @param len  the length of the range; must be > 0
          * @param hint the index at which to begin the search, 0 <= hint < n.
          *             The closer hint is to the result, the faster this method will run.
-         * @param c    the comparator used to order the range, and to search
+         * @param comparator    the comparator used to order the range, and to search
          * @return the int k,  0 <= k <= n such that a[b + k - 1] <= key < a[b + k]
          */
-        private int gallopRight(K key, B a, int base, int len, int hint, Comparator<? super K> c) {
+        private int gallopRight(K key, B search, int base, int len, int hint, Comparator<? super K> comparator) {
             assert len > 0 && hint >= 0 && hint < len;
 
             int ofs = 1;
             int lastOfs = 0;
             K key1 = s.newKey();
 
-            if (c.compare(key, s.getKey(a, base + hint, key1)) < 0) {
+            if (comparator.compare(key, s.getKey(search, base + hint, key1)) < 0) {
                 // Gallop left until a[b+hint - ofs] <= key < a[b+hint - lastOfs]
                 int maxOfs = hint + 1;
-                while (ofs < maxOfs && c.compare(key, s.getKey(a, base + hint - ofs, key1)) < 0) {
+                while (ofs < maxOfs && comparator.compare(key, s.getKey(search, base + hint - ofs, key1)) < 0) {
                     lastOfs = ofs;
                     ofs = (ofs << 1) + 1;
                     if (ofs <= 0)   // int overflow
@@ -638,13 +638,13 @@ class TimSort<K, B> {
                     ofs = maxOfs;
 
                 // Make offsets relative to b
-                int tmp = lastOfs;
+                int tmpValue = lastOfs;
                 lastOfs = hint - ofs;
-                ofs = hint - tmp;
+                ofs = hint - tmpValue;
             } else { // a[b + hint] <= key
                 // Gallop right until a[b+hint + lastOfs] <= key < a[b+hint + ofs]
                 int maxOfs = len - hint;
-                while (ofs < maxOfs && c.compare(key, s.getKey(a, base + hint + ofs, key1)) >= 0) {
+                while (ofs < maxOfs && comparator.compare(key, s.getKey(search, base + hint + ofs, key1)) >= 0) {
                     lastOfs = ofs;
                     ofs = (ofs << 1) + 1;
                     if (ofs <= 0)   // int overflow
@@ -668,7 +668,7 @@ class TimSort<K, B> {
             while (lastOfs < ofs) {
                 int m = lastOfs + ((ofs - lastOfs) >>> 1);
 
-                if (c.compare(key, s.getKey(a, base + m, key1)) < 0)
+                if (comparator.compare(key, s.getKey(search, base + m, key1)) < 0)
                     ofs = m;          // key < a[b + m]
                 else
                     lastOfs = m + 1;  // a[b + m] <= key
@@ -697,31 +697,31 @@ class TimSort<K, B> {
             assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
             // Copy first run into temp array
-            B a = this.a; // For performance
-            B tmp = ensureCapacity(len1);
-            s.copyRange(a, base1, tmp, 0, len1);
+            B src = this.a; // For performance
+            B dst = ensureCapacity(len1);
+            s.copyRange(src, base1, dst, 0, len1);
 
             int cursor1 = 0;       // Indexes into tmp array
             int cursor2 = base2;   // Indexes int a
             int dest = base1;      // Indexes int a
 
             // Move first element of second run and deal with degenerate cases
-            s.copyElement(a, cursor2++, a, dest++);
+            s.copyElement(src, cursor2++, src, dest++);
             if (--len2 == 0) {
-                s.copyRange(tmp, cursor1, a, dest, len1);
+                s.copyRange(dst, cursor1, src, dest, len1);
                 return;
             }
             if (len1 == 1) {
-                s.copyRange(a, cursor2, a, dest, len2);
-                s.copyElement(tmp, cursor1, a, dest + len2); // Last elt of run 1 to end of merge
+                s.copyRange(src, cursor2, src, dest, len2);
+                s.copyElement(dst, cursor1, src, dest + len2); // Last elt of run 1 to end of merge
                 return;
             }
 
             K key0 = s.newKey();
             K key1 = s.newKey();
 
-            Comparator<? super K> c = this.c;  // Use local variable for performance
-            int minGallop = this.minGallop;    //  "    "       "     "      "
+            Comparator<? super K> comparator = this.c;  // Use local variable for performance
+            int gallop = this.minGallop;    //  "    "       "     "      "
             outer:
             while (true) {
                 int count1 = 0; // Number of times in a row that first run won
@@ -733,20 +733,20 @@ class TimSort<K, B> {
                  */
                 do {
                     assert len1 > 1 && len2 > 0;
-                    if (c.compare(s.getKey(a, cursor2, key0), s.getKey(tmp, cursor1, key1)) < 0) {
-                        s.copyElement(a, cursor2++, a, dest++);
+                    if (comparator.compare(s.getKey(src, cursor2, key0), s.getKey(dst, cursor1, key1)) < 0) {
+                        s.copyElement(src, cursor2++, src, dest++);
                         count2++;
                         count1 = 0;
                         if (--len2 == 0)
                             break outer;
                     } else {
-                        s.copyElement(tmp, cursor1++, a, dest++);
+                        s.copyElement(dst, cursor1++, src, dest++);
                         count1++;
                         count2 = 0;
                         if (--len1 == 1)
                             break outer;
                     }
-                } while ((count1 | count2) < minGallop);
+                } while ((count1 | count2) < gallop);
 
                 /*
                  * One run is winning so consistently that galloping may be a
@@ -755,50 +755,50 @@ class TimSort<K, B> {
                  */
                 do {
                     assert len1 > 1 && len2 > 0;
-                    count1 = gallopRight(s.getKey(a, cursor2, key0), tmp, cursor1, len1, 0, c);
+                    count1 = gallopRight(s.getKey(src, cursor2, key0), dst, cursor1, len1, 0, comparator);
                     if (count1 != 0) {
-                        s.copyRange(tmp, cursor1, a, dest, count1);
+                        s.copyRange(dst, cursor1, src, dest, count1);
                         dest += count1;
                         cursor1 += count1;
                         len1 -= count1;
                         if (len1 <= 1) // len1 == 1 || len1 == 0
                             break outer;
                     }
-                    s.copyElement(a, cursor2++, a, dest++);
+                    s.copyElement(src, cursor2++, src, dest++);
                     if (--len2 == 0)
                         break outer;
 
-                    count2 = gallopLeft(s.getKey(tmp, cursor1, key0), a, cursor2, len2, 0, c);
+                    count2 = gallopLeft(s.getKey(dst, cursor1, key0), src, cursor2, len2, 0, comparator);
                     if (count2 != 0) {
-                        s.copyRange(a, cursor2, a, dest, count2);
+                        s.copyRange(src, cursor2, src, dest, count2);
                         dest += count2;
                         cursor2 += count2;
                         len2 -= count2;
                         if (len2 == 0)
                             break outer;
                     }
-                    s.copyElement(tmp, cursor1++, a, dest++);
+                    s.copyElement(dst, cursor1++, src, dest++);
                     if (--len1 == 1)
                         break outer;
-                    minGallop--;
+                    gallop--;
                 } while (count1 >= MIN_GALLOP | count2 >= MIN_GALLOP);
-                if (minGallop < 0)
-                    minGallop = 0;
-                minGallop += 2;  // Penalize for leaving gallop mode
+                if (gallop < 0)
+                    gallop = 0;
+                gallop += 2;  // Penalize for leaving gallop mode
             }  // End of "outer" loop
-            this.minGallop = minGallop < 1 ? 1 : minGallop;  // Write back to field
+            this.minGallop = gallop < 1 ? 1 : gallop;  // Write back to field
 
             if (len1 == 1) {
                 assert len2 > 0;
-                s.copyRange(a, cursor2, a, dest, len2);
-                s.copyElement(tmp, cursor1, a, dest + len2); //  Last elt of run 1 to end of merge
+                s.copyRange(src, cursor2, src, dest, len2);
+                s.copyElement(dst, cursor1, src, dest + len2); //  Last elt of run 1 to end of merge
             } else if (len1 == 0) {
                 throw new IllegalArgumentException(
                         "Comparison method violates its general contract!");
             } else {
                 assert len2 == 0;
                 assert len1 > 1;
-                s.copyRange(tmp, cursor1, a, dest, len1);
+                s.copyRange(dst, cursor1, src, dest, len1);
             }
         }
 
@@ -817,9 +817,9 @@ class TimSort<K, B> {
             assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
             // Copy second run into temp array
-            B a = this.a; // For performance
-            B tmp = ensureCapacity(len2);
-            s.copyRange(a, base2, tmp, 0, len2);
+            B src = this.a; // For performance
+            B dst = ensureCapacity(len2);
+            s.copyRange(src, base2, dst, 0, len2);
 
             int cursor1 = base1 + len1 - 1;  // Indexes into a
             int cursor2 = len2 - 1;          // Indexes into tmp array
@@ -829,21 +829,21 @@ class TimSort<K, B> {
             K key1 = s.newKey();
 
             // Move last element of first run and deal with degenerate cases
-            s.copyElement(a, cursor1--, a, dest--);
+            s.copyElement(src, cursor1--, src, dest--);
             if (--len1 == 0) {
-                s.copyRange(tmp, 0, a, dest - (len2 - 1), len2);
+                s.copyRange(dst, 0, src, dest - (len2 - 1), len2);
                 return;
             }
             if (len2 == 1) {
                 dest -= len1;
                 cursor1 -= len1;
-                s.copyRange(a, cursor1 + 1, a, dest + 1, len1);
-                s.copyElement(tmp, cursor2, a, dest);
+                s.copyRange(src, cursor1 + 1, src, dest + 1, len1);
+                s.copyElement(dst, cursor2, src, dest);
                 return;
             }
 
-            Comparator<? super K> c = this.c;  // Use local variable for performance
-            int minGallop = this.minGallop;    //  "    "       "     "      "
+            Comparator<? super K> comparator = this.c;  // Use local variable for performance
+            int gallop = this.minGallop;    //  "    "       "     "      "
             outer:
             while (true) {
                 int count1 = 0; // Number of times in a row that first run won
@@ -855,20 +855,20 @@ class TimSort<K, B> {
                  */
                 do {
                     assert len1 > 0 && len2 > 1;
-                    if (c.compare(s.getKey(tmp, cursor2, key0), s.getKey(a, cursor1, key1)) < 0) {
-                        s.copyElement(a, cursor1--, a, dest--);
+                    if (comparator.compare(s.getKey(dst, cursor2, key0), s.getKey(src, cursor1, key1)) < 0) {
+                        s.copyElement(src, cursor1--, src, dest--);
                         count1++;
                         count2 = 0;
                         if (--len1 == 0)
                             break outer;
                     } else {
-                        s.copyElement(tmp, cursor2--, a, dest--);
+                        s.copyElement(dst, cursor2--, src, dest--);
                         count2++;
                         count1 = 0;
                         if (--len2 == 1)
                             break outer;
                     }
-                } while ((count1 | count2) < minGallop);
+                } while ((count1 | count2) < gallop);
 
                 /*
                  * One run is winning so consistently that galloping may be a
@@ -877,52 +877,52 @@ class TimSort<K, B> {
                  */
                 do {
                     assert len1 > 0 && len2 > 1;
-                    count1 = len1 - gallopRight(s.getKey(tmp, cursor2, key0), a, base1, len1, len1 - 1, c);
+                    count1 = len1 - gallopRight(s.getKey(dst, cursor2, key0), src, base1, len1, len1 - 1, comparator);
                     if (count1 != 0) {
                         dest -= count1;
                         cursor1 -= count1;
                         len1 -= count1;
-                        s.copyRange(a, cursor1 + 1, a, dest + 1, count1);
+                        s.copyRange(src, cursor1 + 1, src, dest + 1, count1);
                         if (len1 == 0)
                             break outer;
                     }
-                    s.copyElement(tmp, cursor2--, a, dest--);
+                    s.copyElement(dst, cursor2--, src, dest--);
                     if (--len2 == 1)
                         break outer;
 
-                    count2 = len2 - gallopLeft(s.getKey(a, cursor1, key0), tmp, 0, len2, len2 - 1, c);
+                    count2 = len2 - gallopLeft(s.getKey(src, cursor1, key0), dst, 0, len2, len2 - 1, comparator);
                     if (count2 != 0) {
                         dest -= count2;
                         cursor2 -= count2;
                         len2 -= count2;
-                        s.copyRange(tmp, cursor2 + 1, a, dest + 1, count2);
+                        s.copyRange(dst, cursor2 + 1, src, dest + 1, count2);
                         if (len2 <= 1)  // len2 == 1 || len2 == 0
                             break outer;
                     }
-                    s.copyElement(a, cursor1--, a, dest--);
+                    s.copyElement(src, cursor1--, src, dest--);
                     if (--len1 == 0)
                         break outer;
-                    minGallop--;
+                    gallop--;
                 } while (count1 >= MIN_GALLOP | count2 >= MIN_GALLOP);
-                if (minGallop < 0)
-                    minGallop = 0;
-                minGallop += 2;  // Penalize for leaving gallop mode
+                if (gallop < 0)
+                    gallop = 0;
+                gallop += 2;  // Penalize for leaving gallop mode
             }  // End of "outer" loop
-            this.minGallop = minGallop < 1 ? 1 : minGallop;  // Write back to field
+            this.minGallop = gallop < 1 ? 1 : gallop;  // Write back to field
 
             if (len2 == 1) {
                 assert len1 > 0;
                 dest -= len1;
                 cursor1 -= len1;
-                s.copyRange(a, cursor1 + 1, a, dest + 1, len1);
-                s.copyElement(tmp, cursor2, a, dest); // Move first elt of run2 to front of merge
+                s.copyRange(src, cursor1 + 1, src, dest + 1, len1);
+                s.copyElement(dst, cursor2, src, dest); // Move first elt of run2 to front of merge
             } else if (len2 == 0) {
                 throw new IllegalArgumentException(
                         "Comparison method violates its general contract!");
             } else {
                 assert len1 == 0;
                 assert len2 > 0;
-                s.copyRange(tmp, 0, a, dest - (len2 - 1), len2);
+                s.copyRange(dst, 0, src, dest - (len2 - 1), len2);
             }
         }
 

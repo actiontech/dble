@@ -46,11 +46,11 @@ public class HandlerBuilder {
     /**
      * 生成node链，返回endHandler
      *
-     * @param node
+     * @param planNode
      * @return
      */
-    public DMLResponseHandler buildNode(NonBlockingSession session, PlanNode node) {
-        BaseHandlerBuilder builder = createBuilder(session, node);
+    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode) {
+        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode);
         builder.build();
         return builder.getEndHandler();
     }
@@ -65,20 +65,20 @@ public class HandlerBuilder {
         logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
     }
 
-    private BaseHandlerBuilder createBuilder(final NonBlockingSession session, PlanNode node) {
-        PlanNode.PlanNodeType i = node.type();
+    private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode) {
+        PlanNode.PlanNodeType i = planNode.type();
         if (i == PlanNode.PlanNodeType.TABLE) {
-            return new TableNodeHandlerBuilder(session, (TableNode) node, this);
+            return new TableNodeHandlerBuilder(nonBlockingSession, (TableNode) planNode, this);
         } else if (i == PlanNode.PlanNodeType.JOIN) {
-            return new JoinNodeHandlerBuilder(session, (JoinNode) node, this);
+            return new JoinNodeHandlerBuilder(nonBlockingSession, (JoinNode) planNode, this);
         } else if (i == PlanNode.PlanNodeType.MERGE) {
-            return new MergeNodeHandlerBuilder(session, (MergeNode) node, this);
+            return new MergeNodeHandlerBuilder(nonBlockingSession, (MergeNode) planNode, this);
         } else if (i == PlanNode.PlanNodeType.QUERY) {
-            return new QueryNodeHandlerBuilder(session, (QueryNode) node, this);
+            return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
-            return new NoNameNodeHandlerBuilder(session, (NoNameNode) node, this);
+            return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this);
         }
-        throw new RuntimeException("not supported tree node type:" + node.type());
+        throw new RuntimeException("not supported tree node type:" + planNode.type());
     }
 
 }

@@ -67,14 +67,14 @@ public class TableStat implements Comparable<TableStat> {
         }
 
         // 记录 关联表执行情况
-        for (String table : relaTables) {
-            RelaTable relaTable = this.relaTableMap.get(table);
+        for (String tableName : relaTables) {
+            RelaTable relaTable = this.relaTableMap.get(tableName);
             if (relaTable == null) {
-                relaTable = new RelaTable(table, 1);
+                relaTable = new RelaTable(tableName, 1);
             } else {
                 relaTable.incCount();
             }
-            this.relaTableMap.put(table, relaTable);
+            this.relaTableMap.put(tableName, relaTable);
         }
 
         this.lastExecuteTime = endTime;

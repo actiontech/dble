@@ -38,9 +38,9 @@ class FileNio extends FileBase {
     }
 
     @Override
-    public synchronized FileChannel position(long pos) throws IOException {
-        channel.position(pos);
-        this.pos = (int) pos;
+    public synchronized FileChannel position(long newPosition) throws IOException {
+        channel.position(newPosition);
+        this.pos = (int) newPosition;
         return this;
     }
 
@@ -104,15 +104,15 @@ class FileNio extends FileBase {
         try {
             long size = channel.size();
             if (newLength < size) {
-                long pos = channel.position();
+                long position = channel.position();
                 channel.truncate(newLength);
                 long newPos = channel.position();
-                if (pos < newLength) {
+                if (position < newLength) {
                     // position should stay
                     // in theory, this should not be needed
-                    if (newPos != pos) {
-                        channel.position(pos);
-                        this.pos = pos;
+                    if (newPos != position) {
+                        channel.position(position);
+                        this.pos = position;
                     }
                 } else if (newPos > newLength) {
                     // looks like a bug in this FileChannel implementation, as

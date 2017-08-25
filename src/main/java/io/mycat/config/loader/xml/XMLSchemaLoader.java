@@ -327,20 +327,20 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
 
-    private Map<String, TableConfig> loadTables(Element node, boolean lowerCaseNames) {
+    private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames) {
         // 支持表名中包含引号[`] BEN GONG
         Map<String, TableConfig> tables = new TableConfigMap();
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
             String tableNameElement = tableElement.getAttribute("name");
-            if (lowerCaseNames) {
+            if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
 
             //TODO:路由, 增加对动态日期表的支持
             String tableNameSuffixElement = tableElement.getAttribute("nameSuffix");
-            if (lowerCaseNames) {
+            if (isLowerCaseNames) {
                 tableNameSuffixElement = tableNameSuffixElement.toLowerCase();
             }
             if (!"".equals(tableNameSuffixElement)) {
@@ -418,7 +418,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableNames.length == 1) {
                 TableConfig table = tables.get(tableNames[0]);
                 // process child tables
-                processChildTables(tables, table, dataNode, tableElement, lowerCaseNames);
+                processChildTables(tables, table, dataNode, tableElement, isLowerCaseNames);
             }
         }
         return tables;
@@ -459,7 +459,7 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     private void processChildTables(Map<String, TableConfig> tables,
-                                    TableConfig parentTable, String dataNodes, Element tableNode, boolean lowerCaseNames) {
+                                    TableConfig parentTable, String strDatoNodes, Element tableNode, boolean isLowerCaseNames) {
 
         // parse child tables
         NodeList childNodeList = tableNode.getChildNodes();
@@ -471,7 +471,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             Element childTbElement = (Element) theNode;
             //读取子表信息
             String cdTbName = childTbElement.getAttribute("name");
-            if (lowerCaseNames) {
+            if (isLowerCaseNames) {
                 cdTbName = cdTbName.toLowerCase();
             }
             String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
@@ -488,14 +488,14 @@ public class XMLSchemaLoader implements SchemaLoader {
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
             TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, dataNodes, null, false, parentTable, joinKey, parentKey);
+                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");
             }
             tables.put(table.getName(), table);
             //对于子表的子表，递归处理
-            processChildTables(tables, table, dataNodes, childTbElement, lowerCaseNames);
+            processChildTables(tables, table, strDatoNodes, childTbElement, isLowerCaseNames);
         }
     }
 

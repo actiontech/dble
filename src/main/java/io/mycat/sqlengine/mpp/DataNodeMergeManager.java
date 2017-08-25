@@ -66,7 +66,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     }
 
 
-    public void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldCount) throws IOException {
+    public void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldSize) throws IOException {
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("field metadata keys:" + columToIndx.keySet());
@@ -81,7 +81,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
         DataNodeMemoryManager dataNodeMemoryManager = null;
 
-        this.fieldCount = fieldCount;
+        this.fieldCount = fieldSize;
 
         if (rrs.getHavingCols() != null) {
             ColMeta colMeta = columToIndx.get(rrs.getHavingCols().getLeft().toUpperCase());
@@ -156,7 +156,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             /**
              * 构造全局排序器
              */
-            schema = new StructType(columToIndx, fieldCount);
+            schema = new StructType(columToIndx, fieldSize);
             schema.setOrderCols(orderCols);
 
             prefixComputer = new RowPrefixComputer(schema);
@@ -184,7 +184,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
          * 1.schema
          */
 
-        schema = new StructType(columToIndx, fieldCount);
+        schema = new StructType(columToIndx, fieldSize);
         schema.setOrderCols(orderCols);
 
         /**

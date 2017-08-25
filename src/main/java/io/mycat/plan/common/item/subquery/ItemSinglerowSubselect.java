@@ -126,7 +126,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
     }
 
     @Override
-    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
         // TODO Auto-generated method stub
         return null;
     }

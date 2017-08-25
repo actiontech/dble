@@ -108,13 +108,13 @@ public class UnsafeRowGrouper {
                 false);
     }
 
-    private String[] toSortColumnsByIndex(String[] columns, Map<String, ColMeta> columToIndx) {
+    private String[] toSortColumnsByIndex(String[] columns, Map<String, ColMeta> colMetaMap) {
 
         Map<String, Integer> map = new HashMap<>();
 
         ColMeta curColMeta;
         for (String column : columns) {
-            curColMeta = columToIndx.get(column.toUpperCase());
+            curColMeta = colMetaMap.get(column.toUpperCase());
             if (curColMeta == null) {
                 throw new IllegalArgumentException(
                         "all columns in group by clause should be in the selected column list.!" + column);
@@ -123,7 +123,7 @@ public class UnsafeRowGrouper {
         }
 
 
-        String[] sortColumnsByIndex = new String[map.size()];
+        String[] sortColumnsIndexs = new String[map.size()];
 
         List<Map.Entry<String, Integer>> entryList = new ArrayList<>(
                 map.entrySet());
@@ -142,10 +142,10 @@ public class UnsafeRowGrouper {
 
         while (iter.hasNext()) {
             tmpEntry = iter.next();
-            sortColumnsByIndex[index++] = tmpEntry.getKey();
+            sortColumnsIndexs[index++] = tmpEntry.getKey();
         }
 
-        return sortColumnsByIndex;
+        return sortColumnsIndexs;
     }
 
     private void initGroupKey() {

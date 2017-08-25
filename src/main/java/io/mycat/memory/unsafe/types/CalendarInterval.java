@@ -272,15 +272,15 @@ public final class CalendarInterval implements Serializable {
     }
 
     public CalendarInterval add(CalendarInterval that) {
-        int months = this.months + that.months;
-        long microseconds = this.microseconds + that.microseconds;
-        return new CalendarInterval(months, microseconds);
+        int newMonths = this.months + that.months;
+        long newMicroseconds = this.microseconds + that.microseconds;
+        return new CalendarInterval(newMonths, newMicroseconds);
     }
 
     public CalendarInterval subtract(CalendarInterval that) {
-        int months = this.months - that.months;
-        long microseconds = this.microseconds - that.microseconds;
-        return new CalendarInterval(months, microseconds);
+        int newMonths = this.months - that.months;
+        long newMicroseconds = this.microseconds - that.microseconds;
+        return new CalendarInterval(newMonths, newMicroseconds);
     }
 
     public CalendarInterval negate() {

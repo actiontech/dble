@@ -73,13 +73,13 @@ public final class NIOReactor {
 
         @Override
         public void run() {
-            final Selector selector = this.selector;
+            final Selector finalSelector = this.selector;
             Set<SelectionKey> keys = null;
             for (; ; ) {
                 try {
-                    selector.select(500L);
-                    register(selector);
-                    keys = selector.selectedKeys();
+                    finalSelector.select(500L);
+                    register(finalSelector);
+                    keys = finalSelector.selectedKeys();
                     for (SelectionKey key : keys) {
                         AbstractConnection con = null;
                         try {
@@ -137,14 +137,14 @@ public final class NIOReactor {
             }
         }
 
-        private void register(Selector selector) {
+        private void register(Selector finalSelector) {
             AbstractConnection c;
             if (registerQueue.isEmpty()) {
                 return;
             }
             while ((c = registerQueue.poll()) != null) {
                 try {
-                    ((NIOSocketWR) c.getSocketWR()).register(selector);
+                    ((NIOSocketWR) c.getSocketWR()).register(finalSelector);
                     c.register();
                 } catch (Exception e) {
                     c.close("register err" + e.toString());

@@ -29,8 +29,8 @@ public class LoadData implements Serializable {
         return isLocal;
     }
 
-    public void setLocal(boolean isLocal) {
-        this.isLocal = isLocal;
+    public void setLocal(boolean local) {
+        this.isLocal = local;
     }
 
     public List<String> getData() {

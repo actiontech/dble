@@ -62,12 +62,12 @@ public class Procedure implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append("{ call ");
         sb.append(this.getName()).append("(");
-        Collection<ProcedureParameter> paramters = this.getParamterMap().values();
+        Collection<ProcedureParameter> parameters = this.getParameterMap().values();
         int j = 0;
-        for (ProcedureParameter paramter : paramters) {
+        for (ProcedureParameter parameter : parameters) {
 
-            String name = "?";
-            String joinStr = j == this.getParamterMap().size() - 1 ? name : name + ",";
+            String strParameter = "?";
+            String joinStr = j == this.getParameterMap().size() - 1 ? strParameter : strParameter + ",";
             sb.append(joinStr);
             j++;
         }
@@ -79,12 +79,12 @@ public class Procedure implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append("call ");
         sb.append(this.getName()).append("(");
-        Collection<ProcedureParameter> paramters = this.getParamterMap().values();
+        Collection<ProcedureParameter> parameters = this.getParameterMap().values();
         int j = 0;
-        for (ProcedureParameter paramter : paramters) {
-            Object value = paramter.getValue() != null && Types.VARCHAR == paramter.getJdbcType() ? "'" + paramter.getValue() + "'" : paramter.getValue();
-            String name = paramter.getValue() == null ? paramter.getName() : String.valueOf(value);
-            String joinStr = j == this.getParamterMap().size() - 1 ? name : name + ",";
+        for (ProcedureParameter parameter : parameters) {
+            Object value = parameter.getValue() != null && Types.VARCHAR == parameter.getJdbcType() ? "'" + parameter.getValue() + "'" : parameter.getValue();
+            String strParameter = parameter.getValue() == null ? parameter.getName() : String.valueOf(value);
+            String joinStr = j == this.getParameterMap().size() - 1 ? strParameter : strParameter + ",";
             sb.append(joinStr);
             j++;
         }
@@ -124,7 +124,7 @@ public class Procedure implements Serializable {
         this.selectSql = selectSql;
     }
 
-    private Map<String, ProcedureParameter> paramterMap = new LinkedHashMap<>();
+    private Map<String, ProcedureParameter> parameterMap = new LinkedHashMap<>();
 
     public String getOriginSql() {
         return originSql;
@@ -134,12 +134,12 @@ public class Procedure implements Serializable {
         this.originSql = originSql;
     }
 
-    public Map<String, ProcedureParameter> getParamterMap() {
-        return paramterMap;
+    public Map<String, ProcedureParameter> getParameterMap() {
+        return parameterMap;
     }
 
-    public void setParamterMap(Map<String, ProcedureParameter> paramterMap) {
-        this.paramterMap = paramterMap;
+    public void setParameterMap(Map<String, ProcedureParameter> parameterMap) {
+        this.parameterMap = parameterMap;
     }
 
     public String getName() {

@@ -103,10 +103,10 @@
         <module name="DefaultComesLast"/>
         <module name="FallThrough"/>
         <module name="CovariantEquals"/>
-        <!--<module name="HiddenField">-->
-            <!--<property name="ignoreSetter" value="true"/>-->
-            <!--<property name="ignoreConstructorParameter" value="true"/>-->
-        <!--</module>-->
+        <module name="HiddenField">
+            <property name="ignoreSetter" value="true"/>
+            <property name="ignoreConstructorParameter" value="true"/>
+        </module>
 
         <!-- Checks for class design. -->
         <module name="FinalClass"/>

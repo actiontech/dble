@@ -27,8 +27,8 @@ public class Property implements Named {
         return value;
     }
 
-    public Property setValue(String value) {
-        this.value = value;
+    public Property setValue(String val) {
+        this.value = val;
         return this;
     }
 
@@ -36,8 +36,8 @@ public class Property implements Named {
         return name;
     }
 
-    public Property setName(String value) {
-        this.name = value;
+    public Property setName(String propName) {
+        this.name = propName;
         return this;
     }
 

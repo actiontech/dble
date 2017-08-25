@@ -25,8 +25,8 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
 
         if (orderCols != null) {
             for (int i = 0; i < orderCols.length; i++) {
-                ColMeta colMeta = orderCols[i].colMeta;
-                if (colMeta.colIndex == 0) {
+                ColMeta meta = orderCols[i].colMeta;
+                if (meta.colIndex == 0) {
                     orderIndex = i;
                     break;
                 }

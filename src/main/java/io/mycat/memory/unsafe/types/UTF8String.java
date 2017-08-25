@@ -146,9 +146,9 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
     public void writeTo(ByteBuffer buffer) {
         assert (buffer.hasArray());
         byte[] target = buffer.array();
-        int offset = buffer.arrayOffset();
+        int arrayOffset = buffer.arrayOffset();
         int pos = buffer.position();
-        writeToMemory(target, Platform.BYTE_ARRAY_OFFSET + offset + pos);
+        writeToMemory(target, Platform.BYTE_ARRAY_OFFSET + arrayOffset + pos);
         buffer.position(pos + numBytes);
     }
 
@@ -674,14 +674,14 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
 
             byte[] data = new byte[this.numBytes + pad.numBytes * count + remain.numBytes];
             Platform.copyMemory(this.base, this.offset, data, Platform.BYTE_ARRAY_OFFSET, this.numBytes);
-            int offset = this.numBytes;
+            int bytes = this.numBytes;
             int idx = 0;
             while (idx < count) {
-                Platform.copyMemory(pad.base, pad.offset, data, Platform.BYTE_ARRAY_OFFSET + offset, pad.numBytes);
+                Platform.copyMemory(pad.base, pad.offset, data, Platform.BYTE_ARRAY_OFFSET + bytes, pad.numBytes);
                 ++idx;
-                offset += pad.numBytes;
+                bytes += pad.numBytes;
             }
-            Platform.copyMemory(remain.base, remain.offset, data, Platform.BYTE_ARRAY_OFFSET + offset, remain.numBytes);
+            Platform.copyMemory(remain.base, remain.offset, data, Platform.BYTE_ARRAY_OFFSET + bytes, remain.numBytes);
 
             return UTF8String.fromBytes(data);
         }
@@ -706,16 +706,16 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
 
             byte[] data = new byte[this.numBytes + pad.numBytes * count + remain.numBytes];
 
-            int offset = 0;
+            int arrayOffset = 0;
             int idx = 0;
             while (idx < count) {
-                Platform.copyMemory(pad.base, pad.offset, data, Platform.BYTE_ARRAY_OFFSET + offset, pad.numBytes);
+                Platform.copyMemory(pad.base, pad.offset, data, Platform.BYTE_ARRAY_OFFSET + arrayOffset, pad.numBytes);
                 ++idx;
-                offset += pad.numBytes;
+                arrayOffset += pad.numBytes;
             }
-            Platform.copyMemory(remain.base, remain.offset, data, Platform.BYTE_ARRAY_OFFSET + offset, remain.numBytes);
-            offset += remain.numBytes;
-            Platform.copyMemory(this.base, this.offset, data, Platform.BYTE_ARRAY_OFFSET + offset, numBytes());
+            Platform.copyMemory(remain.base, remain.offset, data, Platform.BYTE_ARRAY_OFFSET + arrayOffset, remain.numBytes);
+            arrayOffset += remain.numBytes;
+            Platform.copyMemory(this.base, this.offset, data, Platform.BYTE_ARRAY_OFFSET + arrayOffset, numBytes());
 
             return UTF8String.fromBytes(data);
         }

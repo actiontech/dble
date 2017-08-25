@@ -21,7 +21,7 @@ public interface DMLResponseHandler extends ResponseHandler {
 
     void setAllPushDown(boolean allPushDown);
 
-    void setLeft(boolean isLeft);
+    void setLeft(boolean left);
 
     void terminate();
 

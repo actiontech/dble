@@ -46,7 +46,7 @@ public class VersionedFile {
     }
 
     private long extractLastValidVersionNumberFromFileNames() {
-        long version = -1;
+        long resultVersion = -1;
         File cd = new File(getBaseDir());
         String[] names = cd.list(new FilenameFilter() {
             public boolean accept(File dir, String name) {
@@ -56,22 +56,22 @@ public class VersionedFile {
         if (names != null) {
             for (String name : names) {
                 long sfx = extractVersion(name);
-                if (version < 0 || sfx < version)
-                    version = sfx;
+                if (resultVersion < 0 || sfx < resultVersion)
+                    resultVersion = sfx;
             }
         }
 
-        return version;
+        return resultVersion;
     }
 
     private long extractVersion(String name) {
         long ret = 0;
         int lastpos = name.lastIndexOf('.');
         int startpos = getBaseName().length();
-        String suffix = name.substring(startpos, lastpos);
+        String nameSuffix = name.substring(startpos, lastpos);
         try {
 
-            ret = Long.parseLong(suffix);
+            ret = Long.parseLong(nameSuffix);
         } catch (NumberFormatException e) {
             IllegalArgumentException err = new IllegalArgumentException("Error extracting version from file: " + name + " in " + getBaseDir());
             err.initCause(e);

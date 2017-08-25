@@ -105,16 +105,16 @@ public abstract class AbstractConnection implements NIOConnection {
         return charset;
     }
 
-    public boolean setCharset(String charset) {
+    public boolean setCharset(String strCharset) {
 
         // 修复PHP字符集设置错误, 如： set names 'utf8'
-        if (charset != null) {
-            charset = charset.replace("'", "");
+        if (strCharset != null) {
+            strCharset = strCharset.replace("'", "");
         }
 
-        int ci = CharsetUtil.getIndex(charset);
+        int ci = CharsetUtil.getIndex(strCharset);
         if (ci > 0) {
-            this.charset = charset;
+            this.charset = strCharset;
             this.charsetIndex = ci;
             return true;
         } else {
@@ -126,8 +126,8 @@ public abstract class AbstractConnection implements NIOConnection {
         return isSupportCompress;
     }
 
-    public void setSupportCompress(boolean isSupportCompress) {
-        this.isSupportCompress = isSupportCompress;
+    public void setSupportCompress(boolean supportCompress) {
+        this.isSupportCompress = supportCompress;
     }
 
     public int getCharsetIndex() {

@@ -134,29 +134,29 @@ public final class UnsafeRow extends MySQLPacket {
     /**
      * Update this UnsafeRow to point to different backing data.
      *
-     * @param baseObject  the base object
-     * @param baseOffset  the offset within the base object
-     * @param sizeInBytes the size of this row's backing data, in bytes
+     * @param object  the base object
+     * @param offset  the offset within the base object
+     * @param size the size of this row's backing data, in bytes
      */
-    public void pointTo(Object baseObject, long baseOffset, int sizeInBytes) {
+    public void pointTo(Object object, long offset, int size) {
         assert numFields >= 0 : "numFields (" + numFields + ") should >= 0";
-        this.baseObject = baseObject;
-        this.baseOffset = baseOffset;
-        this.sizeInBytes = sizeInBytes;
+        this.baseObject = object;
+        this.baseOffset = offset;
+        this.sizeInBytes = size;
     }
 
     /**
      * Update this UnsafeRow to point to the underlying byte array.
      *
      * @param buf         byte array to point to
-     * @param sizeInBytes the number of bytes valid in the byte array
+     * @param size the number of bytes valid in the byte array
      */
-    public void pointTo(byte[] buf, int sizeInBytes) {
-        pointTo(buf, Platform.BYTE_ARRAY_OFFSET, sizeInBytes);
+    public void pointTo(byte[] buf, int size) {
+        pointTo(buf, Platform.BYTE_ARRAY_OFFSET, size);
     }
 
-    public void setTotalSize(int sizeInBytes) {
-        this.sizeInBytes = sizeInBytes;
+    public void setTotalSize(int size) {
+        this.sizeInBytes = size;
     }
 
     public void setNotNullAt(int i) {

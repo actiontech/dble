@@ -94,11 +94,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     public void sendLongData(byte[] data) {
         LongDataPacket packet = new LongDataPacket();
         packet.read(data);
-        long pstmtId = packet.getPstmtId();
-        PreparedStatement pstmt = pstmtForId.get(pstmtId);
+        long psId = packet.getPstmtId();
+        PreparedStatement pstmt = pstmtForId.get(psId);
         if (pstmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("send long data to prepare sql : " + pstmtForId.get(pstmtId));
+                LOGGER.debug("send long data to prepare sql : " + pstmtForId.get(psId));
             }
             long paramId = packet.getParamId();
             try {
@@ -113,24 +113,24 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     public void reset(byte[] data) {
         ResetPacket packet = new ResetPacket();
         packet.read(data);
-        long pstmtId = packet.getPstmtId();
-        PreparedStatement pstmt = pstmtForId.get(pstmtId);
+        long psId = packet.getPstmtId();
+        PreparedStatement pstmt = pstmtForId.get(psId);
         if (pstmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("reset prepare sql : " + pstmtForId.get(pstmtId));
+                LOGGER.debug("reset prepare sql : " + pstmtForId.get(psId));
             }
             pstmt.resetLongData();
             source.write(OkPacket.OK);
         } else {
-            source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pstmtForId.get(pstmtId));
+            source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pstmtForId.get(psId));
         }
     }
 
     @Override
     public void execute(byte[] data) {
-        long pstmtId = ByteUtil.readUB4(data, 5);
+        long psId = ByteUtil.readUB4(data, 5);
         PreparedStatement pstmt = null;
-        if ((pstmt = pstmtForId.get(pstmtId)) == null) {
+        if ((pstmt = pstmtForId.get(psId)) == null) {
             source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pstmtId when executing.");
         } else {
             ExecutePacket packet = new ExecutePacket(pstmt);
@@ -155,11 +155,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void close(byte[] data) {
-        long pstmtId = ByteUtil.readUB4(data, 5); // 获取prepare stmt id
+        long psId = ByteUtil.readUB4(data, 5); // 获取prepare stmt id
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("close prepare stmt, stmtId = " + pstmtId);
+            LOGGER.debug("close prepare stmt, stmtId = " + psId);
         }
-        PreparedStatement pstmt = pstmtForId.remove(pstmtId);
+        PreparedStatement pstmt = pstmtForId.remove(psId);
         if (pstmt != null) {
             pstmtForSql.remove(pstmt.getStatement());
         }

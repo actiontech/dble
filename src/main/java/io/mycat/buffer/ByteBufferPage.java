@@ -81,7 +81,7 @@ public class ByteBufferPage {
         }
     }
 
-    public boolean recycleBuffer(ByteBuffer parent, int startChunk, int chunkCount) {
+    public boolean recycleBuffer(ByteBuffer parent, int startChunk, int chunkNum) {
 
         if (parent == this.buf) {
 
@@ -89,7 +89,7 @@ public class ByteBufferPage {
                 Thread.yield();
             }
             try {
-                markChunksUnused(startChunk, chunkCount);
+                markChunksUnused(startChunk, chunkNum);
             } finally {
                 allocLockStatus.set(false);
             }

@@ -28,16 +28,16 @@ public class RowDataSorter extends RowDataPacketSorter {
         this.cmp = new RowDataCmp(orderCols);
     }
 
-    public synchronized void setLimit(int start, int size) {
+    public synchronized void setLimit(int start, int offset) {
         // 容错处理
         if (start < 0) {
             start = 0;
         }
-        if (size <= 0) {
+        if (offset <= 0) {
             this.total = this.size = Integer.MAX_VALUE;
         } else {
-            this.total = start + size;
-            this.size = size;
+            this.total = start + offset;
+            this.size = offset;
         }
         // 统一采用顺序，order by 条件交给比较器去处理
         this.heap = new MaxHeap(cmp, total);

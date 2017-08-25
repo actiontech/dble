@@ -281,7 +281,7 @@ public class DataNodeMemoryManager {
             return allocatePage(size, consumer);
         }
 
-        page.pageNumber = pageNumber;
+        page.setPageNumber(pageNumber);
         pageTable[pageNumber] = page;
 
         return page;
@@ -292,16 +292,16 @@ public class DataNodeMemoryManager {
      */
     public void freePage(MemoryBlock page, MemoryConsumer consumer) {
 
-        assert (page.pageNumber != -1) :
+        assert (page.getPageNumber() != -1) :
                 "Called freePage() on memory that wasn't allocated with allocatePage()";
-        assert (allocatedPages.get(page.pageNumber));
-        pageTable[page.pageNumber] = null;
+        assert (allocatedPages.get(page.getPageNumber()));
+        pageTable[page.getPageNumber()] = null;
 
         synchronized (this) {
-            allocatedPages.clear(page.pageNumber);
+            allocatedPages.clear(page.getPageNumber());
         }
 
-        logger.trace("Freed page number " + page.pageNumber + " (" + page.size() + " bytes)");
+        logger.trace("Freed page number " + page.getPageNumber() + " (" + page.size() + " bytes)");
 
         long pageSize = page.size();
         memoryManager.tungstenMemoryAllocator().free(page);
@@ -327,7 +327,7 @@ public class DataNodeMemoryManager {
             offsetInPage -= page.getBaseOffset();
         }
 
-        return encodePageNumberAndOffset(page.pageNumber, offsetInPage);
+        return encodePageNumberAndOffset(page.getPageNumber(), offsetInPage);
     }
 
     @VisibleForTesting

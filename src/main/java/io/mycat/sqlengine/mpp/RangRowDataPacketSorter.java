@@ -37,8 +37,8 @@ public class RangRowDataPacketSorter extends RowDataSorter {
     }
 
     public int compareRowData(RowDataPacket l, RowDataPacket r, int byColumnIndex) {
-        byte[] left = l.fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
-        byte[] right = r.fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+        byte[] left = l.fieldValues.get(this.orderCols[byColumnIndex].colMeta.getColIndex());
+        byte[] right = r.fieldValues.get(this.orderCols[byColumnIndex].colMeta.getColIndex());
 
         return compareObject(left, right, this.orderCols[byColumnIndex]);
     }

@@ -119,7 +119,7 @@ public class UnsafeRowGrouper {
                 throw new IllegalArgumentException(
                         "all columns in group by clause should be in the selected column list.!" + column);
             }
-            map.put(column, curColMeta.colIndex);
+            map.put(column, curColMeta.getColIndex());
         }
 
 
@@ -166,7 +166,7 @@ public class UnsafeRowGrouper {
             groupcolMetaMap.put(sortColumnsByIndex[i], curColMeta);
 
 
-            switch (curColMeta.colType) {
+            switch (curColMeta.getColType()) {
                 case ColMeta.COL_TYPE_BIT:
                     groupKey.setByte(i, (byte) 0);
                     break;
@@ -216,33 +216,33 @@ public class UnsafeRowGrouper {
         for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
             curColMeta = fieldEntry.getValue();
 
-            switch (curColMeta.colType) {
+            switch (curColMeta.getColType()) {
                 case ColMeta.COL_TYPE_BIT:
-                    emptyAggregationBuffer.setByte(curColMeta.colIndex, (byte) 0);
+                    emptyAggregationBuffer.setByte(curColMeta.getColIndex(), (byte) 0);
                     break;
                 case ColMeta.COL_TYPE_INT:
                 case ColMeta.COL_TYPE_INT24:
                 case ColMeta.COL_TYPE_LONG:
-                    emptyAggregationBuffer.setInt(curColMeta.colIndex, 0);
+                    emptyAggregationBuffer.setInt(curColMeta.getColIndex(), 0);
                     break;
                 case ColMeta.COL_TYPE_SHORT:
-                    emptyAggregationBuffer.setShort(curColMeta.colIndex, (short) 0);
+                    emptyAggregationBuffer.setShort(curColMeta.getColIndex(), (short) 0);
                     break;
                 case ColMeta.COL_TYPE_LONGLONG:
-                    emptyAggregationBuffer.setLong(curColMeta.colIndex, 0);
+                    emptyAggregationBuffer.setLong(curColMeta.getColIndex(), 0);
                     break;
                 case ColMeta.COL_TYPE_FLOAT:
-                    emptyAggregationBuffer.setFloat(curColMeta.colIndex, 0);
+                    emptyAggregationBuffer.setFloat(curColMeta.getColIndex(), 0);
                     break;
                 case ColMeta.COL_TYPE_DOUBLE:
-                    emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
+                    emptyAggregationBuffer.setDouble(curColMeta.getColIndex(), 0);
                     break;
                 case ColMeta.COL_TYPE_NEWDECIMAL:
                     //emptyAggregationBuffer.setDouble(curColMeta.colIndex, 0);
-                    unsafeRowWriter.write(curColMeta.colIndex, new BigDecimal(0L));
+                    unsafeRowWriter.write(curColMeta.getColIndex(), new BigDecimal(0L));
                     break;
                 default:
-                    unsafeRowWriter.write(curColMeta.colIndex, "init".getBytes());
+                    unsafeRowWriter.write(curColMeta.getColIndex(), "init".getBytes());
                     break;
             }
 
@@ -291,7 +291,7 @@ public class UnsafeRowGrouper {
     private void processAvgFieldPrecision() {
         for (Map.Entry<String, ColMeta> entry : columToIndx.entrySet()) {
             if (isAvgField(entry.getKey())) { // AVG列的小数点精度默认取SUM小数点精度, 计算和返回的小数点精度应该扩展4
-                entry.getValue().decimals += 4;
+                entry.getValue().setDecimals(entry.getValue().getDecimals() + 4);
             }
         }
     }
@@ -320,45 +320,45 @@ public class UnsafeRowGrouper {
         for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
             curColMeta = fieldEntry.getValue();
 
-            if (!row.isNullAt(curColMeta.colIndex)) {
-                switch (curColMeta.colType) {
+            if (!row.isNullAt(curColMeta.getColIndex())) {
+                switch (curColMeta.getColType()) {
                     case ColMeta.COL_TYPE_BIT:
-                        unsafeRowWriter.write(curColMeta.colIndex, row.getByte(curColMeta.colIndex));
+                        unsafeRowWriter.write(curColMeta.getColIndex(), row.getByte(curColMeta.getColIndex()));
                         break;
                     case ColMeta.COL_TYPE_INT:
                     case ColMeta.COL_TYPE_LONG:
                     case ColMeta.COL_TYPE_INT24:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                BytesTools.int2Bytes(row.getInt(curColMeta.colIndex)));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                BytesTools.int2Bytes(row.getInt(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_SHORT:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                BytesTools.short2Bytes(row.getShort(curColMeta.colIndex)));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                BytesTools.short2Bytes(row.getShort(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_LONGLONG:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                BytesTools.long2Bytes(row.getLong(curColMeta.colIndex)));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                BytesTools.long2Bytes(row.getLong(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_FLOAT:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                BytesTools.float2Bytes(row.getFloat(curColMeta.colIndex)));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                BytesTools.float2Bytes(row.getFloat(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_DOUBLE:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                BytesTools.double2Bytes(row.getDouble(curColMeta.colIndex)));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                BytesTools.double2Bytes(row.getDouble(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
-                        int scale = curColMeta.decimals;
-                        BigDecimal decimalVal = row.getDecimal(curColMeta.colIndex, scale);
-                        unsafeRowWriter.write(curColMeta.colIndex, decimalVal.toString().getBytes());
+                        int scale = curColMeta.getDecimals();
+                        BigDecimal decimalVal = row.getDecimal(curColMeta.getColIndex(), scale);
+                        unsafeRowWriter.write(curColMeta.getColIndex(), decimalVal.toString().getBytes());
                         break;
                     default:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                row.getBinary(curColMeta.colIndex));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                row.getBinary(curColMeta.getColIndex()));
                         break;
                 }
             } else {
-                unsafeRowWriter.setNullAt(curColMeta.colIndex);
+                unsafeRowWriter.setNullAt(curColMeta.getColIndex());
             }
         }
 
@@ -476,41 +476,41 @@ public class UnsafeRowGrouper {
         ColMeta curColMeta = null;
         for (int i = 0; i < this.groupKeyfieldCount; i++) {
             curColMeta = this.columToIndx.get(sortColumnsByIndex[i].toUpperCase());
-            if (!row.isNullAt(curColMeta.colIndex)) {
-                switch (curColMeta.colType) {
+            if (!row.isNullAt(curColMeta.getColIndex())) {
+                switch (curColMeta.getColType()) {
                     case ColMeta.COL_TYPE_BIT:
-                        key.setByte(i, row.getByte(curColMeta.colIndex));
+                        key.setByte(i, row.getByte(curColMeta.getColIndex()));
                         // fallthrough
                     case ColMeta.COL_TYPE_INT:
                     case ColMeta.COL_TYPE_LONG:
                     case ColMeta.COL_TYPE_INT24:
                         key.setInt(i,
-                                BytesTools.getInt(row.getBinary(curColMeta.colIndex)));
+                                BytesTools.getInt(row.getBinary(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_SHORT:
                         key.setShort(i,
-                                BytesTools.getShort(row.getBinary(curColMeta.colIndex)));
+                                BytesTools.getShort(row.getBinary(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_FLOAT:
                         key.setFloat(i,
-                                BytesTools.getFloat(row.getBinary(curColMeta.colIndex)));
+                                BytesTools.getFloat(row.getBinary(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_DOUBLE:
                         key.setDouble(i,
-                                BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+                                BytesTools.getDouble(row.getBinary(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
                         //key.setDouble(i, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
                         unsafeRowWriter.write(i,
-                                new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
+                                new BigDecimal(new String(row.getBinary(curColMeta.getColIndex()))));
                         break;
                     case ColMeta.COL_TYPE_LONGLONG:
                         key.setLong(i,
-                                BytesTools.getLong(row.getBinary(curColMeta.colIndex)));
+                                BytesTools.getLong(row.getBinary(curColMeta.getColIndex())));
                         break;
                     default:
                         unsafeRowWriter.write(i,
-                                row.getBinary(curColMeta.colIndex));
+                                row.getBinary(curColMeta.getColIndex()));
                         break;
                 }
             } else {
@@ -536,55 +536,55 @@ public class UnsafeRowGrouper {
         ColMeta curColMeta = null;
         for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
             curColMeta = fieldEntry.getValue();
-            if (!row.isNullAt(curColMeta.colIndex)) {
-                switch (curColMeta.colType) {
+            if (!row.isNullAt(curColMeta.getColIndex())) {
+                switch (curColMeta.getColType()) {
                     case ColMeta.COL_TYPE_BIT:
-                        value.setByte(curColMeta.colIndex, row.getByte(curColMeta.colIndex));
+                        value.setByte(curColMeta.getColIndex(), row.getByte(curColMeta.getColIndex()));
                         break;
                     case ColMeta.COL_TYPE_INT:
                     case ColMeta.COL_TYPE_LONG:
                     case ColMeta.COL_TYPE_INT24:
-                        value.setInt(curColMeta.colIndex,
-                                BytesTools.getInt(row.getBinary(curColMeta.colIndex)));
+                        value.setInt(curColMeta.getColIndex(),
+                                BytesTools.getInt(row.getBinary(curColMeta.getColIndex())));
 
                         break;
                     case ColMeta.COL_TYPE_SHORT:
-                        value.setShort(curColMeta.colIndex,
-                                BytesTools.getShort(row.getBinary(curColMeta.colIndex)));
+                        value.setShort(curColMeta.getColIndex(),
+                                BytesTools.getShort(row.getBinary(curColMeta.getColIndex())));
                         break;
                     case ColMeta.COL_TYPE_LONGLONG:
-                        value.setLong(curColMeta.colIndex,
-                                BytesTools.getLong(row.getBinary(curColMeta.colIndex)));
+                        value.setLong(curColMeta.getColIndex(),
+                                BytesTools.getLong(row.getBinary(curColMeta.getColIndex())));
 
 
                         break;
                     case ColMeta.COL_TYPE_FLOAT:
-                        value.setFloat(curColMeta.colIndex,
-                                BytesTools.getFloat(row.getBinary(curColMeta.colIndex)));
+                        value.setFloat(curColMeta.getColIndex(),
+                                BytesTools.getFloat(row.getBinary(curColMeta.getColIndex())));
 
                         break;
                     case ColMeta.COL_TYPE_DOUBLE:
-                        value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
+                        value.setDouble(curColMeta.getColIndex(), BytesTools.getDouble(row.getBinary(curColMeta.getColIndex())));
 
                         break;
                     case ColMeta.COL_TYPE_NEWDECIMAL:
                         //value.setDouble(curColMeta.colIndex, BytesTools.getDouble(row.getBinary(curColMeta.colIndex)));
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                new BigDecimal(new String(row.getBinary(curColMeta.colIndex))));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                new BigDecimal(new String(row.getBinary(curColMeta.getColIndex()))));
                         break;
                     default:
-                        unsafeRowWriter.write(curColMeta.colIndex,
-                                row.getBinary(curColMeta.colIndex));
+                        unsafeRowWriter.write(curColMeta.getColIndex(),
+                                row.getBinary(curColMeta.getColIndex()));
                         break;
                 }
             } else {
-                switch (curColMeta.colType) {
+                switch (curColMeta.getColType()) {
                     case ColMeta.COL_TYPE_NEWDECIMAL:
                         BigDecimal nullDecimal = null;
-                        unsafeRowWriter.write(curColMeta.colIndex, nullDecimal);
+                        unsafeRowWriter.write(curColMeta.getColIndex(), nullDecimal);
                         break;
                     default:
-                        value.setNullAt(curColMeta.colIndex);
+                        value.setNullAt(curColMeta.getColIndex());
                         break;
                 }
             }
@@ -634,8 +634,8 @@ public class UnsafeRowGrouper {
                 byte[] result = null;
                 byte[] left = null;
                 byte[] right = null;
-                int type = merg.colMeta.colType;
-                int index = merg.colMeta.colIndex;
+                int type = merg.colMeta.getColType();
+                int index = merg.colMeta.getColIndex();
                 left = unsafeRow2Bytes(toRow, merg);
                 right = unsafeRow2Bytes(newRow, merg);
                 result = mertFields(left, right, type, merg.mergeType);
@@ -675,12 +675,12 @@ public class UnsafeRowGrouper {
     }
 
     private byte[] unsafeRow2Bytes(UnsafeRow row, MergeCol merg) throws UnsupportedEncodingException {
-        int index = merg.colMeta.colIndex;
+        int index = merg.colMeta.getColIndex();
         byte[] result = null;
         if (row.isNullAt(index)) {
             return null;
         }
-        int type = merg.colMeta.colType;
+        int type = merg.colMeta.getColType();
         switch (type) {
             case ColMeta.COL_TYPE_INT:
             case ColMeta.COL_TYPE_LONG:
@@ -700,7 +700,7 @@ public class UnsafeRowGrouper {
                 result = BytesTools.double2Bytes(row.getDouble(index));
                 break;
             case ColMeta.COL_TYPE_NEWDECIMAL:
-                int scale = merg.colMeta.decimals;
+                int scale = merg.colMeta.getDecimals();
                 BigDecimal decimalLeft = row.getDecimal(index, scale);
                 result = decimalLeft == null ? null : decimalLeft.toString().getBytes();
                 break;
@@ -722,9 +722,9 @@ public class UnsafeRowGrouper {
                 byte[] avgSum = null;
                 byte[] avgCount = null;
 
-                int type = merg.colMeta.colType;
-                int avgSumIndex = merg.colMeta.avgSumIndex;
-                int avgCountIndex = merg.colMeta.avgCountIndex;
+                int type = merg.colMeta.getColType();
+                int avgSumIndex = merg.colMeta.getAvgSumIndex();
+                int avgCountIndex = merg.colMeta.getAvgCountIndex();
 
                 switch (type) {
                     case ColMeta.COL_TYPE_BIT:
@@ -759,7 +759,7 @@ public class UnsafeRowGrouper {
                     case ColMeta.COL_TYPE_NEWDECIMAL:
                         //avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
                         //avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        int scale = merg.colMeta.decimals;
+                        int scale = merg.colMeta.getDecimals();
                         BigDecimal sumDecimal = toRow.getDecimal(avgSumIndex, scale);
                         avgSum = sumDecimal == null ? null : sumDecimal.toString().getBytes();
                         avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
@@ -768,7 +768,7 @@ public class UnsafeRowGrouper {
                         break;
                 }
 
-                result = mertFields(avgSum, avgCount, merg.colMeta.colType, merg.mergeType);
+                result = mertFields(avgSum, avgCount, merg.colMeta.getColType(), merg.mergeType);
 
                 if (result != null) {
                     switch (type) {

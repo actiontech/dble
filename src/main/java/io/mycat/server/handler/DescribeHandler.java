@@ -19,7 +19,7 @@ public final class DescribeHandler {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), c.getSchema(), describeStatement.getTableName());
-            c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.schema), schemaInfo, ServerParse.DESCRIBE);
+            c.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.getSchema()), schemaInfo, ServerParse.DESCRIBE);
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
             return;

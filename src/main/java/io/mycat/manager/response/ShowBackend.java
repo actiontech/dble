@@ -59,43 +59,43 @@ public final class ShowBackend {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("processor",
                 Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("ACTIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("CLOSED", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         // fields[i] = PacketUtil.getField("run", Fields.FIELD_TYPE_VAR_STRING);
         // fields[i++].packetId = ++packetId;
         FIELDS[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("AUTOCOMMIT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -105,19 +105,19 @@ public final class ShowBackend {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         String charset = c.getCharset();
         for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 if (bc != null) {
                     RowDataPacket row = getRow(bc, charset);
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
         }
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }

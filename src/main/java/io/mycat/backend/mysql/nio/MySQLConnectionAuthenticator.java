@@ -71,7 +71,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     // 处理认证结果
                     source.setHandler(new MySQLConnectionHandler(source));
                     source.setAuthenticated(true);
-                    boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & packet.serverCapabilities);
+                    boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & packet.getServerCapabilities());
                     boolean usingCompress = MycatServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
                     if (clientCompress && usingCompress) {
                         source.setSupportCompress(true);
@@ -83,10 +83,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                 case ErrorPacket.FIELD_COUNT:
                     ErrorPacket err = new ErrorPacket();
                     err.read(data);
-                    String errMsg = new String(err.message);
+                    String errMsg = new String(err.getMessage());
                     LOGGER.warn("can't connect to mysql server ,errmsg:" + errMsg + " " + source);
                     //source.close(errMsg);
-                    throw new ConnectionException(err.errno, errMsg);
+                    throw new ConnectionException(err.getErrno(), errMsg);
 
                 case EOFPacket.FIELD_COUNT:
                     auth323(data[3]);
@@ -118,10 +118,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         HandshakePacket packet = new HandshakePacket();
         packet.read(data);
         source.setHandshake(packet);
-        source.setThreadId(packet.threadId);
+        source.setThreadId(packet.getThreadId());
 
         // 设置字符集编码
-        int charsetIndex = (packet.serverCharsetIndex & 0xff);
+        int charsetIndex = (packet.getServerCharsetIndex() & 0xff);
         String charset = CharsetUtil.getCharset(charsetIndex);
         if (charset != null) {
             source.setCharset(charset);
@@ -133,11 +133,11 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     private void auth323(byte packetId) {
         // 发送323响应认证数据包
         Reply323Packet r323 = new Reply323Packet();
-        r323.packetId = ++packetId;
+        r323.setPacketId(++packetId);
         String pass = source.getPassword();
         if (pass != null && pass.length() > 0) {
-            byte[] seed = source.getHandshake().seed;
-            r323.seed = SecurityUtil.scramble323(pass, new String(seed)).getBytes();
+            byte[] seed = source.getHandshake().getSeed();
+            r323.setSeed(SecurityUtil.scramble323(pass, new String(seed)).getBytes());
         }
         r323.write(source);
     }

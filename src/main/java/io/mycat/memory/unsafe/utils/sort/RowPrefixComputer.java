@@ -26,7 +26,7 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
         if (orderCols != null) {
             for (int i = 0; i < orderCols.length; i++) {
                 ColMeta meta = orderCols[i].colMeta;
-                if (meta.colIndex == 0) {
+                if (meta.getColIndex() == 0) {
                     orderIndex = i;
                     break;
                 }
@@ -44,12 +44,12 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
             return 0;
         }
 
-        int orderIndexType = colMeta.colType;
+        int orderIndexType = colMeta.getColType();
 
         byte[] rowIndexElem = null;
 
-        if (!row.isNullAt(colMeta.colIndex)) {
-            rowIndexElem = row.getBinary(colMeta.colIndex);
+        if (!row.isNullAt(colMeta.getColIndex())) {
+            rowIndexElem = row.getBinary(colMeta.getColIndex());
 
             /**
              * 这里注意一下，order by 排序的第一个字段

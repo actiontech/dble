@@ -33,8 +33,8 @@ import java.nio.ByteBuffer;
  */
 public class RequestFilePacket extends MySQLPacket {
     public static final byte FIELD_COUNT = (byte) 251;
-    public byte command = FIELD_COUNT;
-    public byte[] fileName;
+    private byte command = FIELD_COUNT;
+    private byte[] fileName;
 
 
     @Override
@@ -66,4 +66,19 @@ public class RequestFilePacket extends MySQLPacket {
     }
 
 
+    public byte getCommand() {
+        return command;
+    }
+
+    public void setCommand(byte command) {
+        this.command = command;
+    }
+
+    public byte[] getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(byte[] fileName) {
+        this.fileName = fileName;
+    }
 }

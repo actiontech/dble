@@ -20,10 +20,10 @@ public abstract class ItemSumNum extends ItemSum {
         decimals = 0;
         maybeNull = false;
         for (int i = 0; i < getArgCount(); i++) {
-            if (!args.get(i).fixed && args.get(i).fixFields())
+            if (!args.get(i).isFixed() && args.get(i).fixFields())
                 return true;
-            decimals = Math.max(decimals, args.get(i).decimals);
-            maybeNull |= args.get(i).maybeNull;
+            decimals = Math.max(decimals, args.get(i).getDecimals());
+            maybeNull |= args.get(i).isMaybeNull();
         }
         maxLength = floatLength(decimals);
         nullValue = true;

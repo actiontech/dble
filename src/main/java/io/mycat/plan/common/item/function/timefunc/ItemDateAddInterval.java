@@ -57,8 +57,8 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
                 intType == MySqlIntervalUnit.HOUR_MICROSECOND || intType == MySqlIntervalUnit.MINUTE_MICROSECOND ||
                 intType == MySqlIntervalUnit.SECOND_MICROSECOND)
             intervalDec = MyTime.DATETIME_MAX_DECIMALS;
-        else if (intType == MySqlIntervalUnit.SECOND && args.get(1).decimals > 0)
-            intervalDec = Math.min(args.get(1).decimals, MyTime.DATETIME_MAX_DECIMALS);
+        else if (intType == MySqlIntervalUnit.SECOND && args.get(1).getDecimals() > 0)
+            intervalDec = Math.min(args.get(1).getDecimals(), MyTime.DATETIME_MAX_DECIMALS);
 
         if (arg0FieldType == FieldTypes.MYSQL_TYPE_DATETIME ||
                 arg0FieldType == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
@@ -95,16 +95,16 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
             return (nullValue = true);
 
         if (dateSubInterval)
-            interval.neg = !interval.neg;
+            interval.setNeg(!interval.isNeg());
 
         /*
          * Make sure we return proper time_type. It's important for val_str().
          */
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATE &&
-                ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME)
+                ltime.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME)
             MyTime.datetimeToDate(ltime);
         else if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME &&
-                ltime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE)
+                ltime.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_DATE)
             MyTime.dateToDatetime(ltime);
 
         return (nullValue = MyTime.dateAddInterval(ltime, intType, interval));
@@ -117,17 +117,17 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
             return true;
 
         if (dateSubInterval)
-            interval.neg = !interval.neg;
+            interval.setNeg(!interval.isNeg());
 
-        long usec1 = ((((ltime.day * 24 + ltime.hour) * 60 + ltime.minute) * 60 + ltime.second) * 1000000L +
-                ltime.secondPart) * (ltime.neg ? -1 : 1);
-        long usec2 = ((((interval.day * 24 + interval.hour) * 60 + interval.minute) * 60 + interval.second) * 1000000L +
-                interval.secondPart) * (interval.neg ? -1 : 1);
+        long usec1 = ((((ltime.getDay() * 24 + ltime.getHour()) * 60 + ltime.getMinute()) * 60 + ltime.getSecond()) * 1000000L +
+                ltime.getSecondPart()) * (ltime.isNeg() ? -1 : 1);
+        long usec2 = ((((interval.getDay() * 24 + interval.getHour()) * 60 + interval.getMinute()) * 60 + interval.getSecond()) * 1000000L +
+                interval.getSecondPart()) * (interval.isNeg() ? -1 : 1);
         long diff = usec1 + usec2;
         LLDivT seconds = new LLDivT();
-        seconds.quot = diff / 1000000;
-        seconds.rem = diff % 1000000 * 1000; /* time.second_part= lldiv.rem / 1000 */
-        if ((nullValue = (interval.year != 0 || interval.month != 0 || MyTime.secToTime(seconds, ltime)))) {
+        seconds.setQuot(diff / 1000000);
+        seconds.setRem(diff % 1000000 * 1000); /* time.second_part= lldiv.rem / 1000 */
+        if ((nullValue = (interval.getYear() != 0 || interval.getMonth() != 0 || MyTime.secToTime(seconds, ltime)))) {
             LOGGER.warn("datetime function overflow!");
             return true;
         }

@@ -23,7 +23,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
     @Override
     public void fixLengthAndDec() {
         maybeNull = true;
-        fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_WIDTH, args.get(2).decimals);
+        fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_WIDTH, args.get(2).getDecimals());
     }
 
     /**
@@ -34,7 +34,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
     public boolean getTime(MySQLTime ltime) {
         long minute = args.get(1).valInt().longValue();
         BigDecimal sec = args.get(2).valDecimal();
-        if ((nullValue = (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || sec == null ||
+        if ((nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() || sec == null ||
                 minute < 0 || minute > 59))) {
             return true;
         }
@@ -49,12 +49,12 @@ public class ItemFuncMaketime extends ItemTimeFunc {
         long hour = args.get(0).valInt().longValue();
         /* Check for integer overflows */
         if (hour < 0) {
-            ltime.neg = true;
+            ltime.setNeg(true);
         }
-        ltime.hour = ((hour < 0 ? -hour : hour));
-        ltime.minute = minute;
-        ltime.second = scdquot;
-        ltime.secondPart = scdrem;
+        ltime.setHour(((hour < 0 ? -hour : hour)));
+        ltime.setMinute(minute);
+        ltime.setSecond(scdquot);
+        ltime.setSecondPart(scdrem);
         return false;
     }
 

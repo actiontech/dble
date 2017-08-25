@@ -191,16 +191,48 @@ public final class SchemaUtil {
             this.schemaConfig = MycatServer.getInstance().getConfig().getSchemas().get(schema);
         }
 
-        public String table;
-        public String schema;
-        public SchemaConfig schemaConfig;
-        public boolean dualFlag = false;
+        private String table;
+        private String schema;
+        private SchemaConfig schemaConfig;
+        private boolean dualFlag = false;
 
         @Override
         public String toString() {
             return "SchemaInfo{" + "table='" + table + '\'' +
                     ", schema='" + schema + '\'' +
                     '}';
+        }
+
+        public String getTable() {
+            return table;
+        }
+
+        public void setTable(String table) {
+            this.table = table;
+        }
+
+        public String getSchema() {
+            return schema;
+        }
+
+        public void setSchema(String schema) {
+            this.schema = schema;
+        }
+
+        public SchemaConfig getSchemaConfig() {
+            return schemaConfig;
+        }
+
+        public void setSchemaConfig(SchemaConfig schemaConfig) {
+            this.schemaConfig = schemaConfig;
+        }
+
+        public boolean isDualFlag() {
+            return dualFlag;
+        }
+
+        public void setDualFlag(boolean dualFlag) {
+            this.dualFlag = dualFlag;
         }
     }
 }

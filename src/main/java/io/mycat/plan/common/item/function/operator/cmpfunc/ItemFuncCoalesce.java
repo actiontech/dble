@@ -59,7 +59,7 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
         nullValue = false;
         for (int i = 0; i < getArgCount(); i++) {
             BigInteger res = args.get(i).valInt();
-            if (!args.get(i).nullValue)
+            if (!args.get(i).isNullValue())
                 return res;
         }
         nullValue = true;
@@ -71,7 +71,7 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
         nullValue = false;
         for (int i = 0; i < getArgCount(); i++) {
             BigDecimal res = args.get(i).valReal();
-            if (!args.get(i).nullValue)
+            if (!args.get(i).isNullValue())
                 return res;
         }
         nullValue = true;
@@ -83,7 +83,7 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
         nullValue = false;
         for (int i = 0; i < getArgCount(); i++) {
             BigDecimal res = args.get(i).valDecimal();
-            if (!args.get(i).nullValue)
+            if (!args.get(i).isNullValue())
                 return res;
         }
         nullValue = true;

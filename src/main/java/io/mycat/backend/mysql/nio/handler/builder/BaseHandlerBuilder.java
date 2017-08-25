@@ -161,7 +161,7 @@ abstract class BaseHandlerBuilder {
             boolean needOrderBy = (node.getGroupBys().size() > 0) && isOrderNeeded(node, node.getGroupBys());
             boolean canDirectGroupBy = true;
             List<ItemSum> sumRefs = new ArrayList<>();
-            for (ItemSum funRef : node.sumFuncs) {
+            for (ItemSum funRef : node.getSumFuncs()) {
                 if (funRef.hasWithDistinct() || funRef.sumType().equals(Sumfunctype.GROUP_CONCAT_FUNC))
                     canDirectGroupBy = false;
                 sumRefs.add(funRef);
@@ -356,7 +356,7 @@ abstract class BaseHandlerBuilder {
     }
 
     protected static boolean nodeHasGroupBy(PlanNode arg) {
-        return (arg.sumFuncs.size() > 0 || arg.getGroupBys().size() > 0);
+        return (arg.getSumFuncs().size() > 0 || arg.getGroupBys().size() > 0);
     }
 
     protected static long getSequenceId() {

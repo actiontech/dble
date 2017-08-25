@@ -109,8 +109,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                         ColMeta sumColMeta = columToIndx.get(colName + "SUM");
                         ColMeta countColMeta = columToIndx.get(colName + "COUNT");
                         if (sumColMeta != null && countColMeta != null) {
-                            ColMeta colMeta = new ColMeta(sumColMeta.colIndex,
-                                    countColMeta.colIndex,
+                            ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
+                                    countColMeta.getColIndex(),
                                     sumColMeta.getColType());
                             mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
                         }
@@ -217,7 +217,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         PrefixComparator prefixComparator = null;
         OrderCol firstOrderCol = orderCols[0];
         int orderType = firstOrderCol.getOrderType();
-        int colType = firstOrderCol.colMeta.colType;
+        int colType = firstOrderCol.colMeta.getColType();
 
         switch (colType) {
             case ColMeta.COL_TYPE_INT:
@@ -289,10 +289,10 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     final EOFPacket eofp = new EOFPacket();
                     final ByteBuffer eof = ByteBuffer.allocate(9);
                     BufferUtil.writeUB3(eof, eofp.calcPacketSize());
-                    eof.put(eofp.packetId);
-                    eof.put(eofp.fieldCount);
+                    eof.put(eofp.getPacketId());
+                    eof.put(eofp.getFieldCount());
                     BufferUtil.writeUB2(eof, warningCount);
-                    BufferUtil.writeUB2(eof, eofp.status);
+                    BufferUtil.writeUB2(eof, eofp.getStatus());
                     final ServerConnection source = multiQueryHandler.getSession().getSource();
                     final byte[] array = eof.array();
 
@@ -350,7 +350,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 /**
                  *构造一行row，将对应的col填充.
                  */
-                MySQLMessage mm = new MySQLMessage(pack.rowData);
+                MySQLMessage mm = new MySQLMessage(pack.getRowData());
                 mm.readUB3();
                 mm.read();
 

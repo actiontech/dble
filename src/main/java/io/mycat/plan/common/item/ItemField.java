@@ -25,17 +25,17 @@ import java.util.List;
 
 public class ItemField extends ItemIdent {
 
-    public Field field;
+    private Field field;
 
     /* index如果有值的话，代表这个Item_field真实的下标值，需要在调用val之前调用setField方法 */
-    public int index = -1;
+    private int index = -1;
 
     public ItemField(String dbName, String tableName, String fieldName) {
         super(dbName, tableName, fieldName);
     }
 
     public ItemField(Field field) {
-        super(null, field.table, field.name);
+        super(null, field.getTable(), field.getName());
         setField(field);
     }
 
@@ -57,12 +57,12 @@ public class ItemField extends ItemIdent {
     protected void setField(Field field) {
         this.field = field;
         maybeNull = field.maybeNull(); // 有可能为null
-        decimals = field.decimals;
-        tableName = field.table;
-        itemName = field.name;
-        dbName = field.dbname;
-        maxLength = field.fieldLength;
-        charsetIndex = field.charsetIndex;
+        decimals = field.getDecimals();
+        tableName = field.getTable();
+        itemName = field.getName();
+        dbName = field.getDbname();
+        maxLength = field.getFieldLength();
+        charsetIndex = field.getCharsetIndex();
         fixed = true;
     }
 
@@ -88,7 +88,7 @@ public class ItemField extends ItemIdent {
 
     @Override
     public byte[] getRowPacketByte() {
-        return field.ptr;
+        return field.getPtr();
     }
 
     public ItemResult cmpType() {
@@ -162,7 +162,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
         if ((nullValue = field.isNull()) || field.getDate(ltime, fuzzydate)) {
-            ltime.setZeroTime(ltime.timeType);
+            ltime.setZeroTime(ltime.getTimeType());
             return true;
         }
         return false;
@@ -171,7 +171,7 @@ public class ItemField extends ItemIdent {
     @Override
     public boolean getTime(MySQLTime ltime) {
         if ((nullValue = field.isNull()) || field.getTime(ltime)) {
-            ltime.setZeroTime(ltime.timeType);
+            ltime.setZeroTime(ltime.getTimeType());
             return true;
         }
         return false;
@@ -187,13 +187,13 @@ public class ItemField extends ItemIdent {
         field.makeField(fp);
         try {
             if (itemName != null) {
-                fp.name = itemName.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                fp.setName(itemName.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             }
             if ((tableName != null)) {
-                fp.table = tableName.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                fp.setTable(tableName.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             }
             if (dbName != null) {
-                fp.db = dbName.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                fp.setDb(dbName.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             }
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("parse string exception!", e);
@@ -320,4 +320,7 @@ public class ItemField extends ItemIdent {
         return new ItemField(dbName, tableName, itemName);
     }
 
+    public Field getField() {
+        return field;
+    }
 }

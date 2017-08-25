@@ -33,13 +33,13 @@ public class ItemFuncDiv extends ItemNumOp {
     public void fixLengthAndDec() {
         super.fixLengthAndDec();
         if (hybridType == ItemResult.REAL_RESULT) {
-            decimals = Math.max(args.get(0).decimals, args.get(1).decimals) + precIncrement;
+            decimals = Math.max(args.get(0).getDecimals(), args.get(1).getDecimals()) + precIncrement;
             decimals = Math.min(decimals, NOT_FIXED_DEC);
             int tmp = floatLength(decimals);
             if (decimals == NOT_FIXED_DEC)
                 maxLength = tmp;
             else {
-                maxLength = args.get(0).maxLength - args.get(1).decimals + decimals;
+                maxLength = args.get(0).getMaxLength() - args.get(1).getDecimals() + decimals;
                 maxLength = Math.min(maxLength, tmp);
             }
         } else if (hybridType == ItemResult.INT_RESULT) {
@@ -91,7 +91,7 @@ public class ItemFuncDiv extends ItemNumOp {
 
     @Override
     public void resultPrecision() {
-        decimals = Math.min(args.get(0).decimals + precIncrement, DECIMAL_MAX_SCALE);
+        decimals = Math.min(args.get(0).getDecimals() + precIncrement, DECIMAL_MAX_SCALE);
     }
 
     @Override

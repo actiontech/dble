@@ -130,16 +130,16 @@ public final class ShowTables {
         FieldPacket[] fields = new FieldPacket[fieldCount];
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        header.setPacketId(++packetId);
         fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
-        fields[i].packetId = ++packetId;
+        fields[i].setPacketId(++packetId);
         fieldPackets.add(fields[i]);
         fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i + 1].packetId = ++packetId;
+        fields[i + 1].setPacketId(++packetId);
         fieldPackets.add(fields[i + 1]);
 
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         // write header
         buffer = header.write(buffer, c, true);
         // write fields
@@ -159,11 +159,11 @@ public final class ShowTables {
                 HandlerTool.initFields(sourceFields, row.fieldValues);
                 /* 根据where条件进行过滤 */
                 if (whereItem.valBool()) {
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             } else {
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
         }
@@ -176,12 +176,12 @@ public final class ShowTables {
         FieldPacket[] fields = new FieldPacket[fieldCount];
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        header.setPacketId(++packetId);
         fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
-        fields[i].packetId = ++packetId;
+        fields[i].setPacketId(++packetId);
 
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         // write header
         buffer = header.write(buffer, c, true);
         // write fields
@@ -193,7 +193,7 @@ public final class ShowTables {
         for (String name : tableMap.keySet()) {
             RowDataPacket row = new RowDataPacket(fieldCount);
             row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
         return packetId;
@@ -203,7 +203,7 @@ public final class ShowTables {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

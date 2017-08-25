@@ -12,6 +12,22 @@ package io.mycat.sqlengine.mpp;
  * 进行排序.
  */
 public final class PackWraper {
-    public byte[] rowData;
-    public String dataNode;
+    private byte[] rowData;
+    private String dataNode;
+
+    public byte[] getRowData() {
+        return rowData;
+    }
+
+    public void setRowData(byte[] rowData) {
+        this.rowData = rowData;
+    }
+
+    public String getDataNode() {
+        return dataNode;
+    }
+
+    public void setDataNode(String dataNode) {
+        this.dataNode = dataNode;
+    }
 }

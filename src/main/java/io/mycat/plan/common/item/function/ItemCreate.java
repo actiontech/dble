@@ -266,10 +266,10 @@ public class ItemCreate {
     }
 
     public ItemFunc createFuncCast(Item a, CastType type) {
-        CastTarget castType = type.target;
+        CastTarget castType = type.getTarget();
         ItemFunc res = null;
         if (castType == CastTarget.ITEM_CAST_BINARY) {
-            res = new ItemFuncBinary(a, type.length);
+            res = new ItemFuncBinary(a, type.getLength());
 
         } else if (castType == CastTarget.ITEM_CAST_SIGNED_INT) {
             res = new ItemFuncSigned(a);
@@ -281,35 +281,35 @@ public class ItemCreate {
             res = new ItemDateTypecast(a);
 
         } else if (castType == CastTarget.ITEM_CAST_TIME || castType == CastTarget.ITEM_CAST_DATETIME) {
-            if (type.length > MyTime.DATETIME_MAX_DECIMALS) {
+            if (type.getLength() > MyTime.DATETIME_MAX_DECIMALS) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                        "too big precision in cast time/datetime,max 6,current:" + type.length);
+                        "too big precision in cast time/datetime,max 6,current:" + type.getLength());
             }
-            if (type.length == -1) {
+            if (type.getLength() == -1) {
                 res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a) :
                         new ItemDatetimeTypecast(a);
             } else {
-                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.length) :
-                        new ItemDatetimeTypecast(a, type.length);
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.getLength()) :
+                        new ItemDatetimeTypecast(a, type.getLength());
             }
         } else if (castType == CastTarget.ITEM_CAST_DECIMAL) {
-            if (type.length < type.dec) {
+            if (type.getLength() < type.getDec()) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "For float(m,d), double(m,d) or decimal(m,d), M must be >= d");
             }
-            if (type.length > MySQLcom.DECIMAL_MAX_PRECISION) {
+            if (type.getLength() > MySQLcom.DECIMAL_MAX_PRECISION) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                        "Too big precision " + type.length + " max is " + MySQLcom.DECIMAL_MAX_PRECISION);
+                        "Too big precision " + type.getLength() + " max is " + MySQLcom.DECIMAL_MAX_PRECISION);
             }
-            if (type.dec > MySQLcom.DECIMAL_MAX_SCALE) {
+            if (type.getDec() > MySQLcom.DECIMAL_MAX_SCALE) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                        "Too big scale " + type.dec + " max is " + MySQLcom.DECIMAL_MAX_SCALE);
+                        "Too big scale " + type.getDec() + " max is " + MySQLcom.DECIMAL_MAX_SCALE);
             }
-            res = new ItemDecimalTypecast(a, type.length, type.dec);
+            res = new ItemDecimalTypecast(a, type.getLength(), type.getDec());
         } else if (castType == CastTarget.ITEM_CAST_NCHAR) {
             int len = -1;
-            if (type.length > 0)
-                len = type.length;
+            if (type.getLength() > 0)
+                len = type.getLength();
             res = new ItemNCharTypecast(a, len);
         } else {
             assert (false);

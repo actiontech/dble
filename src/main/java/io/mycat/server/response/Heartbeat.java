@@ -47,21 +47,21 @@ public final class Heartbeat {
         hp.read(data);
         if (MycatServer.getInstance().isOnline()) {
             OkPacket ok = new OkPacket();
-            ok.packetId = 1;
-            ok.affectedRows = hp.id;
-            ok.serverStatus = 2;
+            ok.setPacketId(1);
+            ok.setAffectedRows(hp.getId());
+            ok.setServerStatus(2);
             ok.write(c);
             if (HEARTBEAT.isInfoEnabled()) {
-                HEARTBEAT.info(responseMessage("OK", c, hp.id));
+                HEARTBEAT.info(responseMessage("OK", c, hp.getId()));
             }
         } else {
             ErrorPacket error = new ErrorPacket();
-            error.packetId = 1;
-            error.errno = ErrorCode.ER_SERVER_SHUTDOWN;
-            error.message = String.valueOf(hp.id).getBytes();
+            error.setPacketId(1);
+            error.setErrno(ErrorCode.ER_SERVER_SHUTDOWN);
+            error.setMessage(String.valueOf(hp.getId()).getBytes());
             error.write(c);
             if (HEARTBEAT.isInfoEnabled()) {
-                HEARTBEAT.info(responseMessage("ERROR", c, hp.id));
+                HEARTBEAT.info(responseMessage("ERROR", c, hp.getId()));
             }
         }
     }

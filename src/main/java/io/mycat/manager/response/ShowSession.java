@@ -35,17 +35,17 @@ public final class ShowSession {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SESSION", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("DN_COUNT", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("DN_LIST", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -63,7 +63,7 @@ public final class ShowSession {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         for (NIOProcessor process : MycatServer.getInstance().getProcessors()) {
             for (FrontendConnection front : process.getFrontends().values()) {
 
@@ -73,7 +73,7 @@ public final class ShowSession {
                 ServerConnection sc = (ServerConnection) front;
                 RowDataPacket row = getRow(sc, c.getCharset());
                 if (row != null) {
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
@@ -81,7 +81,7 @@ public final class ShowSession {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

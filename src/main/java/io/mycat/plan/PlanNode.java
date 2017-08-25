@@ -23,6 +23,28 @@ import java.util.concurrent.ExecutionException;
 public abstract class PlanNode {
     private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
 
+    /**
+     * 聚合函数集合
+     */
+    public HashSet<ItemSum> getSumFuncs() {
+        return sumFuncs;
+    }
+
+    public void setSumFuncs(HashSet<ItemSum> sumFuncs) {
+        this.sumFuncs = sumFuncs;
+    }
+
+    /**
+     * 子查询集合
+     */
+    public List<ItemSubselect> getSubSelects() {
+        return subSelects;
+    }
+
+    public void setSubSelects(List<ItemSubselect> subSelects) {
+        this.subSelects = subSelects;
+    }
+
     public enum PlanNodeType {
         NONAME, TABLE, JOIN, MERGE, QUERY, VIEW
     }
@@ -98,15 +120,9 @@ public abstract class PlanNode {
 
     protected boolean exsitView = false;
 
-    /**
-     * 聚合函数集合
-     */
-    public HashSet<ItemSum> sumFuncs = new HashSet<>();
+    private HashSet<ItemSum> sumFuncs = new HashSet<>();
 
-    /**
-     * 子查询集合
-     */
-    public List<ItemSubselect> subSelects = new ArrayList<>();
+    private List<ItemSubselect> subSelects = new ArrayList<>();
 
     protected List<TableNode> referedTableNodes = new ArrayList<>();
 
@@ -388,10 +404,10 @@ public abstract class PlanNode {
         for (Item selItem : columnsSelected) {
             if (selItem.isWild()) {
                 ItemField wildField = (ItemField) selItem;
-                if (wildField.tableName == null || wildField.tableName.length() == 0) {
+                if (wildField.getTableName() == null || wildField.getTableName().length() == 0) {
                     dealSingleStarColumn(newSels);
                 } else {
-                    String selTable = wildField.tableName;
+                    String selTable = wildField.getTableName();
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {

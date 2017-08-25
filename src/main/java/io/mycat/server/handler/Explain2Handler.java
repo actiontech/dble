@@ -91,30 +91,30 @@ public final class Explain2Handler {
         ByteBuffer buffer = c.allocate();
         // write header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        byte packetId = header.packetId;
+        byte packetId = header.getPacketId();
         buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : FIELDS) {
-            field.packetId = ++packetId;
+            field.setPacketId(++packetId);
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         buffer = eof.write(buffer, c, true);
 
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(stmt, c.getCharset()));
         row.add(StringUtil.encode(msg, c.getCharset()));
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

@@ -34,7 +34,7 @@ public class ItemFuncMakedate extends ItemDateFunc {
         long year = args.get(0).valInt().longValue();
         long days;
 
-        if (args.get(0).nullValue || args.get(1).nullValue || year < 0 || year > 9999 || daynr <= 0) {
+        if (args.get(0).isNullValue() || args.get(1).isNullValue() || year < 0 || year > 9999 || daynr <= 0) {
             nullValue = true;
             return true;
         }
@@ -50,12 +50,15 @@ public class ItemFuncMakedate extends ItemDateFunc {
             LongPtr lpmonth = new LongPtr(0);
             LongPtr lpday = new LongPtr(0);
             MyTime.getDateFromDaynr(days, lpyear, lpmonth, lpday);
-            ltime.year = lpyear.get();
-            ltime.month = lpmonth.get();
-            ltime.day = lpday.get();
-            ltime.neg = false;
-            ltime.hour = ltime.minute = ltime.second = ltime.secondPart = 0;
-            ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
+            ltime.setYear(lpyear.get());
+            ltime.setMonth(lpmonth.get());
+            ltime.setDay(lpday.get());
+            ltime.setNeg(false);
+            ltime.setSecondPart(0);
+            ltime.setSecond(0);
+            ltime.setMinute(0);
+            ltime.setHour(0);
+            ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATE);
             return false;
         }
         nullValue = true;

@@ -58,30 +58,30 @@ public final class ShowThreadPool {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("POOL_SIZE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ACTIVE_COUNT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("TASK_QUEUE_SIZE",
                 Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("COMPLETED_TASK",
                 Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("TOTAL_TASK",
                 Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -99,19 +99,19 @@ public final class ShowThreadPool {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         List<NameableExecutor> executors = getExecutors();
         for (NameableExecutor exec : executors) {
             if (exec != null) {
                 RowDataPacket row = getRow(exec, c.getCharset());
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

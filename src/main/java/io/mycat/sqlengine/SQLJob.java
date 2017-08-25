@@ -106,14 +106,14 @@ public class SQLJob implements ResponseHandler, Runnable {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
-        String errMsg = "error response errno:" + errPg.errno + ", " + new String(errPg.message) +
+        String errMsg = "error response errno:" + errPg.getErrno() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
 
-        if (errPg.errno == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
+        if (errPg.getErrno() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
             // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
             LOGGER.warn(errMsg);
-        } else if (errPg.errno == ErrorCode.ER_XAER_NOTA) {
+        } else if (errPg.getErrno() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
             conn.release();
             doFinished(false);

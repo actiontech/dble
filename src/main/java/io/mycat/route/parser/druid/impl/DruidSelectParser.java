@@ -75,20 +75,20 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (mysqlFrom instanceof SQLExprTableSource) {
                 SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
                 schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-                if (schemaInfo.dualFlag) {
+                if (schemaInfo.isDualFlag()) {
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
                 }
                 // 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
                 //TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
-                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema)) {
+                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema())) {
                     MysqlInformationSchemaHandler.handle(schemaInfo, sc);
                     rrs.setFinishedExecute(true);
                     return schema;
                 }
 
-                if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.schema) &&
-                        SchemaUtil.TABLE_PROC.equals(schemaInfo.table)) {
+                if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.getSchema()) &&
+                        SchemaUtil.TABLE_PROC.equals(schemaInfo.getTable())) {
                     // 兼容MySQLWorkbench
                     MysqlProcHandler.handle(sc);
                     rrs.setFinishedExecute(true);
@@ -98,31 +98,31 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
                 // `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
                 // GROUP BY STATE ORDER BY SEQ
-                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.schema) &&
-                        SchemaUtil.TABLE_PROFILING.equals(schemaInfo.table) &&
+                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema()) &&
+                        SchemaUtil.TABLE_PROFILING.equals(schemaInfo.getTable()) &&
                         rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
                     InformationSchemaProfiling.response(sc);
                     rrs.setFinishedExecute(true);
                     return schema;
                 }
-                if (schemaInfo.schemaConfig == null) {
+                if (schemaInfo.getSchemaConfig() == null) {
                     String msg = "No Supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
-                if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+                if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.SELECT)) {
                     String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-                schema = schemaInfo.schemaConfig;
-                if (RouterUtil.isNoSharding(schema, schemaInfo.table)) { //整个schema都不分库或者该表不拆分
+                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+                schema = schemaInfo.getSchemaConfig();
+                if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) { //整个schema都不分库或者该表不拆分
                     RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                     return schema;
                 }
 
-                TableConfig tc = schema.getTables().get(schemaInfo.table);
+                TableConfig tc = schema.getTables().get(schemaInfo.getTable());
                 if (tc == null) {
-                    String msg = "Table '" + schema.getName() + "." + schemaInfo.table + "' doesn't exist";
+                    String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
                 }
 
@@ -252,7 +252,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean contactSumFunc(Item selItem) {
-        if (selItem.withSumFunc) {
+        if (selItem.isWithSumFunc()) {
             return true;
         }
         if (selItem.getArgCount() > 0) {

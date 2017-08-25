@@ -32,18 +32,18 @@ public final class ShowSysParam {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PARAM_NAME", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PARAM_VALUE", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PARAM_DESCR", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -61,7 +61,7 @@ public final class ShowSysParam {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
 
         SystemConfig sysConfig = MycatServer.getInstance().getConfig().getSystem();
 
@@ -88,13 +88,13 @@ public final class ShowSysParam {
             row.add(StringUtil.encode(PARAMNAMES[i], c.getCharset()));
             row.add(StringUtil.encode(paramValues.get(i), c.getCharset()));
             row.add(StringUtil.encode(PARAM_DESCRIPTION[i], c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

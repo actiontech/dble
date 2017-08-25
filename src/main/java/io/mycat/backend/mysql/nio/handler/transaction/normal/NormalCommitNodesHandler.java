@@ -39,7 +39,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        String errmsg = new String(errPacket.message);
+        String errmsg = new String(errPacket.getMessage());
         this.setFail(errmsg);
         conn.quit();
         if (decrementCountBy(1)) {

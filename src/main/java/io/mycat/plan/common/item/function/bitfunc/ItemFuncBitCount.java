@@ -28,7 +28,7 @@ public class ItemFuncBitCount extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         BigInteger value = args.get(0).valInt();
-        if ((nullValue = args.get(0).nullValue))
+        if ((nullValue = args.get(0).isNullValue()))
             return BigInteger.ZERO; /* purecov: inspected */
         return BigInteger.valueOf(value.bitCount());
     }

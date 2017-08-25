@@ -25,7 +25,7 @@ public class ItemFuncBitXor extends ItemFuncBit {
     public BigInteger valInt() {
         BigInteger arg1 = args.get(0).valInt();
         BigInteger arg2 = args.get(1).valInt();
-        if (nullValue = (args.get(0).nullValue || args.get(1).nullValue))
+        if (nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO;
         return arg1.xor(arg2);
     }

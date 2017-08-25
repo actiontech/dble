@@ -60,10 +60,10 @@ public final class SelectVariables {
 
         int i = 0;
         byte packetId = 0;
-        header.packetId = ++packetId;
+        header.setPacketId(++packetId);
         for (String s : splitVar) {
             fields[i] = PacketUtil.getField(s, Fields.FIELD_TYPE_VAR_STRING);
-            fields[i++].packetId = ++packetId;
+            fields[i++].setPacketId(++packetId);
         }
 
 
@@ -79,7 +79,7 @@ public final class SelectVariables {
 
 
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         // write eof
         buffer = eof.write(buffer, c, true);
 
@@ -93,13 +93,13 @@ public final class SelectVariables {
 
         }
 
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
 
         // write lastEof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

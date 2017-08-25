@@ -91,8 +91,8 @@ import java.nio.ByteBuffer;
  */
 public class CommandPacket extends MySQLPacket {
 
-    public byte command;
-    public byte[] arg;
+    private byte command;
+    private byte[] arg;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -141,4 +141,19 @@ public class CommandPacket extends MySQLPacket {
     }
 
 
+    public byte getCommand() {
+        return command;
+    }
+
+    public void setCommand(byte command) {
+        this.command = command;
+    }
+
+    public byte[] getArg() {
+        return arg;
+    }
+
+    public void setArg(byte[] arg) {
+        this.arg = arg;
+    }
 }

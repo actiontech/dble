@@ -40,14 +40,14 @@ public class ItemFuncNeg extends ItemFuncNum1 {
     @Override
     public BigDecimal decimalOp() {
         BigDecimal bd = args.get(0).valDecimal();
-        if (nullValue = args.get(0).nullValue)
+        if (nullValue = args.get(0).isNullValue())
             return null;
         return bd.negate();
     }
 
     @Override
     public void fixNumLengthAndDec() {
-        decimals = args.get(0).decimals;
+        decimals = args.get(0).getDecimals();
     }
 
     @Override

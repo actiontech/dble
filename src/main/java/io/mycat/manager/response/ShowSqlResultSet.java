@@ -35,24 +35,24 @@ public final class ShowSqlResultSet {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("FREQUENCY", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RESULTSET_SIZE", Fields.FIELD_TYPE_INT24);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -70,7 +70,7 @@ public final class ShowSqlResultSet {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         int i = 0;
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
@@ -79,14 +79,14 @@ public final class ShowSqlResultSet {
             if (map != null) {
                 for (SqlResultSet sqlResultSet : map.values()) {
                     RowDataPacket row = getRow(++i, user, sqlResultSet.getSql(), sqlResultSet.getCount(), sqlResultSet.getResultSetSize(), c.getCharset());
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
         }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

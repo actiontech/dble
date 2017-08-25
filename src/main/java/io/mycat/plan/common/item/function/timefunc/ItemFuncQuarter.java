@@ -25,7 +25,7 @@ public class ItemFuncQuarter extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         if (getArg0Date(ltime, MyTime.TIME_FUZZY_DATE))
             return BigInteger.ZERO;
-        return BigInteger.valueOf((ltime.month + 2) / 3);
+        return BigInteger.valueOf((ltime.getMonth() + 2) / 3);
     }
 
     @Override

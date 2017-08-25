@@ -24,10 +24,10 @@ public final class ReloadQueryCf {
         LOGGER.warn(String.valueOf(c) + "Reset show  @@sql.condition=" + cf + " success by manager");
 
         OkPacket ok = new OkPacket();
-        ok.packetId = 1;
-        ok.affectedRows = 1;
-        ok.serverStatus = 2;
-        ok.message = "Reset show  @@sql.condition success".getBytes();
+        ok.setPacketId(1);
+        ok.setAffectedRows(1);
+        ok.setServerStatus(2);
+        ok.setMessage("Reset show  @@sql.condition success".getBytes());
         ok.write(c);
     }
 

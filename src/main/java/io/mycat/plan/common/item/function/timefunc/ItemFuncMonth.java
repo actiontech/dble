@@ -23,7 +23,7 @@ public class ItemFuncMonth extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         MySQLTime ltime = new MySQLTime();
-        return getArg0Date(ltime, MyTime.TIME_FUZZY_DATE) ? BigInteger.ZERO : BigInteger.valueOf(ltime.month);
+        return getArg0Date(ltime, MyTime.TIME_FUZZY_DATE) ? BigInteger.ZERO : BigInteger.valueOf(ltime.getMonth());
     }
 
     @Override

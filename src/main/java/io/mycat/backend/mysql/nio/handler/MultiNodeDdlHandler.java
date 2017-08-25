@@ -146,9 +146,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.packetId = ++packetId;
-        errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
-        errPacket.message = StringUtil.encode(reason, session.getSource().getCharset());
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset()));
         err = errPacket;
 
         lock.lock();
@@ -175,9 +175,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.packetId = ++packetId;
-        errPacket.errno = ErrorCode.ER_ABORTING_CONNECTION;
-        errPacket.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset()));
         err = errPacket;
 
         lock.lock();
@@ -212,7 +212,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
-        errPacket.packetId = 1;
+        errPacket.setPacketId(1);
         err = errPacket;
         lock.lock();
         try {

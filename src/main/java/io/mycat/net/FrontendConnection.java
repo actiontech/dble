@@ -202,10 +202,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     private void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         ErrorPacket err = new ErrorPacket();
-        err.packetId = id;
-        err.errno = vendorCode;
-        err.sqlState = encodeString(sqlState, charset);
-        err.message = encodeString(msg, charset);
+        err.setPacketId(id);
+        err.setErrno(vendorCode);
+        err.setSqlState(encodeString(sqlState, charset));
+        err.setMessage(encodeString(msg, charset));
         err.write(this);
     }
 
@@ -424,27 +424,27 @@ public abstract class FrontendConnection extends AbstractConnection {
             boolean useHandshakeV10 = MycatServer.getInstance().getConfig().getSystem().getUseHandshakeV10() == 1;
             if (useHandshakeV10) {
                 HandshakeV10Packet hs = new HandshakeV10Packet();
-                hs.packetId = 0;
-                hs.protocolVersion = Versions.PROTOCOL_VERSION;
-                hs.serverVersion = Versions.serverVersion;
-                hs.threadId = id;
-                hs.seed = rand1;
-                hs.serverCapabilities = getServerCapabilities();
-                hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
-                hs.serverStatus = 2;
-                hs.restOfScrambleBuff = rand2;
+                hs.setPacketId(0);
+                hs.setProtocolVersion(Versions.PROTOCOL_VERSION);
+                hs.setServerVersion(Versions.getServerVersion());
+                hs.setThreadId(id);
+                hs.setSeed(rand1);
+                hs.setServerCapabilities(getServerCapabilities());
+                hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
+                hs.setServerStatus(2);
+                hs.setRestOfScrambleBuff(rand2);
                 hs.write(this);
             } else {
                 HandshakePacket hs = new HandshakePacket();
-                hs.packetId = 0;
-                hs.protocolVersion = Versions.PROTOCOL_VERSION;
-                hs.serverVersion = Versions.serverVersion;
-                hs.threadId = id;
-                hs.seed = rand1;
-                hs.serverCapabilities = getServerCapabilities();
-                hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
-                hs.serverStatus = 2;
-                hs.restOfScrambleBuff = rand2;
+                hs.setPacketId(0);
+                hs.setProtocolVersion(Versions.PROTOCOL_VERSION);
+                hs.setServerVersion(Versions.getServerVersion());
+                hs.setThreadId(id);
+                hs.setSeed(rand1);
+                hs.setServerCapabilities(getServerCapabilities());
+                hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
+                hs.setServerStatus(2);
+                hs.setRestOfScrambleBuff(rand2);
                 hs.write(this);
             }
 

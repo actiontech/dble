@@ -164,9 +164,9 @@ public final class RouterUtil {
     }
 
     public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
-        rrs.setSchema(schemaInfo.schema);
-        rrs.setTable(schemaInfo.table);
-        RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+        rrs.setSchema(schemaInfo.getSchema());
+        rrs.setTable(schemaInfo.getTable());
+        RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
     }
 
     public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
@@ -210,14 +210,14 @@ public final class RouterUtil {
 
 
     public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
-        String stmt = getFixedSql(removeSchema(rrs.getStatement(), schemaInfo.schema));
+        String stmt = getFixedSql(removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
         List<String> dataNodes;
-        Map<String, TableConfig> tables = schemaInfo.schemaConfig.getTables();
-        TableConfig tc = tables.get(schemaInfo.table);
+        Map<String, TableConfig> tables = schemaInfo.getSchemaConfig().getTables();
+        TableConfig tc = tables.get(schemaInfo.getTable());
         if (tc != null) {
             dataNodes = tc.getDataNodes();
         } else {
-            String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
         Iterator<String> iterator1 = dataNodes.iterator();
@@ -229,8 +229,8 @@ public final class RouterUtil {
             nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt);
         }
         rrs.setNodes(nodes);
-        rrs.setSchema(schemaInfo.schema);
-        rrs.setTable(schemaInfo.table);
+        rrs.setSchema(schemaInfo.getSchema());
+        rrs.setTable(schemaInfo.getTable());
         rrs.setFinishedRoute(true);
     }
 
@@ -480,7 +480,7 @@ public final class RouterUtil {
                     colPair.setNodeId(nodeIndx);
                 }
             } else if (colPair.rangeValue != null) {
-                Integer[] nodeRange = algorithm.calculateRange(String.valueOf(colPair.rangeValue.beginValue), String.valueOf(colPair.rangeValue.endValue));
+                Integer[] nodeRange = algorithm.calculateRange(String.valueOf(colPair.rangeValue.getBeginValue()), String.valueOf(colPair.rangeValue.getEndValue()));
                 if (nodeRange != null) {
                     /**
                      * 不能确认 colPair的 nodeid是否会有其它影响
@@ -744,7 +744,7 @@ public final class RouterUtil {
                             }
                             if (pair.rangeValue != null) {
                                 Integer[] nodeIndexs = algorithm.calculateRange(
-                                        pair.rangeValue.beginValue.toString(), pair.rangeValue.endValue.toString());
+                                        pair.rangeValue.getBeginValue().toString(), pair.rangeValue.getEndValue().toString());
                                 ArrayList<String> dataNodes = tableConfig.getDataNodes();
                                 String node;
                                 for (Integer idx : nodeIndexs) {

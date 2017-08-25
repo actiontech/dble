@@ -140,7 +140,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, e.getMessage());
                 return;
             }
-            BindValue[] bindValues = packet.values;
+            BindValue[] bindValues = packet.getValues();
             // 还原sql中的动态参数为实际参数值
             String sql = prepareStmtBindValue(pstmt, bindValues);
             // 执行sql
@@ -213,57 +213,57 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             BindValue bindValue = bindValues[idx];
             idx++;
             // 处理字段为空的情况
-            if (bindValue.isNull) {
+            if (bindValue.isNull()) {
                 sb.append("NULL");
                 continue;
             }
             switch (paramType & 0xff) {
                 case Fields.FIELD_TYPE_TINY:
-                    sb.append(String.valueOf(bindValue.byteBinding));
+                    sb.append(String.valueOf(bindValue.getByteBinding()));
                     break;
                 case Fields.FIELD_TYPE_SHORT:
-                    sb.append(String.valueOf(bindValue.shortBinding));
+                    sb.append(String.valueOf(bindValue.getShortBinding()));
                     break;
                 case Fields.FIELD_TYPE_LONG:
-                    sb.append(String.valueOf(bindValue.intBinding));
+                    sb.append(String.valueOf(bindValue.getIntBinding()));
                     break;
                 case Fields.FIELD_TYPE_LONGLONG:
-                    sb.append(String.valueOf(bindValue.longBinding));
+                    sb.append(String.valueOf(bindValue.getLongBinding()));
                     break;
                 case Fields.FIELD_TYPE_FLOAT:
-                    sb.append(String.valueOf(bindValue.floatBinding));
+                    sb.append(String.valueOf(bindValue.getFloatBinding()));
                     break;
                 case Fields.FIELD_TYPE_DOUBLE:
-                    sb.append(String.valueOf(bindValue.doubleBinding));
+                    sb.append(String.valueOf(bindValue.getDoubleBinding()));
                     break;
                 case Fields.FIELD_TYPE_VAR_STRING:
                 case Fields.FIELD_TYPE_STRING:
                 case Fields.FIELD_TYPE_VARCHAR:
-                    bindValue.value = varcharEscaper.asFunction().apply(String.valueOf(bindValue.value));
-                    sb.append("'" + bindValue.value + "'");
+                    bindValue.setValue(varcharEscaper.asFunction().apply(String.valueOf(bindValue.getValue())));
+                    sb.append("'" + bindValue.getValue() + "'");
                     break;
                 case Fields.FIELD_TYPE_TINY_BLOB:
                 case Fields.FIELD_TYPE_BLOB:
                 case Fields.FIELD_TYPE_MEDIUM_BLOB:
                 case Fields.FIELD_TYPE_LONG_BLOB:
-                    if (bindValue.value instanceof ByteArrayOutputStream) {
-                        byte[] bytes = ((ByteArrayOutputStream) bindValue.value).toByteArray();
+                    if (bindValue.getValue() instanceof ByteArrayOutputStream) {
+                        byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
                         sb.append("X'" + HexFormatUtil.bytesToHexString(bytes) + "'");
                     } else {
                         // 正常情况下不会走到else, 除非long data的存储方式(ByteArrayOutputStream)被修改
                         LOGGER.warn("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
-                        sb.append("'" + bindValue.value + "'");
+                        sb.append("'" + bindValue.getValue() + "'");
                     }
                     break;
                 case Fields.FIELD_TYPE_TIME:
                 case Fields.FIELD_TYPE_DATE:
                 case Fields.FIELD_TYPE_DATETIME:
                 case Fields.FIELD_TYPE_TIMESTAMP:
-                    sb.append("'" + bindValue.value + "'");
+                    sb.append("'" + bindValue.getValue() + "'");
                     break;
                 default:
-                    bindValue.value = varcharEscaper.asFunction().apply(String.valueOf(bindValue.value));
-                    sb.append(bindValue.value.toString());
+                    bindValue.setValue(varcharEscaper.asFunction().apply(String.valueOf(bindValue.getValue())));
+                    sb.append(bindValue.getValue().toString());
                     break;
             }
         }

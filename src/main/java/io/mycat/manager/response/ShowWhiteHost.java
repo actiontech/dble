@@ -27,16 +27,16 @@ public final class ShowWhiteHost {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("IP", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -54,7 +54,7 @@ public final class ShowWhiteHost {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
 
         Map<String, List<UserConfig>> map = MycatServer.getInstance().getConfig().getFirewall().getWhitehost();
         for (Map.Entry<String, List<UserConfig>> entry : map.entrySet()) {
@@ -67,13 +67,13 @@ public final class ShowWhiteHost {
                 users.append(userConfigs.get(i).getName());
             }
             RowDataPacket row = getRow(entry.getKey(), users.toString(), c.getCharset());
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

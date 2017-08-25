@@ -60,43 +60,43 @@ public final class ShowDataSource {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         /*fields[i] = PacketUtil.getField("DATANODE",
                 Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;*/
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c, String name) {
@@ -114,14 +114,14 @@ public final class ShowDataSource {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         MycatConfig conf = MycatServer.getInstance().getConfig();
 
         if (null != name) {
             PhysicalDBNode dn = conf.getDataNodes().get(name);
             for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
                 RowDataPacket row = getRow(w, c.getCharset());
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
 
@@ -133,12 +133,12 @@ public final class ShowDataSource {
 
                 for (int i = 0; i < datahost.getSources().length; i++) {
                     RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                     if (datahost.getrReadSources().get(i) != null) {
                         for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
                             RowDataPacket rsow = getRow(w, c.getCharset());
-                            rsow.packetId = ++packetId;
+                            rsow.setPacketId(++packetId);
                             buffer = rsow.write(buffer, c, true);
                         }
                     }
@@ -148,7 +148,7 @@ public final class ShowDataSource {
         }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

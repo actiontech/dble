@@ -104,30 +104,30 @@ public class MySQLConnection extends BackendAIOConnection {
     private static final CommandPacket ROLLBACK = new CommandPacket();
 
     static {
-        READ_UNCOMMITTED.packetId = 0;
-        READ_UNCOMMITTED.command = MySQLPacket.COM_QUERY;
-        READ_UNCOMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED".getBytes();
-        READ_COMMITTED.packetId = 0;
-        READ_COMMITTED.command = MySQLPacket.COM_QUERY;
-        READ_COMMITTED.arg = "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED".getBytes();
-        REPEATED_READ.packetId = 0;
-        REPEATED_READ.command = MySQLPacket.COM_QUERY;
-        REPEATED_READ.arg = "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes();
-        SERIALIZABLE.packetId = 0;
-        SERIALIZABLE.command = MySQLPacket.COM_QUERY;
-        SERIALIZABLE.arg = "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE".getBytes();
-        AUTOCOMMIT_ON.packetId = 0;
-        AUTOCOMMIT_ON.command = MySQLPacket.COM_QUERY;
-        AUTOCOMMIT_ON.arg = "SET autocommit=1".getBytes();
-        AUTOCOMMIT_OFF.packetId = 0;
-        AUTOCOMMIT_OFF.command = MySQLPacket.COM_QUERY;
-        AUTOCOMMIT_OFF.arg = "SET autocommit=0".getBytes();
-        COMMIT.packetId = 0;
-        COMMIT.command = MySQLPacket.COM_QUERY;
-        COMMIT.arg = "commit".getBytes();
-        ROLLBACK.packetId = 0;
-        ROLLBACK.command = MySQLPacket.COM_QUERY;
-        ROLLBACK.arg = "rollback".getBytes();
+        READ_UNCOMMITTED.setPacketId(0);
+        READ_UNCOMMITTED.setCommand(MySQLPacket.COM_QUERY);
+        READ_UNCOMMITTED.setArg("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED".getBytes());
+        READ_COMMITTED.setPacketId(0);
+        READ_COMMITTED.setCommand(MySQLPacket.COM_QUERY);
+        READ_COMMITTED.setArg("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED".getBytes());
+        REPEATED_READ.setPacketId(0);
+        REPEATED_READ.setCommand(MySQLPacket.COM_QUERY);
+        REPEATED_READ.setArg("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes());
+        SERIALIZABLE.setPacketId(0);
+        SERIALIZABLE.setCommand(MySQLPacket.COM_QUERY);
+        SERIALIZABLE.setArg("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE".getBytes());
+        AUTOCOMMIT_ON.setPacketId(0);
+        AUTOCOMMIT_ON.setCommand(MySQLPacket.COM_QUERY);
+        AUTOCOMMIT_ON.setArg("SET autocommit=1".getBytes());
+        AUTOCOMMIT_OFF.setPacketId(0);
+        AUTOCOMMIT_OFF.setCommand(MySQLPacket.COM_QUERY);
+        AUTOCOMMIT_OFF.setArg("SET autocommit=0".getBytes());
+        COMMIT.setPacketId(0);
+        COMMIT.setCommand(MySQLPacket.COM_QUERY);
+        COMMIT.setArg("commit".getBytes());
+        ROLLBACK.setPacketId(0);
+        ROLLBACK.setCommand(MySQLPacket.COM_QUERY);
+        ROLLBACK.setArg("rollback".getBytes());
     }
 
     private MySQLDataSource pool;
@@ -236,17 +236,17 @@ public class MySQLConnection extends BackendAIOConnection {
 
     public void authenticate() {
         AuthPacket packet = new AuthPacket();
-        packet.packetId = 1;
-        packet.clientFlags = clientFlags;
-        packet.maxPacketSize = maxPacketSize;
-        packet.charsetIndex = this.charsetIndex;
-        packet.user = user;
+        packet.setPacketId(1);
+        packet.setClientFlags(clientFlags);
+        packet.setMaxPacketSize(maxPacketSize);
+        packet.setCharsetIndex(this.charsetIndex);
+        packet.setUser(user);
         try {
-            packet.password = passwd(password, handshake);
+            packet.setPassword(passwd(password, handshake));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
         }
-        packet.database = schema;
+        packet.setDatabase(schema);
         packet.write(this);
     }
 
@@ -268,10 +268,10 @@ public class MySQLConnection extends BackendAIOConnection {
 
     protected void sendQueryCmd(String query) {
         CommandPacket packet = new CommandPacket();
-        packet.packetId = 0;
-        packet.command = MySQLPacket.COM_QUERY;
+        packet.setPacketId(0);
+        packet.setCommand(MySQLPacket.COM_QUERY);
         try {
-            packet.arg = query.getBytes(CharsetUtil.getJavaCharset(charset));
+            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(charset)));
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -406,9 +406,9 @@ public class MySQLConnection extends BackendAIOConnection {
 
     private static CommandPacket getChangeSchemaCommand(String schema) {
         CommandPacket cmd = new CommandPacket();
-        cmd.packetId = 0;
-        cmd.command = MySQLPacket.COM_INIT_DB;
-        cmd.arg = schema.getBytes();
+        cmd.setPacketId(0);
+        cmd.setCommand(MySQLPacket.COM_INIT_DB);
+        cmd.setArg(schema.getBytes());
         return cmd;
     }
 
@@ -533,11 +533,11 @@ public class MySQLConnection extends BackendAIOConnection {
             return null;
         }
         byte[] passwd = pass.getBytes();
-        int sl1 = hs.seed.length;
-        int sl2 = hs.restOfScrambleBuff.length;
+        int sl1 = hs.getSeed().length;
+        int sl2 = hs.getRestOfScrambleBuff().length;
         byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.seed, 0, seed, 0, sl1);
-        System.arraycopy(hs.restOfScrambleBuff, 0, seed, sl1, sl2);
+        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
+        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
         return SecurityUtil.scramble411(passwd, seed);
     }
 

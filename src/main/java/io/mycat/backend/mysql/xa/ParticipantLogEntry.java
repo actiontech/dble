@@ -34,7 +34,7 @@ public class ParticipantLogEntry implements Serializable {
     /**
      * For diagnostic purposes, null if not relevant.
      */
-    public String schema;
+    private String schema;
 
     public ParticipantLogEntry(String coordinatorId, String host, int port, long expires, String schema,
                                TxState txState) {

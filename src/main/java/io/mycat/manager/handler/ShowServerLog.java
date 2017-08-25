@@ -61,12 +61,12 @@ public final class ShowServerLog {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("LOG", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     private static File getLogFile(String logFile) {
@@ -99,7 +99,7 @@ public final class ShowServerLog {
 
         // write rows
 
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         PackageBufINf bufInf = null;
 
         if (condPairMap.isEmpty()) {
@@ -122,11 +122,11 @@ public final class ShowServerLog {
 
         }
 
-        packetId = bufInf.packetId;
-        buffer = bufInf.buffer;
+        packetId = bufInf.getPacketId();
+        buffer = bufInf.getBuffer();
 
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
@@ -159,21 +159,21 @@ public final class ShowServerLog {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode(curLine + "->" + line,
                             c.getCharset()));
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
-            bufINf.buffer = buffer;
-            bufINf.packetId = packetId;
+            bufINf.setBuffer(buffer);
+            bufINf.setPacketId(packetId);
             return bufINf;
 
         } catch (Exception e) {
             LOGGER.error("showLogRangeError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
-            bufINf.buffer = buffer;
+            bufINf.setBuffer(buffer);
         } finally {
             if (br != null) {
                 try {
@@ -184,7 +184,7 @@ public final class ShowServerLog {
             }
 
         }
-        bufINf.packetId = packetId;
+        bufINf.setPacketId(packetId);
         return bufINf;
     }
 
@@ -220,32 +220,32 @@ public final class ShowServerLog {
 
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode("files in log dir:" + totalLines + fileNames, c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode("Total lines " + totalLines + " ,tail " +
                     queue.size() + " line is following:", c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             int size = queue.size() - 1;
             for (int i = size; i >= 0; i--) {
                 String data = queue.get(i);
                 row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode(data, c.getCharset()));
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
-            bufINf.buffer = buffer;
-            bufINf.packetId = packetId;
+            bufINf.setBuffer(buffer);
+            bufINf.setPacketId(packetId);
             return bufINf;
 
         } catch (Exception e) {
             LOGGER.error("showLogSumError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
-            bufINf.buffer = buffer;
+            bufINf.setBuffer(buffer);
         } finally {
             if (br != null) {
                 try {
@@ -256,7 +256,7 @@ public final class ShowServerLog {
             }
 
         }
-        bufINf.packetId = packetId;
+        bufINf.setPacketId(packetId);
         return bufINf;
     }
 

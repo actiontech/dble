@@ -31,9 +31,8 @@ public abstract class Versions {
     /**协议版本**/
     public static final byte PROTOCOL_VERSION = 10;
 
-    /**服务器版本**/
     public static byte[] serverVersion = "@server-version@".getBytes();
-    public static byte[] versionComment = "@version-comment@".getBytes();
+    public static final byte[] VERSION_COMMENT = "@version-comment@".getBytes();
     public static final String ANNOTATION_NAME = "@annotation-name@";
     public static final String ROOT_PREFIX = "@root_prefix@";
 
@@ -51,5 +50,10 @@ public abstract class Versions {
         System.arraycopy(serverVersion, startIndex, newVersion, mysqlVersionPart.length,
                 serverVersion.length - startIndex);
         serverVersion = newVersion;
+    }
+
+    /**服务器版本**/
+    public static byte[] getServerVersion() {
+        return serverVersion;
     }
 }

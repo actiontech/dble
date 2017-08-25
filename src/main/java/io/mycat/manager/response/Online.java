@@ -37,9 +37,9 @@ public final class Online {
     private static final OkPacket OK = new OkPacket();
 
     static {
-        OK.packetId = 1;
-        OK.affectedRows = 1;
-        OK.serverStatus = 2;
+        OK.setPacketId(1);
+        OK.setAffectedRows(1);
+        OK.setServerStatus(2);
     }
 
     public static void execute(ManagerConnection mc) {

@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  */
 public class BinaryPacket extends MySQLPacket {
 
-    public byte[] data;
+    private byte[] data;
 
     public void read(InputStream in) throws IOException {
         packetLength = StreamUtil.readUB3(in);
@@ -76,4 +76,11 @@ public class BinaryPacket extends MySQLPacket {
         return "MySQL Binary Packet";
     }
 
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
 }

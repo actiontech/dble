@@ -60,8 +60,8 @@ public abstract class ItemSumBit extends ItemSumInt {
 
         private static final long serialVersionUID = -5952130248997591472L;
 
-        public BigInteger bits;
-        public boolean isNull;
+        protected BigInteger bits;
+        protected boolean isNull;
 
         public AggData(BigInteger bits, boolean isNull) {
             this.bits = bits;

@@ -1,15 +1,35 @@
 package io.mycat.plan.common.typelib;
 
 public class TypeLib {
-    public int count; /* How many types */
-    public String name; /* Name of typelib */
-    public String[] typeNames;
-    public Integer typeLengths;
+    private int count; /* How many types */
+    private String name; /* Name of typelib */
+    private String[] typeNames;
+    private Integer typeLengths;
 
     public TypeLib(int countPar, String namePar, String[] typeNamesPar, Integer typeLengthsPar) {
         this.count = countPar;
         this.name = namePar;
         this.typeNames = typeNamesPar;
         this.typeLengths = typeLengthsPar;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String[] getTypeNames() {
+        return typeNames;
     }
 }

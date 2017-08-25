@@ -66,32 +66,32 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                     columnList = ((SQLAlterTableDropColumnItem) alterItem).getColumns();
                 }
 
-                support = !this.columnInfluenceCheck(columnList, schemaInfo.schemaConfig, schemaInfo.table);
+                support = !this.columnInfluenceCheck(columnList, schemaInfo.getSchemaConfig(), schemaInfo.getTable());
             }
         }
         if (!support) {
             String msg = "THE DDL is not supported, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
-        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
-            return schemaInfo.schemaConfig;
+            return schemaInfo.getSchemaConfig();
         }
         if (GlobalTableUtil.useGlobleTableCheck() &&
-                GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
+                GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             String sql = modifyColumnIfAlter(schemaInfo, rrs.getStatement(), alterTable);
             rrs.setSrcStatement(sql);
-            sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
+            sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
         }
         RouterUtil.routeToDDLNode(schemaInfo, rrs);
-        return schemaInfo.schemaConfig;
+        return schemaInfo.getSchemaConfig();
     }
 
     private String modifyColumnIfAlter(SchemaInfo schemaInfo, String sql, SQLAlterTableStatement alterStatement) throws SQLNonTransientException {
-        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
+        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (orgTbMeta == null)
             return sql;
         List<String> cols = new ArrayList<>();

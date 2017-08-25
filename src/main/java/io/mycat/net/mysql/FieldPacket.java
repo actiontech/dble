@@ -61,18 +61,18 @@ public class FieldPacket extends MySQLPacket {
     private static final byte[] DEFAULT_CATALOG = "def".getBytes();
     private static final byte[] FILLER = new byte[2];
 
-    public byte[] catalog = DEFAULT_CATALOG;
-    public byte[] db;
-    public byte[] table;
-    public byte[] orgTable;
-    public byte[] name;
-    public byte[] orgName;
-    public int charsetIndex;
-    public long length;
-    public int type;
-    public int flags;
-    public byte decimals;
-    public byte[] definition;
+    private byte[] catalog = DEFAULT_CATALOG;
+    private byte[] db;
+    private byte[] table;
+    private byte[] orgTable;
+    private byte[] name;
+    private byte[] orgName;
+    private int charsetIndex;
+    private long length;
+    private int type;
+    private int flags;
+    private byte decimals;
+    private byte[] definition;
 
     /**
      * 把字节数组转变成FieldPacket
@@ -90,7 +90,7 @@ public class FieldPacket extends MySQLPacket {
     public void read(BinaryPacket bin) {
         this.packetLength = bin.packetLength;
         this.packetId = bin.packetId;
-        readBody(new MySQLMessage(bin.data));
+        readBody(new MySQLMessage(bin.getData()));
     }
 
     @Override
@@ -166,4 +166,99 @@ public class FieldPacket extends MySQLPacket {
         }
     }
 
+    public byte[] getCatalog() {
+        return catalog;
+    }
+
+    public void setCatalog(byte[] catalog) {
+        this.catalog = catalog;
+    }
+
+    public byte[] getDb() {
+        return db;
+    }
+
+    public void setDb(byte[] db) {
+        this.db = db;
+    }
+
+    public byte[] getTable() {
+        return table;
+    }
+
+    public void setTable(byte[] table) {
+        this.table = table;
+    }
+
+    public byte[] getOrgTable() {
+        return orgTable;
+    }
+
+    public void setOrgTable(byte[] orgTable) {
+        this.orgTable = orgTable;
+    }
+
+    public byte[] getName() {
+        return name;
+    }
+
+    public void setName(byte[] name) {
+        this.name = name;
+    }
+
+    public byte[] getOrgName() {
+        return orgName;
+    }
+
+    public void setOrgName(byte[] orgName) {
+        this.orgName = orgName;
+    }
+
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
+
+    public long getLength() {
+        return length;
+    }
+
+    public void setLength(long length) {
+        this.length = length;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public int getFlags() {
+        return flags;
+    }
+
+    public void setFlags(int flags) {
+        this.flags = flags;
+    }
+
+    public byte getDecimals() {
+        return decimals;
+    }
+
+    public void setDecimals(byte decimals) {
+        this.decimals = decimals;
+    }
+
+    public byte[] getDefinition() {
+        return definition;
+    }
+
+    public void setDefinition(byte[] definition) {
+        this.definition = definition;
+    }
 }

@@ -22,7 +22,7 @@ public class ItemFuncHour extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         MySQLTime ltime = new MySQLTime();
-        return getArg0Time(ltime) ? BigInteger.ZERO : BigInteger.valueOf(ltime.hour);
+        return getArg0Time(ltime) ? BigInteger.ZERO : BigInteger.valueOf(ltime.getHour());
     }
 
     @Override

@@ -45,8 +45,8 @@ public final class CmpUtil {
         boolean value;
         MySQLTimeStatus status = new MySQLTimeStatus();
         if (!MyTime.strToDatetime(str, str.length(), lTime, MyTime.TIME_FUZZY_DATE, status) &&
-                (lTime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME ||
-                        lTime.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
+                (lTime.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME ||
+                        lTime.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_DATE))
             /*
              * Do not return yet, we may still want to throw a
              * "trailing garbage" warning.
@@ -54,7 +54,7 @@ public final class CmpUtil {
             value = false;
         else {
             value = true;
-            status.warnings = MyTime.MYSQL_TIME_WARN_TRUNCATED; /*
+            status.setWarnings(MyTime.MYSQL_TIME_WARN_TRUNCATED); /*
                                                                  * force warning
                                                                  */
         }

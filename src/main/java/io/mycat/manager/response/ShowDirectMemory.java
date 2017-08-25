@@ -43,39 +43,39 @@ public final class ShowDirectMemory {
     static {
         int i = 0;
         byte packetId = 0;
-        DETAIL_HEADER.packetId = ++packetId;
+        DETAIL_HEADER.setPacketId(++packetId);
 
         DETAIL_FIELDS[i] = PacketUtil.getField("THREAD_ID", Fields.FIELD_TYPE_VAR_STRING);
-        DETAIL_FIELDS[i++].packetId = ++packetId;
+        DETAIL_FIELDS[i++].setPacketId(++packetId);
 
         DETAIL_FIELDS[i] = PacketUtil.getField("MEM_USE_TYPE", Fields.FIELD_TYPE_VAR_STRING);
-        DETAIL_FIELDS[i++].packetId = ++packetId;
+        DETAIL_FIELDS[i++].setPacketId(++packetId);
 
         DETAIL_FIELDS[i] = PacketUtil.getField("  SIZE  ", Fields.FIELD_TYPE_VAR_STRING);
-        DETAIL_FIELDS[i++].packetId = ++packetId;
-        DETAIL_EOF.packetId = ++packetId;
+        DETAIL_FIELDS[i++].setPacketId(++packetId);
+        DETAIL_EOF.setPacketId(++packetId);
 
 
         i = 0;
         packetId = 0;
 
-        TOTAL_HEADER.packetId = ++packetId;
+        TOTAL_HEADER.setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("MDIRECT_MEMORY_MAXED", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_USED", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_AVAILABLE", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].packetId = ++packetId;
+        TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_RESERVED", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].packetId = ++packetId;
-        TOTAL_EOF.packetId = ++packetId;
+        TOTAL_FIELDS[i++].setPacketId(++packetId);
+        TOTAL_EOF.setPacketId(++packetId);
 
 
     }
@@ -107,7 +107,7 @@ public final class ShowDirectMemory {
         buffer = DETAIL_EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = DETAIL_EOF.packetId;
+        byte packetId = DETAIL_EOF.getPacketId();
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
 
@@ -130,7 +130,7 @@ public final class ShowDirectMemory {
                     row.add("MergeMemoryPool".getBytes(c.getCharset()));
                     row.add(value > 0 ?
                             JavaUtils.bytesToString2(value).getBytes(c.getCharset()) : "0".getBytes(c.getCharset()));
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
@@ -146,7 +146,7 @@ public final class ShowDirectMemory {
                 row.add(value > 0 ?
                         JavaUtils.bytesToString2(value).getBytes(c.getCharset()) : "0".getBytes(c.getCharset()));
 
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
 
@@ -156,7 +156,7 @@ public final class ShowDirectMemory {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
@@ -179,7 +179,7 @@ public final class ShowDirectMemory {
         // write eof
         buffer = TOTAL_EOF.write(buffer, c, true);
         // write rows
-        byte packetId = TOTAL_EOF.packetId;
+        byte packetId = TOTAL_EOF.getPacketId();
 
         int useOffHeapForMerge = MycatServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();
@@ -259,7 +259,7 @@ public final class ShowDirectMemory {
 
             row.add(resevedForOs > 0 ? JavaUtils.bytesToString2(resevedForOs).getBytes(c.getCharset()) : "0".getBytes(c.getCharset()));
 
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
 
         } catch (UnsupportedEncodingException e) {
@@ -268,7 +268,7 @@ public final class ShowDirectMemory {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

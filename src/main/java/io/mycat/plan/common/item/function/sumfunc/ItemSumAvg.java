@@ -14,7 +14,7 @@ import java.util.List;
 
 
 public class ItemSumAvg extends ItemSumSum {
-    public long count;
+    private long count;
 
     public ItemSumAvg(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields) {
         super(args, distinct, isPushDown, fields);
@@ -150,7 +150,7 @@ public class ItemSumAvg extends ItemSumSum {
     private static class AvgAggData extends AggData {
 
         private static final long serialVersionUID = -1831762635995954526L;
-        public long count;
+        private long count;
 
         AvgAggData(BigDecimal sum, long count, boolean isNull) {
             super(sum, isNull);

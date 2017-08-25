@@ -29,12 +29,7 @@ public class MemoryBlock extends MemoryLocation {
 
     private final long length;
 
-    /**
-     * Optional page number; used when this MemoryBlock represents a page allocated by a
-     * DataNodeMemoryManager. This field is public so that it can be modified by the DataNodeMemoryManager,
-     * which lives in a different package.
-     */
-    public int pageNumber = -1;
+    private int pageNumber = -1;
 
     public MemoryBlock(@Nullable Object obj, long offset, long length) {
         super(obj, offset);
@@ -56,4 +51,16 @@ public class MemoryBlock extends MemoryLocation {
     }
 
 
+    /**
+     * Optional page number; used when this MemoryBlock represents a page allocated by a
+     * DataNodeMemoryManager. This field is public so that it can be modified by the DataNodeMemoryManager,
+     * which lives in a different package.
+     */
+    public int getPageNumber() {
+        return pageNumber;
+    }
+
+    public void setPageNumber(int pageNumber) {
+        this.pageNumber = pageNumber;
+    }
 }

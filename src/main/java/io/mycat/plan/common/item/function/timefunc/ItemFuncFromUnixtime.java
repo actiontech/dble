@@ -22,7 +22,7 @@ public class ItemFuncFromUnixtime extends ItemDatetimeFunc {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         long milseconds = args.get(0).valInt().longValue() * 1000;
-        if (nullValue = args.get(0).nullValue)
+        if (nullValue = args.get(0).isNullValue())
             return true;
         java.util.Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(milseconds);

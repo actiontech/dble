@@ -28,7 +28,7 @@ public class ItemFuncExp extends ItemDecFunc {
     @Override
     public BigDecimal valReal() {
         BigDecimal value = args.get(0).valReal();
-        if (nullValue = args.get(0).nullValue) {
+        if (nullValue = args.get(0).isNullValue()) {
             return BigDecimal.ZERO;
         }
         return BigDecimal.valueOf(Math.exp(value.doubleValue()));

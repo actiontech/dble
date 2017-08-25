@@ -33,7 +33,7 @@ public class ItemFuncXor extends ItemBoolFunc2 {
         nullValue = false;
         for (int i = 0; i < getArgCount(); i++) {
             result ^= (args.get(i).valInt().compareTo(BigInteger.ZERO) != 0) ? 1 : 0;
-            if (args.get(i).nullValue) {
+            if (args.get(i).isNullValue()) {
                 nullValue = true;
                 return BigInteger.ZERO;
             }

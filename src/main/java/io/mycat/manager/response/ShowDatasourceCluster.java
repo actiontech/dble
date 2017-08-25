@@ -66,60 +66,60 @@ public final class ShowDatasourceCluster {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("name", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("host", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("port", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_incoming_addresses", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_cluster_size", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_cluster_status", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_connected", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_flow_control_paused", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_local_state_comment", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_ready", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_flow_control_paused_ns", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_flow_control_recv", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_local_bf_aborts", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_local_recv_queue_avg", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_local_send_queue_avg", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_apply_oool", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("wsrep_apply_oooe", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void response(ManagerConnection c) {
@@ -137,16 +137,16 @@ public final class ShowDatasourceCluster {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
 
         for (RowDataPacket row : getRows(c.getCharset())) {
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

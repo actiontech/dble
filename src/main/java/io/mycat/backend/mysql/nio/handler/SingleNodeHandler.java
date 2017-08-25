@@ -145,7 +145,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        err.packetId = ++packetId;
+        err.setPacketId(++packetId);
         backConnectionErr(err, conn);
     }
 
@@ -155,7 +155,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 
-        String errmgs = " errno:" + errPkg.errno + " " + new String(errPkg.message);
+        String errmgs = " errno:" + errPkg.getErrno() + " " + new String(errPkg.getMessage());
         LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
@@ -180,7 +180,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
          */
         // 由于 pakcetId != 1 造成的问题
         if (waitingResponse) {
-            errPkg.packetId = 1;
+            errPkg.setPacketId(1);
             errPkg.write(source);
             waitingResponse = false;
         }
@@ -207,14 +207,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ok.read(data);
             if (rrs.isLoadData()) {
                 byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
-                ok.packetId = ++lastPackId; // OK_PACKET
+                ok.setPacketId(++lastPackId); // OK_PACKET
                 source.getLoadDataInfileHandler().clear();
 
             } else {
-                ok.packetId = ++packetId; // OK_PACKET
+                ok.setPacketId(++packetId); // OK_PACKET
             }
-            ok.serverStatus = source.isAutocommit() ? 2 : 1;
-            source.setLastInsertId(ok.insertId);
+            ok.setServerStatus(source.isAutocommit() ? 2 : 1);
+            source.setLastInsertId(ok.getInsertId());
             //handleSpecial
             session.releaseConnectionIfSafe(conn, false);
             ok.write(source);
@@ -313,7 +313,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
             // find primary key index
             if (primaryKey != null && primaryKeyIndex == -1) {
-                String fieldName = new String(fieldPk.name);
+                String fieldName = new String(fieldPk.getName());
                 if (primaryKey.equalsIgnoreCase(fieldName)) {
                     primaryKeyIndex = i;
                 }
@@ -360,7 +360,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
             BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
             binRowDataPk.read(fieldPackets, rowDataPk);
-            binRowDataPk.packetId = rowDataPk.packetId;
+            binRowDataPk.setPacketId(rowDataPk.getPacketId());
             buffer = binRowDataPk.write(buffer, session.getSource(), true);
         } else {
             buffer = session.getSource().writeToBuffer(row, allocBuffer());
@@ -377,9 +377,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         ErrorPacket err = new ErrorPacket();
-        err.packetId = ++packetId;
-        err.errno = ErrorCode.ER_ERROR_ON_CLOSE;
-        err.message = StringUtil.encode(reason, session.getSource().getCharset());
+        err.setPacketId(++packetId);
+        err.setErrno(ErrorCode.ER_ERROR_ON_CLOSE);
+        err.setMessage(StringUtil.encode(reason, session.getSource().getCharset()));
         this.backConnectionErr(err, conn);
         session.getSource().close(reason);
     }

@@ -10,7 +10,7 @@ public abstract class ItemFuncAdditiveOp extends ItemNumOp {
 
     @Override
     public void resultPrecision() {
-        decimals = Math.max(args.get(0).decimals, args.get(1).decimals);
+        decimals = Math.max(args.get(0).getDecimals(), args.get(1).getDecimals());
     }
 
 }

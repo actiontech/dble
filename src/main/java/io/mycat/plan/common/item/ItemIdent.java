@@ -10,8 +10,8 @@ public abstract class ItemIdent extends Item {
      * shorter than life-time of Item_field.
      */
 
-    public String dbName;
-    public String tableName;
+    protected String dbName;
+    protected String tableName;
 
     public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
         this.dbName = dbNameArg;
@@ -30,4 +30,12 @@ public abstract class ItemIdent extends Item {
         return toExpression().toString();
     }
 
+    @Override
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 }

@@ -144,7 +144,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             int eofCount = 0;
             for (; ; ) {
                 RowDataPacket row = outQueue.take();
-                if (row.fieldCount == 0) {
+                if (row.getFieldCount() == 0) {
                     eofCount++;
                     if (eofCount == bucketSize)
                         break;
@@ -240,7 +240,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             byte[] tmpb = sendSum.getRowPacketByte();
             newRp.add(tmpb);
         }
-        for (int i = 0; i < row.fieldCount; i++) {
+        for (int i = 0; i < row.getFieldCount(); i++) {
             newRp.add(row.getValue(i));
         }
         return nextHandler.rowResponse(null, newRp, this.isLeft, conn);

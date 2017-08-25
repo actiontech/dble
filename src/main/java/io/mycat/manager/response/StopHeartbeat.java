@@ -65,9 +65,9 @@ public final class StopHeartbeat {
             }
         }
         OkPacket packet = new OkPacket();
-        packet.packetId = 1;
-        packet.affectedRows = count;
-        packet.serverStatus = 2;
+        packet.setPacketId(1);
+        packet.setAffectedRows(count);
+        packet.setServerStatus(2);
         packet.write(c);
     }
 

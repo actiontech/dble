@@ -46,28 +46,28 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
 
-        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
-            return schemaInfo.schemaConfig;
+            return schemaInfo.getSchemaConfig();
         }
         //如果这个不是no_sharing表格那么就需要这么进行检查
         sharingTableCheck(createStmt);
         if (GlobalTableUtil.useGlobleTableCheck() &&
-                GlobalTableUtil.isGlobalTable(schemaInfo.schemaConfig, schemaInfo.table)) {
+                GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             String sql = addColumnIfCreate(createStmt);
             rrs.setSrcStatement(sql);
-            sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
+            sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
         }
         try {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         } catch (SQLException e) {
-            String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist in the config of schema";
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist in the config of schema";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
-        return schemaInfo.schemaConfig;
+        return schemaInfo.getSchemaConfig();
     }
 
     private String addColumnIfCreate(MySqlCreateTableStatement createStmt) {

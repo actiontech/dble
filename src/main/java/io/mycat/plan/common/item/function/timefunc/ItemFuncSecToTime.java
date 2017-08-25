@@ -22,13 +22,13 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
     @Override
     public void fixLengthAndDec() {
         maybeNull = true;
-        fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_WIDTH, args.get(0).decimals);
+        fixLengthAndDecAndCharsetDatetime(MyTime.MAX_TIME_WIDTH, args.get(0).getDecimals());
     }
 
     @Override
     public boolean getTime(MySQLTime ltime) {
         BigDecimal val = args.get(0).valDecimal();
-        if (nullValue = args.get(0).nullValue) {
+        if (nullValue = args.get(0).isNullValue()) {
             return true;
         }
         long seconds = val.longValue();
@@ -36,13 +36,13 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
             ltime.setMaxHhmmss();
             return true;
         }
-        ltime.hour = (seconds / 3600);
+        ltime.setHour((seconds / 3600));
         long sec = (seconds % 3600);
-        ltime.minute = sec / 60;
-        ltime.second = sec % 60;
+        ltime.setMinute(sec / 60);
+        ltime.setSecond(sec % 60);
 
         long microseconds = (long) ((val.doubleValue() - val.longValue()) * 1000000);
-        ltime.secondPart = microseconds;
+        ltime.setSecondPart(microseconds);
         return false;
     }
 

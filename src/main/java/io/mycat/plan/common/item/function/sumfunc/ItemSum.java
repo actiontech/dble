@@ -20,7 +20,7 @@ import java.util.List;
 public abstract class ItemSum extends ItemResultField {
     /* 行fields集合 */
     protected List<Field> sourceFields;
-    public boolean isPushDown;
+    protected boolean isPushDown;
 
     public static final int FALSE = 0;
     public static final int TRUE = 1;
@@ -139,7 +139,7 @@ public abstract class ItemSum extends ItemResultField {
     public void fixNumLengthAndDec() {
         decimals = 0;
         for (int i = 0; i < getArgCount(); i++)
-            decimals = Math.max(decimals, args.get(i).decimals);
+            decimals = Math.max(decimals, args.get(i).getDecimals());
         maxLength = floatLength(decimals);
     }
 
@@ -299,8 +299,8 @@ public abstract class ItemSum extends ItemResultField {
                 return null;
             args.set(index, fixedArg);
             getReferTables().addAll(fixedArg.getReferTables());
-            withIsNull = withIsNull || fixedArg.withIsNull;
-            withSubQuery = withSubQuery || fixedArg.withSubQuery;
+            withIsNull = withIsNull || fixedArg.isWithIsNull();
+            withSubQuery = withSubQuery || fixedArg.isWithSubQuery();
         }
         return this;
     }
@@ -316,7 +316,7 @@ public abstract class ItemSum extends ItemResultField {
                 planNode.setExistUnPushDownGroup(true);
                 needAddArgToRefer = true;
                 // 补上sunfuncs里面的arg参数
-                for (ItemSum sumfunc : planNode.sumFuncs) {
+                for (ItemSum sumfunc : planNode.getSumFuncs()) {
                     for (Item sumArg : sumfunc.args) {
                         sumArg.fixRefer(context);
                     }
@@ -330,7 +330,7 @@ public abstract class ItemSum extends ItemResultField {
                 arg.fixRefer(context);
             }
         }
-        planNode.sumFuncs.add(this);
+        planNode.getSumFuncs().add(this);
     }
 
 }

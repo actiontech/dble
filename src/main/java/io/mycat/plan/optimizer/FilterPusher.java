@@ -84,7 +84,7 @@ public final class FilterPusher {
     private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
         List<Item> subHavingList = new ArrayList<>();
         for (Item filter : dnfNodeToPush) {
-            if (filter.withSumFunc) {
+            if (filter.isWithSumFunc()) {
                 subHavingList.add(filter);
             }
         }
@@ -238,7 +238,7 @@ public final class FilterPusher {
                     List<Item> subHavingList = new ArrayList<>();
                     List<Item> subWhereList = new ArrayList<>();
                     for (Item filter : pushToRightNode) {
-                        if (filter.withSumFunc) {
+                        if (filter.isWithSumFunc()) {
                             subHavingList.add(filter);
                         } else {
                             subWhereList.add(filter);

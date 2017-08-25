@@ -50,10 +50,10 @@ public final class SelectTxReadOnly {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
-        FIELDS[i].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
 
     }
 
@@ -64,13 +64,13 @@ public final class SelectTxReadOnly {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(longbt);
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }

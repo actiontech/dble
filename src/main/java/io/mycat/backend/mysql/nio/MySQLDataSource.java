@@ -86,11 +86,11 @@ public class MySQLDataSource extends PhysicalDatasource {
             return null;
         }
         byte[] passwd = pass.getBytes();
-        int sl1 = hs.seed.length;
-        int sl2 = hs.restOfScrambleBuff.length;
+        int sl1 = hs.getSeed().length;
+        int sl2 = hs.getRestOfScrambleBuff().length;
         byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.seed, 0, seed, 0, sl1);
-        System.arraycopy(hs.restOfScrambleBuff, 0, seed, sl1, sl2);
+        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
+        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
         return SecurityUtil.scramble411(passwd, seed);
     }
 
@@ -126,17 +126,17 @@ public class MySQLDataSource extends PhysicalDatasource {
              * Phase 2: client to MySQL. Send auth packet.
              */
             AuthPacket authPacket = new AuthPacket();
-            authPacket.packetId = 1;
-            authPacket.clientFlags = getClientFlags();
-            authPacket.maxPacketSize = 1024 * 1024 * 16;
-            authPacket.charsetIndex = handshake.serverCharsetIndex & 0xff;
-            authPacket.user = this.getConfig().getUser();
+            authPacket.setPacketId(1);
+            authPacket.setClientFlags(getClientFlags());
+            authPacket.setMaxPacketSize(1024 * 1024 * 16);
+            authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
+            authPacket.setUser(this.getConfig().getUser());
             try {
-                authPacket.password = passwd(this.getConfig().getPassword(), handshake);
+                authPacket.setPassword(passwd(this.getConfig().getPassword(), handshake));
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e.getMessage());
             }
-            authPacket.database = schema;
+            authPacket.setDatabase(schema);
             authPacket.write(out);
             out.flush();
 
@@ -145,7 +145,7 @@ public class MySQLDataSource extends PhysicalDatasource {
              */
             BinaryPacket bin2 = new BinaryPacket();
             bin2.read(in);
-            switch (bin2.data[0]) {
+            switch (bin2.getData()[0]) {
                 case OkPacket.FIELD_COUNT:
                     break;
                 case ErrorPacket.FIELD_COUNT:
@@ -154,10 +154,10 @@ public class MySQLDataSource extends PhysicalDatasource {
                 case EOFPacket.FIELD_COUNT:
                     // 发送323响应认证数据包
                     Reply323Packet r323 = new Reply323Packet();
-                    r323.packetId = ++bin2.packetId;
+                    r323.setPacketId((byte) (bin2.getPacketId() + 1));
                     String passwd = this.getConfig().getPassword();
                     if (passwd != null && passwd.length() > 0) {
-                        r323.seed = SecurityUtil.scramble323(passwd, new String(handshake.seed)).getBytes();
+                        r323.setSeed(SecurityUtil.scramble323(passwd, new String(handshake.getSeed())).getBytes());
                     }
                     r323.write(out);
                     out.flush();

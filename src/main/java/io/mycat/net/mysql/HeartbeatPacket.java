@@ -42,8 +42,8 @@ import java.nio.ByteBuffer;
  */
 public class HeartbeatPacket extends MySQLPacket {
 
-    public byte command;
-    public long id;
+    private byte command;
+    private long id;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -73,4 +73,19 @@ public class HeartbeatPacket extends MySQLPacket {
         return "Heartbeat Packet";
     }
 
+    public byte getCommand() {
+        return command;
+    }
+
+    public void setCommand(byte command) {
+        this.command = command;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
 }

@@ -56,13 +56,13 @@ import java.nio.ByteBuffer;
 public class AuthPacket extends MySQLPacket {
     private static final byte[] FILLER = new byte[23];
 
-    public long clientFlags;
-    public long maxPacketSize;
-    public int charsetIndex;
-    public byte[] extra; // from FILLER(23)
-    public String user;
-    public byte[] password;
-    public String database;
+    private long clientFlags;
+    private long maxPacketSize;
+    private int charsetIndex;
+    private byte[] extra; // from FILLER(23)
+    private String user;
+    private byte[] password;
+    private String database;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -163,4 +163,59 @@ public class AuthPacket extends MySQLPacket {
         return "MySQL Authentication Packet";
     }
 
+    public long getClientFlags() {
+        return clientFlags;
+    }
+
+    public void setClientFlags(long clientFlags) {
+        this.clientFlags = clientFlags;
+    }
+
+    public long getMaxPacketSize() {
+        return maxPacketSize;
+    }
+
+    public void setMaxPacketSize(long maxPacketSize) {
+        this.maxPacketSize = maxPacketSize;
+    }
+
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
+
+    public byte[] getExtra() {
+        return extra;
+    }
+
+    public void setExtra(byte[] extra) {
+        this.extra = extra;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public byte[] getPassword() {
+        return password;
+    }
+
+    public void setPassword(byte[] password) {
+        this.password = password;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
 }

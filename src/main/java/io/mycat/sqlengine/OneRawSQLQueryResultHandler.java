@@ -34,7 +34,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
                 byte[] field = fields.get(i);
                 FieldPacket fieldPkg = new FieldPacket();
                 fieldPkg.read(field);
-                String fieldName = new String(fieldPkg.name);
+                String fieldName = new String(fieldPkg.getName());
                 if (watchFd.equalsIgnoreCase(fieldName)) {
                     fetchColPosMap.put(fieldName, i);
                 }

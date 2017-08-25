@@ -24,7 +24,7 @@ public class ItemFuncPeriodDiff extends ItemIntFunc {
         long period1 = args.get(0).valInt().longValue();
         long period2 = args.get(1).valInt().longValue();
 
-        if ((nullValue = args.get(0).nullValue || args.get(1).nullValue))
+        if ((nullValue = args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO; /* purecov: inspected */
         return BigInteger.valueOf(MyTime.convertPeriodToMonth(period1) - MyTime.convertPeriodToMonth(period2));
     }

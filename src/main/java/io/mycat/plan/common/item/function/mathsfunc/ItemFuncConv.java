@@ -25,7 +25,7 @@ public class ItemFuncConv extends ItemStrFunc {
         int toBase = args.get(2).valInt().intValue();
         long dec = 0;
 
-        if (args.get(0).nullValue || args.get(1).nullValue || args.get(2).nullValue || Math.abs(toBase) > 36 ||
+        if (args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() || Math.abs(toBase) > 36 ||
                 Math.abs(toBase) < 2 || Math.abs(fromBase) > 36 || Math.abs(fromBase) < 2 || res.length() == 0) {
             nullValue = true;
             return null;

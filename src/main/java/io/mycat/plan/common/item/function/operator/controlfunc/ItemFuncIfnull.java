@@ -25,8 +25,8 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
     public void fixLengthAndDec() {
         hybridType = MySQLcom.aggResultType(args, 0, 2);
         cachedFieldType = MySQLcom.aggFieldType(args, 0, 2);
-        maybeNull = args.get(1).maybeNull;
-        decimals = Math.max(args.get(0).decimals, args.get(1).decimals);
+        maybeNull = args.get(1).isMaybeNull();
+        decimals = Math.max(args.get(0).getDecimals(), args.get(1).getDecimals());
     }
 
     @Override
@@ -41,12 +41,12 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
     @Override
     public BigDecimal realOp() {
         BigDecimal value = args.get(0).valReal();
-        if (!args.get(0).nullValue) {
+        if (!args.get(0).isNullValue()) {
             nullValue = false;
             return value;
         }
         value = args.get(1).valReal();
-        if ((nullValue = args.get(1).nullValue))
+        if ((nullValue = args.get(1).isNullValue()))
             return BigDecimal.ZERO;
         return value;
     }
@@ -54,12 +54,12 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
     @Override
     public BigInteger intOp() {
         BigInteger value = args.get(0).valInt();
-        if (!args.get(0).nullValue) {
+        if (!args.get(0).isNullValue()) {
             nullValue = false;
             return value;
         }
         value = args.get(1).valInt();
-        if ((nullValue = args.get(1).nullValue))
+        if ((nullValue = args.get(1).isNullValue()))
             return BigInteger.ZERO;
         return value;
     }
@@ -67,12 +67,12 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
     @Override
     public String strOp() {
         String value = args.get(0).valStr();
-        if (!args.get(0).nullValue) {
+        if (!args.get(0).isNullValue()) {
             nullValue = false;
             return value;
         }
         value = args.get(1).valStr();
-        if ((nullValue = args.get(1).nullValue))
+        if ((nullValue = args.get(1).isNullValue()))
             return null;
         return value;
     }
@@ -80,12 +80,12 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
     @Override
     public BigDecimal decimalOp() {
         BigDecimal value = args.get(0).valDecimal();
-        if (!args.get(0).nullValue) {
+        if (!args.get(0).isNullValue()) {
             nullValue = false;
             return value;
         }
         value = args.get(1).valDecimal();
-        if ((nullValue = args.get(1).nullValue))
+        if ((nullValue = args.get(1).isNullValue()))
             return null;
         return value;
     }

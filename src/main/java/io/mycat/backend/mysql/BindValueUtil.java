@@ -36,55 +36,55 @@ public final class BindValueUtil {
     }
 
     public static void read(MySQLMessage mm, BindValue bv, String charset) throws UnsupportedEncodingException {
-        switch (bv.type & 0xff) {
+        switch (bv.getType() & 0xff) {
             case Fields.FIELD_TYPE_BIT:
-                bv.value = mm.readBytesWithLength();
+                bv.setValue(mm.readBytesWithLength());
                 break;
             case Fields.FIELD_TYPE_TINY:
-                bv.byteBinding = mm.read();
+                bv.setByteBinding(mm.read());
                 break;
             case Fields.FIELD_TYPE_SHORT:
-                bv.shortBinding = (short) mm.readUB2();
+                bv.setShortBinding((short) mm.readUB2());
                 break;
             case Fields.FIELD_TYPE_LONG:
-                bv.intBinding = mm.readInt();
+                bv.setIntBinding(mm.readInt());
                 break;
             case Fields.FIELD_TYPE_LONGLONG:
-                bv.longBinding = mm.readLong();
+                bv.setLongBinding(mm.readLong());
                 break;
             case Fields.FIELD_TYPE_FLOAT:
-                bv.floatBinding = mm.readFloat();
+                bv.setFloatBinding(mm.readFloat());
                 break;
             case Fields.FIELD_TYPE_DOUBLE:
-                bv.doubleBinding = mm.readDouble();
+                bv.setDoubleBinding(mm.readDouble());
                 break;
             case Fields.FIELD_TYPE_TIME:
-                bv.value = mm.readTime();
+                bv.setValue(mm.readTime());
                 break;
             case Fields.FIELD_TYPE_DATE:
             case Fields.FIELD_TYPE_DATETIME:
             case Fields.FIELD_TYPE_TIMESTAMP:
-                bv.value = mm.readDate();
+                bv.setValue(mm.readDate());
                 break;
             case Fields.FIELD_TYPE_VAR_STRING:
             case Fields.FIELD_TYPE_STRING:
             case Fields.FIELD_TYPE_VARCHAR:
-                bv.value = mm.readStringWithLength(charset);
+                bv.setValue(mm.readStringWithLength(charset));
                 break;
             case Fields.FIELD_TYPE_DECIMAL:
             case Fields.FIELD_TYPE_NEW_DECIMAL:
-                bv.value = mm.readBigDecimal();
-                if (bv.value == null) {
-                    bv.isNull = true;
+                bv.setValue(mm.readBigDecimal());
+                if (bv.getValue() == null) {
+                    bv.setNull(true);
                 }
                 break;
             case Fields.FIELD_TYPE_BLOB:
-                bv.isLongData = true;
+                bv.setLongData(true);
                 break;
             default:
-                throw new IllegalArgumentException("bindValue error,unsupported type:" + bv.type);
+                throw new IllegalArgumentException("bindValue error,unsupported type:" + bv.getType());
         }
-        bv.isSet = true;
+        bv.setSet(true);
     }
 
 }

@@ -54,8 +54,8 @@ public final class HandlerTool {
     }
 
     public static Field createField(FieldPacket fp) {
-        Field field = Field.getFieldItem(fp.name, fp.table, fp.type, fp.charsetIndex, (int) fp.length, fp.decimals,
-                fp.flags);
+        Field field = Field.getFieldItem(fp.getName(), fp.getTable(), fp.getType(), fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(),
+                fp.getFlags());
         return field;
     }
 
@@ -279,8 +279,8 @@ public final class HandlerTool {
         for (int index = startIndex; index < fields.size(); index++) {
             Field field = fields.get(index);
             // ''下发之后field.name==null
-            String colName2 = field.name == null ? null : field.name.trim();
-            String tableName2 = field.table;
+            String colName2 = field.getName() == null ? null : field.getName().trim();
+            String tableName2 = field.getTable();
             if (sel instanceof ItemField && !((StringUtil.isEmpty(tableName) && StringUtil.isEmpty(tableName2)) || tableName.equals(tableName2)))
                 continue;
             if (selName.equalsIgnoreCase(colName2))

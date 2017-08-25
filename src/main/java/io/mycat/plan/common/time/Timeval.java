@@ -7,8 +7,8 @@ import java.math.BigDecimal;
  * and used in other calls.
  */
 public class Timeval {
-    public long tvSec; /* seconds */
-    public long tvUsec; /* and microseconds */
+    private long tvSec; /* seconds */
+    private long tvUsec; /* and microseconds */
 
     public Timeval() {
         tvSec = tvUsec = 0;
@@ -36,5 +36,21 @@ public class Timeval {
      */
     public String myTimevalToStr() {
         return tvSec + "." + tvUsec;
+    }
+
+    public long getTvSec() {
+        return tvSec;
+    }
+
+    public void setTvSec(long tvSec) {
+        this.tvSec = tvSec;
+    }
+
+    public long getTvUsec() {
+        return tvUsec;
+    }
+
+    public void setTvUsec(long tvUsec) {
+        this.tvUsec = tvUsec;
     }
 }

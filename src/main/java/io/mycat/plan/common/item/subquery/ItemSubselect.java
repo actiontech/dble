@@ -76,7 +76,7 @@ public abstract class ItemSubselect extends ItemResultField {
         if (context.isPushDownNode())
             return;
         else
-            context.getPlanNode().subSelects.add(this);
+            context.getPlanNode().getSubSelects().add(this);
     }
 
     @Override

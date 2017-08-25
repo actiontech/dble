@@ -26,7 +26,7 @@ public class ItemFuncRegex extends ItemBoolFunc {
     public BigInteger valInt() {
         String arg0 = args.get(0).valStr();
         String arg1 = args.get(1).valStr();
-        if (nullValue = (args.get(0).nullValue || args.get(1).nullValue))
+        if (nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO;
         return arg0.matches(arg1) ? BigInteger.ONE : BigInteger.ZERO;
     }

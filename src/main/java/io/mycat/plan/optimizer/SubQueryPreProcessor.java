@@ -64,7 +64,7 @@ public final class SubQueryPreProcessor {
     private static SubQueryAndFilter buildSubQuery(SubQueryAndFilter qtn, Item filter) {
         if (filter == null)
             return qtn;
-        if (!filter.withSubQuery) {
+        if (!filter.isWithSubQuery()) {
             qtn.filter = filter;
         } else if (filter instanceof ItemCondOr) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support 'or' when condition subquery");

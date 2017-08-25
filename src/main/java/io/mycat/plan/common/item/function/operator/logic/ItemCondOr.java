@@ -32,7 +32,7 @@ public class ItemCondOr extends ItemCond {
                 nullValue = false;
                 return BigInteger.ONE;
             }
-            if (item.nullValue)
+            if (item.isNullValue())
                 nullValue = true;
         }
         return BigInteger.ZERO;

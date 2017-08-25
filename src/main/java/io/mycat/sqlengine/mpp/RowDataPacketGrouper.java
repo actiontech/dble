@@ -201,11 +201,11 @@ public class RowDataPacketGrouper {
         for (MergeCol merg : mergCols) {
             if (merg.mergeType != MergeCol.MERGE_AVG) {
                 byte[] mergeValue = mertFields(
-                        toRow.fieldValues.get(merg.colMeta.colIndex),
-                        newRow.fieldValues.get(merg.colMeta.colIndex),
-                        merg.colMeta.colType, merg.mergeType);
+                        toRow.fieldValues.get(merg.colMeta.getColIndex()),
+                        newRow.fieldValues.get(merg.colMeta.getColIndex()),
+                        merg.colMeta.getColType(), merg.mergeType);
                 if (mergeValue != null) {
-                    toRow.fieldValues.set(merg.colMeta.colIndex, mergeValue);
+                    toRow.fieldValues.set(merg.colMeta.getColIndex(), mergeValue);
                 }
             }
         }
@@ -222,18 +222,18 @@ public class RowDataPacketGrouper {
         for (MergeCol merg : mergCols) {
             if (merg.mergeType == MergeCol.MERGE_AVG) {
                 byte[] mergeValue = mertFields(
-                        toRow.fieldValues.get(merg.colMeta.avgSumIndex),
-                        toRow.fieldValues.get(merg.colMeta.avgCountIndex),
-                        merg.colMeta.colType, merg.mergeType);
+                        toRow.fieldValues.get(merg.colMeta.getAvgSumIndex()),
+                        toRow.fieldValues.get(merg.colMeta.getAvgCountIndex()),
+                        merg.colMeta.getColType(), merg.mergeType);
                 if (mergeValue != null) {
-                    toRow.fieldValues.set(merg.colMeta.avgSumIndex, mergeValue);
-                    rmIndexSet.add(merg.colMeta.avgCountIndex);
+                    toRow.fieldValues.set(merg.colMeta.getAvgSumIndex(), mergeValue);
+                    rmIndexSet.add(merg.colMeta.getAvgCountIndex());
                 }
             }
         }
         for (Integer index : rmIndexSet) {
             toRow.fieldValues.remove(index);
-            toRow.fieldCount = toRow.fieldCount - 1;
+            toRow.setFieldCount(toRow.getFieldCount() - 1);
         }
 
 

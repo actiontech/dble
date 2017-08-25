@@ -132,8 +132,8 @@ public class RowDataPacketSorter {
             return;
         }
 
-        byte[] left = array[p1].fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
-        byte[] right = array[p2].fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+        byte[] left = array[p1].fieldValues.get(this.orderCols[byColumnIndex].colMeta.getColIndex());
+        byte[] right = array[p2].fieldValues.get(this.orderCols[byColumnIndex].colMeta.getColIndex());
 
         if (compareObject(left, right, this.orderCols[byColumnIndex]) <= 0) {
             if (compareObject(left, right, this.orderCols[byColumnIndex]) < 0) {

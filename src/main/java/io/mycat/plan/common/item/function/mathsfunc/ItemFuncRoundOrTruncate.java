@@ -41,7 +41,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
          */
         BigInteger val0 = args.get(0).valInt();
         int val1 = args.get(1).valInt().intValue();
-        if ((nullValue = args.get(0).nullValue || args.get(1).nullValue))
+        if ((nullValue = args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO;
         return getIntRound(val0, val1);
     }
@@ -70,7 +70,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         else
             decimalsToSet = (int) val1;
 
-        if (args.get(0).decimals == NOT_FIXED_DEC) {
+        if (args.get(0).getDecimals() == NOT_FIXED_DEC) {
             decimals = Math.min(decimalsToSet, NOT_FIXED_DEC);
             maxLength = floatLength(decimals);
             hybridType = ItemResult.REAL_RESULT;

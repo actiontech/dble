@@ -18,14 +18,30 @@
 package io.mycat.memory.unsafe.utils.sort;
 
 public final class RecordPointerAndKeyPrefix {
+    private long recordPointer;
+
+    private long keyPrefix;
+
     /**
      * A pointer to a record; see {@link io.mycat.memory.unsafe.memory} for a
      * description of how these addresses are encoded.
      */
-    public long recordPointer;
+    public long getRecordPointer() {
+        return recordPointer;
+    }
+
+    public void setRecordPointer(long recordPointer) {
+        this.recordPointer = recordPointer;
+    }
 
     /**
      * A key prefix, for use in comparisons.
      */
-    public long keyPrefix;
+    public long getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    public void setKeyPrefix(long keyPrefix) {
+        this.keyPrefix = keyPrefix;
+    }
 }

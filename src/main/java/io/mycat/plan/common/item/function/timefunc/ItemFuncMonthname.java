@@ -23,9 +23,9 @@ public class ItemFuncMonthname extends ItemStrFunc {
     public String valStr() {
         MySQLTime ltime = new MySQLTime();
 
-        if ((nullValue = (getArg0Date(ltime, MyTime.TIME_FUZZY_DATE) || ltime.month == 0)))
+        if ((nullValue = (getArg0Date(ltime, MyTime.TIME_FUZZY_DATE) || ltime.getMonth() == 0)))
             return null;
-        return MyTime.MONTH_NAMES[(int) ltime.month - 1];
+        return MyTime.MONTH_NAMES[(int) ltime.getMonth() - 1];
     }
 
     public void fixLengthAndDec() {

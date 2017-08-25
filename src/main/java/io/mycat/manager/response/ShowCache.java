@@ -54,25 +54,25 @@ public final class ShowCache {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("CACHE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("MAX", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("CUR", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("ACCESS", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("HIT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("PUT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("LAST_ACCESS", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("LAST_PUT", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -91,7 +91,7 @@ public final class ShowCache {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         CacheService cacheService = MycatServer.getInstance().getCacheService();
         for (Map.Entry<String, CachePool> entry : cacheService.getAllCachePools().entrySet()) {
             String cacheName = entry.getKey();
@@ -100,12 +100,12 @@ public final class ShowCache {
                 if (cachePool instanceof LayerCachePool) {
                     for (Map.Entry<String, CacheStatic> staticsEntry : ((LayerCachePool) cachePool).getAllCacheStatic().entrySet()) {
                         RowDataPacket row = getRow(cacheName + '.' + staticsEntry.getKey(), staticsEntry.getValue(), c.getCharset());
-                        row.packetId = ++packetId;
+                        row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
                 } else {
                     RowDataPacket row = getRow(cacheName, cachePool.getCacheStatic(), c.getCharset());
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
@@ -113,7 +113,7 @@ public final class ShowCache {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

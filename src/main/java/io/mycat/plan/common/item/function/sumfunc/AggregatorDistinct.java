@@ -48,8 +48,8 @@ public class AggregatorDistinct extends Aggregator {
         // TODO see item_sum.cc for more
         FieldPacket tmp = new FieldPacket();
         itemSum.getArg(0).makeField(tmp);
-        field = Field.getFieldItem(tmp.name, tmp.table, tmp.type, tmp.charsetIndex, (int) tmp.length, tmp.decimals,
-                tmp.flags);
+        field = Field.getFieldItem(tmp.getName(), tmp.getTable(), tmp.getType(), tmp.getCharsetIndex(), (int) tmp.getLength(), tmp.getDecimals(),
+                tmp.getFlags());
         return false;
     }
 
@@ -59,7 +59,7 @@ public class AggregatorDistinct extends Aggregator {
         distinctRows.clear();
         if (!(itemSum.sumType() == ItemSum.Sumfunctype.COUNT_FUNC ||
                 itemSum.sumType() == ItemSum.Sumfunctype.COUNT_DISTINCT_FUNC)) {
-            itemSum.nullValue = true;
+            itemSum.setNullValue(true);
         }
     }
 
@@ -109,7 +109,7 @@ public class AggregatorDistinct extends Aggregator {
 
     @Override
     public boolean argIsNull() {
-        return useDistinctValues ? field.isNull() : itemSum.getArg(0).nullValue;
+        return useDistinctValues ? field.isNull() : itemSum.getArg(0).isNullValue();
     }
 
 }

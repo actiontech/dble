@@ -107,10 +107,10 @@ public class DataMergeService extends AbstractDataNodeMerge {
                         ColMeta sumColMeta = columToIndx.get(colName + "SUM");
                         ColMeta countColMeta = columToIndx.get(colName + "COUNT");
                         if (sumColMeta != null && countColMeta != null) {
-                            ColMeta colMeta = new ColMeta(sumColMeta.colIndex,
-                                    countColMeta.colIndex,
+                            ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
+                                    countColMeta.getColIndex(),
                                     sumColMeta.getColType());
-                            colMeta.decimals = sumColMeta.decimals; // 保存精度
+                            colMeta.setDecimals(sumColMeta.getDecimals()); // 保存精度
                             mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
                         }
                     } else {
@@ -196,10 +196,10 @@ public class DataMergeService extends AbstractDataNodeMerge {
                     final EOFPacket eofp = new EOFPacket();
                     final ByteBuffer eof = ByteBuffer.allocate(9);
                     BufferUtil.writeUB3(eof, eofp.calcPacketSize());
-                    eof.put(eofp.packetId);
-                    eof.put(eofp.fieldCount);
+                    eof.put(eofp.getPacketId());
+                    eof.put(eofp.getFieldCount());
                     BufferUtil.writeUB2(eof, warningCount);
-                    BufferUtil.writeUB2(eof, eofp.status);
+                    BufferUtil.writeUB2(eof, eofp.getStatus());
                     final ServerConnection source = multiQueryHandler.getSession().getSource();
                     final byte[] array = eof.array();
                     multiQueryHandler.outputMergeResult(source, array, getResults(array));
@@ -209,16 +209,16 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
                 // merge: sort-or-group, or simple add
                 final RowDataPacket row = new RowDataPacket(fieldCount);
-                row.read(pack.rowData);
+                row.read(pack.getRowData());
 
                 if (grouper != null) {
                     grouper.addRow(row);
                 } else if (sorter != null) {
                     if (!sorter.addRow(row)) {
-                        canDiscard.put(pack.dataNode, true);
+                        canDiscard.put(pack.getDataNode(), true);
                     }
                 } else {
-                    result.get(pack.dataNode).add(row);
+                    result.get(pack.getDataNode()).add(row);
                 }
             } // rof
         } catch (final Exception e) {

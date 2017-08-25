@@ -57,14 +57,14 @@ public class DruidDeleteParser extends DefaultDruidParser {
         } else {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
-            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.DELETE)) {
+            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.DELETE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            schema = schemaInfo.schemaConfig;
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-            if (RouterUtil.isNoSharding(schema, schemaInfo.table)) { //整个schema都不分库或者该表不拆分
-                if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, new StringPtr(schemaInfo.schema))) {
+            schema = schemaInfo.getSchemaConfig();
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+            if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) { //整个schema都不分库或者该表不拆分
+                if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, new StringPtr(schemaInfo.getSchema()))) {
                     String msg = "DELETE query with sub-query is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
@@ -76,7 +76,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            TableConfig tc = schema.getTables().get(schemaInfo.table);
+            TableConfig tc = schema.getTables().get(schemaInfo.getTable());
             if (tc != null && tc.isGlobalTable()) {
                 rrs.setGlobalTable(true);
             }

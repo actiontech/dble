@@ -26,7 +26,7 @@ public class DataMigrator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataMigrator.class);
 
-    public static DataMigratorArgs margs;
+    private static DataMigratorArgs margs;
 
     private List<TableMigrateInfo> migrateTables;
 
@@ -84,6 +84,14 @@ public class DataMigrator {
         migrator.clearTempFiles();
         long end = System.currentTimeMillis();
         System.out.println("\n" + format.format(new Date()) + " migrate data complete in " + (end - start) + "ms");
+    }
+
+    public static DataMigratorArgs getMargs() {
+        return margs;
+    }
+
+    public static void setMargs(DataMigratorArgs margs) {
+        DataMigrator.margs = margs;
     }
 
     //打印各个表的迁移数据信息

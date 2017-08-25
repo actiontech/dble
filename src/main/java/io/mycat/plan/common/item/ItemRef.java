@@ -118,17 +118,17 @@ public class ItemRef extends Item {
     public void makeField(FieldPacket tmpFp) {
         ref.makeField(tmpFp);
         if (fieldAlias != null) {
-            tmpFp.orgName = tmpFp.name;
+            tmpFp.setOrgName(tmpFp.getName());
             try {
-                tmpFp.name = fieldAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                tmpFp.setName(fieldAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
                 LOGGER.warn("parse string exception!", e);
             }
         }
         if (tableAlias != null) {
-            tmpFp.orgTable = tmpFp.table;
+            tmpFp.setOrgTable(tmpFp.getTable());
             try {
-                tmpFp.table = tableAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex));
+                tmpFp.setTable(tableAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
                 LOGGER.warn("parse string exception!", e);
             }

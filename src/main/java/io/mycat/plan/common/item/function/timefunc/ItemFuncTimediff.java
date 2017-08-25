@@ -61,25 +61,25 @@ public class ItemFuncTimediff extends ItemTimeFunc {
                 return nullValue = true;
         }
 
-        if (lTime1.timeType != lTime2.timeType) {
+        if (lTime1.getTimeType() != lTime2.getTimeType()) {
             return nullValue = true; // Incompatible types
         }
-        if (lTime1.neg != lTime2.neg)
+        if (lTime1.isNeg() != lTime2.isNeg())
             lSign = -lSign;
 
         MySQLTime lTime3 = new MySQLTime();
 
         LongPtr seconds = new LongPtr(0);
         LongPtr microseconds = new LongPtr(0);
-        lTime3.neg = MyTime.calcTimeDiff(lTime1, lTime2, lSign, seconds, microseconds);
+        lTime3.setNeg(MyTime.calcTimeDiff(lTime1, lTime2, lSign, seconds, microseconds));
 
         /*
          * For MYSQL_TIMESTAMP_TIME only: If first argument was negative and
          * diff between arguments is non-zero we need to swap sign to get proper
          * result.
          */
-        if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
-            lTime3.neg = !lTime3.neg; // Swap sign of result
+        if (lTime1.isNeg() && (seconds.get() != 0 || microseconds.get() != 0))
+            lTime3.setNeg(!lTime3.isNeg()); // Swap sign of result
 
         MyTime.calcTimeFromSec(lTime3, seconds.get(), microseconds.get());
         return false;

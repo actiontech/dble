@@ -38,7 +38,7 @@ public class GroupByBucket extends GroupByLocalResult {
                 try {
                     while (true) {
                         RowDataPacket rp = inData.take();
-                        if (rp.fieldCount == 0)
+                        if (rp.getFieldCount() == 0)
                             break;
                         add(rp);
                     }

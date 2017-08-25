@@ -22,7 +22,7 @@ public class ItemFuncSign extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         double value = args.get(0).valReal().doubleValue();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return value < 0.0 ? BigInteger.ONE.negate() : (value > 0 ? BigInteger.ONE : BigInteger.ZERO);
     }
 

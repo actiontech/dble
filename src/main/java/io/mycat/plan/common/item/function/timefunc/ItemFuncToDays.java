@@ -25,7 +25,7 @@ public class ItemFuncToDays extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
             return BigInteger.ZERO;
-        return BigInteger.valueOf(MyTime.calcDaynr(ltime.year, ltime.month, ltime.day));
+        return BigInteger.valueOf(MyTime.calcDaynr(ltime.getYear(), ltime.getMonth(), ltime.getDay()));
     }
 
     @Override

@@ -33,16 +33,16 @@ public abstract class ItemSumHybrid extends ItemSum {
         Item item = args.get(0);
 
         // 'item' can be changed during fix_fields
-        if (!item.fixed && item.fixFields())
+        if (!item.isFixed() && item.fixFields())
             return true;
         item = args.get(0);
-        decimals = item.decimals;
-        value = Field.getFieldItem(funcName(), null, item.fieldType().numberValue(), item.charsetIndex,
-                item.maxLength, item.decimals, (item.maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG));
+        decimals = item.getDecimals();
+        value = Field.getFieldItem(funcName(), null, item.fieldType().numberValue(), item.getCharsetIndex(),
+                item.getMaxLength(), item.getDecimals(), (item.isMaybeNull() ? 0 : FieldUtil.NOT_NULL_FLAG));
 
         ItemResult i = hybridType = item.resultType();
         if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT || i == ItemResult.STRING_RESULT) {
-            maxLength = item.maxLength;
+            maxLength = item.getMaxLength();
 
         } else if (i == ItemResult.REAL_RESULT) {
             maxLength = floatLength(decimals);
@@ -50,7 +50,7 @@ public abstract class ItemSumHybrid extends ItemSum {
         } else {
             assert (false);
         }
-        charsetIndex = item.charsetIndex;
+        charsetIndex = item.getCharsetIndex();
         /*
          * MIN/MAX can return NULL for empty set indepedent of the used column
          */
@@ -121,7 +121,7 @@ public abstract class ItemSumHybrid extends ItemSum {
 
     @Override
     public int getTransSize() {
-        return value.fieldLength;
+        return value.getFieldLength();
     }
 
     @Override

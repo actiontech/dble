@@ -95,7 +95,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                 } catch (InterruptedException e) {
                     //ignore error
                 }
-                if (row.fieldCount == 0) {
+                if (row.getFieldCount() == 0) {
                     break;
                 }
                 localResult.add(row);

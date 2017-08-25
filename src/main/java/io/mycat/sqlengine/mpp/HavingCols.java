@@ -9,7 +9,7 @@ public class HavingCols implements Serializable {
     String left;
     String right;
     String operator;
-    public ColMeta colMeta;
+    private ColMeta colMeta;
 
     public HavingCols(String left, String right, String operator) {
         this.left = left;

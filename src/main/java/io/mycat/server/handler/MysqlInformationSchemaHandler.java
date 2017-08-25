@@ -36,23 +36,23 @@ public final class MysqlInformationSchemaHandler {
 
         // write header
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
-        byte packetId = header.packetId;
+        byte packetId = header.getPacketId();
         buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : fields) {
-            field.packetId = ++packetId;
+            field.setPacketId(++packetId);
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         buffer = eof.write(buffer, c, true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write
@@ -62,7 +62,7 @@ public final class MysqlInformationSchemaHandler {
 
     public static void handle(SchemaInfo schemaInfo, ServerConnection c) {
         if (schemaInfo != null) {
-            if (schemaInfo.table.toUpperCase().equals("CHARACTER_SETS")) {
+            if (schemaInfo.getTable().toUpperCase().equals("CHARACTER_SETS")) {
                 // 模拟列头
                 int fieldCount = 4;
                 FieldPacket[] fields = new FieldPacket[fieldCount];

@@ -26,7 +26,7 @@ public class ItemSumSum extends ItemSumNum {
     @Override
     public void fixLengthAndDec() {
         maybeNull = nullValue = true;
-        decimals = args.get(0).decimals;
+        decimals = args.get(0).getDecimals();
         ItemResult i = args.get(0).numericContextResultType();
         if (i == ItemResult.REAL_RESULT) {
             hybridType = ItemResult.REAL_RESULT;
@@ -154,8 +154,8 @@ public class ItemSumSum extends ItemSumNum {
 
         private static final long serialVersionUID = 6951860386146676307L;
 
-        public BigDecimal bd;
-        public boolean isNull;
+        private BigDecimal bd;
+        protected boolean isNull;
 
         public AggData(BigDecimal bd, boolean isNull) {
             this.bd = bd;

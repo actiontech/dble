@@ -30,11 +30,13 @@ public class ItemFuncCurtimeUtc extends ItemTimeFunc {
     @Override
     public boolean getTime(MySQLTime ltime) {
         java.util.Calendar cal = getUTCTime();
-        ltime.year = ltime.month = ltime.day = 0;
-        ltime.hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
-        ltime.minute = cal.get(java.util.Calendar.MINUTE);
-        ltime.second = cal.get(java.util.Calendar.SECOND);
-        ltime.secondPart = cal.get(java.util.Calendar.MILLISECOND) * 1000;
+        ltime.setDay(0);
+        ltime.setMonth(0);
+        ltime.setYear(0);
+        ltime.setHour(cal.get(java.util.Calendar.HOUR_OF_DAY));
+        ltime.setMinute(cal.get(java.util.Calendar.MINUTE));
+        ltime.setSecond(cal.get(java.util.Calendar.SECOND));
+        ltime.setSecondPart(cal.get(java.util.Calendar.MILLISECOND) * 1000);
         return false;
     }
 

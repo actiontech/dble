@@ -36,7 +36,7 @@ import java.nio.ByteBuffer;
  */
 public class Reply323Packet extends MySQLPacket {
 
-    public byte[] seed;
+    private byte[] seed;
 
     public void write(OutputStream out) throws IOException {
         StreamUtil.writeUB3(out, calcPacketSize());
@@ -71,4 +71,11 @@ public class Reply323Packet extends MySQLPacket {
         return "MySQL Auth323 Packet";
     }
 
+    public byte[] getSeed() {
+        return seed;
+    }
+
+    public void setSeed(byte[] seed) {
+        this.seed = seed;
+    }
 }

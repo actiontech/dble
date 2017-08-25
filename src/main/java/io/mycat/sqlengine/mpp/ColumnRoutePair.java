@@ -31,9 +31,9 @@ package io.mycat.sqlengine.mpp;
 public class ColumnRoutePair {
     public final String colValue;
     public final RangeValue rangeValue;
-    public Integer nodeId;
+    private Integer nodeId;
 
-    public int slot = -2;
+    private int slot = -2;
 
     public int getSlot() {
         return slot;

@@ -6,20 +6,20 @@ import io.mycat.plan.common.typelib.TypeLib;
  * @author ActionTech
  */
 public class MyLocale {
-    public int number;
-    public String name;
-    public String description;
-    public boolean isAscii;
-    public TypeLib monthNames;
-    public TypeLib abMonthNames;
-    public TypeLib dayNames;
-    public TypeLib abDayNames;
-    public int maxMonthNameLength;
-    public int maxDayNameLength;
-    public int decimalPoint;
-    public int thousandSep;
-    public String grouping;
-    public MyLocaleErrMsgs errmsgs;
+    private int number;
+    private String name;
+    private String description;
+    private boolean isAscii;
+    private TypeLib monthNames;
+    private TypeLib abMonthNames;
+    private TypeLib dayNames;
+    private TypeLib abDayNames;
+    private int maxMonthNameLength;
+    private int maxDayNameLength;
+    private int decimalPoint;
+    private int thousandSep;
+    private String grouping;
+    private MyLocaleErrMsgs errmsgs;
 
     MyLocale(int numberPar, String namePar, String descrPar, boolean isAsciiPar, TypeLib monthNamesPar,
              TypeLib abMonthNamesPar, TypeLib dayNamesPar, TypeLib abDayNamesPar, int maxMonthNameLengthPar,
@@ -39,5 +39,37 @@ public class MyLocale {
         this.thousandSep = thousandSepPar;
         this.grouping = groupingPar;
         this.errmsgs = errmsgsPar;
+    }
+
+    public TypeLib getMonthNames() {
+        return monthNames;
+    }
+
+    public void setMonthNames(TypeLib monthNames) {
+        this.monthNames = monthNames;
+    }
+
+    public TypeLib getAbMonthNames() {
+        return abMonthNames;
+    }
+
+    public void setAbMonthNames(TypeLib abMonthNames) {
+        this.abMonthNames = abMonthNames;
+    }
+
+    public TypeLib getDayNames() {
+        return dayNames;
+    }
+
+    public void setDayNames(TypeLib dayNames) {
+        this.dayNames = dayNames;
+    }
+
+    public TypeLib getAbDayNames() {
+        return abDayNames;
+    }
+
+    public void setAbDayNames(TypeLib abDayNames) {
+        this.abDayNames = abDayNames;
     }
 }

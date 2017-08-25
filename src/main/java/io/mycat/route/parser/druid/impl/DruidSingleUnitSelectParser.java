@@ -49,16 +49,16 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 
             SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-            if (schemaInfo.schemaConfig == null) {
+            if (schemaInfo.getSchemaConfig() == null) {
                 String msg = "No Supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.SELECT)) {
+            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-            schema = schemaInfo.schemaConfig;
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+            schema = schemaInfo.getSchemaConfig();
             super.visitorParse(schema, rrs, stmt, visitor, sc);
             if (visitor.isHasSubQuery()) {
                 this.getCtx().getRouteCalculateUnits().clear();

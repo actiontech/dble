@@ -68,37 +68,37 @@ public class FrontendAuthenticator implements NIOHandler {
         auth.read(data);
 
         // check user
-        if (!checkUser(auth.user, source.getHost())) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "' with host '" + source.getHost() + "'");
+        if (!checkUser(auth.getUser(), source.getHost())) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "' with host '" + source.getHost() + "'");
             return;
         }
 
         // check password
-        if (!checkPassword(auth.password, auth.user)) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because password is error ");
+        if (!checkPassword(auth.getPassword(), auth.getUser())) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because password is error ");
             return;
         }
 
         // check degrade
-        if (isDegrade(auth.user)) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because service be degraded ");
+        if (isDegrade(auth.getUser())) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because service be degraded ");
             return;
         }
 
         // check dataHost without writeHost flag
         if (MycatServer.getInstance().getConfig().isDataHostWithoutWR() && !(this instanceof ManagerAuthenticator)) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because there have dataHost without writeHost ");
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because there have dataHost without writeHost ");
             return;
         }
 
 
         // check schema
-        switch (checkSchema(auth.database, auth.user)) {
+        switch (checkSchema(auth.getDatabase(), auth.getUser())) {
             case ErrorCode.ER_BAD_DB_ERROR:
-                failure(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + auth.database + "'");
+                failure(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + auth.getDatabase() + "'");
                 break;
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                String s = "Access denied for user '" + auth.user + "' to database '" + auth.database + "'";
+                String s = "Access denied for user '" + auth.getUser() + "' to database '" + auth.getDatabase() + "'";
                 failure(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
                 break;
             default:
@@ -186,15 +186,15 @@ public class FrontendAuthenticator implements NIOHandler {
 
     protected void success(AuthPacket auth) {
         source.setAuthenticated(true);
-        source.setUser(auth.user);
-        source.setSchema(auth.database);
-        source.setCharsetIndex(auth.charsetIndex);
+        source.setUser(auth.getUser());
+        source.setSchema(auth.getDatabase());
+        source.setCharsetIndex(auth.getCharsetIndex());
         source.setHandler(successCommendHander());
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
-            s.append(source).append('\'').append(auth.user).append("' login success");
-            byte[] extra = auth.extra;
+            s.append(source).append('\'').append(auth.getUser()).append("' login success");
+            byte[] extra = auth.getExtra();
             if (extra != null && extra.length > 0) {
                 s.append(",extra:").append(new String(extra));
             }
@@ -203,7 +203,7 @@ public class FrontendAuthenticator implements NIOHandler {
 
         ByteBuffer buffer = source.allocate();
         source.write(source.writeToBuffer(AUTH_OK, buffer));
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.clientFlags);
+        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
         boolean usingCompress = MycatServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
         if (clientCompress && usingCompress) {
             source.setSupportCompress(true);

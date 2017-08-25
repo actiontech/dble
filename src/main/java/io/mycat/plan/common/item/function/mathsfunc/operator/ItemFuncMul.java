@@ -51,7 +51,7 @@ public class ItemFuncMul extends ItemNumOp {
 
     @Override
     public void resultPrecision() {
-        decimals = Math.min(args.get(0).decimals + args.get(1).decimals, DECIMAL_MAX_SCALE);
+        decimals = Math.min(args.get(0).getDecimals() + args.get(1).getDecimals(), DECIMAL_MAX_SCALE);
     }
 
     @Override

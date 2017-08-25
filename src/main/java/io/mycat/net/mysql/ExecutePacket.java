@@ -83,18 +83,18 @@ import java.io.UnsupportedEncodingException;
  */
 public class ExecutePacket extends MySQLPacket {
 
-    public byte code;
-    public long statementId;
-    public byte flags;
-    public long iterationCount;
-    public byte[] nullBitMap;
-    public byte newParameterBoundFlag;
-    public BindValue[] values;
-    protected PreparedStatement pstmt;
+    private byte code;
+    private long statementId;
+    private byte flags;
+    private long iterationCount;
+    private byte[] nullBitMap;
+    private byte newParameterBoundFlag;
+    private BindValue[] values;
+    private PreparedStatement pStmt;
 
-    public ExecutePacket(PreparedStatement pstmt) {
-        this.pstmt = pstmt;
-        this.values = new BindValue[pstmt.getParametersNumber()];
+    public ExecutePacket(PreparedStatement pStmt) {
+        this.pStmt = pStmt;
+        this.values = new BindValue[pStmt.getParametersNumber()];
     }
 
     public void read(byte[] data, String charset) throws UnsupportedEncodingException {
@@ -117,7 +117,7 @@ public class ExecutePacket extends MySQLPacket {
         newParameterBoundFlag = mm.read();
         if (newParameterBoundFlag == (byte) 1) {
             for (int i = 0; i < parameterCount; i++) {
-                pstmt.getParametersType()[i] = mm.readUB2();
+                pStmt.getParametersType()[i] = mm.readUB2();
             }
         }
 
@@ -125,13 +125,13 @@ public class ExecutePacket extends MySQLPacket {
         byte[] bitMap = this.nullBitMap;
         for (int i = 0; i < parameterCount; i++) {
             BindValue bv = new BindValue();
-            bv.type = pstmt.getParametersType()[i];
+            bv.setType(pStmt.getParametersType()[i]);
             if ((bitMap[i / 8] & (1 << (i & 7))) != 0) {
-                bv.isNull = true;
+                bv.setNull(true);
             } else {
                 BindValueUtil.read(mm, bv, charset);
-                if (bv.isLongData) {
-                    bv.value = pstmt.getLongData(i);
+                if (bv.isLongData()) {
+                    bv.setValue(pStmt.getLongData(i));
                 }
             }
             values[i] = bv;
@@ -149,4 +149,67 @@ public class ExecutePacket extends MySQLPacket {
         return "MySQL Execute Packet";
     }
 
+    public byte getCode() {
+        return code;
+    }
+
+    public void setCode(byte code) {
+        this.code = code;
+    }
+
+    public long getStatementId() {
+        return statementId;
+    }
+
+    public void setStatementId(long statementId) {
+        this.statementId = statementId;
+    }
+
+    public byte getFlags() {
+        return flags;
+    }
+
+    public void setFlags(byte flags) {
+        this.flags = flags;
+    }
+
+    public long getIterationCount() {
+        return iterationCount;
+    }
+
+    public void setIterationCount(long iterationCount) {
+        this.iterationCount = iterationCount;
+    }
+
+    public byte[] getNullBitMap() {
+        return nullBitMap;
+    }
+
+    public void setNullBitMap(byte[] nullBitMap) {
+        this.nullBitMap = nullBitMap;
+    }
+
+    public byte getNewParameterBoundFlag() {
+        return newParameterBoundFlag;
+    }
+
+    public void setNewParameterBoundFlag(byte newParameterBoundFlag) {
+        this.newParameterBoundFlag = newParameterBoundFlag;
+    }
+
+    public BindValue[] getValues() {
+        return values;
+    }
+
+    public void setValues(BindValue[] values) {
+        this.values = values;
+    }
+
+    public PreparedStatement getpStmt() {
+        return pStmt;
+    }
+
+    public void setpStmt(PreparedStatement pStmt) {
+        this.pStmt = pStmt;
+    }
 }

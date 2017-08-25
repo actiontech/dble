@@ -52,7 +52,7 @@ public class AggregatorSimple extends Aggregator {
 
     @Override
     public boolean argIsNull() {
-        return itemSum.args.get(0).nullValue;
+        return itemSum.args.get(0).isNullValue();
     }
 
 }

@@ -24,9 +24,9 @@ public class MysqlDataIO implements DataIO {
     private String charset;
 
     public MysqlDataIO() {
-        cmdLength = DataMigrator.margs.getCmdLength();
-        charset = DataMigrator.margs.getCharSet();
-        mysqlBin = DataMigrator.margs.getMysqlBin();
+        cmdLength = DataMigrator.getMargs().getCmdLength();
+        charset = DataMigrator.getMargs().getCharSet();
+        mysqlBin = DataMigrator.getMargs().getMysqlBin();
     }
 
     @Override

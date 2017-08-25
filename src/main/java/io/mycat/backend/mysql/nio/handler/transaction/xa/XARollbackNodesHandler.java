@@ -241,7 +241,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE) {
                 ErrorPacket errPacket = new ErrorPacket();
                 errPacket.read(err);
-                if (errPacket.errno == ErrorCode.ER_XAER_NOTA) {
+                if (errPacket.getErrno() == ErrorCode.ER_XAER_NOTA) {
                     //ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
                     mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
                     XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);

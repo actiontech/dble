@@ -50,9 +50,9 @@ import java.nio.ByteBuffer;
 public class EOFPacket extends MySQLPacket {
     public static final byte FIELD_COUNT = (byte) 0xfe;
 
-    public byte fieldCount = FIELD_COUNT;
-    public int warningCount;
-    public int status = 2;
+    private byte fieldCount = FIELD_COUNT;
+    private int warningCount;
+    private int status = 2;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -98,5 +98,29 @@ public class EOFPacket extends MySQLPacket {
         buffer.get(data);
         MycatServer.getInstance().getBufferPool().recycle(buffer);
         return data;
+    }
+
+    public byte getFieldCount() {
+        return fieldCount;
+    }
+
+    public void setFieldCount(byte fieldCount) {
+        this.fieldCount = fieldCount;
+    }
+
+    public int getWarningCount() {
+        return warningCount;
+    }
+
+    public void setWarningCount(int warningCount) {
+        this.warningCount = warningCount;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
     }
 }

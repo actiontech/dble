@@ -52,9 +52,9 @@ public class KillConnectionHandler implements ResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
         CommandPacket packet = new CommandPacket();
-        packet.packetId = 0;
-        packet.command = MySQLPacket.COM_QUERY;
-        packet.arg = ("KILL " + killee.getThreadId()).getBytes();
+        packet.setPacketId(0);
+        packet.setCommand(MySQLPacket.COM_QUERY);
+        packet.setArg(("KILL " + killee.getThreadId()).getBytes());
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         packet.write(mysqlCon);
     }
@@ -90,9 +90,9 @@ public class KillConnectionHandler implements ResponseHandler {
         err.read(data);
         String msg = null;
         try {
-            msg = new String(err.message, conn.getCharset());
+            msg = new String(err.getMessage(), conn.getCharset());
         } catch (UnsupportedEncodingException e) {
-            msg = new String(err.message);
+            msg = new String(err.getMessage());
         }
         LOGGER.warn("kill backend connection " + killee + " failed: " + msg + " con:" + conn);
         conn.release();

@@ -25,10 +25,10 @@ public final class ReloadSqlSlowTime {
         LOGGER.warn(String.valueOf(c) + "Reset show  @@sql.slow=" + time + " time success by manager");
 
         OkPacket ok = new OkPacket();
-        ok.packetId = 1;
-        ok.affectedRows = 1;
-        ok.serverStatus = 2;
-        ok.message = "Reset show  @@sql.slow time success".getBytes();
+        ok.setPacketId(1);
+        ok.setAffectedRows(1);
+        ok.setServerStatus(2);
+        ok.setMessage("Reset show  @@sql.slow time success".getBytes());
         ok.write(c);
     }
 

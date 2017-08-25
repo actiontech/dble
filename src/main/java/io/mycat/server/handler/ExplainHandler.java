@@ -91,24 +91,24 @@ public final class ExplainHandler {
 
         // write header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        byte packetId = header.packetId;
+        byte packetId = header.getPacketId();
         buffer = header.write(buffer, c, true);
 
         // write fields
         for (FieldPacket field : FIELDS) {
-            field.packetId = ++packetId;
+            field.setPacketId(++packetId);
             buffer = field.write(buffer, c, true);
         }
 
         // write eof
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         buffer = eof.write(buffer, c, true);
         if (!rrs.isNeedOptimizer()) {
             // write rows
             for (RouteResultsetNode node : rrs.getNodes()) {
                 RowDataPacket row = getRow(node, c.getCharset());
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
         } else {
@@ -118,13 +118,13 @@ public final class ExplainHandler {
                 row.add(StringUtil.encode(result[0], c.getCharset()));
                 row.add(StringUtil.encode(result[1], c.getCharset()));
                 row.add(StringUtil.encode(result[2].replaceAll("[\\t\\n\\r]", " "), c.getCharset()));
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
         }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write
@@ -322,8 +322,8 @@ public final class ExplainHandler {
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = statement.getTableSource();
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), schemaName, tableSource);
-        String tableName = schemaInfo.table;
-        schema = schemaInfo.schemaConfig;
+        String tableName = schemaInfo.getTable();
+        schema = schemaInfo.getSchemaConfig();
         TableConfig tableConfig = schema.getTables().get(tableName);
         if (tableConfig == null) {
             return false;

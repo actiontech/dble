@@ -26,7 +26,7 @@ public class ItemFuncBitInversion extends ItemFuncBit {
     @Override
     public BigInteger valInt() {
         BigInteger res = args.get(0).valInt();
-        if (nullValue = args.get(0).nullValue)
+        if (nullValue = args.get(0).isNullValue())
             return BigInteger.ZERO;
         // select ~1 18446744073709551614
         if (res.compareTo(BigInteger.ZERO) > 0) {

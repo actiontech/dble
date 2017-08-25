@@ -20,13 +20,13 @@ public class DruidTruncateTableParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SQLTruncateStatement truncateTable = (SQLTruncateStatement) stmt;
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, truncateTable.getTableSources().get(0));
-        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema);
+        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
-            return schemaInfo.schemaConfig;
+            return schemaInfo.getSchemaConfig();
         }
         RouterUtil.routeToDDLNode(schemaInfo, rrs);
-        return schemaInfo.schemaConfig;
+        return schemaInfo.getSchemaConfig();
     }
 }

@@ -193,8 +193,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             //向客户端请求发送文件
             ByteBuffer buffer = serverConnection.allocate();
             RequestFilePacket filePacket = new RequestFilePacket();
-            filePacket.fileName = fileName.getBytes();
-            filePacket.packetId = 1;
+            filePacket.setFileName(fileName.getBytes());
+            filePacket.setPacketId(1);
             filePacket.write(buffer, serverConnection, true);
         } else {
             if (!new File(fileName).exists()) {
@@ -228,7 +228,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(data, 0, data.length);
             packet.read(inputStream);
 
-            saveByteOrToFile(packet.data, false);
+            saveByteOrToFile(packet.getData(), false);
 
 
         } catch (IOException e) {

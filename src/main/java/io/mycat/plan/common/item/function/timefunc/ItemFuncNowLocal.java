@@ -26,13 +26,13 @@ public class ItemFuncNowLocal extends ItemDatetimeFunc {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         java.util.Calendar cal = java.util.Calendar.getInstance();
-        ltime.year = cal.get(java.util.Calendar.YEAR);
-        ltime.month = cal.get(java.util.Calendar.MONTH) + 1;
-        ltime.day = cal.get(java.util.Calendar.DAY_OF_MONTH);
-        ltime.hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
-        ltime.minute = cal.get(java.util.Calendar.MINUTE);
-        ltime.second = cal.get(java.util.Calendar.SECOND);
-        ltime.secondPart = cal.get(java.util.Calendar.MILLISECOND) * 1000;
+        ltime.setYear(cal.get(java.util.Calendar.YEAR));
+        ltime.setMonth(cal.get(java.util.Calendar.MONTH) + 1);
+        ltime.setDay(cal.get(java.util.Calendar.DAY_OF_MONTH));
+        ltime.setHour(cal.get(java.util.Calendar.HOUR_OF_DAY));
+        ltime.setMinute(cal.get(java.util.Calendar.MINUTE));
+        ltime.setSecond(cal.get(java.util.Calendar.SECOND));
+        ltime.setSecondPart(cal.get(java.util.Calendar.MILLISECOND) * 1000);
         return false;
     }
 

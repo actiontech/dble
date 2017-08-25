@@ -50,10 +50,10 @@ public final class SessionIsolation {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("@@session.tx_isolation", Fields.FIELD_TYPE_STRING);
-        FIELDS[i].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void response(ServerConnection c) {
@@ -63,7 +63,7 @@ public final class SessionIsolation {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 
         String value = "";
@@ -84,10 +84,10 @@ public final class SessionIsolation {
                 break;
         }
         row.add(StringUtil.encode(value, c.getCharset()));
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }

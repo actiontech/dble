@@ -75,8 +75,8 @@ public final class LoadDataUtil {
                     System.arraycopy(buffer, 0, temp, 0, len);
                 }
                 BinaryPacket packet = new BinaryPacket();
-                packet.packetId = ++packID;
-                packet.data = temp;
+                packet.setPacketId(++packID);
+                packet.setData(temp);
                 packet.write(backendAIOConnection);
             }
 

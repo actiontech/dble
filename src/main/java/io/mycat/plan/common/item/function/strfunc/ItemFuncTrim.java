@@ -70,12 +70,12 @@ public class ItemFuncTrim extends ItemStrFunc {
     @Override
     public String valStr() {
         String toTrim = args.get(0).valStr();
-        if (nullValue = args.get(0).nullValue)
+        if (nullValue = args.get(0).isNullValue())
             return null;
         String remove = null;
         if (getArgCount() == 2) {
             remove = args.get(1).valStr();
-            if (nullValue = args.get(1).nullValue)
+            if (nullValue = args.get(1).isNullValue())
                 return null;
         }
         String ret = null;

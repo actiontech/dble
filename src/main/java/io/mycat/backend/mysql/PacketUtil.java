@@ -41,8 +41,8 @@ public final class PacketUtil {
 
     public static ResultSetHeaderPacket getHeader(int fieldCount) {
         ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
-        packet.packetId = 1;
-        packet.fieldCount = fieldCount;
+        packet.setPacketId(1);
+        packet.setFieldCount(fieldCount);
         return packet;
     }
 
@@ -59,26 +59,26 @@ public final class PacketUtil {
 
     public static FieldPacket getField(String name, String orgName, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CharsetUtil.getIndex(UTF8);
-        packet.name = encode(name, UTF8);
-        packet.orgName = encode(orgName, UTF8);
-        packet.type = type;
+        packet.setCharsetIndex(CharsetUtil.getIndex(UTF8));
+        packet.setName(encode(name, UTF8));
+        packet.setOrgName(encode(orgName, UTF8));
+        packet.setType(type);
         return packet;
     }
 
     public static FieldPacket getField(String name, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CharsetUtil.getIndex(UTF8);
-        packet.name = encode(name, UTF8);
-        packet.type = type;
+        packet.setCharsetIndex(CharsetUtil.getIndex(UTF8));
+        packet.setName(encode(name, UTF8));
+        packet.setType(type);
         return packet;
     }
 
     public static ErrorPacket getShutdown() {
         ErrorPacket error = new ErrorPacket();
-        error.packetId = 1;
-        error.errno = ErrorCode.ER_SERVER_SHUTDOWN;
-        error.message = "The server has been shutdown".getBytes();
+        error.setPacketId(1);
+        error.setErrno(ErrorCode.ER_SERVER_SHUTDOWN);
+        error.setMessage("The server has been shutdown".getBytes());
         return error;
     }
 

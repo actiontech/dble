@@ -186,8 +186,8 @@ public abstract class MySQLPacket {
     public static final int PACKET_HEADER_SIZE = 4;
 
 
-    public int packetLength;
-    public byte packetId;
+    protected int packetLength;
+    protected byte packetId;
 
     /**
      * 把数据包写到buffer中，如果buffer满了就把buffer通过前端连接写出 (writeSocketIfFull=true)。
@@ -219,4 +219,15 @@ public abstract class MySQLPacket {
                 packetId + '}';
     }
 
+    public void setPacketLength(int packetLength) {
+        this.packetLength = packetLength;
+    }
+
+    public byte getPacketId() {
+        return packetId;
+    }
+
+    public void setPacketId(byte packetId) {
+        this.packetId = packetId;
+    }
 }

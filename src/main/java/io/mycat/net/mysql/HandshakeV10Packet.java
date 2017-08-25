@@ -68,15 +68,15 @@ public class HandshakeV10Packet extends MySQLPacket {
     private static final byte[] FILLER_10 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     private static final byte[] DEFAULT_AUTH_PLUGIN_NAME = "mysql_native_password".getBytes();
 
-    public byte protocolVersion;
-    public byte[] serverVersion;
-    public long threadId;
-    public byte[] seed; // auth-plugin-data-part-1
-    public int serverCapabilities;
-    public byte serverCharsetIndex;
-    public int serverStatus;
-    public byte[] restOfScrambleBuff; // auth-plugin-data-part-2
-    public byte[] authPluginName = DEFAULT_AUTH_PLUGIN_NAME;
+    private byte protocolVersion;
+    private byte[] serverVersion;
+    private long threadId;
+    private byte[] seed; // auth-plugin-data-part-1
+    private int serverCapabilities;
+    private byte serverCharsetIndex;
+    private int serverStatus;
+    private byte[] restOfScrambleBuff; // auth-plugin-data-part-2
+    private byte[] authPluginName = DEFAULT_AUTH_PLUGIN_NAME;
 
     public void write(FrontendConnection c) {
 
@@ -149,4 +149,75 @@ public class HandshakeV10Packet extends MySQLPacket {
         return "MySQL HandshakeV10 Packet";
     }
 
+    public byte getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(byte protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
+
+    public byte[] getServerVersion() {
+        return serverVersion;
+    }
+
+    public void setServerVersion(byte[] serverVersion) {
+        this.serverVersion = serverVersion;
+    }
+
+    public long getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    public byte[] getSeed() {
+        return seed;
+    }
+
+    public void setSeed(byte[] seed) {
+        this.seed = seed;
+    }
+
+    public int getServerCapabilities() {
+        return serverCapabilities;
+    }
+
+    public void setServerCapabilities(int serverCapabilities) {
+        this.serverCapabilities = serverCapabilities;
+    }
+
+    public byte getServerCharsetIndex() {
+        return serverCharsetIndex;
+    }
+
+    public void setServerCharsetIndex(byte serverCharsetIndex) {
+        this.serverCharsetIndex = serverCharsetIndex;
+    }
+
+    public int getServerStatus() {
+        return serverStatus;
+    }
+
+    public void setServerStatus(int serverStatus) {
+        this.serverStatus = serverStatus;
+    }
+
+    public byte[] getRestOfScrambleBuff() {
+        return restOfScrambleBuff;
+    }
+
+    public void setRestOfScrambleBuff(byte[] restOfScrambleBuff) {
+        this.restOfScrambleBuff = restOfScrambleBuff;
+    }
+
+    public byte[] getAuthPluginName() {
+        return authPluginName;
+    }
+
+    public void setAuthPluginName(byte[] authPluginName) {
+        this.authPluginName = authPluginName;
+    }
 }

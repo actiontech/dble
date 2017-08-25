@@ -53,17 +53,17 @@ public class OkPacket extends MySQLPacket {
     public static final byte[] OK = new byte[]{7, 0, 0, 1, 0, 0, 0, 2, 0, 0,
             0};
 
-    public byte fieldCount = FIELD_COUNT;
-    public long affectedRows;
-    public long insertId;
-    public int serverStatus;
-    public int warningCount;
-    public byte[] message;
+    private byte fieldCount = FIELD_COUNT;
+    private long affectedRows;
+    private long insertId;
+    private int serverStatus;
+    private int warningCount;
+    private byte[] message;
 
     public void read(BinaryPacket bin) {
         packetLength = bin.packetLength;
         packetId = bin.packetId;
-        MySQLMessage mm = new MySQLMessage(bin.data);
+        MySQLMessage mm = new MySQLMessage(bin.getData());
         fieldCount = mm.read();
         affectedRows = mm.readLength();
         insertId = mm.readLength();
@@ -150,4 +150,43 @@ public class OkPacket extends MySQLPacket {
         return data;
     }
 
+    public long getAffectedRows() {
+        return affectedRows;
+    }
+
+    public void setAffectedRows(long affectedRows) {
+        this.affectedRows = affectedRows;
+    }
+
+    public long getInsertId() {
+        return insertId;
+    }
+
+    public void setInsertId(long insertId) {
+        this.insertId = insertId;
+    }
+
+    public int getServerStatus() {
+        return serverStatus;
+    }
+
+    public void setServerStatus(int serverStatus) {
+        this.serverStatus = serverStatus;
+    }
+
+    public int getWarningCount() {
+        return warningCount;
+    }
+
+    public void setWarningCount(int warningCount) {
+        this.warningCount = warningCount;
+    }
+
+    public byte[] getMessage() {
+        return message;
+    }
+
+    public void setMessage(byte[] message) {
+        this.message = message;
+    }
 }

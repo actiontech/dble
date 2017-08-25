@@ -23,14 +23,14 @@ public class ItemFuncUnhex extends ItemStrFunc {
     @Override
     public void fixLengthAndDec() {
         decimals = 0;
-        maxLength = (1 + args.get(0).maxLength) / 2;
+        maxLength = (1 + args.get(0).getMaxLength()) / 2;
     }
 
     @Override
     public String valStr() {
         nullValue = true;
         String hexString = args.get(0).valStr();
-        if (args.get(0).nullValue)
+        if (args.get(0).isNullValue())
             return null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream(hexString.length() / 2);
         for (int index = 0; index < hexString.length(); index += 2) {

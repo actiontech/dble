@@ -155,7 +155,7 @@ public class PushDownVisitor extends MysqlVisitor {
         for (Item col : columns) {
             if (existUnPushDownGroup && col.type().equals(ItemType.SUM_FUNC_ITEM))
                 continue;
-            if ((col.type().equals(ItemType.FUNC_ITEM) || col.type().equals(ItemType.COND_ITEM)) && col.withSumFunc)
+            if ((col.type().equals(ItemType.FUNC_ITEM) || col.type().equals(ItemType.COND_ITEM)) && col.isWithSumFunc())
                 continue;
             String pdName = visitPushDownNameSel(col);
             if (StringUtils.isEmpty(pdName))// 重复列
@@ -266,7 +266,7 @@ public class PushDownVisitor extends MysqlVisitor {
 
     /* 判断node是否需要groupby */
     public static boolean nodeHasGroupBy(PlanNode node) {
-        return (node.sumFuncs.size() > 0 || node.getGroupBys().size() > 0);
+        return (node.getSumFuncs().size() > 0 || node.getGroupBys().size() > 0);
     }
 
     @Override

@@ -32,7 +32,7 @@ public class ItemCharTypecast extends ItemStrFunc {
 
     @Override
     public void fixLengthAndDec() {
-        fixCharLength(castLength >= 0 ? castLength : args.get(0).maxLength);
+        fixCharLength(castLength >= 0 ? castLength : args.get(0).getMaxLength());
     }
 
     @Override

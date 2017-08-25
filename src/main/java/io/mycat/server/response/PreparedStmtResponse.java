@@ -43,35 +43,35 @@ public final class PreparedStmtResponse {
 
         // write preparedOk packet
         PreparedOkPacket preparedOk = new PreparedOkPacket();
-        preparedOk.packetId = ++packetId;
-        preparedOk.statementId = pstmt.getId();
-        preparedOk.columnsNumber = pstmt.getColumnsNumber();
-        preparedOk.parametersNumber = pstmt.getParametersNumber();
+        preparedOk.setPacketId(++packetId);
+        preparedOk.setStatementId(pstmt.getId());
+        preparedOk.setColumnsNumber(pstmt.getColumnsNumber());
+        preparedOk.setParametersNumber(pstmt.getParametersNumber());
         ByteBuffer buffer = preparedOk.write(c.allocate(), c, true);
 
         // write parameter field packet
-        int parametersNumber = preparedOk.parametersNumber;
+        int parametersNumber = preparedOk.getParametersNumber();
         if (parametersNumber > 0) {
             for (int i = 0; i < parametersNumber; i++) {
                 FieldPacket field = new FieldPacket();
-                field.packetId = ++packetId;
+                field.setPacketId(++packetId);
                 buffer = field.write(buffer, c, true);
             }
             EOFPacket eof = new EOFPacket();
-            eof.packetId = ++packetId;
+            eof.setPacketId(++packetId);
             buffer = eof.write(buffer, c, true);
         }
 
         // write column field packet
-        int columnsNumber = preparedOk.columnsNumber;
+        int columnsNumber = preparedOk.getColumnsNumber();
         if (columnsNumber > 0) {
             for (int i = 0; i < columnsNumber; i++) {
                 FieldPacket field = new FieldPacket();
-                field.packetId = ++packetId;
+                field.setPacketId(++packetId);
                 buffer = field.write(buffer, c, true);
             }
             EOFPacket eof = new EOFPacket();
-            eof.packetId = ++packetId;
+            eof.setPacketId(++packetId);
             buffer = eof.write(buffer, c, true);
         }
 

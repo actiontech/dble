@@ -35,9 +35,9 @@ public abstract class ItemBoolFunc2 extends ItemBoolFunc {
          * See agg_item_charsets() in item.cc for comments on character set and
          * collation aggregation.
          */
-
-        args.get(0).cmpContext = args.get(1).cmpContext = MySQLcom.itemCmpType(args.get(0).resultType(),
-                args.get(1).resultType());
+        ItemResult cmpContext = MySQLcom.itemCmpType(args.get(0).resultType(), args.get(1).resultType());
+        args.get(0).setCmpContext(cmpContext);
+        args.get(1).setCmpContext(cmpContext);
         // Make a special case of compare with fields to get nicer DATE
         // comparisons
 

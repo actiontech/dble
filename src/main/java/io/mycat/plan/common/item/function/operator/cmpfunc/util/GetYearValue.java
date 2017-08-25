@@ -36,7 +36,7 @@ public class GetYearValue implements GetValueFunc {
         long value = 0;
 
         value = item.valInt().longValue();
-        isNull.set(item.nullValue);
+        isNull.set(item.isNullValue());
         if (isNull.get())
             return 0;
 
@@ -47,8 +47,8 @@ public class GetYearValue implements GetValueFunc {
          * don't want to convert zero/bad YEAR(4) values to the value of 2000.
          */
         if (item.type() == ItemType.FIELD_ITEM) {
-            Field field = ((ItemField) item).field;
-            if (field.fieldType() == FieldTypes.MYSQL_TYPE_YEAR && field.fieldLength == 4) {
+            Field field = ((ItemField) item).getField();
+            if (field.fieldType() == FieldTypes.MYSQL_TYPE_YEAR && field.getFieldLength() == 4) {
                 if (value < 70)
                     value += 100;
                 if (value <= 1900)

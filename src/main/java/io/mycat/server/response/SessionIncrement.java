@@ -49,10 +49,10 @@ public final class SessionIncrement {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("@@session.auto_increment_increment", Fields.FIELD_TYPE_LONG);
-        FIELDS[i].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void response(ServerConnection c) {
@@ -62,13 +62,13 @@ public final class SessionIncrement {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(1));
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }

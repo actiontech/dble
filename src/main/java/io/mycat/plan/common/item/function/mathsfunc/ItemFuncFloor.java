@@ -26,7 +26,7 @@ public class ItemFuncFloor extends ItemFuncIntVal {
         ItemResult i = args.get(0).resultType();
         if (i == ItemResult.INT_RESULT) {
             result = args.get(0).valInt();
-            nullValue = args.get(0).nullValue;
+            nullValue = args.get(0).isNullValue();
 
         } else if (i == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = decimalOp();
@@ -43,14 +43,14 @@ public class ItemFuncFloor extends ItemFuncIntVal {
     @Override
     public BigDecimal realOp() {
         double value = args.get(0).valReal().doubleValue();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return new BigDecimal(Math.floor(value));
     }
 
     @Override
     public BigDecimal decimalOp() {
         BigDecimal bd = args.get(0).valDecimal();
-        if (nullValue = args.get(0).nullValue)
+        if (nullValue = args.get(0).isNullValue())
             return null;
         return bd.setScale(0, RoundingMode.FLOOR);
     }

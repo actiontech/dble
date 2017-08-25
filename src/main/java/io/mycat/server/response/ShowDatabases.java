@@ -55,10 +55,10 @@ public final class ShowDatabases {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("DATABASE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void response(ServerConnection c) {
@@ -76,7 +76,7 @@ public final class ShowDatabases {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         MycatConfig conf = MycatServer.getInstance().getConfig();
         Map<String, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
@@ -93,14 +93,14 @@ public final class ShowDatabases {
             for (String name : schemaSet) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode(name, c.getCharset()));
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

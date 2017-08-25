@@ -55,14 +55,14 @@ public final class ShowBinlogStatus {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS_PACKET[i] = PacketUtil.getField("Url", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS_PACKET[i++].packetId = ++packetId;
+        FIELDS_PACKET[i++].setPacketId(++packetId);
         for (String field : FIELDS) {
             FIELDS_PACKET[i] = PacketUtil.getField(field, Fields.FIELD_TYPE_VAR_STRING);
-            FIELDS_PACKET[i++].packetId = ++packetId;
+            FIELDS_PACKET[i++].setPacketId(++packetId);
         }
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     private static final String SHOW_BINLOG_QUERY = "SHOW MASTER STATUS";
@@ -169,14 +169,14 @@ public final class ShowBinlogStatus {
                 buffer = field.write(buffer, c, true);
             }
             buffer = EOF.write(buffer, c, true);
-            byte packetId = EOF.packetId;
+            byte packetId = EOF.getPacketId();
             for (RowDataPacket row : rows) {
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
             rows.clear();
             EOFPacket lastEof = new EOFPacket();
-            lastEof.packetId = ++packetId;
+            lastEof.setPacketId(++packetId);
             buffer = lastEof.write(buffer, c, true);
             c.write(buffer);
         } else {

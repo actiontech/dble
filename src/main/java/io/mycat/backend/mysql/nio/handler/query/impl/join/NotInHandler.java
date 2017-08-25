@@ -130,10 +130,10 @@ public class NotInHandler extends OwnThreadDMLHandler {
             while (true) {
                 RowDataPacket leftRow = leftLocal.getLastRow();
                 RowDataPacket rightRow = rightLocal.getLastRow();
-                if (leftRow.fieldCount == 0) {
+                if (leftRow.getFieldCount() == 0) {
                     break;
                 }
-                if (rightRow.fieldCount == 0) {
+                if (rightRow.getFieldCount() == 0) {
                     sendLeft(leftLocal, conn);
                     leftLocal.close();
                     leftLocal = takeFirst(leftQueue);
@@ -177,7 +177,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
         deque.waitUtilCount(1);
         LocalResult result = deque.peekFirst();
         RowDataPacket lastRow = result.getLastRow();
-        if (lastRow.fieldCount == 0)
+        if (lastRow.getFieldCount() == 0)
             return deque.takeFirst();
         else {
             deque.waitUtilCount(2);
@@ -197,10 +197,10 @@ public class NotInHandler extends OwnThreadDMLHandler {
         LocalResult localResult = deque.peekLast();
         if (localResult != null) {
             RowDataPacket lastRow = localResult.getLastRow();
-            if (lastRow.fieldCount == 0) {
+            if (lastRow.getFieldCount() == 0) {
                 // 有可能是terminateThread添加的eof
                 return;
-            } else if (row.fieldCount > 0 && cmp.compare(lastRow, row) == 0) {
+            } else if (row.getFieldCount() > 0 && cmp.compare(lastRow, row) == 0) {
                 localResult.add(row);
                 return;
             } else {
@@ -210,7 +210,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
         LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset).
                 setMemSizeController(session.getJoinBufferMC());
         newLocalResult.add(row);
-        if (row.fieldCount == 0)
+        if (row.getFieldCount() == 0)
             newLocalResult.done();
         deque.putLast(newLocalResult);
     }

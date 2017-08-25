@@ -33,7 +33,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         cachedTimestampType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
         if (args.get(1).basicConstItem()) {
             String format = args.get(1).valStr();
-            if (!args.get(1).nullValue)
+            if (!args.get(1).isNullValue())
                 fixFromFormat(format);
         }
     }
@@ -107,26 +107,26 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         String val = args.get(0).valStr();
         String format = args.get(1).valStr();
         boolean nullDate = false;
-        if (args.get(0).nullValue || args.get(1).nullValue)
+        if (args.get(0).isNullValue() || args.get(1).isNullValue())
             nullDate = true;
         if (!nullDate) {
             nullValue = false;
-            dateTimeFormat.format = format;
+            dateTimeFormat.setFormat(format);
             if (MyTime.extractDateTime(dateTimeFormat, val, ltime, cachedTimestampType, "datetime") ||
                     ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0 &&
-                            (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
+                            (ltime.getYear() == 0 || ltime.getMonth() == 0 || ltime.getDay() == 0)))
                 nullDate = true;
         }
         if (!nullDate) {
-            ltime.timeType = cachedTimestampType;
-            if (cachedTimestampType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.day != 0) {
+            ltime.setTimeType(cachedTimestampType);
+            if (cachedTimestampType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME && ltime.getDay() != 0) {
                 /*
                  * Day part for time type can be nonzero value and so we should
                  * add hours from day part to hour part to keep valid time
                  * value.
                  */
-                ltime.hour += ltime.day * 24;
-                ltime.day = 0;
+                ltime.setHour(ltime.getHour() + ltime.getDay() * 24);
+                ltime.setDay(0);
             }
             return false;
         }

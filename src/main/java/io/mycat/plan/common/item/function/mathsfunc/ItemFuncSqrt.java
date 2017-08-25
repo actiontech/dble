@@ -22,7 +22,7 @@ public class ItemFuncSqrt extends ItemDecFunc {
     public BigDecimal valReal() {
         double value = args.get(0).valReal().doubleValue();
 
-        if ((nullValue = args.get(0).nullValue))
+        if ((nullValue = args.get(0).isNullValue()))
             return BigDecimal.ZERO;
         return new BigDecimal(Math.sqrt(value));
     }

@@ -33,7 +33,7 @@ public class ItemFuncInterval extends ItemIntFunc {
     @Override
     public BigInteger valInt() {
         BigInteger arg0 = args.get(0).valInt();
-        if (args.get(0).nullValue)
+        if (args.get(0).isNullValue())
             return BigInteger.ONE.negate();
         int i = 0;
         for (i = 1; i < args.size(); i++) {

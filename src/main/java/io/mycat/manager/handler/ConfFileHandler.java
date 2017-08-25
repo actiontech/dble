@@ -63,12 +63,12 @@ public final class ConfFileHandler {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("DATA", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void handle(String stmt, ManagerConnection c) {
@@ -85,7 +85,7 @@ public final class ConfFileHandler {
         // write eof
         buffer = EOF.write(buffer, c, true);
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         String theStmt = stmt.toUpperCase().trim();
         PackageBufINf bufInf;
         if (theStmt.equals("FILE @@LIST")) {
@@ -107,12 +107,12 @@ public final class ConfFileHandler {
             bufInf = showInfo(c, buffer, packetId, "Invald command ");
         }
 
-        packetId = bufInf.packetId;
-        buffer = bufInf.buffer;
+        packetId = bufInf.getPacketId();
+        buffer = bufInf.getBuffer();
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
@@ -239,12 +239,12 @@ public final class ConfFileHandler {
                                           ByteBuffer buffer, byte packetId, String string) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(string, c.getCharset()));
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
         PackageBufINf bufINf = new PackageBufINf();
-        bufINf.packetId = packetId;
-        bufINf.buffer = buffer;
+        bufINf.setPacketId(packetId);
+        bufINf.setBuffer(buffer);
         return bufINf;
     }
 
@@ -262,20 +262,20 @@ public final class ConfFileHandler {
                 }
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode(line, c.getCharset()));
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
-            bufINf.buffer = buffer;
-            bufINf.packetId = packetId;
+            bufINf.setBuffer(buffer);
+            bufINf.setPacketId(packetId);
             return bufINf;
 
         } catch (Exception e) {
             LOGGER.error("showConfigFileError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
-            bufINf.buffer = buffer;
+            bufINf.setBuffer(buffer);
         } finally {
             if (br != null) {
                 try {
@@ -286,7 +286,7 @@ public final class ConfFileHandler {
             }
 
         }
-        bufINf.packetId = packetId;
+        bufINf.setPacketId(packetId);
         return bufINf;
     }
 
@@ -305,24 +305,24 @@ public final class ConfFileHandler {
                                 (i++) + " : " + f.getName() + "  time:" +
                                         df.format(new Date(f.lastModified())),
                                 c.getCharset()));
-                        row.packetId = ++packetId;
+                        row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
                 }
             }
-            bufINf.buffer = buffer;
-            bufINf.packetId = packetId;
+            bufINf.setBuffer(buffer);
+            bufINf.setPacketId(packetId);
             return bufINf;
 
         } catch (Exception e) {
             LOGGER.error("listConfigFilesError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset()));
-            row.packetId = ++packetId;
+            row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
-            bufINf.buffer = buffer;
+            bufINf.setBuffer(buffer);
         }
-        bufINf.packetId = packetId;
+        bufINf.setPacketId(packetId);
         return bufINf;
     }
 }

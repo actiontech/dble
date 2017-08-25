@@ -24,8 +24,8 @@ public class ItemFuncTimeToSec extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         if (getArg0Time(ltime))
             return BigInteger.ZERO;
-        long seconds = ltime.hour * 3600L + ltime.minute * 60 + ltime.second;
-        return BigInteger.valueOf(ltime.neg ? -seconds : seconds);
+        long seconds = ltime.getHour() * 3600L + ltime.getMinute() * 60 + ltime.getSecond();
+        return BigInteger.valueOf(ltime.isNeg() ? -seconds : seconds);
     }
 
     @Override

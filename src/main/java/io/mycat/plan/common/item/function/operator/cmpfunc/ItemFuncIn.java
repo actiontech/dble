@@ -33,7 +33,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
     @Override
     public void fixLengthAndDec() {
         for (int i = 1; i < args.size(); i++) {
-            args.get(i).cmpContext = MySQLcom.itemCmpType(leftResultType, args.get(i).resultType());
+            args.get(i).setCmpContext(MySQLcom.itemCmpType(leftResultType, args.get(i).resultType()));
         }
         maxLength = 1;
     }
@@ -53,11 +53,11 @@ public class ItemFuncIn extends ItemFuncOptNeg {
                 haveNull = true;
                 continue;
             }
-            if (nullValue = left.nullValue)
+            if (nullValue = left.isNullValue())
                 return BigInteger.ZERO;
             ArgComparator cmp = new ArgComparator(left, right);
             cmp.setCmpFunc(this, left, right, false);
-            if (cmp.compare() == 0 && !right.nullValue)
+            if (cmp.compare() == 0 && !right.isNullValue())
                 return !negated ? BigInteger.ONE : BigInteger.ZERO;
             haveNull |= right.isNull();
         }

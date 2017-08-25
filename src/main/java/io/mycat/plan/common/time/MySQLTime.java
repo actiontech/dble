@@ -5,13 +5,15 @@ import java.util.Calendar;
 
 public class MySQLTime implements Serializable {
     private static final long serialVersionUID = 8021983316690707464L;
-    public long year, month, day, hour, minute, second;
-    public long secondPart;
-    /**
-     * < microseconds
-     */
-    public boolean neg;
-    public MySQLTimestampType timeType;
+    private long year;
+    private long month;
+    private long day;
+    private long hour;
+    private long minute;
+    private long second;
+    private long secondPart;
+    private boolean neg;
+    private MySQLTimestampType timeType;
 
     public void setZeroTime(MySQLTimestampType type) {
         year = month = day = hour = minute = second = secondPart = 0;
@@ -59,4 +61,78 @@ public class MySQLTime implements Serializable {
         return cmp == 0 ? 0 : (lt1 > lt2 ? 1 : -1);
     }
 
+    public long getYear() {
+        return year;
+    }
+
+    public void setYear(long year) {
+        this.year = year;
+    }
+
+    public long getMonth() {
+        return month;
+    }
+
+    public void setMonth(long month) {
+        this.month = month;
+    }
+
+    public long getDay() {
+        return day;
+    }
+
+    public void setDay(long day) {
+        this.day = day;
+    }
+
+    public long getHour() {
+        return hour;
+    }
+
+    public void setHour(long hour) {
+        this.hour = hour;
+    }
+
+    public long getMinute() {
+        return minute;
+    }
+
+    public void setMinute(long minute) {
+        this.minute = minute;
+    }
+
+    public long getSecond() {
+        return second;
+    }
+
+    public void setSecond(long second) {
+        this.second = second;
+    }
+
+    public long getSecondPart() {
+        return secondPart;
+    }
+
+    public void setSecondPart(long secondPart) {
+        this.secondPart = secondPart;
+    }
+
+    /**
+     * < microseconds
+     */
+    public boolean isNeg() {
+        return neg;
+    }
+
+    public void setNeg(boolean neg) {
+        this.neg = neg;
+    }
+
+    public MySQLTimestampType getTimeType() {
+        return timeType;
+    }
+
+    public void setTimeType(MySQLTimestampType timeType) {
+        this.timeType = timeType;
+    }
 }

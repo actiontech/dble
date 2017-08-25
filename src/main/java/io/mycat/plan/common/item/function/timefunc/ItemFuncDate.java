@@ -20,7 +20,7 @@ public class ItemFuncDate extends ItemDateFunc {
 
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
-        if (nullValue = args.get(0).nullValue) {
+        if (nullValue = args.get(0).isNullValue()) {
             return true;
         }
         nullValue = getArg0Date(ltime, fuzzyDate);

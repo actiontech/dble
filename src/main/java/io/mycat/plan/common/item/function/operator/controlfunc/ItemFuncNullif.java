@@ -29,7 +29,7 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
             return BigDecimal.ZERO;
         }
         value = args.get(0).valReal();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return value;
     }
 
@@ -41,7 +41,7 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
             return BigInteger.ZERO;
         }
         value = args.get(0).valInt();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return value;
     }
 
@@ -53,7 +53,7 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
             return null;
         }
         res = args.get(0).valStr();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return res;
     }
 
@@ -65,13 +65,13 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
             return null;
         }
         value = args.get(0).valDecimal();
-        nullValue = args.get(0).nullValue;
+        nullValue = args.get(0).isNullValue();
         return value;
     }
 
     @Override
     public boolean isNull() {
-        return (nullValue = (cmp.compare() == 0 || args.get(0).nullValue));
+        return (nullValue = (cmp.compare() == 0 || args.get(0).isNullValue()));
     }
 
     @Override

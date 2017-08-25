@@ -31,13 +31,13 @@ public abstract class ItemTimevalFunc extends ItemFunc {
     public BigDecimal valReal() {
         Timeval tm = new Timeval();
         return valTimeval(tm) ? BigDecimal.ZERO :
-                BigDecimal.valueOf((double) tm.tvSec + (double) tm.tvUsec / (double) 1000000);
+                BigDecimal.valueOf((double) tm.getTvSec() + (double) tm.getTvUsec() / (double) 1000000);
     }
 
     @Override
     public BigInteger valInt() {
         Timeval tm = new Timeval();
-        return valTimeval(tm) ? BigInteger.ZERO : BigInteger.valueOf(tm.tvSec);
+        return valTimeval(tm) ? BigInteger.ZERO : BigInteger.valueOf(tm.getTvSec());
     }
 
     @Override

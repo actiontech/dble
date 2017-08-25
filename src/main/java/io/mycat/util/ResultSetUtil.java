@@ -44,20 +44,20 @@ public final class ResultSetUtil {
             for (int i = 0; i < colunmCount; i++) {
                 int j = i + 1;
                 FieldPacket fieldPacket = new FieldPacket();
-                fieldPacket.orgName = StringUtil.encode(metaData.getColumnName(j), charset);
-                fieldPacket.name = StringUtil.encode(metaData.getColumnLabel(j), charset);
+                fieldPacket.setOrgName(StringUtil.encode(metaData.getColumnName(j), charset));
+                fieldPacket.setName(StringUtil.encode(metaData.getColumnLabel(j), charset));
                 if (!isSpark) {
-                    fieldPacket.orgTable = StringUtil.encode(metaData.getTableName(j), charset);
-                    fieldPacket.table = StringUtil.encode(metaData.getTableName(j), charset);
-                    fieldPacket.db = StringUtil.encode(metaData.getSchemaName(j), charset);
-                    fieldPacket.flags = toFlag(metaData, j);
+                    fieldPacket.setOrgTable(StringUtil.encode(metaData.getTableName(j), charset));
+                    fieldPacket.setTable(StringUtil.encode(metaData.getTableName(j), charset));
+                    fieldPacket.setDb(StringUtil.encode(metaData.getSchemaName(j), charset));
+                    fieldPacket.setFlags(toFlag(metaData, j));
                 }
-                fieldPacket.length = metaData.getColumnDisplaySize(j);
+                fieldPacket.setLength(metaData.getColumnDisplaySize(j));
 
-                fieldPacket.decimals = (byte) metaData.getScale(j);
+                fieldPacket.setDecimals((byte) metaData.getScale(j));
                 int javaType = MysqlDefs.javaTypeDetect(
-                        metaData.getColumnType(j), fieldPacket.decimals);
-                fieldPacket.type = (byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff);
+                        metaData.getColumnType(j), fieldPacket.getDecimals());
+                fieldPacket.setType((byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff));
                 fieldPks.add(fieldPacket);
                 //values+=metaData.getColumnLabel(j)+"|"+metaData.getColumnName(j)+"  ";
             }

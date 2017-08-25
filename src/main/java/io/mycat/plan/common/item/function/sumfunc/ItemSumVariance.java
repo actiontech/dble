@@ -34,10 +34,10 @@ import java.util.List;
  */
 
 public class ItemSumVariance extends ItemSumNum {
-    public ItemResult hybridType;
-    public double recurrenceM, recurrenceS; /* Used in recurrence relation. */
-    public long count = 0;
-    public int sample;
+    protected ItemResult hybridType;
+    protected double recurrenceM, recurrenceS; /* Used in recurrence relation. */
+    protected long count = 0;
+    protected int sample;
 
     // pushdown variables下发的情况下计算时所需要用到的变量
     // 下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
@@ -103,7 +103,7 @@ public class ItemSumVariance extends ItemSumNum {
             sumA += nr;
             sumAi2 += nr * nr;
             // end add
-            if (!args.get(0).nullValue) {
+            if (!args.get(0).isNullValue()) {
                 DoublePtr rM = new DoublePtr(recurrenceM);
                 DoublePtr rS = new DoublePtr(recurrenceS);
                 LongPtr countPtr = new LongPtr(count);
@@ -241,9 +241,9 @@ public class ItemSumVariance extends ItemSumNum {
 
         private static final long serialVersionUID = -5441804522036055390L;
 
-        public double sumAi2;
-        public double sumA;
-        public long count;
+        private double sumAi2;
+        private double sumA;
+        private long count;
 
         AggData(double sumAi2, double sumA, long count) {
             this.sumAi2 = sumAi2;

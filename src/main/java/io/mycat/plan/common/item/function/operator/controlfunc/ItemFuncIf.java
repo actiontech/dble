@@ -64,15 +64,15 @@ public class ItemFuncIf extends ItemFunc {
         }
         cachedResultType = MySQLcom.aggResultType(args, 1, 2);
         cachedFieldType = MySQLcom.aggFieldType(args, 1, 2);
-        maybeNull = args.get(1).maybeNull || args.get(2).maybeNull;
-        decimals = Math.max(args.get(1).decimals, args.get(2).decimals);
+        maybeNull = args.get(1).isMaybeNull() || args.get(2).isMaybeNull();
+        decimals = Math.max(args.get(1).getDecimals(), args.get(2).getDecimals());
     }
 
     @Override
     public BigDecimal valReal() {
         Item arg = args.get(0).valBool() ? args.get(1) : args.get(2);
         BigDecimal value = arg.valReal();
-        nullValue = arg.nullValue;
+        nullValue = arg.isNullValue();
         return value;
     }
 
@@ -80,7 +80,7 @@ public class ItemFuncIf extends ItemFunc {
     public BigInteger valInt() {
         Item arg = args.get(0).valBool() ? args.get(1) : args.get(2);
         BigInteger value = arg.valInt();
-        nullValue = arg.nullValue;
+        nullValue = arg.isNullValue();
         return value;
     }
 
@@ -108,7 +108,7 @@ public class ItemFuncIf extends ItemFunc {
     public BigDecimal valDecimal() {
         Item arg = args.get(0).valBool() ? args.get(1) : args.get(2);
         BigDecimal value = arg.valDecimal();
-        nullValue = arg.nullValue;
+        nullValue = arg.isNullValue();
         return value;
     }
 
@@ -127,9 +127,9 @@ public class ItemFuncIf extends ItemFunc {
     private void cacheTypeInfo(Item source) {
         cachedFieldType = source.fieldType();
         cachedResultType = source.resultType();
-        decimals = source.decimals;
-        maxLength = source.maxLength;
-        maybeNull = source.maybeNull;
+        decimals = source.getDecimals();
+        maxLength = source.getMaxLength();
+        maybeNull = source.isMaybeNull();
     }
 
     @Override

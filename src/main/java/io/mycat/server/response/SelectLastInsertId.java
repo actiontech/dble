@@ -48,7 +48,7 @@ public final class SelectLastInsertId {
 
     static {
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
     }
 
     public static void response(ServerConnection c, String stmt, int aliasIndex) {
@@ -63,25 +63,25 @@ public final class SelectLastInsertId {
         buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        byte packetId = HEADER.packetId;
+        byte packetId = HEADER.getPacketId();
         FieldPacket field = PacketUtil.getField(alias, ORG_NAME, Fields.FIELD_TYPE_LONGLONG);
-        field.packetId = ++packetId;
+        field.setPacketId(++packetId);
         buffer = field.write(buffer, c, true);
 
         // write eof
         EOFPacket eof = new EOFPacket();
-        eof.packetId = ++packetId;
+        eof.setPacketId(++packetId);
         buffer = eof.write(buffer, c, true);
 
         // write rows
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getLastInsertId()));
-        row.packetId = ++packetId;
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

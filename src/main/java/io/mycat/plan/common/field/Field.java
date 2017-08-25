@@ -84,18 +84,15 @@ public abstract class Field {
 
     protected static final Logger LOGGER = Logger.getLogger(Field.class);
 
-    /**
-     * -- field的长度 --
-     **/
-    public String name;
-    public String table;
-    public String dbname; // TODO
-    public int charsetIndex;
-    public String charsetName;
-    public long flags;
-    public byte[] ptr;
-    public int fieldLength;
-    public int decimals;
+    protected String name;
+    protected String table;
+    protected String dbname; // TODO
+    protected int charsetIndex;
+    protected String charsetName;
+    protected long flags;
+    protected byte[] ptr;
+    protected int fieldLength;
+    protected int decimals;
 
     public Field(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
         this.name = name;
@@ -148,16 +145,16 @@ public abstract class Field {
 
     public void makeField(FieldPacket fp) {
         try {
-            fp.name = this.name.getBytes(charsetName);
-            fp.db = this.dbname != null ? this.dbname.getBytes(charsetName) : null;
+            fp.setName(this.name.getBytes(charsetName));
+            fp.setDb(this.dbname != null ? this.dbname.getBytes(charsetName) : null);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
-        fp.charsetIndex = this.charsetIndex;
-        fp.length = this.fieldLength;
-        fp.flags = (int) this.flags;
-        fp.decimals = (byte) this.decimals;
-        fp.type = fieldType().numberValue();
+        fp.setCharsetIndex(this.charsetIndex);
+        fp.setLength(this.fieldLength);
+        fp.setFlags((int) this.flags);
+        fp.setDecimals((byte) this.decimals);
+        fp.setType(fieldType().numberValue());
     }
 
     public abstract BigInteger valInt();
@@ -226,5 +223,76 @@ public abstract class Field {
                 h = 31 * h + (int) ptr[i];
         }
         return h;
+    }
+
+    /**
+     * -- field的长度 --
+     **/
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
+    }
+
+    public String getDbname() {
+        return dbname;
+    }
+
+    public void setDbname(String dbname) {
+        this.dbname = dbname;
+    }
+
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
+
+    public String getCharsetName() {
+        return charsetName;
+    }
+
+    public void setCharsetName(String charsetName) {
+        this.charsetName = charsetName;
+    }
+
+    public long getFlags() {
+        return flags;
+    }
+
+    public void setFlags(long flags) {
+        this.flags = flags;
+    }
+
+    public byte[] getPtr() {
+        return ptr;
+    }
+
+    public int getFieldLength() {
+        return fieldLength;
+    }
+
+    public void setFieldLength(int fieldLength) {
+        this.fieldLength = fieldLength;
+    }
+
+    public int getDecimals() {
+        return decimals;
+    }
+
+    public void setDecimals(int decimals) {
+        this.decimals = decimals;
     }
 }

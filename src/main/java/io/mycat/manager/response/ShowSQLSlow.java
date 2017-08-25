@@ -59,21 +59,21 @@ public final class ShowSQLSlow {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("START_TIME", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c, boolean isClear) {
@@ -91,7 +91,7 @@ public final class ShowSQLSlow {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             String user = userStat.getUser();
@@ -99,7 +99,7 @@ public final class ShowSQLSlow {
             for (SQLRecord key : keyList) {
                 if (key != null) {
                     RowDataPacket row = getRow(user, key, c.getCharset());
-                    row.packetId = ++packetId;
+                    row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
             }
@@ -111,7 +111,7 @@ public final class ShowSQLSlow {
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
@@ -121,9 +121,9 @@ public final class ShowSQLSlow {
     private static RowDataPacket getRow(String user, SQLRecord sql, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(user, charset));
-        row.add(StringUtil.encode(FormatUtil.formatDate(sql.startTime), charset));
-        row.add(LongUtil.toBytes(sql.executeTime));
-        row.add(StringUtil.encode(sql.statement, charset));
+        row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
+        row.add(LongUtil.toBytes(sql.getExecuteTime()));
+        row.add(StringUtil.encode(sql.getStatement(), charset));
         return row;
     }
 

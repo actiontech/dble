@@ -72,8 +72,8 @@ public class SendMakeHandler extends BaseDMLHandler {
                 FieldPacket tmpFp = new FieldPacket();
                 selItem.makeField(tmpFp);
                 /* Keep things compatible for old clients */
-                if (tmpFp.type == FieldTypes.MYSQL_TYPE_VARCHAR.numberValue())
-                    tmpFp.type = FieldTypes.MYSQL_TYPE_VAR_STRING.numberValue();
+                if (tmpFp.getType() == FieldTypes.MYSQL_TYPE_VARCHAR.numberValue())
+                    tmpFp.setType(FieldTypes.MYSQL_TYPE_VAR_STRING.numberValue());
                 newFieldPackets.add(tmpFp);
             }
             nextHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, conn);

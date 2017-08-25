@@ -155,10 +155,10 @@ public final class ReloadConfig {
     private static void writeOKResult(ManagerConnection c) {
         LOGGER.info("send ok package to client " + String.valueOf(c));
         OkPacket ok = new OkPacket();
-        ok.packetId = 1;
-        ok.affectedRows = 1;
-        ok.serverStatus = 2;
-        ok.message = "Reload config success".getBytes();
+        ok.setPacketId(1);
+        ok.setAffectedRows(1);
+        ok.setServerStatus(2);
+        ok.setMessage("Reload config success".getBytes());
         ok.write(c);
     }
 

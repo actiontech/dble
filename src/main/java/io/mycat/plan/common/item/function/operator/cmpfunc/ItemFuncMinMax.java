@@ -172,7 +172,7 @@ public abstract class ItemFuncMinMax extends ItemFunc {
                 if (nullValue)
                     return null;
                 String strRes = args.get((int) minMaxIdx).valStr();
-                if (args.get((int) minMaxIdx).nullValue) {
+                if (args.get((int) minMaxIdx).isNullValue()) {
                     // check if the call to val_str() above returns a NULL value
                     nullValue = true;
                     return null;
@@ -310,8 +310,8 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         cmpType = args.get(0).temporalWithDateAsNumberResultType();
 
         for (Item arg : args) {
-            maxLength = Math.max(maxLength, arg.maxLength);
-            decimals = Math.max(decimals, arg.decimals);
+            maxLength = Math.max(maxLength, arg.getMaxLength());
+            decimals = Math.max(decimals, arg.getDecimals());
             cmpType = MySQLcom.itemCmpType(cmpType, arg.temporalWithDateAsNumberResultType());
             if (arg.resultType() == ItemResult.STRING_RESULT)
                 stringArgCount++;

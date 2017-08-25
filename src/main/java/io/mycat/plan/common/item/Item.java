@@ -29,6 +29,94 @@ public abstract class Item {
     public static final int DECIMAL_MAX_SCALE = 30;
     public static final String FNAF = "$$_";
 
+    public int getMaxLength() {
+        return maxLength;
+    }
+
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+    }
+
+    public int getDecimals() {
+        return decimals;
+    }
+
+    public void setDecimals(int decimals) {
+        this.decimals = decimals;
+    }
+
+    public boolean isMaybeNull() {
+        return maybeNull;
+    }
+
+    public void setMaybeNull(boolean maybeNull) {
+        this.maybeNull = maybeNull;
+    }
+
+    public boolean isNullValue() {
+        return nullValue;
+    }
+
+    public void setNullValue(boolean nullValue) {
+        this.nullValue = nullValue;
+    }
+
+    public boolean isWithSumFunc() {
+        return withSumFunc;
+    }
+
+    public void setWithSumFunc(boolean withSumFunc) {
+        this.withSumFunc = withSumFunc;
+    }
+
+    public boolean isWithIsNull() {
+        return withIsNull;
+    }
+
+    public void setWithIsNull(boolean withIsNull) {
+        this.withIsNull = withIsNull;
+    }
+
+    public boolean isWithSubQuery() {
+        return withSubQuery;
+    }
+
+    public void setWithSubQuery(boolean withSubQuery) {
+        this.withSubQuery = withSubQuery;
+    }
+
+    public boolean isWithUnValAble() {
+        return withUnValAble;
+    }
+
+    public void setWithUnValAble(boolean withUnValAble) {
+        this.withUnValAble = withUnValAble;
+    }
+
+    public boolean isFixed() {
+        return fixed;
+    }
+
+    public void setFixed(boolean fixed) {
+        this.fixed = fixed;
+    }
+
+    public ItemResult getCmpContext() {
+        return cmpContext;
+    }
+
+    public void setCmpContext(ItemResult cmpContext) {
+        this.cmpContext = cmpContext;
+    }
+
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
+
     public enum ItemResult {
         STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT, DECIMAL_RESULT
     }
@@ -40,18 +128,18 @@ public abstract class Item {
     protected String itemName; /* Name from visit */
     protected String pushDownName; /* name in child or db */
     protected String aliasName; /* name for alias */
-    public int maxLength = 0;
-    public int decimals = NOT_FIXED_DEC;
-    public boolean maybeNull; /* If item may be null */
-    public boolean nullValue;
-    public boolean withSumFunc;
-    public boolean withIsNull;
-    public boolean withSubQuery;
-    public boolean withUnValAble;
-    public boolean fixed;
-    public ItemResult cmpContext;
+    protected int maxLength = 0;
+    protected int decimals = NOT_FIXED_DEC;
+    protected boolean maybeNull; /* If item may be null */
+    protected boolean nullValue;
+    protected boolean withSumFunc;
+    protected boolean withIsNull;
+    protected boolean withSubQuery;
+    protected boolean withUnValAble;
+    protected boolean fixed;
+    protected ItemResult cmpContext;
     /* 默认charsetindex为my_charset_bin */
-    public int charsetIndex = 63;
+    protected int charsetIndex = 63;
     private HashSet<PlanNode> referTables;
 
     public boolean fixFields() {
@@ -694,7 +782,7 @@ public abstract class Item {
             // Nanosecond rounding is not needed, for performance purposes
             if ((tmp != null) && !MyTime.strToDatetime(tmp, tmp.length(), ltime,
                     MyTime.TIME_NO_NSEC_ROUNDING | MyTime.TIME_FUZZY_DATE, status))
-                return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
+                return Math.min((int) status.getFractionalDigits(), MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);
     }
@@ -711,15 +799,17 @@ public abstract class Item {
             if (nullValue)
                 return true; /* Value is NULL */
             else {
-                tm.tvSec = tm.tvUsec = 0;
+                tm.setTvUsec(0);
+                tm.setTvSec(0);
                 return false;
             }
         }
-        if (MyTime.datetimeToTimeval(ltime,
-                tm)) { /*
-                         * Value is out of the supported range
-                         */
-            tm.tvSec = tm.tvUsec = 0;
+        if (MyTime.datetimeToTimeval(ltime, tm)) {
+            /*
+             * Value is out of the supported range
+             */
+            tm.setTvUsec(0);
+            tm.setTvSec(0);
             return false;
         }
         return false; /* Value is a good Unix timestamp */
@@ -727,19 +817,19 @@ public abstract class Item {
 
     private void initMakeField(FieldPacket tmpField, FieldTypes fieldType) {
         byte[] emptyName = new byte[]{};
-        tmpField.db = emptyName;
-        tmpField.orgTable = emptyName;
-        tmpField.orgName = emptyName;
-        tmpField.charsetIndex = charsetIndex;
+        tmpField.setDb(emptyName);
+        tmpField.setOrgTable(emptyName);
+        tmpField.setOrgName(emptyName);
+        tmpField.setCharsetIndex(charsetIndex);
         try {
-            tmpField.name = (getAlias() == null ? getItemName() : getAlias()).getBytes(charset());
+            tmpField.setName((getAlias() == null ? getItemName() : getAlias()).getBytes(charset()));
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("parse string exception!", e);
         }
-        tmpField.flags = (maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG);
-        tmpField.type = fieldType.numberValue();
-        tmpField.length = maxLength;
-        tmpField.decimals = (byte) decimals;
+        tmpField.setFlags((maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG));
+        tmpField.setType(fieldType.numberValue());
+        tmpField.setLength(maxLength);
+        tmpField.setDecimals((byte) decimals);
     }
 
     private String charset() {
@@ -756,7 +846,7 @@ public abstract class Item {
             MySQLTimeStatus status = new MySQLTimeStatus();
             // Nanosecond rounding is not needed, for performance purposes
             if (tmp != null && !MyTime.strToTime(tmp, tmp.length(), ltime, status))
-                return Math.min((int) status.fractionalDigits, MyTime.DATETIME_MAX_DECIMALS);
+                return Math.min((int) status.getFractionalDigits(), MyTime.DATETIME_MAX_DECIMALS);
         }
         return Math.min(decimals, MyTime.DATETIME_MAX_DECIMALS);
     }

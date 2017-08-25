@@ -53,12 +53,12 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             ok[3] = ++packetId;
-            if ((okPacket.serverStatus & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
+            if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
                 HandlerTool.terminateHandlerTree(this);
                 if (hasNext) {
-                    okPacket.serverStatus |= StatusFlags.SERVER_MORE_RESULTS_EXISTS;
+                    okPacket.setServerStatus(okPacket.getServerStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
                 }
                 buffer = source.writeToBuffer(ok, buffer);
                 if (hasNext) {
@@ -78,7 +78,7 @@ public class OutputHandler extends BaseDMLHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        logger.warn(new StringBuilder().append(conn.toString()).append("|errorResponse()|").append(new String(errPacket.message)));
+        logger.warn(new StringBuilder().append(conn.toString()).append("|errorResponse()|").append(new String(errPacket.getMessage())));
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
@@ -100,17 +100,17 @@ public class OutputHandler extends BaseDMLHandler {
             if (this.isBinary)
                 this.fieldPackets = fieldPackets;
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();
-            hp.fieldCount = fieldPackets.size();
-            hp.packetId = ++packetId;
+            hp.setFieldCount(fieldPackets.size());
+            hp.setPacketId(++packetId);
 
             ServerConnection source = session.getSource();
             buffer = hp.write(buffer, source, true);
             for (FieldPacket fp : fieldPackets) {
-                fp.packetId = ++packetId;
+                fp.setPacketId(++packetId);
                 buffer = fp.write(buffer, source, true);
             }
             EOFPacket ep = new EOFPacket();
-            ep.packetId = ++packetId;
+            ep.setPacketId(++packetId);
             buffer = ep.write(buffer, source, true);
         } finally {
             lock.unlock();
@@ -128,11 +128,11 @@ public class OutputHandler extends BaseDMLHandler {
             if (this.isBinary) {
                 BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
                 binRowPacket.read(this.fieldPackets, rowPacket);
-                binRowPacket.packetId = ++packetId;
+                binRowPacket.setPacketId(++packetId);
                 buffer = binRowPacket.write(buffer, session.getSource(), true);
             } else {
                 if (rowPacket != null) {
-                    rowPacket.packetId = ++packetId;
+                    rowPacket.setPacketId(++packetId);
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                 } else {
                     row = rownull;
@@ -159,9 +159,9 @@ public class OutputHandler extends BaseDMLHandler {
             if (data != null) {
                 eofPacket.read(data);
             }
-            eofPacket.packetId = ++packetId;
+            eofPacket.setPacketId(++packetId);
             if (hasNext) {
-                eofPacket.status |= StatusFlags.SERVER_MORE_RESULTS_EXISTS;
+                eofPacket.setStatus(eofPacket.getStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
             }
             HandlerTool.terminateHandlerTree(this);
             byte[] eof = eofPacket.toBytes();
@@ -202,8 +202,8 @@ public class OutputHandler extends BaseDMLHandler {
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
             ErrorPacket err = new ErrorPacket();
-            err.errno = ErrorCode.ER_YES;
-            err.message = errMsg;
+            err.setErrno(ErrorCode.ER_YES);
+            err.setMessage(errMsg);
             HandlerTool.terminateHandlerTree(this);
             backendConnError(err);
         }
@@ -215,10 +215,10 @@ public class OutputHandler extends BaseDMLHandler {
             recycleResources();
             if (error == null) {
                 error = new ErrorPacket();
-                error.errno = ErrorCode.ER_YES;
-                error.message = "unknown error".getBytes();
+                error.setErrno(ErrorCode.ER_YES);
+                error.setMessage("unknown error".getBytes());
             }
-            error.packetId = ++packetId;
+            error.setPacketId(++packetId);
             //session.getSource().excuteNext(packetId, true);
             session.getSource().write(error.toBytes());
         } finally {

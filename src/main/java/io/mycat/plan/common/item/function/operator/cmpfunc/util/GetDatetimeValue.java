@@ -14,10 +14,10 @@ public class GetDatetimeValue implements GetValueFunc {
         String str = null;
         if (item.isTemporal()) {
             value = item.valDateTemporal();
-            isNull.set(item.nullValue);
+            isNull.set(item.isNullValue());
         } else {
             str = item.valStr();
-            isNull.set(item.nullValue);
+            isNull.set(item.isNullValue());
         }
         if (isNull.get())
             return 0;

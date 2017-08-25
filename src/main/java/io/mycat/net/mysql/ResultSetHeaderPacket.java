@@ -54,8 +54,8 @@ import java.nio.ByteBuffer;
  */
 public class ResultSetHeaderPacket extends MySQLPacket {
 
-    public int fieldCount;
-    public long extra;
+    private int fieldCount;
+    private long extra;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -96,4 +96,19 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     }
 
 
+    public int getFieldCount() {
+        return fieldCount;
+    }
+
+    public void setFieldCount(int fieldCount) {
+        this.fieldCount = fieldCount;
+    }
+
+    public long getExtra() {
+        return extra;
+    }
+
+    public void setExtra(long extra) {
+        this.extra = extra;
+    }
 }

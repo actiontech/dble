@@ -54,19 +54,19 @@ import java.nio.ByteBuffer;
 public class HandshakePacket extends MySQLPacket {
     private static final byte[] FILLER_13 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    public byte protocolVersion;
-    public byte[] serverVersion;
-    public long threadId;
-    public byte[] seed;
-    public int serverCapabilities;
-    public byte serverCharsetIndex;
-    public int serverStatus;
-    public byte[] restOfScrambleBuff;
+    private byte protocolVersion;
+    private byte[] serverVersion;
+    private long threadId;
+    private byte[] seed;
+    private int serverCapabilities;
+    private byte serverCharsetIndex;
+    private int serverStatus;
+    private byte[] restOfScrambleBuff;
 
     public void read(BinaryPacket bin) {
         packetLength = bin.packetLength;
         packetId = bin.packetId;
-        MySQLMessage mm = new MySQLMessage(bin.data);
+        MySQLMessage mm = new MySQLMessage(bin.getData());
         protocolVersion = mm.read();
         serverVersion = mm.readBytesWithNull();
         threadId = mm.readUB4();
@@ -127,4 +127,67 @@ public class HandshakePacket extends MySQLPacket {
         return "MySQL Handshake Packet";
     }
 
+    public byte getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(byte protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
+
+    public byte[] getServerVersion() {
+        return serverVersion;
+    }
+
+    public void setServerVersion(byte[] serverVersion) {
+        this.serverVersion = serverVersion;
+    }
+
+    public long getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    public byte[] getSeed() {
+        return seed;
+    }
+
+    public void setSeed(byte[] seed) {
+        this.seed = seed;
+    }
+
+    public int getServerCapabilities() {
+        return serverCapabilities;
+    }
+
+    public void setServerCapabilities(int serverCapabilities) {
+        this.serverCapabilities = serverCapabilities;
+    }
+
+    public byte getServerCharsetIndex() {
+        return serverCharsetIndex;
+    }
+
+    public void setServerCharsetIndex(byte serverCharsetIndex) {
+        this.serverCharsetIndex = serverCharsetIndex;
+    }
+
+    public int getServerStatus() {
+        return serverStatus;
+    }
+
+    public void setServerStatus(int serverStatus) {
+        this.serverStatus = serverStatus;
+    }
+
+    public byte[] getRestOfScrambleBuff() {
+        return restOfScrambleBuff;
+    }
+
+    public void setRestOfScrambleBuff(byte[] restOfScrambleBuff) {
+        this.restOfScrambleBuff = restOfScrambleBuff;
+    }
 }

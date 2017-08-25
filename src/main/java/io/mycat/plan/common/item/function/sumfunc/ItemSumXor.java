@@ -24,7 +24,7 @@ public class ItemSumXor extends ItemSumBit {
                 bits = bits.xor(other.bits);
         } else {
             BigInteger value = args.get(0).valInt();
-            if (!args.get(0).nullValue)
+            if (!args.get(0).isNullValue())
                 bits = bits.xor(value);
         }
         return false;
@@ -36,7 +36,7 @@ public class ItemSumXor extends ItemSumBit {
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
         BigInteger value = args.get(0).valInt();
-        if (!args.get(0).nullValue)
+        if (!args.get(0).isNullValue())
             bits = bits.xor(value);
         return false;
     }

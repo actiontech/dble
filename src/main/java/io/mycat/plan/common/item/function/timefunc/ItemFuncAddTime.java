@@ -64,36 +64,36 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
         nullValue = false;
         if (cachedFieldType == FieldTypes.MYSQL_TYPE_DATETIME) /* TIMESTAMP function */ {
             if (getArg0Date(lTime1, fuzzyDate) || args.get(1).getTime(lTime2) ||
-                    lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ||
-                    lTime2.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
+                    lTime1.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_TIME ||
+                    lTime2.getTimeType() != MySQLTimestampType.MYSQL_TIMESTAMP_TIME) {
                 nullValue = true;
                 return true;
             }
         } else /* ADDTIME function */ {
             if (args.get(0).getTime(lTime1) || args.get(1).getTime(lTime2) ||
-                    lTime2.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
+                    lTime2.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME) {
                 nullValue = true;
                 return true;
             }
-            isTime = (lTime1.timeType == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+            isTime = (lTime1.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
         }
-        if (lTime1.neg != lTime2.neg)
+        if (lTime1.isNeg() != lTime2.isNeg())
             lSign = -lSign;
 
-        time.setZeroTime(time.timeType);
+        time.setZeroTime(time.getTimeType());
 
         LongPtr seconds = new LongPtr(0);
         LongPtr microseconds = new LongPtr(0);
-        time.neg = MyTime.calcTimeDiff(lTime1, lTime2, -lSign, seconds, microseconds);
+        time.setNeg(MyTime.calcTimeDiff(lTime1, lTime2, -lSign, seconds, microseconds));
 
         /*
          * If first argument was negative and diff between arguments is non-zero
          * we need to swap sign to get proper result.
          */
-        if (lTime1.neg && (seconds.get() != 0 || microseconds.get() != 0))
-            time.neg = !time.neg; // Swap sign of result
+        if (lTime1.isNeg() && (seconds.get() != 0 || microseconds.get() != 0))
+            time.setNeg(!time.isNeg()); // Swap sign of result
 
-        if (!isTime && time.neg) {
+        if (!isTime && time.isNeg()) {
             nullValue = true;
             return true;
         }
@@ -107,17 +107,17 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
             LongPtr lpmonth = new LongPtr(0);
             LongPtr lpday = new LongPtr(0);
             MyTime.getDateFromDaynr(days, lpyear, lpmonth, lpday);
-            time.year = lpyear.get();
-            time.month = lpmonth.get();
-            time.day = lpday.get();
-            time.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME;
-            if (time.day != 0)
+            time.setYear(lpyear.get());
+            time.setMonth(lpmonth.get());
+            time.setDay(lpday.get());
+            time.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
+            if (time.getDay() != 0)
                 return false;
             nullValue = true;
             return true;
         }
-        time.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_TIME;
-        time.hour += days * 24;
+        time.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+        time.setHour(time.getHour() + days * 24);
         return false;
     }
 

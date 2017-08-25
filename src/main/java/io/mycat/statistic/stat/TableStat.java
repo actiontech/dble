@@ -23,7 +23,7 @@ public class TableStat implements Comparable<TableStat> {
     //3、关联表  次数
     //4、读写 TPS
 
-    public String table;
+    private String table;
 
     private final AtomicLong rCount = new AtomicLong(0);
     private final AtomicLong wCount = new AtomicLong(0);
@@ -128,6 +128,10 @@ public class TableStat implements Comparable<TableStat> {
         } else {
             return super.equals(obj);
         }
+    }
+
+    public void setTable(String table) {
+        this.table = table;
     }
 
     /**

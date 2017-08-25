@@ -85,8 +85,8 @@ public class UnionHandler extends BaseDMLHandler {
         for (int i = 0; i < sels.size(); i++) {
             FieldPacket fp = this.fieldPackets.get(i);
             Item sel = sels.get(i);
-            fp.name = sel.getItemName().getBytes();
-            fp.table = sel.getTableName().getBytes();
+            fp.setName(sel.getItemName().getBytes());
+            fp.setTable(sel.getTableName().getBytes());
         }
     }
 
@@ -110,17 +110,17 @@ public class UnionHandler extends BaseDMLHandler {
 
     private FieldPacket unionFieldPacket(FieldPacket fp1, FieldPacket fp2) {
         FieldPacket union = new FieldPacket();
-        union.catalog = fp1.catalog;
-        union.charsetIndex = fp1.charsetIndex;
-        union.db = fp1.db;
-        union.decimals = (byte) Math.max(fp1.decimals, fp2.decimals);
-        union.definition = fp1.definition;
-        union.flags = fp1.flags | fp2.flags;
-        union.length = Math.max(fp1.length, fp2.length);
-        FieldTypes fieldType1 = FieldTypes.valueOf(fp1.type);
-        FieldTypes fieldType2 = FieldTypes.valueOf(fp2.type);
+        union.setCatalog(fp1.getCatalog());
+        union.setCharsetIndex(fp1.getCharsetIndex());
+        union.setDb(fp1.getDb());
+        union.setDecimals((byte) Math.max(fp1.getDecimals(), fp2.getDecimals()));
+        union.setDefinition(fp1.getDefinition());
+        union.setFlags(fp1.getFlags() | fp2.getFlags());
+        union.setLength(Math.max(fp1.getLength(), fp2.getLength()));
+        FieldTypes fieldType1 = FieldTypes.valueOf(fp1.getType());
+        FieldTypes fieldType2 = FieldTypes.valueOf(fp2.getType());
         FieldTypes mergeFieldType = FieldUtil.fieldTypeMerge(fieldType1, fieldType2);
-        union.type = mergeFieldType.numberValue();
+        union.setType(mergeFieldType.numberValue());
         return union;
     }
 

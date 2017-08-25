@@ -35,8 +35,8 @@ import io.mycat.memory.unsafe.Platform;
  * if the fields of row are all fixed-length, as the size of result row is also fixed.
  */
 public class BufferHolder {
-    public byte[] buffer;
-    public int cursor = Platform.BYTE_ARRAY_OFFSET;
+    private byte[] buffer;
+    private int cursor = Platform.BYTE_ARRAY_OFFSET;
 
 
     private final UnsafeRow row;
@@ -83,5 +83,21 @@ public class BufferHolder {
 
     public int totalSize() {
         return cursor - Platform.BYTE_ARRAY_OFFSET;
+    }
+
+    public byte[] getBuffer() {
+        return buffer;
+    }
+
+    public void setBuffer(byte[] buffer) {
+        this.buffer = buffer;
+    }
+
+    public int getCursor() {
+        return cursor;
+    }
+
+    public void setCursor(int cursor) {
+        this.cursor = cursor;
     }
 }

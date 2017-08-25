@@ -27,7 +27,7 @@ public class ItemFuncDayofyear extends ItemIntFunc {
         if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
             return BigInteger.ZERO;
         return BigInteger.valueOf(
-                MyTime.calcDaynr(ltime.year, ltime.month, ltime.day) - MyTime.calcDaynr(ltime.year, 1, 1) + 1);
+                MyTime.calcDaynr(ltime.getYear(), ltime.getMonth(), ltime.getDay()) - MyTime.calcDaynr(ltime.getYear(), 1, 1) + 1);
     }
 
     @Override

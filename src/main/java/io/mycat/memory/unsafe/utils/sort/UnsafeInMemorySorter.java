@@ -306,13 +306,13 @@ public final class UnsafeInMemorySorter {
         @Override
         public int compare(RecordPointerAndKeyPrefix r1, RecordPointerAndKeyPrefix r2) {
 
-            final int prefixComparisonResult = prefixComparator.compare(r1.keyPrefix, r2.keyPrefix);
+            final int prefixComparisonResult = prefixComparator.compare(r1.getKeyPrefix(), r2.getKeyPrefix());
 
             if (prefixComparisonResult == 0) {
-                final Object baseObject1 = memoryManager.getPage(r1.recordPointer);
-                final long baseOffset1 = memoryManager.getOffsetInPage(r1.recordPointer) + 4; // skip length
-                final Object baseObject2 = memoryManager.getPage(r2.recordPointer);
-                final long baseOffset2 = memoryManager.getOffsetInPage(r2.recordPointer) + 4; // skip length
+                final Object baseObject1 = memoryManager.getPage(r1.getRecordPointer());
+                final long baseOffset1 = memoryManager.getOffsetInPage(r1.getRecordPointer()) + 4; // skip length
+                final Object baseObject2 = memoryManager.getPage(r2.getRecordPointer());
+                final long baseOffset2 = memoryManager.getOffsetInPage(r2.getRecordPointer()) + 4; // skip length
                 return recordComparator.compare(baseObject1, baseOffset1, baseObject2, baseOffset2);
             } else {
                 return prefixComparisonResult;

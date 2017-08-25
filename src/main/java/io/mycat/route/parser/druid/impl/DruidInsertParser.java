@@ -46,12 +46,12 @@ public class DruidInsertParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = insert.getTableSource();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
-        if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.INSERT)) {
+        if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.INSERT)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
-        schema = schemaInfo.schemaConfig;
-        String tableName = schemaInfo.table;
+        schema = schemaInfo.getSchemaConfig();
+        String tableName = schemaInfo.getTable();
 
         if (parserNoSharding(sc, schemaName, schemaInfo, rrs, insert)) {
             return schema;
@@ -73,7 +73,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
                 sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck());
             } else {
-                sql = RouterUtil.removeSchema(sql, schemaInfo.schema);
+                sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
             rrs.setStatement(sql);
             RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
@@ -102,23 +102,23 @@ public class DruidInsertParser extends DefaultDruidParser {
                 parserSingleInsert(schemaInfo, rrs, partitionColumn, insert);
             }
         } else {
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             ctx.addTable(tableName);
         }
         return schema;
     }
 
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insert) throws SQLException {
-        if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             if (insert.getQuery() != null) {
                 SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
-                StringPtr sqlSchema = new StringPtr(schemaInfo.schema);
+                StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
                 if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), selectStmt, contextSchema, sqlSchema)) {
                     return false;
                 }
             }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
-            RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+            RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
             return true;
         }
         return false;
@@ -135,8 +135,8 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     private RouteResultset parserChildTable(SchemaInfo schemaInfo, RouteResultset rrs, MySqlInsertStatement insertStmt, ServerConnection sc) throws SQLNonTransientException {
-        SchemaConfig schema = schemaInfo.schemaConfig;
-        String tableName = schemaInfo.table;
+        SchemaConfig schema = schemaInfo.getSchemaConfig();
+        String tableName = schemaInfo.getTable();
         TableConfig tc = schema.getTables().get(tableName);
         if (isMultiInsert(insertStmt)) {
             String msg = "ChildTable multi insert not provided";
@@ -147,7 +147,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         int joinKeyIndex = getJoinKeyIndex(schemaInfo, insertStmt, joinKey);
         String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
         String realVal = StringUtil.removeApostrophe(joinKeyVal);
-        String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema);
+        String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
         RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -218,18 +218,18 @@ public class DruidInsertParser extends DefaultDruidParser {
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
         String shardingValue = shardingValueToSting(valueExpr);
-        TableConfig tableConfig = schemaInfo.schemaConfig.getTables().get(schemaInfo.table);
+        TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         Integer nodeIndex = algorithm.calculate(shardingValue);
         //没找到插入的分片
         if (nodeIndex == null) {
-            String msg = "can't find any valid datanode :" + schemaInfo.table + " -> " +
+            String msg = "can't find any valid datanode :" + schemaInfo.getTable() + " -> " +
                     partitionColumn + " -> " + shardingValue;
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-        nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
+        nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(), RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
 
         // insert into .... on duplicateKey
         //such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b);
@@ -240,7 +240,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 SQLBinaryOpExpr opExpr = (SQLBinaryOpExpr) expr;
                 String column = StringUtil.removeBackQuote(opExpr.getLeft().toString().toUpperCase());
                 if (column.equals(partitionColumn)) {
-                    String msg = "Sharding column can't be updated: " + schemaInfo.table + " -> " + partitionColumn;
+                    String msg = "Sharding column can't be updated: " + schemaInfo.getTable() + " -> " + partitionColumn;
                     LOGGER.warn(msg);
                     throw new SQLNonTransientException(msg);
                 }
@@ -262,8 +262,8 @@ public class DruidInsertParser extends DefaultDruidParser {
     private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
                                    MySqlInsertStatement insertStmt) throws SQLNonTransientException {
         // insert into table() values (),(),....
-        SchemaConfig schema = schemaInfo.schemaConfig;
-        String tableName = schemaInfo.table;
+        SchemaConfig schema = schemaInfo.getSchemaConfig();
+        String tableName = schemaInfo.getTable();
         // 字段列数
         int columnNum = getTableColumns(schemaInfo, insertStmt);
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
@@ -300,7 +300,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             List<ValuesClause> valuesList = node.getValue();
             insertStmt.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.schema));
+                    RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
             count++;
 
         }
@@ -313,8 +313,8 @@ public class DruidInsertParser extends DefaultDruidParser {
             throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
         }
         int primaryKeyIndex = -1;
-        TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
-                schemaInfo.table);
+        TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
         if (tbMeta != null) {
             boolean hasPrimaryKey = false;
             IndexMeta primaryKey = tbMeta.getPrimary();
@@ -352,7 +352,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     private int getShardingColIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
-            TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
+            TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta != null) {
                 for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
                     if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
@@ -375,9 +375,9 @@ public class DruidInsertParser extends DefaultDruidParser {
     private int getTableColumns(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt)
             throws SQLNonTransientException {
         if (insertStmt.getColumns() == null || insertStmt.getColumns().size() == 0) {
-            TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema, schemaInfo.table);
+            TableMeta tbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta == null) {
-                String msg = "Meta data of table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";
+                String msg = "Meta data of table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
                 LOGGER.warn(msg);
                 throw new SQLNonTransientException(msg);
             }
@@ -401,14 +401,14 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc, boolean isGlobalCheck) throws SQLNonTransientException {
-        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
-                schemaInfo.table);
+        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
 
         boolean isAutoIncrement = tc.isAutoIncrement();
 
-        String tableName = schemaInfo.table;
+        String tableName = schemaInfo.getTable();
         if (isGlobalCheck && !GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta)) {
             if (!isAutoIncrement) {
                 return originSql;
@@ -476,7 +476,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         }
 
         sb.append(" values");
-        String tableKey = StringUtil.getFullName(schemaInfo.schema, schemaInfo.table);
+        String tableKey = StringUtil.getFullName(schemaInfo.getSchema(), schemaInfo.getTable());
         List<ValuesClause> vcl = insert.getValuesList();
         if (vcl != null && vcl.size() > 1) { // 批量insert
             for (int j = 0; j < vcl.size(); j++) {
@@ -517,7 +517,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 onDuplicateGlobalColumn(sb);
             }
         }
-        return RouterUtil.removeSchema(sb.toString(), schemaInfo.schema);
+        return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
     private static void onDuplicateGlobalColumn(StringBuilder sb) {

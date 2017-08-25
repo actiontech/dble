@@ -23,7 +23,7 @@ public class ItemSumMin extends ItemSumHybrid {
 
     @Override
     public Object getTransAggObj() {
-        AggData data = new AggData(value.ptr, nullValue);
+        AggData data = new AggData(value.getPtr(), nullValue);
         return data;
     }
 
@@ -32,14 +32,14 @@ public class ItemSumMin extends ItemSumHybrid {
         if (transObj != null) {
             AggData data = (AggData) transObj;
             byte[] b1 = data.ptr;
-            byte[] b0 = value.ptr;
+            byte[] b0 = value.getPtr();
             if (!data.isNull && (nullValue || value.compare(b0, b1) > 0)) {
                 value.setPtr(b1);
                 nullValue = false;
             }
         } else {
             byte[] b1 = args.get(0).getRowPacketByte();
-            byte[] b0 = value.ptr;
+            byte[] b0 = value.getPtr();
             if (!args.get(0).isNull() && (nullValue || value.compare(b0, b1) > 0)) {
                 value.setPtr(b1);
                 nullValue = false;
@@ -54,7 +54,7 @@ public class ItemSumMin extends ItemSumHybrid {
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
         byte[] b1 = args.get(0).getRowPacketByte();
-        byte[] b0 = value.ptr;
+        byte[] b0 = value.getPtr();
         if (!args.get(0).isNull() && (nullValue || value.compare(b0, b1) > 0)) {
             value.setPtr(b1);
             nullValue = false;
@@ -88,8 +88,8 @@ public class ItemSumMin extends ItemSumHybrid {
     private static class AggData implements Serializable {
 
         private static final long serialVersionUID = 5265691791812484350L;
-        public byte[] ptr;
-        public boolean isNull = false;
+        private byte[] ptr;
+        private boolean isNull = false;
 
         AggData(byte[] ptr, boolean isNull) {
             this.ptr = ptr;

@@ -27,7 +27,7 @@ public class ItemFuncLog extends ItemDecFunc {
      */
     public BigDecimal valReal() {
         double value = args.get(0).valReal().doubleValue();
-        if ((nullValue = args.get(0).nullValue))
+        if ((nullValue = args.get(0).isNullValue()))
             return BigDecimal.ZERO;
         if (value <= 0.0) {
             signalDivideByNull();
@@ -35,7 +35,7 @@ public class ItemFuncLog extends ItemDecFunc {
         }
         if (args.size() == 2) {
             double value2 = args.get(1).valReal().doubleValue();
-            if ((nullValue = args.get(1).nullValue))
+            if ((nullValue = args.get(1).isNullValue()))
                 return BigDecimal.ZERO;
             if (value2 <= 0.0 || value == 1.0) {
                 signalDivideByNull();

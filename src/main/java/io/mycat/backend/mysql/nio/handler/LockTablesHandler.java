@@ -83,8 +83,8 @@ public class LockTablesHandler extends MultiNodeHandler {
                 ok.read(data);
                 lock.lock();
                 try {
-                    ok.packetId = ++packetId;
-                    ok.serverStatus = session.getSource().isAutocommit() ? 2 : 1;
+                    ok.setPacketId(++packetId);
+                    ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
                 } finally {
                     lock.unlock();
                 }

@@ -600,9 +600,9 @@ public class ERJoinChooser {
      * @author chenzifei
      */
     private static class JoinKeyInfo {
-        public Item key; // join on的on key
-        public PlanNode tn; // 该joinkey属于哪个treenode
-        public ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
+        private Item key; // join on的on key
+        private PlanNode tn; // 该joinkey属于哪个treenode
+        private ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
 
         JoinKeyInfo(Item key) {
             this.key = key;
@@ -636,6 +636,30 @@ public class ERJoinChooser {
         @Override
         public String toString() {
             return "key:" + key;
+        }
+
+        public Item getKey() {
+            return key;
+        }
+
+        public void setKey(Item key) {
+            this.key = key;
+        }
+
+        public PlanNode getTn() {
+            return tn;
+        }
+
+        public void setTn(PlanNode tn) {
+            this.tn = tn;
+        }
+
+        public ERTable getCm() {
+            return cm;
+        }
+
+        public void setCm(ERTable cm) {
+            this.cm = cm;
         }
     }
 }

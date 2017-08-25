@@ -28,9 +28,9 @@ package io.mycat.statistic;
  */
 public final class SQLRecord implements Comparable<SQLRecord> {
 
-    public String statement;
-    public long startTime;
-    public long executeTime;
+    private String statement;
+    private long startTime;
+    private long executeTime;
 
     @Override
     public int compareTo(SQLRecord o) {
@@ -53,4 +53,27 @@ public final class SQLRecord implements Comparable<SQLRecord> {
     }
 
 
+    public String getStatement() {
+        return statement;
+    }
+
+    public void setStatement(String statement) {
+        this.statement = statement;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public long getExecuteTime() {
+        return executeTime;
+    }
+
+    public void setExecuteTime(long executeTime) {
+        this.executeTime = executeTime;
+    }
 }

@@ -26,7 +26,7 @@ public class ItemFuncWeekofyear extends ItemIntFunc {
         if (nullValue = getArg0Date(ltime, MyTime.TIME_FUZZY_DATE)) {
             return BigInteger.ZERO;
         }
-        return BigInteger.valueOf(ltime.month);
+        return BigInteger.valueOf(ltime.getMonth());
     }
 
     @Override

@@ -67,7 +67,7 @@ public class ArgComparator {
         if (strArg.fieldType() == FieldTypes.MYSQL_TYPE_TIME) {
             // Convert from TIME to DATETIME
             value = strArg.valDateTemporal();
-            if (strArg.nullValue)
+            if (strArg.isNullValue())
                 return true;
         } else {
             // Convert from string to DATETIME
@@ -75,7 +75,7 @@ public class ArgComparator {
             MySQLTimestampType ttype = (dateArg.fieldType() == FieldTypes.MYSQL_TYPE_DATE ?
                     MySQLTimestampType.MYSQL_TIMESTAMP_DATE :
                     MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME);
-            if (strArg.nullValue) {
+            if (strArg.isNullValue()) {
                 return true;
             }
             value = MySQLcom.getDateFromStr(strVal, ttype, error);
@@ -117,8 +117,8 @@ public class ArgComparator {
         } else if (type == ItemResult.DECIMAL_RESULT) {
             //
         } else if (type == ItemResult.REAL_RESULT) {
-            if (a.decimals < Item.NOT_FIXED_DEC && b.decimals < Item.NOT_FIXED_DEC) {
-                precision = 5 / Math.pow(10, (Math.max(a.decimals, b.decimals) + 1));
+            if (a.getDecimals() < Item.NOT_FIXED_DEC && b.getDecimals() < Item.NOT_FIXED_DEC) {
+                precision = 5 / Math.pow(10, (Math.max(a.getDecimals(), b.getDecimals()) + 1));
                 if (func instanceof CompareReal)
                     func = new CompareRealFixed();
                 else if (func instanceof CompareEReal)
@@ -241,9 +241,9 @@ public class ArgComparator {
 
     public void setcmpcontextfordatetime() {
         if (a.isTemporal())
-            a.cmpContext = ItemResult.INT_RESULT;
+            a.setCmpContext(ItemResult.INT_RESULT);
         if (b.isTemporal())
-            b.cmpContext = ItemResult.INT_RESULT;
+            b.setCmpContext(ItemResult.INT_RESULT);
     }
 
     /**
@@ -263,13 +263,13 @@ public class ArgComparator {
             if ((res1 = ac.a.valStr()) != null) {
                 if ((res2 = ac.b.valStr()) != null) {
                     if (ac.setNull && ac.owner != null) {
-                        ac.owner.nullValue = false;
+                        ac.owner.setNullValue(false);
                         return res1.compareTo(res2);
                     }
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = true;
+                ac.owner.setNullValue(true);
             return -1;
         }
     }
@@ -282,7 +282,7 @@ public class ArgComparator {
             if ((res1 = ac.a.valStr()) != null) {
                 if ((res2 = ac.b.valStr()) != null) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     byte[] res1b = res1.getBytes();
                     byte[] res2b = res2.getBytes();
                     int res1Len = res1b.length;
@@ -292,7 +292,7 @@ public class ArgComparator {
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = (true);
+                ac.owner.setNullValue((true));
             return -1;
 
         }
@@ -308,12 +308,12 @@ public class ArgComparator {
                 val2 = ac.b.valReal();
                 if (!(ac.b.isNull())) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = true;
+                ac.owner.setNullValue(true);
             return -1;
         }
     }
@@ -327,12 +327,12 @@ public class ArgComparator {
                 BigDecimal val2 = ac.b.valDecimal();
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     return val1.compareTo(val2);
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = (true);
+                ac.owner.setNullValue((true));
             return -1;
         }
     }
@@ -346,12 +346,12 @@ public class ArgComparator {
                 BigInteger val2 = ac.b.valInt();
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = (true);
+                ac.owner.setNullValue((true));
             return -1;
         }
     }
@@ -381,12 +381,12 @@ public class ArgComparator {
                 long val2 = ac.b.valDateTemporal();
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     return Long.compare(val1, val2);
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = (true);
+                ac.owner.setNullValue((true));
             return -1;
         }
     }
@@ -498,7 +498,7 @@ public class ArgComparator {
                 val2 = ac.b.valReal();
                 if (!ac.b.isNull()) {
                     if (ac.setNull && ac.owner != null)
-                        ac.owner.nullValue = (false);
+                        ac.owner.setNullValue((false));
                     if (val1.compareTo(val2) == 0 || Math.abs(val1.doubleValue() - val2.doubleValue()) < ac.precision)
                         return 0;
                     if (val1.compareTo(val2) < 0)
@@ -507,7 +507,7 @@ public class ArgComparator {
                 }
             }
             if (ac.setNull)
-                ac.owner.nullValue = (true);
+                ac.owner.setNullValue((true));
             return -1;
         }
     }
@@ -552,7 +552,7 @@ public class ArgComparator {
             aValue = ac.getValueAFunc.get(ac.a, ac.b, aIsNull);
             if (!ac.isNullsEq && aIsNull.get()) {
                 if (ac.setNull && ac.owner != null)
-                    ac.owner.nullValue = (true);
+                    ac.owner.setNullValue((true));
                 return -1;
             }
 
@@ -560,13 +560,13 @@ public class ArgComparator {
             bValue = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
                 if (ac.setNull)
-                    ac.owner.nullValue = (!ac.isNullsEq);
+                    ac.owner.setNullValue((!ac.isNullsEq));
                 return ac.isNullsEq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
             }
 
             /* Here we have two not-NULL values. */
             if (ac.setNull)
-                ac.owner.nullValue = (false);
+                ac.owner.setNullValue((false));
 
             /* Compare values. */
             if (ac.isNullsEq)

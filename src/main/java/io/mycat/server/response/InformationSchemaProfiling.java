@@ -30,15 +30,15 @@ public final class InformationSchemaProfiling {
 
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("State", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
         FIELDS[i + 1] = PacketUtil.getField("Duration", Fields.FIELD_TYPE_DECIMAL);
-        FIELDS[i + 1].packetId = ++packetId;
+        FIELDS[i + 1].setPacketId(++packetId);
 
         FIELDS[i + 2] = PacketUtil.getField("Percentage", Fields.FIELD_TYPE_DECIMAL);
-        FIELDS[i + 2].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i + 2].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -53,12 +53,12 @@ public final class InformationSchemaProfiling {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        packetId = EOF.packetId;
+        packetId = EOF.getPacketId();
 
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

@@ -43,7 +43,7 @@ public class ItemFuncSigned extends ItemIntFunc {
 
         if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
             value = args.get(0).valInt();
-            nullValue = args.get(0).nullValue;
+            nullValue = args.get(0).isNullValue();
             return value;
         }
 

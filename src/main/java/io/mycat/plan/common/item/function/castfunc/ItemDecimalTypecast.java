@@ -65,7 +65,7 @@ public class ItemDecimalTypecast extends ItemFunc {
     public BigDecimal valDecimal() {
         BigDecimal tmp = args.get(0).valDecimal();
 
-        if ((nullValue = args.get(0).nullValue))
+        if ((nullValue = args.get(0).isNullValue()))
             return null;
         return tmp.setScale(this.dec, RoundingMode.HALF_UP);
     }

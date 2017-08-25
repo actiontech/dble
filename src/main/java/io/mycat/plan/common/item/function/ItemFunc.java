@@ -82,14 +82,14 @@ public abstract class ItemFunc extends Item {
         if (!fixed) {
             if (args != null && args.size() > 0) {
                 for (Item arg : args) {
-                    if ((!arg.fixed && arg.fixFields()))
+                    if ((!arg.isFixed() && arg.fixFields()))
                         return true; /* purecov: inspected */
-                    if (arg.maybeNull)
+                    if (arg.isMaybeNull())
                         maybeNull = true;
-                    withSumFunc = withSumFunc || arg.withSumFunc;
-                    withIsNull = withIsNull || arg.withIsNull;
-                    withSubQuery = withSubQuery || arg.withSubQuery;
-                    withUnValAble = withUnValAble || arg.withUnValAble;
+                    withSumFunc = withSumFunc || arg.isWithSumFunc();
+                    withIsNull = withIsNull || arg.isWithIsNull();
+                    withSubQuery = withSubQuery || arg.isWithSubQuery();
+                    withUnValAble = withUnValAble || arg.isWithUnValAble();
                 }
             }
             fixLengthAndDec();
@@ -109,10 +109,10 @@ public abstract class ItemFunc extends Item {
                     return null;
                 args.set(index, fixedArg);
                 getReferTables().addAll(fixedArg.getReferTables());
-                withSumFunc = withSumFunc || fixedArg.withSumFunc;
-                withIsNull = withIsNull || fixedArg.withIsNull;
-                withSubQuery = withSubQuery || fixedArg.withSubQuery;
-                withUnValAble = withUnValAble || arg.withUnValAble;
+                withSumFunc = withSumFunc || fixedArg.isWithSumFunc();
+                withIsNull = withIsNull || fixedArg.isWithIsNull();
+                withSubQuery = withSubQuery || fixedArg.isWithSubQuery();
+                withUnValAble = withUnValAble || arg.isWithUnValAble();
             }
         }
         return this;
@@ -197,10 +197,10 @@ public abstract class ItemFunc extends Item {
         maxLength = 0;
         for (Item arg : args) {
             if (decimals != NOT_FIXED_DEC) {
-                decimals = Math.max(decimals, arg.decimals);
-                length = Math.max(length, arg.maxLength - arg.decimals);
+                decimals = Math.max(decimals, arg.getDecimals());
+                length = Math.max(length, arg.getMaxLength() - arg.getDecimals());
             }
-            maxLength = Math.max(maxLength, arg.maxLength);
+            maxLength = Math.max(maxLength, arg.getMaxLength());
         }
         if (decimals != NOT_FIXED_DEC) {
             maxLength = length;
@@ -221,7 +221,7 @@ public abstract class ItemFunc extends Item {
         int maxIntPart = 0;
         decimals = 0;
         for (Item arg : args) {
-            decimals = Math.max(decimals, arg.decimals);
+            decimals = Math.max(decimals, arg.getDecimals());
             maxIntPart = Math.max(maxIntPart, arg.decimalIntPart());
         }
         int precision = maxIntPart + decimals;

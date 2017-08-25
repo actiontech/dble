@@ -119,13 +119,13 @@
         <module name="OneStatementPerLine"/>
         <module name="NoFinalizer"/>
         <module name="InnerTypeLast"/>
-        <!--<module name="VisibilityModifier">-->
-            <!--<property name="packageAllowed" value="true"/>-->
-            <!--<property name="protectedAllowed" value="true"/>-->
-            <!--<property name="publicMemberPattern" value="^$"/>-->
-            <!--<property name="allowPublicFinalFields" value="true"/>-->
-            <!--<property name="allowPublicImmutableFields" value="true"/>-->
-        <!--</module>-->
+        <module name="VisibilityModifier">
+            <property name="packageAllowed" value="true"/>
+            <property name="protectedAllowed" value="true"/>
+            <property name="publicMemberPattern" value="^$"/>
+            <property name="allowPublicFinalFields" value="true"/>
+            <property name="allowPublicImmutableFields" value="true"/>
+        </module>
 
         <!-- Checks for metrics. -->
         <!--<module name="CyclomaticComplexity">-->

@@ -58,7 +58,7 @@ public class RowDataPacket extends MySQLPacket {
     protected static final byte NULL_MARK = (byte) 251;
     protected static final byte EMPTY_MARK = (byte) 0;
 
-    public int fieldCount;
+    private int fieldCount;
     public final List<byte[]> fieldValues;
     private List<byte[]> cmpValue;
 
@@ -168,4 +168,11 @@ public class RowDataPacket extends MySQLPacket {
         this.cmpValue = cmpValue;
     }
 
+    public int getFieldCount() {
+        return fieldCount;
+    }
+
+    public void setFieldCount(int fieldCount) {
+        this.fieldCount = fieldCount;
+    }
 }

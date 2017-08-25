@@ -165,14 +165,14 @@ public class ProxyMetaManager {
                 if (!isSuccess) {
                     return;
                 }
-                dropTable(schemaInfo.schema, schemaInfo.table);
+                dropTable(schemaInfo.getSchema(), schemaInfo.getTable());
             } catch (Exception e) {
                 LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
-                removeMetaLock(schemaInfo.schema, schemaInfo.table);
+                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 if (MycatServer.getInstance().isUseZK()) {
                     try {
-                        notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                        notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
                         LOGGER.warn("notifyClusterDDL error", e);
                     }
@@ -382,15 +382,15 @@ public class ProxyMetaManager {
             if (!isSuccess) {
                 return;
             }
-            TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.table, statement, System.currentTimeMillis());
-            addTable(schemaInfo.schema, tblMeta);
+            TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.getTable(), statement, System.currentTimeMillis());
+            addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
             LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.schema, schemaInfo.table);
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (MycatServer.getInstance().isUseZK()) {
                 try {
-                    notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyClusterDDL error", e);
                 }
@@ -404,7 +404,7 @@ public class ProxyMetaManager {
             if (!isSuccess) {
                 return;
             }
-            TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
+            TableMeta orgTbMeta = getTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (orgTbMeta == null)
                 return;
             TableMeta.Builder tmBuilder = orgTbMeta.toBuilder();
@@ -455,14 +455,14 @@ public class ProxyMetaManager {
             }
             tmBuilder.setVersion(System.currentTimeMillis());
             TableMeta newTblMeta = tmBuilder.build();
-            addTable(schemaInfo.schema, newTblMeta);
+            addTable(schemaInfo.getSchema(), newTblMeta);
         } catch (Exception e) {
             LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.schema, schemaInfo.table);
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (MycatServer.getInstance().isUseZK()) {
                 try {
-                    notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyClusterDDL error", e);
                 }
@@ -474,10 +474,10 @@ public class ProxyMetaManager {
         //TODO:reset Sequence?
         SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
         SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
-        removeMetaLock(schemaInfo.schema, schemaInfo.table);
+        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         if (MycatServer.getInstance().isUseZK()) {
             try {
-                notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn("notifyClusterDDL error", e);
             }
@@ -493,7 +493,7 @@ public class ProxyMetaManager {
                 if (!isSuccess) {
                     return;
                 }
-                TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
+                TableMeta orgTbMeta = getTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
                 if (orgTbMeta == null)
                     return;
                 String indexName = StringUtil.removeBackQuote(statement.getName().getSimpleName());
@@ -506,10 +506,10 @@ public class ProxyMetaManager {
             } catch (Exception e) {
                 LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
-                removeMetaLock(schemaInfo.schema, schemaInfo.table);
+                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 if (MycatServer.getInstance().isUseZK()) {
                     try {
-                        notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                        notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
                         LOGGER.warn("notifyClusterDDL error", e);
                     }
@@ -544,7 +544,7 @@ public class ProxyMetaManager {
 
     private void dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess, boolean needNotifyOther) {
         SchemaInfo schemaInfo = getSchemaInfo(schema, dropIndexStatement.getTableName());
-        TableMeta orgTbMeta = getTableMeta(schemaInfo.schema, schemaInfo.table);
+        TableMeta orgTbMeta = getTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         try {
             if (!isSuccess) {
                 return;
@@ -557,10 +557,10 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.schema, schemaInfo.table);
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (MycatServer.getInstance().isUseZK()) {
                 try {
-                    notifyClusterDDL(schemaInfo.schema, schemaInfo.table, sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
+                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLStatus.SUCCESS : DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyClusterDDL error", e);
                 }

@@ -60,15 +60,15 @@ public class DruidUpdateParser extends DefaultDruidParser {
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
             //权限控制
-            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.schema, schemaInfo.table, Checktype.UPDATE)) {
+            if (!MycatPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            schema = schemaInfo.schemaConfig;
-            String tableName = schemaInfo.table;
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.schema));
+            schema = schemaInfo.getSchemaConfig();
+            String tableName = schemaInfo.getTable();
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             if (RouterUtil.isNoSharding(schema, tableName)) { //整个schema都不分库或者该表不拆分
-                if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, new StringPtr(schemaInfo.schema))) {
+                if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, new StringPtr(schemaInfo.getSchema()))) {
                     String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
@@ -105,7 +105,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
             }
             if (ctx.getTables().size() == 0) {
-                ctx.addTable(schemaInfo.table);
+                ctx.addTable(schemaInfo.getTable());
             }
         }
         return schema;
@@ -113,8 +113,8 @@ public class DruidUpdateParser extends DefaultDruidParser {
 
     private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String orginSQL) {
         long opTimestamp = new Date().getTime();
-        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.schema,
-                schemaInfo.table);
+        TableMeta orgTbMeta = MycatServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
         if (orgTbMeta == null)
             return orginSQL;
         if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
@@ -140,7 +140,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             newItem.setValue(new SQLIntegerExpr(opTimestamp));
             items.add(newItem);
         }
-        return RouterUtil.removeSchema(update.toString(), schemaInfo.schema);
+        return RouterUtil.removeSchema(update.toString(), schemaInfo.getSchema());
     }
 
     /*

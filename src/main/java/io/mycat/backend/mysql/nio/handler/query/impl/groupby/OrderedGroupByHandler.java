@@ -148,7 +148,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             byte[] tmpb = sum.getRowPacketByte();
             newRp.add(tmpb);
         }
-        for (int i = 0; i < originRp.fieldCount; i++) {
+        for (int i = 0; i < originRp.getFieldCount(); i++) {
             newRp.add(originRp.getValue(i));
         }
         nextHandler.rowResponse(null, newRp, this.isLeft, conn);

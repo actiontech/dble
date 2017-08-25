@@ -76,7 +76,7 @@ public class ItemFuncCase extends ItemFunc {
             return BigDecimal.ZERO;
         }
         BigDecimal res = item.valReal();
-        nullValue = item.nullValue;
+        nullValue = item.isNullValue();
         return res;
     }
 
@@ -88,7 +88,7 @@ public class ItemFuncCase extends ItemFunc {
             return BigInteger.ZERO;
         }
         BigInteger res = item.valInt();
-        nullValue = item.nullValue;
+        nullValue = item.isNullValue();
         return res;
     }
 
@@ -123,7 +123,7 @@ public class ItemFuncCase extends ItemFunc {
             return null;
         }
         BigDecimal res = item.valDecimal();
-        nullValue = item.nullValue;
+        nullValue = item.isNullValue();
         return res;
     }
 
@@ -180,7 +180,7 @@ public class ItemFuncCase extends ItemFunc {
                 Item rightCmpItem = args.get(i);
                 ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
                 cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
-                if (cmptor.compare() == 0 && !rightCmpItem.nullValue)
+                if (cmptor.compare() == 0 && !rightCmpItem.isNullValue())
                     return args.get(i + 1);
             }
         }

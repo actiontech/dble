@@ -79,8 +79,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private byte[] makeErrorPacket(String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
-        errPacket.message = StringUtil.encode(errMsg, session.getSource().getCharset());
+        errPacket.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset()));
         return errPacket.toBytes();
     }
 
@@ -149,7 +149,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        String errmsg = new String(errPacket.message);
+        String errmsg = new String(errPacket.getMessage());
         this.setFail(errmsg);
         sendData = makeErrorPacket(errmsg);
         if (conn instanceof MySQLConnection) {

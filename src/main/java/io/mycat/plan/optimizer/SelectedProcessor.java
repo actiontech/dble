@@ -74,8 +74,8 @@ public final class SelectedProcessor {
                 }
                 // @bug select sum(id) from (select id,sum(id) from t1) t
                 // 如果直接将id下推，少去了sum(id)则出错
-                if (!existSum && qtn.sumFuncs.size() > 0) {
-                    selList.add(qtn.sumFuncs.iterator().next());
+                if (!existSum && qtn.getSumFuncs().size() > 0) {
+                    selList.add(qtn.getSumFuncs().iterator().next());
                 }
                 qtn.setUpRefers(isPushDownNode);
             }
@@ -180,7 +180,7 @@ public final class SelectedProcessor {
     private static boolean mergeNodeChildsCheck(MergeNode merge) {
         for (PlanNode child : merge.getChildren()) {
             boolean cdis = child.isDistinct();
-            boolean bsum = child.sumFuncs.size() > 0;
+            boolean bsum = child.getSumFuncs().size() > 0;
             if (cdis || bsum)
                 return false;
         }
@@ -193,7 +193,7 @@ public final class SelectedProcessor {
                 mergeSelects.add(orderSel);
         } else if (orderSel instanceof ItemFunc) {
             ItemFunc func = (ItemFunc) orderSel;
-            if (func.withSumFunc) {
+            if (func.isWithSumFunc()) {
                 for (int index = 0; index < func.getArgCount(); index++) {
                     Item arg = func.arguments().get(index);
                     mergePushOrderBy(arg, mergeSelects);

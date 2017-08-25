@@ -35,12 +35,12 @@ import java.util.List;
  */
 public class BinaryRowDataPacket extends MySQLPacket {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinaryRowDataPacket.class);
-    public int fieldCount;
-    public List<byte[]> fieldValues;
-    public byte packetHeader = (byte) 0;
-    public byte[] nullBitMap;
+    private int fieldCount;
+    private List<byte[]> fieldValues;
+    private byte packetHeader = (byte) 0;
+    private byte[] nullBitMap;
 
-    public List<FieldPacket> fieldPackets;
+    private List<FieldPacket> fieldPackets;
 
     public BinaryRowDataPacket() {
     }
@@ -80,7 +80,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
      */
     public void read(List<FieldPacket> fields, RowDataPacket rowDataPk) {
         this.fieldPackets = fields;
-        this.fieldCount = rowDataPk.fieldCount;
+        this.fieldCount = rowDataPk.getFieldCount();
         this.fieldValues = new ArrayList<>(fieldCount);
         this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
 
@@ -111,7 +111,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
      */
     private void convert(byte[] fv, FieldPacket fieldPk) {
 
-        int fieldType = fieldPk.type;
+        int fieldType = fieldPk.getType();
         switch (fieldType) {
             case Fields.FIELD_TYPE_STRING:
             case Fields.FIELD_TYPE_VARCHAR:
@@ -264,7 +264,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             byte[] fv = fieldValues.get(i);
             if (fv != null) {
                 FieldPacket fieldPk = this.fieldPackets.get(i);
-                int fieldType = fieldPk.type;
+                int fieldType = fieldPk.getType();
                 switch (fieldType) {
                     case Fields.FIELD_TYPE_STRING:
                     case Fields.FIELD_TYPE_VARCHAR:
@@ -308,7 +308,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             byte[] fv = fieldValues.get(i);
             if (fv != null) {
                 FieldPacket fieldPk = this.fieldPackets.get(i);
-                int fieldType = fieldPk.type;
+                int fieldType = fieldPk.getType();
                 switch (fieldType) {
                     case Fields.FIELD_TYPE_STRING:
                     case Fields.FIELD_TYPE_VARCHAR:
@@ -345,7 +345,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             byte[] value = fieldValues.get(i);
             if (value != null) {
                 FieldPacket fieldPk = this.fieldPackets.get(i);
-                int fieldType = fieldPk.type;
+                int fieldType = fieldPk.getType();
                 switch (fieldType) {
                     case Fields.FIELD_TYPE_STRING:
                     case Fields.FIELD_TYPE_VARCHAR:
@@ -387,5 +387,45 @@ public class BinaryRowDataPacket extends MySQLPacket {
     @Override
     protected String getPacketInfo() {
         return "MySQL Binary RowData Packet";
+    }
+
+    public int getFieldCount() {
+        return fieldCount;
+    }
+
+    public void setFieldCount(int fieldCount) {
+        this.fieldCount = fieldCount;
+    }
+
+    public List<byte[]> getFieldValues() {
+        return fieldValues;
+    }
+
+    public void setFieldValues(List<byte[]> fieldValues) {
+        this.fieldValues = fieldValues;
+    }
+
+    public byte getPacketHeader() {
+        return packetHeader;
+    }
+
+    public void setPacketHeader(byte packetHeader) {
+        this.packetHeader = packetHeader;
+    }
+
+    public byte[] getNullBitMap() {
+        return nullBitMap;
+    }
+
+    public void setNullBitMap(byte[] nullBitMap) {
+        this.nullBitMap = nullBitMap;
+    }
+
+    public List<FieldPacket> getFieldPackets() {
+        return fieldPackets;
+    }
+
+    public void setFieldPackets(List<FieldPacket> fieldPackets) {
+        this.fieldPackets = fieldPackets;
     }
 }

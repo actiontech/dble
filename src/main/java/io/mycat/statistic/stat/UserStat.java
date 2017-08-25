@@ -154,9 +154,9 @@ public class UserStat {
         long executeTime = endTime - startTime;
         if (executeTime >= sqlSlowTime) {
             SQLRecord record = new SQLRecord();
-            record.executeTime = executeTime;
-            record.statement = sql;
-            record.startTime = startTime;
+            record.setExecuteTime(executeTime);
+            record.setStatement(sql);
+            record.setStartTime(startTime);
             this.sqlRecorder.add(record);
         }
 

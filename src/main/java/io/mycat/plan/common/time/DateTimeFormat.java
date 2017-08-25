@@ -3,7 +3,7 @@ package io.mycat.plan.common.time;
 public class DateTimeFormat {
     //public char time_separator; /* Separator between hour and minute */
     //public int flag; /* For future */
-    public String format;
+    private String format;
 
     public DateTimeFormat() {
 
@@ -15,6 +15,14 @@ public class DateTimeFormat {
     //    this.format = format;
     //}
     public DateTimeFormat(String format) {
+        this.format = format;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
         this.format = format;
     }
 }

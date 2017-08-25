@@ -40,9 +40,9 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         if (lockedConns.size() == 0) {
             LOGGER.warn("find no locked backend connection!" + session.getSource());
             OkPacket ok = new OkPacket();
-            ok.packetId = ++packetId;
-            ok.packetLength = 7; // unlock table 命令返回MySQL协议包长度为7
-            ok.serverStatus = session.getSource().isAutocommit() ? 2 : 1;
+            ok.setPacketId(++packetId);
+            ok.setPacketLength(7); // unlock table 命令返回MySQL协议包长度为7
+            ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
             ok.write(session.getSource());
             return;
         }
@@ -92,8 +92,8 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
                 ok.read(data);
                 lock.lock();
                 try {
-                    ok.packetId = ++packetId;
-                    ok.serverStatus = session.getSource().isAutocommit() ? 2 : 1;
+                    ok.setPacketId(++packetId);
+                    ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
                 } finally {
                     lock.unlock();
                 }

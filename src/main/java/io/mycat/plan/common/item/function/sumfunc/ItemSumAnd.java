@@ -23,7 +23,7 @@ public class ItemSumAnd extends ItemSumBit {
                 bits = bits.and(other.bits);
         } else {
             BigInteger value = args.get(0).valInt();
-            if (!args.get(0).nullValue)
+            if (!args.get(0).isNullValue())
                 bits = bits.and(value);
         }
         return false;
@@ -35,7 +35,7 @@ public class ItemSumAnd extends ItemSumBit {
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
         BigInteger value = args.get(0).valInt();
-        if (!args.get(0).nullValue)
+        if (!args.get(0).isNullValue())
             bits = bits.and(value);
         return false;
     }

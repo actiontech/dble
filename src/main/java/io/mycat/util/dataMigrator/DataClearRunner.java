@@ -70,7 +70,7 @@ public class DataClearRunner implements Runnable {
 
     private void deleteDataDependFile(long offset, Connection con) throws IOException, SQLException {
         String data;
-        while ((data = DataMigratorUtil.readData(tempFile, offset, DataMigrator.margs.getQueryPageSize())).length() > 0) {
+        while ((data = DataMigratorUtil.readData(tempFile, offset, DataMigrator.getMargs().getQueryPageSize())).length() > 0) {
             offset += data.getBytes().length;
             if (data.startsWith(",")) {
                 data = data.substring(1, data.length());

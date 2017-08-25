@@ -24,22 +24,22 @@ public class ItemFuncFromDays extends ItemDateFunc {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         long value = args.get(0).valInt().longValue();
-        if ((nullValue = args.get(0).nullValue))
+        if ((nullValue = args.get(0).isNullValue()))
             return true;
-        ltime.setZeroTime(ltime.timeType);
+        ltime.setZeroTime(ltime.getTimeType());
         LongPtr lpyear = new LongPtr(0);
         LongPtr lpmonth = new LongPtr(0);
         LongPtr lpday = new LongPtr(0);
         MyTime.getDateFromDaynr(value, lpyear, lpmonth, lpday);
-        ltime.year = lpyear.get();
-        ltime.month = lpmonth.get();
-        ltime.day = lpday.get();
+        ltime.setYear(lpyear.get());
+        ltime.setMonth(lpmonth.get());
+        ltime.setDay(lpday.get());
 
         if ((nullValue = ((fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0) &&
-                (ltime.year == 0 || ltime.month == 0 || ltime.day == 0)))
+                (ltime.getYear() == 0 || ltime.getMonth() == 0 || ltime.getDay() == 0)))
             return true;
 
-        ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATE;
+        ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATE);
         return false;
     }
 

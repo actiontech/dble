@@ -36,7 +36,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     /**
      * 分片结束包
      */
-    public PackWraper endFlagPack = new PackWraper();
+    protected PackWraper endFlagPack = new PackWraper();
 
 
     /**
@@ -84,8 +84,8 @@ public abstract class AbstractDataNodeMerge implements Runnable {
      */
     public boolean onNewRecord(String dataNode, byte[] rowData) {
         final PackWraper data = new PackWraper();
-        data.dataNode = dataNode;
-        data.rowData = rowData;
+        data.setDataNode(dataNode);
+        data.setRowData(rowData);
         addPack(data);
 
         return false;
@@ -108,7 +108,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
                 throw new IllegalArgumentException(
                         "all columns in group by clause should be in the selected column list.!" + columns[i]);
             }
-            result[i] = curColMeta.colIndex;
+            result[i] = curColMeta.getColIndex();
         }
         return result;
     }

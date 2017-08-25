@@ -21,7 +21,7 @@ public final class MergeHavingFilter {
             List<Item> subFilters = FilterUtils.splitFilter(qtn.getHavingFilter());
             List<Item> canMergeSubs = new ArrayList<>();
             for (Item subFilter : subFilters) {
-                if (!subFilter.withSumFunc) {
+                if (!subFilter.isWithSumFunc()) {
                     canMergeSubs.add(subFilter);
                 }
             }

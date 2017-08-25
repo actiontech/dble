@@ -8,16 +8,16 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SequenceVal {
 
-    public AtomicBoolean newValueSetted = new AtomicBoolean(false);
-    public AtomicLong curVal = new AtomicLong(0);
-    public volatile String dbretVal = null;
-    public volatile boolean dbfinished;
-    public AtomicBoolean fetching = new AtomicBoolean(false);
-    public volatile long maxSegValue;
-    public volatile boolean successFetched;
-    public volatile String dataNode;
-    public final String seqName;
-    public final String sql;
+    AtomicBoolean newValueSetted = new AtomicBoolean(false);
+    AtomicLong curVal = new AtomicLong(0);
+    volatile String dbretVal = null;
+    volatile boolean dbfinished;
+    AtomicBoolean fetching = new AtomicBoolean(false);
+    volatile long maxSegValue;
+    volatile boolean successFetched;
+    volatile String dataNode;
+    final String seqName;
+    final String sql;
 
     public SequenceVal(String seqName, String dataNode) {
         this.seqName = seqName;

@@ -78,9 +78,9 @@ public final class KillHandler {
 
     private static OkPacket getOkPacket() {
         OkPacket packet = new OkPacket();
-        packet.packetId = 1;
-        packet.affectedRows = 0;
-        packet.serverStatus = 2;
+        packet.setPacketId(1);
+        packet.setAffectedRows(0);
+        packet.setServerStatus(2);
         return packet;
     }
 

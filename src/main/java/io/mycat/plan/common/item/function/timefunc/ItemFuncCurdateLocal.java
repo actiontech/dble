@@ -21,10 +21,13 @@ public class ItemFuncCurdateLocal extends ItemDateFunc {
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         java.util.Calendar cal = java.util.Calendar.getInstance();
-        ltime.year = cal.get(java.util.Calendar.YEAR);
-        ltime.month = cal.get(java.util.Calendar.MONTH) + 1;
-        ltime.day = cal.get(java.util.Calendar.DAY_OF_MONTH);
-        ltime.hour = ltime.minute = ltime.second = ltime.secondPart = 0;
+        ltime.setYear(cal.get(java.util.Calendar.YEAR));
+        ltime.setMonth(cal.get(java.util.Calendar.MONTH) + 1);
+        ltime.setDay(cal.get(java.util.Calendar.DAY_OF_MONTH));
+        ltime.setSecondPart(0);
+        ltime.setSecond(0);
+        ltime.setMinute(0);
+        ltime.setHour(0);
         return false;
     }
 

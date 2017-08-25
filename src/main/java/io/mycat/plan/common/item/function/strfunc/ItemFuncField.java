@@ -35,27 +35,27 @@ public class ItemFuncField extends ItemIntFunc {
             }
         } else if (cmpType == ItemResult.INT_RESULT) {
             long val = args.get(0).valInt().longValue();
-            if (args.get(0).nullValue)
+            if (args.get(0).isNullValue())
                 return BigInteger.ZERO;
             for (int i = 1; i < getArgCount(); i++) {
-                if (val == args.get(i).valInt().longValue() && !args.get(i).nullValue)
+                if (val == args.get(i).valInt().longValue() && !args.get(i).isNullValue())
                     return BigInteger.valueOf(i);
             }
         } else if (cmpType == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
-            if (args.get(0).nullValue)
+            if (args.get(0).isNullValue())
                 return BigInteger.ZERO;
             for (int i = 1; i < getArgCount(); i++) {
                 BigDecimal decArg = args.get(i).valDecimal();
-                if (!args.get(i).nullValue && decArg.compareTo(dec) == 0)
+                if (!args.get(i).isNullValue() && decArg.compareTo(dec) == 0)
                     return BigInteger.valueOf(i);
             }
         } else {
             double val = args.get(0).valReal().doubleValue();
-            if (args.get(0).nullValue)
+            if (args.get(0).isNullValue())
                 return BigInteger.ZERO;
             for (int i = 1; i < getArgCount(); i++) {
-                if (val == args.get(i).valReal().doubleValue() && !args.get(i).nullValue)
+                if (val == args.get(i).valReal().doubleValue() && !args.get(i).isNullValue())
                     return BigInteger.valueOf(i);
             }
         }

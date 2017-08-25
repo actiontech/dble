@@ -53,13 +53,13 @@ public class ColMeta implements Serializable {
     public static final int COL_TYPE_VAR_STRING = 0xfd;
     public static final int COL_TYPE_STRING = 0xfe;
     public static final int COL_TYPE_GEOMETRY = 0xff;
-    public int colIndex;
-    public final int colType;
+    private int colIndex;
+    private final int colType;
 
-    public int decimals;
+    private int decimals;
 
-    public int avgSumIndex;
-    public int avgCountIndex;
+    private int avgSumIndex;
+    private int avgCountIndex;
 
     public ColMeta(int colIndex, int colType) {
         super();
@@ -87,4 +87,31 @@ public class ColMeta implements Serializable {
         return "ColMeta [colIndex=" + colIndex + ", colType=" + colType + "]";
     }
 
+    public void setColIndex(int colIndex) {
+        this.colIndex = colIndex;
+    }
+
+    public int getDecimals() {
+        return decimals;
+    }
+
+    public void setDecimals(int decimals) {
+        this.decimals = decimals;
+    }
+
+    public int getAvgSumIndex() {
+        return avgSumIndex;
+    }
+
+    public void setAvgSumIndex(int avgSumIndex) {
+        this.avgSumIndex = avgSumIndex;
+    }
+
+    public int getAvgCountIndex() {
+        return avgCountIndex;
+    }
+
+    public void setAvgCountIndex(int avgCountIndex) {
+        this.avgCountIndex = avgCountIndex;
+    }
 }

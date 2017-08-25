@@ -33,21 +33,21 @@ public final class ShowSQLCondition {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("KEY", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("VALUE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("COUNT", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].packetId = ++packetId;
+        FIELDS[i++].setPacketId(++packetId);
 
-        EOF.packetId = ++packetId;
+        EOF.setPacketId(++packetId);
     }
 
     public static void execute(ManagerConnection c) {
@@ -65,7 +65,7 @@ public final class ShowSQLCondition {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
 
         String key = QueryConditionAnalyzer.getInstance().getKey();
         List<Map.Entry<Object, AtomicLong>> list = QueryConditionAnalyzer.getInstance().getValues();
@@ -81,23 +81,23 @@ public final class ShowSQLCondition {
                 total += count;
 
                 RowDataPacket row = getRow(i, key, value.toString(), count, c.getCharset());
-                row.packetId = ++packetId;
+                row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
 
             RowDataPacket vkRow = getRow(size + 1, key + ".valuekey", "size", size, c.getCharset());
-            vkRow.packetId = ++packetId;
+            vkRow.setPacketId(++packetId);
             buffer = vkRow.write(buffer, c, true);
 
             RowDataPacket vcRow = getRow(size + 2, key + ".valuecount", "total", total, c.getCharset());
-            vcRow.packetId = ++packetId;
+            vcRow.setPacketId(++packetId);
             buffer = vcRow.write(buffer, c, true);
 
         }
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

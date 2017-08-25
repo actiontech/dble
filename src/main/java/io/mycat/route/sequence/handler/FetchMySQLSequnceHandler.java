@@ -68,8 +68,8 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
 
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        String errMsg = new String(err.message);
-        LOGGER.warn("errorResponse " + err.errno + " " + errMsg);
+        String errMsg = new String(err.getMessage());
+        LOGGER.warn("errorResponse " + err.getErrno() + " " + errMsg);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
         conn.release();
 

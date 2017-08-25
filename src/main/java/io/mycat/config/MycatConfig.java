@@ -386,8 +386,8 @@ public class MycatConfig {
     }
 
     private static class DsDiff {
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
+        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
+        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
 
         DsDiff() {
             deled = new HashMap<>(2);
@@ -438,6 +438,22 @@ public class MycatConfig {
                     }
                 }
             }
+        }
+
+        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getDeled() {
+            return deled;
+        }
+
+        public void setDeled(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled) {
+            this.deled = deled;
+        }
+
+        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getAdded() {
+            return added;
+        }
+
+        public void setAdded(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added) {
+            this.added = added;
         }
     }
 }

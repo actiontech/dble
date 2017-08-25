@@ -87,9 +87,9 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         session.releaseConnectionIfSafe(conn, false);
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        String errmsg = new String(err.message);
+        String errmsg = new String(err.getMessage());
         this.setFail(errmsg);
-        LOGGER.warn("error response from " + conn + " err " + errmsg + " code:" + err.errno);
+        LOGGER.warn("error response from " + conn + " err " + errmsg + " code:" + err.getErrno());
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 
@@ -131,12 +131,12 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         ErrorPacket err = new ErrorPacket();
         lock.lock();
         try {
-            err.packetId = ++packetId;
+            err.setPacketId(++packetId);
         } finally {
             lock.unlock();
         }
-        err.errno = ErrorCode.ER_UNKNOWN_ERROR;
-        err.message = StringUtil.encode(errmgs, session.getSource().getCharset());
+        err.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
+        err.setMessage(StringUtil.encode(errmgs, session.getSource().getCharset()));
         return err;
     }
 

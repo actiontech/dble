@@ -62,27 +62,27 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             long secondBeg, secondEnd, microsecondBeg, microsecondEnd;
 
             if (neg == -1) {
-                yearBeg = ltime2.year;
-                yearEnd = ltime1.year;
-                monthBeg = ltime2.month;
-                monthEnd = ltime1.month;
-                dayBeg = ltime2.day;
-                dayEnd = ltime1.day;
-                secondBeg = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
-                secondEnd = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
-                microsecondBeg = ltime2.secondPart;
-                microsecondEnd = ltime1.secondPart;
+                yearBeg = ltime2.getYear();
+                yearEnd = ltime1.getYear();
+                monthBeg = ltime2.getMonth();
+                monthEnd = ltime1.getMonth();
+                dayBeg = ltime2.getDay();
+                dayEnd = ltime1.getDay();
+                secondBeg = ltime2.getHour() * 3600 + ltime2.getMinute() * 60 + ltime2.getSecond();
+                secondEnd = ltime1.getHour() * 3600 + ltime1.getMinute() * 60 + ltime1.getSecond();
+                microsecondBeg = ltime2.getSecondPart();
+                microsecondEnd = ltime1.getSecondPart();
             } else {
-                yearBeg = ltime1.year;
-                yearEnd = ltime2.year;
-                monthBeg = ltime1.month;
-                monthEnd = ltime2.month;
-                dayBeg = ltime1.day;
-                dayEnd = ltime2.day;
-                secondBeg = ltime1.hour * 3600 + ltime1.minute * 60 + ltime1.second;
-                secondEnd = ltime2.hour * 3600 + ltime2.minute * 60 + ltime2.second;
-                microsecondBeg = ltime1.secondPart;
-                microsecondEnd = ltime2.secondPart;
+                yearBeg = ltime1.getYear();
+                yearEnd = ltime2.getYear();
+                monthBeg = ltime1.getMonth();
+                monthEnd = ltime2.getMonth();
+                dayBeg = ltime1.getDay();
+                dayEnd = ltime2.getDay();
+                secondBeg = ltime1.getHour() * 3600 + ltime1.getMinute() * 60 + ltime1.getSecond();
+                secondEnd = ltime2.getHour() * 3600 + ltime2.getMinute() * 60 + ltime2.getSecond();
+                microsecondBeg = ltime1.getSecondPart();
+                microsecondEnd = ltime2.getSecondPart();
             }
 
             /* calc years */

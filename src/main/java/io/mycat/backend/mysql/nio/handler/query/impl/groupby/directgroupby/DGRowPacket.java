@@ -29,7 +29,7 @@ public class DGRowPacket extends RowDataPacket {
     private int[] sumByteSizes;
 
     public DGRowPacket(RowDataPacket innerRow, int sumSize) {
-        this(innerRow.fieldCount, sumSize);
+        this(innerRow.getFieldCount(), sumSize);
         this.addAll(innerRow.fieldValues);
     }
 
@@ -106,7 +106,7 @@ public class DGRowPacket extends RowDataPacket {
                 BufferUtil.writeWithLength(buffer, ov);
             }
         }
-        for (int i = 0; i < this.fieldCount; i++) {
+        for (int i = 0; i < this.getFieldCount(); i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {
                 buffer.put(NULL_MARK);

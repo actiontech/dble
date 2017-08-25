@@ -8,7 +8,7 @@ public class GetTimeValue implements GetValueFunc {
     @Override
     public long get(Item item, Item warn, BoolPtr isNull) {
         long value = item.valTimeTemporal();
-        isNull.set(item.nullValue);
+        isNull.set(item.isNullValue());
         return value;
     }
 

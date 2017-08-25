@@ -25,7 +25,7 @@ public class RowDataCmp implements Comparator<RowDataPacket> {
         //依次比较order by语句上的多个排序字段的值
         int type = OrderCol.COL_ORDER_TYPE_ASC;
         for (OrderCol aTmp : tmp) {
-            int colIndex = aTmp.colMeta.colIndex;
+            int colIndex = aTmp.colMeta.getColIndex();
             byte[] left = o1.fieldValues.get(colIndex);
             byte[] right = o2.fieldValues.get(colIndex);
             if (aTmp.orderType == type) {

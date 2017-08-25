@@ -17,8 +17,8 @@ public abstract class ItemFuncNum1 extends ItemFuncNumhybrid {
 
     @Override
     public void fixNumLengthAndDec() {
-        decimals = args.get(0).decimals;
-        this.maxLength = args.get(0).maxLength;
+        decimals = args.get(0).getDecimals();
+        this.maxLength = args.get(0).getMaxLength();
     }
 
     @Override

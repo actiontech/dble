@@ -44,14 +44,14 @@ public class ItemFuncUnsigned extends ItemIntFunc {
 
         if (args.get(0).castToIntType() == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
-            if (!(nullValue = args.get(0).nullValue))
+            if (!(nullValue = args.get(0).isNullValue()))
                 value = dec.toBigInteger();
             else
                 value = BigInteger.ZERO;
             return value;
         } else if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
             value = args.get(0).valInt();
-            nullValue = args.get(0).nullValue;
+            nullValue = args.get(0).isNullValue();
             return value;
         }
 

@@ -232,22 +232,22 @@ public class ServerConnection extends FrontendConnection {
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
         MycatConfig conf = MycatServer.getInstance().getConfig();
         UserConfig user = conf.getUsers().get(this.getUser());
-        if (user == null || !user.getSchemas().contains(schemaInfo.schema)) {
-            writeErrMessage("42000", "Access denied for user '" + this.getUser() + "' to database '" + schemaInfo.schema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+        if (user == null || !user.getSchemas().contains(schemaInfo.getSchema())) {
+            writeErrMessage("42000", "Access denied for user '" + this.getUser() + "' to database '" + schemaInfo.getSchema() + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
         RouteResultset rrs = new RouteResultset(stmt, sqlType);
         try {
-            if (RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
-                RouterUtil.routeToSingleNode(rrs, schemaInfo.schemaConfig.getDataNode());
+            if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
+                RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
             } else {
-                TableConfig tc = schemaInfo.schemaConfig.getTables().get(schemaInfo.table);
+                TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {
-                    String msg = "Table '" + schemaInfo.schema + "." + schemaInfo.table + "' doesn't exist";
+                    String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
                     writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
                     return;
                 }
-                RouterUtil.routeToRandomNode(rrs, schemaInfo.schemaConfig, schemaInfo.table);
+                RouterUtil.routeToRandomNode(rrs, schemaInfo.getSchemaConfig(), schemaInfo.getTable());
             }
             session.execute(rrs, sqlType);
         } catch (Exception e) {

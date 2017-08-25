@@ -36,7 +36,9 @@ public class ItemFuncDateFormat extends ItemStrFunc {
         } else {
             if (getArg0Time(lTime))
                 return null;
-            lTime.year = lTime.month = lTime.day = 0;
+            lTime.setDay(0);
+            lTime.setMonth(0);
+            lTime.setYear(0);
         }
         if ((format = args.get(1).valStr()) == null || format.length() == 0) {
             nullValue = true;
@@ -46,7 +48,7 @@ public class ItemFuncDateFormat extends ItemStrFunc {
         if (size < MyTime.MAX_DATE_STRING_REP_LENGTH)
             size = MyTime.MAX_DATE_STRING_REP_LENGTH;
         DateTimeFormat dateTimeFormat = new DateTimeFormat();
-        dateTimeFormat.format = format;
+        dateTimeFormat.setFormat(format);
         StringPtr strPtr = new StringPtr("");
         if (!MyTime.makeDateTime(dateTimeFormat, lTime,
                 isTimeFormat ? MySQLTimestampType.MYSQL_TIMESTAMP_TIME : MySQLTimestampType.MYSQL_TIMESTAMP_DATE,

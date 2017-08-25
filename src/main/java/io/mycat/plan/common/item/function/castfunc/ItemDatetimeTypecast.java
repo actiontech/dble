@@ -41,8 +41,8 @@ public class ItemDatetimeTypecast extends ItemDatetimeFunc {
     public boolean getDate(MySQLTime ltime, long fuzzyDate) {
         if ((nullValue = args.get(0).getDate(ltime, fuzzyDate | MyTime.TIME_NO_DATE_FRAC_WARN)))
             return true;
-        assert (ltime.timeType != MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
-        ltime.timeType = MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME; // In
+        assert (ltime.getTimeType() != MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+        ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME); // In
         // case
         // it
         // was

@@ -30,7 +30,7 @@ public final class PlanUtil {
         if (node.getReferedTableNodes().size() == 0)
             return false;
         else {
-            if (node.sumFuncs.size() > 0 || node.getGroupBys().size() > 0 ||
+            if (node.getSumFuncs().size() > 0 || node.getGroupBys().size() > 0 ||
                     node.getLimitTo() != -1 || node.isDistinct())
                 return true;
         }
@@ -80,11 +80,11 @@ public final class PlanUtil {
             Item arg = f.arguments().get(index);
             rtables.addAll(arg.getReferTables());
             // refresh exist sel is null
-            f.withIsNull = f.withIsNull || arg.withIsNull;
+            f.setWithIsNull(f.isWithIsNull() || arg.isWithIsNull());
             // refresh exist agg
-            f.withSumFunc = f.withSumFunc || arg.withSumFunc;
-            f.withSubQuery = f.withSubQuery || arg.withSubQuery;
-            f.withUnValAble = f.withUnValAble || arg.withUnValAble;
+            f.setWithSumFunc(f.isWithSumFunc() || arg.isWithSumFunc());
+            f.setWithSubQuery(f.isWithSubQuery() || arg.isWithSubQuery());
+            f.setWithUnValAble(f.isWithUnValAble() || arg.isWithUnValAble());
         }
         return;
     }
@@ -99,7 +99,7 @@ public final class PlanUtil {
     public static boolean canPush(Item sel, PlanNode child, PlanNode parent) {
         if (sel == null)
             return false;
-        if (sel.withSumFunc)
+        if (sel.isWithSumFunc())
             return false;
         HashSet<PlanNode> referTables = sel.getReferTables();
         if (referTables.size() == 0) {
@@ -108,7 +108,7 @@ public final class PlanUtil {
             PlanNode referTable = referTables.iterator().next();
             if (referTable == child) {
                 // left join的right 节点的is null不下发
-                return !sel.withIsNull || parent.type() != PlanNodeType.JOIN || !((JoinNode) parent).isLeftOuterJoin() ||
+                return !sel.isWithIsNull() || parent.type() != PlanNodeType.JOIN || !((JoinNode) parent).isLeftOuterJoin() ||
                         ((JoinNode) parent).getRightNode() != child;
             }
         }
@@ -119,7 +119,7 @@ public final class PlanUtil {
      * 是否属于可直接下推的函数
      **/
     public static boolean isDirectPushDownFunction(Item func) {
-        if (func.withSumFunc)
+        if (func.isWithSumFunc())
             return false;
         else {
             // 如果函数涉及的所有的参数仅有一个table，则可以下推
@@ -157,7 +157,7 @@ public final class PlanUtil {
                 sel.setPushDownName(func.getItemName());
                 return func;
             }
-            if (!subQueryOpt && (func.withSumFunc)) {
+            if (!subQueryOpt && (func.isWithSumFunc())) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not pushdown sum func!");
             }
             for (int index = 0; index < func.getArgCount(); index++) {

@@ -20,15 +20,14 @@ public abstract class FieldNum extends Field {
 
     protected BigInteger intValue = null;
     protected String zeroptrStr = null;
+    private boolean zerofill = false;
+    //public boolean unsigned_flag = false;
 
     public FieldNum(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
         super(name, table, charsetIndex, fieldLength, decimals, flags);
         zerofill = (FieldUtil.ZEROFILL_FLAG & flags) != 0;
         //unsigned_flag = (FieldUtil.UNSIGNED_FLAG & flags) != 0;
     }
-
-    public boolean zerofill = false;
-    //public boolean unsigned_flag = false;
 
     @Override
     public ItemResult resultType() {

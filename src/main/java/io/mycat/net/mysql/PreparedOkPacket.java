@@ -58,12 +58,12 @@ import java.nio.ByteBuffer;
  */
 public class PreparedOkPacket extends MySQLPacket {
 
-    public byte flag;
-    public long statementId;
-    public int columnsNumber;
-    public int parametersNumber;
-    public byte filler;
-    public int warningCount;
+    private byte flag;
+    private long statementId;
+    private int columnsNumber;
+    private int parametersNumber;
+    private byte filler;
+    private int warningCount;
 
     public PreparedOkPacket() {
         this.flag = 0;
@@ -95,4 +95,51 @@ public class PreparedOkPacket extends MySQLPacket {
         return "MySQL PreparedOk Packet";
     }
 
+    public byte getFlag() {
+        return flag;
+    }
+
+    public void setFlag(byte flag) {
+        this.flag = flag;
+    }
+
+    public long getStatementId() {
+        return statementId;
+    }
+
+    public void setStatementId(long statementId) {
+        this.statementId = statementId;
+    }
+
+    public int getColumnsNumber() {
+        return columnsNumber;
+    }
+
+    public void setColumnsNumber(int columnsNumber) {
+        this.columnsNumber = columnsNumber;
+    }
+
+    public int getParametersNumber() {
+        return parametersNumber;
+    }
+
+    public void setParametersNumber(int parametersNumber) {
+        this.parametersNumber = parametersNumber;
+    }
+
+    public byte getFiller() {
+        return filler;
+    }
+
+    public void setFiller(byte filler) {
+        this.filler = filler;
+    }
+
+    public int getWarningCount() {
+        return warningCount;
+    }
+
+    public void setWarningCount(int warningCount) {
+        this.warningCount = warningCount;
+    }
 }

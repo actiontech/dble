@@ -49,10 +49,10 @@ public final class SelectVersionComment {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.packetId = ++packetId;
+        HEADER.setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].packetId = ++packetId;
-        EOF.packetId = ++packetId;
+        FIELDS[i].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
     }
 
     public static void response(ServerConnection c) {
@@ -70,15 +70,15 @@ public final class SelectVersionComment {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.packetId;
+        byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(Versions.versionComment);
-        row.packetId = ++packetId;
+        row.add(Versions.VERSION_COMMENT);
+        row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
+        lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

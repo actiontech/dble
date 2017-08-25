@@ -381,7 +381,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLCharExpr x) {
         item = new ItemString(x.getText());
-        item.charsetIndex = this.charsetIndex;
+        item.setCharsetIndex(this.charsetIndex);
         initName(x);
     }
 
@@ -406,7 +406,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLNCharExpr x) {
         item = new ItemString(x.getText());
-        item.charsetIndex = this.charsetIndex;
+        item.setCharsetIndex(this.charsetIndex);
         initName(x);
     }
 
@@ -657,45 +657,45 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         List<Integer> args = changeExprListToInt(dataTypeImpl.getArguments());
         switch (upType) {
             case "BINARY":
-                castType.target = CastTarget.ITEM_CAST_BINARY;
+                castType.setTarget(CastTarget.ITEM_CAST_BINARY);
                 if (args.size() > 0) {
-                    castType.length = args.get(0);
+                    castType.setLength(args.get(0));
                 }
                 break;
             case "DATE":
-                castType.target = CastTarget.ITEM_CAST_DATE;
+                castType.setTarget(CastTarget.ITEM_CAST_DATE);
                 break;
             case "DATETIME":
-                castType.target = CastTarget.ITEM_CAST_DATETIME;
+                castType.setTarget(CastTarget.ITEM_CAST_DATETIME);
                 if (args.size() > 0) {
-                    castType.length = args.get(0);
+                    castType.setLength(args.get(0));
                 }
                 break;
             case "DECIMAL":
-                castType.target = CastTarget.ITEM_CAST_DECIMAL;
+                castType.setTarget(CastTarget.ITEM_CAST_DECIMAL);
                 if (args.size() > 0) {
-                    castType.length = args.get(0);
+                    castType.setLength(args.get(0));
                 }
                 if (args.size() > 1) {
-                    castType.dec = args.get(1);
+                    castType.setDec(args.get(1));
                 }
                 break;
             case "NCHAR":
-                castType.target = CastTarget.ITEM_CAST_NCHAR;
+                castType.setTarget(CastTarget.ITEM_CAST_NCHAR);
                 if (args.size() > 0) {
-                    castType.length = args.get(0);
+                    castType.setLength(args.get(0));
                 }
                 break;
             case "SIGNED":
-                castType.target = CastTarget.ITEM_CAST_SIGNED_INT;
+                castType.setTarget(CastTarget.ITEM_CAST_SIGNED_INT);
                 break;
             case "UNSIGNED":
-                castType.target = CastTarget.ITEM_CAST_UNSIGNED_INT;
+                castType.setTarget(CastTarget.ITEM_CAST_UNSIGNED_INT);
                 break;
             case "TIME":
-                castType.target = CastTarget.ITEM_CAST_TIME;
+                castType.setTarget(CastTarget.ITEM_CAST_TIME);
                 if (args.size() > 0) {
-                    castType.length = args.get(0);
+                    castType.setLength(args.get(0));
                 }
                 break;
             default:

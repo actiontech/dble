@@ -168,7 +168,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         finished.incrementAndGet();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        LOGGER.warn("errorResponse " + err.errno + " " + new String(err.message));
+        LOGGER.warn("errorResponse " + err.getErrno() + " " + new String(err.getMessage()));
         if (canReleaseConn()) {
             conn.release();
         }

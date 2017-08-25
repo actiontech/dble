@@ -25,9 +25,9 @@ public class ItemFuncToSeconds extends ItemIntFunc {
         MySQLTime ltime = new MySQLTime();
         if (getArg0Date(ltime, MyTime.TIME_NO_ZERO_DATE))
             return BigInteger.ZERO;
-        long seconds = ltime.hour * 3600L + ltime.minute * 60 + ltime.second;
-        seconds = ltime.neg ? -seconds : seconds;
-        long days = MyTime.calcDaynr(ltime.year, ltime.month, ltime.day);
+        long seconds = ltime.getHour() * 3600L + ltime.getMinute() * 60 + ltime.getSecond();
+        seconds = ltime.isNeg() ? -seconds : seconds;
+        long days = MyTime.calcDaynr(ltime.getYear(), ltime.getMonth(), ltime.getDay());
         return BigInteger.valueOf(seconds + days * 24L * 3600L);
     }
 

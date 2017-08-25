@@ -28,24 +28,21 @@ package io.mycat.backend.mysql;
  */
 public class BindValue {
 
-    public boolean isNull; /* NULL indicator */
-    public boolean isLongData; /* long data indicator */
-    public boolean isSet; /* has this parameter been set */
+    private boolean isNull; /* NULL indicator */
+    private boolean isLongData; /* long data indicator */
+    private boolean isSet; /* has this parameter been set */
 
-    public long length; /* Default length of data */
-    public int type; /* data type */
-    public byte scale;
+    private long length; /* Default length of data */
+    private int type; /* data type */
+    private byte scale;
 
-    /**
-     * 数据值
-     **/
-    public byte byteBinding;
-    public short shortBinding;
-    public int intBinding;
-    public float floatBinding;
-    public long longBinding;
-    public double doubleBinding;
-    public Object value; /* Other value to store */
+    private byte byteBinding;
+    private short shortBinding;
+    private int intBinding;
+    private float floatBinding;
+    private long longBinding;
+    private double doubleBinding;
+    private Object value; /* Other value to store */
 
     public void reset() {
         this.isNull = false;
@@ -65,4 +62,110 @@ public class BindValue {
         this.value = null;
     }
 
+    public boolean isNull() {
+        return isNull;
+    }
+
+    public void setNull(boolean aNull) {
+        isNull = aNull;
+    }
+
+    public boolean isLongData() {
+        return isLongData;
+    }
+
+    public void setLongData(boolean longData) {
+        isLongData = longData;
+    }
+
+    public boolean isSet() {
+        return isSet;
+    }
+
+    public void setSet(boolean set) {
+        isSet = set;
+    }
+
+    public long getLength() {
+        return length;
+    }
+
+    public void setLength(long length) {
+        this.length = length;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public byte getScale() {
+        return scale;
+    }
+
+    public void setScale(byte scale) {
+        this.scale = scale;
+    }
+
+    /**
+     * 数据值
+     **/
+    public byte getByteBinding() {
+        return byteBinding;
+    }
+
+    public void setByteBinding(byte byteBinding) {
+        this.byteBinding = byteBinding;
+    }
+
+    public short getShortBinding() {
+        return shortBinding;
+    }
+
+    public void setShortBinding(short shortBinding) {
+        this.shortBinding = shortBinding;
+    }
+
+    public int getIntBinding() {
+        return intBinding;
+    }
+
+    public void setIntBinding(int intBinding) {
+        this.intBinding = intBinding;
+    }
+
+    public float getFloatBinding() {
+        return floatBinding;
+    }
+
+    public void setFloatBinding(float floatBinding) {
+        this.floatBinding = floatBinding;
+    }
+
+    public long getLongBinding() {
+        return longBinding;
+    }
+
+    public void setLongBinding(long longBinding) {
+        this.longBinding = longBinding;
+    }
+
+    public double getDoubleBinding() {
+        return doubleBinding;
+    }
+
+    public void setDoubleBinding(double doubleBinding) {
+        this.doubleBinding = doubleBinding;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
 }

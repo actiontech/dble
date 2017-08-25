@@ -136,17 +136,17 @@ public class ItemExtract extends ItemIntFunc {
         } else {
             if (getArg0Time(ltime))
                 return BigInteger.ZERO;
-            neg = ltime.neg ? -1 : 1;
+            neg = ltime.isNeg() ? -1 : 1;
         }
         switch (intType) {
             case YEAR:
-                return BigInteger.valueOf(ltime.year);
+                return BigInteger.valueOf(ltime.getYear());
             case YEAR_MONTH:
-                return BigInteger.valueOf(ltime.year * 100L + ltime.month);
+                return BigInteger.valueOf(ltime.getYear() * 100L + ltime.getMonth());
             case QUARTER:
-                return BigInteger.valueOf((ltime.month + 2) / 3);
+                return BigInteger.valueOf((ltime.getMonth() + 2) / 3);
             case MONTH:
-                return BigInteger.valueOf(ltime.month);
+                return BigInteger.valueOf(ltime.getMonth());
             case WEEK: {
                 weekFormat = MyTime.WEEK_MONDAY_FIRST;
                 long ret = MyTime.calcWeek(ltime, MyTime.weekMode(weekFormat), new LongPtr(0));
@@ -154,39 +154,39 @@ public class ItemExtract extends ItemIntFunc {
 
             }
             case DAY:
-                return BigInteger.valueOf(ltime.day);
+                return BigInteger.valueOf(ltime.getDay());
             case DAY_HOUR:
-                return BigInteger.valueOf((ltime.day * 100L + ltime.hour) * neg);
+                return BigInteger.valueOf((ltime.getDay() * 100L + ltime.getHour()) * neg);
             case DAY_MINUTE:
-                return (BigInteger.valueOf((ltime.day * 10000L + ltime.hour * 100L + ltime.minute) * neg));
+                return (BigInteger.valueOf((ltime.getDay() * 10000L + ltime.getHour() * 100L + ltime.getMinute()) * neg));
             case DAY_SECOND:
                 return BigInteger.valueOf(
-                        (ltime.day * 1000000L + (ltime.hour * 10000L + ltime.minute * 100 + ltime.second)) * neg);
+                        (ltime.getDay() * 1000000L + (ltime.getHour() * 10000L + ltime.getMinute() * 100 + ltime.getSecond())) * neg);
             case HOUR:
-                return BigInteger.valueOf(ltime.hour * neg);
+                return BigInteger.valueOf(ltime.getHour() * neg);
             case HOUR_MINUTE:
-                return BigInteger.valueOf((ltime.hour * 100 + ltime.minute) * neg);
+                return BigInteger.valueOf((ltime.getHour() * 100 + ltime.getMinute()) * neg);
             case HOUR_SECOND:
-                return BigInteger.valueOf((ltime.hour * 10000 + ltime.minute * 100 + ltime.second) * neg);
+                return BigInteger.valueOf((ltime.getHour() * 10000 + ltime.getMinute() * 100 + ltime.getSecond()) * neg);
             case MINUTE:
-                return BigInteger.valueOf(ltime.minute * neg);
+                return BigInteger.valueOf(ltime.getMinute() * neg);
             case MINUTE_SECOND:
-                return BigInteger.valueOf((ltime.minute * 100 + ltime.second) * neg);
+                return BigInteger.valueOf((ltime.getMinute() * 100 + ltime.getSecond()) * neg);
             case SECOND:
-                return BigInteger.valueOf(ltime.second * neg);
+                return BigInteger.valueOf(ltime.getSecond() * neg);
             case MICROSECOND:
-                return BigInteger.valueOf(ltime.secondPart * neg);
+                return BigInteger.valueOf(ltime.getSecondPart() * neg);
             case DAY_MICROSECOND:
                 return BigInteger.valueOf(
-                        ((ltime.day * 1000000L + ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L +
-                                ltime.secondPart) * neg);
+                        ((ltime.getDay() * 1000000L + ltime.getHour() * 10000L + ltime.getMinute() * 100 + ltime.getSecond()) * 1000000L +
+                                ltime.getSecondPart()) * neg);
             case HOUR_MICROSECOND:
                 return BigInteger.valueOf(
-                        ((ltime.hour * 10000L + ltime.minute * 100 + ltime.second) * 1000000L + ltime.secondPart) * neg);
+                        ((ltime.getHour() * 10000L + ltime.getMinute() * 100 + ltime.getSecond()) * 1000000L + ltime.getSecondPart()) * neg);
             case MINUTE_MICROSECOND:
-                return BigInteger.valueOf((((ltime.minute * 100 + ltime.second)) * 1000000L + ltime.secondPart) * neg);
+                return BigInteger.valueOf((((ltime.getMinute() * 100 + ltime.getSecond())) * 1000000L + ltime.getSecondPart()) * neg);
             case SECOND_MICROSECOND:
-                return BigInteger.valueOf((ltime.second * 1000000L + ltime.secondPart) * neg);
+                return BigInteger.valueOf((ltime.getSecond() * 1000000L + ltime.getSecondPart()) * neg);
             default:
                 break;
         }

@@ -41,7 +41,6 @@ import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -248,82 +247,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             erRelations = new HashMap<>();
         }
         erRelations.putAll(schemaFkERMap);
-        schemaFkERMap = null;
-    }
-
-    /**
-     * 处理动态日期表, 支持 YYYYMM、YYYYMMDD 两种格式
-     * <p>
-     * YYYYMM格式：       yyyymm,2015,01,60
-     * YYYYMMDD格式:  yyyymmdd,2015,01,10,50
-     *
-     * @param tableNameElement
-     * @param tableNameSuffixElement
-     * @return
-     */
-    private String doTableNameSuffix(String tableNameElement, String tableNameSuffixElement) {
-
-        String newTableName = tableNameElement;
-
-        String[] params = tableNameSuffixElement.split(",");
-        String suffixFormat = params[0];
-        if (suffixFormat.equals("YYYYMM")) {
-
-            //日期处理
-            SimpleDateFormat yyyyMMDateFormat = new SimpleDateFormat("yyyyMM");
-
-            int yyyy = Integer.parseInt(params[1]);
-            int mm = Integer.parseInt(params[2]);
-
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.YEAR, yyyy);
-            cal.set(Calendar.MONTH, mm - 1);
-            cal.set(Calendar.DATE, 0);
-
-            //表名改写
-            StringBuilder tableNameBuffer = new StringBuilder();
-            int mmEndIdx = Integer.parseInt(params[3]);
-            for (int mmIdx = 0; mmIdx <= mmEndIdx; mmIdx++) {
-                tableNameBuffer.append(tableNameElement);
-                tableNameBuffer.append(yyyyMMDateFormat.format(cal.getTime()));
-                cal.add(Calendar.MONTH, 1);
-
-                if (mmIdx != mmEndIdx) {
-                    tableNameBuffer.append(",");
-                }
-            }
-            newTableName = tableNameBuffer.toString();
-
-        } else if (suffixFormat.equals("YYYYMMDD")) {
-
-            //日期处理
-            SimpleDateFormat yyyyMMddSDF = new SimpleDateFormat("yyyyMMdd");
-
-            int yyyy = Integer.parseInt(params[1]);
-            int mm = Integer.parseInt(params[2]);
-            int dd = Integer.parseInt(params[3]);
-
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.YEAR, yyyy);
-            cal.set(Calendar.MONTH, mm - 1);
-            cal.set(Calendar.DATE, dd);
-
-            //表名改写
-            int ddEndIdx = Integer.parseInt(params[4]);
-            StringBuilder tableNameBuffer = new StringBuilder();
-            for (int ddIdx = 0; ddIdx <= ddEndIdx; ddIdx++) {
-                tableNameBuffer.append(tableNameElement);
-                tableNameBuffer.append(yyyyMMddSDF.format(cal.getTime()));
-
-                cal.add(Calendar.DATE, 1);
-
-                if (ddIdx != ddEndIdx) {
-                    tableNameBuffer.append(",");
-                }
-            }
-            newTableName = tableNameBuffer.toString();
-        }
-        return newTableName;
     }
 
 
@@ -333,24 +256,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
-            String tableNameElement = tableElement.getAttribute("name");
-            if (isLowerCaseNames) {
-                tableNameElement = tableNameElement.toLowerCase();
-            }
 
-            //TODO:路由, 增加对动态日期表的支持
-            String tableNameSuffixElement = tableElement.getAttribute("nameSuffix");
-            if (isLowerCaseNames) {
-                tableNameSuffixElement = tableNameSuffixElement.toLowerCase();
-            }
-            if (!"".equals(tableNameSuffixElement)) {
-
-                if (tableNameElement.split(",").length > 1) {
-                    throw new ConfigException("nameSuffix " + tableNameSuffixElement + ", require name parameter cannot multiple breaks!");
-                }
-                //前缀用来标明日期格式
-                tableNameElement = doTableNameSuffix(tableNameElement, tableNameSuffixElement);
-            }
             //记录主键，用于之后路由分析，以及启用自增长主键
             String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
             //记录是否主键自增，默认不是，（启用全局sequence handler）
@@ -383,12 +289,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableElement.hasAttribute("ruleRequired")) {
                 ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
             }
-
-            String[] tableNames = tableNameElement.split(",");
-            if (tableNames == null) {
-                throw new ConfigException("table name is not found!");
-            }
-
             String dataNode = tableElement.getAttribute("dataNode");
             //distribute函数，重新编排dataNode
             String distPrex = "distribute(";
@@ -396,7 +296,14 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (distTableDns) {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
             }
-
+            String tableNameElement = tableElement.getAttribute("name");
+            if (isLowerCaseNames) {
+                tableNameElement = tableNameElement.toLowerCase();
+            }
+            String[] tableNames = tableNameElement.split(",");
+            if (tableNames == null) {
+                throw new ConfigException("table name is not found!");
+            }
             for (String tableName : tableNames) {
                 TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
                         dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);

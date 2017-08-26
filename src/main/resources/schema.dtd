@@ -25,7 +25,6 @@
 
         <!ELEMENT table (childTable*)>
         <!ATTLIST table name CDATA #REQUIRED>
-        <!ATTLIST table nameSuffix CDATA #IMPLIED>
         <!ATTLIST table dataNode CDATA #REQUIRED>
         <!ATTLIST table rule NMTOKEN #IMPLIED>
         <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>

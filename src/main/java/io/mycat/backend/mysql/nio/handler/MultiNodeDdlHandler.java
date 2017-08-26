@@ -51,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author guoji.ma@gmail.com
  */
 public class MultiNodeDdlHandler extends MultiNodeHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeDdlHandler.class);
 
     private static final String STMT = "select 1";
     private final RouteResultset rrs;

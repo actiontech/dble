@@ -11,7 +11,7 @@ public final class ReloadQueryCf {
     private ReloadQueryCf() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadQueryCf.class);
 
     public static void execute(ManagerConnection c, String cf) {
 

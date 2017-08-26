@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public final class ReloadMetaData {
     private ReloadMetaData() {
     }
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
 
     public static void execute(ManagerConnection c) {
         String msg = "datahost has no write_host";

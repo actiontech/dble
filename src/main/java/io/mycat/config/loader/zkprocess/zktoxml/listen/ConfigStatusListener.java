@@ -25,7 +25,7 @@ import java.util.Set;
  * Created by huqing.yan on 2017/6/23.
  */
 public class ConfigStatusListener extends ZkMultLoader implements NotifyService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigStatusListener.class);
     public static final String SUCCESS = "SUCCESS";
     private final String currZkPath;
     private Set<NotifyService> childService = new HashSet<>();

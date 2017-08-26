@@ -38,7 +38,7 @@ public final class ZktoXmlMain {
      *
      * @字段说明 LOGGER
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZktoXmlMain.class);
 
     /**
      * 将zk数据放到到本地

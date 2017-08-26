@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public class HintDataNodeHandler implements HintHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HintSchemaHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HintDataNodeHandler.class);
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL,

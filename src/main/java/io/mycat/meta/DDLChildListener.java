@@ -24,7 +24,7 @@ import java.util.concurrent.locks.LockSupport;
  * Created by huqing.yan on 2017/6/6.
  */
 public class DDLChildListener implements PathChildrenCacheListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PathChildrenCacheListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DDLChildListener.class);
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {

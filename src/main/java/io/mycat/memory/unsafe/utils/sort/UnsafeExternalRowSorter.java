@@ -35,7 +35,7 @@ import java.util.List;
 
 public final class UnsafeExternalRowSorter {
 
-    private final Logger logger = LoggerFactory.getLogger(UnsafeExternalSorter.class);
+    private final Logger logger = LoggerFactory.getLogger(UnsafeExternalRowSorter.class);
 
     private long numRowsInserted = 0;
     private final StructType schema;

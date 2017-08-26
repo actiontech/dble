@@ -390,8 +390,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
 
         } else {
+            lock.lock();
             try {
-                lock.lock();
                 eof[3] = ++packetId;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("last packet id:" + packetId);

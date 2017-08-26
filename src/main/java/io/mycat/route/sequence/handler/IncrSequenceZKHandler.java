@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @time 23:35 2016/5/6
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceZKHandler.class);
     private static final String PATH = KVPathUtil.getSequencesIncrPath() + "/";
     private static final String LOCK = "/lock";
     private static final String SEQ = "/seq";

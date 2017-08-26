@@ -39,7 +39,7 @@ public class RouterUtilTest {
         String sql = "update testx.test set name='abcd \\' testx.aa' where id=1";
         String sqltrue = "update test set name='abcd \\' testx.aa' where id=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -47,7 +47,7 @@ public class RouterUtilTest {
         String sql = "update testx.test set testx.name='abcd testx.aa' where testx.id=1";
         String sqltrue = "update test set name='abcd testx.aa' where id=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -55,7 +55,7 @@ public class RouterUtilTest {
         String sql = "update testx.test set testx.name='abcd testx.aa' and testx.name2='abcd testx.aa' where testx.id=1";
         String sqltrue = "update test set name='abcd testx.aa' and name2='abcd testx.aa' where id=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -63,7 +63,7 @@ public class RouterUtilTest {
         String sql = "UPDATE TESTX.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TESTX.NAME2='ABCD TESTX.AA' WHERE TESTX.ID=1";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class RouterUtilTest {
         String sql = "UPDATE TESTX.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TESTX.NAME2='ABCD TESTX.AA' WHERE TESTX.ID=1";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1";
         String sqlnew = RouterUtil.removeSchema(sql, "TESTX", false);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class RouterUtilTest {
         String sql = "update testx.test set testx.name='abcd testx.aa' and testx.name2='abcd testx.aa' where testx.id=1";
         String sqltrue = "update test set name='abcd testx.aa' and name2='abcd testx.aa' where id=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", false);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -87,7 +87,7 @@ public class RouterUtilTest {
         String sql = "UPDATE TESTX.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TEStX.NAME2='ABCD TESTX.AA' WHERE testx.ID=1";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class RouterUtilTest {
         String sql = "UPDATE TESTX.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TEStX.NAME2='ABCD TESTX.AA' WHERE `testx`.ID=1";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -103,7 +103,7 @@ public class RouterUtilTest {
         String sql = "UPDATE TESTX.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TEStX.NAME2='ABCD TESTX.AA' WHERE `testx`.ID=1 OR testx.ID=2";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1 OR ID=2";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -111,7 +111,7 @@ public class RouterUtilTest {
         String sql = "UPDATE `TESTX`.TEST SET TESTX.NAME='ABCD TESTX.AA' AND TEStX.NAME2='ABCD TESTX.AA' WHERE testx.ID=1 OR `testx`.ID=2";
         String sqltrue = "UPDATE TEST SET NAME='ABCD TESTX.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1 OR ID=2";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class RouterUtilTest {
         String sql = "UPDATE `TESTX`.TEST SET TESTX.NAME='ABCD `TESTX`.AA' AND TEStX.NAME2='ABCD TESTX.AA' WHERE testx.ID=1 OR `testx`.ID=2";
         String sqltrue = "UPDATE TEST SET NAME='ABCD `TESTX`.AA' AND NAME2='ABCD TESTX.AA' WHERE ID=1 OR ID=2";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 
     @Test
@@ -127,6 +127,6 @@ public class RouterUtilTest {
         String sql = "UPDATE `TESTX`.TEST SET TESTX.NAME='ABCD \\' `TESTX`.AA' \\' AND TEStX.NAME2='ABCD TESTX.AA' WHERE testx.ID=1 OR `testx`.ID=2";
         String sqltrue = "UPDATE TEST SET NAME='ABCD \\' `TESTX`.AA' \\' AND NAME2='ABCD TESTX.AA' WHERE ID=1 OR ID=2";
         String sqlnew = RouterUtil.removeSchema(sql, "testx", true);
-        Assert.assertEquals("处理错误：", sqltrue, sqlnew);
+        Assert.assertEquals("EXECUTE ERROR：", sqltrue, sqlnew);
     }
 }

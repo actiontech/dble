@@ -99,19 +99,19 @@ public class DruidUpdateParserTest {
         try {
             method.invoke(c.newInstance(), update, schemaConfig, tableName, "ID", "", routeResultset);
             if (throwException) {
-                System.out.println("未抛异常，解析通过则不对！");
+                System.out.println("Not passed without exception is not correct");
                 Assert.assertTrue(false);
             } else {
-                System.out.println("未抛异常，解析通过，此情况分片字段可能在update语句中但是实际不会被更新");
+                System.out.println("Passed without exception. Maybe the partition key exists in update statement,but not update in fact");
                 Assert.assertTrue(true);
             }
         } catch (Exception e) {
             if (throwException) {
                 System.out.println(e.getCause().getClass());
                 Assert.assertTrue(e.getCause() instanceof SQLNonTransientException);
-                System.out.println("抛异常原因为SQLNonTransientException则正确");
+                System.out.println("SQLNonTransientException is expected");
             } else {
-                System.out.println("抛异常，需要检查");
+                System.out.println("need checked");
                 Assert.assertTrue(false);
             }
         }

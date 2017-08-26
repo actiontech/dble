@@ -95,7 +95,7 @@ public class DistributedSequenceHandlerTest {
         Set<Long> idSet = new HashSet<>();
         try {
             int leader = failLeader(17);
-            System.out.println("***断掉一个leader节点后（curator会抛对应的异常断链异常，不用在意）***：");
+            System.out.println("*** When a leader is offline,curator will throw an expected exception. ***：");
             for (int i = 0; i < 16; i++) {
                 if (i == leader) {
                     System.out.println("Node [" + i + "] used to be leader");
@@ -109,7 +109,7 @@ public class DistributedSequenceHandlerTest {
             Assert.assertEquals(idSet.size(), 15);
             idSet = new HashSet<>();
             int leader2 = failLeader(leader);
-            System.out.println("***断掉两个leader节点后（curator会抛对应的异常断链异常，不用在意）***：");
+            System.out.println("*** When two leaders are offline,curator will throw an expected exception. ***：");
             for (int i = 0; i < 16; i++) {
                 if (i == leader || i == leader2) {
                     System.out.println("Node [" + i + " used to be leader");
@@ -130,7 +130,7 @@ public class DistributedSequenceHandlerTest {
             distributedSequenceHandler[leader2] = new DistributedSequenceHandler();
             distributedSequenceHandler[leader2].initializeZK(testingServer.getConnectString());
             distributedSequenceHandler[leader2].nextId("");
-            System.out.println("新加入两个节点后");
+            System.out.println("add two new nodes");
             for (int i = 0; i < 16; i++) {
                 System.out.println("Node [" + i + "]is leader:" + distributedSequenceHandler[i].getLeaderSelector().hasLeadership());
                 System.out.println(" InstanceID:" + distributedSequenceHandler[i].getInstanceId());

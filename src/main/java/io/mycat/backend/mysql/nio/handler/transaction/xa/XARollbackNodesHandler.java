@@ -32,7 +32,6 @@ import io.mycat.backend.mysql.xa.ParticipantLogEntry;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.XAStateLog;
 import io.mycat.config.ErrorCode;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.route.RouteResultsetNode;
@@ -416,9 +415,9 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     public void debugRollbackDelay() {
         try {
-            if (LOGGER.isDebugEnabled() && System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) != null) {
-                long delayTime = System.getProperty(SystemConfig.XA_ROLLBACK_DELAY) == null ?
-                        0 : Long.parseLong(System.getProperty(SystemConfig.XA_ROLLBACK_DELAY)) * 1000;
+            if (LOGGER.isDebugEnabled()) {
+                String rollbackDelayTime = System.getProperty("ROLLBACK_DELAY");
+                long delayTime = rollbackDelayTime == null ? 0 : Long.parseLong(rollbackDelayTime) * 1000;
                 LOGGER.debug("before xa rollback sleep time = " + delayTime);
                 Thread.sleep(delayTime);
                 LOGGER.debug("before xa rollback sleep finished " + delayTime);

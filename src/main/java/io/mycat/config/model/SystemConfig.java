@@ -3,7 +3,7 @@
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software;Designed and Developed mainly by many Chinese
- * opensource volunteers. you can redistribute it and/or modify it under the
+ * open source volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -36,14 +36,11 @@ import java.io.IOException;
 public final class SystemConfig {
 
     public static final String SYS_HOME = "MYCAT_HOME";
-    public static final String XA_COMMIT_DELAY = "COMMIT_DELAY";
-    public static final String XA_PREPARE_DELAY = "PREPARE_DELAY";
-    public static final String XA_ROLLBACK_DELAY = "ROLLBACK_DELAY";
     static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
-    public static final int SEQUENCEHANDLER_MYSQLDB = 1;
-    public static final int SEQUENCEHANDLER_LOCAL_TIME = 2;
-    public static final int SEQUENCEHANDLER_ZK_DISTRIBUTED = 3;
-    public static final int SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT = 4;
+    public static final int SEQUENCE_HANDLER_MYSQL = 1;
+    public static final int SEQUENCE_HANDLER_LOCAL_TIME = 2;
+    public static final int SEQUENCE_HANDLER_ZK_DISTRIBUTED = 3;
+    public static final int SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT = 4;
     /*
      * 注意！！！ 目前mycat支持的MySQL版本，如果后续有新的MySQL版本,请添加到此数组， 对于MySQL的其他分支，
      * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
@@ -62,8 +59,8 @@ public final class SystemConfig {
     private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1000L;
-    private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
-    private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
+    private static final long DEFAULT_DATA_NODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
+    private static final long DEFAULT_DATA_NODE_HEARTBEAT_PERIOD = 10 * 1000L;
     private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
     private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
     private static final int DEFAULT_SQL_RECORD_COUNT = 10;
@@ -72,20 +69,20 @@ public final class SystemConfig {
     private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
     private static final String DEFAULT_TRANSACTION_BASE_NAME = "server-tx";
     private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
-    private static final long CHECKTABLECONSISTENCYPERIOD = 30 * 60 * 1000;
+    private static final long CHECK_TABLE_CONSISTENCY_PERIOD = 30 * 60 * 1000;
     // 全局表一致性检测任务，默认24小时调度一次
     private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
     private static final int DEFAULT_MERGE_QUEUE_SIZE = 1024;
-    private static final int DEFAULT_ORDERBY_QUEUE_SIZE = 1024;
+    private static final int DEFAULT_ORDER_BY_QUEUE_SIZE = 1024;
     private static final int DEFAULT_JOIN_QUEUE_SIZE = 1024;
-    private static final int DEFAULT_NESTLOOP_ROWS_SIZE = 2000;
-    private static final int DEFAULT_NESTLOOP_CONN_SIZE = 4;
-    private static final int DEFAULT_MAPPEDFILE_SIZE = 1024 * 1024 * 64;
-    private static final boolean DEFAULT_USE_JOINSTRATEGY = false;
+    private static final int DEFAULT_NEST_LOOP_ROWS_SIZE = 2000;
+    private static final int DEFAULT_NEST_LOOP_CONN_SIZE = 4;
+    private static final int DEFAULT_MAPPED_FILE_SIZE = 1024 * 1024 * 64;
+    private static final boolean DEFAULT_USE_JOIN_STRATEGY = false;
 
     private int frontSocketSoRcvbuf = 1024 * 1024;
     private int frontSocketSoSndbuf = 4 * 1024 * 1024;
-    // mysql 5.6 net_buffer_length defaut 4M
+    // mysql 5.6 net_buffer_length default 4M
     private int backSocketSoRcvbuf = 4 * 1024 * 1024;
     private int backSocketSoSndbuf = 1024 * 1024;
     private int frontSocketNoDelay = 1; // 0=false
@@ -98,7 +95,6 @@ public final class SystemConfig {
     private String charset;
     private int processors;
     private int processorExecutor;
-    private int managerExecutor;
     private long idleTimeout;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
@@ -121,11 +117,11 @@ public final class SystemConfig {
     private short bufferPoolPageNumber;
     //大结果集阈值，默认512kb
     private int maxResultSet = 512 * 1024;
-    //大结果集拒绝策咯，bufferpool使用率阈值(0-100)，默认80%
+    //大结果集拒绝策咯，buffer pool使用率阈值(0-100)，默认80%
     private int bufferUsagePercent = 80;
     //清理大结果集记录周期
     private long clearBigSqLResultSetMapMs = 10 * 60 * 1000;
-    private int sequnceHandlerType = SEQUENCEHANDLER_LOCAL_TIME;
+    private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private int usingAIO = 0;
     private int maxPacketSize = 16 * 1024 * 1024;
     private int serverNodeId = 1;
@@ -136,7 +132,7 @@ public final class SystemConfig {
     // 使用HandshakeV10Packet为的是兼容高版本的jdbc驱动, 后期稳定下来考虑全部采用HandshakeV10Packet来通讯
     private int useHandshakeV10 = 0;
     private int checkTableConsistency = 0;
-    private long checkTableConsistencyPeriod = CHECKTABLECONSISTENCYPERIOD;
+    private long checkTableConsistencyPeriod = CHECK_TABLE_CONSISTENCY_PERIOD;
     private int useGlobleTableCheck = 1;    // 全局表一致性检查开关
     private long glableTableCheckPeriod;
 
@@ -203,14 +199,13 @@ public final class SystemConfig {
         this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
 
         this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
-        this.managerExecutor = 2;
 
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
         this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
         this.xaSessionCheckPeriod = DEFAULT_XA_SESSION_CHECK_PERIOD;
         this.xaLogCleanPeriod = DEFAULT_XA_LOG_CLEAN_PERIOD;
-        this.dataNodeIdleCheckPeriod = DEFAULT_DATANODE_IDLE_CHECK_PERIOD;
-        this.dataNodeHeartbeatPeriod = DEFAULT_DATANODE_HEARTBEAT_PERIOD;
+        this.dataNodeIdleCheckPeriod = DEFAULT_DATA_NODE_IDLE_CHECK_PERIOD;
+        this.dataNodeHeartbeatPeriod = DEFAULT_DATA_NODE_HEARTBEAT_PERIOD;
         this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
         this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
         this.txIsolation = Isolations.REPEATED_READ;
@@ -225,12 +220,12 @@ public final class SystemConfig {
         this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
         this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
         this.mergeQueueSize = DEFAULT_MERGE_QUEUE_SIZE;
-        this.orderByQueueSize = DEFAULT_ORDERBY_QUEUE_SIZE;
+        this.orderByQueueSize = DEFAULT_ORDER_BY_QUEUE_SIZE;
         this.joinQueueSize = DEFAULT_JOIN_QUEUE_SIZE;
-        this.nestLoopRowsSize = DEFAULT_NESTLOOP_ROWS_SIZE;
-        this.nestLoopConnSize = DEFAULT_NESTLOOP_CONN_SIZE;
-        this.mappedFileSize = DEFAULT_MAPPEDFILE_SIZE;
-        this.useJoinStrategy = DEFAULT_USE_JOINSTRATEGY;
+        this.nestLoopRowsSize = DEFAULT_NEST_LOOP_ROWS_SIZE;
+        this.nestLoopConnSize = DEFAULT_NEST_LOOP_CONN_SIZE;
+        this.mappedFileSize = DEFAULT_MAPPED_FILE_SIZE;
+        this.useJoinStrategy = DEFAULT_USE_JOIN_STRATEGY;
         this.dataNodeSortedTempDir = SystemConfig.getHomePath() + "/sortDirs";
     }
 
@@ -505,16 +500,6 @@ public final class SystemConfig {
         this.processorExecutor = processorExecutor;
     }
 
-    @SuppressWarnings("unused")
-    public int getManagerExecutor() {
-        return managerExecutor;
-    }
-
-    @SuppressWarnings("unused")
-    public void setManagerExecutor(int managerExecutor) {
-        this.managerExecutor = managerExecutor;
-    }
-
     public long getIdleTimeout() {
         return idleTimeout;
     }
@@ -760,51 +745,6 @@ public final class SystemConfig {
         this.serverNodeId = serverNodeId;
     }
 
-    @Override
-    public String toString() {
-        return "SystemConfig [frontSocketSoRcvbuf=" +
-                frontSocketSoRcvbuf +
-                ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
-                ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
-                ", backSocketSoSndbuf=" + backSocketSoSndbuf +
-                ", frontSocketNoDelay=" + frontSocketNoDelay +
-                ", backSocketNoDelay=" + backSocketNoDelay +
-                ", bindIp=" + bindIp +
-                ", serverPort=" + serverPort +
-                ", managerPort=" + managerPort +
-                ", charset=" + charset +
-                ", processors=" + processors +
-                ", processorExecutor=" + processorExecutor +
-                ", managerExecutor=" + managerExecutor +
-                ", idleTimeout=" + idleTimeout +
-                ", sqlExecuteTimeout=" + sqlExecuteTimeout +
-                ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
-                ", processorCheckPeriod=" + processorCheckPeriod +
-                ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
-                ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
-                ", xaSessionCheckPeriod=" + xaSessionCheckPeriod +
-                ", xaLogCleanPeriod=" + xaLogCleanPeriod +
-                ", transactionLogBaseDir=" + transactionLogBaseDir +
-                ", transactionLogBaseName=" + transactionLogBaseName +
-                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
-                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
-                ", txIsolation=" + txIsolation +
-                ", sqlRecordCount=" + sqlRecordCount +
-                ", bufferPoolPageSize=" + bufferPoolPageSize +
-                ", bufferPoolChunkSize=" + bufferPoolChunkSize +
-                ", bufferPoolPageNumber=" + bufferPoolPageNumber +
-                ", maxResultSet=" + maxResultSet +
-                ", bufferUsagePercent=" + bufferUsagePercent +
-                ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs +
-                ", sequnceHandlerType=" + sequnceHandlerType +
-                ", usingAIO=" + usingAIO +
-                ", maxPacketSize=" + maxPacketSize +
-                ", serverNodeId=" + serverNodeId +
-                ", dataNodeSortedTempDir=" + dataNodeSortedTempDir +
-                "]";
-    }
-
-
     public int getCheckTableConsistency() {
         return checkTableConsistency;
     }
@@ -886,4 +826,47 @@ public final class SystemConfig {
         this.orderByQueueSize = orderByQueueSize;
     }
 
+
+    @Override
+    public String toString() {
+        return "SystemConfig [" +
+                "  frontSocketSoRcvbuf=" + frontSocketSoRcvbuf +
+                ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
+                ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
+                ", backSocketSoSndbuf=" + backSocketSoSndbuf +
+                ", frontSocketNoDelay=" + frontSocketNoDelay +
+                ", backSocketNoDelay=" + backSocketNoDelay +
+                ", bindIp=" + bindIp +
+                ", serverPort=" + serverPort +
+                ", managerPort=" + managerPort +
+                ", charset=" + charset +
+                ", processors=" + processors +
+                ", processorExecutor=" + processorExecutor +
+                ", idleTimeout=" + idleTimeout +
+                ", sqlExecuteTimeout=" + sqlExecuteTimeout +
+                ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
+                ", processorCheckPeriod=" + processorCheckPeriod +
+                ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
+                ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
+                ", xaSessionCheckPeriod=" + xaSessionCheckPeriod +
+                ", xaLogCleanPeriod=" + xaLogCleanPeriod +
+                ", transactionLogBaseDir=" + transactionLogBaseDir +
+                ", transactionLogBaseName=" + transactionLogBaseName +
+                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
+                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
+                ", txIsolation=" + txIsolation +
+                ", sqlRecordCount=" + sqlRecordCount +
+                ", bufferPoolPageSize=" + bufferPoolPageSize +
+                ", bufferPoolChunkSize=" + bufferPoolChunkSize +
+                ", bufferPoolPageNumber=" + bufferPoolPageNumber +
+                ", maxResultSet=" + maxResultSet +
+                ", bufferUsagePercent=" + bufferUsagePercent +
+                ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs +
+                ", sequnceHandlerType=" + sequnceHandlerType +
+                ", usingAIO=" + usingAIO +
+                ", maxPacketSize=" + maxPacketSize +
+                ", serverNodeId=" + serverNodeId +
+                ", dataNodeSortedTempDir=" + dataNodeSortedTempDir +
+                "]";
+    }
 }

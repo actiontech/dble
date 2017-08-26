@@ -232,13 +232,13 @@ public final class MycatServer {
 
     private SequenceHandler initSequenceHandler(int seqHandlerType) {
         switch (seqHandlerType) {
-            case SystemConfig.SEQUENCEHANDLER_MYSQLDB:
+            case SystemConfig.SEQUENCE_HANDLER_MYSQL:
                 return IncrSequenceMySQLHandler.getInstance();
-            case SystemConfig.SEQUENCEHANDLER_LOCAL_TIME:
+            case SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME:
                 return IncrSequenceTimeHandler.getInstance();
-            case SystemConfig.SEQUENCEHANDLER_ZK_DISTRIBUTED:
+            case SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
                 return DistributedSequenceHandler.getInstance();
-            case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
+            case SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
                 return IncrSequenceZKHandler.getInstance();
             default:
                 throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);

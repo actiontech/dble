@@ -69,12 +69,13 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getProcessors() + "");
         paramValues.add(sysConfig.getBufferPoolChunkSize() + "B");
         paramValues.add(sysConfig.getBufferPoolPageSize() + "B");
+        paramValues.add(sysConfig.getBufferPoolPageNumber() + "B");
         paramValues.add(sysConfig.getProcessorExecutor() + "");
-        paramValues.add(sysConfig.getSequnceHandlerType() == 1 ? "数据库方式" : "本地文件方式");
+        paramValues.add(sysConfig.getSequnceHandlerType() > 4 || sysConfig.getSequnceHandlerType() < 1 ? "Incorrect Sequence Type" : SEQUENCES[sysConfig.getSequnceHandlerType()]);
         paramValues.add(sysConfig.getMaxPacketSize() / 1024 / 1024 + "M");
         paramValues.add(sysConfig.getIdleTimeout() / 1000 / 60 + " Minutes");
         paramValues.add(sysConfig.getCharset() + "");
-        paramValues.add(ISOLATIONS[sysConfig.getTxIsolation()]);
+        paramValues.add(sysConfig.getTxIsolation() > 4 || sysConfig.getTxIsolation() < 1 ? "Incorrect isolation" : ISOLATION_LEVELS[sysConfig.getTxIsolation()]);
         paramValues.add(sysConfig.getSqlExecuteTimeout() + " Seconds");
         paramValues.add(sysConfig.getProcessorCheckPeriod() / 1000 + " Seconds");
         paramValues.add(sysConfig.getDataNodeIdleCheckPeriod() / 1000 + " Seconds");
@@ -103,37 +104,42 @@ public final class ShowSysParam {
 
     private static final String[] PARAMNAMES = {
             "processors",
-            "processorBufferPool",
+            "bufferPoolChunkSize",
+            "bufferPoolPageSize",
+            "bufferPoolPageNumber",
             "processorExecutor",
-            "sequnceHandlerType",
-            "Mysql_maxPacketSize",
-            "Mysql_idleTimeout",
-            "Mysql_charset",
-            "Mysql_txIsolation",
-            "Mysql_sqlExecuteTimeout",
-            "Server_processorCheckPeriod",
-            "Server_dataNodeIdleCheckPeriod",
-            "Server_dataNodeHeartbeatPeriod",
-            "Server_bindIp",
-            "Server_serverPort",
-            "Server_managerPort"};
+            "sequenceHandlerType",
+            "maxPacketSize",
+            "idleTimeout",
+            "charset",
+            "txIsolation",
+            "sqlExecuteTimeout",
+            "processorCheckPeriod",
+            "dataNodeIdleCheckPeriod",
+            "dataNodeHeartbeatPeriod",
+            "bindIp",
+            "serverPort",
+            "managerPort"};
 
     private static final String[] PARAM_DESCRIPTION = {
-            "主要用于指定系统可用的线程数，默认值为Runtime.getRuntime().availableProcessors()方法返回的值。主要影响processorBufferPool、processorBufferLocalPercent、processorExecutor属性。NIOProcessor的个数也是由这个属性定义的，所以调优的时候可以适当的调高这个属性。",
-            "指定bufferPool计算 比例值。由于每次执行NIO读、写操作都需要使用到buffer，系统初始化的时候会建立一定长度的buffer池来加快读、写的效率，减少建立buffer的时间",
-            "主要用于指定NIOProcessor上共享的businessExecutor固定线程池大小。Server在需要处理一些异步逻辑的时候会把任务提交到这个线程池中。新版本中这个连接池的使用频率不是很大了，可以设置一个较小的值。",
-            "指定使用全局序列的类型。",
-            "指定Mysql协议可以携带的数据最大长度。默认16M",
-            "指定连接的空闲超时时间。某连接在发起空闲检查下，发现距离上次使用超过了空闲时间，那么这个连接会被回收，就是被直接的关闭掉。默认30分钟",
-            "连接的初始化字符集。默认为utf8",
-            "前端连接的初始化事务隔离级别，只在初始化的时候使用，后续会根据客户端传递过来的属性对后端数据库连接进行同步。默认为REPEATED_READ",
-            "SQL执行超时的时间，Server会检查连接上最后一次执行SQL的时间，若超过这个时间则会直接关闭这连接。默认时间为300秒",
-            "清理NIOProcessor上前后端空闲、超时和关闭连接的间隔时间。默认是1秒",
-            "对后端连接进行空闲、超时检查的时间间隔，默认是300秒",
-            "对后端所有读、写库发起心跳的间隔时间，默认是10秒",
-            "服务监听的IP地址，默认值为0.0.0.0",
-            "使用端口，默认值为8066",
-            "管理端口，默认值为9066"};
+            "The size of NIOProcessor, the default is the number of processors available to the Java virtual machine",
+            "The chunk size of memory bufferPool. The min direct memory used for allocating",
+            "The page size of memory bufferPool. The max direct memory used for allocating",
+            "The page number of memory bufferPool. The bufferPool size is PageNumber * PageSize",
+            "The size of fixed thread pool named of businessExecutor and the core size of cached thread pool named of complexQueryExecutor .",
+            "Global Sequence Type. The default is Local TimeStamp(like Snowflake)",
+            "The maximum size of one packet. The default is 16MB.",
+            "The max allowed time of idle connection. The connection will be closed if it is timed out after last read/write/heartbeat.The default is 30 minutes",
+            "The initially charset of connection. The default is UTF8",
+            "The initially isolation level of the front end connection. The default is REPEATED_READ",
+            "The max query executing time.If time out,the connection will be closed. The default is 300 seconds",
+            "The period between the jobs for cleaning the closed or overtime connections. The default is 1 second",
+            "The period between the heartbeat jobs for checking the health of all idle connections. The default is 300 seconds",
+            "The period between the heartbeat jobs for checking the health of all write/read data sources. The default is 10 seconds",
+            "The host where the server is running. The default is 0.0.0.0",
+            "User connection port. The default number is 8066",
+            "Manager connection port. The default number is 9066"};
 
-    public static final String[] ISOLATIONS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATED_READ", "SERIALIZABLE"};
+    private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATED_READ", "SERIALIZABLE"};
+    private static final String[] SEQUENCES = {"", "Offset-Step stored in MySQL", "Local TimeStamp(like Snowflake)", "ZooKeeper/Local TimeStamp(like Snowflake)", "Offset-Step stored in ZooKeeper"};
 }

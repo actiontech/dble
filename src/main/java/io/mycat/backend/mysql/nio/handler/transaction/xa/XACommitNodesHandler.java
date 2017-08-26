@@ -9,7 +9,6 @@ import io.mycat.backend.mysql.xa.ParticipantLogEntry;
 import io.mycat.backend.mysql.xa.TxState;
 import io.mycat.backend.mysql.xa.XAStateLog;
 import io.mycat.config.ErrorCode;
-import io.mycat.config.model.SystemConfig;
 import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.server.NonBlockingSession;
@@ -325,12 +324,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 String xaStatus = "";
                 //before the prepare command
                 if (session.getXaState() == TxState.TX_ENDED_STATE) {
-                    delayTime = System.getProperty(SystemConfig.XA_PREPARE_DELAY) == null ?
-                            0 : Long.parseLong(System.getProperty(SystemConfig.XA_PREPARE_DELAY)) * 1000;
+                    String prepareDelayTime = System.getProperty("PREPARE_DELAY");
+                    delayTime = prepareDelayTime == null ? 0 : Long.parseLong(prepareDelayTime) * 1000;
                     xaStatus = "'XA PREPARED'";
                 } else if (session.getXaState() == TxState.TX_PREPARED_STATE) {
-                    delayTime = System.getProperty(SystemConfig.XA_COMMIT_DELAY) == null ?
-                            0 : Long.parseLong(System.getProperty(SystemConfig.XA_COMMIT_DELAY)) * 1000;
+                    String commitDelayTime = System.getProperty("COMMIT_DELAY");
+                    delayTime = commitDelayTime == null ? 0 : Long.parseLong(commitDelayTime) * 1000;
                     xaStatus = "'XA COMMIT'";
                 }
                 //if using the debug log & using the jvm xa delay properties action will be delay by properties

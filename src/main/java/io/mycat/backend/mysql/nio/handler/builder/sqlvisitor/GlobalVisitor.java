@@ -152,7 +152,7 @@ public class GlobalVisitor extends MysqlVisitor {
         leftVisitor.visit();
         sqlBuilder.append(leftVisitor.getSql());
         if (join.getLeftOuter() && join.getRightOuter()) {
-            throw new RuntimeException("full outter join 不支持");
+            throw new RuntimeException("not supported for full outer join");
         } else if (join.getLeftOuter() && !join.getRightOuter()) {
             sqlBuilder.append(" left");
         } else if (join.getRightOuter() && !join.getLeftOuter()) {

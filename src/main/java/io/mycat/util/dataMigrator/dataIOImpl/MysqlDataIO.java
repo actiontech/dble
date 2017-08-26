@@ -66,7 +66,7 @@ public class MysqlDataIO implements DataIO {
         String db = dn.getDb();
 
         //String mysqlDump = "?mysqldump -h? -P? -u? -p? ? ?  --no-create-info --default-character-set=? --add-locks=false --tab='?' --fields-terminated-by=',' --lines-terminated-by='\\r\\n' --where='? in(?)'";
-        //由于mysqldump导出csv格式文件只能导出到本地，暂时替换成导出insert形式的文件
+        //由于mysqldump导出csv格式文件只能导出到本地,暂时替换成导出insert形式的文件
         String mysqlDump = "?mysqldump -h? -P? -u? -p? ? ?  --compact --no-create-info --default-character-set=? --add-locks=false --where=\"? in (#)\" --result-file=\"?\"";
 
         String fileName = condition.getName();
@@ -75,11 +75,11 @@ public class MysqlDataIO implements DataIO {
             exportPath.mkdirs();
         }
         File exportFile = new File(exportPath, tableName.toLowerCase() + ".txt");
-        //拼接mysqldump命令，不拼接where条件：--where=id in(?)
+        //拼接mysqldump命令,不拼接where条件:--where=id in(?)
         mysqlDump = DataMigratorUtil.paramsAssignment(mysqlDump, "?", mysqlBin, ip, port, user, pwd, db, tableName, charset, table.getColumn(), exportFile);
 
         String data = "";
-        //由于操作系统对命令行长度的限制，导出过程被拆分成多次，最后需要将导出的数据文件合并
+        //由于操作系统对命令行长度的限制,导出过程被拆分成多次,最后需要将导出的数据文件合并
         File mergedFile = new File(exportPath, tableName.toLowerCase() + ".sql");
         if (!mergedFile.exists()) {
             mergedFile.createNewFile();

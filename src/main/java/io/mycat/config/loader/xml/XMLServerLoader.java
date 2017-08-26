@@ -75,7 +75,7 @@ public class XMLServerLoader {
 
 
     private void load() {
-        //读取server.xml配置
+        //read server.xml
         InputStream dtd = null;
         InputStream xml = null;
         try {
@@ -83,13 +83,8 @@ public class XMLServerLoader {
             xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
 
-            //加载System标签
             loadSystem(root);
-
-            //加载User标签
             loadUsers(root);
-
-            //加载全局SQL防火墙
             loadFirewall(root);
         } catch (ConfigException e) {
             throw e;
@@ -205,7 +200,7 @@ public class XMLServerLoader {
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
                     }
-                    // 加载用户 DML 权限
+                    // load DML
                     loadPrivileges(user, e);
                 }
                 if (users.containsKey(name)) {
@@ -291,13 +286,10 @@ public class XMLServerLoader {
         if (system.getFakeMySQLVersion() != null) {
             boolean validVersion = false;
             String majorMySQLVersion = system.getFakeMySQLVersion();
-            /*
-             * 注意！！！ 目前MySQL官方主版本号仍然是5.x, 以后万一前面的大版本号变成2位数字，
-             * 比如 10.x...,下面获取主版本的代码要做修改
-             */
-            majorMySQLVersion = majorMySQLVersion.substring(0, majorMySQLVersion.indexOf(".", 2));
+            int pos = majorMySQLVersion.indexOf(".") + 1;
+            majorMySQLVersion = majorMySQLVersion.substring(0, majorMySQLVersion.indexOf(".", pos));
             for (String ver : SystemConfig.MYSQL_VERSIONS) {
-                // 这里只是比较mysql前面的大版本号
+                // version is x.y.z ,just compare the x.y
                 if (majorMySQLVersion.equals(ver)) {
                     validVersion = true;
                 }

@@ -150,7 +150,8 @@ public class MySQLConnection extends BackendAIOConnection {
         this.isQuit = new AtomicBoolean(false);
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;
-        // 每个初始化好的连接第一次必需同步一下,以免server.xml 和下面mysql节点不一致时不下发
+        /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
+        *  it need to sync the status firstly for new idle connection*/
         this.txIsolation = -1;
         this.complexQuery = false;
     }
@@ -518,9 +519,6 @@ public class MySQLConnection extends BackendAIOConnection {
         return false;
     }
 
-    /**
-     * 写队列为空，可以继续写数据
-     */
     public void writeQueueAvailable() {
         if (respHandler != null) {
             respHandler.writeQueueAvailable();

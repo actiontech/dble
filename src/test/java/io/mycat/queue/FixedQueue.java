@@ -26,7 +26,7 @@ package io.mycat.queue;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 固定容量的阻塞队列
+ * FixedQueue
  *
  * @author mycat
  */

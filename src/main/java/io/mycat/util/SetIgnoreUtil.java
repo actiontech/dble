@@ -20,7 +20,7 @@ public final class SetIgnoreUtil {
 
     static {
 
-        //TODO: 忽略部分 SET 指令, 避免WARN 不断的刷日志
+        //TODO: 忽略部分 SET 指令, 避免WARN 不断的刷志
         String[] ignores = new String[]{
                 "(?i)set (sql_mode)",
                 "(?i)set (interactive_timeout|wait_timeout|net_read_timeout|net_write_timeout|lock_wait_timeout|slave_net_timeout)",

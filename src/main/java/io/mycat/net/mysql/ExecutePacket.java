@@ -106,14 +106,14 @@ public class ExecutePacket extends MySQLPacket {
         flags = mm.read();
         iterationCount = mm.readUB4();
 
-        // 读取NULL指示器数据
+        // read nullBitMap
         int parameterCount = values.length;
         nullBitMap = new byte[(parameterCount + 7) / 8];
         for (int i = 0; i < nullBitMap.length; i++) {
             nullBitMap[i] = mm.read();
         }
 
-        // 当newParameterBoundFlag==1时，更新参数类型。
+        // when newParameterBoundFlag==1,update Parameter type
         newParameterBoundFlag = mm.read();
         if (newParameterBoundFlag == (byte) 1) {
             for (int i = 0; i < parameterCount; i++) {
@@ -121,7 +121,7 @@ public class ExecutePacket extends MySQLPacket {
             }
         }
 
-        // 设置参数类型和读取参数值
+        // set Parameter Type and read value
         byte[] bitMap = this.nullBitMap;
         for (int i = 0; i < parameterCount; i++) {
             BindValue bv = new BindValue();

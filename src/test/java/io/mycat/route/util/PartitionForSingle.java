@@ -24,30 +24,20 @@
 package io.mycat.route.util;
 
 /**
- * 数据分区工具单独版本，请使用singleton的模式调用。
+ * PartitionForSingle
  *
  * @author mycat
  */
 public final class PartitionForSingle {
 
-    // 分区长度:数据段分布定义，其中取模的数一定要是2^n， 因为这里使用x % 2^n == x & (2^n - 1)等式，来优化性能。
     private static final int PARTITION_LENGTH = 1024;
 
     private static final int DEFAULT_HASH_LENGTH = 8;
 
-    // %转换为&操作的换算数值
     private static final long AND_VALUE = PARTITION_LENGTH - 1;
 
-    // 分区线段
     private final int[] segment = new int[PARTITION_LENGTH];
 
-    /**
-     * @param count  表示定义的分区数
-     * @param length 表示对应每个分区的取值长度
-     *               <p>
-     *               注意：其中count,length两个数组的长度必须是一致的。
-     *               </p>
-     */
     public PartitionForSingle(int[] count, int[] length) {
         if (count == null || length == null || (count.length != length.length)) {
             throw new RuntimeException("error,check your scope & scopeLength definition.");
@@ -68,7 +58,6 @@ public final class PartitionForSingle {
             throw new RuntimeException("error,check your partitionScope definition.");
         }
 
-        // 数据映射操作
         for (int i = 1; i < scopeSegment.length; i++) {
             for (int j = scopeSegment[i - 1]; j < scopeSegment[i]; j++) {
                 segment[j] = (i - 1);
@@ -95,13 +84,13 @@ public final class PartitionForSingle {
 
     // for test
     public static void main(String[] args) {
-        // 拆分为16份，每份长度均为：64。
+        // split to 16 nodes and every node contains 64.
         // Scope scope = new Scope(new int[] { 16 }, new int[] { 64 });
 
-        // // 拆分为23份，前8份长度为：8，后15份长度为：64。
+        // split to 23 nodes ,the front 8 nodes contains 8,the last 15 nodes contains 64.
         // Scope scope = new Scope(new int[] { 8, 15 }, new int[] { 8, 64 });
 
-        // // 拆分为128份，每份长度均为：8。
+        // split to 128 nodes and every node contains 8.
         // Scope scope = new Scope(new int[] { 128 }, new int[] { 8 });
 
         PartitionForSingle p = new PartitionForSingle(new int[]{8, 15}, new int[]{8, 64});

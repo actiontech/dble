@@ -79,15 +79,13 @@ public class HandshakeV10Packet extends MySQLPacket {
     private byte[] authPluginName = DEFAULT_AUTH_PLUGIN_NAME;
 
     public void write(FrontendConnection c) {
-
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer.put(protocolVersion);
         BufferUtil.writeWithNull(buffer, serverVersion);
         BufferUtil.writeUB4(buffer, threadId);
-        buffer.put(seed);
-        buffer.put((byte) 0); // [00] filler
+        BufferUtil.writeWithNull(buffer, seed);
         BufferUtil.writeUB2(buffer, serverCapabilities); // capability flags (lower 2 bytes)
         buffer.put(serverCharsetIndex);
         BufferUtil.writeUB2(buffer, serverStatus);

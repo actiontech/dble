@@ -31,7 +31,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 记录最近3个时段的平均响应时间，默认1，10，30分钟。
+ * Recorder avg time ,the default is 1,10,30 minutes.
  *
  * @author mycat
  */
@@ -86,7 +86,7 @@ public class HeartbeatRecorder {
     }
 
     /**
-     * 删除超过统计时间段的数据
+     * remove old data
      */
     private void remove(long time) {
         final Queue<Record> recordQueue = this.records;
@@ -110,9 +110,6 @@ public class HeartbeatRecorder {
         }
     }
 
-    /**
-     * 计算记录的统计数据
-     */
     private void calculate(long time) {
         long v1 = 0L, v2 = 0L, v3 = 0L;
         int c1 = 0, c2 = 0, c3 = 0;

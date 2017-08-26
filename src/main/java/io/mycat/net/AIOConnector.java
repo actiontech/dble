@@ -68,7 +68,6 @@ public final class AIOConnector implements SocketConnector,
     }
 
     /**
-     * 后端连接ID生成器
      *
      * @author mycat
      */

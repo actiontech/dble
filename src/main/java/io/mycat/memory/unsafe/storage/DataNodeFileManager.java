@@ -42,7 +42,7 @@ public class DataNodeFileManager {
     private static final Logger LOG = LoggerFactory.getLogger(DataNodeFileManager.class);
     private boolean deleteFilesOnStop;
     /**
-     * TODO 操作完成之后，需要删除临时文件
+     * TODO 操作完成之后,需要删除临时文件
      */
     // The content of subDirs is immutable but the content of subDirs(i) is mutable. And the content
     // of subDirs(i) is protected by the lock of subDirs(i)

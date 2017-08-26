@@ -15,11 +15,11 @@ public class JoinStrategyChooser {
     }
 
     /**
-     * 尝试减少join数据
+     * tryNestLoop
      *
      * @param jn
-     * @return boolean true:join优化成功，无须再对join的子节点进行
-     * false:join优化失败，需要继续对join的子节点进行尝试
+     * @return boolean true:join can use the nest loop optimization,will not try to optimizer join's child
+     * false:join can't use the nest loop optimization,try to optimizer join's child
      */
     public boolean tryNestLoop() {
         if (jn.isNotIn()) {
@@ -62,7 +62,7 @@ public class JoinStrategyChooser {
     private boolean tryLeftJoinNestLoop() {
         TableNode tnLeft = (TableNode) jn.getLeftNode();
         TableNode tnRight = (TableNode) jn.getRightNode();
-        // left join时，只有左有过滤条件，而右没有过滤条件时才适用优化
+        // left join and only left node has where filter
         if (isSmallTable(tnLeft) && !isSmallTable(tnRight)) {
             handleNestLoopStrategy(true);
             return true;
@@ -80,7 +80,7 @@ public class JoinStrategyChooser {
     }
 
     /**
-     * 是否是小表，目前一旦有where条件之后就认为是小表
+     * the table contains where is small table now
      *
      * @param tn
      * @return

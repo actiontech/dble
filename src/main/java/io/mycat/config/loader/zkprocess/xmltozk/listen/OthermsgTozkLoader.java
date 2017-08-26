@@ -11,20 +11,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 其他一些信息加载到zk中
- * 源文件名：SchemasLoader.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
-    /**
-     * 日志
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(OthermsgTozkLoader.class);
 
 
@@ -37,7 +35,7 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
     @Override
     public boolean notifyProcess() throws Exception {
-        // 添加line目录，用作集群中节点，在线的基本目录信息
+        // 添加line目录,用作集群中节点,在线的基本目录信息
         String line = KVPathUtil.getOnlinePath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), line);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + line + " success");

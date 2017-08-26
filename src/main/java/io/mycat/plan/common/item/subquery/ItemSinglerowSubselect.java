@@ -14,9 +14,8 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class ItemSinglerowSubselect extends ItemSubselect {
-    /* 记录一行的row */
     private List<Item> row;
-    /* 记录row item相关的fields值 */
+    /* row item fields*/
     private List<Field> fields;
     private Item value;
     private boolean noRows;

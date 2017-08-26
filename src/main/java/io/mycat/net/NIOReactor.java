@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 网络事件反应器
+ * NIOReactor
  * <p>
  * <p>
  * Catch exceptions such as OOM so that the reactor can keep running for response client!

@@ -32,7 +32,7 @@ import java.sql.SQLNonTransientException;
 import java.util.*;
 
 /**
- * 从ServerRouterUtil中抽取的一些公用方法，路由解析工具类
+ * 从ServerRouterUtil中抽取的一些公用方法,路由解析工具类
  *
  * @author wang.dw
  */
@@ -50,7 +50,7 @@ public final class RouterUtil {
      * 移除执行语句中的数据库名
      *
      * @param stmt        执行语句
-     * @param schema      数据库名 ,如果需要，已经小写化过了
+     * @param schema      数据库名 ,如果需要,已经小写化过了
      * @param isLowerCase 是否lowercase
      * @return 执行语句
      */
@@ -305,11 +305,11 @@ public final class RouterUtil {
         String token2 = " TABLE ";
         int createInd = upStmt.indexOf(token1, start);
         int tabInd = upStmt.indexOf(token2, start);
-        // 既包含CREATE又包含TABLE，且CREATE关键字在TABLE关键字之前
+        // 既包含CREATE又包含TABLE,且CREATE关键字在TABLE关键字之前
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时,只关注第一个返回值为-1,第二个任意
         }
     }
 
@@ -327,11 +327,11 @@ public final class RouterUtil {
         String token2 = " TABLE ";
         int createInd = upStmt.indexOf(token1, start);
         int tabInd = upStmt.indexOf(token2, start);
-        // 既包含CREATE又包含TABLE，且CREATE关键字在TABLE关键字之前
+        // 既包含CREATE又包含TABLE,且CREATE关键字在TABLE关键字之前
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时,只关注第一个返回值为-1,第二个任意
         }
     }
 
@@ -353,7 +353,7 @@ public final class RouterUtil {
             if (ifInd >= 0 && tabInd > 0 && tabInd > ifInd) {
                 return new int[]{tabInd, token2.length()};
             } else {
-                return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
+                return new int[]{-1, token2.length()}; // 不满足条件时,只关注第一个返回值为-1,第二个任意
             }
         } else {
             String token1 = "DROP ";
@@ -364,7 +364,7 @@ public final class RouterUtil {
             if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
                 return new int[]{tabInd, token2.length()};
             } else {
-                return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
+                return new int[]{-1, token2.length()}; // 不满足条件时,只关注第一个返回值为-1,第二个任意
             }
         }
     }
@@ -383,11 +383,11 @@ public final class RouterUtil {
         String token2 = " TABLE ";
         int createInd = upStmt.indexOf(token1, start);
         int tabInd = upStmt.indexOf(token2, start);
-        // 既包含CREATE又包含TABLE，且CREATE关键字在TABLE关键字之前
+        // 既包含CREATE又包含TABLE,且CREATE关键字在TABLE关键字之前
         if (createInd >= 0 && tabInd > 0 && tabInd > createInd) {
             return new int[]{tabInd, token2.length()};
         } else {
-            return new int[]{-1, token2.length()}; // 不满足条件时，只关注第一个返回值为-1，第二个任意
+            return new int[]{-1, token2.length()}; // 不满足条件时,只关注第一个返回值为-1,第二个任意
         }
     }
 
@@ -537,7 +537,7 @@ public final class RouterUtil {
             }
         }
 
-        //为单库表找路由,全局表不改变结果集，全局表*任意表 无交集的已经退化为普通表join了
+        //为单库表找路由,全局表不改变结果集,全局表*任意表 无交集的已经退化为普通表join了
         for (String tableName : tables) {
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { // 余下的表都是单库表
@@ -630,7 +630,7 @@ public final class RouterUtil {
             return false;
         }
         if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.LOAD_DATA_HINT) || rrs.isLoadData()) {
-            //由于load data一次会计算很多路由数据，如果输出此日志会极大降低load data的性能
+            //由于load data一次会计算很多路由数据,如果输出此志会极大降低load data的性能
             return false;
         }
         //try by primary key if found in cache
@@ -692,7 +692,7 @@ public final class RouterUtil {
             if (tableConfig.isGlobalTable() || schema.getTables().get(tableName).getDataNodes().size() == 1) {
                 //global table or single node shard-ing table will router later
                 continue;
-            } else { //非全局表：分库表、childTable、其他
+            } else { //非全局表:分库表、childTable、其他
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
                 if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
                     continue;
@@ -717,7 +717,7 @@ public final class RouterUtil {
                     routerForJoinTable(rrs, tableConfig, columnsMap, joinKey);
                     return;
                 } else {
-                    //没找到拆分字段，该表的所有节点都路由
+                    //没找到拆分字段,该表的所有节点都路由
                     if (tablesRouteMap.get(tableName) == null) {
                         tablesRouteMap.put(tableName, new HashSet<String>());
                     }
@@ -811,7 +811,7 @@ public final class RouterUtil {
     /**
      * @param schema
      * @param tc
-     * @return true表示校验通过，false表示检验不通过
+     * @return true表示校验通过,false表示检验不通过
      */
     public static boolean checkRuleRequired(SchemaConfig schema, RouteCalculateUnit routeUnit, TableConfig tc) {
         if (!tc.isRuleRequired()) {

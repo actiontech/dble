@@ -13,9 +13,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * 根据OrderBy的item list进行行数据排序的比较器
- */
 public class RowDataComparator implements Comparator<RowDataPacket> {
 
     private List<Field> sourceFields;
@@ -52,25 +49,22 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             public int compare(RowDataPacket o1, RowDataPacket o2) {
                 if (RowDataComparator.this.ascs != null && RowDataComparator.this.ascs.size() > 0)
                     return RowDataComparator.this.compare(o1, o2);
-                else
-                    // 无须比较，按照原始的数据输出
+                else {
                     return -1;
+                }
             }
         };
         Collections.sort(rows, c);
     }
 
     @Override
-    /**
-     * 传递进来的是源生行的row数据
-     */
     public int compare(RowDataPacket o1, RowDataPacket o2) {
         if (this.ascs != null && this.ascs.size() > 0) {
             int cmpValue = cmp(o1, o2, 0);
             return cmpValue;
-        } else
-            // 无须比较，按照原始的数据输出
+        } else {
             return 0;
+        }
     }
 
     private List<byte[]> getCmpBytes(RowDataPacket o) {

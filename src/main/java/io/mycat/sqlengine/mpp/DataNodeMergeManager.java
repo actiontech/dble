@@ -37,7 +37,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
 
     /**
-     * 全局sorter，排序器
+     * global sorter
      */
     private UnsafeExternalRowSorter globalSorter = null;
     /**
@@ -46,12 +46,12 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     private UnsafeRowGrouper unsafeRowGrouper = null;
 
     /**
-     * 全局merge，排序器
+     * global merge sorter
      */
     private UnsafeExternalRowSorter globalMergeResult = null;
 
     /**
-     * sorter需要的上下文环境
+     * the context of sorter
      */
     private final MyCatMemory serverMemory;
     private final MemoryManager memoryManager;
@@ -131,7 +131,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             }
 
             /**
-             * Group操作
+             * Group
              */
             unsafeRowGrouper = new UnsafeRowGrouper(columToIndx, rrs.getGroupByCols(),
                     mergCols.toArray(new MergeCol[mergCols.size()]),
@@ -153,9 +153,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 orderCols[i++] = new OrderCol(colMeta, entry.getValue());
             }
 
-            /**
-             * 构造全局排序器
-             */
             schema = new StructType(columToIndx, fieldSize);
             schema.setOrderCols(orderCols);
 
@@ -167,7 +164,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
 
             /**
-             * 默认排序，只是将数据连续存储到内存中即可。
+             * default sorter, just store the data in fact
              */
             globalSorter = new UnsafeExternalRowSorter(
                     dataNodeMemoryManager,
@@ -175,8 +172,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     schema,
                     prefixComparator, prefixComputer,
                     conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
-                    false/**是否使用基数排序*/,
-                    true/**排序*/);
+                    false,
+                    true);
         }
 
 
@@ -193,7 +190,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         prefixComputer = new RowPrefixComputer(schema);
 
         /**
-         * 3 .PrefixComparator 默认是ASC，可以选择DESC
+         * 3 .PrefixComparator ,ASC/DESC and the default is ASC
          */
 
         prefixComparator = PrefixComparators.LONG;
@@ -209,8 +206,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 prefixComparator,
                 prefixComputer,
                 conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
-                false, /**是否使用基数排序*/
-                false /**不排序*/);
+                false,
+                false);
     }
 
     private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
@@ -282,8 +279,8 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 }
                 if (pack == endFlagPack) {
                     /**
-                     * 最后一个节点datenode发送了row eof packet说明了整个
-                     * 分片数据全部接收完成，进而将结果集全部发给你Mycat 客户端
+                     * if last date node send row eof packet
+                     * means all the data have received
                      */
                     final int warningCount = 0;
                     final EOFPacket eofp = new EOFPacket();
@@ -302,7 +299,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
                     if (unsafeRowGrouper != null) {
                         /**
-                         * group by里面需要排序情况
+                         * group by need order
                          */
                         if (globalSorter != null) {
                             iters = unsafeRowGrouper.getResult(globalSorter);
@@ -348,7 +345,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 bufferHolder.reset();
 
                 /**
-                 *构造一行row，将对应的col填充.
+                 * make a row to filled col
                  */
                 MySQLMessage mm = new MySQLMessage(pack.getRowData());
                 mm.readUB3();
@@ -388,7 +385,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     }
 
     /**
-     * 释放DataNodeMergeManager所申请的资源
+     * release the resource of DataNodeMergeManager
      */
     public void clear() {
 

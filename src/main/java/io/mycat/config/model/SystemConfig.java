@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * 系统基础配置项
+ * SystemConfig
  *
  * @author mycat
  */
@@ -42,8 +42,9 @@ public final class SystemConfig {
     public static final int SEQUENCE_HANDLER_ZK_DISTRIBUTED = 3;
     public static final int SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT = 4;
     /*
-     * 注意！！！ 目前mycat支持的MySQL版本，如果后续有新的MySQL版本,请添加到此数组， 对于MySQL的其他分支，
-     * 比如MariaDB目前版本号已经到10.1.x，但是其驱动程序仍然兼容官方的MySQL,因此这里版本号只需要MySQL官方的版本号即可。
+     * the supported  protocol version of MySQL
+     * For Other MySQL branch ,like MariaDB 10.1.x,
+     * but its protocol is compatible with MySQL. So the versions array only contain official version here
      */
     public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7"};
 
@@ -70,7 +71,6 @@ public final class SystemConfig {
     private static final String DEFAULT_TRANSACTION_BASE_NAME = "server-tx";
     private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
     private static final long CHECK_TABLE_CONSISTENCY_PERIOD = 30 * 60 * 1000;
-    // 全局表一致性检测任务，默认24小时调度一次
     private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
     private static final int DEFAULT_MERGE_QUEUE_SIZE = 1024;
     private static final int DEFAULT_ORDER_BY_QUEUE_SIZE = 1024;
@@ -115,11 +115,11 @@ public final class SystemConfig {
     private short bufferPoolChunkSize;
     // buffer pool page number
     private short bufferPoolPageNumber;
-    //大结果集阈值，默认512kb
+    //Threshold of big result ,default512kb
     private int maxResultSet = 512 * 1024;
-    //大结果集拒绝策咯，buffer pool使用率阈值(0-100)，默认80%
+    //Threshold of Usage Percent of buffer pool,if reached the Threshold,big result will be clean up,default 80%
     private int bufferUsagePercent = 80;
-    //清理大结果集记录周期
+    //period of clear the big result
     private long clearBigSqLResultSetMapMs = 10 * 60 * 1000;
     private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private int usingAIO = 0;
@@ -128,43 +128,28 @@ public final class SystemConfig {
     private int useCompression = 0;
     private int useSqlStat = 1;
 
-    // 是否使用HandshakeV10Packet来与client进行通讯, 1:是 , 0:否(使用HandshakePacket)
-    // 使用HandshakeV10Packet为的是兼容高版本的jdbc驱动, 后期稳定下来考虑全部采用HandshakeV10Packet来通讯
-    private int useHandshakeV10 = 0;
+    //TODO: DELETE ,just USE HandshakeV10Packet
+    private int useHandshakeV10 = 1;
     private int checkTableConsistency = 0;
     private long checkTableConsistencyPeriod = CHECK_TABLE_CONSISTENCY_PERIOD;
-    private int useGlobleTableCheck = 1;    // 全局表一致性检查开关
+    private int useGlobleTableCheck = 1;
     private long glableTableCheckPeriod;
 
-    /* 使用 Off Heap For Merge/Order/Group/Limit计算相关参数*/
     /**
-     * 是否启用Off Heap for Merge  1-启用，0-不启用
+     * Off Heap for Merge  1-enable,0-disable
      */
     private int useOffHeapForMerge;
     /*
-     *页大小,对应MemoryBlock的大小，单位为M
+     * memoryPageSize the unit is M
      */
     private String memoryPageSize;
-    /*
-     * DiskRowWriter写磁盘是临时写Buffer，单位为K
-     */
     private String spillsFileBufferSize;
 
     /*
-     * 排序时，内存不够时，将已经排序的结果集
-     * 写入到临时目录
+     * tmp dir for big result sorted
      */
     private String dataNodeSortedTempDir;
 
-    /*
-         * 该变量仅在Merge使用On Heap
-         * 内存方式时起作用，如果使用Off Heap内存方式
-         * 那么可以认为-Xmx就是系统预留内存。
-         * 在On Heap上给系统预留的内存，
-         * 主要供新小对象创建，JAVA简单数据结构使用
-         * 以保证在On Heap上大结果集计算时情况，能快速响应其他
-         * 连接操作。
-         */
     private String xaRecoveryLogBaseDir;
     private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
@@ -177,14 +162,10 @@ public final class SystemConfig {
     private int nestLoopRowsSize;
     private int nestLoopConnSize;
     private int mappedFileSize;
-    /**
-     * 是否启用zk切换
-     */
     private boolean useZKSwitch = DEFAULT_USE_ZK_SWITCH;
 
     private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
 
-    // 是否使用JoinStrategy优化
     private boolean useJoinStrategy;
 
     public SystemConfig() {
@@ -195,7 +176,7 @@ public final class SystemConfig {
         this.processors = DEFAULT_PROCESSORS;
         this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
         this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
-        // 大结果集时 需增大 network buffer pool pages.
+        // if always big result,need large network buffer pool pages.
         this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
 
         this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
@@ -392,7 +373,7 @@ public final class SystemConfig {
             System.setProperty(SystemConfig.SYS_HOME, home);
         }
 
-        // MYCAT_HOME为空，默认尝试设置为当前目录或上级目录。BEN
+        // if HOMEis not set,set it as current path or parent path
         if (home == null) {
             try {
                 String path = new File("..").getCanonicalPath().replaceAll("\\\\", "/");
@@ -418,7 +399,6 @@ public final class SystemConfig {
         return home;
     }
 
-    // 是否使用SQL统计
     public int getUseSqlStat() {
         return useSqlStat;
     }

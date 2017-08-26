@@ -13,13 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 处理那种可以下推部分sql，又和global表的下推不同的node类型 单个table er关系表 非全global表的下退等等
+ * execute like single er tables ,global * normal table
  *
  * @author ActionTech
  */
 public class PushDownVisitor extends MysqlVisitor {
 
-    /* 用来记录真正被下发下去的orderby列表 */
+    /* store order by list pushed down*/
     private List<Order> pushDownOrderBy;
 
     public PushDownVisitor(PlanNode pushDownQuery, boolean isTopQuery) {
@@ -32,7 +32,7 @@ public class PushDownVisitor extends MysqlVisitor {
         if (!visited) {
             replaceableSqlBuilder.clear();
             sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
-            // 在已经visited的情况下，pushdownvisitor只要进行table名称的替换即可
+            // if visited,push down visitor need just replace the name
             PlanNode.PlanNodeType i = query.type();
             if (i == PlanNode.PlanNodeType.TABLE) {
                 visit((TableNode) query);
@@ -45,7 +45,7 @@ public class PushDownVisitor extends MysqlVisitor {
             }
             visited = true;
         } else {
-            // where的可替换仅针对tablenode，不可以迭代
+            // where's replaceable is just for table node
             buildWhere(query);
         }
     }
@@ -62,12 +62,11 @@ public class PushDownVisitor extends MysqlVisitor {
                 return;
             sqlBuilder.append(" from ");
         }
-        // 需要根据是否是下划表进行计算，生成可替换的String
         buildTableName(query, sqlBuilder);
         if (query.isSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
-            // having中由于可能存在聚合函数，而聚合函数需要merge之后结果才能出来，所以需要自己进行计算
+            // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(query);
             buildLimit(query, sqlBuilder);
         }
@@ -133,7 +132,7 @@ public class PushDownVisitor extends MysqlVisitor {
         if (join.isSubQuery() || isTopQuery) {
             buildWhere(join);
             buildGroupBy(join);
-            // having中由于可能存在聚合函数，而聚合函数需要merge之后结果才能出来，所以需要自己进行计算
+            // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(join);
             buildLimit(join, sqlBuilder);
         }
@@ -158,7 +157,7 @@ public class PushDownVisitor extends MysqlVisitor {
             if ((col.type().equals(ItemType.FUNC_ITEM) || col.type().equals(ItemType.COND_ITEM)) && col.isWithSumFunc())
                 continue;
             String pdName = visitPushDownNameSel(col);
-            if (StringUtils.isEmpty(pdName))// 重复列
+            if (StringUtils.isEmpty(pdName))// it's null when duplicate column
                 continue;
             if (col.type().equals(ItemType.SUM_FUNC_ITEM)) {
                 ItemSum funCol = (ItemSum) col;
@@ -191,12 +190,12 @@ public class PushDownVisitor extends MysqlVisitor {
 
     protected void buildGroupBy(PlanNode query) {
         if (nodeHasGroupBy(query)) {
-            // 可以下发整个group by的情形
+            // push down group by
             if (!existUnPushDownGroup) {
                 if (!query.getGroupBys().isEmpty()) {
                     sqlBuilder.append(" GROUP BY ");
                     for (Order group : query.getGroupBys()) {
-                        // 记录下当前下推的结果集的排序
+                        // store the order by's order
                         pushDownOrderBy.add(group.copy());
                         Item groupCol = group.getItem();
                         String pdName = "";
@@ -209,7 +208,7 @@ public class PushDownVisitor extends MysqlVisitor {
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
                 }
             } else {
-                // 不可以下发group by的情况，转化为下发order
+                // change to push down order by
                 pushDownOrderBy.addAll(query.getGroupBys());
                 if (pushDownOrderBy.size() > 0) {
                     sqlBuilder.append(" ORDER BY ");
@@ -229,7 +228,7 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     protected void buildOrderBy(PlanNode query) {
-        /* 由于有groupby时，在merge的时候需要根据groupby的列进行排序merge，所以有groupby时不能下发order */
+        /* if group by exists,it must merge as "group by"'s order,so don't push down order */
         boolean realPush = query.getGroupBys().isEmpty();
         if (query.getOrderBys().size() > 0) {
             if (realPush)
@@ -252,9 +251,8 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     protected void buildLimit(PlanNode query, StringBuilder sb) {
-        /* groupby和limit共存时，是不可以下发limit的 */
+        /* both group by and limit are exist, don't push down limit */
         if (query.getGroupBys().isEmpty() && !existUnPushDownGroup) {
-            /* 只有order by可以下发时，limit才可以下发 */
             if (query.getLimitFrom() != -1 && query.getLimitTo() != -1) {
                 sb.append(" LIMIT ").append(query.getLimitFrom() + query.getLimitTo());
             }
@@ -264,7 +262,6 @@ public class PushDownVisitor extends MysqlVisitor {
 
     /* -------------------------- help method ------------------------ */
 
-    /* 判断node是否需要groupby */
     public static boolean nodeHasGroupBy(PlanNode node) {
         return (node.getSumFuncs().size() > 0 || node.getGroupBys().size() > 0);
     }
@@ -277,12 +274,12 @@ public class PushDownVisitor extends MysqlVisitor {
         }
         String pushAlias = null;
         if (pushNameMap.containsKey(orgPushDownName)) {
-            // 重复的列不下发
+            // duplicate column
             item.setPushDownName(pushNameMap.get(orgPushDownName));
             return null;
         }
         if (item.type().equals(ItemType.SUM_FUNC_ITEM)) {
-            // 聚合函数添加别名，但是需要表示出是哪个聚合函数
+            // generate alias for aggregate function,it must contain the real name
             String aggName = ((ItemSum) item).funcName().toUpperCase();
             pushAlias = getMadeAggAlias(aggName) + getRandomAliasName();
         } else if (item.getAlias() != null) {

@@ -17,8 +17,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * union all语句的handler，如果是union语句的话，则在handlerbuilder时，
- * 向unionallhandler后面添加distinctHandler
+ * union all statement handler
+ * and union statement split to union all handler and distinctHandler
  *
  * @author ActionTech
  */
@@ -33,11 +33,11 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     /**
-     * 因为union有可能是多个表，最终出去的节点仅按照第一个表的列名来
+     * union may has multi tables,but the result's columns are same as the first table's
      */
     private List<Item> sels;
     private AtomicInteger nodeCount;
-    /* 供fieldeof使用的 */
+    /* used for fieldeof */
     private AtomicInteger nodeCountField;
     private ReentrantLock lock = new ReentrantLock();
     private Condition conFieldSend = lock.newCondition();
@@ -47,9 +47,6 @@ public class UnionHandler extends BaseDMLHandler {
         return HandlerType.UNION;
     }
 
-    /**
-     * 所有的上一级表传递过来的信息全部视作Field类型
-     */
     public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
                                  byte[] eofnull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
@@ -62,7 +59,7 @@ public class UnionHandler extends BaseDMLHandler {
                 this.fieldPackets = unionFieldPackets(this.fieldPackets, fieldPackets);
             }
             if (nodeCountField.decrementAndGet() == 0) {
-                // 将fieldpackets赋成正确的fieldname
+                // set correct name to fieldpackets
                 checkFieldPackets();
                 nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
                 conFieldSend.signalAll();
@@ -91,8 +88,8 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     /**
-     * 将fieldpakcets和fieldpackets2进行merge，比如说
-     * 一个int的列和一个double的列union完了之后结果是一个double的列
+     * merge fieldpakcets with fieldpackets2
+     * eg: int field union double field ->double field
      *
      * @param fieldPackets
      * @param fieldPackets2
@@ -125,7 +122,7 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     /**
-     * 收到行数据包的响应处理，这里需要等上面的field都merge完了才可以发送
+     * need wait for all field merged
      */
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
@@ -134,9 +131,6 @@ public class UnionHandler extends BaseDMLHandler {
         return false;
     }
 
-    /**
-     * 收到行数据包结束的响应处理
-     */
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;

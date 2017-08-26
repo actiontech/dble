@@ -39,7 +39,7 @@ import io.mycat.util.LongUtil;
 import java.nio.ByteBuffer;
 
 /**
- * 查看处理器状态
+ * ShowProcessor
  *
  * @author mycat
  * @author mycat

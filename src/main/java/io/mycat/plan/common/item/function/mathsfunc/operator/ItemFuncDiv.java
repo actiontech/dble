@@ -16,7 +16,7 @@ import java.util.List;
 public class ItemFuncDiv extends ItemNumOp {
 
     /**
-     * 默认的bigdecimal的长度，正确的方式应该是从mysql自身的配置获取
+     * default size of bigdecimal, the correct way is get the conf of mysql
      */
     private int precIncrement = 4;
 

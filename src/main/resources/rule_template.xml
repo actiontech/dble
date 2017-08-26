@@ -59,22 +59,22 @@
     </tableRule>
 
 
-    <!-- 枚举方式分区 -->
+    <!-- enum partition -->
     <function name="enum"
               class="io.mycat.route.function.PartitionByFileMap">
         <property name="mapFile">partition-hash-int.txt</property>
-        <property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
-        <property name="type">0</property><!--默认为0 表示key为数字类型，如果是其他类型，请设为其他值-->
+        <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
+        <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
     </function>
 
-    <!-- 数字范围方式分区 -->
+    <!-- number range partition -->
     <function name="rangeLong"
               class="io.mycat.route.function.AutoPartitionByLong">
         <property name="mapFile">autopartition-long.txt</property>
-        <property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
+        <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
     </function>
 
-    <!-- 固定Hash 分区,当partitionLength全为1时，退化为求模分区-->
+    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
     <!--MAX(sum(count*length[i]) must not more then 1024-->
     <function name="hashLong" class="io.mycat.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
@@ -83,13 +83,13 @@
         <property name="partitionLength">4,5</property>-->
     </function>
 
-    <!-- 对8求模-->
+    <!-- eg:  mod 8 -->
     <function name="hashmod" class="io.mycat.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
         <property name="partitionLength">1</property>
     </function>
 
-    <!-- 固定Hash 分区 ，string 类型-->
+    <!-- Hash partition for string-->
     <function name="hashString" class="io.mycat.route.function.PartitionByString">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
@@ -97,30 +97,30 @@
         <!--<property name="hashSlice">-4:0</property> -->
     </function>
 
-    <!-- 按日期分区 -->
-    <!--四种情况讨论
-    1.设置了sEndDate和defaultNode: 小于sBeginDate 进defaultNode，大于sEndDate求模
-    2.设置了sEndDate，不设置defaultNode:小于sBeginDate报错，大于sEndDate求模
-    3.不设置sEndDate，设置defaultNode：小于sBeginDate 进defaultNode，大于sBeginDate+ 节点数*sPartionDay-1 会在算法外层报错(期望是进defaultNode，但算法本身无法控制)
-    4.不设置sEndDate和defaultNode: 小于sBeginDate报错，大于sBeginDate+ 节点数*sPartionDay-1 会在外层报错
+    <!-- date partition -->
+    <!-- 4 case:
+    1.set sEndDate and defaultNode: input <sBeginDate ,router to defaultNode; input>sEndDate ,mod the period
+    2.set sEndDate, but no defaultNode:input <sBeginDate report error; input>sEndDate ,mod the period
+    3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sEndDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
+    4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sEndDate + (node size)*sPartionDay-1 will report error
      -->
     <function name="partbydate"
               class="io.mycat.route.function.PartitionByDate">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
         <property name="sEndDate">2015-01-31
-        </property> <!--sEndDate可不设置，如设置，请自行计算 sEndDate = sBeginDate+ 节点数*sPartionDay-1 -->
+        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
         <property name="sPartionDay">10</property>
-        <property name="defaultNode">0</property><!--默认为-1 ,若为-1 时,小于sBeginDate日期直接报错 -->
+        <property name="defaultNode">0</property><!--the default is -1-->
     </function>
 
-    <!-- 模式方式分区 -->
-    <!--需要人工保证覆盖到0~patternValue-1所有值,key 和value都是连续递增的-->
+    <!-- pattern partition -->
+    <!--mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
     <function name="pattern"
               class="io.mycat.route.function.PartitionByPattern">
         <property name="mapFile">partition-pattern.txt</property>
         <property name="patternValue">1024</property>
-        <property name="defaultNode">0</property><!--包含非数值字符，默认于存储节点-->
+        <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
     </function>
 
 

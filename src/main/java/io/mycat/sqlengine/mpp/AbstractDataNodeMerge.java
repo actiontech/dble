@@ -21,31 +21,28 @@ public abstract class AbstractDataNodeMerge implements Runnable {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractDataNodeMerge.class);
     /**
-     * row 有多少col
+     * col size
      */
     protected int fieldCount;
 
     /**
-     * 本次select的路由缓存集
+     * cache the router
      */
     protected final RouteResultset rrs;
-    /**
-     * 夸分片处理handler
-     */
     protected MultiNodeQueryHandler multiQueryHandler = null;
     /**
-     * 分片结束包
+     * the end packet
      */
     protected PackWraper endFlagPack = new PackWraper();
 
 
     /**
-     * rowData缓存队列
+     * rowData queue
      */
     protected BlockingQueue<PackWraper> packs = new LinkedBlockingQueue<>();
 
     /**
-     * 标志业务线程是否启动了？
+     * the merge thread is running
      */
     protected final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -74,8 +71,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     }
 
     /**
-     * 处理新进来每个row数据，通过PackWraper进行封装，
-     * 投递到队列中进行后续处理即可。
+     * PackWraper the new row data
      * process new record (mysql binary data),if data can output to client
      * ,return true
      *
@@ -93,7 +89,7 @@ public abstract class AbstractDataNodeMerge implements Runnable {
 
 
     /**
-     * 将Map对应的col字段集，返回row中对应的index数组
+     * get the index array of row according map
      *
      * @param columns
      * @param toIndexMap
@@ -127,9 +123,8 @@ public abstract class AbstractDataNodeMerge implements Runnable {
     }
 
     /**
-     * 做最后的结果集输出
      *
-     * @return (最多i*(offset+size)行数据)
+     * @return ( i*(offset+size) row)
      */
     public abstract List<RowDataPacket> getResults(byte[] eof);
 

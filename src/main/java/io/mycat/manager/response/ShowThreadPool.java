@@ -41,7 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * 查看线程池状态
+ * ShowThreadPool status
  *
  * @author mycat
  * @author mycat

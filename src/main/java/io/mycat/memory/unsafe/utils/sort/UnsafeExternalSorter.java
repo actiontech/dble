@@ -170,22 +170,22 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         if (inMemSorter.numRecords() > 0) {
 
             /**
-             * 创建一个写外存的SpillWriter，当前内存数据已经排序了，直接写到磁盘中.
+             * create an SpillWriter, the data has ordered in memory,write it to the disk.
              */
             final UnsafeSorterSpillWriter spillWriter = new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, /**writeMetrics,*/inMemSorter.numRecords());
 
             /**
-             * 添加到SpillWriter列表中，标志了有多少 spillWriters.size()写到磁盘中了。
+             * add to SpillWriter list,mark that there are spillWriters.size() have written to disk
              */
             spillWriters.add(spillWriter);
 
             /**
-             * 获取本次内存中排序的迭代器，这个函数执行In Memory Sort use time sorter 或者 radix sorter
+             * In Memory Sort use tim sorter or radix sorter
              */
             final UnsafeSorterIterator sortedRecords = inMemSorter.getSortedIterator();
 
             /**
-             * 一条一条记录写入磁盘
+             * write rows to disk one by one
              */
             while (sortedRecords.hasNext()) {
                 /**
@@ -193,33 +193,33 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
                  */
                 sortedRecords.loadNext();
                 /**
-                 * 获取当前记录的起始对象实例，on-heap为obj，off-heap为null
+                 * get the object of the recod which is in the beginning of records,on-heap is obj,off-heap is null
                  */
                 final Object baseObject = sortedRecords.getBaseObject();
 
                 /**
-                 * 获取当前记录的相对起始对象实例地址偏移量
+                 * get the offset to the beginning record
                  */
                 final long baseOffset = sortedRecords.getBaseOffset();
 
                 /**
-                 * 当前记录的长度
+                 * record the length
                  */
                 final int recordLength = sortedRecords.getRecordLength();
                 /**
-                 * 把数据写入磁盘写入器中 Write a record to a spill file.
+                 * Write a record to a spill file.
                  */
                 spillWriter.write(baseObject, baseOffset, recordLength, sortedRecords.getKeyPrefix());
             }
 
             /**
-             * 关闭spillWriter
+             * close the spillWriter
              */
             spillWriter.close();
         }
 
         /**
-         * 释放当前sorter所占的内存数据
+         * release the memory of sorter
          */
         final long spillSize = freeMemory();
         // Note that this is more-or-less going to be a multiple of the page size, so wasted space in
@@ -426,57 +426,56 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         acquireNewPageIfNecessary(required);
 
         /**
-         * 数据k-v插入currentPage(MemoryBlock)页内，当前插入位置pageCursor
+         * insert k-v into currentPage(MemoryBlock),the position is pageCursor
          */
         final Object base = currentPage.getBaseObject();
         /**
-         * 通过currentPage和pageCursor页内偏移量，codec一个地址处理，该条记录存数据的
-         * 存数据的起始位置
+         * record address according to currentPage and pageCursor
          */
         final long recordAddress = dataNodeMemoryManager.encodePageNumberAndOffset(currentPage, pageCursor);
 
         /**
-         * 一条记录的总长度=keyLen + valueLen + record length (一般是int类型4个字节)
+         * total length of a row =keyLen + valueLen + record length (4 for int)
          */
-        Platform.putInt(base, pageCursor, keyLen + valueLen + 4/**record length所占的长度*/);
+        Platform.putInt(base, pageCursor, keyLen + valueLen + 4/**record length*/);
 
         /**
-         * 移动4个bytes
+         * add 4 bytes
          */
         pageCursor += 4;
         /**
-         * 存key len的size
+         * the size of key len
          */
         Platform.putInt(base, pageCursor, keyLen);
 
         /**
-         * 移动4个bytes
+         * add 4 bytes
          */
         pageCursor += 4;
 
         /**
-         * 存key的值
+         * record the key
          */
         Platform.copyMemory(keyBase, keyOffset, base, pageCursor, keyLen);
         /**
-         * 移动keyLen个bytes
+         * add keyLen bytes
          */
         pageCursor += keyLen;
 
         /**
-         * 存value的值
+         * record the value
          */
         Platform.copyMemory(valueBase, valueOffset, base, pageCursor, valueLen);
 
         /**
-         * 移动valueLen个bytes
+         * add valueLen bytes
          */
         pageCursor += valueLen;
 
         assert (inMemSorter != null);
         /**
-         * 把对应的指针插入到longArray数组中，
-         * longArray存指向Page内一个指针的所存储的值
+         * insert the pointer into the longArray
+         * longArray point to the real value of the pointer in the Page
          */
         inMemSorter.insertRecord(recordAddress, prefix);
     }
@@ -495,7 +494,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
     }
 
     /**
-     * SpillableIterator是一个支持内存+外存排序的迭代器
+     * SpillableIterator is an Iterator for order in memory /disk?
      * Returns a sorted iterator. It is the caller's responsibility to call `cleanupResources()`
      * after consuming this iterator.
      */
@@ -508,14 +507,14 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
             return readingIterator;
         } else {
             /**
-             * 合并多个UnsafeSorterSpillWriter对应的文件，进行排序????
+             * merger files of UnsafeSorterSpillWriter and order it
              */
             final UnsafeSorterSpillMerger spillMerger =
                     new UnsafeSorterSpillMerger(recordComparator, prefixComparator, spillWriters.size());
 
             for (UnsafeSorterSpillWriter spillWriter : spillWriters) {
                 /**
-                 * 通过UnsafeSorterSpillReader迭代器放入要合并的UnsafeSorterSpillMerger中
+                 * add to UnsafeSorterSpillMerger from UnsafeSorterSpillReader
                  */
                 spillMerger.addSpillIfNotEmpty(spillWriter.getReader(serializerManager));
             }
@@ -524,7 +523,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
                 spillMerger.addSpillIfNotEmpty(readingIterator);
             }
             /**
-             * 最终调用排序器排序，重点分析函数
+             * sort
              */
             return spillMerger.getSortedIterator();
         }
@@ -540,16 +539,15 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
      */
     public UnsafeSorterIterator getIterator() throws IOException {
         /**
-         * 如果spillWriters为空说明，直接读取内存中即可
+         * if spillWriters is empty,read from memory
          */
         if (spillWriters.isEmpty()) {
             assert (inMemSorter != null);
             return inMemSorter.getSortedIterator();
         } else {
             /**
-             * 否则将spillWriters对应的file中的数据，通过getReader对应UnsafeSorterSpillReader的
-             * 读取器反序列化到UnsafeSorterIterator中，然后到添加到queue队列中
-             * UnsafeSorterSpillReader也是UnsafeSorterIterator的子类
+             * read data from file of spillWriters to UnsafeSorterIterator
+             * and add to the queue
              */
             LinkedList<UnsafeSorterIterator> queue = new LinkedList<>();
             for (UnsafeSorterSpillWriter spillWriter : spillWriters) {
@@ -559,9 +557,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
                 queue.add(inMemSorter.getSortedIterator());
             }
             /**
-             * ChainedIterator是一个UnsafeSorterIterator的子类
-             * 实现将将多个UnsafeSorterIterator合成一个UnsafeSorterIterator
-             * 提供给应用使用
+             * merge multi-UnsafeSorterIterator to single UnsafeSorterIterator
              */
             return new ChainedIterator(queue);
         }
@@ -707,7 +703,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         @Override
         public boolean hasNext() {
             while (!current.hasNext() && !iterators.isEmpty()) {
-                current = iterators.remove(); /**从队列中移除一个已经遍历完的UnsafeSorterIterator*/
+                current = iterators.remove();
             }
             return current.hasNext();
         }
@@ -715,7 +711,7 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         @Override
         public void loadNext() throws IOException {
             while (!current.hasNext() && !iterators.isEmpty()) {
-                current = iterators.remove(); /**从队列中移除一个已经遍历完的UnsafeSorterIterator*/
+                current = iterators.remove();
             }
             current.loadNext();
         }

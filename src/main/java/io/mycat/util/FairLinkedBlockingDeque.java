@@ -381,7 +381,7 @@ public class FairLinkedBlockingDeque<E> extends AbstractQueue<E> implements Bloc
     }
 
     /**
-     * 添加一个元素到队列的最后，如果队列满，则替换最后一个元素
+     * add to last, if full, replace it
      */
     public E addOrReplaceLast(E e) throws InterruptedException {
         if (e == null)

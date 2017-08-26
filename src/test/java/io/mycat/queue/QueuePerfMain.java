@@ -30,7 +30,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Queue 性能测试
+ * Queue performance test
  *
  * @author mycat
  */

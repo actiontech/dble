@@ -61,16 +61,15 @@ public class ConfigInitializer {
     private volatile boolean dataHostWithoutWH = false;
 
     public ConfigInitializer(boolean loadDataHost) {
-        //读取server.xml
+        //load server.xml
         XMLConfigLoader configLoader = new XMLConfigLoader();
-        //读取rule.xml和schema.xml
+        //load rule.xml and schema.xml
         SchemaLoader schemaLoader = new XMLSchemaLoader(configLoader.getSystemConfig().isLowerCaseTableNames());
-        //加载配置
         this.system = configLoader.getSystemConfig();
         this.users = configLoader.getUserConfigs();
         this.schemas = schemaLoader.getSchemas();
         this.erRelations = schemaLoader.getErRelations();
-        //是否重新加载DataHost和对应的DataNode
+        // need reload DataHost and DataNode?
         if (loadDataHost) {
             this.dataHosts = initDataHosts(schemaLoader);
             this.dataNodes = initDataNodes(schemaLoader);
@@ -81,10 +80,9 @@ public class ConfigInitializer {
             this.dataHostWithoutWH = MycatServer.getInstance().getConfig().isDataHostWithoutWR();
         }
 
-        //权限管理
         this.firewall = configLoader.getFirewallConfig();
 
-        //不同类型的全局序列处理器的配置加载
+        //load global sequence
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
             IncrSequenceMySQLHandler.getInstance().load(system.isLowerCaseTableNames());
         }
@@ -102,14 +100,14 @@ public class ConfigInitializer {
         }
 
         /**
-         * 配置文件初始化， 自检
+         * check config
          */
         this.selfChecking0();
     }
 
     private void selfChecking0() throws ConfigException {
-
-        // 检查user与schema配置对应以及schema配置不为空
+        // check 1.user's schemas are all existed in schema's conf
+        // 2.schema's conf is not empty
         if (users == null || users.isEmpty()) {
             throw new ConfigException("SelfCheck### user all node is empty!");
         } else {
@@ -132,12 +130,12 @@ public class ConfigInitializer {
             }
         }
         Set<String> allUseDataNode = new HashSet<>();
-        // schema 配置检测
+        // check schema
         for (SchemaConfig sc : schemas.values()) {
             if (null == sc) {
                 throw new ConfigException("SelfCheck### schema all node is empty!");
             } else {
-                // check dataNode / dataHost 节点
+                // check dataNode / dataHost
                 if (this.dataNodes != null && this.dataHosts != null) {
                     Set<String> dataNodeNames = sc.getAllDataNodes();
                     for (String dataNodeName : dataNodeNames) {
@@ -167,7 +165,7 @@ public class ConfigInitializer {
 
     private void deleteRedundancyConf(Set<String> allUseDataNode) {
         Set<String> allUseHost = new HashSet<>();
-        //删除冗余dataNode
+        //delete redundancy dataNode
         Iterator<Map.Entry<String, PhysicalDBNode>> iterator = this.dataNodes.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, PhysicalDBNode> entry = iterator.next();
@@ -180,7 +178,7 @@ public class ConfigInitializer {
             }
         }
         allUseDataNode.clear();
-        //删除冗余dataHost
+        //delete redundancy dataHost
         if (allUseHost.size() < this.dataHosts.size()) {
             Iterator<String> dataHost = this.dataHosts.keySet().iterator();
             while (dataHost.hasNext()) {
@@ -195,7 +193,6 @@ public class ConfigInitializer {
     }
 
     public void testConnection() {
-        // 实际链路的连接测试
         if (this.dataNodes != null && this.dataHosts != null) {
             Map<String, Boolean> map = new HashMap<>();
             for (PhysicalDBNode dataNode : dataNodes.values()) {
@@ -263,10 +260,10 @@ public class ConfigInitializer {
 
     private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
         Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
-        //根据DataHost建立PhysicalDBPool，其实就是实际数据库连接池，每个DataHost对应一个PhysicalDBPool
+        //create PhysicalDBPool according to DataHost
         Map<String, PhysicalDBPool> nodes = new HashMap<>(nodeConfs.size());
         for (DataHostConfig conf : nodeConfs.values()) {
-            //建立PhysicalDBPool
+            //create PhysicalDBPool
             PhysicalDBPool pool = getPhysicalDBPool(conf);
             nodes.put(pool.getHostName(), pool);
         }
@@ -277,7 +274,6 @@ public class ConfigInitializer {
                                                   boolean isRead) {
         PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
         for (int i = 0; i < nodes.length; i++) {
-            //设置最大idle时间，默认为30分钟
             nodes[i].setIdleTimeout(system.getIdleTimeout());
             MySQLDataSource ds = new MySQLDataSource(nodes[i], conf, isRead);
             dataSources[i] = ds;
@@ -286,11 +282,11 @@ public class ConfigInitializer {
     }
 
     private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
-        //针对所有写节点创建PhysicalDatasource
+        //create PhysicalDatasource for write host
         PhysicalDatasource[] writeSources = createDataSource(conf, conf.getWriteHosts(), false);
         Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
         Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<>(readHostsMap.size());
-        //对于每个读节点建立key为writeHost下标, value为readHost的PhysicalDatasource[]的哈希表
+        //create map for read host:writeHost-> readHost's  PhysicalDatasource[]
         for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
             PhysicalDatasource[] readSources = createDataSource(conf, entry.getValue(), true);
             readSourcesMap.put(entry.getKey(), readSources);

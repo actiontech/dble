@@ -94,17 +94,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         waitingResponse = true;
         this.packetId = 0;
         final BackendConnection conn = session.getTarget(node);
-        LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-        node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-        LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
+        node.setRunOnSlave(rrs.getRunOnSlave());
 
         if (session.tryExistsCon(conn, node)) {
             execute(conn);
         } else {
             // create new connection
-            LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
-            node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-            LOGGER.debug("node.getRunOnSlave() " + node.getRunOnSlave());
+            node.setRunOnSlave(rrs.getRunOnSlave());
 
             MycatConfig conf = MycatServer.getInstance().getConfig();
             PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
@@ -167,7 +163,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         /**
          * TODO: 修复全版本BUG
          *
-         * BUG复现：
+         * BUG复现:
          * 1、MysqlClient:  SELECT 9223372036854775807 + 1;
          * 2、MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
          * 3、MysqlClient: ERROR 2013 (HY000): Lost connection to MySQL server during query
@@ -191,8 +187,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     /**
      * insert/update/delete
      * <p>
-     * okResponse()：读取data字节数组，组成一个OKPacket，并调用ok.write(source)将结果写入前端连接FrontendConnection的写缓冲队列writeQueue中，
-     * 真正发送给应用是由对应的NIOSocketWR从写队列中读取ByteBuffer并返回的
+     * okResponse():
+     *  read data, make an OKPacket, write to writeQueue in FrontendConnection by ok.write(source)
      */
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
@@ -226,7 +222,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     /**
      * select
      * <p>
-     * 行结束标志返回时触发，将EOF标志写入缓冲区，最后调用source.write(buffer)将缓冲区放入前端连接的写缓冲队列中，等待NIOSocketWR将其发送给应用
+     * write EOF to Queue
      */
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
@@ -234,7 +230,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += eof.length;
 
         ServerConnection source = session.getSource();
-        // 判断是调用存储过程的话不能在这里释放链接
+        // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
             session.releaseConnectionIfSafe(conn, false);
         }
@@ -250,7 +246,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             if (rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
             }
-            //查询结果派发
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
                     netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
             QueryResultDispatcher.dispatchQuery(queryResult);
@@ -278,11 +273,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         return buffer;
     }
 
-    /**
-     * select
-     * <p>
-     * 元数据返回时触发，将header和元数据内容依次写入缓冲区中
-     */
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
@@ -306,7 +296,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             byte[] field = fields.get(i);
             field[3] = ++packetId;
 
-            // 保存field信息
+            // save field
             FieldPacket fieldPk = new FieldPacket();
             fieldPk.read(field);
             fieldPackets.add(fieldPk);
@@ -328,11 +318,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         buffer = source.writeToBuffer(eof, buffer);
     }
 
-    /**
-     * select
-     * <p>
-     * 行数据返回时触发，将行数据写入缓冲区中
-     */
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 

@@ -4,16 +4,16 @@ package io.mycat.config.loader.zkprocess.comm;
  * 通过接口
  *
  * @author liujun
- * @date 2015年2月4日
+ * @date 2015/2/4
  * @vsersion 0.0.1
  */
 public interface NotifyService {
 
     /**
-     * 进行通知接口
+     * notify interface
      *
-     * @return true 通知更新成功，false ，更新失败
-     * @throws Exception 异常操作
+     * @return true for success ,false for failed
+     * @throws Exception
      */
     boolean notifyProcess() throws Exception;
 }

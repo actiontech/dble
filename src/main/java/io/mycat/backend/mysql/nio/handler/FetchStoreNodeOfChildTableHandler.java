@@ -94,7 +94,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                     LOGGER.debug("execute in datanode " + dn);
                 }
                 RouteResultsetNode node = new RouteResultsetNode(dn, ServerParse.SELECT, sql);
-                node.setRunOnSlave(false); // 获取 子表节点，最好走master为好
+                node.setRunOnSlave(false); // get child node from master
                 BackendConnection conn = session.getTarget(node);
                 if (session.tryExistsCon(conn, node)) {
                     if (session.closed()) {

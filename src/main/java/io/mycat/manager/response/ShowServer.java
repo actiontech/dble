@@ -39,7 +39,7 @@ import io.mycat.util.TimeUtil;
 import java.nio.ByteBuffer;
 
 /**
- * 服务器状态报告
+ * ShowServer
  *
  * @author mycat
  * @author mycat

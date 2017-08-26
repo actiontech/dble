@@ -23,7 +23,6 @@
  */
 package io.mycat.util;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,9 +37,9 @@ public final class SplitUtil {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     /**
-     * 解析字符串<br>
-     * 比如:c1='$',c2='-' 输入字符串：mysql_db$0-2<br>
-     * 输出array:mysql_db[0],mysql_db[1],mysql_db[2]
+     * split<br>
+     * eg:c1='$',c2='-' input:mysql_db$0-2<br>
+     *  output array:mysql_db[0],mysql_db[1],mysql_db[2]
      */
     public static String[] split2(String src, char c1, char c2) {
         if (src == null) {
@@ -154,7 +153,7 @@ public final class SplitUtil {
         int i = 0;
         int start = 0;
         boolean match = false;
-        if (separatorChars == null) { // null表示使用空白作为分隔符
+        if (separatorChars == null) { // null means use whitespace as Separator
             while (i < length) {
                 if (Character.isWhitespace(src.charAt(i))) {
                     if (match) {
@@ -170,7 +169,7 @@ public final class SplitUtil {
                 match = true;
                 i++;
             }
-        } else if (separatorChars.length() == 1) { // 优化分隔符长度为1的情形
+        } else if (separatorChars.length() == 1) {
             char sep = separatorChars.charAt(0);
             while (i < length) {
                 if (src.charAt(i) == sep) {
@@ -187,7 +186,7 @@ public final class SplitUtil {
                 match = true;
                 i++;
             }
-        } else { // 一般情形
+        } else {
             while (i < length) {
                 if (separatorChars.indexOf(src.charAt(i)) >= 0) {
                     if (match) {
@@ -211,13 +210,13 @@ public final class SplitUtil {
     }
 
     /**
-     * 解析字符串，比如: <br>
-     * 1. c1='$',c2='-',c3='[',c4=']' 输入字符串：mysql_db$0-2<br>
-     * 输出mysql_db[0],mysql_db[1],mysql_db[2]<br>
-     * 2. c1='$',c2='-',c3='#',c4='0' 输入字符串：mysql_db$0-2<br>
-     * 输出mysql_db#0,mysql_db#1,mysql_db#2<br>
-     * 3. c1='$',c2='-',c3='0',c4='0' 输入字符串：mysql_db$0-2<br>
-     * 输出mysql_db0,mysql_db1,mysql_db2<br>
+     * parser String,eg: <br>
+     * 1. c1='$',c2='-',c3='[',c4=']' input:mysql_db$0-2<br>
+     * output:mysql_db[0],mysql_db[1],mysql_db[2]<br>
+     * 2. c1='$',c2='-',c3='#',c4='0' input:mysql_db$0-2<br>
+     * output:mysql_db#0,mysql_db#1,mysql_db#2<br>
+     * 3. c1='$',c2='-',c3='0',c4='0' input:mysql_db$0-2<br>
+     * output:mysql_db0,mysql_db1,mysql_db2<br>
      */
     public static String[] split(String src, char c1, char c2, char c3, char c4) {
         if (src == null) {
@@ -268,46 +267,6 @@ public final class SplitUtil {
             Collections.addAll(list, s);
         }
         return list.toArray(new String[list.size()]);
-    }
-
-    public static String[] splitByByteSize(String string, int size) {
-        if (size < 2) {
-            return new String[]{string};
-        }
-        byte[] bytes = string.getBytes();
-        if (bytes.length <= size) {
-            return new String[]{string};
-        }
-        // 分成的条数不确定(整除的情况下也许会多出一条),所以先用list再转化为array
-        List list = new ArrayList();
-        int offset = 0; // 偏移量,也就是截取的字符串的首字节的位置
-        int length = 0; // 截取的字符串的长度,可能是size,可能是size-1
-        int position = 0; // 可能的截取点,根据具体情况判断是不是在此截取
-        while (position < bytes.length) {
-            position = offset + size;
-            if (position > bytes.length) {
-                // 最后一条
-                String s = new String(bytes, offset, bytes.length - offset);
-                list.add(s);
-                break;
-            }
-            if (bytes[position - 1] > 0 ||
-                    (bytes[position - 1] < 0 && bytes[position - 2] < 0)) {
-                // 截断点是字母,或者是汉字
-                length = size;
-            } else {
-                // 截断点在汉字中间
-                length = size - 1;
-            }
-            String s = new String(bytes, offset, length);
-            list.add(s);
-            offset += length;
-        }
-        String[] array = new String[list.size()];
-        for (int i = 0; i < array.length; i++) {
-            array[i] = (String) list.get(i);
-        }
-        return array;
     }
 
 }

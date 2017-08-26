@@ -14,16 +14,17 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * _2TableComparator和RowDataComparator的区别在于，join比较的两列有可能是不同的类型，比如一个是整数， 一个是字符串等等
+ * the difference of the 2TableComparator and RowDataComparatoris that
+ * the columns to be compared of join table are may different type.
+ * eg: int compare with string
  *
  * @author ActionTech
  */
 public class TwoTableComparator implements Comparator<RowDataPacket> {
 
-    /* 用来存放左右原始数据值的容器，item计算前更新 */
+    /* origin field, update before calculating the item */
     private List<Field> leftFields;
     private List<Field> rightFields;
-    /* 左右排序规则，必定相同，所以只保留一份 */
     private List<ArgComparator> cmptors;
     private List<Boolean> ascs;
 

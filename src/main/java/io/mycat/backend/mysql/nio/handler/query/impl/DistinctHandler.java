@@ -44,7 +44,7 @@ public class DistinctHandler extends BaseDMLHandler {
     }
 
     /**
-     * 所有的上一级表传递过来的信息全部视作Field类型
+     * treat all the data from parent as Field Type
      */
     public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
                                  byte[] eofnull, boolean isLeft, BackendConnection conn) {
@@ -55,7 +55,7 @@ public class DistinctHandler extends BaseDMLHandler {
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         if (this.distincts == null) {
-            // 比如show tables这种语句
+            // eg:show tables
             this.distincts = new ArrayList<>();
             for (FieldPacket fp : this.fieldPackets) {
                 Item sel = HandlerTool.createItemField(fp);
@@ -71,9 +71,6 @@ public class DistinctHandler extends BaseDMLHandler {
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
-    /**
-     * 收到行数据包的响应处理
-     */
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;

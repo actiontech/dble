@@ -24,7 +24,7 @@
 package io.mycat.net.handler;
 
 /**
- * SQL预处理处理器
+ * FrontendPrepareHandler
  *
  * @author mycat, CrazyPig
  */

@@ -75,7 +75,7 @@ public class FieldPacket extends MySQLPacket {
     private byte[] definition;
 
     /**
-     * 把字节数组转变成FieldPacket
+     * change data to FieldPacket
      */
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -85,7 +85,7 @@ public class FieldPacket extends MySQLPacket {
     }
 
     /**
-     * 把BinaryPacket转变成FieldPacket
+     * read BinaryPacket, change to FieldPacket
      */
     public void read(BinaryPacket bin) {
         this.packetLength = bin.packetLength;

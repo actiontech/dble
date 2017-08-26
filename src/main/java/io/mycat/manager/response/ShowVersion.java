@@ -35,7 +35,7 @@ import io.mycat.net.mysql.RowDataPacket;
 import java.nio.ByteBuffer;
 
 /**
- * 查看CobarServer版本
+ * ShowVersion
  *
  * @author mycat
  */

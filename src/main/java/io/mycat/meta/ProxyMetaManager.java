@@ -256,9 +256,9 @@ public class ProxyMetaManager {
                 times++;
             }
             initMeta(config);
-            // 创建online状态
+            // online
             ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-            //创建 监视
+            //add watcher
             ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
             // syncMeta UNLOCK
             zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
@@ -285,7 +285,7 @@ public class ProxyMetaManager {
         }
         catalogs.clear();
     }
-    //定时检查不同分片表结构一致性
+    //Check the Consistency of table Structure
 
     private Runnable tableStructureCheckTask(final Set<String> selfNode) {
         return new Runnable() {
@@ -344,7 +344,7 @@ public class ProxyMetaManager {
             }
             //TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
             boolean finished = false;
-            //zkLock， if the other instance get the lock,this instance will wait
+            //zkLock, if the other instance get the lock,this instance will wait
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
             distributeLock.acquire();
             try {

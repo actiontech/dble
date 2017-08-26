@@ -63,10 +63,10 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             final boolean isLeftSmall = left.getNestLoopFilters() == null;
             final PlanNode tnSmall = isLeftSmall ? left : right;
             final PlanNode tnBig = isLeftSmall ? right : left;
-            // 确定准备传递的列
+            // prepare the column for sending
             List<Item> keySources = isLeftSmall ? node.getLeftKeys() : node.getRightKeys();
             List<Item> keyToPasses = isLeftSmall ? node.getRightKeys() : node.getLeftKeys();
-            // 只需要传递第一个key过滤条件给目标节点就ok， 尽量选择toPass的是Column的
+            // just find one key as filter later, try to choose a simple column(FIELD_ITEM) from toPasses
             int columnIndex = 0;
             for (int index = 0; index < keyToPasses.size(); index++) {
                 Item keyToPass = keyToPasses.get(index);
@@ -91,7 +91,6 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
                     bigLh.setNextHandler(tempHandler.getNextHandler());
                     tempHandler.setCreatedHandler(bigLh);
-                    // 启动handler
                     HandlerBuilder.startHandler(bigLh);
                 }
             };
@@ -142,7 +141,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     /**
-     * 根据临时表的数据生成新的大表的过滤条件
+     * generate filter for big table according to tmp(small) table's result
      *
      * @param tnBig
      * @param keyToPass
@@ -178,7 +177,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             ItemFuncIn inFilter = new ItemFuncIn(argList, false);
             strategyFilters.add(inFilter);
         }
-        // 没有数据
+        // if no data
         if (strategyFilters.isEmpty()) {
             strategyFilters.add(new ItemInt(0));
         }

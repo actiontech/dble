@@ -24,7 +24,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
     private List<Order> orders;
     private BlockingQueue<RowDataPacket> queue;
-    /* 排序对象，支持缓存、文件系统 */
+    /* tmp object for ordering,support Memory-mapped file or file */
     private LocalResult localResult;
     private BufferPool pool;
 

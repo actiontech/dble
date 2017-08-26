@@ -29,20 +29,18 @@ import java.util.List;
 
 /**
  * 进行server的文件从zk中加载
- * 源文件名：ServerzkToxmlLoader.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
-    /**
-     * 日志
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerzkToxmlLoader.class);
 
     /**
@@ -118,7 +116,8 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
      *
      * @param zkDirectory
      * @return
-     * @创建日期 2016年9月17日
+     * @Created 2016/9/17
+     * @create
      */
     private Server zktoServerBean(DiretoryInf zkDirectory) {
         Server server = new Server();

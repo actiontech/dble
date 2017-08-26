@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * 数据导入导出接口，mysql、oracle等数据库通过实现此接口提供具体的数据导入导出功能
+ * 数据导入导出接口,mysql、oracle等数据库通过实现此接口提供具体的数据导入导出功能
  *
  * @author haonan108
  */

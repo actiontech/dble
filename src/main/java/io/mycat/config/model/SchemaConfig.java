@@ -171,7 +171,7 @@ public class SchemaConfig {
     }
 
     /**
-     * 取得含有不同Meta信息的数据节点,比如表和表结构。
+     * schema's default dataNode,used for show tables
      */
     private String buildMetaDataNodes() {
         if (!isEmpty(dataNode)) {
@@ -184,9 +184,6 @@ public class SchemaConfig {
         }
     }
 
-    /**
-     * 取得该schema的所有数据节点
-     */
     private Set<String> buildAllDataNodes() {
         Set<String> set = new HashSet<>();
         if (!isEmpty(dataNode)) {

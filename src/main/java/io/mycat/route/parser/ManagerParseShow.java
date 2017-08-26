@@ -683,7 +683,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@White  ip白名单
+    // SHOW @@White  ip white list
     private static int show2WCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HITE".length()) {
             char c1 = stmt.charAt(++offset);
@@ -1327,8 +1327,9 @@ public final class ManagerParseShow {
                 if (stmt.length() > ++offset && stmt.charAt(offset) == '.') {
 
                     /*
-                     *  兼容之前指令
-                     *  在保留 SHOW @@SQL.SUM 指令的同时， 扩展支持  SHOW @@SQL.SUM.TABLE 、 SHOW @@SQL.SUM.USER
+                     *  keep SHOW @@SQL.SUM
+                     *  add  SHOW @@SQL.SUM.TABLE , SHOW @@SQL.SUM.USER
+                     *  SHOW @@SQL.SUM == SHOW @@SQL.SUM.TABLE
                      */
                     if (stmt.length() > (offset + 4)) {
                         char c2 = stmt.charAt(++offset);
@@ -1441,7 +1442,7 @@ public final class ManagerParseShow {
 
 
     /**
-     * 跳过不定数量的空格，返回最后一个空格的index
+     * skip all whitespace ,return the index of last whitespace
      *
      * @param offset
      * @param stmt

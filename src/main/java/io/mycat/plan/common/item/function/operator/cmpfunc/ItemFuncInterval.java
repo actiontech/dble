@@ -9,8 +9,7 @@ import java.util.List;
 
 
 /*
- * 至少两个参数,  INTERVAL(N,N1,N2,N3,...).
- * 假如N < N1,则返回值为0;假如N < N2 等等,则返回值为1;假如N 为NULL,则返回值为 -1.
+ * INTERVAL(N,N1,N2,N3,...).
  */
 
 public class ItemFuncInterval extends ItemIntFunc {

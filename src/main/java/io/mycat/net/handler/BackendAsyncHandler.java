@@ -46,7 +46,6 @@ public abstract class BackendAsyncHandler implements NIOHandler {
 
     protected void handleQueue(final Executor executor) {
         if (isHandling.compareAndSet(false, true)) {
-            // 异步处理后端数据
             executor.execute(new Runnable() {
                 @Override
                 public void run() {

@@ -37,7 +37,7 @@ public abstract class AbstractMultiTreadBatchTester {
     SimpleConPool conPool;
     protected AtomicLong finshiedCount = new AtomicLong();
     protected AtomicLong failedCount = new AtomicLong();
-    protected int threadCount = 0;// 线程数
+    protected int threadCount = 0;
     protected String url;
     protected String user;
     protected String password;

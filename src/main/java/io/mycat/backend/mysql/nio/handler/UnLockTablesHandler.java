@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * unlock tables 语句处理器
+ * UnLock Tables Handler
  *
  * @author songdabin
  */
@@ -36,12 +36,12 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     public void execute() {
         Map<RouteResultsetNode, BackendConnection> lockedConns = session.getTargetMap();
         this.reset(lockedConns.size());
-        // 客户端直接发送unlock tables命令，由于之前未发送lock tables语句，无法获取后端绑定的连接，此时直接返回OK包
+        // if client just send an unlock tables, theres is no lock tables statement, just send back OK
         if (lockedConns.size() == 0) {
             LOGGER.warn("find no locked backend connection!" + session.getSource());
             OkPacket ok = new OkPacket();
             ok.setPacketId(++packetId);
-            ok.setPacketLength(7); // unlock table 命令返回MySQL协议包长度为7
+            ok.setPacketLength(7); // the size of unlock table's response OK packet is 7
             ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
             ok.write(session.getSource());
             return;

@@ -31,10 +31,10 @@ import java.util.Set;
 public class UserConfig {
 
     private String name;
-    private String password;                        //明文
-    private String encryptPassword;                //密文
-    private int benchmark = 0;                        // 负载限制, 默认0表示不限制
-    private UserPrivilegesConfig privilegesConfig;    //SQL表级的增删改查权限控制
+    private String password;
+    private String encryptPassword;
+    private int benchmark = 0;                        // default 0 means not check
+    private UserPrivilegesConfig privilegesConfig;    //privileges for tables
 
     private boolean readOnly = false;
     private boolean manager = false;

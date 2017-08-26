@@ -178,11 +178,11 @@ public abstract class MySQLPacket {
     public static final byte COM_STMT_FETCH = 28;
 
     /**
-     * Mycat heartbeat
+     * heartbeat
      */
     public static final byte COM_HEARTBEAT = 64;
 
-    //包头大小
+    //HEADER_SIZE
     public static final int PACKET_HEADER_SIZE = 4;
 
 
@@ -190,26 +190,26 @@ public abstract class MySQLPacket {
     protected byte packetId;
 
     /**
-     * 把数据包写到buffer中，如果buffer满了就把buffer通过前端连接写出 (writeSocketIfFull=true)。
+     * write to buffer ,if writeSocketIfFull write the buffer data to FrontendConnection
      */
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * 把数据包通过后端连接写出，一般使用buffer机制来提高写的吞吐量。
+     * write to backend connection
      */
     public void write(BackendAIOConnection c) {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * 计算数据包大小，不包含包头长度。
+     * calcPacketSize,not contains header size
      */
     public abstract int calcPacketSize();
 
     /**
-     * 取得数据包信息
+     * getPacketInfo
      */
     protected abstract String getPacketInfo();
 

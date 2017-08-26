@@ -39,17 +39,14 @@ public class ItemSumVariance extends ItemSumNum {
     protected long count = 0;
     protected int sample;
 
-    // pushdown variables下发的情况下计算时所需要用到的变量
-    // 下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
-    // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
+    // pushdown variables
+    // v[0]:count,v[1]:sum,v[2]:variance(Partial)
+    // variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     private double sum = 0;
     private double squareSum = 0;
 
-    /**
-     * 为了局部聚合时使用
-     **/
     private boolean useTransObj = false;
-    // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
+    // variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     private double sumAi2 = 0;
     private double sumA = 0;
 
@@ -116,12 +113,11 @@ public class ItemSumVariance extends ItemSumNum {
         return false;
     }
 
-    // pushdown variables下发的情况下计算时所需要用到的变量
-
-    // 下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
+    // pushdown variables
+    // push down v[0]:count,v[1]:sum,v[2]:variance(Partial)
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
-        // 下发的做法,依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
+        //  variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
         long partCount = args.get(0).valInt().longValue();
         double partSum = args.get(1).valReal().doubleValue();
         double partVariane = args.get(2).valReal().doubleValue();
@@ -135,7 +131,7 @@ public class ItemSumVariance extends ItemSumNum {
         return false;
     }
 
-    // 依据为 variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
+    // variance = (sum(ai^2) - sum(a)^2/count(a))/count(a)
     @Override
     public BigDecimal valReal() {
         if (!isPushDown) {

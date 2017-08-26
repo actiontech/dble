@@ -223,7 +223,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         if (db != null && MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
             db = db.toLowerCase();
         }
-        // 检查schema的有效性
+        // check schema
         if (db == null || !privileges.schemaExists(db)) {
             writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
             return;
@@ -297,16 +297,15 @@ public abstract class FrontendConnection extends AbstractConnection {
             LOGGER.debug(String.valueOf(this) + " " + sql);
         }
 
-        // 记录SQL
+        // record SQL
         this.setExecuteSql(sql);
 
-        // 防火墙策略( SQL 黑名单/ 注入攻击)
         if (!privileges.checkFirewallSQLPolicy(user, sql)) {
             writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
             return;
         }
 
-        // 执行查询
+        // execute
         if (queryHandler != null) {
             Boolean result = privileges.isReadOnly(user);
             if (result != null) {
@@ -320,7 +319,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void query(byte[] data) {
 
-        // 取得语句
         String sql = null;
         try {
             MySQLMessage mm = new MySQLMessage(data);
@@ -336,7 +334,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void stmtPrepare(byte[] data) {
         if (prepareHandler != null) {
-            // 取得语句
             MySQLMessage mm = new MySQLMessage(data);
             mm.position(5);
             String sql = null;
@@ -352,10 +349,10 @@ public abstract class FrontendConnection extends AbstractConnection {
                 return;
             }
 
-            // 记录SQL
+            // record SQL
             this.setExecuteSql(sql);
 
-            // 执行预处理
+            // execute
             prepareHandler.prepare(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
@@ -410,17 +407,17 @@ public abstract class FrontendConnection extends AbstractConnection {
     public void register() throws IOException {
         if (!isClosed.get()) {
 
-            // 生成认证数据
+            // generate auth data
             byte[] rand1 = RandomUtil.randomBytes(8);
             byte[] rand2 = RandomUtil.randomBytes(12);
 
-            // 保存认证数据
+            // save  auth data
             byte[] rand = new byte[rand1.length + rand2.length];
             System.arraycopy(rand1, 0, rand, 0, rand1.length);
             System.arraycopy(rand2, 0, rand, rand1.length, rand2.length);
             this.seed = rand;
 
-            // 发送握手数据包
+            // send auth data
             boolean useHandshakeV10 = MycatServer.getInstance().getConfig().getSystem().getUseHandshakeV10() == 1;
             if (useHandshakeV10) {
                 HandshakeV10Packet hs = new HandshakeV10Packet();
@@ -471,13 +468,13 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void rawHandle(final byte[] data) {
 
-        //load data infile  客户端会发空包 长度为4
+        //load data infile  client send empty packet which size is 4
         if (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0) {
-            // load in data空包
+            // load in data empty packet
             loadDataInfileEnd(data[3]);
             return;
         }
-        //修改quit的判断,当load data infile 分隔符为\001 时可能会出现误判断的bug.
+        //when TERMINATED char of load data infile is \001
         if (data.length > 4 && data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == MySQLPacket.COM_QUIT) {
             this.getProcessor().getCommands().doQuit();
             this.close("quit cmd");

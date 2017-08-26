@@ -72,7 +72,7 @@ public abstract class Field {
                 return new FieldVarstring(name, table, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_STRING:
                 return new FieldString(name, table, charsetIndex, fieldLength, decimals, flags);
-            /** --下列的类型函数目前不支持，因为select *出来的mysql都转化成string了，无法知晓它们在数据库中的type-- **/
+            /** --下列的类型函数目前不支持,因为select *出来的mysql都转化成string了,无法知晓它们在数据库中的type-- **/
             case MYSQL_TYPE_ENUM:
                 return new FieldEnum(name, table, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_SET:

@@ -53,7 +53,7 @@ public class AIOSocketWR extends SocketWR {
             return false;
         }
         ByteBuffer theBuffer = con.writeBuffer;
-        if (theBuffer == null || !theBuffer.hasRemaining()) { // writeFinished,但要区分bufer是否NULL，不NULL，要回收
+        if (theBuffer == null || !theBuffer.hasRemaining()) { // writeFinished,if buffer not NULL,recycle
             if (theBuffer != null) {
                 con.recycle(theBuffer);
                 con.writeBuffer = null;

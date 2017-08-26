@@ -267,7 +267,7 @@ public final class UnsafeExternalRowSorter {
 
             for (OrderCol orderCol : orderCols) {
                 int colIndex = orderCol.colMeta.getColIndex();
-                /**取出一行数据中的列值，进行大小比对*/
+                /**取出一行数据中的列值,进行大小比对*/
                 byte[] left = null;
                 byte[] right = null;
 

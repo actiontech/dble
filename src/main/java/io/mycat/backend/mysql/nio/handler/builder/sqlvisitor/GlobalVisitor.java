@@ -8,10 +8,10 @@ import io.mycat.plan.common.item.Item.ItemType;
 import io.mycat.plan.node.*;
 
 /**
- * 标准sql生成器，node是什么就下发什么，因为node是global的 每一个node都得用一个新的globalvisitor对象来进行visit
+ * sql generator,node is always global table,every  node must create a new global visitor object
  *
  * @author ActionTech
- * @CreateTime 2014年12月10日
+ * @CreateTime 2014/12/10
  */
 public class GlobalVisitor extends MysqlVisitor {
 
@@ -44,7 +44,7 @@ public class GlobalVisitor extends MysqlVisitor {
             }
             visited = true;
         } else {
-            // where的可替换仅针对tablenode，不可以迭代
+            // where just for table node without iteration
             buildWhere(query);
         }
     }
@@ -61,7 +61,6 @@ public class GlobalVisitor extends MysqlVisitor {
                 return;
             sqlBuilder.append(" from ");
         }
-        // 需要根据是否是下划表进行计算
         buildTableName(query, sqlBuilder);
         if (query.isSubQuery() || isTopQuery) {
             buildWhere(query);
@@ -81,8 +80,7 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
     protected void visit(NoNameNode query) {
-        // to fix:如果在viewoptimizr时，将noname的where和select进行了修改，则需要
-        // 改成和tablenode类似的做法
+        //FIXME:如果在viewoptimizr时,将noname的where和select进行了修改,则需要改成和tablenode类似的做法
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
@@ -300,7 +298,7 @@ public class GlobalVisitor extends MysqlVisitor {
             pushAlias = item.getAlias();
             if (pushAlias.startsWith(Item.FNAF))
                 pushAlias = getRandomAliasName();
-        } else if (orgPushDownName.length() > MAX_COL_LENGTH) { // 如果超出最大长度，则需要自定义别名
+        } else if (orgPushDownName.length() > MAX_COL_LENGTH) { // define alias if>MAX_COL_LENGTH
             pushAlias = getRandomAliasName();
         }
         if (pushAlias == null) {

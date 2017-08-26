@@ -22,7 +22,7 @@ public final class DateUtil {
     public static final String TIME_PATTERN_FULL = "HHH:mm:ss.SSSSSS";
 
     /**
-     * 根据日期字符串解析得到date类型日期
+     * 根据期字符串解析得到date类型期
      *
      * @param dateStr
      * @return
@@ -33,7 +33,7 @@ public final class DateUtil {
     }
 
     /**
-     * 根据日期字符串和日期格式解析得到date类型日期
+     * 根据期字符串和期格式解析得到date类型期
      *
      * @param dateStr
      * @param datePattern
@@ -46,7 +46,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象年份
+     * 获取date对象/份
      *
      * @param date
      * @return
@@ -57,7 +57,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象月份
+     * 获取date对象/份
      *
      * @param date
      * @return

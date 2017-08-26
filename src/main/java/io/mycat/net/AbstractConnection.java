@@ -107,7 +107,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
     public boolean setCharset(String strCharset) {
 
-        // 修复PHP字符集设置错误, 如： set names 'utf8'
+        // support PHP eg:set names 'utf8'
         if (strCharset != null) {
             strCharset = strCharset.replace("'", "");
         }
@@ -259,9 +259,6 @@ public abstract class AbstractConnection implements NIOConnection {
         this.socketWR.doNextWriteCheck();
     }
 
-    /**
-     * 读取可能的Socket字节流
-     */
     public void onReadData(int got) throws IOException {
         if (isClosed.get()) {
             return;
@@ -278,7 +275,7 @@ public abstract class AbstractConnection implements NIOConnection {
         netInBytes += got;
         processor.addNetInBytes(got);
 
-        // 循环处理字节信息
+        // execute data in loop
         int offset = readBufferOffset, length = 0, position = readBuffer.position();
         for (; ; ) {
             length = getPacketLength(readBuffer, offset);
@@ -497,12 +494,8 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
-    /**
-     * 清理资源
-     */
     protected void cleanup() {
 
-        // 清理资源占用
         if (readBuffer != null) {
             this.recycle(readBuffer);
             this.readBuffer = null;

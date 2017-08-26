@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 如果Item是Item_sum,那么Item肯定已经在GroupBy中生成过了，如果不是Item_sum,则有可能需要自己进行一次计算
+ * if the Item is Item_sum,then theItem must be generated in GroupBy.Otherwise,calc by middle-ware
  */
 public class SendMakeHandler extends BaseDMLHandler {
 
@@ -25,12 +25,11 @@ public class SendMakeHandler extends BaseDMLHandler {
     private List<Item> sels;
     private List<Field> sourceFields;
     private List<Item> selItems;
-    /* 表的别名 */
     private String tbAlias;
 
     /**
      * @param session
-     * @param sels    用户最终需要的sel集合
+     * @param sels
      */
     public SendMakeHandler(long id, NonBlockingSession session, List<Item> sels, String tableAlias) {
         super(id, session);
@@ -60,7 +59,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                 tmpItem.setItemName(sel.getItemName());
                 if (sel.getAlias() != null || tbAlias != null) {
                     String selAlias = sel.getAlias();
-                    // 由于添加了FNAF，需要去掉
+                    // remove the added tmp FNAF
                     if (StringUtils.indexOf(selAlias, Item.FNAF) == 0)
                         selAlias = StringUtils.substring(selAlias, Item.FNAF.length());
                     tmpItem = HandlerTool.createRefItem(tmpItem, tbAlias, selAlias);

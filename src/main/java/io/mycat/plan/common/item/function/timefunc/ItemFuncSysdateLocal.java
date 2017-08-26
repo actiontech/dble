@@ -8,7 +8,7 @@ import io.mycat.plan.common.time.MyTime;
 import java.util.List;
 
 /*
- * 函数执行的时间，now函数表示的是命令接收到的的时间，在这里相同处理
+ * sysdate, execute like now
  */
 public class ItemFuncSysdateLocal extends ItemDatetimeFunc {
 

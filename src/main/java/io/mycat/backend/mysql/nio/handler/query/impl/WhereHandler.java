@@ -23,7 +23,7 @@ public class WhereHandler extends BaseDMLHandler {
     private Item where = null;
     private Item whereItem = null;
     private List<Field> sourceFields;
-    // 因为merge在没有order by时会存在多线程并发rowresponse
+    // if merge handler have no order by, the row response is not thread safe
     private ReentrantLock lock = new ReentrantLock();
 
     @Override
@@ -31,9 +31,6 @@ public class WhereHandler extends BaseDMLHandler {
         return HandlerType.WHERE;
     }
 
-    /**
-     * 所有的上一级表传递过来的信息全部视作Field类型
-     */
     public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
                                  byte[] eofnull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
@@ -45,16 +42,13 @@ public class WhereHandler extends BaseDMLHandler {
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
-    /**
-     * 收到行数据包的响应处理
-     */
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         lock.lock();
         try {
             HandlerTool.initFields(this.sourceFields, rowPacket.fieldValues);
-            /* 根据where条件进行过滤 */
+            /* use whereto filter */
             if (whereItem.valBool()) {
                 nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
             } else {
@@ -66,9 +60,6 @@ public class WhereHandler extends BaseDMLHandler {
         }
     }
 
-    /**
-     * 收到行数据包结束的响应处理
-     */
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;

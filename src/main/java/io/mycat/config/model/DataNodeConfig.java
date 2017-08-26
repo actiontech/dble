@@ -24,7 +24,6 @@
 package io.mycat.config.model;
 
 /**
- * 用于描述一个数据节点的配置
  *
  * @author mycat
  */

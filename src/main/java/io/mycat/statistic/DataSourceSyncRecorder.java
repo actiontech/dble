@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 记录最近3个时段的平均响应时间，默认1，10，30分钟。
+ * record avg time of a,b,c minutes,the default is 1,10,30
  *
  * @author songwie
  */
@@ -48,7 +48,6 @@ public class DataSourceSyncRecorder {
 
     private static final long SWAP_TIME = 24 * 60 * 60 * 1000L;
 
-    //日期处理
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private int switchType = 2;
 
@@ -92,7 +91,7 @@ public class DataSourceSyncRecorder {
     }
 
     /**
-     * 删除超过统计时间段的数据
+     * remove the old data
      */
     private void remove(long time) {
         final List<Record> recordsAll = this.asynRecords;

@@ -11,11 +11,11 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * zookeeper 实现递增序列号
- * 默认测试模拟60个进程，每个进程内20个线程。每个线程调用50次参数为GLOBAL的nextid
- * 默认GLOBAL.MINID=1
- * 默认GLOBAL.MAXID=10
- * 表示当前线程内id用光时，每次会取GLOBAL.MINID-GLOBAL.MAXID9个ID
+ * zookeeper
+ * 60 processors,20 thread in every 20 thread.every thead called 50 times
+ * default GLOBAL.MINID=1
+ * default GLOBAL.MAXID=10
+ * get GLOBAL.MINID-GLOBAL.MAXID(9) every time
  *
  * @author Hash Zhang
  * @version 1.0

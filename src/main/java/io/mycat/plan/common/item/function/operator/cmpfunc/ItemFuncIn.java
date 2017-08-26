@@ -16,7 +16,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
     private ItemResult leftResultType;
 
     /**
-     * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
+     * select 'a' in ('a','b','c') args(0) is 'a',[1] is 'b',[2] is'c'...
      *
      * @param args
      */

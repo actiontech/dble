@@ -26,9 +26,6 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
     ArgComparator geCmp = new ArgComparator();
     ArgComparator leCmp = new ArgComparator();
 
-    /**
-     * select 'a' in ('a','b','c') args(0)为'a',[1]为'a',[2]为'b'。。。
-     */
     public ItemFuncBetweenAnd(Item a, Item b, Item c, boolean isNegation) {
         super(new ArrayList<Item>(), isNegation);
         args.add(a);

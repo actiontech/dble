@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 缓冲池
+ * BufferPool
  *
  * @author Hash Zhang
  * @version 1.0

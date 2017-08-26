@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import static io.mycat.server.parser.ServerParseSet.*;
 
 /**
- * SET 语句处理
+ * SetHandler
  *
  * @author mycat
  * @author zhuam
@@ -147,7 +147,7 @@ public final class SetHandler {
         String charset = stmt.substring(rs >>> 8).trim();
         int index = charset.indexOf(",");
         if (index > -1) {
-            // 支持rails框架自动生成的SET NAMES utf8, @@SESSION.sql_auto_is_null = 0, @@SESSION.wait_timeout = 2147483, @@SESSION.sql_mode = 'STRICT_ALL_TABLES'
+            // support rails for SET NAMES utf8, @@SESSION.sql_auto_is_null = 0, @@SESSION.wait_timeout = 2147483, @@SESSION.sql_mode = 'STRICT_ALL_TABLES'
             charset = charset.substring(0, index);
         }
         if (charset.startsWith("'") && charset.endsWith("'")) {
@@ -158,15 +158,14 @@ public final class SetHandler {
         } else {
 
             /**
-             * TODO：修复 phpAyAdmin's 的发包问题
-             * 如： SET NAMES 'utf8' COLLATE 'utf8_general_ci' 错误
+             * FIXME: SET NAMES 'utf8' COLLATE 'utf8_general_ci'
              */
             int beginIndex = stmt.toLowerCase().indexOf("names");
             int endIndex = stmt.toLowerCase().indexOf("collate");
             int collateName = stmt.toLowerCase().indexOf("'utf8_general_ci'");
             if (beginIndex > -1 && endIndex > -1 && collateName > -1) {
                 charset = stmt.substring(beginIndex + "names".length(), endIndex);
-                //重试一次
+                //try again
                 if (c.setCharset(charset.trim())) {
                     c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
                 } else {

@@ -27,7 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 加密解密工具类
+ * SecurityUtil
  *
  * @author mycat
  */

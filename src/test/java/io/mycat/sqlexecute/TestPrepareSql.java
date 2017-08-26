@@ -16,7 +16,7 @@ public class TestPrepareSql {
             // 加载MySql的驱动类
             Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("找不到驱动程序类 ，加载驱动失败！");
+            System.out.println("找不到驱动程序类 ,加载驱动失败！");
             e.printStackTrace();
         }
     }

@@ -175,7 +175,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' err
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -213,7 +213,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' connectionError
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -249,7 +249,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa commit' connectionClose
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO :服务降级？
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
@@ -273,7 +273,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private void cleanAndFeedback() {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
-            //在这里释放取消限制锁
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             byte[] send = sendData;
             session.clearResources(false);
@@ -288,17 +287,16 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (errConn != null) {
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
                 if (++tryCommitTimes < COMMIT_TIMES) {
-                    // 多试几次
+                    // try commit several times
                     commit();
                 } else {
-                    // 关session ,add to定时任务
+                    // close this session ,add to schedule job
                     session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
                     MycatServer.getInstance().getXaSessionCheck().addCommitSession(session);
                 }
             } else {
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
-                //在这里释放取消限制锁
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
                 byte[] toSend = sendData;
                 session.clearResources(false);

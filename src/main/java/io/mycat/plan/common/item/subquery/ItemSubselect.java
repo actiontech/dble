@@ -84,9 +84,6 @@ public abstract class ItemSubselect extends ItemResultField {
         return "subselect";
     }
 
-    /**
-     * 计算子查询相关数据
-     */
     public boolean execute() {
         // TODO
         return false;

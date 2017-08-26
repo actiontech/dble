@@ -43,7 +43,7 @@ public final class QueryResultDispatcher {
     }
 
     public static void dispatchQuery(final QueryResult queryResult) {
-        //TODO：异步分发，待进一步调优
+        //TODO:异步分发,待进一步调优
         MycatServer.getInstance().getBusinessExecutor().execute(new Runnable() {
 
             public void run() {

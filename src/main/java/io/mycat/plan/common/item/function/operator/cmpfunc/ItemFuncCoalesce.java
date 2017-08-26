@@ -13,7 +13,7 @@ import java.util.List;
 
 
 /*
- * 返回第一个不是null的值
+ * ItemFuncCoalesce
  */
 public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 

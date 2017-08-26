@@ -55,7 +55,7 @@ public class TestSelectBetweenSqlParser {
         schema = schemaMap.get("cndb");
         rrs = RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null,
                 null, cachePool);
-        Assert.assertEquals(2, rrs.getNodes().length);    //这里2个表都有条件路由，取的是交集
+        Assert.assertEquals(2, rrs.getNodes().length);    //这里2个表都有条件路由,取的是交集
 
         //确认大于小于操作符
         sql = "select b.* from  offer_date b " +

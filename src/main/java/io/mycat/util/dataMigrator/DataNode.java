@@ -1,7 +1,7 @@
 package io.mycat.util.dataMigrator;
 
 /**
- * 数据节点，精确到库名称
+ * 数据节点,精确到库名称
  *
  * @author haonan108
  */

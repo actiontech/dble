@@ -6,9 +6,9 @@ package io.mycat.sqlengine.mpp;
  */
 
 /**
- * 一行数据是从哪个节点来的。
- * 通过dataNode查找对应的sorter，
- * 将数据放到对应的datanode的sorter，
+ * 一行数据是从哪个节点来的.
+ * 通过dataNode查找对应的sorter,
+ * 将数据放到对应的datanode的sorter,
  * 进行排序.
  */
 public final class PackWraper {

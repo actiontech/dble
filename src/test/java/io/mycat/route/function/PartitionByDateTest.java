@@ -64,7 +64,7 @@ public class PartitionByDateTest {
          * 0 : 01.01-01.10,02.10-02.19
          * 1 : 01.11-01.20,02.20-03.01
          * 2 : 01.21-01.30,03.02-03.12
-         * 3  ： 01.31-02-09,03.13-03.23
+         * 3  : 01.31-02-09,03.13-03.23
          */
         Assert.assertEquals(true, 0 == partition.calculate("2014-01-01"));
         Assert.assertEquals(true, 0 == partition.calculate("2014-01-10"));

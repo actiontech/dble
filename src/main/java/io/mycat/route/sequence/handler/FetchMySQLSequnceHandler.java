@@ -29,7 +29,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
                 LOGGER.debug("execute in datanode " + seqVal.dataNode +
                         " for fetch sequnce sql " + seqVal.sql);
             }
-            // 修正获取seq的逻辑，在读写分离的情况下只能走写节点。修改Select模式为Update模式。
+            // change Select mode to Update mode. Make sure the query send to the write host
             mysqlDN.getConnection(mysqlDN.getDatabase(), true,
                     new RouteResultsetNode(seqVal.dataNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);

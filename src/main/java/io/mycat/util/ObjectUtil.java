@@ -78,14 +78,13 @@ public final class ObjectUtil {
 
 
     /**
-     * 递归地比较两个数组是否相同，支持多维数组。
+     * compare the array.
      * <p>
-     * 如果比较的对象不是数组，则此方法的结果同<code>ObjectUtil.equals</code>。
      * </p>
      *
-     * @param array1 数组1
-     * @param array2 数组2
-     * @return 如果相等, 则返回<code>true</code>
+     * @param array1
+     * @param array2
+     * @return
      */
     public static boolean equals(Object array1, Object array2) {
         if (array1 == array2) {
@@ -106,7 +105,7 @@ public final class ObjectUtil {
             return array1.equals(array2);
         }
 
-        // array1和array2为同类型的数组
+        // array1 and array2 have same type
         if (array1 instanceof long[]) {
             return arrayEquals((long[]) array1, (long[]) array2);
         } else if (array1 instanceof int[]) {

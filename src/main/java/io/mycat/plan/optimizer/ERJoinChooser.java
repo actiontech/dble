@@ -68,9 +68,9 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer start -------------------- */
 
     /**
-     * left join时也可以进行ER优化，但是策略和inner join不同
-     * ex:t1，t2中，t1.id和t2.id是外键关联，且是拆分ER规则(同一个拆分规则)，那么t1 left join t2 on
-     * t1.id=t2.id是可以下发的 <leftjoin我们不更改join节点的结构，仅是做出判断，该left join是否可以ER优化>
+     * left join时也可以进行ER优化,但是策略和inner join不同
+     * ex:t1,t2中,t1.id和t2.id是外键关联,且是拆分ER规则(同一个拆分规则),那么t1 left join t2 on
+     * t1.id=t2.id是可以下发的 <leftjoin我们不更改join节点的结构,仅是做出判断,该left join是否可以ER优化>
      *
      * @return
      */
@@ -123,7 +123,7 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer end -------------------- */
 
     /**
-     * inner join的er优化，将inner join的unit拆分进行重新拼接
+     * inner join的er优化,将inner join的unit拆分进行重新拼接
      *
      * @return
      */
@@ -149,7 +149,7 @@ public class ERJoinChooser {
             return jn;
 
         List<PlanNode> others = new ArrayList<>();
-        // makedErJnList放在前面，这样可以和ER进行join
+        // makedErJnList放在前面,这样可以和ER进行join
         others.addAll(makedERJnList);
         others.addAll(joinUnits);
         for (int i = 0; i < others.size(); i++) {
@@ -158,12 +158,12 @@ public class ERJoinChooser {
             PlanNode newT0 = joinWithGlobal(tnewOther, globals);
             others.set(i, newT0);
         }
-        // 到这儿为止，就剩下others和globals中有可能有node了，而且other中的和global中的已经都尝试过join了
+        // 到这儿为止,就剩下others和globals中有可能有node了,而且other中的和global中的已经都尝试过join了
         if (globals.size() > 0) {
             PlanNode globalJoin = makeJoinNode(globals);
             others.add(globalJoin);
         }
-        // others中的节点都是无法进行优化的join units，随意将他们进行组合即可
+        // others中的节点都是无法进行优化的join units,随意将他们进行组合即可
         JoinNode ret = (JoinNode) makeJoinNode(others);
         ret.setOrderBys(jn.getOrderBys());
         ret.setGroupBys(jn.getGroupBys());
@@ -210,7 +210,7 @@ public class ERJoinChooser {
         return null;
     }
 
-    // 生成er join节点，删除selListIndex中的erKeyIndexs的jk，替换其余selList中的tn节点
+    // 生成er join节点,删除selListIndex中的erKeyIndexs的jk,替换其余selList中的tn节点
     private JoinNode makeERJoin(List<JoinKeyInfo> erKeys) {
         PlanNode t0 = erKeys.get(0).tn;
         PlanNode t1 = erKeys.get(1).tn;
@@ -254,7 +254,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * t0和t1进行join，在selLists中查找他们之间存在的join关系，并将这些关系进行组合形成joinfilter
+     * t0和t1进行join,在selLists中查找他们之间存在的join关系,并将这些关系进行组合形成joinfilter
      * [假设不会出现a.id=b.id and a.id = b.name这种无意义的join语句]
      *
      * @param tmp
@@ -303,7 +303,7 @@ public class ERJoinChooser {
                 // 尝试做他们的join
                 JoinNode joinNode = new JoinNode(newT, global);
                 List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false);
-                // @如果没有可以join的join列，证明剩下的都是cross join
+                // @如果没有可以join的join列,证明剩下的都是cross join
                 if (jnFilter.size() > 0 || selLists.size() == 0) { // 可以join
                     replaceSelListReferedTn(newT, global, joinNode);
                     foundJoin = true;
@@ -320,7 +320,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 尝试着对t0和global的节点进行join，和erjoin不同的是，t0是已经被er优化唰下来的，不可以再ER优化了
+     * 尝试着对t0和global的节点进行join,和erjoin不同的是,t0是已经被er优化唰下来的,不可以再ER优化了
      *
      * @param t0
      * @param global
@@ -337,7 +337,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 初始化sellist中的JoinKeyInfo,selList刚组建好时，里面的JoinKeyInfo只有key属性，这个函数
+     * 初始化sellist中的JoinKeyInfo,selList刚组建好时,里面的JoinKeyInfo只有key属性,这个函数
      * 就是对其它的两个属性赋值
      */
     private void initJoinKeyInfo() {
@@ -403,7 +403,7 @@ public class ERJoinChooser {
         for (PlanNode child : joinNode.getChildren()) {
             if ((!isUnit(child)) && (child.type().equals(PlanNodeType.JOIN))) {
                 // a join b on a.id=b.id and a.id+b.id=10 join c on
-                // a.id=c.id，将a.id+b.id提上来
+                // a.id=c.id,将a.id+b.id提上来
                 JoinNode jnChild = (JoinNode) child;
                 if (jnChild.getOtherJoinOnFilter() != null)
                     otherJoinOns.add(jnChild.getOtherJoinOnFilter());
@@ -413,7 +413,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 将joinfilter串解析，得到的key放置到selLists中
+     * 将joinfilter串解析,得到的key放置到selLists中
      *
      * @param filter
      */
@@ -444,10 +444,10 @@ public class ERJoinChooser {
     }
 
     /**
-     * 将一个新的ISelectable放置到selLists中，因为存在这种情况： 先插入的是 sellist[0] test3.id,test2.id
+     * 将一个新的ISelectable放置到selLists中,因为存在这种情况: 先插入的是 sellist[0] test3.id,test2.id
      * sellist[1] test4.id,test5.id,test6.id
-     * 这个时候如果有joinfilter是test3.id=test4.id，
-     * 显然需要将test4.id放置到sellist[0]中，同时，要将sellist[1] 中剩余的项也放置到sel[0]中
+     * 这个时候如果有joinfilter是test3.id=test4.id,
+     * 显然需要将test4.id放置到sellist[0]中,同时,要将sellist[1] 中剩余的项也放置到sel[0]中
      *
      * @param s
      * @param listIndex
@@ -468,8 +468,8 @@ public class ERJoinChooser {
     }
 
     /**
-     * 由于join节点的变化，有可能导致有一些filter原来是join on
-     * filter的，但是现在成为不了joinfilter了，把他们丢到other join on中
+     * 由于join节点的变化,有可能导致有一些filter原来是join on
+     * filter的,但是现在成为不了joinfilter了,把他们丢到other join on中
      *
      * @return
      */
@@ -602,7 +602,7 @@ public class ERJoinChooser {
     private static class JoinKeyInfo {
         private Item key; // join on的on key
         private PlanNode tn; // 该joinkey属于哪个treenode
-        private ERTable cm; // 该joinkey是否有er关联，如果有er关联的话，保存它的parentkey
+        private ERTable cm; // 该joinkey是否有er关联,如果有er关联的话,保存它的parentkey
 
         JoinKeyInfo(Item key) {
             this.key = key;

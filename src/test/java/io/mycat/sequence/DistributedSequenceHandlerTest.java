@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 基于ZK与本地配置的分布式ID生成器
- * 无悲观锁，吞吐量更高
  *
  * @author Hash Zhang
  * @version 1.0
@@ -38,7 +36,6 @@ public class DistributedSequenceHandlerTest {
     }
 
     /**
-     * 测试获取的唯一InstanceId
      *
      * @throws Exception
      */
@@ -52,7 +49,6 @@ public class DistributedSequenceHandlerTest {
     }
 
     /**
-     * 测试获取的唯一id
      *
      * @throws Exception
      */
@@ -61,7 +57,6 @@ public class DistributedSequenceHandlerTest {
         final ConcurrentHashMap<Long, String> idSet = new ConcurrentHashMap<>();
         Thread thread[] = new Thread[10];
         long start = System.currentTimeMillis();
-        //多少线程，注意线程数不能超过最大线程数（1<<threadBits）
         for (int i = 0; i < 10; i++) {
             thread[i] = new Thread() {
                 @Override
@@ -86,7 +81,7 @@ public class DistributedSequenceHandlerTest {
     }
 
     /**
-     * 测试ZK容灾
+     * testFailOver
      *
      * @throws Exception
      */
@@ -95,7 +90,7 @@ public class DistributedSequenceHandlerTest {
         Set<Long> idSet = new HashSet<>();
         try {
             int leader = failLeader(17);
-            System.out.println("*** When a leader is offline,curator will throw an expected exception. ***：");
+            System.out.println("*** When a leader is offline,curator will throw an expected exception. ***:");
             for (int i = 0; i < 16; i++) {
                 if (i == leader) {
                     System.out.println("Node [" + i + "] used to be leader");
@@ -109,7 +104,7 @@ public class DistributedSequenceHandlerTest {
             Assert.assertEquals(idSet.size(), 15);
             idSet = new HashSet<>();
             int leader2 = failLeader(leader);
-            System.out.println("*** When two leaders are offline,curator will throw an expected exception. ***：");
+            System.out.println("*** When two leaders are offline,curator will throw an expected exception. ***:");
             for (int i = 0; i < 16; i++) {
                 if (i == leader || i == leader2) {
                     System.out.println("Node [" + i + " used to be leader");

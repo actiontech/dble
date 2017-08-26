@@ -28,42 +28,38 @@ import java.util.Map.Entry;
 
 /**
  * xml文件操作转换的类的信息
- * 源文件名：XmlProcessBase.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public class XmlProcessBase {
 
-    /**
-     * 日志
-     *
-     * @字段说明 LOGGER
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlProcessBase.class);
 
     /**
      * 转换对象
      *
-     * @字段说明 jaxContext
+     *
      */
     private JAXBContext jaxContext;
 
     /**
      * 反序列化xml文件的对象
      *
-     * @字段说明 unmarshaller
+     *
      */
     private Unmarshaller unmarshaller;
 
     /**
      * 转换的实体对象的class信息
      *
-     * @字段说明 parseXmlClass
+     *
      */
     @SuppressWarnings("rawtypes")
     private List<Class> parseXmlClass = new ArrayList<>();
@@ -73,7 +69,7 @@ public class XmlProcessBase {
      * 方法描述
      *
      * @param parseClass
-     * @创建日期 2016年9月15日
+     * @Created 2016/9/15
      */
     @SuppressWarnings("rawtypes")
     public void addParseClass(Class parseClass) {
@@ -85,7 +81,7 @@ public class XmlProcessBase {
      * 方法描述
      *
      * @throws JAXBException
-     * @创建日期 2016年9月15日
+     * @Created 2016/9/15
      */
     @SuppressWarnings("rawtypes")
     public void initJaxbClass() throws JAXBException {
@@ -112,7 +108,7 @@ public class XmlProcessBase {
      * @param user      用户对象
      * @param inputPath
      * @param name      当前的转换xml的dtd文件的信息
-     * @创建日期 2016年9月15日
+     * @Created 2016/9/15
      */
     public void baseParseAndWriteToXml(Object user, String inputPath, String name) throws IOException {
         try {
@@ -144,7 +140,7 @@ public class XmlProcessBase {
      * @param user      用户对象
      * @param inputPath
      * @param name      当前的转换xml的dtd文件的信息
-     * @创建日期 2016年9月15日
+     * @Created 2016/9/15
      */
     @SuppressWarnings("restriction")
     public void baseParseAndWriteToXml(Object user, String inputPath, String name, Map<String, Object> map)
@@ -185,7 +181,7 @@ public class XmlProcessBase {
      * @return
      * @throws JAXBException
      * @throws XMLStreamException
-     * @创建日期 2016年9月16日
+     * @Created 2016/9/16
      */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         // 搜索当前转化的文件

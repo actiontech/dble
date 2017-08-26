@@ -11,10 +11,9 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * 多线程的Group By桶，并发生成Group By的中间结果，最终再进行Group By，从而生成Group By的总结果
+ * GroupByBucket,generate Group By tmp result in every bucket in parallel ,and merge the buckets finally
  */
 public class GroupByBucket extends GroupByLocalResult {
-    // 进行groupby的输入来源
     private BlockingQueue<RowDataPacket> inData;
     private BlockingQueue<RowDataPacket> outData;
 
@@ -29,7 +28,7 @@ public class GroupByBucket extends GroupByLocalResult {
     }
 
     /**
-     * 开启一个新的线程进行Group by工作
+     * new Group by thread
      */
     public void start() {
         Thread thread = new Thread(new Runnable() {

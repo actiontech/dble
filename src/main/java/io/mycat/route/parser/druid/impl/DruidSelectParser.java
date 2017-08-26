@@ -89,7 +89,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
-                if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) { //整个schema都不分库或者该表不拆分
+                if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
                     RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                     return schema;
                 }
@@ -107,7 +107,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return schema;
                 }
                 parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
-                // 更改canRunInReadDB属性
+                // select ...for update /in shard mode /in transaction
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
                 }
@@ -132,8 +132,8 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean matchSysTable(RouteResultset rrs, ServerConnection sc, SchemaInfo schemaInfo) {
-        // 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-        //TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
+        // support PhpAdmin
+        //TODO:refactor INFORMATION_SCHEMA,MYSQL
         if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema())) {
             MysqlInformationSchemaHandler.handle(schemaInfo, sc);
             rrs.setFinishedExecute(true);
@@ -142,7 +142,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
         if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.getSchema()) &&
                 SchemaUtil.TABLE_PROC.equals(schemaInfo.getTable())) {
-            // 兼容MySQLWorkbench
+            // support MySQLWorkbench
             MysqlProcHandler.handle(sc);
             rrs.setFinishedExecute(true);
             return true;
@@ -273,7 +273,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean isNeedOptimizer(SQLExpr expr) {
-        // it is NotSimpleColumn TODO: 细分是否真的NeedOptimizer
+        // it is NotSimpleColumn TODO: check every expr to decide it is NeedOptimizer
         return !(expr instanceof SQLPropertyExpr) && !(expr instanceof SQLIdentifierExpr);
     }
 
@@ -289,7 +289,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private String getFieldName(SQLSelectItem item) {
         if ((item.getExpr() instanceof SQLPropertyExpr) || (item.getExpr() instanceof SQLMethodInvokeExpr) ||
                 (item.getExpr() instanceof SQLIdentifierExpr) || item.getExpr() instanceof SQLBinaryOpExpr) {
-            return item.getExpr().toString(); // 字段别名
+            return item.getExpr().toString(); // alias
         } else {
             return item.toString();
         }
@@ -306,7 +306,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             return aliaColumns;
         }
 
-        // 通过优化转换成group by来实现
+        // distinct change to group by
         boolean isNeedChangeSql = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         if (isNeedChangeSql) {
             mysqlSelectQuery.setDistionOption(0);
@@ -366,7 +366,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (!column.contains(".")) {
                 String col = "." + column;
                 String col2 = ".`" + column + "`";
-                // 展开aliaColumns，将<c.name,cname>之类的键值对展开成<c.name,cname>和<name,cname>
+                // for aliaColumns,change <c.name,cname> to <c.name,cname> and <name,cname>
                 for (Map.Entry<String, String> entry : aliaColumns.entrySet()) {
                     if (entry.getKey().endsWith(col) || entry.getKey().endsWith(col2)) {
                         if (entry.getValue() != null && entry.getValue().indexOf(".") > 0) {
@@ -403,7 +403,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
             } else if (sqlExpr instanceof SQLPropertyExpr) {
                 /*
-                 * 针对子查询别名，例如select id from (select h.id from hotnews h union
+                 * eg:select id from (select h.id from hotnews h union
                  * select h.title from hotnews h ) as t1 group by t1.id;
                  */
                 column = sqlExpr.toString();
@@ -413,9 +413,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
             int dotIndex = column.indexOf(".");
             int bracketIndex = column.indexOf("(");
-            // 通过判断含有括号来决定是否为函数列
+            // check it is a function
             if (dotIndex != -1 && bracketIndex == -1) {
-                // 此步骤得到的column必须是不带.的，有别名的用别名，无别名的用字段名
+                // get column from table.column
                 column = column.substring(dotIndex + 1);
             }
             groupByCols[i] = getAliaColumn(aliaColumns, column); // column;
@@ -440,7 +440,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     /**
-     * 改写sql：需要加limit的加上
+     * changeSql: add limit if need
      */
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
@@ -512,7 +512,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
             throws SQLException {
         if (rrs.isFinishedRoute()) {
-            return; // 避免重复路由
+            return;
         }
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         String table = ctx.getTables().get(0);
@@ -544,7 +544,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     /**
-     * 获取所有的条件：因为可能被or语句拆分成多个RouteCalculateUnit，条件分散了
+     * getAllConditions
      */
     private Map<String, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
         Map<String, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
@@ -582,13 +582,13 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (tc == null || (ctx.getTables().size() == 1 && tc.isGlobalTable())) {
             return false;
         } else {
-            //单表主键查询
+            //single table
             if (ctx.getTables().size() == 1) {
                 String tableName = ctx.getTables().get(0);
                 String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
                 if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
                         ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null &&
-                        tc.getDataNodes().size() > 1) { //有主键条件
+                        tc.getDataNodes().size() > 1) { //primaryKey condition
                     return false;
                 }
             }
@@ -600,10 +600,10 @@ public class DruidSelectParser extends DefaultDruidParser {
                              MySqlSelectQueryBlock mysqlSelectQuery) {
         if (schema.getDefaultMaxLimit() == -1) {
             return;
-        } else if (mysqlSelectQuery.getLimit() != null) { // 语句中已有limit
+        } else if (mysqlSelectQuery.getLimit() != null) {
             return;
         } else if (!tableConfig.isNeedAddLimit()) {
-            return; // 优先从配置文件取
+            return;
         }
         SQLLimit limit = new SQLLimit();
         limit.setRowCount(new SQLIntegerExpr(schema.getDefaultMaxLimit()));
@@ -611,8 +611,6 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     /**
-     * 单表且是全局表
-     * 单表且rule为空且nodeNodes只有一个
      *
      * @param schema
      * @param rrs
@@ -626,22 +624,22 @@ public class DruidSelectParser extends DefaultDruidParser {
             return false;
         } else if (schema.getDefaultMaxLimit() == -1) {
             return false;
-        } else if (mysqlSelectQuery.getLimit() != null) { // 语句中已有limit
+        } else if (mysqlSelectQuery.getLimit() != null) { // has already limit
             return false;
         } else if (ctx.getTables().size() == 1) {
             if (rrs.hasPrimaryKeyToCache()) {
-                // 只有一个表且条件中有主键,不需要limit了,因为主键只能查到一条记录
+                // single table and has primary key , need not limit because of only one row
                 return false;
             }
             String tableName = ctx.getTables().get(0);
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
-                return schema.getDefaultMaxLimit() > -1; // 找不到则取schema的配置
+                return schema.getDefaultMaxLimit() > -1; // get schema's configure
             }
 
             boolean isNeedAddLimit = tableConfig.isNeedAddLimit();
             if (!isNeedAddLimit) {
-                return false; // 优先从配置文件取
+                return false; // get table configure
             }
 
             if (schema.getTables().get(tableName).isGlobalTable()) {
@@ -649,9 +647,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
 
             String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
-            // 无条件
+            // no condition
             return allConditions.get(tableName) == null || allConditions.get(tableName).get(primaryKey) == null;
-        } else { // 多表或无表
+        } else { // no table or multi-table
             return false;
         }
 

@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 打印MycatServer所支持的语句
+ * ShowHelp
  *
  * @author mycat
  * @author mycat
@@ -149,7 +149,6 @@ public final class ShowHelp {
         HELPS.put("show @@sysparam", "Report system param");
         HELPS.put("show @@syslog limit=?", "Report system log");
         HELPS.put("show @@white", "show server white host ");
-        HELPS.put("show @@white.set=?,?", "set server white host,[ip,user]");
         HELPS.put("show @@directmemory=1 or 2", "show server direct memory usage");
 
         // switch
@@ -164,14 +163,11 @@ public final class ShowHelp {
         // reload
         HELPS.put("reload @@config", "Reload basic config from file");
         HELPS.put("reload @@config_all", "Reload all config from file");
-        HELPS.put("reload @@route", "Reload route config from file");
-        HELPS.put("reload @@user", "Reload user config from file");
+        HELPS.put("reload @@metadata", "Reload metadata of tables");
         HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         // rollback
         HELPS.put("rollback @@config", "Rollback all config from memory");
-        HELPS.put("rollback @@route", "Rollback route config from memory");
-        HELPS.put("rollback @@user", "Rollback user config from memory");
 
         // open/close sql stat
         HELPS.put("reload @@sqlstat=open", "Open real-time sql stat analyzer");

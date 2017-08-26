@@ -15,7 +15,7 @@ import java.sql.SQLNonTransientException;
 import java.util.Map;
 
 /**
- * 处理注释中类型为schema 的情况（按照指定schema做路由解析）
+ * HintSchemaHandler
  */
 public class HintSchemaHandler implements HintHandler {
 
@@ -28,8 +28,6 @@ public class HintSchemaHandler implements HintHandler {
     }
 
     /**
-     * 从全局的schema列表中查询指定的schema是否存在， 如果存在则替换connection属性中原有的schema，
-     * 如果不存在，则throws SQLNonTransientException，表示指定的schema 不存在
      *
      * @param schema
      * @param sqlType

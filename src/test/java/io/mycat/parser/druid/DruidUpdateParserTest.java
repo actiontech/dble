@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 
 public class DruidUpdateParserTest {
     /**
-     * 测试单表更新分片字段
+     * testUpdateShardColumn
      *
      * @throws NoSuchMethodException
      */
@@ -48,7 +48,7 @@ public class DruidUpdateParserTest {
         throwExceptionParse("update hotnews set id = 1, name = '123' where name = '234' and (id = 1 or age > 3)", true);
         throwExceptionParse("update hotnews set id = 1, name = '123' where id = 1 and (name = '234' or age > 3)", false);
 
-        // 子查询，特殊的运算符between等情况
+        // subQuery /between
         throwExceptionParse("update hotnews set id = 1, name = '123' where id = 1 and name in (select name from test)", false);
         throwExceptionParse("update hotnews set id = 1, name = '123' where name = '123' and id in (select id from test)", true);
         throwExceptionParse("update hotnews set id = 1, name = '123' where id between 1 and 3", true);
@@ -58,7 +58,7 @@ public class DruidUpdateParserTest {
     }
 
     /**
-     * 测试单表别名更新分片字段
+     * testAliasUpdateShardColumn
      *
      * @throws NoSuchMethodException
      */
@@ -118,9 +118,9 @@ public class DruidUpdateParserTest {
     }
 
     /*
-    * 添加一个static方法用于打印一个SQL的where子句，比如这样的一条SQL:
+    * add an static to printf where ,eg:
     * update mytab t set t.ptn_col = 'A', col1 = 3 where ptn_col = 'A' and (col1 = 4 or col2 > 5);
-    * where子句的语法树如下
+    * where looks like this
     *                  AND
     *              /        \
     *             =          OR
@@ -128,16 +128,14 @@ public class DruidUpdateParserTest {
     *     ptn_col 'A'    =       >
     *                  /  \    /   \
     *               col1  4  col2   5
-    * 其输出如下，(按层输出，并且每层最后输出下一层的节点数目)
+    * the output is
     * BooleanAnd			Num of nodes in next level: 2
     * Equality	BooleanOr			Num of nodes in next level: 4
     * ptn_col	'A'	Equality	Equality			Num of nodes in next level: 4
     * col1	4	col2	5			Num of nodes in next level: 0
     *
-    * 因为大部分的update的where子句都比较简单，按层次打印应该足够清晰，未来可以完全按照逻辑打印类似上面的整棵树结构
      */
     public static void printWhereClauseAST(SQLExpr sqlExpr) {
-        // where子句的AST sqlExpr可以通过 MySqlUpdateStatement.getWhere(); 获得
         if (sqlExpr == null)
             return;
         ArrayList<SQLExpr> exprNode = new ArrayList<>();

@@ -29,7 +29,7 @@ public final class DataMigratorUtil {
     }
 
     /**
-     * 添加数据到文件末尾
+     * appendDataToFileEnd
      *
      * @param file
      * @param content
@@ -38,11 +38,8 @@ public final class DataMigratorUtil {
     public static void appendDataToFile(File file, String content) throws IOException {
         RandomAccessFile randomFile = null;
         try {
-            // 打开一个随机访问文件流，按读写方式
             randomFile = new RandomAccessFile(file, "rw");
-            // 文件长度，字节数
             long fileLength = randomFile.length();
-            // 将写文件指针移到文件尾。
             randomFile.seek(fileLength);
             randomFile.writeBytes(content);
             content = null;
@@ -62,7 +59,6 @@ public final class DataMigratorUtil {
     public static String readDataFromFile(File file, long offset, int length) throws IOException {
         RandomAccessFile randomFile = null;
         try {
-            // 打开一个随机访问文件流，按读写方式
             randomFile = new RandomAccessFile(file, "rw");
             randomFile.seek(offset);
             byte[] buffer = new byte[length];
@@ -82,11 +78,9 @@ public final class DataMigratorUtil {
     }
 
     /**
-     * 读取逗号分隔的文件数据
-     *
      * @param file
-     * @param start  文件起始位置
-     * @param length 读取字节数
+     * @param start
+     * @param length
      * @return
      * @throws IOException
      */
@@ -137,7 +131,6 @@ public final class DataMigratorUtil {
     }
 
     /**
-     * 统计文件有多少行
      *
      * @param file
      * @return
@@ -146,7 +139,6 @@ public final class DataMigratorUtil {
         long count = 0L;
         RandomAccessFile randomFile = null;
 
-        // 打开一个随机访问文件流，按读写方式
         try {
             randomFile = new RandomAccessFile(file, "rw");
             String s = "";
@@ -169,9 +161,8 @@ public final class DataMigratorUtil {
     }
 
     /**
-     * 递归删除目录下的所有文件及子目录下所有文件
      *
-     * @param dir 将要删除的文件目录
+     * @param dir
      * @return boolean Returns "true" if all deletions were successful.
      * If a deletion fails, the method stops attempting to
      * delete and returns "false".
@@ -186,15 +177,15 @@ public final class DataMigratorUtil {
                 }
             }
         }
-        // 目录此时为空，可以删除
+        // it is empty and delete it
         return dir.delete();
     }
 
-    //将命令行中的？替换为具体参数
+    //replace ? to parameter
     public static String paramsAssignment(String cmd, String mark, Object... params) {
         List<Object> paramList = Arrays.asList(params);
         for (Object param : paramList) {
-            cmd = cmd.replaceFirst("\\" + mark, Matcher.quoteReplacement(param.toString()));
+            cmd = cmd.replaceFirst("\\\\" + mark, Matcher.quoteReplacement(param.toString()));
         }
         return cmd;
     }
@@ -209,7 +200,7 @@ public final class DataMigratorUtil {
         return JdbcUtils.executeQuery(conn, sql, Arrays.asList(parameters));
     }
 
-    //查询表数据量
+    //get the size of table
     public static long querySize(DataNode dn, String tableName) throws SQLException {
         List<Map<String, Object>> list = null;
         long size = 0L;
@@ -239,7 +230,7 @@ public final class DataMigratorUtil {
     }
 
     /**
-     * 格式化数据迁移信息
+     * format
      * +---------title-------+
      * |key1 = value1     |
      * |key2 = value2     |
@@ -271,7 +262,7 @@ public final class DataMigratorUtil {
             maxLength = title.length() + 8;
         }
         itor = map.entrySet().iterator();
-        //合并key和value，并找出长度最大的字符串
+        //merge key and value,find the longest string
         while (itor.hasNext()) {
             Entry<String, String> entry = itor.next();
             String key = entry.getKey();
@@ -286,11 +277,11 @@ public final class DataMigratorUtil {
             String merge = key + " " + mark + " " + value;
             mergeList.add(merge);
         }
-        int maxLineLength = 300; //一行显示最大字符数
+        int maxLineLength = 300;
         if (maxLength > maxLineLength) {
             maxLength = maxLineLength;
         }
-        //拼第一行title
+        //the title
         StringBuilder titleSb = new StringBuilder("+");
         int halfLength = (maxLength - title.length()) / 2;
         for (int i = 0; i < halfLength; i++) {
@@ -306,7 +297,7 @@ public final class DataMigratorUtil {
         result.append(titleSb);
 
         List<String> changeList = new ArrayList<>();
-        //调整内容
+        //content
         for (String content : mergeList) {
             if (content.trim().length() >= maxLength) {
                 String[] str = content.split(mark);
@@ -332,7 +323,6 @@ public final class DataMigratorUtil {
             }
         }
 
-        //拼接内容
         for (String aChangeList : changeList) {
             StringBuilder contentSb = new StringBuilder(" |");
             String content = aChangeList;

@@ -31,8 +31,8 @@ public class UnsafeExternalRowSorterTest {
     public static final Logger LOGGER = LoggerFactory.getLogger(UnsafeExternalRowSorterTest.class);
 
     /**
-     * 测试类型 LONG，INT，SHORT,Float，Double，String，Binary
-     * 经测试基数排序可以适用上述数据类型，大大提高排序速度
+     * 测试类型 LONG,INT,SHORT,Float,Double,String,Binary
+     * 经测试基数排序可以适用上述数据类型,大大提高排序速度
      */
     @Test
     public void testUnsafeExternalRowSorter() throws NoSuchFieldException, IllegalAccessException, IOException {
@@ -70,7 +70,7 @@ public class UnsafeExternalRowSorterTest {
                 new RowPrefixComputer(schema);
 
         /**
-         * 3 .PrefixComparator 默认是ASC，可以选择DESC
+         * 3 .PrefixComparator 默认是ASC,可以选择DESC
          */
         final PrefixComparator prefixComparator = PrefixComparators.LONG;
 

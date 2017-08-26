@@ -24,7 +24,7 @@
 package io.mycat.util.exception;
 
 /**
- * 未知事物隔离级别异常
+ * UnknownTxIsolationException
  *
  * @author mycat
  */

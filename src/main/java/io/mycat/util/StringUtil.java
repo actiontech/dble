@@ -51,8 +51,7 @@ public final class StringUtil {
             'B', 'N', 'M'};
 
     /**
-     * 字符串hash算法：s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1] <br>
-     * 其中s[]为字符串的字符数组，换算成程序的表达式为：<br>
+     * String hash:s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1] <br>
      * h = 31*h + s.charAt(i); => h = (h << 5) - h + s.charAt(i); <br>
      *
      * @param start hash for s.substring(start, end)
@@ -446,7 +445,7 @@ public final class StringUtil {
         boolean modified = false;
         for (int i = 0, isize = searchChars.length(); i < isize; i++) {
             char searchChar = searchChars.charAt(i);
-            if ((replaceChars == null) || (i >= replaceChars.length())) { // 删除
+            if ((replaceChars == null) || (i >= replaceChars.length())) { // DELETE
                 int pos = 0;
                 for (int j = 0; j < len; j++) {
                     if (chars[j] != searchChar) {
@@ -456,7 +455,7 @@ public final class StringUtil {
                     }
                 }
                 len = pos;
-            } else { // 替换
+            } else { // REPLACE
                 for (int j = 0; j < len; j++) {
                     if (chars[j] == searchChar) {
                         chars[j] = replaceChars.charAt(i);
@@ -472,7 +471,8 @@ public final class StringUtil {
     }
 
     /**
-     * 移除`tablename`名字中的`符号, ```tablename` may not correct
+     * remove ` in `tablename`
+     * FIXME```tablename` may not correct
      *
      * @param str
      * @return
@@ -490,7 +490,7 @@ public final class StringUtil {
     }
 
     /**
-     * 移除'value'包围的'符号
+     * remove ' from 'value'
      *
      * @param str
      * @return

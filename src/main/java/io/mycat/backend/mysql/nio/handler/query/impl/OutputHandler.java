@@ -14,13 +14,10 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /*
- * 最终将数据返回给用户的hander处理
+ * send back to client handler
  */
 public class OutputHandler extends BaseDMLHandler {
     private static Logger logger = Logger.getLogger(OutputHandler.class);
-    /**
-     * 回收资源和其他的response方法有可能同步
-     */
     protected final ReentrantLock lock;
 
     private byte packetId;

@@ -262,8 +262,6 @@ public final class ShowServerLog {
 
 
     /**
-     * 这个方法不光是获取到对应的条件信息同样的在这里
-     * 我们还会校验整个SQL是不是符合我们的定义
      *
      * @param sql
      * @return
@@ -272,14 +270,13 @@ public final class ShowServerLog {
         try {
             HashMap<String, String> map = new HashMap<>();
             int offset = ManagerParseShow.trim(0, sql);
-            //sql拿到之后起头先过滤空格
+            //filter whitespace of sql
             char c1 = sql.charAt(offset);
             char c2 = sql.charAt(++offset);
             char c3 = sql.charAt(++offset);
             if ((c1 == 'L' || c1 == 'l') &&
                     (c2 == 'o' || c2 == 'O') &&
                     (c3 == 'g' || c3 == 'G')) {
-                //log之后去空格
                 offset = ManagerParseShow.trim(++offset, sql);
                 char c4 = sql.charAt(offset);
                 char c5 = sql.charAt(++offset);

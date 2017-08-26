@@ -1,25 +1,24 @@
 package io.mycat.config.loader.zkprocess.entity.schema.schema;
 
-import io.mycat.config.loader.zkprocess.entity.Named;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
-import java.util.ArrayList;
-import java.util.List;
+
+import io.mycat.config.loader.zkprocess.entity.Named;
 
 /**
  * <table name="travelrecord" dataNode="dn1,dn2,dn3" rule="auto-sharding-long" />
- * 用于具体的表信息
- * 源文件名：Table.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "table")
@@ -44,11 +43,6 @@ public class Table implements Named {
     @XmlAttribute
     protected String type;
 
-    /**
-     * 子节点信息
-     *
-     * @字段说明 childTable
-     */
     protected List<ChildTable> childTable;
 
     public String getName() {

@@ -171,9 +171,6 @@ public class NotInHandler extends OwnThreadDMLHandler {
     }
 
     private LocalResult takeFirst(FairLinkedBlockingDeque<LocalResult> deque) throws InterruptedException {
-        /**
-         * 前提条件是这个方法是个单线程
-         */
         deque.waitUtilCount(1);
         LocalResult result = deque.peekFirst();
         RowDataPacket lastRow = result.getLastRow();
@@ -198,7 +195,6 @@ public class NotInHandler extends OwnThreadDMLHandler {
         if (localResult != null) {
             RowDataPacket lastRow = localResult.getLastRow();
             if (lastRow.getFieldCount() == 0) {
-                // 有可能是terminateThread添加的eof
                 return;
             } else if (row.getFieldCount() > 0 && cmp.compare(lastRow, row) == 0) {
                 localResult.add(row);

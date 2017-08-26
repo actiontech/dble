@@ -8,14 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Where条件单元
+ * WhereUnit
  *
  * @author wang.dw
  * @version 0.1.0
- * @date 2015-3-17 下午4:21:21
+ * @date 2015-3-17 16:21:21
  * @copyright wonhigh.cn
  * <p>
- * 示例：
+ * eg:
  * SELECT id,traveldate
  * FROM   travelrecord
  * WHERE  id = 1
@@ -32,7 +32,7 @@ import java.util.List;
 public class WhereUnit {
 
     /**
-     * 还能继续再分的表达式:可能还有or关键字
+     * canSplitExpr:contains or expr
      */
     private SQLBinaryOpExpr canSplitExpr;
 
@@ -41,13 +41,10 @@ public class WhereUnit {
     private List<List<Condition>> conditionList = new ArrayList<>();
 
     /**
-     * whereExpr并不是一个where的全部，有部分条件在outConditions
+     * whereExpris not contains all where condition,consider outConditions
      */
     private List<Condition> outConditions = new ArrayList<>();
 
-    /**
-     * 按照or拆分后的条件片段中可能还有or语句，这样的片段实际上是嵌套的or语句，将其作为内层子whereUnit，不管嵌套多少层，循环处理
-     */
     private List<WhereUnit> subWhereUnits = new ArrayList<>();
 
     private boolean finishedParse = false;

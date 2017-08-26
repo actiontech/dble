@@ -145,7 +145,6 @@ public final class NIOConnector extends Thread implements SocketConnector {
     }
 
     /**
-     * 后端连接ID生成器
      *
      * @author mycat
      */

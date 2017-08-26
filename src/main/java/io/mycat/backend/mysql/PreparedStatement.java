@@ -39,7 +39,7 @@ public class PreparedStatement {
     private int parametersNumber;
     private int[] parametersType;
     /**
-     * 存放COM_STMT_SEND_LONG_DATA命令发送过来的字节数据
+     * store the byte data from COM_STMT_SEND_LONG_DATA
      * <pre>
      * key : param_id
      * value : byte data
@@ -81,7 +81,7 @@ public class PreparedStatement {
     }
 
     /**
-     * COM_STMT_RESET命令将调用该方法进行数据重置
+     * reset value which is used by COM_STMT_RESET
      */
     public void resetLongData() {
         for (Map.Entry<Long, ByteArrayOutputStream> longData : longDataMap.entrySet()) {
@@ -90,7 +90,7 @@ public class PreparedStatement {
     }
 
     /**
-     * 追加数据到指定的预处理参数
+     * append data to param
      *
      * @param paramId
      * @param data

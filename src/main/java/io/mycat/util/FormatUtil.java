@@ -28,19 +28,17 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 /**
- * 格式化工具
+ * FormatUtil
  *
  * @author mycat
- * @version 2008-11-24 下午12:58:17
+ * @version 2008-11-24 12:58:17
  */
 public final class FormatUtil {
     private FormatUtil() {
     }
 
-    // 右对齐格式化字符串
     public static final int ALIGN_RIGHT = 0;
 
-    // 左对齐格式化字符串
     public static final int ALIGN_LEFT = 1;
 
     private static final char DEFAULT_SPLIT_CHAR = ' ';
@@ -48,10 +46,9 @@ public final class FormatUtil {
     private static final String[] TIME_FORMAT = new String[]{"d ", "h ", "m ", "s ", "ms"};
 
     /**
-     * 格式化后返回的字符串
      *
-     * @param s          需要格式化的原始字符串，默认按左对齐。
-     * @param fillLength 填充长度
+     * @param s          origin input string,ALIGN_LEFT.
+     * @param fillLength
      * @return String
      */
     public static String format(String s, int fillLength) {
@@ -59,10 +56,9 @@ public final class FormatUtil {
     }
 
     /**
-     * 格式化后返回的字符串
      *
-     * @param i          需要格式化的数字类型，默认按右对齐。
-     * @param fillLength 填充长度
+     * @param i       input value,ALIGN_RIGHT.
+     * @param fillLength
      * @return String
      */
     public static String format(int i, int fillLength) {
@@ -70,10 +66,9 @@ public final class FormatUtil {
     }
 
     /**
-     * 格式化后返回的字符串
      *
-     * @param l          需要格式化的数字类型，默认按右对齐。
-     * @param fillLength 填充长度
+     * @param l          input value,ALIGN_RIGHT.
+     * @param fillLength
      * @return String
      */
     public static String format(long l, int fillLength) {
@@ -81,10 +76,10 @@ public final class FormatUtil {
     }
 
     /**
-     * @param s          需要格式化的原始字符串
-     * @param fillLength 填充长度
-     * @param fillChar   填充的字符
-     * @param align      填充方式（左边填充还是右边填充）
+     * @param s          input origin string
+     * @param fillLength
+     * @param fillChar
+     * @param align
      * @return String
      */
     public static String format(String s, int fillLength, char fillChar, int align) {
@@ -117,7 +112,6 @@ public final class FormatUtil {
     }
 
     /**
-     * 格式化时间输出
      * <p>
      * 1d 15h 4m 15s 987ms
      * </p>
@@ -148,7 +142,7 @@ public final class FormatUtil {
     }
 
     /**
-     * 格式化日期 yyyy/MM/dd HH:mm:ss
+     *  yyyy/MM/dd HH:mm:ss
      *
      * @param tsmp
      * @return
@@ -159,7 +153,6 @@ public final class FormatUtil {
     }
 
     /**
-     * 格式化日期
      *
      * @param time
      * @return

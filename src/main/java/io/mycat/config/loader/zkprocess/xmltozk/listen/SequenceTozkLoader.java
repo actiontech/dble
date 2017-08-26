@@ -15,20 +15,18 @@ import java.util.Properties;
 
 /**
  * 进行从sequence加载到zk中加载
- * 源文件名：SchemasLoader.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
 
-    /**
-     * 日志
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTozkLoader.class);
 
     /**
@@ -93,7 +91,7 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
      * @param basePath 基本路径
      * @param name     文件的信息
      * @throws Exception 异常信息
-     * @创建日期 2016年9月17日
+     * @Created 2016/9/17
      */
     private void sequenceTozk(String basePath, String name) throws Exception {
         // 读取当前节的信息

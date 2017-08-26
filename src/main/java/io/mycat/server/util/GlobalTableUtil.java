@@ -39,7 +39,7 @@ public final class GlobalTableUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTableUtil.class);
     private static Map<String, TableConfig> globalTableMap = new ConcurrentHashMap<>();
     /**
-     * 全局表 保存修改时间戳 的字段名，用于全局表一致性检查
+     * 全局表 保存修改时间戳 的字段名,用于全局表一致性检查
      */
     public static final String GLOBAL_TABLE_CHECK_COLUMN = "_mycat_op_time";
     public static final String COUNT_COLUMN = "record_count";
@@ -139,7 +139,7 @@ public final class GlobalTableUtil {
                             }
                         }
                         LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
-                        // 一种 check 完成之后，再进行另一种 check
+                        // 一种 check 完成之后,再进行另一种 check
                         checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
                         isColumnCountCheckFinished = 0;
                         checker.checkRecordCout();
@@ -161,7 +161,7 @@ public final class GlobalTableUtil {
     }
 
     /**
-     * 每次处理 一种 check 的结果，不会交叉同时处理 多种不同 check 的结果
+     * 每次处理 一种 check 的结果,不会交叉同时处理 多种不同 check 的结果
      *
      * @param list
      * @return

@@ -14,30 +14,28 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 处理可以下发的查询节点，可以下发的情况有可能是全global表， 也有可能是部分global部分非global
+ * execute the node which can push down,may be all global tables,and maybe contain global tables
  *
  * @author ActionTech
- * @CreateTime 2014年12月10日
+ * @CreateTime 2014/12/10
  */
 public abstract class MysqlVisitor {
-    // mysql支持的最长列长度
+    // the max column size of mysql
     protected static final int MAX_COL_LENGTH = 255;
-    // 记录sel name和push name之间的映射关系
+    // map :sel name->push name
     protected Map<String, String> pushNameMap = new HashMap<>();
     protected boolean isTopQuery = false;
     protected PlanNode query;
     protected long randomIndex = 0L;
-    /* 是否存在不可下发的聚合函数，如果存在，所有函数都不下发，自己进行计算 */
+    /* is all function can be push down?if not,it need to calc by middle-ware */
     protected boolean existUnPushDownGroup = false;
     protected boolean visited = false;
-    // -- start replaceable stringbuilder
+    // -- start replaceable string builder
     protected ReplaceableStringBuilder replaceableSqlBuilder = new ReplaceableStringBuilder();
-    // 临时记录的sql
+    // tmp sql
     protected StringBuilder sqlBuilder;
     protected StringPtr replaceableWhere = new StringPtr("");
 
-    // 存储可替换的String
-    // -- end replaceable stringbuilder
 
     public MysqlVisitor(PlanNode query, boolean isTopQuery) {
         this.query = query;
@@ -73,7 +71,7 @@ public abstract class MysqlVisitor {
         }
     }
 
-    /* where修改为可替换的 */
+    /* change where to replaceable */
     protected void buildWhere(PlanNode planNode) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
@@ -88,7 +86,7 @@ public abstract class MysqlVisitor {
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
     }
 
-    // 生成自定义的聚合函数别名
+    // generate an alias for aggregate function
     public static String getMadeAggAlias(String aggFuncName) {
         return "_$" + aggFuncName + "$_";
     }
@@ -98,11 +96,11 @@ public abstract class MysqlVisitor {
     }
 
     /**
-     * 生成pushdown信息
+     * generate push down
      */
     protected abstract String visitPushDownNameSel(Item o);
 
-    // 非sellist的下推name
+    // pushDown's name of not in select list
     public final String visitUnselPushDownName(Item item, boolean canUseAlias) {
         String selName = item.getItemName();
         if (item.type().equals(ItemType.FIELD_ITEM)) {
@@ -112,8 +110,8 @@ public abstract class MysqlVisitor {
         if (nameInMap != null) {
             item.setPushDownName(nameInMap);
             if (canUseAlias && !(query.type() == PlanNodeType.JOIN && item.type().equals(ItemType.FIELD_ITEM))) {
-                // join时 select t1.id,t2.id from t1,t2 order by t1.id
-                // 尽量用用户原始输入的group by，order by
+                // join: select t1.id,t2.id from t1,t2 order by t1.id
+                // try to use the origin group by,order by
                 selName = nameInMap;
             }
         }

@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * 暂停数据节点心跳检测
+ * StopHeartbeatCheck
  *
  * @author mycat
  */

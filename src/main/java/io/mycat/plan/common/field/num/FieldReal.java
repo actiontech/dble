@@ -34,7 +34,7 @@ public abstract class FieldReal extends FieldNum {
     }
 
     /**
-     * 如果是null的对象则是Item_field_null对象，不会是这些对象，所以这里不会返回null
+     * 如果是null的对象则是Item_field_null对象,不会是这些对象,所以这里不会返回null
      */
     @Override
     public BigDecimal valDecimal() {

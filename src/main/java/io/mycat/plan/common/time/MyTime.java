@@ -100,7 +100,7 @@ public final class MyTime {
     public static final int WEEK_FIRST_WEEKDAY = 4;
 
     /*-------------------------My_time.h  start------------------------------
-     *-------------------------My_time.h都是time类型的转向其它类型的方法--------------- */
+     *-------------------------change time type to other type--------------- */
 
     /*
      * Handle 2 digit year conversions
@@ -1079,7 +1079,7 @@ public final class MyTime {
         String stime = String.format("%s%02d:%02d:%02d", (lTime.isNeg() ? "-" : ""), lTime.getHour(), lTime.getMinute(),
                 lTime.getSecond());
         if (dec != 0) {
-            // 目前无法显示小数点后的6位
+            // TODO: 6 digits after Decimal point
             // String stmp = String.format("%06d", l_time.second_part);
             // stime += "." + stmp.substring(0, (int) dec);
         }
@@ -1102,7 +1102,7 @@ public final class MyTime {
         timeToDatetimeStr(ptrtmp, lTime);
         String res = ptrtmp.get();
         if (dec != 0) {
-            // 目前无法显示小数点后的位
+            // TODO: 6 digits after Decimal point
             // String stmp = String.format("%06d", l_time.second_part);
             // res += "." + stmp.substring(0, (int) dec);
         }
@@ -1134,7 +1134,7 @@ public final class MyTime {
     }
 
     /*-------------------------My_time.h  end------------------------------*/
-    /*-------------------------Sql_time.h(其它类型向MySqlTime转换)start----------------------------*/
+    /*-------------------------the other type change to time type----------------------------*/
 
     /* Rounding functions */
 

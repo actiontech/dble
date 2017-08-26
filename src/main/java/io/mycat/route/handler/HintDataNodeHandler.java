@@ -14,7 +14,7 @@ import java.sql.SQLNonTransientException;
 import java.util.Map;
 
 /**
- * 处理注释中类型为datanode 的情况
+ * HintDataNodeHandler
  *
  * @author zhuam
  */

@@ -43,7 +43,7 @@ import io.mycat.util.TimeUtil;
 import java.nio.ByteBuffer;
 
 /**
- * 查询后端连接
+ * ShowBackend
  *
  * @author mycat
  */

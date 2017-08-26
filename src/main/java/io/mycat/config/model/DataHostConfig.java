@@ -42,7 +42,7 @@ public class DataHostConfig {
     private static final Pattern PATTERN = Pattern.compile("\\s*show\\s+slave\\s+status\\s*", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_CLUSTER = Pattern.compile("\\s*show\\s+status\\s+like\\s+'wsrep%'", Pattern.CASE_INSENSITIVE);
     private String name;
-    private int maxCon = 128; // 保持后端数据通道的默认最大值
+    private int maxCon = 128;
     private int minCon = 10;
     private int balance = PhysicalDBPool.BALANCE_NONE;
     private final DBHostConfig[] writeHosts;
@@ -52,7 +52,7 @@ public class DataHostConfig {
     private boolean isShowClusterSql = false;
     private int slaveThreshold = -1;
     private final int switchType;
-    private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
+    private boolean tempReadHostAvailable = false;
 
     public DataHostConfig(String name,
                           DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {

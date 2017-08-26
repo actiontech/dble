@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 防火墙配置定义
+ * FirewallConfig
  *
  * @author songwie
  * @author zhuam

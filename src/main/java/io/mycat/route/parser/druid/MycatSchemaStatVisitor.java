@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Druid解析器中用来从ast语法中提取表名、条件、字段等的vistor
+ * MycatSchemaStatVisitor
  *
  * @author wang.dw
  */
@@ -183,7 +183,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
                 break;
             case BooleanOr:
-                //永真条件，where条件抛弃
+                //remove always true
                 if (!RouterUtil.isConditionAlwaysTrue(x)) {
                     hasOrCondition = true;
 
@@ -309,7 +309,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (betweenExpr.getTestExpr() != null) {
             String tableName = null;
             String column = null;
-            if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //字段带别名的
+            if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //field has alias
                 tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
                 column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
                 SQLObject query = this.subQueryMap.get(tableName);
@@ -322,8 +322,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 return handleSubQueryColumn(tableName, column);
             } else if (betweenExpr.getTestExpr() instanceof SQLIdentifierExpr) {
                 column = ((SQLIdentifierExpr) betweenExpr.getTestExpr()).getName();
-                //字段不带别名的,此处如果是多表，容易出现ambiguous，
-                //不知道这个字段是属于哪个表的,fdbparser用了defaultTable，即join语句的leftTable
                 tableName = getOwnerTableName(betweenExpr, column);
             }
             String table = tableName;
@@ -399,27 +397,25 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 从between语句中获取字段所属的表名。
-     * 对于容易出现ambiguous的（字段不知道到底属于哪个表），实际应用中必须使用别名来避免歧义
+     * get table name of field in between expr
      *
      * @param betweenExpr
      * @param column
      * @return
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (tableStats.size() == 1) { //只有一个表，直接返回这一个表名
+        if (tableStats.size() == 1) { //only has 1 table
             return tableStats.keySet().iterator().next().getName();
-        } else if (tableStats.size() == 0) { //一个表都没有，返回空串
+        } else if (tableStats.size() == 0) { //no table
             return "";
-        } else { //多个表名
+        } else { // multi tables
             for (Column col : columns.keySet()) {
                 if (col.getName().equals(column)) {
                     return col.getTable();
                 }
             }
 
-            //前面没找到表名的，自己从parent中解析
-
+            //parser from parent
             SQLObject parent = betweenExpr.getParent();
             if (parent instanceof SQLBinaryOpExpr) {
                 parent = parent.getParent();
@@ -427,10 +423,11 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
             if (parent instanceof MySqlSelectQueryBlock) {
                 MySqlSelectQueryBlock select = (MySqlSelectQueryBlock) parent;
-                if (select.getFrom() instanceof SQLJoinTableSource) { //多表连接
+                if (select.getFrom() instanceof SQLJoinTableSource) {
                     SQLJoinTableSource joinTableSource = (SQLJoinTableSource) select.getFrom();
-                    return joinTableSource.getLeft().toString(); //将left作为主表，此处有不严谨处，但也是实在没有办法，如果要准确，字段前带表名或者表的别名即可
-                } else if (select.getFrom() instanceof SQLExprTableSource) { //单表
+                    //FIXME :left as driven table
+                    return joinTableSource.getLeft().toString();
+                } else if (select.getFrom() instanceof SQLExprTableSource) {
                     return select.getFrom().toString();
                 }
             } else if (parent instanceof SQLUpdateStatement) {
@@ -445,10 +442,10 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 分解条件
+     * splitConditions
      */
     public List<List<Condition>> splitConditions() {
-        //按照or拆分
+        //split according to or expr
         for (WhereUnit whereUnit : whereUnits) {
             splitUntilNoOr(whereUnit);
         }
@@ -457,17 +454,15 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         loopFindSubWhereUnit(whereUnits);
 
-        //拆分后的条件块解析成Condition列表
         for (WhereUnit whereUnit : storedwhereUnits) {
             this.getConditionsFromWhereUnit(whereUnit);
         }
 
-        //多个WhereUnit组合:多层集合的组合
         return mergedConditions();
     }
 
     /**
-     * 循环寻找子WhereUnit（实际是嵌套的or）
+     * FIND WhereUnit
      *
      * @param whereUnitList
      */
@@ -516,7 +511,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 一个WhereUnit内递归
+     * mergeOneWhereUnit
      *
      * @param whereUnit
      */
@@ -548,7 +543,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 条件合并：多个WhereUnit中的条件组合
+     * merge WhereUnit's condition
      *
      * @return
      */
@@ -566,7 +561,7 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 两个list中的条件组合
+     * Merge 2 list
      *
      * @param list1
      * @param list2
@@ -593,7 +588,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private void getConditionsFromWhereUnit(WhereUnit whereUnit) {
         List<List<Condition>> retList = new ArrayList<>();
-        //or语句外层的条件:如where condition1 and (condition2 or condition3),condition1就会在外层条件中,因为之前提取
         List<Condition> outSideCondition = new ArrayList<>();
         outSideCondition.addAll(conditions);
         this.conditions.clear();
@@ -613,9 +607,9 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * 递归拆分OR
+     * splitUntilNoOr
      *
-     * @param whereUnit TODO:考虑嵌套or语句，条件中有子查询、 exists等很多种复杂情况是否能兼容
+     * @param whereUnit
      */
     private void splitUntilNoOr(WhereUnit whereUnit) {
         if (whereUnit.isFinishedParse()) {
@@ -642,7 +636,6 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private void addExprIfNotFalse(WhereUnit whereUnit, SQLExpr expr) {
-        //非永假条件加入路由计算
         if (!RouterUtil.isConditionAlwaysFalse(expr)) {
             whereUnit.addSplitedExpr(expr);
         }

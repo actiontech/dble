@@ -1,12 +1,17 @@
 package io.mycat.config.loader.zkprocess.comm;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import com.alibaba.fastjson.util.IOUtils;
+
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.util.ResourceUtil;
-
-import java.io.*;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by huqing.yan on 2017/6/15.
@@ -18,7 +23,6 @@ public final class ConfFileRWUtils {
     public static String readFile(String name) throws IOException {
         StringBuilder mapFileStr = new StringBuilder();
         String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;
-        // 加载数据
         InputStream input = ResourceUtil.getResourceAsStreamFromRoot(path);
         checkNotNull(input, "read file curr Path :" + path + " is null! It must be not null");
         byte[] buffers = new byte[256];
@@ -34,7 +38,6 @@ public final class ConfFileRWUtils {
     }
 
     public static void writeFile(String name, String value) throws IOException {
-        // 加载数据
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");
         path = new File(path).getPath() + File.separator + name;

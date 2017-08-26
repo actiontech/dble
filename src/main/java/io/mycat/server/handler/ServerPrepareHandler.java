@@ -80,7 +80,6 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         LOGGER.debug("use server prepare, sql: " + sql);
         PreparedStatement pstmt = null;
         if ((pstmt = pstmtForSql.get(sql)) == null) {
-            // 解析获取字段个数和参数个数
             int columnCount = getColumnCount(sql);
             int paramCount = getParamCount(sql);
             pstmt = new PreparedStatement(++pstmtId, sql, columnCount, paramCount);
@@ -141,9 +140,8 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 return;
             }
             BindValue[] bindValues = packet.getValues();
-            // 还原sql中的动态参数为实际参数值
+            // reset the Parameter
             String sql = prepareStmtBindValue(pstmt, bindValues);
-            // 执行sql
             source.getSession2().setPrepared(true);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute prepare sql: " + sql);
@@ -155,7 +153,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void close(byte[] data) {
-        long psId = ByteUtil.readUB4(data, 5); // 获取prepare stmt id
+        long psId = ByteUtil.readUB4(data, 5); // prepare stmt id
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close prepare stmt, stmtId = " + psId);
         }
@@ -171,14 +169,12 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         this.pstmtForSql.clear();
     }
 
-    // TODO 获取预处理语句中column的个数
+    // TODO:the size of columns of prepared statement
     private int getColumnCount(String sql) {
-        int columnCount = 0;
-        // TODO ...
-        return columnCount;
+        return 0;
     }
 
-    // 获取预处理sql中预处理参数个数
+    // the size of parameters of prepared statement
     private int getParamCount(String sql) {
         char[] cArr = sql.toCharArray();
         int count = 0;
@@ -191,7 +187,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     }
 
     /**
-     * 组装sql语句,替换动态参数为实际参数值
+     * build sql
      *
      * @param pstmt
      * @param bindValues
@@ -208,11 +204,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 sb.append(c);
                 continue;
             }
-            // 处理占位符?
+            // execute the ?
             int paramType = paramTypes[idx];
             BindValue bindValue = bindValues[idx];
             idx++;
-            // 处理字段为空的情况
+            // if field is empty
             if (bindValue.isNull()) {
                 sb.append("NULL");
                 continue;
@@ -250,7 +246,6 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                         byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
                         sb.append("X'" + HexFormatUtil.bytesToHexString(bytes) + "'");
                     } else {
-                        // 正常情况下不会走到else, 除非long data的存储方式(ByteArrayOutputStream)被修改
                         LOGGER.warn("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
                         sb.append("'" + bindValue.getValue() + "'");
                     }

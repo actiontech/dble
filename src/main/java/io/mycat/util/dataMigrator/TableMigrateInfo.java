@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * 表迁移信息，包括:
+ * 表迁移信息,包括:
  * 表名、迁移前后的数据节点、表数据量、迁移前后数据分布对比
  *
  * @author haonan108
@@ -29,13 +29,13 @@ public class TableMigrateInfo {
     private AbstractPartitionAlgorithm newRuleAlgorithm;
     private String column;
 
-    private boolean isExpantion; //true:扩容 false：缩容
+    private boolean isExpantion; //true:扩容 false:缩容
 
     private volatile boolean isError;
 
     private StringBuffer errMessage = new StringBuffer();
 
-    private String tableStructure = ""; //记录建表信息，迁移后的节点表不存在的话自动建表
+    private String tableStructure = ""; //记录建表信息,迁移后的节点表不存在的话自动建表
 
     private Map<String, String> dnMigrateSize;
 
@@ -78,7 +78,7 @@ public class TableMigrateInfo {
     public void setTableStructure(String tableStructure) {
         this.tableStructure = tableStructure;
     }
-    //缩容后，找出被移除的节点
+    //缩容后,找出被移除的节点
 
     public List<DataNode> getRemovedDataNodes() {
         List<DataNode> list = new ArrayList<>();
@@ -86,7 +86,7 @@ public class TableMigrateInfo {
         list.removeAll(newDataNodes);
         return list;
     }
-    //扩容后，找出除旧节点以外新增加的节点
+    //扩容后,找出除旧节点以外新增加的节点
 
     public List<DataNode> getNewAddDataNodes() {
         List<DataNode> list = new ArrayList<>();
@@ -94,7 +94,7 @@ public class TableMigrateInfo {
         list.removeAll(oldDataNodes);
         return list;
     }
-    //对新增的节点创建表：create table if not exists
+    //对新增的节点创建表:create table if not exists
 
     public void createTableToNewDataNodes() throws SQLException {
         if (this.isExpantion) {
@@ -123,7 +123,7 @@ public class TableMigrateInfo {
     }
 
     /**
-     * 是否为扩容，true：扩容，false：缩容
+     * 是否为扩容,true:扩容,false:缩容
      *
      * @return
      */

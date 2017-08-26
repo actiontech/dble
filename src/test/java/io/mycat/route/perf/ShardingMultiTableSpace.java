@@ -49,7 +49,6 @@ public class ShardingMultiTableSpace {
     }
 
     /**
-     * 路由到tableSpace的性能测试
      *
      * @throws SQLNonTransientException
      */

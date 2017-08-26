@@ -22,9 +22,6 @@ public class XASessionCheck {
         this.rollbackSession.put(s.getSource().getId(), s);
     }
 
-    /**
-     * 定时执行
-     */
     public void checkSessions() {
         checkCommitSession();
         checkRollbackSession();

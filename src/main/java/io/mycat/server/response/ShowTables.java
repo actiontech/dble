@@ -69,7 +69,7 @@ public final class ShowTables {
             c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
-        //不分库的schema，show tables从后端 mysql中查
+        //if schema has default node ,show tables will send to backend
         String node = schema.getDataNode();
         if (!Strings.isNullOrEmpty(node)) {
             try {
@@ -157,7 +157,7 @@ public final class ShowTables {
             row.add(StringUtil.encode(entry.getValue(), c.getCharset()));
             if (whereItem != null) {
                 HandlerTool.initFields(sourceFields, row.fieldValues);
-                /* 根据where条件进行过滤 */
+                /* filter by where condition */
                 if (whereItem.valBool()) {
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
@@ -211,7 +211,7 @@ public final class ShowTables {
     }
 
     public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
-        //在这里对于没有建立起来的表格进行过滤，去除尚未新建的表格
+        //remove the table which is not created but configured
         SchemaMeta schemata = MycatServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
             return new HashMap<>();

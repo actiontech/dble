@@ -122,7 +122,7 @@ public final class PlanUtil {
         if (func.isWithSumFunc())
             return false;
         else {
-            // 如果函数涉及的所有的参数仅有一个table，则可以下推
+            // 如果函数涉及的所有的参数仅有一个table,则可以下推
             return func.getReferTables().size() <= 1;
         }
     }
@@ -175,7 +175,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 判断bf是否可以做为node的joinkey，并且调整bf的左右位置
+     * 判断bf是否可以做为node的joinkey,并且调整bf的左右位置
      *
      * @param bf
      * @param node
@@ -205,7 +205,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 将原本的Join的where条件中的a.id=b.id构建为join条件，并从where条件中移除
+     * 将原本的Join的where条件中的a.id=b.id构建为join条件,并从where条件中移除
      */
     public static void findJoinKeysAndRemoveIt(List<Item> dnfNode, JoinNode join) {
         if (dnfNode.isEmpty()) {
@@ -327,7 +327,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 当order1 包含order2的时候，返回true，要求order2的列在order1中要从第一列开始按照顺序来进行
+     * 当order1 包含order2的时候,返回true,要求order2的列在order1中要从第一列开始按照顺序来进行
      *
      * @param orders1
      * @param orders2

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * join的策略目前为sortmerge，在merge数据到达之前，已经按照merge列进行了排序
+ * join strategy is sortMerge,the merge data has been ordered
  *
  * @author ActionTech
  */
@@ -103,7 +103,6 @@ public class JoinHandler extends OwnThreadDMLHandler {
         }
     }
 
-    /* 用来处理otherjoinonfilter的 */
     private Item makeOtherJoinOnItem(List<FieldPacket> rowpackets, BackendConnection conn) {
         this.joinRowFields = HandlerTool.createFields(rowpackets);
         if (otherJoinOn == null)
@@ -228,7 +227,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     private LocalResult takeFirst(FairLinkedBlockingDeque<LocalResult> deque) throws InterruptedException {
         /**
-         * 前提条件是这个方法是个单线程
+         * it must be in single thread
          */
         deque.waitUtilCount(1);
         LocalResult result = deque.peekFirst();
@@ -322,7 +321,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         if (localResult != null) {
             RowDataPacket lastRow = localResult.getLastRow();
             if (lastRow.getFieldCount() == 0) {
-                // 有可能是terminateThread添加的eof
+                // eof may added in terminateThread
                 return;
             } else if (row.getFieldCount() > 0 && cmp.compare(lastRow, row) == 0) {
                 localResult.add(row);

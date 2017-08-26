@@ -28,20 +28,19 @@ import io.mycat.util.StringUtil;
 import java.io.Serializable;
 
 /**
- * 数据分区工具
+ * PartitionUtil
  *
  * @author mycat
  */
 public final class PartitionUtil implements Serializable {
 
-    // 分区最大长度:数据段分布定义，如果取模的数是2^n， 使用x % 2^n == x & (2^n - 1)等式，来优化性能。
+    // MAX_PARTITION_LENGTH: if the number is 2^n,  then optimizer by x % 2^n == x & (2^n - 1).
     private static final int MAX_PARTITION_LENGTH = 2880;
     private int partitionLength;
 
-    // %转换为&操作的换算数值
+    // cached the value of  2^n - 1 because of x % 2^n == x & (2^n - 1).
     private long addValue;
 
-    // 分区线段
     private int[] segment;
 
     private boolean canProfile = false;
@@ -50,10 +49,10 @@ public final class PartitionUtil implements Serializable {
 
     /**
      * <pre>
-     * @param count 表示定义的分区数
-     * @param length 表示对应每个分区的取值长度
-     * 注意：其中count,length两个数组的长度必须是一致的。
-     * 约束：MAX_PARTITION_LENGTH >=sum((count[i]*length[i]))
+     * @param count the size of partitions
+     * @param length the consequent value of every partition
+     * Notice:count.length must equals length.length.
+     * and :MAX_PARTITION_LENGTH >=sum((count[i]*length[i]))
      * </pre>
      */
     public PartitionUtil(int[] count, int[] length) {
@@ -84,7 +83,6 @@ public final class PartitionUtil implements Serializable {
             canProfile = true;
         }
 
-        // 数据映射操作
         for (int i = 1; i < ai.length; i++) {
             for (int j = ai[i - 1]; j < ai[i]; j++) {
                 segment[j] = (i - 1);

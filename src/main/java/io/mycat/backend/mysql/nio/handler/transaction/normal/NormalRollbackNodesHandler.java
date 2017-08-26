@@ -55,7 +55,6 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         } finally {
             lock.unlock();
         }
-        // 执行
         int position = 0;
         for (final RouteResultsetNode node : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(node);

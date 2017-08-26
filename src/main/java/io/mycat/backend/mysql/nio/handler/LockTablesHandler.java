@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * lock tables 语句处理器
+ * Lock Tables Handler
  *
  * @author songdabin
  */

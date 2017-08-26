@@ -138,7 +138,7 @@ public abstract class Item {
     protected boolean withUnValAble;
     protected boolean fixed;
     protected ItemResult cmpContext;
-    /* 默认charsetindex为my_charset_bin */
+    /* the default charsetindex is my_charset_bin */
     protected int charsetIndex = 63;
     private HashSet<PlanNode> referTables;
 
@@ -214,14 +214,15 @@ public abstract class Item {
     public abstract ItemType type();
 
     /**
-     * val_real和val_decimal的区别是，val_real不会返回null，返回null的情况下会返回BigDecimal.zero
+     * the difference of val_real and val_decimal is;
+     *  val_real return BigDecimal.zero if need return null
      *
      * @return
      */
     public abstract BigDecimal valReal();
 
     /**
-     * 不会返回null,对应的返回BigInteger.zero
+     * will not return null,return BigInteger.zero if need null
      *
      * @return
      */

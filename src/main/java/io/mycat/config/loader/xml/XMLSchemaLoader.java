@@ -64,17 +64,14 @@ public class XMLSchemaLoader implements SchemaLoader {
     private final boolean lowerCaseNames;
 
     public XMLSchemaLoader(String schemaFile, String ruleFile, boolean lowerCaseNames) {
-        //先读取rule.xml
+        //load rule.xml
         XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile);
-        //将tableRules拿出，用于这里加载Schema做rule有效判断，以及之后的分片路由计算
         this.tableRules = ruleLoader.getTableRules();
-        //释放ruleLoader
-        ruleLoader = null;
         this.dataHosts = new HashMap<>();
         this.dataNodes = new HashMap<>();
         this.schemas = new HashMap<>();
         this.lowerCaseNames = lowerCaseNames;
-        //读取加载schema配置
+        //load schema
         this.load(DEFAULT_DTD, schemaFile == null ? DEFAULT_XML : schemaFile);
     }
 
@@ -117,11 +114,8 @@ public class XMLSchemaLoader implements SchemaLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            //先加载所有的DataHost
             loadDataHosts(root);
-            //再加载所有的DataNode
             loadDataNodes(root);
-            //最后加载所有的Schema
             loadSchemas(root);
         } catch (ConfigException e) {
             throw e;
@@ -151,7 +145,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         NodeList list = root.getElementsByTagName("schema");
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Element schemaElement = (Element) list.item(i);
-            //读取各个属性
             String name = schemaElement.getAttribute("name");
             if (lowerCaseNames) {
                 name = name.toLowerCase();
@@ -159,11 +152,11 @@ public class XMLSchemaLoader implements SchemaLoader {
             String dataNode = schemaElement.getAttribute("dataNode");
             String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
             int sqlMaxLimit = -1;
-            //读取sql返回结果集限制
+            // sql result size limit
             if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
                 sqlMaxLimit = Integer.parseInt(sqlMaxLimitStr);
             }
-            //校验检查并添加dataNode
+            //check and add dataNode
             if (dataNode != null && !dataNode.isEmpty()) {
                 List<String> dataNodeLst = new ArrayList<>(1);
                 dataNodeLst.add(dataNode);
@@ -171,14 +164,13 @@ public class XMLSchemaLoader implements SchemaLoader {
             } else {
                 dataNode = null;
             }
-            //加载schema下所有tables
+            //load tables from schema
             Map<String, TableConfig> tables = loadTables(schemaElement, lowerCaseNames);
-            //判断schema是否重复
             if (schemas.containsKey(name)) {
                 throw new ConfigException("schema " + name + " duplicated!");
             }
 
-            // 设置了table的不需要设置dataNode属性，没有设置table的必须设置dataNode属性
+            // if schema has no default dataNode,it must contains at least one table
             if (dataNode == null && tables.size() == 0) {
                 throw new ConfigException(
                         "schema " + name + " didn't config tables,so you must set dataNode property!");
@@ -251,31 +243,31 @@ public class XMLSchemaLoader implements SchemaLoader {
 
 
     private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames) {
-        // 支持表名中包含引号[`] BEN GONG
+        // supprot [`] BEN GONG in table name
         Map<String, TableConfig> tables = new TableConfigMap();
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
 
-            //记录主键，用于之后路由分析，以及启用自增长主键
+            //primaryKey used for cache and autoincrement
             String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
-            //记录是否主键自增，默认不是，（启用全局sequence handler）
+            //if autoIncrement,it will use sequence handler
             boolean autoIncrement = false;
             if (tableElement.hasAttribute("autoIncrement")) {
                 autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
             }
-            //记录是否需要加返回结果集限制，默认需要加
+            //limit size of the table
             boolean needAddLimit = true;
             if (tableElement.hasAttribute("needAddLimit")) {
                 needAddLimit = Boolean.parseBoolean(tableElement.getAttribute("needAddLimit"));
             }
-            //记录type，是否为global
+            //table type is global or not
             String tableTypeStr = tableElement.hasAttribute("type") ? tableElement.getAttribute("type") : null;
             TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
             if ("global".equalsIgnoreCase(tableTypeStr)) {
                 tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
             }
-            //记录dataNode，就是分布在哪些dataNode上
+            //dataNode of table
             TableRuleConfig tableRule = null;
             if (tableElement.hasAttribute("rule")) {
                 String ruleName = tableElement.getAttribute("rule");
@@ -285,12 +277,12 @@ public class XMLSchemaLoader implements SchemaLoader {
                 }
             }
             boolean ruleRequired = false;
-            //记录是否绑定有分片规则
+            //ruleRequired?
             if (tableElement.hasAttribute("ruleRequired")) {
                 ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
             }
             String dataNode = tableElement.getAttribute("dataNode");
-            //distribute函数，重新编排dataNode
+            //distribute function
             String distPrex = "distribute(";
             boolean distTableDns = dataNode.startsWith(distPrex);
             if (distTableDns) {
@@ -308,21 +300,18 @@ public class XMLSchemaLoader implements SchemaLoader {
                 TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
                         dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
                 checkDataNodeExists(table.getDataNodes());
-                // 检查分片表分片规则配置是否合法
                 if (table.getRule() != null) {
                     checkRuleSuitTable(table);
                 }
                 if (distTableDns) {
                     distributeDataNodes(table.getDataNodes());
                 }
-                //检查去重
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
-                //放入map
                 tables.put(table.getName(), table);
             }
-            //只有tableName配置的是单个表（没有逗号）的时候才能有子表
+            // child table must know its unique father
             if (tableNames.length == 1) {
                 TableConfig parentTable = tables.get(tableNames[0]);
                 // process child tables
@@ -333,10 +322,9 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     /**
-     * distribute datanodes in multi hosts,means ,dn1 (host1),dn100
-     * (host2),dn300(host3),dn2(host1),dn101(host2),dn301(host3)...etc
-     * 将每个host上的datanode按照host重新排列。比如上面的例子host1拥有dn1,dn2，host2拥有dn100，dn101，host3拥有dn300，dn301,
-     * 按照host重新排列： 0->dn1 (host1),1->dn100(host2),2->dn300(host3),3->dn2(host1),4->dn101(host2),5->dn301(host3)
+     * distribute data nodes in multi hosts, reorder data node according to host .
+     * eg :dn1 (host1),dn2(host1),dn100(host2),dn101(host2),dn300(host3),dn101(host2),dn301(host3)...etc
+     * result: 0->dn1 (host1),1->dn100(host2),2->dn300(host3),3->dn2(host1),4->dn101(host2),5->dn301(host3)
      *
      * @param theDataNodes
      */
@@ -377,7 +365,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 continue;
             }
             Element childTbElement = (Element) theNode;
-            //读取子表信息
             String cdTbName = childTbElement.getAttribute("name");
             if (isLowerCaseNames) {
                 cdTbName = cdTbName.toLowerCase();
@@ -392,7 +379,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (childTbElement.hasAttribute("needAddLimit")) {
                 needAddLimit = Boolean.parseBoolean(childTbElement.getAttribute("needAddLimit"));
             }
-            //子表join键，和对应的parent的键，父子表通过这个关联
+            //join key ,the parent's column
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
             TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
@@ -402,7 +389,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 throw new ConfigException("table " + table.getName() + " duplicated!");
             }
             tables.put(table.getName(), table);
-            //对于子表的子表，递归处理
+            //child table may also have children
             processChildTables(tables, table, strDatoNodes, childTbElement, isLowerCaseNames);
         }
     }
@@ -418,15 +405,14 @@ public class XMLSchemaLoader implements SchemaLoader {
         }
     }
 
-    /**
-     * 检查分片表分片规则配置, 目前主要检查分片表分片算法定义与分片dataNode是否匹配<br>
-     * 例如分片表定义如下:<br>
+    /**<br>
+     * eg::<br>
      * {@code
      * <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2"
      * rule="mod-long" />
      * }
      * <br>
-     * 分片算法如下:<br>
+     * algorithm:<br>
      * {@code
      * <function name="mod-long" class="io.mycat.route.function.PartitionByMod">
      * <!-- how many data nodes -->
@@ -434,16 +420,16 @@ public class XMLSchemaLoader implements SchemaLoader {
      * </function>
      * }
      * <br>
-     * shard table datanode(2) < function count(3) 此时检测为不匹配
+     * shard table datanode(2) < function count(3) and check failed
      */
     private void checkRuleSuitTable(TableConfig tableConf) {
         AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
         int suitValue = function.suitableFor(tableConf);
-        if (suitValue < 0) { // 少节点,给提示并抛异常
+        if (suitValue < 0) {
             throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
                     tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : " +
                     tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
-        } else if (suitValue > 0) { // 有些节点是多余的,给出warn log
+        } else if (suitValue > 0) {
             LOGGER.warn("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant",
                     new String[]{
                             tableConf.getName(),
@@ -453,12 +439,11 @@ public class XMLSchemaLoader implements SchemaLoader {
                     });
 
         } else {
-            // table datanode size == rule function partition size
+            // table data node size == rule function partition size
         }
     }
 
     private void loadDataNodes(Element root) {
-        //读取DataNode分支
         NodeList list = root.getElementsByTagName("dataNode");
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Element element = (Element) list.item(i);
@@ -469,14 +454,14 @@ public class XMLSchemaLoader implements SchemaLoader {
                 databaseStr = databaseStr.toLowerCase();
             }
             String host = element.getAttribute("dataHost");
-            //字符串不为空
             if (empty(dnNamePre) || empty(databaseStr) || empty(host)) {
                 throw new ConfigException("dataNode " + dnNamePre + " define error ,attribute can't be empty");
             }
-            //dnNames（name）,databases（database）,hostStrings（dataHost）都可以配置多个，以',', '$', '-'区分，但是需要保证database的个数*dataHost的个数=name的个数
-            //多个dataHost与多个database如果写在一个标签，则每个dataHost拥有所有database
-            //例如：<dataNode name="dn1$0-75" dataHost="localhost$1-10" database="db$0-759" />
-            //则为：localhost1拥有dn1$0-75,localhost2也拥有dn1$0-75（对应db$76-151）
+            //dnNamePre(name),databaseStr(database),host(dataHost) can use ',', '$', '-' to configure multi nodes
+            // but the database size *dataHost size must equal the size of name
+            // every dataHost has all database in its tag
+            //eg:<dataNode name="dn1$0-75" dataHost="localhost$1-10" database="db$0-75" />
+            //means:localhost1 has database of dn1$0-75,localhost2has database of dn1$0-75(name is db$76-151)
             String[] dnNames = io.mycat.util.SplitUtil.split(dnNamePre, ',', '$', '-');
             String[] databases = io.mycat.util.SplitUtil.split(databaseStr, ',', '$', '-');
             String[] hostStrings = io.mycat.util.SplitUtil.split(host, ',', '$', '-');
@@ -504,8 +489,6 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     /**
-     * 匹配DataHost和Database，每个DataHost拥有每个Database名字
-     *
      * @param hostStrings
      * @param databases
      * @return
@@ -568,7 +551,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
         String weightStr = node.getAttribute("weight");
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
-        conf.setWeight(weight);    //新增权重
+        conf.setWeight(weight);
         return conf;
     }
 
@@ -578,44 +561,38 @@ public class XMLSchemaLoader implements SchemaLoader {
 
             Element element = (Element) list.item(i);
             String name = element.getAttribute("name");
-            //判断是否重复
             if (dataHosts.containsKey(name)) {
                 throw new ConfigException("dataHost name " + name + "duplicated!");
             }
-            //读取最大连接数
             int maxCon = Integer.parseInt(element.getAttribute("maxCon"));
-            //读取最小连接数
             int minCon = Integer.parseInt(element.getAttribute("minCon"));
             /**
-             * 读取负载均衡配置
-             * 1. balance="0", 不开启分离机制，所有读操作都发送到当前可用的 writeHost 上。
-             * 2. balance="1"，全部的 readHost 和 stand by writeHost 参不 select 的负载均衡
-             * 3. balance="2"，所有读操作都随机的在 writeHost、readhost 上分发。
-             * 4. balance="3"，所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压力
+             * balance type for read
+             * 1. balance="0", read will be send to all writeHost.
+             * 2. balance="1", read will be send to all readHost and stand by writeHost
+             * 3. balance="2", read will be send to all readHost and all writeHost
+             * 4. balance="3", read will be send to all readHost
              */
             final int balance = Integer.parseInt(element.getAttribute("balance"));
             /**
-             * 读取切换类型
-             * -1 表示不自动切换
-             * 1 默认值，自动切换
-             * 2 基于MySQL主从同步的状态决定是否切换
-             * 心跳询句为 show slave status
-             * 3 基于 MySQL galary cluster 的切换机制
+             * switchType
+             * -1 No switch
+             * 1 switch automatically
+             * 2 switch according to the second behind of slave ,the heartbeat query is show slave status
+             * 3 switch according to Galera Cluster for MySQL
              */
             String switchTypeStr = element.getAttribute("switchType");
             int switchType = switchTypeStr.equals("") ? -1 : Integer.parseInt(switchTypeStr);
-            //读取从延迟界限
+            //slave delay threshold
             String slaveThresholdStr = element.getAttribute("slaveThreshold");
             int slaveThreshold = slaveThresholdStr.equals("") ? -1 : Integer.parseInt(slaveThresholdStr);
 
-            //如果 tempReadHostAvailable 设置大于 0 则表示写主机如果挂掉， 临时的读服务依然可用
+            //tempReadHostAvailable >0 means read service is still work even write host crash
             String tempReadHostAvailableStr = element.getAttribute("tempReadHostAvailable");
             boolean tempReadHostAvailable = !tempReadHostAvailableStr.equals("") && Integer.parseInt(tempReadHostAvailableStr) > 0;
 
-            //读取心跳语句
             final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 
-            //读取writeHost
             NodeList writeNodes = element.getElementsByTagName("writeHost");
             DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
             Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
@@ -623,7 +600,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 Element writeNode = (Element) writeNodes.item(w);
                 writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
                 NodeList readNodes = writeNode.getElementsByTagName("readHost");
-                //读取对应的每一个readHost
+                //for every readHost
                 if (readNodes.getLength() != 0) {
                     DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
                     for (int r = 0; r < readDbConfs.length; r++) {

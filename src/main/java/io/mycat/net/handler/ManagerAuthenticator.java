@@ -27,7 +27,7 @@ import io.mycat.net.FrontendConnection;
 import io.mycat.net.NIOHandler;
 
 /**
- * manager认证处理器
+ * ManagerAuthenticator
  *
  * @author mycat
  */

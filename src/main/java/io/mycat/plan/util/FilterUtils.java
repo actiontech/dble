@@ -17,7 +17,7 @@ public final class FilterUtils {
     }
 
     /**
-     * 将filter尽可能拆分 一个无法拆分的filter：booleanfiler，orfilter
+     * split the filter until filter is 'boolean filer' or 'orfilter'
      *
      * @param filter
      * @return
@@ -77,7 +77,7 @@ public final class FilterUtils {
     }
 
     /**
-     * 创建and条件
+     * create and condition
      */
     public static Item and(Item root, Item o) {
         List<Item> list = new ArrayList<>();
@@ -108,7 +108,7 @@ public final class FilterUtils {
     }
 
     /**
-     * 创建or条件
+     * create or condition
      */
     public static Item or(Item root, Item o) {
         List<Item> list = new ArrayList<>();
@@ -118,7 +118,7 @@ public final class FilterUtils {
     }
 
     /**
-     * 创建equal filter
+     * create equal filter
      */
     public static ItemFuncEqual equal(Item column, Item value) {
         ItemFuncEqual f = new ItemFuncEqual(column, value);

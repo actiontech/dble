@@ -21,7 +21,7 @@ public class UserSqlHighStat {
         String newSql = this.sqlParser.mergeSql(sql);
         SqlFrequency frequency = this.sqlFrequencyMap.get(newSql);
         if (frequency == null) {
-            //防止新建的时候的并发问题，只有新建的时候有锁
+            //防止新建的时候的并发问题,只有新建的时候有锁
             if (lock.tryLock()) {
                 try {
                     frequency = new SqlFrequency();
@@ -37,7 +37,7 @@ public class UserSqlHighStat {
         }
         frequency.setLastTime(endTime);
         frequency.incCount();
-        //TODO 目前setExecuteTime方法由于弃用锁，所以某些参数不准确，为了性能，放弃这些参数的准确性。下一步期待更多优化
+        //TODO 目前setExecuteTime方法由于弃用锁,所以某些参数不准确,为了性能,放弃这些参数的准确性.下一步期待更多优化
         frequency.setExecuteTime(executeTime);
         this.sqlFrequencyMap.put(newSql, frequency);
     }

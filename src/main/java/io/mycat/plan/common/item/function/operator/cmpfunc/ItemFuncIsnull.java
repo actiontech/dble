@@ -14,8 +14,8 @@ import java.util.List;
 
 
 /*
- * 当MySQL的sql_auto_is_null变量设为true,并且col_name为自增列时，
- * select * from table_name where col_name is null返回last_insert_id
+ * when MySQL's sql_auto_is_null is set to true, and col_nameis auto increment ,
+ * select * from table_name where col_name is null retrun last_insert_id
  */
 public class ItemFuncIsnull extends ItemBoolFunc {
 

@@ -18,8 +18,6 @@ import io.mycat.server.NonBlockingSession;
 import io.mycat.server.parser.ServerParse;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
 
 public class MergeBuilder {
     private boolean needCommonFlag;
@@ -40,11 +38,10 @@ public class MergeBuilder {
     }
 
     /**
-     * 将一个或者多个条件合并后计算出所需要的节点...
+     * calculate the RouteResultset by Parser
      *
      * @return
-     * @throws SQLNonTransientException
-     * @throws SQLSyntaxErrorException
+     * @throws SQLException
      */
     public RouteResultset construct() throws SQLException {
         pdVisitor.visit();

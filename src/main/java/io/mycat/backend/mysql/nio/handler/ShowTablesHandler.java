@@ -78,7 +78,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
                 RowDataPacket rowDataPk = new RowDataPacket(sourceFields.size());
                 rowDataPk.read(row);
                 HandlerTool.initFields(sourceFields, rowDataPk.fieldValues);
-                /* 根据where条件进行过滤 */
+                /* filter the where condition */
                 if (whereItem.valBool()) {
                     super.rowResponse(row, rowPacket, isLeft, conn);
                 }

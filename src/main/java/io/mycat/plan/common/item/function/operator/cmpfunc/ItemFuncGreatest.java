@@ -11,7 +11,7 @@ import java.util.List;
  * select least(c1,c2,'a') from t,结果为'a'
  * select least(c1,c2,'a')+1 from t,结果为1
  * 是否根据参数类型已经不能判断返回类型？
- * calculate时是否应该保存最大值的index号，然后返回旧的argument？
+ * calculate时是否应该保存最大值的index号,然后返回旧的argument？
  */
 public class ItemFuncGreatest extends ItemFuncMinMax {
 

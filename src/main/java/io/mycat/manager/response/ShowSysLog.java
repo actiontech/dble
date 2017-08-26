@@ -98,7 +98,6 @@ public final class ShowSysLog {
         String[] lines = new String[numLines];
         BufferedReader in = null;
         try {
-            //获取长度
             int totalNumLines = 0;
             File logFile = new File(filename);
             in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
@@ -111,7 +110,7 @@ public final class ShowSysLog {
 
             in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
 
-            // 跳过行
+            // skip
             for (int i = 0; i < totalNumLines - numLines; i++) {
                 in.readLine();
             }

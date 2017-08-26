@@ -24,7 +24,7 @@
 package io.mycat.util;
 
 /**
- * 弱精度的计时器，考虑性能不使用同步策略。
+ * weak accuracy timer for performance.
  *
  * @author mycat
  */

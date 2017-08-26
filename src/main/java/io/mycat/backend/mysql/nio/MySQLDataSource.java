@@ -152,12 +152,12 @@ public class MySQLDataSource extends PhysicalDatasource {
                     isConnected = false;
                     break;
                 case EOFPacket.FIELD_COUNT:
-                    // 发送323响应认证数据包
+                    // send 323 auth packet
                     Reply323Packet r323 = new Reply323Packet();
                     r323.setPacketId((byte) (bin2.getPacketId() + 1));
-                    String passwd = this.getConfig().getPassword();
-                    if (passwd != null && passwd.length() > 0) {
-                        r323.setSeed(SecurityUtil.scramble323(passwd, new String(handshake.getSeed())).getBytes());
+                    String password = this.getConfig().getPassword();
+                    if (password != null && password.length() > 0) {
+                        r323.setSeed(SecurityUtil.scramble323(password, new String(handshake.getSeed())).getBytes());
                     }
                     r323.write(out);
                     out.flush();

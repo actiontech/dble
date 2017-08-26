@@ -149,7 +149,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * OK数据包处理
+     * execute OK Packet
      */
     private void handleOkPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
@@ -159,7 +159,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * ERROR数据包处理
+     * execute ERROR packet
      */
     private void handleErrorPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
@@ -171,7 +171,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * load data file 请求文件数据包处理
+     * execute load request Packet:load data file
      */
     private void handleRequestPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
@@ -184,7 +184,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * 字段数据包结束处理
+     * execute FieldEof Packet
      */
     private void handleFieldEofPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
@@ -196,7 +196,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * 行数据包处理
+     * execute Row Packet
      */
     private void handleRowPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
@@ -216,7 +216,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     /**
-     * 行数据包结束处理
+     * execute RowEof Packet
      */
     private void handleRowEofPacket(byte[] data) {
         if (responseHandler != null) {

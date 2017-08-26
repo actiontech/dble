@@ -17,7 +17,7 @@ import java.math.BigInteger;
 public class ArgComparator {
     private Item a, b;
     private ItemFunc owner;
-    private ArgCmpFunc func; // compare function name,在mysql源代码中为函数指针
+    private ArgCmpFunc func; // compare function name,function pointer in mysql source code
     double precision = 0.0;
     /* Fields used in DATE/DATETIME comparison. */
     //FieldTypes atype, btype; // Types of a and b items
@@ -99,7 +99,8 @@ public class ArgComparator {
     public int setCompareFunc(ItemFunc ownerarg, ItemResult type) {
         owner = ownerarg;
         func = comparatorMatrix[type.ordinal()][isOwnerEqualFunc() ? 1 : 0];
-        if (type == ItemResult.ROW_RESULT) { // 未实现
+        if (type == ItemResult.ROW_RESULT) {
+            //TODO
             return 1;
         } else if (type == ItemResult.STRING_RESULT) {
             if (func instanceof CompareString)

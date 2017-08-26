@@ -62,10 +62,8 @@ public abstract class PhysicalDatasource {
     private PhysicalDBPool dbPool;
     private AtomicBoolean dying = new AtomicBoolean(false);
 
-    // 添加DataSource读计数
     private AtomicLong readCount = new AtomicLong(0);
 
-    // 添加DataSource写计数
     private AtomicLong writeCount = new AtomicLong(0);
 
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
@@ -320,7 +318,6 @@ public abstract class PhysicalDatasource {
     }
 
     public void doHeartbeat() {
-        // 未到预定恢复时间，不执行心跳检测。
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
@@ -342,7 +339,7 @@ public abstract class PhysicalDatasource {
         }
         ConQueue queue = conMap.getSchemaConQueue(schema);
         queue.incExecuteCount();
-        // 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
+        // update last time, the schedule job will not close it
         conn.setLastTime(System.currentTimeMillis());
         return conn;
     }
@@ -380,9 +377,6 @@ public abstract class PhysicalDatasource {
         });
     }
 
-    /**
-     * 创建新连接
-     */
     public abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
 
     public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
@@ -393,15 +387,13 @@ public abstract class PhysicalDatasource {
             throw new IOException(this.name + "will to die");
         }
 
-        // 从当前连接map中拿取已建立好的后端连接
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con != null) {
-            //如果不为空，则绑定对应前端请求的handler
             takeCon(con, handler, attachment, schema);
             return;
         } else {
-            int activeCons = this.getActiveCount(); // 当前最大活动连接
-            if (activeCons + 1 > size) { // 下一个连接大于最大连接数
+            int activeCons = this.getActiveCount();
+            if (activeCons + 1 > size) {
                 String msg = "the max activeConnnections size can not be max than maxconnections";
                 LOGGER.error(msg);
                 throw new IOException(msg);
@@ -414,11 +406,10 @@ public abstract class PhysicalDatasource {
     }
 
     public BackendConnection getConnection(String schema, boolean autocommit) throws IOException {
-        // 从当前连接map中拿取已建立好的后端连接
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
-            int activeCons = this.getActiveCount(); // 当前最大活动连接
-            if (activeCons + 1 > size) { // 下一个连接大于最大连接数
+            int activeCons = this.getActiveCount(); // the max active
+            if (activeCons + 1 > size) {
                 LOGGER.error("the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
@@ -474,7 +465,7 @@ public abstract class PhysicalDatasource {
     }
 
     /**
-     * 测试连接，用于初始化及热更新配置检测
+     * used for init or reload
      */
     public abstract boolean testConnection(String schema) throws IOException;
 

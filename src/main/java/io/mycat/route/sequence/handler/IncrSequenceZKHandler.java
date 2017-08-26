@@ -43,14 +43,12 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * zookeeper 实现递增序列号
- * 配置文件：sequence_conf.properties
- * 只要配置好ZK地址和表名的如下属性
- * TABLE.MINID 某线程当前区间内最小值
- * TABLE.MAXID 某线程当前区间内最大值
- * TABLE.CURID 某线程当前区间内当前值
- * 文件配置的MAXID以及MINID决定每次取得区间，这个对于每个线程或者进程都有效
- * 文件中的这三个属性配置只对第一个进程的第一个线程有效，其他线程和进程会动态读取ZK
+ * zookeeper IncrSequenceZKHandler
+ * file:sequence_conf.properties
+ * `DB`.`TABLE`.MINID minID for a thread
+ * `DB`.`TABLE`.MAXID maxID for a thread
+ * `DB`.`TABLE`.CURID curID for a thread
+ * the properties in file is useful the first thread,the other thread/process will read from ZK
  *
  * @author Hash Zhang
  * @version 1.0

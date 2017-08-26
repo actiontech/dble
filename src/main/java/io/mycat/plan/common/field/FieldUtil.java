@@ -15,7 +15,7 @@ public class FieldUtil {
     public static final int BINARY_FLAG = 128; /* Field is binary */
 
     /**
-     * b1,b2代表的是整数型数字，进行比较,b1,b2非null
+     * b1,b2代表的是整数型数字,进行比较,b1,b2非null
      *
      * @param b1
      * @param b2

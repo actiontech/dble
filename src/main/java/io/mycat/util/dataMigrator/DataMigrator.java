@@ -16,9 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * 数据迁移统一调度类，支持扩容缩容
- * 原理：读取需要迁移的数据节点表所有拆分字段数据，按照扩容或缩容后的配置对拆分字段重新计算路由节点，
- * 将需要迁移的数据导出，然后导入到扩容或缩容后对应的数据节点
+ * DataMigrator
+ * export from the old severs to files,and import to new servers
  *
  * @author haonan108
  */
@@ -45,7 +44,7 @@ public class DataMigrator {
             createTempParentDir(margs.getTempFileDir());
             ConfigComparer loader = new ConfigComparer(margs.isAwaysUseMaster());
             migrateTables = loader.getMigratorTables();
-            //建表
+            //create tables
             for (TableMigrateInfo table : migrateTables) {
                 table.setTableStructure();
                 table.createTableToNewDataNodes();
@@ -53,7 +52,6 @@ public class DataMigrator {
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             System.out.println(e.getMessage());
-            //配置错误退出迁移程序
             System.exit(-1);
         }
     }
@@ -62,23 +60,23 @@ public class DataMigrator {
         final long start = System.currentTimeMillis();
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
         System.out.println("\n" + format.format(new Date()) + " [1]-> creating migrator schedule and temp files for migrate...");
-        //初始化配置
+        //init
         DataMigrator migrator = new DataMigrator(args);
 
-        //生成中间文件
+        //generate the tnp files
         migrator.createTempFiles();
         migrator.changeSize();
         migrator.printInfo();
 
-        //迁移数据
+        //migrate
         System.out.println("\n" + format.format(new Date()) + " [2]-> start migrate data...");
         migrator.migrateData();
 
-        //清除中间临时文件、清除被迁移掉的冗余数据
+        //cleaning redundant data
         System.out.println("\n" + format.format(new Date()) + " [3]-> cleaning redundant data...");
         migrator.clear();
 
-        //校验数据是否迁移成功
+        //validating tables migrate result
         System.out.println("\n" + format.format(new Date()) + " [4]-> validating tables migrate result...");
         migrator.validate();
         migrator.clearTempFiles();
@@ -94,7 +92,6 @@ public class DataMigrator {
         DataMigrator.margs = margs;
     }
 
-    //打印各个表的迁移数据信息
     private void printInfo() {
         for (TableMigrateInfo table : migrateTables) {
             table.printMigrateInfo();
@@ -102,7 +99,7 @@ public class DataMigrator {
         }
     }
 
-    //删除临时文件
+    //clearTempFiles
     private void clearTempFiles() {
         File tempFileDir = new File(margs.getTempFileDir());
         if (tempFileDir.exists() && margs.isDeleteTempDir()) {
@@ -110,10 +107,9 @@ public class DataMigrator {
         }
     }
 
-    //生成需要进行迁移的数据依赖的拆分字段值文件
+    //generate file according to the partition column
     private void createTempFiles() {
         for (TableMigrateInfo table : migrateTables) {
-            //创建具体拆分表中间临时文件
             createTableTempFiles(table);
         }
         executor.shutdown();
@@ -134,7 +130,7 @@ public class DataMigrator {
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
         for (TableMigrateInfo table : migrateTables) {
-            if (!table.isError()) { //忽略已出错的拆分表
+            if (!table.isError()) { //ignore the error table
                 List<DataNodeMigrateInfo> detailList = table.getDataNodesDetail();
                 for (DataNodeMigrateInfo info : detailList) {
                     executor.execute(new DataMigrateRunner(table, info.getSrc(), info.getTarget(), table.getTableName(), info.getTempFile()));
@@ -154,7 +150,7 @@ public class DataMigrator {
         }
     }
 
-    //缩容需要重新计算表大小
+    // recalculate the size
     private void changeSize() throws SQLException {
         for (TableMigrateInfo table : migrateTables) {
             if (!table.isExpantion()) {
@@ -168,7 +164,7 @@ public class DataMigrator {
         }
     }
 
-    //校验迁移计划中数据迁移情况同数据实际落盘是否一致
+    //validate the data
     private void validate() throws SQLException {
         for (TableMigrateInfo table : migrateTables) {
             if (table.isError()) {
@@ -186,7 +182,7 @@ public class DataMigrator {
             }
         }
 
-        //打印最终迁移结果信息
+        //print migrate result
         String title = "migrate result";
         Map<String, String> result = new HashMap<>();
         for (TableMigrateInfo table : migrateTables) {
@@ -197,7 +193,7 @@ public class DataMigrator {
         System.out.println(info);
     }
 
-    //清除中间临时文件、导出的迁移数据文件、已被迁移的原始节点冗余数据
+    //clear the tmp file and old data
     private void clear() {
         for (TableMigrateInfo table : migrateTables) {
             makeClearDataGroup(table);
@@ -207,11 +203,10 @@ public class DataMigrator {
         }
     }
 
-    //同一主机上的mysql执行按where条件删除数据并发多了性能反而下降很快
-    //按照主机ip进行分组，每个主机ip分配一个线程池，线程池大小可配置，默认为当前主机环境cpu核数的一半
+    //for performance
+    //make group by ip ,every ip has a thread pool,it is configurable,the default is cpu/2
     private void makeClearDataGroup(TableMigrateInfo table) {
         List<DataNodeMigrateInfo> list = table.getDataNodesDetail();
-        //将数据节点按主机ip分组，每组分配一个线程池
         for (DataNodeMigrateInfo dnInfo : list) {
             DataNode src = dnInfo.getSrc();
             String ip = src.getIp();
@@ -271,7 +266,7 @@ public class DataMigrator {
 
     private void createTableTempFiles(TableMigrateInfo table) {
         List<DataNode> oldDn = table.getOldDataNodes();
-        //生成迁移中间文件，并生成迁移执行计划
+        //generate tmp files and migrate jobs
         for (DataNode dn : oldDn) {
             executor.execute(new MigratorConditonFilesMaker(table, dn, margs.getTempFileDir(), margs.getQueryPageSize()));
         }

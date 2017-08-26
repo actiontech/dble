@@ -317,13 +317,13 @@ public final class BytesToBytesMap extends MemoryConsumer {
                 long stored = longArray.get(pos * 2 + 1);
 
                 /**
-                 * hash相等
+                 * hash is equal
                  */
                 if ((int) (stored) == hash) {
                     // Full hash code matches.Let's compare the keys for equality.
                     location.with(pos, hash, true);
                     /**
-                     * 比较key的值
+                     * compare the key
                      */
                     if (location.getKeyLength() == keyLength) {
                         final boolean areEqual = ByteArrayMethods.arrayEquals(

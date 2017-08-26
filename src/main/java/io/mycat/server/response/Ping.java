@@ -30,7 +30,7 @@ import io.mycat.net.mysql.ErrorPacket;
 import io.mycat.net.mysql.OkPacket;
 
 /**
- * 加入了offline状态推送，用于心跳语句。
+ * for heartbeat.
  *
  * @author mycat
  */

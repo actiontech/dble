@@ -2613,7 +2613,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         boolean hasTableName();
@@ -2622,7 +2622,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         java.lang.String getTableName();
@@ -2631,7 +2631,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         com.google.protobuf.ByteString
@@ -2641,7 +2641,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         java.util.List<io.mycat.meta.protocol.StructureMeta.ColumnMeta>
@@ -2651,7 +2651,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         io.mycat.meta.protocol.StructureMeta.ColumnMeta getColumns(int index);
@@ -2660,7 +2660,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         int getColumnsCount();
@@ -2669,7 +2669,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         java.util.List<? extends io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder>
@@ -2679,7 +2679,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
@@ -3012,7 +3012,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         public boolean hasTableName() {
@@ -3023,7 +3023,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         public java.lang.String getTableName() {
@@ -3045,7 +3045,7 @@ public final class StructureMeta {
          * <code>optional string tableName = 1;</code>
          * <p>
          * <pre>
-         * 不带dbname的表名:如table1
+         * tableName without dbName
          * </pre>
          */
         public com.google.protobuf.ByteString
@@ -3069,7 +3069,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         public java.util.List<io.mycat.meta.protocol.StructureMeta.ColumnMeta> getColumnsList() {
@@ -3080,7 +3080,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         public java.util.List<? extends io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder>
@@ -3092,7 +3092,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         public int getColumnsCount() {
@@ -3103,7 +3103,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         public io.mycat.meta.protocol.StructureMeta.ColumnMeta getColumns(int index) {
@@ -3114,7 +3114,7 @@ public final class StructureMeta {
          * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
          * <p>
          * <pre>
-         * 所有的列属性，有序
+         * Columns
          * </pre>
          */
         public io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
@@ -3947,7 +3947,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public boolean hasTableName() {
@@ -3958,7 +3958,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public java.lang.String getTableName() {
@@ -3980,7 +3980,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public com.google.protobuf.ByteString
@@ -4001,7 +4001,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public Builder setTableName(
@@ -4019,7 +4019,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public Builder clearTableName() {
@@ -4033,7 +4033,7 @@ public final class StructureMeta {
              * <code>optional string tableName = 1;</code>
              * <p>
              * <pre>
-             * 不带dbname的表名:如table1
+             * tableName without dbName
              * </pre>
              */
             public Builder setTableNameBytes(
@@ -4064,7 +4064,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public java.util.List<io.mycat.meta.protocol.StructureMeta.ColumnMeta> getColumnsList() {
@@ -4079,7 +4079,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public int getColumnsCount() {
@@ -4094,7 +4094,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta getColumns(int index) {
@@ -4109,7 +4109,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder setColumns(
@@ -4131,7 +4131,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder setColumns(
@@ -4150,7 +4150,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder addColumns(io.mycat.meta.protocol.StructureMeta.ColumnMeta value) {
@@ -4171,7 +4171,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder addColumns(
@@ -4193,7 +4193,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder addColumns(
@@ -4212,7 +4212,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder addColumns(
@@ -4231,7 +4231,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder addAllColumns(
@@ -4251,7 +4251,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder clearColumns() {
@@ -4269,7 +4269,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public Builder removeColumns(int index) {
@@ -4287,7 +4287,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder getColumnsBuilder(
@@ -4299,7 +4299,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder getColumnsOrBuilder(
@@ -4315,7 +4315,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public java.util.List<? extends io.mycat.meta.protocol.StructureMeta.ColumnMetaOrBuilder>
@@ -4331,7 +4331,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder addColumnsBuilder() {
@@ -4343,7 +4343,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder addColumnsBuilder(
@@ -4356,7 +4356,7 @@ public final class StructureMeta {
              * <code>repeated .io.mycat.meta.protocol.ColumnMeta columns = 2;</code>
              * <p>
              * <pre>
-             * 所有的列属性，有序
+             * Columns
              * </pre>
              */
             public java.util.List<io.mycat.meta.protocol.StructureMeta.ColumnMeta.Builder>

@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
 import java.util.List;
 
 /**
- * no sort need diskbuffer，when a new row come in,added it directly
+ * no sort need diskbuffer,when a new row come in,added it directly
  *
  * @author ActionTech
  */

@@ -36,7 +36,7 @@ import java.util.List;
 public interface ResponseHandler {
 
     /**
-     * 无法获取连接
+     * can't get an valid connection
      *
      * @param e
      * @param conn
@@ -44,54 +44,51 @@ public interface ResponseHandler {
     void connectionError(Throwable e, BackendConnection conn);
 
     /**
-     * 已获得有效连接的响应处理
+     * execute after acquired an valid connection
      */
     void connectionAcquired(BackendConnection conn);
 
     /**
-     * 收到错误数据包的响应处理
+     * execute after get an error response
      */
     void errorResponse(byte[] err, BackendConnection conn);
 
     /**
-     * 收到OK数据包的响应处理
+     *  execute after get an OK response
      */
     void okResponse(byte[] ok, BackendConnection conn);
 
     /**
-     * 收到字段数据包结束的响应处理
+     * execute after get an fieldEof response
      */
 
     void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                           boolean isLeft, BackendConnection conn);
 
     /**
-     * 收到行数据包的响应处理
+     * execute after get an row response
      */
     boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
 
     /**
-     * 收到行数据包结束的响应处理
+     * execute after get an rowEof response
      */
     void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
 
     /**
-     * 收到中继数据包的响应处理
+     * execute after get an relayPacket response
      */
     void relayPacketResponse(byte[] relayPacket, BackendConnection conn);
 
     /**
-     * 收到结束数据包的响应处理
+     * execute after get an endPacket response
      */
     void endPacketResponse(byte[] endPacket, BackendConnection conn);
 
-    /**
-     * 写队列为空，可以写数据了
-     */
     void writeQueueAvailable();
 
     /**
-     * on connetion close event
+     * on connection close event
      */
     void connectionClose(BackendConnection conn, String reason);
 

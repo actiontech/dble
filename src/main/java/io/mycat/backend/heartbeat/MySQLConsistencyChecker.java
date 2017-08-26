@@ -52,8 +52,6 @@ public class MySQLConsistencyChecker {
     private String tableName;    // global table name
     private long beginTime;
     private String[] physicalSchemas;
-    // 此处用到了 mysql 多行转一行 group_concat 的用法，主要是为了简化对结果的处理
-    // 得到的结果类似于：id,name,_mycat_op_time
     private String columnExistSQL = "select group_concat(COLUMN_NAME separator ',') as " +
             GlobalTableUtil.INNER_COLUMN + " from information_schema.columns where TABLE_NAME='"; //user' and TABLE_SCHEMA='db1';
 
@@ -167,7 +165,7 @@ public class MySQLConsistencyChecker {
 
     public boolean isTimeOut() {
         long duration = new Date().getTime() - this.beginTime;
-        return TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS) > 1; // 1分钟超时
+        return TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS) > 1;
     }
 
     public String getCountSQL() {

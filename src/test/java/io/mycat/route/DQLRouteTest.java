@@ -89,7 +89,7 @@ public class DQLRouteTest {
                 if (value != null && value.indexOf("`") >= 0) {
                     value = value.replaceAll("`", "");
                 }
-                // 表名前面带database的，去掉
+                // 表名前面带database的,去掉
                 if (key != null) {
                     int pos = key.indexOf(".");
                     if (pos > 0) {

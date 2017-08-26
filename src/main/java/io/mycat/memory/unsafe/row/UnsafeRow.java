@@ -424,7 +424,7 @@ public final class UnsafeRow extends MySQLPacket {
                             writeSocketIfFull);
                     BufferUtil.writeLength(bb, fv.length);
                     /**
-                     * 把数据写到Writer Buffer中
+                     * write data to Writer Buffer
                      */
                     bb = c.writeToBuffer(fv, bb);
                 }

@@ -28,7 +28,7 @@ import io.mycat.route.function.AbstractPartitionAlgorithm;
 import java.io.Serializable;
 
 /**
- * 分片规则，column是用于分片的数据库物理字段
+ * RuleConfig
  *
  * @author mycat
  */

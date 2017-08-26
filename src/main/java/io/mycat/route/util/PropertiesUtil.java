@@ -10,7 +10,7 @@ import java.util.Properties;
 import static io.mycat.route.sequence.handler.IncrSequenceHandler.*;
 
 /**
- * Property文件加载器
+ * PropertiesUtil
  *
  * @author Hash Zhang
  * @version 1.0

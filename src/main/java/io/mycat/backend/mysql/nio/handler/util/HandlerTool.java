@@ -27,11 +27,9 @@ public final class HandlerTool {
     private HandlerTool() {
     }
 
-    // 两端是单引号，并且中间不允许出现单引号
     // private static Pattern pat = Pattern.compile("^\'([^\']*?)\'$");
 
     /**
-     * 停止以node为根节点的handler树
      *
      * @param node
      */
@@ -69,7 +67,7 @@ public final class HandlerTool {
     }
 
     /**
-     * 创建一个Item，并且Item内部的对象指向fields中的某个对象，当field的实际值改变时，Item的value也改变
+     * create Item, the Item value referenced by field and changed by field changes
      *
      * @param sel
      * @param fields
@@ -85,7 +83,6 @@ public final class HandlerTool {
         if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
             ItemFunc func = (ItemFunc) sel;
             if (func.getPushDownName() == null || func.getPushDownName().length() == 0) {
-                // 自己计算
                 ret = createFunctionItem(func, fields, startIndex, allPushDown, type, charset);
             } else {
                 ret = createFieldItem(func, fields, startIndex);
@@ -113,7 +110,7 @@ public final class HandlerTool {
     }
 
     /**
-     * 将field进行复制
+     * clone field
      *
      * @param fields
      * @param bs
@@ -139,12 +136,12 @@ public final class HandlerTool {
     // ------------------------------- helper methods ------------------------
 
     /**
-     * 计算下发的聚合函数 1.count(id) 下发count(id) 之后 count(id) = sum[count(id) 0...n];
-     * 2.sum(id) sum(id) = sum[sum(id) 0...n]; 3.avg(id) avg(id) = sum[sum(id)
-     * 0...n]/sum[count(id) 0...n];
+     * 1.count(id) : count(id) = sum[count(id) 0...n];
+     * 2.sum(id): sum(id) = sum[sum(id) 0...n];
+     * 3.avg(id) avg(id) = sum[sum(id) 0...n]/sum[count(id) 0...n];
      *
-     * @param sumfun 聚合函数的名称
-     * @param fields 当前所有行的fields信息
+     * @param sumfun aggregate function name
+     * @param fields
      * @return
      */
     protected static Item createPushDownGroupBy(ItemSum sumfun, List<Field> fields, int startIndex) {
@@ -170,7 +167,7 @@ public final class HandlerTool {
                 funName.equalsIgnoreCase("STDDEV_SAMP") || funName.equalsIgnoreCase("STDDEV") ||
                 funName.equalsIgnoreCase("VAR_POP") || funName.equalsIgnoreCase("VAR_SAMP") ||
                 funName.equalsIgnoreCase("VARIANCE")) {
-            // variance:下发时 v[0]:count,v[1]:sum,v[2]:variance(局部)
+            // variance: v[0]:count,v[1]:sum,v[2]:variance(locally)
             String colNameCount = colName.replace(funName + "(", "COUNT(");
             String colNameSum = colName.replace(funName + "(", "SUM(");
             String colNameVar = colName.replace(funName + "(", "VARIANCE(");
@@ -247,13 +244,6 @@ public final class HandlerTool {
         return ret;
     }
 
-    /**
-     * 查出col对应的field，所有的col对象不管是函数还是非函数均当做普通列处理，直接比较他们的表名和列名
-     *
-     * @param col
-     * @param fields
-     * @return
-     */
     protected static ItemField createFieldItem(Item col, List<Field> fields, int startIndex) {
         int index = findField(col, fields, startIndex);
         if (index < 0)
@@ -264,12 +254,11 @@ public final class HandlerTool {
     }
 
     /**
-     * 查找sel在fields中的对应，包含start，
+     * findField in sel from start
      *
      * @param sel
      * @param fields
      * @param startIndex
-     * @param endIndex
      * @return
      */
     public static int findField(Item sel, List<Field> fields, int startIndex) {
@@ -278,7 +267,7 @@ public final class HandlerTool {
         String tableName = sel.getTableName();
         for (int index = startIndex; index < fields.size(); index++) {
             Field field = fields.get(index);
-            // ''下发之后field.name==null
+            // field.name==null if '' push down
             String colName2 = field.getName() == null ? null : field.getName().trim();
             String tableName2 = field.getTable();
             if (sel instanceof ItemField && !((StringUtil.isEmpty(tableName) && StringUtil.isEmpty(tableName2)) || tableName.equals(tableName2)))
@@ -290,7 +279,7 @@ public final class HandlerTool {
     }
 
     /**
-     * 根据distinct的列生成orderby
+     * make order by from distinct
      *
      * @param sels
      * @return

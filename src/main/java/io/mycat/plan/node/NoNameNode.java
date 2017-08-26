@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * 匿名表，比如select 1,only exists selecteditems
+ * 匿名表,比如select 1,only exists selecteditems
  *
  * @author ActionTech
  */

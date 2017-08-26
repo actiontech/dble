@@ -49,22 +49,19 @@ public final class ParameterMapping {
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
 
     /**
-     * 将property键值对赋值组装到object中
      *
-     * @param object    目标反射对象
-     * @param parameter property的键值对
+     * @param object
+     * @param parameter property
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
     public static void mapping(Object object, Map<String, ?> parameter) throws IllegalAccessException,
             InvocationTargetException {
-        //获取用于导出clazz这个JavaBean的所有属性的PropertyDescriptor
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
             Object obj = parameter.get(pd.getName());
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
-            //类型转换
             if (obj instanceof String) {
                 String string = (String) obj;
                 if (!StringUtil.isEmpty(string)) {
@@ -82,7 +79,6 @@ public final class ParameterMapping {
                 }
                 value = list.toArray();
             }
-            //赋值
             if (cls != null && value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
@@ -116,23 +112,21 @@ public final class ParameterMapping {
     }
 
     /**
-     * 用于导出clazz这个JavaBean的所有属性的PropertyDescriptor
      *
      * @param clazz
      * @return
      */
     private static PropertyDescriptor[] getDescriptors(Class<?> clazz) {
-        //PropertyDescriptor类表示JavaBean类通过存储器导出一个属性
         PropertyDescriptor[] pds;
         List<PropertyDescriptor> list;
         PropertyDescriptor[] pds2 = DESCRIPTORS.get(clazz);
-        //该clazz是否第一次加载
+        //clazz init for first time?
         if (null == pds2) {
             try {
                 BeanInfo beanInfo = Introspector.getBeanInfo(clazz);
                 pds = beanInfo.getPropertyDescriptors();
                 list = new ArrayList<>();
-                //加载每一个类型不为空的property
+                //add property it type is not null
                 for (PropertyDescriptor pd : pds) {
                     if (null != pd.getPropertyType()) {
                         list.add(pd);

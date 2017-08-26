@@ -68,10 +68,11 @@ public final class PairUtil {
 
     /**
      * <pre>
-     * 将名字和索引用进行分割 当src = "offer_group[4]", l='[', r=']'时，
-     * 返回的Piar<String,Integer>("offer", 4);
-     * 当src = "offer_group", l='[', r=']'时，
-     * 返回Pair<String, Integer>("offer",-1);
+     * get the pair split by l and r
+     * eg:src = "offer_group[4]", l='[', r=']' ,
+     * return Piar<String,Integer>("offer", 4);
+     * when src = "offer_group", l='[', r=']' ,
+     * return Pair<String, Integer>("offer",-1);
      * </pre>
      */
     public static Pair<String, Integer> splitIndex(String src, char l, char r) {

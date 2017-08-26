@@ -43,7 +43,6 @@ import io.mycat.config.ErrorCode;
 import io.mycat.config.MycatConfig;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
-import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.OkPacket;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.exception.MySQLOutPutException;
@@ -73,7 +72,7 @@ public class NonBlockingSession implements Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
     public static final int CANCEL_STATUS_INIT = 0;
-    public static final int CANCEL_STATUS_COMMITING = 1;
+    public static final int CANCEL_STATUS_COMMITTING = 1;
     public static final int CANCEL_STATUS_CANCELING = 2;
 
 
@@ -89,12 +88,12 @@ public class NonBlockingSession implements Session {
     private volatile TxState xaState;
     private boolean prepared;
     private volatile boolean needWaitFinished = false;
-    // 取消状态 0 - 初始 1 - 提交进行  2 - 切断进行
+    // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
     private int cancelStatus = 0;
 
     private OutputHandler outputHandler;
 
-    // 以链接为单位，对链接中使用的join，orderby以及其它内存使用进行控制
+    // the memory controller for join,orderby,other in this session
     private MemSizeController joinBufferMC;
     private MemSizeController orderBufferMC;
     private MemSizeController otherBufferMC;
@@ -147,10 +146,10 @@ public class NonBlockingSession implements Session {
     }
 
     /**
-     * 获取并验证锁的方法
+     * SET CANCELABLE STATUS
      */
     public synchronized boolean cancelableStatusSet(int value) {
-        //这个锁其实只有在1和2冲突的时候才会有提示
+        // in fact ,only CANCEL_STATUS_COMMITTING(1) or CANCEL_STATUS_CANCELING(2) need to judge
         if ((value | this.cancelStatus) > 2) {
             return false;
         }
@@ -166,7 +165,6 @@ public class NonBlockingSession implements Session {
             StringBuilder s = new StringBuilder();
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
-        // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
@@ -351,14 +349,13 @@ public class NonBlockingSession implements Session {
     }
 
     /**
-     * 执行lock tables语句方法
+     * lockTable
      *
      * @param rrs
      * @author songdabin
      * @date 2016-7-9
      */
     public void lockTable(RouteResultset rrs) {
-        // 检查路由结果是否为空
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null ||
                 nodes[0].getName().equals("")) {
@@ -377,7 +374,7 @@ public class NonBlockingSession implements Session {
     }
 
     /**
-     * 执行unlock tables语句方法
+     * unLockTable
      *
      * @param sql
      * @author songdabin
@@ -388,10 +385,6 @@ public class NonBlockingSession implements Session {
         handler.execute();
     }
 
-    @Override
-    public void cancel(FrontendConnection sponsor) {
-
-    }
 
     /**
      * {@link ServerConnection#isClosed()} must be true before invoking this
@@ -496,13 +489,11 @@ public class NonBlockingSession implements Session {
         }
 
         boolean canReUse = false;
-        // conn 是 slave db 的，并且 路由结果显示，本次sql可以重用该 conn
         if (conn.isFromSlaveDB() && (node.canRunnINReadDB(getSource().isAutocommit()) &&
                 (node.getRunOnSlave() == null || node.getRunOnSlave()))) {
             canReUse = true;
         }
 
-        // conn 是 master db 的，并且路由结果显示，本次sql可以重用该conn
         if (!conn.isFromSlaveDB() && (node.getRunOnSlave() == null || !node.getRunOnSlave())) {
             canReUse = true;
         }

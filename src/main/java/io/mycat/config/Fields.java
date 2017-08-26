@@ -24,7 +24,7 @@
 package io.mycat.config;
 
 /**
- * 字段类型及标识定义
+ * field type and flag
  *
  * @author mycat
  */

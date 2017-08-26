@@ -29,7 +29,7 @@ import io.mycat.net.FrontendConnection;
 import java.nio.ByteBuffer;
 
 /**
- * load data local infile 向客户端请求发送文件用
+ * load data local infile
  */
 public class RequestFilePacket extends MySQLPacket {
     public static final byte FIELD_COUNT = (byte) 251;

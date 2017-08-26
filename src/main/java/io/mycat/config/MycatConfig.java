@@ -78,7 +78,7 @@ public class MycatConfig {
 
     public MycatConfig() {
 
-        //读取schema.xml,rule.xml和server.xml
+        //read schema.xml,rule.xml andserver.xml
         ConfigInitializer confInit = new ConfigInitializer(true);
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
@@ -93,12 +93,10 @@ public class MycatConfig {
 
         this.firewall = confInit.getFirewall();
 
-        //初始化重加载配置时间
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.rollbackTime = -1L;
         this.status = RELOAD;
 
-        //配置加载锁
         this.lock = new ReentrantLock();
     }
 
@@ -337,9 +335,9 @@ public class MycatConfig {
         final ReentrantReadWriteLock confLock = MycatServer.getInstance().getConfLock();
         confLock.writeLock().lock();
         try {
-            // old 处理
-            // 1、停止老的数据源心跳
-            // 2、备份老的数据源配置
+            // old data host
+            // 1 stop heartbeat
+            // 2 backup
             //--------------------------------------------
             if (isLoadAll) {
                 Map<String, PhysicalDBPool> oldDataHosts = this.dataHosts;
@@ -365,9 +363,9 @@ public class MycatConfig {
             //    diff.apply();
             //}
 
-            // new 处理
-            // 1、启动新的数据源心跳
-            // 2、执行新的配置
+            // new data host
+            // 1 start heartbeat
+            // 2 apply the configure
             //---------------------------------------------------
             if (isLoadAll) {
                 if (newDataHosts != null) {

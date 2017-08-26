@@ -11,7 +11,7 @@ import java.util.List;
 
 
 /**
- * 类型不定的函数，参数是混合类型可能
+ * args's type maybe different from each other
  */
 public abstract class ItemFuncNumhybrid extends ItemFunc {
     protected ItemResult hybridType;

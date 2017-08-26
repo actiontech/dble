@@ -184,7 +184,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         RouteResultset rrs = routeStrategy.route(schema, -1, sql, null,
                 null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isCacheAble());//已经缓存了,不必再缓存了
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(null, rrs.getPrimaryKey());
         Assert.assertEquals(-1, rrs.getLimitSize());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
@@ -440,8 +440,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(128, rrs.getNodes().length);
         for (int i = 0; i < 128; i++) {
-//            Assert.assertEquals("offer_dn" + i ,
-//                    rrs.getNodes()[i].getName());//node的排序有变化，所以此处不强求
             Assert.assertEquals(
                     "select * from offer where (offer_id, group_id ) In (123,234)",
                     rrs.getNodes()[i].getStatement());
@@ -858,8 +856,8 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 支持insert into ... values (),()...
-     * 不支持insert into ... select...
+     * support insert into ... values (),()...
+     * not support insert into ... select...
      *
      * @throws Exception
      */
@@ -867,7 +865,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         SchemaConfig schema = schemaMap.get("TESTDB");
         RouteResultset rrs = null;
-        //不支持childtable 批量插入
+        //not supprot childtable batch insert
         String sql = "insert into orders (id,name,customer_id) values(1,'testonly',1),(2,'testonly',2000001)";
         try {
             rrs = routeStrategy.route(schema, 1, sql, null, null,
@@ -884,7 +882,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
             Assert.assertEquals("TODO:insert into .... select .... not supported!", e.getMessage());
         }
 
-        //分片表批量插入正常 employee
         sql = "insert into employee (id,name,sharding_id) values(1,'testonly',10000),(2,'testonly',10010)";
         rrs = routeStrategy.route(schema, 1, sql, null, null,
                 cachePool);
@@ -936,7 +933,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试函数COUNT
+     * test Aggregate COUNT
      *
      * @throws Exception
      */
@@ -957,7 +954,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试between语句的路由
+     * testBetweenExpr
      *
      * @throws Exception
      */
@@ -997,7 +994,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试or语句的路由
+     * testOr
      *
      * @throws Exception
      */
@@ -1028,7 +1025,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试父子表，查询子表的语句路由到多个节点
+     * testERRouteMutiNode
      *
      * @throws Exception
      */
@@ -1043,7 +1040,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试多层or语句
+     * testMultiLevelOr
      *
      * @throws Exception
      */
@@ -1073,7 +1070,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试 global table 的or语句
+     * testGlobalTableOr
      *
      * @throws Exception
      */
@@ -1088,7 +1085,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
     }
 
     /**
-     * 测试别名路由
+     * testAlias
      *
      * @throws Exception
      */
@@ -1096,21 +1093,20 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         SchemaConfig schema = schemaMap.get("TESTDB");
         RouteResultset rrs = null;
-        //不支持childtable 批量插入
-        //update 全局表
+        //update global table
         String sql = "update company a set name = '' where a.id = 1;";
         rrs = routeStrategy.route(schema, 1, sql, null, null,
                 cachePool);
 
         Assert.assertEquals(3, rrs.getNodes().length);
 
-        //update带别名时的路由
+        //update with alias
         sql = "update travelrecord a set name = '' where a.id = 1;";
         rrs = routeStrategy.route(schema, 1, sql, null, null,
                 cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
 
-        //别名大小写路由
+        //alias with lowercase
         sql = "select * from travelrecord A where a.id = 1;";
         rrs = routeStrategy.route(schema, 1, sql, null, null,
                 cachePool);

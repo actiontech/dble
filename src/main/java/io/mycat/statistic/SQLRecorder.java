@@ -29,7 +29,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * SQL统计排序记录器
+ * SQLRecorder
  *
  * @author mycat
  */

@@ -6,13 +6,13 @@ import io.mycat.server.NonBlockingSession;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 拥有自己的thread的dmlhandler
+ * OwnThreadDMLHandler
  *
  * @author ActionTech
- * @CreateTime 2014年11月27日
+ * @CreateTime 2014/11/27
  */
 public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
-    /* 当前是否需要结束ownthread，ownthread运行中时为true */
+    /* if the own thread need to terminated, true if own thread running */
     private AtomicBoolean ownJobFlag;
     private Object ownThreadLock = new Object();
     private boolean preparedToRecycle;
@@ -26,11 +26,11 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
     @Override
     public final void onTerminate() throws Exception {
         if (ownJobFlag.compareAndSet(false, true)) {
-            // thread未启动即进入了terminate
+            // terminated before the thread started
             recycleResources();
-        } else { // thread已经启动
+        } else { // thread started
             synchronized (ownThreadLock) {
-                if (!preparedToRecycle) { // 还未进入释放资源的地步
+                if (!preparedToRecycle) { // not ready to release resources
                     terminateThread();
                 }
             }
@@ -38,7 +38,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
     }
 
     /**
-     * @param objects 有可能会用到的参数
+     * @param objects
      */
     protected final void startOwnThread(final Object... objects) {
         MycatServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
@@ -62,10 +62,10 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
 
     protected abstract void ownThreadJob(Object... objects);
 
-    /* 通过一些动作，可以让running的thread终结 */
+    /* ending the running thread */
     protected abstract void terminateThread() throws Exception;
 
-    /* 线程结束后需要执行的动作 */
+    /* after thread terminated */
     protected abstract void recycleResources();
 
 }

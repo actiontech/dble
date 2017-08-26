@@ -27,7 +27,7 @@ public class ItemField extends ItemIdent {
 
     private Field field;
 
-    /* index如果有值的话，代表这个Item_field真实的下标值，需要在调用val之前调用setField方法 */
+    /* index如果有值的话,代表这个Item_field真实的下标值,需要在调用val之前调用setField方法 */
     private int index = -1;
 
     public ItemField(String dbName, String tableName, String fieldName) {

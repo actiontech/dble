@@ -40,7 +40,7 @@ public class DataClearRunner implements Runnable {
             if (tableInfo.isExpantion()) {
                 deleteDataDependFile(offset, con);
             } else {
-                //缩容，移除的节点直接truncate删除数据，非移除的节点按照临时文件的中值进行删除操作
+                //缩容,移除的节点直接truncate删除数据,非移除的节点按照临时文件的中值进行删除操作
                 List<DataNode> list = tableInfo.getRemovedDataNodes();
                 boolean isRemovedDn = false;
                 for (DataNode dn : list) {

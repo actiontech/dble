@@ -36,17 +36,17 @@ abstract class BaseHandlerBuilder {
     protected NonBlockingSession session;
     protected HandlerBuilder hBuilder;
     protected DMLResponseHandler start;
-    /* 当前的最后一个handler */
+    /* the current last handler */
     protected DMLResponseHandler currentLast;
     private PlanNode node;
     protected MycatConfig config;
-    /* 是否可以全下推 */
+    /* the children can be push down */
     protected boolean canPushDown = false;
-    /* 是否需要common中的handler，包括group by，order by，limit等 */
+    /* need common handler? like group by,order by,limit and so on */
     protected boolean needCommon = true;
-    /* 是否需要过wherehandler过滤 */
+    /* has where handler */
     protected boolean needWhereHandler = true;
-    /* 直接从用户的sql下发的是不需要sendmaker */
+    /* it's no need to send maker if sql is just the same as the client origin query  */
     protected boolean needSendMaker = true;
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder) {
@@ -63,22 +63,22 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * 生成正确的hanlder链
+     * generate a handler chain
      */
     public final void build() {
         List<DMLResponseHandler> preHandlers = null;
-        // 是否切换了join策略
-        boolean joinStrategyed = isNestLoopStrategy(node);
-        if (joinStrategyed) {
+        // is use the nest loop join
+        boolean isNestLoopJoin = isNestLoopStrategy(node);
+        if (isNestLoopJoin) {
             nestLoopBuild();
         } else if (!node.isExsitView() && node.getUnGlobalTableCount() == 0 && node.getNoshardNode() != null) {
-            // 可确定统一下发到某个节点
+            // the query can be send to a certain node
             noShardBuild();
         } else if (canDoAsMerge()) {
-            //可下发到某些(1...n)结点,如果：eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
+            // the query can be send to some certain nodes .eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
             mergeBuild();
         } else {
-            //拆分
+            //need to split to simple query
             preHandlers = buildPre();
             buildOwn();
         }
@@ -99,14 +99,11 @@ abstract class BaseHandlerBuilder {
         }
     }
 
-    /**
-     * 虽然where和otherjoinOn过滤条件为空，但是存在strategyFilters作为过滤条件
-     */
     protected void nestLoopBuild() {
         throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not implement yet, node type[" + node.type() + "]");
     }
 
-    /* join的er关系，或者global优化以及tablenode，可以当成merge来做 */
+    /* er join and  global *normal and table node are need not split to simple query*/
     protected boolean canDoAsMerge() {
         return false;
     }
@@ -118,22 +115,22 @@ abstract class BaseHandlerBuilder {
     protected abstract List<DMLResponseHandler> buildPre();
 
     /**
-     * 生成自己的handler
+     * build own handler
      */
     protected abstract void buildOwn();
 
     /**
-     * 不存在拆分表，下推到第一个节点
+     * no shard-ing node,just send to the first node
      */
     protected final void noShardBuild() {
         this.needCommon = false;
-        // 默认的可以global的都是unglobalcount=0，除了是joinnode有特殊情况
-        // 當且僅當node.unglobalcount=0,所以所有的語句都可以下發，僅需要將語句拼出來下發到一個節點即可
+        // nearly all global tables :unGlobalCount=0.
+        // Maybe the join node break the rule. eg: global1(node 0,1) join global2(node 2,3)
         String sql = null;
-        if (node.getParent() == null) { // root节点
+        if (node.getParent() == null) { // it's root
             sql = node.getSql();
         }
-        // 有可能node来自于view
+        // maybe some node is view
         if (sql == null) {
             GlobalVisitor visitor = new GlobalVisitor(node, true);
             visitor.visit();
@@ -149,7 +146,7 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * 构建node公共的属性，包括where，groupby，having，orderby，limit，还有最后的sendmakehandler
+     * build common properties,like where,groupby,having,orderby,limit, and sendMakHandler(rename)
      */
     protected void buildCommon() {
         if (node.getWhereFilter() != null && needWhereHandler) {
@@ -232,7 +229,7 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * 添加一个handler到hanlder链
+     * add a handler into handler chain
      */
     protected void addHandler(DMLResponseHandler bh) {
         if (currentLast == null) {
@@ -251,8 +248,8 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * 是否需要对该node进行orderby排序
-     * 如果该node的上一层handler返回的结果已经按照orderBys排序，则无需再次进行orderby
+     *
+     * if the node's parent handler has been ordered,it is no need to order again
      *
      * @param planNode
      * @param orderBys
@@ -270,15 +267,16 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * joinnode的默认排序记录在leftjoinonorders和rightjoinonorders中
+     * the order way of join node stored in left join on orders and right join on orders
      *
      * @param jn
-     * @param orderBys 目标排序
+     * @param orderBys
      * @return
      */
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
-        // 记录orderBys中前面出现的onCondition列,如jn.onCond = (t1.id=t2.id),
-        // orderBys为t1.id,t2.id,t1.name，则onOrders = {t1.id,t2.id};
+        // onCondition column in orderBys will be saved to onOrders,
+        // eg: if jn.onCond = (t1.id=t2.id),
+        // orderBys is t1.id,t2.id,t1.name, and onOrders = {t1.id,t2.id};
         List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
         List<Order> rightOnOrders = jn.getRightJoinOnOrders();
@@ -290,7 +288,7 @@ abstract class BaseHandlerBuilder {
             }
         }
         if (onOrders.isEmpty()) {
-            // joinnode的数据一定是按照joinOnCondition进行排序的
+            // join node must order by joinOnCondition
             return false;
         } else {
             List<Order> remainOrders = orderBys.subList(onOrders.size(), orderBys.size());
@@ -317,7 +315,7 @@ abstract class BaseHandlerBuilder {
 
     /**
      * @param qn
-     * @param orderBys 目标排序
+     * @param orderBys
      * @return
      */
     private boolean isQueryNodeOrderMatch(QueryNode qn, List<Order> orderBys) {
@@ -327,7 +325,7 @@ abstract class BaseHandlerBuilder {
     }
 
     /**
-     * 尝试将order by的顺序合并到columnsSelected中
+     * try to merger the order of 'order by' syntax to columnsSelected
      *
      * @param columnsSelected
      * @param orderBys
@@ -363,8 +361,6 @@ abstract class BaseHandlerBuilder {
         return sequenceId.incrementAndGet();
     }
 
-    /*-----------------计算datasource相关start------------------*/
-
     protected void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
         hBuilder.checkRRSs(rrssArray);
         MultiNodeMergeHandler mh = null;
@@ -396,6 +392,5 @@ abstract class BaseHandlerBuilder {
             return null;
         return schemaConfig.getTables().get(table);
     }
-    /*-------------------------------计算datasource相关end------------------*/
 
 }

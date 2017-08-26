@@ -37,12 +37,12 @@ import java.util.Map;
 public final class RouteResultset implements Serializable {
     private static final long serialVersionUID = 3906972758236875720L;
 
-    private String srcStatement; // 原始语句
+    private String srcStatement; // origin statement
     private String statement;
     private String schema;
     private String table;
     private final int sqlType;
-    private RouteResultsetNode[] nodes; // 路由结果节点
+    private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
 
     private boolean needOptimizer;
@@ -55,26 +55,26 @@ public final class RouteResultset implements Serializable {
     private int limitSize;
     private SQLMerge sqlMerge;
 
-    private boolean callStatement = false; // 处理call关键字
+    private boolean callStatement = false; // is Call Statement
 
-    // 是否为全局表，只有在insert、update、delete、ddl里会判断并修改。默认不是全局表，用于修正全局表修改数据的反馈。
+    // used for insert、update、delete、ddl statement for affect rows.
     private boolean globalTableFlag = false;
 
-    // 是否完成了路由
+    // FinishedRoute
     private boolean isFinishedRoute = false;
 
-    // 是否完成了执行
+    // FinishedExecute
     private boolean isFinishedExecute = false;
 
 
     private boolean isLoadData = false;
 
-    //是否可以在从库运行,此属性主要供RouteResultsetNode获取
+    //canRunInReadDB,set from RouteResultsetNode
     private Boolean canRunInReadDB;
 
-    // 强制走 master，可以通过 RouteResultset的属性canRunInReadDB=false
-    // 传给 RouteResultsetNode 来实现，但是 强制走 slave需要增加一个属性来实现:
-    private Boolean runOnSlave = null;    // 默认null表示不施加影响
+    // if force master,set canRunInReadDB=false
+    // if force slave set runOnSlave,default null means not effect
+    private Boolean runOnSlave = null;
 
     public boolean isNeedOptimizer() {
         return needOptimizer;

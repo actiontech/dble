@@ -1,13 +1,18 @@
 package io.mycat.cache.impl;
 
 
-import io.mycat.cache.CachePool;
-import io.mycat.cache.CacheStatic;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import org.iq80.leveldb.DB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import io.mycat.cache.CachePool;
+import io.mycat.cache.CacheStatic;
 
 
 public class LevelDBPool implements CachePool {
@@ -78,7 +83,7 @@ public class LevelDBPool implements CachePool {
         }
         //long[] sizes = cache.getApproximateSizes(new Range(bytes("TESTDB"), bytes("TESTDC")));
          */
-        //cacheStati.setItemSize(cache.getSize());//sizes[0]);//需要修改leveldb的代码
+        //cacheStati.setItemSize(cache.getSize());//sizes[0]);
         cacheStati.setItemSize(cacheStati.getPutTimes());
         return cacheStati;
     }

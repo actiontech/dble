@@ -37,12 +37,12 @@ public interface NIOConnection extends ClosableConnection {
     void register() throws IOException;
 
     /**
-     * 处理数据
+     * execute
      */
     void handle(byte[] data);
 
     /**
-     * 写出一块缓存数据
+     * write from buffer
      */
     void write(ByteBuffer buffer);
 

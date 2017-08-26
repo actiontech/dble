@@ -42,7 +42,7 @@ import io.mycat.util.TimeUtil;
 import java.nio.ByteBuffer;
 
 /**
- * 查看当前有效连接信息
+ * Show Active Connection
  *
  * @author mycat
  * @author mycat

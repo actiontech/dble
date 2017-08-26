@@ -102,10 +102,10 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
     }
 
     /**
-     * 比原生的resultdisktape要添加sum结果的值
+     * origin resultdisktape+ sum result
      *
      * @author ActionTech
-     * @CreateTime 2015年5月20日
+     * @CreateTime 2015/5/20
      */
     static class GroupResultDiskTape extends ResultDiskTape {
         private final int orgFieldCount;

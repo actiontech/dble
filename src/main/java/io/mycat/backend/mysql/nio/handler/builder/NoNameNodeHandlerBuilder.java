@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * select 1 as name这种sql
+ * query like "select 1 as name"
  *
  * @author ActionTech
- * @CreateTime 2015年3月23日
+ * @CreateTime 2015/3/23
  */
 class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
     private NoNameNode node;

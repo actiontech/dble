@@ -53,14 +53,11 @@ public class XMLRuleLoader {
     private static final String DEFAULT_XML = "/rule.xml";
 
     private final Map<String, TableRuleConfig> tableRules;
-    // private final Set<RuleConfig> rules;
     private final Map<String, AbstractPartitionAlgorithm> functions;
 
     public XMLRuleLoader(String ruleFile) {
-        // this.rules = new HashSet<RuleConfig>();
-        //rule名 -> rule
         this.tableRules = new HashMap<>();
-        //function名 -> 具体分片算法
+        //function-> algorithm
         this.functions = new HashMap<>();
         load(DEFAULT_DTD, ruleFile == null ? DEFAULT_XML : ruleFile);
     }
@@ -76,11 +73,8 @@ public class XMLRuleLoader {
         try {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
-            //读取出语意树
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            //加载Function
             loadFunctions(root);
-            //加载TableRule
             loadTableRules(root);
         } catch (ConfigException e) {
             throw e;
@@ -105,7 +99,7 @@ public class XMLRuleLoader {
     }
 
     /**
-     * tableRule标签结构：
+     * tableRule tag:
      * <tableRule name="sharding-by-month">
      * <rule>
      * <columns>create_date</columns>
@@ -117,13 +111,11 @@ public class XMLRuleLoader {
      * @throws SQLSyntaxErrorException
      */
     private void loadTableRules(Element root) throws SQLSyntaxErrorException {
-        //获取每个tableRule标签
         NodeList list = root.getElementsByTagName("tableRule");
         for (int i = 0, n = list.getLength(); i < n; ++i) {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element e = (Element) node;
-                //先判断是否重复
                 String name = e.getAttribute("name");
                 if (StringUtil.isEmpty(name)) {
                     throw new ConfigException("name is null or empty");
@@ -131,23 +123,20 @@ public class XMLRuleLoader {
                 if (tableRules.containsKey(name)) {
                     throw new ConfigException("table rule " + name + " duplicated!");
                 }
-                //获取rule标签
                 NodeList ruleNodes = e.getElementsByTagName("rule");
                 int length = ruleNodes.getLength();
                 if (length > 1) {
                     throw new ConfigException("only one rule can defined :" + name);
                 }
-                //目前只处理第一个，未来可能有多列复合逻辑需求
-                //RuleConfig是保存着rule与function对应关系的对象
+                //rule has only one element now. Maybe it will not contains one rule in feature
+                //RuleConfig:rule->function
                 RuleConfig rule = loadRule((Element) ruleNodes.item(0));
-                //保存到tableRules
                 tableRules.put(name, new TableRuleConfig(name, rule));
             }
         }
     }
 
     private RuleConfig loadRule(Element element) throws SQLSyntaxErrorException {
-        //读取columns
         Element columnsEle = ConfigUtil.loadElement(element, "columns");
         String column = columnsEle.getTextContent();
         if (StringUtil.isEmpty(column)) {
@@ -158,14 +147,12 @@ public class XMLRuleLoader {
             throw new ConfigException("table rule coulmns has multi values:" +
                     columnsEle.getTextContent());
         }
-        //读取algorithm
         Element algorithmEle = ConfigUtil.loadElement(element, "algorithm");
         String algorithmName = algorithmEle.getTextContent();
 
         if (StringUtil.isEmpty(algorithmName)) {
             throw new ConfigException("algorithm is null or empty");
         }
-        //判断function是否存在，获取function
         AbstractPartitionAlgorithm algorithm = functions.get(algorithmName);
         if (algorithm == null) {
             throw new ConfigException("can't find function of name :" + algorithmName);
@@ -174,7 +161,7 @@ public class XMLRuleLoader {
     }
 
     /**
-     * function标签结构：
+     * function tag:
      * <function name="partbymonth" class="io.mycat.route.function.PartitionByMonth">
      * <property name="dateFormat">yyyy-MM-dd</property>
      * <property name="sBeginDate">2015-01-01</property>
@@ -194,22 +181,18 @@ public class XMLRuleLoader {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element e = (Element) node;
-                //获取name标签
                 String name = e.getAttribute("name");
-                //如果Map已有，则function重复
+                // check if the function is duplicate
                 if (functions.containsKey(name)) {
                     throw new ConfigException("rule function " + name + " duplicated!");
                 }
-                //获取class标签
                 String clazz = e.getAttribute("class");
-                //根据class利用反射新建分片算法
+                //reflection
                 AbstractPartitionAlgorithm function = createFunction(name, clazz);
                 function.setName(name);
-                //根据读取参数配置分片算法
                 ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
-                //每个AbstractPartitionAlgorithm可能会实现init来初始化
+                //init for AbstractPartitionAlgorithm
                 function.init();
-                //放入functions map
                 functions.put(name, function);
             }
         }
@@ -235,7 +218,7 @@ public class XMLRuleLoader {
                 return new PartitionByDate();
             default:
                 Class<?> clz = Class.forName(clazz);
-                //判断是否继承AbstractPartitionAlgorithm
+                //all function must be extend from AbstractPartitionAlgorithm
                 if (!AbstractPartitionAlgorithm.class.isAssignableFrom(clz)) {
                     throw new IllegalArgumentException("rule function must implements " +
                             AbstractPartitionAlgorithm.class.getName() + ", name=" + name);

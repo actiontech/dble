@@ -110,9 +110,6 @@ public class BindValue {
         this.scale = scale;
     }
 
-    /**
-     * 数据值
-     **/
     public byte getByteBinding() {
         return byteBinding;
     }

@@ -1,16 +1,17 @@
 package io.mycat.buffer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import sun.nio.ch.DirectBuffer;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sun.nio.ch.DirectBuffer;
+
 /**
- * DirectByteBuffer池，可以分配任意指定大小的DirectByteBuffer，用完需要归还
+ * DirectByteBufferPool
  *
  * @author wuzhih
  * @author zagnix
@@ -26,7 +27,7 @@ public class DirectByteBufferPool implements BufferPool {
     private final int pageSize;
     private final short pageCount;
     /**
-     * 记录对线程ID->该线程的所使用Direct Buffer的size
+     * thread ID->the size of Direct Buffer
      */
     private final ConcurrentMap<Long, Long> memoryUsage;
 
@@ -43,7 +44,7 @@ public class DirectByteBufferPool implements BufferPool {
     }
 
     /**
-     * TODO 当页不够时，考虑扩展内存池的页的数量...........
+     * TODO expandBuffer...
      *
      * @param buffer
      * @return

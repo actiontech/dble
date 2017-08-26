@@ -116,7 +116,6 @@ public class RowDataPacketSorter {
     }
 
     /**
-     * 递归按照排序字段进行排序
      *
      * @param byColumnIndex
      */
@@ -137,18 +136,18 @@ public class RowDataPacketSorter {
 
         if (compareObject(left, right, this.orderCols[byColumnIndex]) <= 0) {
             if (compareObject(left, right, this.orderCols[byColumnIndex]) < 0) {
-                if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) { // 升序
+                if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {
                     resultTemp[pr++] = array[p1++];
                 } else {
                     resultTemp[pr++] = array[p2++];
                 }
-            } else { // 如果当前字段相等，则按照下一个字段排序
+            } else { // if this field is equal, try next
                 compare(byColumnIndex + 1);
 
             }
 
         } else {
-            if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) { // 升序
+            if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {
                 resultTemp[pr++] = array[p2++];
             } else {
                 resultTemp[pr++] = array[p1++];
@@ -173,7 +172,7 @@ public class RowDataPacketSorter {
             case ColMeta.COL_TYPE_LONGLONG:
             case ColMeta.COL_TYPE_INT24:
             case ColMeta.COL_TYPE_NEWDECIMAL:
-                // 因为mysql的日期也是数字字符串方式表达，因此可以跟整数等一起对待
+                // treat date type as number
             case ColMeta.COL_TYPE_DATE:
             case ColMeta.COL_TYPE_TIMSTAMP:
             case ColMeta.COL_TYPE_TIME:
@@ -184,11 +183,11 @@ public class RowDataPacketSorter {
                 return ByteUtil.compareNumberByte(left, right);
             case ColMeta.COL_TYPE_VAR_STRING:
             case ColMeta.COL_TYPE_STRING:
-                // ENUM和SET类型都是字符串，按字符串处理
+                // execute ENUM and SET as string
             case ColMeta.COL_TYPE_ENUM:
             case ColMeta.COL_TYPE_SET:
                 return BytesTools.compareTo(left, right);
-            // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+            // ignore BLOB GEOMETRY
             default:
                 break;
         }

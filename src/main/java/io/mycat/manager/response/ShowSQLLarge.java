@@ -85,7 +85,7 @@ public final class ShowSQLLarge {
             }
 
             if (isClear) {
-                userStat.getSqlLargeRowStat().clear(); //读取大结果集SQL后，清理
+                userStat.getSqlLargeRowStat().clear(); //读取大结果集SQL后,清理
             }
         }
 

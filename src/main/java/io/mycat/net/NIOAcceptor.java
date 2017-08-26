@@ -58,7 +58,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
         this.selector = Selector.open();
         this.serverChannel = ServerSocketChannel.open();
         this.serverChannel.configureBlocking(false);
-        //设置TCP属性
+        //set TCP option
         serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
         serverChannel.bind(new InetSocketAddress(bindIp, port), backlog);
@@ -135,7 +135,6 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
     }
 
     /**
-     * 前端连接ID生成器
      *
      * @author mycat
      */

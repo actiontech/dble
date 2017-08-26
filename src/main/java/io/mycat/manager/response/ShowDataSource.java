@@ -43,7 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * 查看数据源信息
+ * ShowDataSource
  *
  * @author mycat
  * @author mycat

@@ -49,7 +49,7 @@ import java.text.NumberFormat;
 import java.util.*;
 
 /**
- * 查看数据节点信息
+ * ShowDataNode
  *
  * @author mycat
  * @author mycat

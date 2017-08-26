@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * alter table 语句解析
+ * DruidAlterTableParser
  *
  * @author wang.dw
  */

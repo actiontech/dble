@@ -40,7 +40,7 @@ public class ServerPrepareTest {
      */
 
     /**
-     * 测试发送COM_STMT_SEND_LONG_DATA命令
+     * TEST COM_STMT_SEND_LONG_DATA
      *
      * @throws IOException
      */
@@ -48,13 +48,11 @@ public class ServerPrepareTest {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        // 获取待存储图片输入流
         InputStream image0In = classLoader.getResourceAsStream("blob/image0.jpg");
         InputStream image1In = classLoader.getResourceAsStream("blob/image1.png");
         InputStream image2In = classLoader.getResourceAsStream("blob/image2.png");
         InputStream image3In = classLoader.getResourceAsStream("blob/image3.png");
 
-        // 保存图片字节数据,待后面取回数据进行校验
         byte[] image0Bytes = getBytes(image0In);
         byte[] image1Bytes = getBytes(image1In);
         byte[] image2Bytes = getBytes(image2In);
@@ -65,9 +63,7 @@ public class ServerPrepareTest {
             pstmt = conn.prepareStatement("insert into hotnews(id, title, content, image0, image1, image2, image3) values(?,?,?,?,?,?,?)");
             pstmt.setInt(1, 1314);
             pstmt.setString(2, "hotnew");
-            // text字段设置
             pstmt.setBinaryStream(3, new ByteArrayInputStream("this is a content of hotnew".getBytes("UTF-8")));
-            // blob字段构造
             Blob image0Blob = conn.createBlob();
             Blob image1Blob = conn.createBlob();
             Blob image2Blob = conn.createBlob();
@@ -76,15 +72,14 @@ public class ServerPrepareTest {
             image1Blob.setBytes(1, image1Bytes);
             image2Blob.setBytes(1, image2Bytes);
             image3Blob.setBytes(1, image3Bytes);
-            // blob字段设置
+
             pstmt.setBlob(4, image0Blob);
             pstmt.setBlob(5, image1Blob);
             pstmt.setBlob(6, image2Blob);
             pstmt.setBlob(7, image3Blob);
-            // 执行
             pstmt.execute();
 
-            // 从表里面拿出刚插入的数据, 对blob字段进行校验
+            //  CHECK blob field which get from table
             pstmt = conn.prepareStatement("select image0, image1, image2, image3 from hotnews where id = ?");
             pstmt.setInt(1, 1314);
             ResultSet rs = pstmt.executeQuery();
@@ -93,7 +88,7 @@ public class ServerPrepareTest {
                 InputStream _image1In = rs.getBlob(2).getBinaryStream();
                 InputStream _image2In = rs.getBlob(3).getBinaryStream();
                 InputStream _image3In = rs.getBlob(4).getBinaryStream();
-                // 断言从数据库取出来的数据,与之前发送的数据是一致的(字节数组内容比较)
+
                 Assert.assertArrayEquals(image0Bytes, getBytes(_image0In));
                 Assert.assertArrayEquals(image1Bytes, getBytes(_image1In));
                 Assert.assertArrayEquals(image2Bytes, getBytes(_image2In));
@@ -130,7 +125,7 @@ public class ServerPrepareTest {
     }
 
     /**
-     * 测试发送COM_STMT_RESET命令
+     * TEST COM_STMT_RESET
      */
     public static void testComStmtRest() {
         Connection conn = null;
@@ -234,11 +229,9 @@ public class ServerPrepareTest {
             throws SQLException {
         System.out.println(name);
         ResultSetMetaData meta = res.getMetaData();
-        //System.out.println( "\t"+res.getRow()+"条记录");
         String str = "";
         for (int i = 1; i <= meta.getColumnCount(); i++) {
             str += meta.getColumnName(i) + "   ";
-            //System.out.println( meta.getColumnName(i)+"   ");
         }
         System.out.println("\t" + str);
         str = "";

@@ -61,12 +61,12 @@ public abstract class PlanNode {
     protected List<Item> columnsSelected = new ArrayList<>();
 
     /**
-     * 显式的由查询接口指定的orderBy，注意需要保证顺序
+     * 显式的由查询接口指定的orderBy,注意需要保证顺序
      */
     protected List<Order> orderBys = new LinkedList<>();
 
     /**
-     * 显式的由查询接口指定的group by，注意需要保证顺序
+     * 显式的由查询接口指定的group by,注意需要保证顺序
      */
     protected List<Order> groups = new LinkedList<>();
 
@@ -75,7 +75,7 @@ public abstract class PlanNode {
      */
     protected Item havingFilter;
     /**
-     * 上一层父节点，比如子查询会依赖父节点的字段信息
+     * 上一层父节点,比如子查询会依赖父节点的字段信息
      * http://dev.mysql.com/doc/refman/5.0/en/correlated-subqueries.html
      */
     private PlanNode parent;
@@ -101,15 +101,15 @@ public abstract class PlanNode {
     protected Item whereFilter = null;
 
     /**
-     * 当前tn的别名，用于进行join等操作的时候辨别到底这一行是从哪个subNode来的。
+     * 当前tn的别名,用于进行join等操作的时候辨别到底这一行是从哪个subNode来的.
      */
     protected String alias;
 
     /**
-     * 如果出现subQuery，内外都存在别名时，内部的别名为subAlias，外部使用的别名为alias
-     * tablenode自身的这个Alias属性和基类TreeNode的alias属性的作用如下： 按照原本tddl的做法无法区分 select *
+     * 如果出现subQuery,内外都存在别名时,内部的别名为subAlias,外部使用的别名为alias
+     * tablenode自身的这个Alias属性和基类TreeNode的alias属性的作用如下: 按照原本tddl的做法无法区分 select *
      * from (select* from test1 t1) t当中的两个alias
-     * 当tablenode的tableAlias属性有值时，我们就把这个语句带上tableAlias下发下去
+     * 当tablenode的tableAlias属性有值时,我们就把这个语句带上tableAlias下发下去
      */
     protected String subAlias;
 
@@ -143,7 +143,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 依赖的所有列，保存的是childnode->iselectable
+     * 依赖的所有列,保存的是childnode->iselectable
      */
     protected LoadingCache<PlanNode, List<Item>> columnsReferedCache = CacheBuilder.newBuilder().build(
             new CacheLoader<PlanNode, List<Item>>() {
@@ -557,7 +557,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 设置别名，表级别
+     * 设置别名,表级别
      */
     public PlanNode setAlias(String string) {
         this.alias(string);
@@ -565,7 +565,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 设置别名，表级别
+     * 设置别名,表级别
      */
     public PlanNode setSubAlias(String string) {
         this.subAlias(string);

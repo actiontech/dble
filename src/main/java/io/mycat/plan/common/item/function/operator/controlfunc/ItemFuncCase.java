@@ -25,8 +25,8 @@ public class ItemFuncCase extends ItemFunc {
 
     /**
      * @param args
-     * @param firstExprNum -1 代表没有case表达式,否则代表case表达式在args中的index，case和else exp在队列的最后
-     * @param elseExprNum  else在args中的index
+     * @param firstExprNum -1 means no case exp,else means the index of args in case exp,case and else exp are at the end of args
+     * @param elseExprNum  the index of else in args
      */
     public ItemFuncCase(List<Item> args, int ncases, int firstExprNum, int elseExprNum) {
         super(args);

@@ -24,54 +24,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 对SQLStatement解析
- * 主要通过visitor解析和statement解析：有些类型的SQLStatement通过visitor解析足够了，
- * 有些只能通过statement解析才能得到所有信息
- * 有些需要通过两种方式解析才能得到完整信息
+ * DefaultDruidParser
  *
  * @author wang.dw
  */
 public class DefaultDruidParser implements DruidParser {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultDruidParser.class);
-    /**
-     * 解析得到的结果
-     */
     protected DruidShardingParseInfo ctx;
 
     /**
-     * 使用MycatSchemaStatVisitor解析,得到tables、tableAliasMap、conditions等
-     *
      * @param schema
      * @param stmt
      * @param sc
      */
     public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, MycatSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
         ctx = new DruidShardingParseInfo();
-        //通过visitor解析
         schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc);
-
-        //改写sql：如insert语句主键自增长的可以
         changeSql(schema, rrs, stmt, cachePool);
         return schema;
     }
 
 
-    /**
-     * 改写sql：如insert是
-     */
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs,
                           SQLStatement stmt, LayerCachePool cachePool) throws SQLException {
 
     }
 
-    /**
-     * 子类可覆盖（如果该方法解析得不到表名、字段等信息的，就覆盖该方法，覆盖成空方法，然后通过statementPparse去解析）
-     * 通过visitor解析：有些类型的Statement通过visitor解析得不到表名、
-     *
-     * @param stmt
-     * @param sc
-     */
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
@@ -81,9 +60,8 @@ public class DefaultDruidParser implements DruidParser {
         }
         List<List<Condition>> mergedConditionList = new ArrayList<>();
         if (visitor.hasOrCondition()) {
-            // 根据or拆分
             mergedConditionList = visitor.splitConditions();
-        } else { // 不包含OR语句
+        } else {
             mergedConditionList.add(visitor.getConditions());
         }
         Map<String, String> tableAliasMap = getTableAliasMap(visitor.getAliasMap());
@@ -114,7 +92,7 @@ public class DefaultDruidParser implements DruidParser {
             if (value != null && value.contains("`")) {
                 value = value.replaceAll("`", "");
             }
-            // 表名前面带database的，去掉
+            // remove database in database.table
             if (key != null) {
                 boolean needAddTable = false;
                 if (key.equals(value)) {
@@ -136,7 +114,7 @@ public class DefaultDruidParser implements DruidParser {
 
     private List<RouteCalculateUnit> buildRouteCalculateUnits(Map<String, String> tableAliasMap, List<List<Condition>> conditionList) {
         List<RouteCalculateUnit> retList = new ArrayList<>();
-        //遍历condition ，找分片字段
+        //find partition column in condition
         for (List<Condition> aConditionList : conditionList) {
             RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
             for (Condition condition : aConditionList) {
@@ -150,7 +128,8 @@ public class DefaultDruidParser implements DruidParser {
                     if (MycatServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
                         tableName = tableName.toLowerCase();
                     }
-                    if (tableAliasMap != null && tableAliasMap.get(tableName) == null) { //子查询的别名条件忽略掉,不参数路由计算，否则后面找不到表
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) == null) {
+                        //ignore subQuery's alias
                         continue;
                     }
                     if (tableAliasMap != null && tableAliasMap.get(tableName) != null &&
@@ -159,11 +138,11 @@ public class DefaultDruidParser implements DruidParser {
                     }
                     String operator = condition.getOperator();
 
-                    //只处理between ,in和=3中操作符
+                    //execute only between ,in and =
                     if (operator.equals("between")) {
                         RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
                         routeCalculateUnit.addShardingExpr(tableName, columnName, rv);
-                    } else if (operator.equals("=") || operator.toLowerCase().equals("in")) { //只处理=号和in操作符,其他忽略
+                    } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
                     }
                 }

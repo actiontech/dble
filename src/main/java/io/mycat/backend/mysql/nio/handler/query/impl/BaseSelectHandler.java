@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 仅用来执行Sql，将接收到的数据转发到下一个handler
+ * for execute Sql,transform the response data to next handler
  */
 public class BaseSelectHandler extends BaseDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(BaseSelectHandler.class);

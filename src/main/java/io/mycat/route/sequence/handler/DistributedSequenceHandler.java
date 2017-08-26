@@ -27,14 +27,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * Deprecated:
  * <p>
- * 基于ZK与本地配置的分布式ID生成器(可以通过ZK获取集群（机房）唯一InstanceID，也可以通过配置文件配置InstanceID)
- * ID结构：long 64位，ID最大可占63位
- * |current time millis(微秒时间戳38位,可以使用17年)|clusterId（机房或者ZKid，通过配置文件配置5位）|instanceId（实例ID，可以通过ZK或者配置文件获取，5位）|threadId（线程ID，9位）|increment(自增,6位)
- * 一共63位，可以承受单机房单机器单线程1000*(2^6)=640000的并发。
- * 无悲观锁，无强竞争，吞吐量更高
+ *  use ZK(get InstanceID from ZK) Or local file (set InstanceID) generate a sequence
+ * ID :long 63 bits
+ * |threadId(9)|instanceId(5)|clusterId(4)|increment(6)|current time millis(39 digits ,used for 17 years)|
  * <p/>
- * 配置文件：sequence_distributed_conf.properties
- * 只要配置里面：INSTANCEID=ZK就是从ZK上获取InstanceID
+ * local file:sequence_distributed_conf.properties
+ * set :INSTANCEID=ZK then the INSTANCEIDwill generated from zk
  *
  * @author Hash Zhang
  * @version 1.0
@@ -44,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * clusterId 4bits
  * <p>
- * |threadId(线程ID)|instanceId(实例ID)|clusterId(机房ID)|increment(自增)|current time millis(时间戳39位,可以使用17年)|
+ * |threadId|instanceId|clusterId|increment|current time millis|
  */
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
@@ -76,7 +74,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private int[] mark;
     private volatile boolean isLeader = false;
     private volatile String slavePath;
-    // 配置是否载入好
     private volatile boolean ready = false;
 
     private CuratorFramework client;

@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MySQL 验证处理器
+ * MySQLConnectionAuthenticator
  *
  * @author mycat
  */
@@ -64,11 +64,11 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     HandshakePacket packet = source.getHandshake();
                     if (packet == null) {
                         processHandShakePacket(data);
-                        // 发送认证数据包
+                        // send auth packet
                         source.authenticate();
                         break;
                     }
-                    // 处理认证结果
+                    // execute auth response
                     source.setHandler(new MySQLConnectionHandler(source));
                     source.setAuthenticated(true);
                     boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & packet.getServerCapabilities());
@@ -95,7 +95,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     packet = source.getHandshake();
                     if (packet == null) {
                         processHandShakePacket(data);
-                        // 发送认证数据包
+                        // send auth packet
                         source.authenticate();
                         break;
                     } else {
@@ -114,13 +114,11 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     }
 
     private void processHandShakePacket(byte[] data) {
-        // 设置握手数据包
         HandshakePacket packet = new HandshakePacket();
         packet.read(data);
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());
 
-        // 设置字符集编码
         int charsetIndex = (packet.getServerCharsetIndex() & 0xff);
         String charset = CharsetUtil.getCharset(charsetIndex);
         if (charset != null) {
@@ -131,7 +129,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     }
 
     private void auth323(byte packetId) {
-        // 发送323响应认证数据包
+        // send 323 auth packet
         Reply323Packet r323 = new Reply323Packet();
         r323.setPacketId(++packetId);
         String pass = source.getPassword();

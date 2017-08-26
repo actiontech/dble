@@ -27,7 +27,7 @@ public interface ClosableConnection {
     String getCharset();
 
     /**
-     * 关闭连接
+     * close connection
      */
     void close(String reason);
 

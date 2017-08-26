@@ -28,20 +28,18 @@ import java.util.List;
 
 /**
  * 进行从rule.xml加载到zk中加载
- * 源文件名：SchemasLoader.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
-    /**
-     * 日志
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RulesxmlTozkLoader.class);
 
     /**
@@ -99,7 +97,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
      * @param basePath 基本路径
      * @param rules    件的信息
      * @throws Exception 异常信息
-     * @创建日期 2016年9月17日
+     * @Created 2016/9/17
      */
     private void xmlTozkRulesJson(String basePath, Rules rules) throws Exception {
         // tablerune节点信息
@@ -119,7 +117,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
      * 方法描述
      *
      * @param functionList
-     * @创建日期 2016年9月18日
+     * @Created 2016/9/18
      */
     private void readMapFileAddFunction(List<Function> functionList) {
 
@@ -130,7 +128,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
             if (null != proList && !proList.isEmpty()) {
                 // 进行数据遍历
                 for (Property property : proList) {
-                    // 如果为mapfile，则需要去读取数据信息，并存到json中
+                    // 如果为mapfile,则需要去读取数据信息,并存到json中
                     if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
                         Property mapFilePro = new Property();
                         mapFilePro.setName(property.getValue());
@@ -145,7 +143,7 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
                 }
                 // 将数据添加的集合中
                 proList.addAll(tempData);
-                // 清空，以进行下一次的添加
+                // 清空,以进行下一次的添加
                 tempData.clear();
             }
         }

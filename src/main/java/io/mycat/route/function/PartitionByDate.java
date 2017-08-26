@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * 例子 按日期列分区  格式 between操作解析的范例
+ * 例子 按期列分区  格式 between操作解析的范例
  *
  * @author lxy
  */

@@ -44,7 +44,7 @@ public class FieldBit extends Field {
 
     @Override
     protected void internalJob() {
-        // 比如一个bit(16)的数据类型，存储的值为8737(=34*256+33)那么客户端传递给我们的byte[]为[34,33]
+        // 比如一个bit(16)的数据类型,存储的值为8737(=34*256+33)那么客户端传递给我们的byte[]为[34,33]
         if (ptr != null) {
             long lv = getBitInt(ptr);
             intValue = BigInteger.valueOf(lv);

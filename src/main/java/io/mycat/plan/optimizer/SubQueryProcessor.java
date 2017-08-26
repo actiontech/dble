@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 将View进行处理，将虚拟的merge node变成其它的三种类型的node
+ * 将View进行处理,将虚拟的merge node变成其它的三种类型的node
  *
  * @author ActionTech
  */
@@ -33,7 +33,7 @@ public final class SubQueryProcessor {
     }
 
     /**
-     * 尝试找出qtn中的querynode，并将他们转换为对应的三种node
+     * 尝试找出qtn中的querynode,并将他们转换为对应的三种node
      *
      * @param qtn
      * @return
@@ -65,7 +65,7 @@ public final class SubQueryProcessor {
     private static PlanNode transformerQuery(QueryNode query, BoolPtr boolptr) {
         boolean canBeMerged = ViewUtil.canBeMerged(query.getChild());
         if (canBeMerged) {
-            // 需要将viewnode的属性merge到view的child，从而实现优化
+            // 需要将viewnode的属性merge到view的child,从而实现优化
             PlanNode newNode = mergeNode(query, query.getChild());
             boolptr.set(true);
             return newNode;
@@ -75,7 +75,7 @@ public final class SubQueryProcessor {
     }
 
     /**
-     * 将parent的属性merge到child，并返回新的child前提是child是canBeMerged
+     * 将parent的属性merge到child,并返回新的child前提是child是canBeMerged
      *
      * @param parent
      * @param child
@@ -115,7 +115,7 @@ public final class SubQueryProcessor {
             String selName = pSel.getAlias();
             if (StringUtils.isEmpty(selName)) {
                 selName = pSel.getItemName();
-                // 下推时，父节点是函数，且函数无别名，mysql不允许select func() as func()这种
+                // 下推时,父节点是函数,且函数无别名,mysql不允许select func() as func()这种
                 if (pSel.type() == ItemType.FUNC_ITEM || pSel.type() == ItemType.COND_ITEM ||
                         pSel.type() == ItemType.SUM_FUNC_ITEM)
                     selName = Item.FNAF + selName;

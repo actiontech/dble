@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 /**
- * 查看schema信息
+ * ShowDatabase
  *
  * @author mycat
  * @author mycat

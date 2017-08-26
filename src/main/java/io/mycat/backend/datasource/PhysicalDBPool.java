@@ -348,7 +348,7 @@ public class PhysicalDBPool {
         for (int i = 0; i < writeSources.length; i++) {
             int j = loop(i + index);
             if (initSource(j, writeSources[j])) {
-                // 不切换时，如果主写挂了,不允许切换过去
+                // if init failed and not allowed switch
                 boolean isNotSwitchDs = (dataHostConfig.getSwitchType() == DataHostConfig.NOT_SWITCH_DS);
                 if (isNotSwitchDs && j > 0) {
                     return j;
@@ -477,7 +477,7 @@ public class PhysicalDBPool {
     }
 
     /**
-     * 强制清除 dataSources
+     * clearDataSources
      *
      * @param reason
      */
@@ -553,13 +553,12 @@ public class PhysicalDBPool {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select read source " + theNode.getName() + " for dataHost:" + this.getHostName());
         }
-        // 统计节点读操作次数
         theNode.setReadCount();
         theNode.getConnection(schema, autocommit, handler, attachment);
     }
 
     /**
-     * slave 读负载均衡，也就是 readSource 之间实现负载均衡
+     * slave balance for read, balance in read sources
      *
      * @param schema
      * @param autocommit
@@ -567,18 +566,17 @@ public class PhysicalDBPool {
      * @param attachment
      * @throws Exception
      */
-    public void getReadBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+    public void getReadBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = null;
         ArrayList<PhysicalDatasource> okSources = null;
         okSources = getAllActiveRWSources(false, false, checkSlaveSynStatus());
         theNode = randomSelect(okSources);
-        // 统计节点读操作次数
         theNode.setReadCount();
         theNode.getConnection(schema, autocommit, handler, attachment);
     }
 
     /**
-     * 从 writeHost 下面的 readHost中随机获取一个 connection, 用于slave注解
+     * get a random readHost connection from writeHost, used by slave hint
      *
      * @param schema
      * @param autocommit
@@ -624,7 +622,6 @@ public class PhysicalDBPool {
                     }
                 }
             }
-            // 统计节点读操作次数
             if (theNode != null) {
                 theNode.setReadCount();
                 theNode.getConnection(schema, autocommit, handler, attachment);
@@ -647,7 +644,7 @@ public class PhysicalDBPool {
     /**
      * TODO: modify by zhuam
      * <p>
-     * 随机选择，按权重设置随机概率。 在一个截面上碰撞的概率高，但调用量越大分布越均匀，而且按概率使用权重后也比较均匀，有利于动态调整提供者权重。
+     * randomSelect by weight
      *
      * @param okSources
      * @return
@@ -658,24 +655,20 @@ public class PhysicalDBPool {
             return this.getSource();
 
         } else {
-            int length = okSources.size(); // 总个数
-            int totalWeight = 0; // 总权重
-            boolean sameWeight = true; // 权重是否都一样
+            int length = okSources.size();
+            int totalWeight = 0;
+            boolean sameWeight = true;
             for (int i = 0; i < length; i++) {
                 int weight = okSources.get(i).getConfig().getWeight();
-                totalWeight += weight; // 累计总权重
-
-                // 计算所有权重是否一样
+                totalWeight += weight;
                 if (sameWeight && i > 0 && weight != okSources.get(i - 1).getConfig().getWeight()) {
                     sameWeight = false;
                 }
             }
 
             if (totalWeight > 0 && !sameWeight) {
-                // 如果权重不相同且权重大于0则按总权重数随机
+                // random by different weight
                 int offset = random.nextInt(totalWeight);
-
-                // 并确定随机值落在哪个片断上
                 for (PhysicalDatasource okSource : okSources) {
                     offset -= okSource.getConfig().getWeight();
                     if (offset < 0) {
@@ -684,7 +677,7 @@ public class PhysicalDBPool {
                 }
             }
 
-            // 如果权重相同或权重为0则均等随机
+            // sameWeight or all zero then random
             return okSources.get(random.nextInt(length));
             // int index = Math.abs(random.nextInt()) % okSources.size();
             // return okSources.get(index);

@@ -9,8 +9,8 @@ import java.util.List;
 
 
 /**
- * 参数是任意类型 <br>
- * 返回值是BIG INT
+ * parameter is any type <br>
+ * return BIG INT
  *
  * @author Administrator
  */

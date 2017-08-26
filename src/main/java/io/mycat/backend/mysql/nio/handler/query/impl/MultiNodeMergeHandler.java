@@ -25,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * mergeHandler仅负责将从数据库采集回来的数据进行merge，如果有聚合函数的话，使用group byhandler进行处理
+ * mergeHandler will merge data,if contains aggregate function,use group by handler
  *
  * @author ActionTech
  */
@@ -35,7 +35,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     private final int queueSize;
     private final ReentrantLock lock;
     private List<BaseSelectHandler> exeHandlers;
-    // 对应MultiSource的row结果的blockingquene,if rowend, add NullHeapItem into queue;
+    // map;conn->blocking queue.if receive row packet, add to the queue,if receive rowEof packet, add NullHeapItem into queue;
     private Map<MySQLConnection, BlockingQueue<HeapItem>> queues;
     private List<Order> orderBys;
     private RowDataComparator rowComparator;
@@ -93,7 +93,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(conn.toString() + "'s field is reached.");
         }
-        // 保证连接及时中断
+        // if terminated
         if (terminate.get()) {
             return;
         }
@@ -252,8 +252,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
-    /**
-     * terminate前置handler
+    /**s
      *
      * @param handler
      */

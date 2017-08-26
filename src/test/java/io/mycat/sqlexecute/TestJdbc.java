@@ -8,11 +8,11 @@ public class TestJdbc {
             // 加载MySql的驱动类
             Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("找不到驱动程序类 ，加载驱动失败！");
+            System.out.println("找不到驱动程序类 ,加载驱动失败！");
             e.printStackTrace();
         }
 
-        // 连接MySql数据库，用户名和密码都是root
+        // 连接MySql数据库,用户名和密码都是root
         // String url = "jdbc:mysql://192.168.56.101:3309/mycat";
         // String username = "root";
         // String password = "root123";

@@ -66,7 +66,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                     return longRang.nodeIndx;
                 }
             }
-            //数据超过范围，暂时使用配置的默认节点
+            // use default node for other value
             if (rst == null && defaultNode >= 0) {
                 return defaultNode;
             }
@@ -77,7 +77,6 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     }
 
     /**
-     * 判断是不是存在不在表格里面的边际条件
      *
      * @param columnValue
      * @return
@@ -91,7 +90,6 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                     return false;
                 }
             }
-            //数据超过范围，暂时使用配置的默认节点
             if (rst == null && defaultNode >= 0) {
                 return true;
             }
@@ -105,7 +103,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
         Integer begin = 0, end = 0;
-        if (isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)) { //如果beginValue或者是endValue中存在边际条件
+        if (isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)) {
             begin = 0;
             end = longRongs.length - 1;
         } else {

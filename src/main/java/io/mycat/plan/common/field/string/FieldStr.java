@@ -106,7 +106,7 @@ public abstract class FieldStr extends Field {
             return 1;
         }
         try {
-            // mysql order by,>,<字符串使用的是排序值，正常是用大写作为比较
+            // mysql order by,>,<字符串使用的是排序值,正常是用大写作为比较
             String sval1 = MySQLcom.getFullString(charsetName, v1).toUpperCase();
             String sval2 = MySQLcom.getFullString(charsetName, v2).toUpperCase();
             return sval1.compareTo(sval2);

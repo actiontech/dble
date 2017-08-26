@@ -170,11 +170,11 @@ public class RowDataPacketGrouper {
             case ColMeta.COL_TYPE_BIT:
             case ColMeta.COL_TYPE_VAR_STRING:
             case ColMeta.COL_TYPE_STRING:
-                // ENUM和SET类型都是字符串，按字符串处理
+                // ENUM and SET are String
             case ColMeta.COL_TYPE_ENUM:
             case ColMeta.COL_TYPE_SET:
                 return ByteUtil.compareNumberByte(left, right);
-            // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+            // not support BLOB and GEOMETRY
             default:
                 break;
         }
@@ -296,7 +296,7 @@ public class RowDataPacketGrouper {
                     return vale.toString().getBytes();
                 } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL || colType == ColMeta.COL_TYPE_DECIMAL) {
                     BigDecimal sum = new BigDecimal(new String(bs));
-                    // mysql avg 处理精度为 sum结果的精度扩展4, 采用四舍五入
+                    // mysql avg Precision is the Precision of sum+4,use HALF_UP
                     BigDecimal avg = sum.divide(new BigDecimal(new String(bs2)), sum.scale() + 4, RoundingMode.HALF_UP);
                     return avg.toString().getBytes();
                 }

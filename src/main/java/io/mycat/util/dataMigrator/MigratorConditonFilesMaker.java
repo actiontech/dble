@@ -92,7 +92,7 @@ public class MigratorConditonFilesMaker implements Runnable {
             flushData(true);
             statisticalData(total, count);
         } catch (Exception e) {
-            //发生错误，终止此拆分表所有节点线程任务，记录错误信息，退出此拆分表迁移任务
+            //发生错误,终止此拆分表所有节点线程任务,记录错误信息,退出此拆分表迁移任务
             String message = "[" + tableInfo.getSchemaName() + ":" + tableName + "]  src dataNode: " + srcDn.getUrl() +
                     " prepare temp files is failed! this table's migrator will exit! " + e.getMessage();
             tableInfo.setError(true);
@@ -150,7 +150,7 @@ public class MigratorConditonFilesMaker implements Runnable {
         sizeMap.put(srcDn.getName() + "[" + total + "]", sizeList.toString());
     }
 
-    //将迁移字段值写入中间文件,数据超过1024或者要求强制才写入，避免重复打开关闭写入文件
+    //将迁移字段值写入中间文件,数据超过1024或者要求强制才写入,避免重复打开关闭写入文件
     private void flushData(boolean isForce) throws IOException {
         for (DataNode dn : newDnList) {
             StringBuilder sb = map.get(dn);

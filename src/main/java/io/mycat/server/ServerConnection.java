@@ -69,9 +69,6 @@ public class ServerConnection extends FrontendConnection {
     private volatile String txInterrputMsg = "";
     private long lastInsertId;
     private NonBlockingSession session;
-    /**
-     * 标志是否执行了lock tables语句，并处于lock状态
-     */
     private volatile boolean isLocked = false;
     private AtomicLong txID;
 
@@ -141,9 +138,6 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    /**
-     * 设置是否需要中断当前事务
-     */
     public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
             txInterrupted = true;
@@ -178,18 +172,15 @@ public class ServerConnection extends FrontendConnection {
     }
 
     public void execute(String sql, int type) {
-        //连接状态检查
         if (this.isClosed()) {
             LOGGER.warn("ignore execute ,server connection is closed " + this);
             return;
         }
-        // 事务状态检查
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
             return;
         }
 
-        // 检查当前使用的DB
         String db = this.schema;
 
         SchemaConfig schemaConfig = null;
@@ -205,7 +196,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
     public RouteResultset routeSQL(String sql, int type) {
-        // 检查当前使用的DB
         String db = this.schema;
         if (db == null) {
             writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No Database selected");
@@ -217,7 +207,6 @@ public class ServerConnection extends FrontendConnection {
             return null;
         }
 
-        // 路由计算
         RouteResultset rrs;
         try {
             rrs = MycatServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
@@ -256,7 +245,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
-        // 路由计算
         RouteResultset rrs;
         try {
             rrs = MycatServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
@@ -270,7 +258,6 @@ public class ServerConnection extends FrontendConnection {
             executeException(e, sql);
             return;
         }
-        // session执行
         session.execute(rrs, type);
     }
 
@@ -320,7 +307,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     /**
-     * 事务沒有commit 直接begin
+     * begin without commit means commit and begin
      */
     public void beginInTx(String stmt) {
         if (txInterrupted) {
@@ -333,9 +320,6 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    /**
-     * 提交事务
-     */
     public void commit(String logReason) {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
@@ -345,31 +329,25 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    /**
-     * 回滚事务
-     */
     public void rollback() {
-        // 状态检查
         if (txInterrupted) {
             txInterrupted = false;
         }
 
-        // 执行回滚
         session.rollback();
     }
 
     /**
-     * 执行lock tables语句方法
      *
      * @param sql
      */
     public void lockTable(String sql) {
-        // 事务中不允许执行lock table语句
+        // lock table is disable in transaction
         if (!autocommit) {
             writeErrMessage(ErrorCode.ER_YES, "can't lock table in transaction!");
             return;
         }
-        // 已经执行了lock table且未执行unlock table之前的连接不能再次执行lock table命令
+        // if lock table has been executed and unlock has not been executed, can't execute lock table again
         if (isLocked) {
             writeErrMessage(ErrorCode.ER_YES, "can't lock multi-table");
             return;
@@ -381,7 +359,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
     /**
-     * 执行unlock tables语句方法
      *
      * @param sql
      */
@@ -400,17 +377,17 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public void close(String reason) {
 
-        //处于第一阶段的XA事务，可以通过关闭的方式回滚
+        //XA transaction in this phase,close it
         if (session.getSource().isTxstart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             super.close(reason);
             session.initiativeTerminate();
         } else if (session.getSource().isTxstart() &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
-            //已经提交了commit/rollback的XA事务，关闭前端，待后端自动完成
+            //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);
         } else {
-            //并没有开启XA事务，直接关闭前后端连接
+            //not a xa transaction ,close it
             super.close(reason);
             session.terminate();
         }

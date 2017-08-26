@@ -42,22 +42,20 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     private String mapFile;
     private Map<Object, Integer> app2Partition;
     /**
-     * Map<Object, Integer> app2Partition中key值的类型：默认值为0，0表示Integer，非零表示String
+     * Map<Object, Integer> app2Partition key's type:default 0 means Integer,other means String
      */
     private int type;
 
     /**
-     * 默认节点在map中的key
+     * DEFAULT_NODE key
      */
     private static final String DEFAULT_NODE = "DEFAULT_NODE";
 
     /**
-     * 默认节点:小于0表示不设置默认节点，大于等于0表示设置默认节点
+     * defaultNode:-1 means no default node ,other means the default node index
      * <p>
-     * 默认节点的作用：枚举分片时，如果碰到不识别的枚举值，就让它路由到默认节点
-     * 如果不配置默认节点（defaultNode值小于0表示不配置默认节点），碰到
-     * 不识别的枚举值就会报错，
-     * like this：can't find datanode for sharding column:column_name val:ffffffff
+     * use defaultNode,the unexpected value will router to the default value.
+     * Otherwise will report error like this:can't find datanode for sharding column:column_name val:ffffffff
      */
     private int defaultNode = -1;
 
@@ -146,7 +144,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
                     //ignore error
                 }
             }
-            //设置默认节点
+            //set default node
             if (defaultNode >= 0) {
                 app2Partition.put(DEFAULT_NODE, defaultNode);
             }

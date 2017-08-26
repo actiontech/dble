@@ -79,7 +79,7 @@ public final class ShowBinlogStatus {
             String lockPath = KVPathUtil.getBinlogPauseLockPath();
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, lockPath);
             try {
-                //zkLock， the other instance cant't get lock before finished
+                //zkLock, the other instance cant't get lock before finished
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
                     return;

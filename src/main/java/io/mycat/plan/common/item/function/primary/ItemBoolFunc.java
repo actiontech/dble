@@ -6,9 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * 返回结果boolean的function算子的基类
- */
 public abstract class ItemBoolFunc extends ItemIntFunc {
 
     public ItemBoolFunc(Item a) {

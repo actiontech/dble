@@ -80,7 +80,7 @@ public class DDLRouteTest {
         String upsql = sql.toUpperCase();
 
         //TODO : modify by zhuam
-        // 小写表名，需要额外转为 大写 做比较
+        // 小写表名,需要额外转为 大写 做比较
         String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 
@@ -252,7 +252,7 @@ public class DDLRouteTest {
         sql = RouterUtil.getFixedSql(sql);
         String upsql = sql.toUpperCase();
 
-        //TODO：modify by zhuam 小写表名，转为大写比较
+        //TODO:modify by zhuam 小写表名,转为大写比较
         String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 

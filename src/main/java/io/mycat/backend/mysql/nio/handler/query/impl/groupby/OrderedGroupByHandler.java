@@ -24,11 +24,10 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 1.处理已经依据groupby的列进行过排序的groupby 2.处理需要用到Aggregator_distinct的group by
+ * 1.executed the ordered result of group by 2. group by of Aggregator_distinct
  */
 public class OrderedGroupByHandler extends BaseDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(OrderedGroupByHandler.class);
-    /* 接收到的参数 */
     private List<Order> groupBys;
     private List<ItemSum> referedSumFunctions;
 
@@ -36,7 +35,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     private List<ItemSum> sums = new ArrayList<>();
 
-    /* group组的原始rowpacket，目前保留第一条数据的值 */
+    /* origin group row packet,save the first row data */
     private RowDataPacket originRp = null;
 
     private boolean hasFirstRow = false;
@@ -46,16 +45,16 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     private String charset = "UTF-8";
 
     /**
-     * merge以及sendmaker现在都是多线程
+     * merge and send maker are multi-thread
      **/
     private ReentrantLock lock = new ReentrantLock();
 
-    /* 例如count(distinct id)中用到的distinct store */
+    /* eg: distinct store used for count(distinct id)*/
     private List<ResultStore> distinctStores;
 
     /**
      * @param groupBys
-     * @param refers   涉及到的所有的sumfunction集合
+     * @param referedSumFunctions
      */
     public OrderedGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referedSumFunctions) {
         super(id, session);
@@ -92,7 +91,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     }
 
     /**
-     * 生成新的fieldPackets，包括生成的聚合函数以及原始的fieldpackets
+     * new fieldPackets: generated function result + origin fieldpackets
      */
     private void sendGroupFieldPackets(BackendConnection conn) {
         List<FieldPacket> newFps = new ArrayList<>();
@@ -120,7 +119,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             } else {
                 boolean sameGroupRow = this.groupBys.size() == 0 || (cmptor.compare(originRp, rowPacket) == 0);
                 if (!sameGroupRow) {
-                    // 需要将这一组数据发送出去
+                    // send the completed result firstly
                     sendGroupRowPacket((MySQLConnection) conn);
                     originRp = rowPacket;
                     initSumFunctions(sums, rowPacket);
@@ -134,16 +133,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         }
     }
 
-    /**
-     * 将一组group好的数据发送出去
-     */
     private void sendGroupRowPacket(MySQLConnection conn) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
-        /**
-         * 将自己生成的聚合函数的值放在前面，这样在tablenode时，如果用户语句如select count(*) from t
-         * 由于整个语句下发，所以最后生成的rowpacket顺序为
-         * count(*){groupbyhandler生成的},count(*){下发到各个节点的，不是真实的值}
-         */
         for (ItemSum sum : this.sums) {
             byte[] tmpb = sum.getRowPacketByte();
             newRp.add(tmpb);
@@ -169,7 +160,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     }
 
     /**
-     * 没有数据时，也要发送结果 比如select count(*) from t2 ，如果t2是一张空表的话，那么显示为0
+     * send data to next even no data here. eg: select count(*) from t2 ,if t2 empty,then send 0
      */
     private void sendNoRowGroupRowPacket(MySQLConnection conn) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());

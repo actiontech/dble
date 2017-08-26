@@ -24,7 +24,7 @@
 package io.mycat.util.exception;
 
 /**
- * 未知数据包异常
+ * UnknownPacketException
  *
  * @author mycat
  */

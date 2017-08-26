@@ -13,7 +13,7 @@ import io.mycat.plan.common.time.MyTime;
 import java.util.List;
 
 /**
- * compare用到的一些公共方法
+ * CmpUtil
  */
 public final class CmpUtil {
     private CmpUtil() {

@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 查询每个用户的执行时间超过设定阈值的SQL, 默认TOP10
+ * show slow SQL, default TOP10
  *
  * @author mycat
  * @author zhuam
@@ -105,7 +105,7 @@ public final class ShowSQLSlow {
             }
 
             if (isClear) {
-                userStat.clearSqlslow(); //读取慢SQL后，清理
+                userStat.clearSqlslow();
             }
         }
 

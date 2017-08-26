@@ -63,9 +63,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * mysql命令行客户端也需要启用local file权限，加参数--local-infile=1
- * jdbc则正常，不用设置
- * load data sql中的CHARACTER SET 'gbk'   其中的字符集必须引号括起来，否则druid解析出错
+ * mysql client need add --local-infile=1
+ * CHARACTER SET 'gbk' in load data sql  the charset need ', otherwise the druid will error
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
     private ServerConnection serverConnection;
@@ -190,7 +189,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         parseLoadDataPram();
         if (statement.isLocal()) {
             isStartLoadData = true;
-            //向客户端请求发送文件
+            //request file from client
             ByteBuffer buffer = serverConnection.allocate();
             RequestFilePacket filePacket = new RequestFilePacket();
             filePacket.setFileName(fileName.getBytes());
@@ -249,7 +248,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        if ((isForce && isHasStoreToFile) || tempByteBuffrSize > 200 * 1024 * 1024) { //超过200M 存文件
+        if ((isForce && isHasStoreToFile) || tempByteBuffrSize > 200 * 1024 * 1024) { //200M
             FileOutputStream channel = null;
             try {
                 File file = new File(tempFile);
@@ -283,7 +282,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
         if (tableConfig == null && schema.getDataNode() != null) {
-            //走默认节点
+            //default node
             RouteResultsetNode rrNode = new RouteResultsetNode(schema.getDataNode(), ServerParse.INSERT, strSql);
             rrs.setNodes(new RouteResultsetNode[]{rrNode});
             return rrs;
@@ -351,7 +350,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
-            //无路由处理
+            //do nothing
         } else {
             for (RouteResultsetNode routeResultsetNode : rrs.getNodes()) {
                 String name = routeResultsetNode.getName();
@@ -375,9 +374,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
                 }
 
-                if (toFile &&
-                        //避免当导入数据跨多分片时内存溢出的情况
-                        data.getData().size() > 10000) {
+                if (toFile && data.getData().size() > 10000) {
+                    //avoid OOM
                     saveDataToFile(data, name);
                 }
 
@@ -443,10 +441,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private RouteResultset buildResultSet(Map<String, LoadData> routeMap) {
-        statement.setLocal(true); //强制local
-        SQLLiteralExpr fn = new SQLCharExpr(fileName);    //默认druid会过滤掉路径的分隔符，所以这里重新设置下
+        statement.setLocal(true);
+        SQLLiteralExpr fn = new SQLCharExpr(fileName);    //druid will filter path,reset it now
         statement.setFileName(fn);
-        //在这里使用替换方法替换掉SQL语句中的 IGNORE X LINES 防止每个物理节点都IGNORE X个元素
+        //replace IGNORE X LINES in SQL.avoid  IGNORING X LINE in every node
         String srcStatement = this.ignoreLinesDelete(statement.toString());
         RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL);
         rrs.setLoadData(true);
@@ -462,9 +460,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             ObjectUtil.copyProperties(loadData, newLoadData);
             newLoadData.setLocal(true);
             LoadData loadData1 = entry.getValue();
-            //  if (isHasStoreToFile)
             if (loadData1.getFileName() != null) {
-                //此处判断是否有保存分库load的临时文件dn1.txt/dn2.txt，不是判断是否有clientTemp.txt
                 newLoadData.setFileName(loadData1.getFileName());
             } else {
                 newLoadData.setData(loadData1.getData());
@@ -570,7 +566,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     public void end(byte packid) {
         isStartLoadData = false;
         this.packID = packid;
-        //load in data空包 结束
+        //empty packet for end
         saveByteOrToFile(null, true);
         List<SQLExpr> columns = statement.getColumns();
         String tableSimpleName = statement.getTableName().getSimpleName();
@@ -595,7 +591,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             /*
              *  fix bug #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
              *  不可见字符将在CsvParser被当成whitespace过滤掉, 使用settings.trimValues(false)来避免被过滤掉
-             *  TODO : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
+             *  FIXME : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
              */
             settings.trimValues(false);
             CsvParser parser = new CsvParser(settings);
@@ -603,7 +599,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 parser.beginParsing(new StringReader(content));
                 String[] row = null;
 
-                //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
                 int ignoreNumber = 0;
                 if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
                     ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
@@ -650,7 +645,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         /*
          *  fix #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
          *  不可见字符将在CsvParser被当成whitespace过滤掉, 使用settings.trimValues(false)来避免被过滤掉
-         *  TODO : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
+         *  FIXME : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
          */
         settings.trimValues(false);
         CsvParser parser = new CsvParser(settings);
@@ -663,7 +658,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             parser.beginParsing(reader);
             String[] row = null;
 
-            //直接通过druid获取的省略行数进行处理，直接跳过需要省略的数量
             int ignoreNumber = 0;
             if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
                 ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
@@ -784,9 +778,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
     /**
-     * 删除目录及其所有子目录和文件
+     * deleteFile and its children
      *
-     * @param dirPath 要删除的目录路径
+     * @param dirPath
      * @throws Exception
      */
     private static void deleteFile(String dirPath) {

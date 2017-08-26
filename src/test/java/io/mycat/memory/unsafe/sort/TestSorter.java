@@ -68,7 +68,7 @@ public class TestSorter implements Runnable {
                 new RowPrefixComputer(schema);
 
         /**
-         * 3 .PrefixComparator 默认是ASC，可以选择DESC
+         * 3 .PrefixComparator 默认是ASC,可以选择DESC
          */
         final PrefixComparator prefixComparator = PrefixComparators.LONG;
 

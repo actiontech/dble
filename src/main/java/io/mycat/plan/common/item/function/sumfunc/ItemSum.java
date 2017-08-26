@@ -18,7 +18,7 @@ import java.util.List;
 
 
 public abstract class ItemSum extends ItemResultField {
-    /* 行fields集合 */
+    /* row fields list */
     protected List<Field> sourceFields;
     protected boolean isPushDown;
 
@@ -112,15 +112,14 @@ public abstract class ItemSum extends ItemResultField {
     }
 
     /**
-     * 局部聚合生成的中间结果(transitional)
+     * tmp result(transitional)
      *
-     * @return notice:不能返回null，因为Group By的第一条数据的transAggObj是null，
-     * 如果聚合过的也返回null的话，将无法区分是聚合过的还是第一条数据
+     * @return notice:can't return null, because of thetransAggObj of first row in Group By is null,
      */
     public abstract Object getTransAggObj();
 
     /**
-     * 局部聚合结果的byte数组的预估大小
+     * tmp result size(just expected, not real)
      *
      * @return
      */
@@ -235,14 +234,14 @@ public abstract class ItemSum extends ItemResultField {
     public abstract void clear();
 
     /**
-     * 函数不下发时候的add方法，和mysql原生代码基本一致
+     * add for aggregate function,copy from mysql
      *
      * @return
      */
     protected abstract boolean add(RowDataPacket row, Object transObj);
 
     /**
-     * 聚合函数被下发时的add方法
+     * add for push down
      *
      * @return
      */
@@ -312,10 +311,10 @@ public abstract class ItemSum extends ItemResultField {
         boolean needAddArgToRefer = true;
         if (context.isPushDownNode() && !planNode.existUnPushDownGroup()) {
             boolean isUnpushSum = PlanUtil.isUnPushDownSum(this);
-            if (isUnpushSum) { // 这个函数是非下推函数
+            if (isUnpushSum) { // this function can not be push down
                 planNode.setExistUnPushDownGroup(true);
                 needAddArgToRefer = true;
-                // 补上sunfuncs里面的arg参数
+                // add args of sunfuncs
                 for (ItemSum sumfunc : planNode.getSumFuncs()) {
                     for (Item sumArg : sumfunc.args) {
                         sumArg.fixRefer(context);

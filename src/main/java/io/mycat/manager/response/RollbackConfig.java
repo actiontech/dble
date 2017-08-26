@@ -143,11 +143,9 @@ public final class RollbackConfig {
         FirewallConfig firewall = conf.getBackupFirewall();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backDataHostWithoutWR = conf.backDataHostWithoutWR();
-        // 检查可回滚状态
         if (conf.canRollback()) {
             conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
         } else if (conf.canRollbackAll()) {
-            // 如果回滚已经存在的pool
             boolean rollbackStatus = true;
             String errorMsg = null;
             for (PhysicalDBPool dn : dataHosts.values()) {
@@ -158,7 +156,7 @@ public final class RollbackConfig {
                     break;
                 }
             }
-            // 如果回滚不成功，则清理已初始化的资源。
+            // INIT FAILED
             if (!rollbackStatus && dataHosts != null) {
                 for (PhysicalDBPool dn : dataHosts.values()) {
                     dn.clearDataSources("rollbackup config");
@@ -167,9 +165,9 @@ public final class RollbackConfig {
                 throw new Exception(errorMsg);
             }
             final Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
-            // 应用回滚
+            // apply
             conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
-            // 处理旧的资源
+            // stop old resource heartbeat
             for (PhysicalDBPool dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();

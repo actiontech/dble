@@ -502,7 +502,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    // DESCRIBE' ' 或 desc' '
+    // DESCRIBE' ' or desc' '
     static int describeCheck(String stmt, int offset) {
         //desc
         if (stmt.length() > offset + 4) {

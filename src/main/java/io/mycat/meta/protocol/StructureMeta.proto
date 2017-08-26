@@ -32,8 +32,8 @@ message ColumnMeta{
 }
 
 message TableMeta{
-	optional string            tableName      = 1;//不带dbname的表名:如table1
-	repeated ColumnMeta        columns     = 2;//所有的列属性，有序
+	optional string            tableName      = 1;//tableName without dbName
+	repeated ColumnMeta        columns     = 2;//Columns
 	optional bool              isView         = 3[default = false];
 	optional string            createSql      = 4;
 	optional int64             version        = 5;

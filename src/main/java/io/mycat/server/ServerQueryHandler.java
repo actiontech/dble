@@ -85,14 +85,12 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             case ServerParse.BEGIN:
                 BeginHandler.handle(sql, c);
                 break;
-            //不支持oracle的savepoint事务回退点
             case ServerParse.SAVEPOINT:
                 SavepointHandler.handle(sql, c);
                 break;
             case ServerParse.KILL:
                 KillHandler.handle(sql, rs >>> 8, c);
                 break;
-            //不支持KILL_Query
             case ServerParse.KILL_QUERY:
                 LOGGER.warn("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");

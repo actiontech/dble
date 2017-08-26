@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 目前having做成和where一样的处理
+ * having is just as same as where
  *
  * @author ActionTech
  */
@@ -37,9 +37,6 @@ public class HavingHandler extends BaseDMLHandler {
         return HandlerType.HAVING;
     }
 
-    /**
-     * 所有的上一级表传递过来的信息全部视作Field类型
-     */
     public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
                                  byte[] eofnull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
@@ -47,23 +44,20 @@ public class HavingHandler extends BaseDMLHandler {
         this.fieldPackets = fieldPackets;
         this.sourceFields = HandlerTool.createFields(this.fieldPackets);
         /**
-         * having的函数我们基本算他不下发，因为他有可能带group by
+         * having will not be pushed down because of aggregate function
          */
         this.havingItem = HandlerTool.createItem(this.having, this.sourceFields, 0, false, this.type(),
                 conn.getCharset());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
-    /**
-     * 收到行数据包的响应处理
-     */
     public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         lock.lock();
         try {
             HandlerTool.initFields(this.sourceFields, rowPacket.fieldValues);
-            /* 根据where条件进行过滤 */
+            /* filter by having statement */
             if (havingItem.valBool()) {
                 nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
             } else {

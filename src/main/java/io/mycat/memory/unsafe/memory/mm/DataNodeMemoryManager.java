@@ -141,7 +141,7 @@ public class DataNodeMemoryManager {
                     if (c != consumer && c.getUsed() > 0) {
                         try {
                             /**
-                             * 调用spill函数，写数据到磁盘中
+                             * write data to disk
                              */
                             long released = c.spill(required - got, consumer);
                             if (released > 0 && mode == tungstenMemoryMode) {
@@ -239,7 +239,7 @@ public class DataNodeMemoryManager {
         }
 
         /**
-         * 这里spill到磁盘中，释放内存空间
+         * spill to disk ,release the memory
          */
         long acquired = 0;
         try {

@@ -34,7 +34,7 @@ public class HandlerBuilder {
     }
 
     /**
-     * 启动一个节点下面的所有的启动节点
+     * start all leaf handler of children of special handler
      */
     public static void startHandler(DMLResponseHandler handler) throws Exception {
         for (DMLResponseHandler startHandler : handler.getMerges()) {
@@ -44,7 +44,7 @@ public class HandlerBuilder {
     }
 
     /**
-     * 生成node链，返回endHandler
+     * generate node handler chain, and return endHandler
      *
      * @param planNode
      * @return

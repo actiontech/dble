@@ -13,14 +13,14 @@ import java.util.List;
  * <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
  * writeType="0" dbType="mysql" dbDriver="native" switchType="1"  slaveThreshold="100">
  * </dataHost>
- * 源文件名：DataHost.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "dataHost")

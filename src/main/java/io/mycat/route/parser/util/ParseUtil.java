@@ -38,7 +38,7 @@ public final class ParseUtil {
         return space == ' ' || space == '\r' || space == '\n' || space == '\t';
     }
     /**
-     * 检查SQL的最后部分是不是存在非法的输入
+     * check the tail is unexpected char
      *
      * @param offset
      * @param stmt
@@ -219,7 +219,7 @@ public final class ParseUtil {
     }
 
     /**
-     * 解析注释，返回stmt中注释结尾的index
+     * return the index of the end of hint in stmt
      *
      * @param stmt
      * @param offset
@@ -267,95 +267,6 @@ public final class ParseUtil {
             }
         }
         return true;
-    }
-
-    /*****
-     * 检查下一个字符是否为分隔符，并把偏移量加1
-     */
-    public static boolean nextCharIsSep(String stmt, int offset) {
-        return currentCharIsSep(stmt, ++offset);
-    }
-
-    /*****
-     * 检查下一个字符串是否为期望的字符串，并把偏移量移到从offset开始计算，expectValue之后的位置
-     *
-     * @param stmt 被解析的sql
-     * @param offset 被解析的sql的当前位置
-     * @param nextExpectedString 在stmt中准备查找的字符串
-     * @param checkSepChar 当找到expectValue值时，是否检查其后面字符为分隔符号
-     * @return 如果包含指定的字符串，则移动相应的偏移量，否则返回值=offset
-     */
-    public static int nextStringIsExpectedWithIgnoreSepChar(String stmt,
-                                                            int offset,
-                                                            String nextExpectedString,
-                                                            boolean checkSepChar) {
-        if (nextExpectedString == null || nextExpectedString.length() < 1) {
-            return offset;
-        }
-        int i = offset;
-        int index = 0;
-        char expectedChar;
-        char actualChar;
-        boolean isSep;
-        for (; i < stmt.length() && index < nextExpectedString.length(); ++i) {
-            if (index == 0) {
-                isSep = currentCharIsSep(stmt, i);
-                if (isSep) {
-                    continue;
-                }
-            }
-            actualChar = stmt.charAt(i);
-            expectedChar = nextExpectedString.charAt(index++);
-            if (actualChar != expectedChar) {
-                return offset;
-            }
-        }
-        if (index == nextExpectedString.length()) {
-            boolean ok = true;
-            if (checkSepChar) {
-                ok = nextCharIsSep(stmt, i);
-            }
-            if (ok) {
-                return i;
-            }
-        }
-        return offset;
-    }
-
-    private static final String JSON = "json";
-    private static final String EQ = "=";
-
-    //private static final String WHERE = "where";
-    //private static final String SET = "set";
-
-    /**********
-     * 检查下一个字符串是否json= *
-     *
-     * @param stmt 被解析的sql
-     * @param offset 被解析的sql的当前位置
-     * @return 如果包含指定的字符串，则移动相应的偏移量，否则返回值=offset
-     */
-    public static int nextStringIsJsonEq(String stmt, int offset) {
-        int i = offset;
-
-        // / drds 之后的符号
-        if (!currentCharIsSep(stmt, ++i)) {
-            return offset;
-        }
-
-        // json 串
-        int k = nextStringIsExpectedWithIgnoreSepChar(stmt, i, JSON, false);
-        if (k <= i) {
-            return offset;
-        }
-        i = k;
-
-        // 等于符号
-        k = nextStringIsExpectedWithIgnoreSepChar(stmt, i, EQ, false);
-        if (k <= i) {
-            return offset;
-        }
-        return i;
     }
 
     public static int move(String stmt, int offset, int length) {

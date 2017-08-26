@@ -24,7 +24,7 @@
 package io.mycat.util.exception;
 
 /**
- * 未知字符集异常
+ * UnknownCharsetException
  *
  * @author mycat
  */

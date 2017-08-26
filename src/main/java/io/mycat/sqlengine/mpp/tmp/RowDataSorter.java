@@ -39,7 +39,7 @@ public class RowDataSorter extends RowDataPacketSorter {
             this.total = start + offset;
             this.size = offset;
         }
-        // 统一采用顺序，order by 条件交给比较器去处理
+        // 统一采用顺序,order by 条件交给比较器去处理
         this.heap = new MaxHeap(cmp, total);
     }
 
@@ -49,7 +49,7 @@ public class RowDataSorter extends RowDataPacketSorter {
             heap.add(row);
             return true;
         }
-        // 堆已满，构建最大堆，并执行淘汰元素逻辑
+        // 堆已满,构建最大堆,并执行淘汰元素逻辑
         if (heap.getData().size() == total && !hasBuild) {
             heap.buildHeap();
             hasBuild = true;

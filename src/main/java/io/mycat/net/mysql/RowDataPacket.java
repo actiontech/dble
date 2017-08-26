@@ -68,12 +68,10 @@ public class RowDataPacket extends MySQLPacket {
     }
 
     public void add(byte[] value) {
-        //这里应该修改value
         fieldValues.add(value);
     }
 
     public void addFieldCount(int add) {
-        //这里应该修改field
         fieldCount = fieldCount + add;
     }
 

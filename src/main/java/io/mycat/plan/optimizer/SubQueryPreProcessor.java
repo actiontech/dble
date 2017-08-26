@@ -35,7 +35,6 @@ public final class SubQueryPreProcessor {
     }
 
     /**
-     * 处理下 = in的子查询转化为join
      * http://dev.mysql.com/doc/refman/5.0/en/comparisons-using-subqueries.html
      */
     private static PlanNode findComparisonsSubQueryToJoinNode(PlanNode qtn) {
@@ -50,14 +49,14 @@ public final class SubQueryPreProcessor {
         Item where = qtn.getWhereFilter();
         SubQueryAndFilter result = buildSubQuery(find, where);
         if (result != find) {
-            // 如果出现filter，代表where条件中没有组合条件，只有单自查询的条件，直接替换即可
+            // that means where filter only contains subquery,just replace it
             result.query.query(result.filter);
             qtn.query(null);
-            // 修改了result.filter哦归属，需要重新build
+            // change result.filter and rebuild
             result.query.setUpFields();
             return result.query;
         } else {
-            return qtn; // 没变化
+            return qtn;
         }
     }
 
@@ -114,7 +113,6 @@ public final class SubQueryPreProcessor {
         Item rightColumn = query.getColumnsSelected().get(0);
         qtn.query.setColumnsSelected(new ArrayList<Item>());
         String rightJoinName = rightColumn.getAlias();
-        // add 聚合函数类型的支持
         if (StringUtils.isEmpty(rightJoinName)) {
             if (rightColumn instanceof ItemField) {
                 rightJoinName = rightColumn.getItemName();
@@ -125,9 +123,9 @@ public final class SubQueryPreProcessor {
         }
 
         ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
-        // left column的table名称需要改变
+        // rename the left column's table name
         result.query = new JoinNode(qtn.query, query);
-        // 保留原sql至新的join节点
+        // leave origin sqlto new join node
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
         result.query.select(newSelects);
@@ -222,8 +220,8 @@ public final class SubQueryPreProcessor {
 
     private static class SubQueryAndFilter {
 
-        PlanNode query; // 子查询可能会改变query节点为join node
-        Item filter; // 子查询带上来的filter
+        PlanNode query; // subQuery may change querynode to join node
+        Item filter; // sub query's filter
     }
 
 }

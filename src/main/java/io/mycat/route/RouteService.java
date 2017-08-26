@@ -65,7 +65,7 @@ public class RouteService {
         String cacheKey = null;
 
         /**
-         *  SELECT 类型的SQL, 检测,debug 模式下不缓存
+         *  SELECT  SQL,  not cached in debug mode
          */
         if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
             cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + sc.getUser() + "_" + stmt;
@@ -81,7 +81,7 @@ public class RouteService {
         if (hintLength != -1) {
             int endPos = stmt.indexOf("*/");
             if (endPos > 0) {
-                // 用!mycat:内部的语句来做路由分析
+                // router by hint of !mycat:
                 String hint = stmt.substring(hintLength, endPos).trim();
 
                 String hintSplit = "=";
@@ -101,10 +101,6 @@ public class RouteService {
                     if (hintHandler != null) {
 
                         if (hintHandler instanceof HintSQLHandler) {
-                            /**
-                             * 修复 注解SQL的 sqlType 与 实际SQL的 sqlType 不一致问题， 如： hint=SELECT，real=INSERT
-                             * fixed by zhuam
-                             */
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
                             rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
 
@@ -140,13 +136,10 @@ public class RouteService {
         int len = sql.length();
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             char c = sql.charAt(j);
-            // 过滤掉 空格 和 * 两种字符, 支持： "/** !mycat: */" 和 "/** #mycat: */" 形式的注解
+            // support: "/** !mycat: */" for mysql  and "/** #mycat: */"  for mybatis
             while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
                 c = sql.charAt(++j);
             }
-            //注解支持的'!'不被mysql单库兼容，
-            //注解支持的'#'不被mybatis兼容
-            //考虑用mycat字符前缀标志Hintsql:"/** mycat: */"
             if (sql.charAt(j) == annotation[0]) {
                 j--;
             }

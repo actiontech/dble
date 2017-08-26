@@ -43,7 +43,7 @@ import java.util.Map;
 
 
 /**
- * 查询用户最近执行的SQL记录
+ * Show Last SQL
  *
  * @author mycat
  * @author zhuam
@@ -110,7 +110,6 @@ public final class ShowSQL {
                 }
             }
 
-            //读取SQL监控后清理
             if (isClear) {
                 userStat.getSqlLastStat().clear();
             }

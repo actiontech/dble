@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 前端命令处理器
+ * FrontendCommandHandler
  *
  * @author mycat
  */
@@ -132,7 +132,6 @@ public class FrontendCommandHandler implements NIOHandler {
                         }
                     } catch (Exception e) {
                         source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
-                        // QUESTION_TO 阻止当前线程继续工作
                         dataQueue.clear();
                     } finally {
                         handleStatus.set(false);

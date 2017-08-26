@@ -38,7 +38,7 @@ import io.mycat.util.LongUtil;
 import java.nio.ByteBuffer;
 
 /**
- * 统计各类数据包的执行次数
+ * Show Command times
  *
  * @author mycat
  * @author mycat

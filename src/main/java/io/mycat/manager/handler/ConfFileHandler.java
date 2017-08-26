@@ -152,17 +152,13 @@ public final class ConfFileHandler {
         ConfigUtil.getDocument(dtdStream, new ByteArrayInputStream(data));
     }
 
-    /**
-     * 以字节为单位读取文件，常用于读二进制文件，如图片、声音、影像等文件。
-     */
     private static byte[] readFileByBytes(File fileName) {
         InputStream in = null;
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        try { // 一次读多个字节
+        try {
             byte[] tempbytes = new byte[100];
             int byteread;
             in = new FileInputStream(fileName);
-            // 读入多个字节到字节数组中，byteread为一次读入的字节数
             while ((byteread = in.read(tempbytes)) != -1) {
                 outStream.write(tempbytes, 0, byteread);
             }

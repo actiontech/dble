@@ -65,14 +65,12 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         } finally {
             lock.unlock();
         }
-        // 执行
         int position = 0;
-        //在发起真正的rollback之前就获取到session级别的锁
-        //当执行END的时候我们就可以认为这个状态处于一种不定的状态
-        //不再允许XA事务被kill,如果事务已经被kill那么我们不再执行commit
+        //get session's lock before sending rollback(in fact, after ended)
+        //then the XA transaction will be not killed. if killed ,then we will not rollback
         if (session.getXaState() != null &&
                 session.getXaState() == TxState.TX_ENDED_STATE) {
-            if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITING)) {
+            if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
                 return;
             }
         }
@@ -352,7 +350,6 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private void cleanAndFeedback() {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
-            //取消限制
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             byte[] send = sendData;
             session.clearResources(false);
@@ -367,7 +364,6 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (errConn != null) {
                 XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
-                    // 多试几次
                     rollback();
                 } else {
                     StringBuilder closeReason = new StringBuilder("ROLLBCAK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
@@ -375,7 +371,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                         closeReason.append(", the ERROR is ");
                         closeReason.append(error);
                     }
-                    // 关session ,add to定时任务
+                    // close the session ,add to schedule job
                     session.getSource().close(closeReason.toString());
                     MycatServer.getInstance().getXaSessionCheck().addRollbackSession(session);
                 }

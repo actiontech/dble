@@ -4,14 +4,14 @@ import java.util.List;
 
 /**
  * 目录接口信息
- * 源文件名：DiretoryInf.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月15日
- * 修改作者：liujun
- * 修改日期：2016年9月15日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/15
+ *
+ *
+ *
+ *
  */
 public interface DiretoryInf {
 
@@ -34,7 +34,7 @@ public interface DiretoryInf {
      * 方法描述
      *
      * @param data
-     * @创建日期 2016年9月15日
+     * @Created 2016/9/15
      */
     void add(DataInf data);
 
@@ -48,7 +48,7 @@ public interface DiretoryInf {
     /**
      * 获取节点的名称
      *
-     * @字段说明 getDataName
+     *
      */
     String getDataName();
 

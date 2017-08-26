@@ -28,9 +28,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * SELECT * FROM v1user Where userName = "李四"
  * SELECT * FROM v1user Where userName = "张三" AND age > 20
  * <p>
- * 现在我们希望知道DB 中 业务比较关注的 userName 有哪些，次数是多少, 怎么处理哩，如下
+ * 现在我们希望知道DB 中 业务比较关注的 userName 有哪些,次数是多少, 怎么处理哩,如下
  * <p>
- * 设置： 表名&条件列  ( v1user&userName ) 即可，取消请设置 NULL
+ * 设置: 表名&条件列  ( v1user&userName ) 即可,取消请设置 NULL
  *
  * @author zhuam
  */

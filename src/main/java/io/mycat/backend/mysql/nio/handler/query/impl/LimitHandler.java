@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 用来处理limit，仅作简单的统计过滤
+ * LimitHandler
  *
  * @author ActionTech
  */

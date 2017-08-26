@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * 按照注释中包含指定类型的内容做路由解析
+ * router according to  the hint
  */
 public interface HintHandler {
 

@@ -59,12 +59,10 @@ public final class NIOProcessor {
     private long netInBytes;
     private long netOutBytes;
 
-    // TODO: add by zhuam
-    // reload @@config_all 后, 老的backends  全部移往 backends_old, 待检测任务进行销毁
+    // after reload @@config_all ,old back ends connections stored in backends_old
     public static final ConcurrentLinkedQueue<BackendConnection> BACKENDS_OLD = new ConcurrentLinkedQueue<>();
 
-    //前端已连接数
-    private AtomicInteger frontendsLength = new AtomicInteger(0);
+    private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
     public NIOProcessor(String name, BufferPool bufferPool,
                         NameableExecutor executor) throws IOException {
@@ -124,7 +122,7 @@ public final class NIOProcessor {
 
     public void addFrontend(FrontendConnection c) {
         this.frontends.put(c.getId(), c);
-        this.frontendsLength.incrementAndGet();
+        this.frontEndsLength.incrementAndGet();
     }
 
     public ConcurrentMap<Long, FrontendConnection> getFrontends() {
@@ -132,7 +130,7 @@ public final class NIOProcessor {
     }
 
     public int getForntedsLength() {
-        return this.frontendsLength.get();
+        return this.frontEndsLength.get();
     }
 
     public void addBackend(BackendConnection c) {
@@ -143,37 +141,30 @@ public final class NIOProcessor {
         return this.backends;
     }
 
-    /**
-     * 定时执行该方法，回收部分资源。
-     */
     public void checkBackendCons() {
         backendCheck();
     }
 
-    /**
-     * 定时执行该方法，回收部分资源。
-     */
     public void checkFrontCons() {
         frontendCheck();
     }
 
-    // 前端连接检查
     private void frontendCheck() {
         Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet().iterator();
         while (it.hasNext()) {
             FrontendConnection c = it.next().getValue();
 
-            // 删除空连接
+            // remove empty conn
             if (c == null) {
                 it.remove();
-                this.frontendsLength.decrementAndGet();
+                this.frontEndsLength.decrementAndGet();
                 continue;
             }
-            // 清理已关闭连接，否则空闲检查。
+            // clean closed conn or check timeout
             if (c.isClosed()) {
                 c.cleanup();
                 it.remove();
-                this.frontendsLength.decrementAndGet();
+                this.frontEndsLength.decrementAndGet();
             } else {
                 // very important ,for some data maybe not sent
                 checkConSendQueue(c);
@@ -201,14 +192,13 @@ public final class NIOProcessor {
         }
     }
 
-    // 后端连接检查
     private void backendCheck() {
         long sqlTimeout = MycatServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
         Iterator<Entry<Long, BackendConnection>> it = backends.entrySet().iterator();
         while (it.hasNext()) {
             BackendConnection c = it.next().getValue();
 
-            // 删除空连接
+            // remove empty
             if (c == null) {
                 it.remove();
                 continue;
@@ -224,13 +214,13 @@ public final class NIOProcessor {
                     continue;
                 }
             }
-            // SQL执行超时的连接关闭
+            // close the conn which executeTimeOut
             if (!c.isDDL() && c.isBorrowed() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
                 LOGGER.warn("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
             }
 
-            // 清理已关闭连接，否则空闲检查。
+            // clean closed conn or check time out
             if (c.isClosed()) {
                 it.remove();
             } else {
@@ -248,7 +238,7 @@ public final class NIOProcessor {
             this.backends.remove(con.getId());
         } else {
             this.frontends.remove(con.getId());
-            this.frontendsLength.decrementAndGet();
+            this.frontEndsLength.decrementAndGet();
         }
 
     }

@@ -55,7 +55,7 @@ public final class AIOAcceptor implements SocketAcceptor,
         this.port = port;
         this.factory = factory;
         serverChannel = AsynchronousServerSocketChannel.open(group);
-        /** 设置TCP属性 */
+        /** set TCP option */
         serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
         // backlog=100
@@ -126,7 +126,6 @@ public final class AIOAcceptor implements SocketAcceptor,
     }
 
     /**
-     * 前端连接ID生成器
      *
      * @author mycat
      */

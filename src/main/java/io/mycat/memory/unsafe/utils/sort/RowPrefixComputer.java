@@ -52,7 +52,7 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
             rowIndexElem = row.getBinary(colMeta.getColIndex());
 
             /**
-             * 这里注意一下，order by 排序的第一个字段
+             * 这里注意一下,order by 排序的第一个字段
              */
             switch (orderIndexType) {
                 case ColMeta.COL_TYPE_INT:
@@ -78,11 +78,11 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
                 case ColMeta.COL_TYPE_BIT:
                 case ColMeta.COL_TYPE_VAR_STRING:
                 case ColMeta.COL_TYPE_STRING:
-                    // ENUM和SET类型都是字符串，按字符串处理
+                    // ENUM和SET类型都是字符串,按字符串处理
                 case ColMeta.COL_TYPE_ENUM:
                 case ColMeta.COL_TYPE_SET:
                     return PrefixComparators.BinaryPrefixComparator.computePrefix(rowIndexElem);
-                // BLOB相关类型和GEOMETRY类型不支持排序，略掉
+                // BLOB相关类型和GEOMETRY类型不支持排序,略掉
                 default:
                     break;
             }

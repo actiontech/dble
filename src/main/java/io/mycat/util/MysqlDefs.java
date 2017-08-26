@@ -472,7 +472,7 @@ public final class MysqlDefs {
 
             case Types.LONGVARBINARY:
                 return MysqlDefs.FIELD_TYPE_BLOB;
-            //对应sqlserver的image类型
+            //sqlserver's image type
             case 27:
                 return MysqlDefs.FIELD_TYPE_BLOB;
 
@@ -491,9 +491,8 @@ public final class MysqlDefs {
                 return MysqlDefs.FIELD_TYPE_VAR_STRING;
             case Types.BLOB:
                 return MysqlDefs.FIELD_TYPE_BLOB;
-
-            //修改by     magicdoom@gmail.com
-            // 当jdbc连接非mysql的数据库时，需要把对应类型映射为mysql的类型，否则应用端会出错
+            // change by     magicdoom@gmail.com
+            // FIXME:当jdbc连接非mysql的数据库时,需要把对应类型映射为mysql的类型,否则应用端会出错
             case Types.NVARCHAR:
                 return MysqlDefs.FIELD_TYPE_VAR_STRING;
             case Types.NCHAR:
@@ -504,7 +503,7 @@ public final class MysqlDefs {
                 return MysqlDefs.FIELD_TYPE_VAR_STRING;
 
             default:
-                return MysqlDefs.FIELD_TYPE_VAR_STRING;   //其他未知类型返回字符类型
+                return MysqlDefs.FIELD_TYPE_VAR_STRING;   //OTHER TYPE RETURN string
             //    return Types.VARCHAR;
         }
 

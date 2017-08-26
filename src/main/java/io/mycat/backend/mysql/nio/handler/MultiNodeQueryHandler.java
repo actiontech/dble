@@ -102,9 +102,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         int isOffHeapuseOffHeapForMerge = MycatServer.getInstance().
                 getConfig().getSystem().getUseOffHeapForMerge();
         if (ServerParse.SELECT == sqlType && rrs.needMerge()) {
-            /**
-             * 使用Off Heap
-             */
             if (isOffHeapuseOffHeapForMerge == 1) {
                 dataMergeSvr = new DataNodeMergeManager(this, rrs);
             } else {
@@ -159,22 +156,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
-                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());
                 innerExecute(conn, node);
             } else {
                 // create new connection
-                LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
-                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-                LOGGER.debug("node.getRunOnSlave()2-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
-                // 注意该方法不仅仅是获取连接，获取新连接成功之后，会通过层层回调，最后回调到本类 的connectionAcquired
-                // 这是通过 上面方法的 this 参数的层层传递完成的。
-                // connectionAcquired 进行执行操作:
-                // session.bindConnection(node, conn);
-                // _execute(conn, node);
             }
         }
     }
@@ -303,7 +291,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             ok.read(data);
             lock.lock();
             try {
-                // 判断是否是全局表，如果是，执行行数不做累加，以最后一次执行的为准。
+                // the affected rows of global table will use the last node's response
                 if (!rrs.isGlobalTable()) {
                     affectedRows += ok.getAffectedRows();
                 } else {
@@ -324,7 +312,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (rrs.isLoadData()) {
                     byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
                     ok.setPacketId(++lastPackId); // OK_PACKET
-                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes()); // 此处信息只是为了控制台给人看的
+                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
                     source.getLoadDataInfileHandler().clear();
                 } else {
                     ok.setPacketId(++packetId); // OK_PACKET
@@ -409,7 +397,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (rrs != null && rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
             }
-            // 查询结果派发
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
                     rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
             QueryResultDispatcher.dispatchQuery(queryResult);
@@ -417,7 +404,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     /**
-     * 将汇聚结果集数据真正的发送给Mycat客户端
+     * send the final result to the client
      *
      * @param source
      * @param eof
@@ -430,8 +417,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
 
             /**
-             * 处理limit语句的start 和 end位置，将正确的结果发送给
-             * Mycat 客户端
+             * cut the result for the limit statement
              */
             int start = routeResultset.getLimitStart();
             int end = start + routeResultset.getLimitSize();
@@ -476,10 +462,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("last packet id:" + packetId);
             }
-
-            /**
-             * 真正的开始把Writer Buffer的数据写入到channel 中
-             */
             source.write(source.writeToBuffer(eof, buffer));
         } catch (Exception e) {
             handleDataProcessException(e);
@@ -499,7 +481,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             ByteBuffer buffer = session.getSource().allocate();
             final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
 
-            // 处理limit语句
             int start = routeResultset.getLimitStart();
             int end = start + routeResultset.getLimitSize();
 
@@ -655,13 +636,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     fieldPkg.setName(newFieldName.getBytes());
                     fieldPkg.setPacketId(++packetId);
                     shouldSkip = true;
-                    // 处理AVG字段位数和精度, AVG位数 = SUM位数 - 14
+                    // Number of bits and precision of AVG. AVG bits = SUM bits - 14
                     fieldPkg.setLength(fieldPkg.getLength() - 14);
-                    // AVG精度 = SUM精度 + 4
+                    // AVG precision = SUM precision + 4
                     fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() + 4));
                     buffer = fieldPkg.write(buffer, source, false);
 
-                    // 还原精度
+                    // reset precision
                     fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() - 4));
                 }
 
@@ -784,7 +765,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (nodeCount < 0) {
                 return;
             }
-            //隐式分布式事务，自动发起commit or rollback
+            //Implicit Distributed Transaction,send commit or rollback automatically
             if (txOperation == AutoTxOperation.COMMIT) {
                 if (!conn.isDDL()) {
                     session.checkBackupStatus();
@@ -808,10 +789,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         } else {
             boolean inTransaction = !source.isAutocommit() || source.isTxstart();
             if (!inTransaction) {
-                // 普通查询
                 session.releaseConnection(conn);
             }
-            // 显示分布式事务
+            // Explicit Distributed Transaction
             if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
                 source.setTxInterrupt("ROLLBACK");
             }

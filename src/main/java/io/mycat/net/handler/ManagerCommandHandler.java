@@ -28,7 +28,7 @@ import io.mycat.net.FrontendConnection;
 import io.mycat.net.mysql.MySQLPacket;
 
 /**
- * manager命令处理器
+ * ManagerCommandHandler
  *
  * @author mycat
  */

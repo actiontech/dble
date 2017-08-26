@@ -114,7 +114,7 @@ public final class UnsafeSorterSpillWriter {
          */
         writeIntToBuffer(recordLength, 0);
         /**
-         * 排序key，8个bytes
+         * 排序key,8个bytes
          */
         writeLongToBuffer(keyPrefix, 4);
         /**
@@ -133,13 +133,13 @@ public final class UnsafeSorterSpillWriter {
 
         while (dataRemaining > 0) {
             /**
-             * 计算本次需要从内存中读取的实际数据，取freeSpaceInWriteBuffer和dataRemaining
+             * 计算本次需要从内存中读取的实际数据,取freeSpaceInWriteBuffer和dataRemaining
              * 中的最小值
              */
             final int toTransfer = Math.min(freeSpaceInWriteBuffer, dataRemaining);
 
             /**
-             * 执行数据拷贝动作，将baseObject的数据拷贝到writeBuffer中
+             * 执行数据拷贝动作,将baseObject的数据拷贝到writeBuffer中
              */
             Platform.copyMemory(
                     baseObject, /**srd*/

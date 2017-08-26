@@ -97,11 +97,11 @@ public final class MySQLcom {
     }
 
     /**
-     * str转换成longlong
+     * str to longlong
      *
-     * @param cs    str的byte数组
-     * @param start 起始位置，包含
-     * @param end   结束位置，包含
+     * @param cs    str ->char array
+     * @param start
+     * @param end
      * @param error
      * @return
      */
@@ -189,7 +189,7 @@ public final class MySQLcom {
      * 'items' array.
      *
      * RETURN 0 - if row type incompatibility has been detected (see
-     * cmp_row_type) Bitmap of collected types - otherwise 可以表示出一共有几种type
+     * cmp_row_type) Bitmap of collected types - otherwise show how many types there are
      */
 
     public static int collectCmpTypes(List<Item> items, boolean skipnulls) {
@@ -315,7 +315,7 @@ public final class MySQLcom {
     }
 
     /**
-     * 比较两个byte数组的大小，其中a_ptr的长度>=b_ptr的长度
+     * compare two byte array that the size of a_ptr >=b_ptr
      *
      * @param aPtr
      * @param bPtr
@@ -324,7 +324,7 @@ public final class MySQLcom {
     private static int memcmp0(byte[] aPtr, byte[] bPtr) {
         int aLen = aPtr.length, bLen = bPtr.length;
         for (int i = 0; i < aLen - bLen; i++) {
-            if (aPtr[i] != 0) // a比b多出了值
+            if (aPtr[i] != 0)
                 return 1;
         }
         int aStart = aLen - bLen;
@@ -340,7 +340,7 @@ public final class MySQLcom {
     }
 
     /**
-     * 解析rowpacket时使用，rowpacket的数据全都是字符串
+     * parser rowpacket, all rowpacket's data is String
      *
      * @param charsetIndex
      * @param buff

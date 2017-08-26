@@ -29,7 +29,7 @@ public final class SelectedProcessor {
     }
 
     /**
-     * 将topushColumns列下推到当前节点上 父节点的selectedrefered为A.id,A.name,B.id,B.name，
+     * 将topushColumns列下推到当前节点上 父节点的selectedrefered为A.id,A.name,B.id,B.name,
      * name子节点A只要提供父节点的selectcolumn为 A.id,A.name即可
      *
      * @param qtn
@@ -39,7 +39,7 @@ public final class SelectedProcessor {
     private static PlanNode pushSelected(PlanNode qtn, Collection<Item> toPushColumns) {
         boolean isPushDownNode = false;
         if (PlanUtil.isGlobalOrER(qtn)) {
-            // 这边应该循环遍历它的child然后每个进行buildColumnRefers，先不处理了
+            // 这边应该循环遍历它的child然后每个进行buildColumnRefers,先不处理了
             List<Item> selList = qtn.getColumnsSelected();
             for (Item pdSel : toPushColumns) {
                 if (!selList.contains(pdSel)) {
@@ -73,7 +73,7 @@ public final class SelectedProcessor {
                     existSum |= toPush.type().equals(ItemType.SUM_FUNC_ITEM);
                 }
                 // @bug select sum(id) from (select id,sum(id) from t1) t
-                // 如果直接将id下推，少去了sum(id)则出错
+                // 如果直接将id下推,少去了sum(id)则出错
                 if (!existSum && qtn.getSumFuncs().size() > 0) {
                     selList.add(qtn.getSumFuncs().iterator().next());
                 }

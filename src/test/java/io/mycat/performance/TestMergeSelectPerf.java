@@ -60,7 +60,7 @@ public class TestMergeSelectPerf {
                     .println("input param,format: [jdbcurl] [user] [password]  [threadpoolsize]  [executetimes] ");
             return;
         }
-        int threadCount = 0;// 线程数
+        int threadCount = 0;
         String url = args[0];
         String user = args[1];
         String password = args[2];

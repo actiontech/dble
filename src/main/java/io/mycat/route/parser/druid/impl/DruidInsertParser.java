@@ -62,7 +62,6 @@ public class DruidInsertParser extends DefaultDruidParser {
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
-        // 整个schema都不分库或者该表不拆分
         TableConfig tc = schema.getTables().get(tableName);
         if (tc == null) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
@@ -88,14 +87,13 @@ public class DruidInsertParser extends DefaultDruidParser {
             stmt = parser.parseStatement();
             insert = (MySqlInsertStatement) stmt;
         }
-        // childTable的insert直接在解析过程中完成路由
+        // insert childTable will finished router while parser
         if (tc.getParentTC() != null) {
             parserChildTable(schemaInfo, rrs, insert, sc);
             return schema;
         }
         String partitionColumn = tc.getPartitionColumn();
         if (partitionColumn != null) {
-            // 批量insert
             if (isMultiInsert(insert)) {
                 parserBatchInsert(schemaInfo, rrs, partitionColumn, insert);
             } else {
@@ -125,7 +123,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     /**
-     * 是否为批量插入：insert into ...values (),()...或 insert into ...select.....
+     * insert into ...values (),()... or insert into ...select.....
      *
      * @param insertStmt
      * @return
@@ -206,7 +204,6 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     /**
-     * 单条insert（非批量）
      *
      * @param schemaInfo
      * @param rrs
@@ -221,7 +218,6 @@ public class DruidInsertParser extends DefaultDruidParser {
         TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         Integer nodeIndex = algorithm.calculate(shardingValue);
-        //没找到插入的分片
         if (nodeIndex == null) {
             String msg = "can't find any valid datanode :" + schemaInfo.getTable() + " -> " +
                     partitionColumn + " -> " + shardingValue;
@@ -251,7 +247,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     /**
-     * insert into .... select .... 或insert into table() values (),(),....
+     * insert into .... select .... or insert into table() values (),(),....
      *
      * @param schemaInfo
      * @param rrs
@@ -264,7 +260,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         // insert into table() values (),(),....
         SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
-        // 字段列数
+        // the size of columns
         int columnNum = getTableColumns(schemaInfo, insertStmt);
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         List<ValuesClause> valueClauseList = insertStmt.getValuesList();
@@ -281,7 +277,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
             String shardingValue = shardingValueToSting(expr);
             Integer nodeIndex = algorithm.calculate(shardingValue);
-            // 没找到插入的分片
+            // null means can't find any valid index
             if (nodeIndex == null) {
                 String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
                 LOGGER.warn(msg);
@@ -342,7 +338,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     /**
-     * 寻找拆分字段在 columnList中的索引
+     * find the index of the partition column
      *
      * @param insertStmt
      * @param partitionColumn
@@ -388,12 +384,12 @@ public class DruidInsertParser extends DefaultDruidParser {
     }
 
     /**
-     * 寻找joinKey的索引
+     * find joinKey index
      *
      * @param schemaInfo
      * @param insertStmt
      * @param joinKey
-     * @return -1表示没找到，>=0表示找到了
+     * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException
      */
     private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String joinKey) throws SQLNonTransientException {
@@ -417,21 +413,21 @@ public class DruidInsertParser extends DefaultDruidParser {
             }
         }
 
-        StringBuilder sb = new StringBuilder(200  /* 指定初始容量可以提高性能 */).append("insert into ").append(tableName);
+        StringBuilder sb = new StringBuilder(200).append("insert into ").append(tableName);
 
         List<SQLExpr> columns = insert.getColumns();
 
         int autoIncrement = -1;
         int idxGlobal = -1;
         int colSize;
-        // insert 没有带列名：insert into t values(xxx,xxx)
+        // insert without columns :insert into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
             if (isAutoIncrement) {
                 autoIncrement = getPrimaryKeyIndex(schemaInfo, tc.getPrimaryKey());
             }
             colSize = orgTbMeta.getColumnsList().size();
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
-        } else { // insert 语句带有 列名
+        } else {
             genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement) {
@@ -450,14 +446,14 @@ public class DruidInsertParser extends DefaultDruidParser {
         sb.append(" values");
         String tableKey = StringUtil.getFullName(schemaInfo.getSchema(), schemaInfo.getTable());
         List<ValuesClause> vcl = insert.getValuesList();
-        if (vcl != null && vcl.size() > 1) { // 批量insert
+        if (vcl != null && vcl.size() > 1) { // batch insert
             for (int j = 0; j < vcl.size(); j++) {
                 if (j != vcl.size() - 1)
                     appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
                 else
                     appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
             }
-        } else { // 非批量 insert
+        } else {
             List<SQLExpr> valuse = insert.getValues().getValues();
             appendValues(tableKey, valuse, sb, autoIncrement, idxGlobal, colSize);
         }
@@ -529,7 +525,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             }
             sb.append(column);
             if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                idxGlobal = i; // 找到 内部列的索引位置
+                idxGlobal = i; // find the index of inner column
             }
         }
         sb.append(")");

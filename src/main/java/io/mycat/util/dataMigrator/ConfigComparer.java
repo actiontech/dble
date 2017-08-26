@@ -47,7 +47,7 @@ public class ConfigComparer {
     private boolean isAwaysUseMaster;
     private Properties dnIndexProps;
 
-    //此类主要目的是通过加载新旧配置文件来获取表迁移信息，migratorTables就是最终要获取的迁移信息集合
+    //此类主要目的是通过加载新旧配置文件来获取表迁移信息,migratorTables就是最终要获取的迁移信息集合
     private List<TableMigrateInfo> migratorTables = new ArrayList<>();
 
     public ConfigComparer(boolean isAwaysUseMaster) throws Exception {
@@ -112,7 +112,7 @@ public class ConfigComparer {
     }
 
     /*
-     * 加载迁移表信息，tables大小为0表示迁移schema下所有表
+     * 加载迁移表信息,tables大小为0表示迁移schema下所有表
      */
     private void loadMigratorTables(String schemaName, String[] tables) {
         if (!DataMigratorUtil.isKeyExistIgnoreCase(oldSchemas, schemaName)) {

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 最大堆排序，适用于顺序排序
+ * 最大堆排序,适用于顺序排序
  *
  * @author coderczp-2014-12-8
  */
@@ -129,7 +129,7 @@ public class MaxHeap implements HeapItf {
         }
         final int min = size == total ? 0 : (total - size - 1);
 
-        // 末尾与头交换，交换后调整最大堆
+        // 末尾与头交换,交换后调整最大堆
         for (int i = total - 1; i > min; i--) {
             swap(0, i);
             heapifyRecursive(0, i);

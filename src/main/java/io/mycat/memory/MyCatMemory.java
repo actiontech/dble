@@ -17,9 +17,9 @@ import org.apache.log4j.Logger;
  * Mycat内存管理工具类
  * 规划为三部分内存:结果集处理内存,系统预留内存,网络处理内存
  * 其中网络处理内存部分全部为Direct Memory
- * 结果集内存分为Direct Memory 和 Heap Memory，但目前仅使用Direct Memory
- * 系统预留内存为 Heap Memory。
- * 系统运行时，必须设置-XX:MaxDirectMemorySize 和 -Xmx JVM参数
+ * 结果集内存分为Direct Memory 和 Heap Memory,但目前仅使用Direct Memory
+ * 系统预留内存为 Heap Memory.
+ * 系统运行时,必须设置-XX:MaxDirectMemorySize 和 -Xmx JVM参数
  * -Xmx1024m -Xmn512m -XX:MaxDirectMemorySize=2048m -Xss256K -XX:+UseParallelGC
  */
 
@@ -53,7 +53,7 @@ public class MyCatMemory {
 
 
         /**
-         * 目前merge，order by ，limit 没有使用On Heap内存
+         * 目前merge,order by ,limit 没有使用On Heap内存
          */
 
         resultSetBufferSize =

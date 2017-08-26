@@ -33,7 +33,7 @@ import io.mycat.route.parser.util.Pair;
 import java.util.Map;
 
 /**
- * 切换数据节点的数据源
+ * SwitchDataSource
  *
  * @author mycat
  */

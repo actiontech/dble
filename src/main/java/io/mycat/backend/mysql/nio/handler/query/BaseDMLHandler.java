@@ -17,12 +17,12 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     protected final long id;
 
     /**
-     * 是否是处理所有的都pushdown了，包括函数
+     * all pushed down? contains functions
      */
     private boolean allPushDown = false;
 
     /**
-     * 从上一层hangdler接受到的fieldpackets集合
+     * field packets list from parent handler
      */
     protected List<FieldPacket> fieldPackets = new ArrayList<>();
     protected BaseDMLHandler nextHandler = null;

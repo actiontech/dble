@@ -32,7 +32,7 @@ public class MergeNode extends PlanNode {
         return this;
     }
 
-    // 记录union字段名称以及对应index的map
+    // map for union filed name-> index
     public Map<String, Integer> getColIndexs() {
         Map<String, Integer> colIndexs = new HashMap<>();
         for (int index = 0; index < getColumnsSelected().size(); index++) {
@@ -55,9 +55,9 @@ public class MergeNode extends PlanNode {
     }
 
     public List<Item> getComeInFields() {
-        // modify：允许为了让union的order
-        // by直接下发，在SelectPush后允许union的select列和child的select列不同，
-        // uionhandler的列以firstchild为准，union sql的结果仍然为node.getcolumnSelected
+        // push down the union's ordern by
+        //  union's select column may be different from  child's select
+        // union handler's use the first child as oolumns,union sql's result is node.getcolumnSelected
         if (comeInFields == null)
             return getColumnsSelected();
         else

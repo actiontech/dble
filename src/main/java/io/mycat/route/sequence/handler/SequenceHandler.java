@@ -26,7 +26,7 @@ package io.mycat.route.sequence.handler;
 /**
  * @author <a href="http://www.micmiu.com">Michael</a>
  * @version 1.0
- * @time Create on 2013-12-20 下午3:35:53
+ * @time Create on 2013-12-20 15:35:53
  */
 public interface SequenceHandler {
 

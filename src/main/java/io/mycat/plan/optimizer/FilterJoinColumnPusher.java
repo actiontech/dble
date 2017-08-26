@@ -30,7 +30,7 @@ public final class FilterJoinColumnPusher {
     }
 
     private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
-        // 如果是叶节点，接收filter做为where条件,否则继续合并当前where条件，然后下推
+        // 如果是叶节点,接收filter做为where条件,否则继续合并当前where条件,然后下推
         if (qtn.getChildren().isEmpty()) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
@@ -94,7 +94,7 @@ public final class FilterJoinColumnPusher {
                 dnfNodeToCurrent.add(filter);
             }
         }
-        // 针对不能下推的，合并到当前的where
+        // 针对不能下推的,合并到当前的where
         Item node = FilterUtils.and(dnfNodeToCurrent);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
@@ -108,13 +108,13 @@ public final class FilterJoinColumnPusher {
             refreshPdFilters(jn, dnfNodetoPushToLeft);
             pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft);
             if (!dnfNodeToPush.isEmpty()) {
-                jn.query(FilterUtils.and(dnfNodetoPushToRight)); // 在父节点完成filter，不能下推
+                jn.query(FilterUtils.and(dnfNodetoPushToRight)); // 在父节点完成filter,不能下推
             }
         } else if (jn.isRightOuterJoin()) {
             refreshPdFilters(jn, dnfNodetoPushToRight);
             pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight);
             if (!dnfNodeToPush.isEmpty()) {
-                jn.query(FilterUtils.and(dnfNodetoPushToLeft)); // 在父节点完成filter，不能下推
+                jn.query(FilterUtils.and(dnfNodetoPushToLeft)); // 在父节点完成filter,不能下推
             }
         } else {
             if (!dnfNodeToPush.isEmpty()) {
@@ -135,7 +135,7 @@ public final class FilterJoinColumnPusher {
     }
 
     /**
-     * 是否是可能得ER关系Filter： 1.Filter必须是=关系 2.Filter必须是Column = Column
+     * 是否是可能得ER关系Filter: 1.Filter必须是=关系 2.Filter必须是Column = Column
      * 3.Filter的key和value必须来自于不同的两张表 ex:a.id=b.id true a.id=b.id+1 false
      */
     private static boolean isPossibleERJoinColumnFilter(PlanNode node, Item ifilter) {

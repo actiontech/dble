@@ -59,7 +59,7 @@ public class DruidMycatRouteStrategy extends AbstractRouteStrategy {
 
 
     /**
-     * 检验不支持的SQLStatement类型 ：不支持的类型直接抛SQLSyntaxErrorException异常
+     * 检验不支持的SQLStatement类型 :不支持的类型直接抛SQLSyntaxErrorException异常
      *
      * @param statement
      * @throws SQLSyntaxErrorException

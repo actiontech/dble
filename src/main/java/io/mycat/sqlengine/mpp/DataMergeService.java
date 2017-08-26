@@ -110,7 +110,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
                             ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
                                     countColMeta.getColIndex(),
                                     sumColMeta.getColType());
-                            colMeta.setDecimals(sumColMeta.getDecimals()); // 保存精度
+                            colMeta.setDecimals(sumColMeta.getDecimals()); // Keep the Precision
                             mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
                         }
                     } else {
@@ -239,7 +239,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
     /**
      * return merged data
      *
-     * @return (最多i*(offset+size)行数据)
+     * @return (i*(offset+size) rows at most)
      */
     public List<RowDataPacket> getResults(byte[] eof) {
 

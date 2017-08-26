@@ -18,7 +18,7 @@ public class ShowHeartBeatDetailTest {
                 "show        @@heartbeat.detail         where     name     =       host  M1       ",
                 "show @@heartbeat.details where name = hostM1",
                 "show @@heartbeat.detail wherename = hostM1",
-                "show @@heartbeat.detail where name ：hostM1",
+                "show @@heartbeat.detail where name :hostM1",
                 "show @@heartbeat.detail where name = hossdfasdf  tM1",
                 "show @@heartbeat.detailwhere name = hostM1",
                 "show @@heartbeat.detail where name = ",

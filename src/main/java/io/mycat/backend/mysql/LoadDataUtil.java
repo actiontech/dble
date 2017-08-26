@@ -1,14 +1,19 @@
 package io.mycat.backend.mysql;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.BackendConnection;
 import io.mycat.net.BackendAIOConnection;
 import io.mycat.net.mysql.BinaryPacket;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.sqlengine.mpp.LoadData;
-
-import java.io.*;
-import java.util.List;
 
 /**
  * Created by nange on 2015/3/31.
@@ -41,7 +46,6 @@ public final class LoadDataUtil {
                 packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), backendAIOConnection);
 
             } else {
-                //从文件读取
                 packId = writeToBackConnection(packId, new BufferedInputStream(new FileInputStream(loadData.getFileName())), backendAIOConnection);
 
             }
@@ -49,7 +53,7 @@ public final class LoadDataUtil {
 
             throw new RuntimeException(e);
         } finally {
-            //结束必须发空包
+            //send empty packet
             byte[] empty = new byte[]{0, 0, 0, 3};
             empty[3] = ++packId;
             backendAIOConnection.write(empty);

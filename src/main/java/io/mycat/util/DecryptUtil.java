@@ -87,8 +87,8 @@ public final class DecryptUtil {
         try {
             cipher.init(Cipher.DECRYPT_MODE, publicKey);
         } catch (InvalidKeyException e) {
-            // 因为 IBM JDK 不支持私钥加密, 公钥解密, 所以要反转公私钥
-            // 也就是说对于解密, 可以通过公钥的参数伪造一个私钥对象欺骗 IBM JDK
+            //  IBM JDK not support Private key encryption, public key decryption
+            // so fake an PrivateKey for it
             RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
             RSAPrivateKeySpec spec = new RSAPrivateKeySpec(rsaPublicKey.getModulus(), rsaPublicKey.getPublicExponent());
             Key fakePrivateKey = KeyFactory.getInstance("RSA").generatePrivate(spec);
@@ -167,7 +167,7 @@ public final class DecryptUtil {
         try {
             cipher.init(Cipher.ENCRYPT_MODE, privateKey);
         } catch (InvalidKeyException e) {
-            //For IBM JDK, 原因请看解密方法中的说明
+            //For IBM JDK
             RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) privateKey;
             RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(rsaPrivateKey.getModulus(), rsaPrivateKey.getPrivateExponent());
             Key fakePublicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);

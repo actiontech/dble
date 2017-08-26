@@ -69,7 +69,7 @@ public final class ReloadConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
 
     public static void execute(ManagerConnection c, final boolean loadAll) {
-        // reload @@config_all 校验前一次的事务完成情况
+        // reload @@config_all check the last old connections
         if (loadAll && !NIOProcessor.BACKENDS_OLD.isEmpty()) {
             c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
             return;
@@ -170,9 +170,9 @@ public final class ReloadConfig {
 
     public static void reloadAll() throws Exception {
         /*
-         *  1、载入新的配置
-         *  1.1、ConfigInitializer 初始化l, 基本自检
-         *  1.2、DataNode/DataHost 实际链路检测
+         *  1 load new conf
+         *  1.1 ConfigInitializer init adn check itself
+         *  1.2 DataNode/DataHost test connection
          */
         ConfigInitializer loader;
         try {
@@ -187,7 +187,6 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
 
-        /* 1.2、实际链路检测 */
         try {
             loader.testConnection();
         } catch (Exception e) {
@@ -195,22 +194,21 @@ public final class ReloadConfig {
         }
 
         /*
-         *  2、承接
-         *  2.1、老的 dataSource 继续承接新建请求
-         *  2.2、新的 dataSource 开始初始化， 完毕后交由 2.3
-         *  2.3、新的 dataSource 开始承接新建请求
-         *  2.4、老的 dataSource 内部的事务执行完毕， 相继关闭
-         *  2.5、老的 dataSource 超过阀值的，强制关闭
+         *  2 transform
+         *  2.1 old dataSource continue to work
+         *  2.2 init the new dataSource
+         *  2.3 transform
+         *  2.4 execute the old connection
          */
         MycatConfig config = MycatServer.getInstance().getConfig();
 
-        /* 2.1 、老的 dataSource 继续承接新建请求， 此处什么也不需要做 */
+        /* 2.1 do nothing */
         boolean isReloadStatusOK = true;
 
-        /* 2.2、新的 dataHosts 初始化 */
+        /* 2.2 init the new dataSource */
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
             String hostName = dbPool.getHostName();
-            // 设置 schemas
+            // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);
             for (PhysicalDBNode dn : newDataNodes.values()) {
                 if (dn.getDbPool().getHostName().equals(hostName)) {
@@ -219,7 +217,7 @@ public final class ReloadConfig {
             }
             dbPool.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
 
-            // 获取 data host
+            // get data host
             String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
             if (!"0".equals(dnIndex)) {
                 LOGGER.info("init datahost: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
@@ -232,17 +230,15 @@ public final class ReloadConfig {
             }
         }
 
-        /*
-         *  新的 dataHosts 是否初始化成功
-         */
         if (isReloadStatusOK) {
-            /* 2.3、 在老的配置上，应用新的配置，开始准备承接任务 */
+            /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, loader.isDataHostWithoutWH(), true);
 
-            /* 2.4、 处理旧的资源 */
+            /* 2.4 execute the old connection */
             LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
-            // 清除前一次 reload 转移出去的 old Cons
+            // clear old Cons
+            // FIXME: THE NIOProcessor.BACKENDS_OLD IS EMPTY
             Iterator<BackendConnection> iter = NIOProcessor.BACKENDS_OLD.iterator();
             while (iter.hasNext()) {
                 BackendConnection con = iter.next();
@@ -253,7 +249,6 @@ public final class ReloadConfig {
             for (PhysicalDBPool dbPool : oldDataHosts.values()) {
                 dbPool.stopHeartbeat();
 
-                // 提取数据源下的所有连接
                 for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                     for (NIOProcessor processor : MycatServer.getInstance().getProcessors()) {
                         for (BackendConnection con : processor.getBackends().values()) {
@@ -270,7 +265,7 @@ public final class ReloadConfig {
             LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
 
         } else {
-            // 如果重载不成功，则清理已初始化的资源。
+            // INIT FAILED
             LOGGER.info("reload failed, clear previously created datasources ");
             for (PhysicalDBPool dbPool : newDataHosts.values()) {
                 dbPool.clearDataSources("reload config");
@@ -281,7 +276,7 @@ public final class ReloadConfig {
     }
 
     public static void reload() throws Exception {
-        /* 1、载入新的配置， ConfigInitializer 内部完成自检工作 */
+        /* 1 load new conf, ConfigInitializer will check itself */
         ConfigInitializer loader;
         try {
             loader = new ConfigInitializer(false);
@@ -295,7 +290,7 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
         FirewallConfig firewall = loader.getFirewall();
 
-        /* 2、在老的配置上， 应用新的配置 */
+        /* 2 apply the new conf */
         MycatServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, loader.isDataHostWithoutWH(), false);
     }
 

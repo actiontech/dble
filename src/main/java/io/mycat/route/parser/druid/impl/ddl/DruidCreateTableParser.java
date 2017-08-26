@@ -30,13 +30,13 @@ public class DruidCreateTableParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
-        //创建新表select from禁止
+        //disable create table select from
         if (createStmt.getSelect() != null) {
             String msg = "create table from other table not supported :" + stmt;
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
-        //创建新表like禁止
+        //disable create table select from
         if (createStmt.getLike() != null) {
             String msg = "create table like other table not supported :" + stmt;
             LOGGER.warn(msg);
@@ -52,7 +52,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
             return schemaInfo.getSchemaConfig();
         }
-        //如果这个不是no_sharing表格那么就需要这么进行检查
         sharingTableCheck(createStmt);
         if (GlobalTableUtil.useGlobleTableCheck() &&
                 GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
@@ -94,17 +93,16 @@ public class DruidCreateTableParser extends DefaultDruidParser {
     }
 
     /**
-     * 检查创建的表格里面是不是有我们不支持的参数
      */
     private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
-        //创建新表分片属性禁止
+        //TODO:DELETE
         if (createStmt.getPartitioning() != null) {
             String msg = "create table with Partition not supported:" + createStmt;
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
 
-        //创建的新表只允许出现InnoDB引擎
+        //ALLOW InnoDB ONLY
         SQLObject engine = createStmt.getTableOptions().get("ENGINE");
         if (engine != null) {
             String strEngine;
@@ -122,7 +120,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             }
         }
 
-        //创建新表的时候数据目录指定禁止
+        //DISABLE DATA DIRECTORY
         if (createStmt.getTableOptions().get("DATA DIRECTORY") != null) {
             String msg = "create table with DATA DIRECTORY  not supported:" + createStmt;
             LOGGER.warn(msg);

@@ -24,7 +24,7 @@
 package io.mycat.net.handler;
 
 /**
- * 查询处理器
+ * FrontendQueryHandler
  *
  * @author mycat
  */

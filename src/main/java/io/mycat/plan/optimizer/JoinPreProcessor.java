@@ -13,11 +13,11 @@ public final class JoinPreProcessor {
     }
 
     /**
-     * 会遍历所有节点将right join的左右节点进行调换，转换成left join.
+     * change right join to left join.
      * <p>
      * <pre>
-     * 比如 A right join B on A.id = B.id
-     * 转化为 B left join B on A.id = B.id
+     * eg: A right join B on A.id = B.id
+     * change to B left join B on A.id = B.id
      * </pre>
      */
     private static PlanNode findAndChangeRightJoinToLeftJoin(PlanNode qtn) {

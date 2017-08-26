@@ -147,7 +147,6 @@ public final class ShowDatasourceSynDetail {
                         row.add(StringUtil.encode(states.get("Master_Host"), charset));
                         row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
                         row.add(StringUtil.encode(states.get("Master_User"), charset));
-                        //DateFormat非线程安全
                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                         String time = sdf.format(new Date(r.getTime()));
                         row.add(StringUtil.encode(time, charset));

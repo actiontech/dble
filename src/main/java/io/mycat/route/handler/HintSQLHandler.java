@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 处理注释中 类型为sql的情况 （按照 注释中的sql做路由解析，而不是实际的sql）
+ * HintSQLHandler
  */
 public class HintSQLHandler implements HintHandler {
 
@@ -46,7 +46,7 @@ public class HintSQLHandler implements HintHandler {
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
                 hintSQLValue, charset, sc, cachePool);
 
-        // 替换RRS中的SQL执行
+        // replace the sql of RRS
         RouteResultsetNode[] oldRsNodes = rrs.getNodes();
         RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];
         for (int i = 0; i < newRrsNodes.length; i++) {
@@ -55,7 +55,7 @@ public class HintSQLHandler implements HintHandler {
         }
         rrs.setNodes(newRrsNodes);
 
-        // 判断是否为调用存储过程的SQL语句，这里不能用SQL解析器来解析判断是否为CALL语句
+        //  can't judge the cal statement by parser
         if (ServerParse.CALL == sqlType) {
             rrs.setCallStatement(true);
 

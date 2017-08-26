@@ -82,5 +82,5 @@ public class CharArray {
         return stringBuilder.toString();
     }
 
-    //todo:实现from string，使字符串数组可变
+    //todo: from string
 }

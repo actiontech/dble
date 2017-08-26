@@ -56,7 +56,6 @@ public final class UseHandler {
                 schema = schema.toLowerCase();
             }
         }
-        // 检查schema的有效性
         FrontendPrivileges privileges = c.getPrivileges();
         if (schema == null || !privileges.schemaExists(schema)) {
             c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");

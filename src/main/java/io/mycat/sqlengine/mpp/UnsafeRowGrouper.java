@@ -149,9 +149,6 @@ public class UnsafeRowGrouper {
     }
 
     private void initGroupKey() {
-        /**
-         * 构造groupKey
-         */
         Map<String, ColMeta> groupcolMetaMap = new HashMap<>(this.groupKeyfieldCount);
 
         UnsafeRow groupKey = new UnsafeRow(this.groupKeyfieldCount);
@@ -204,9 +201,6 @@ public class UnsafeRowGrouper {
     }
 
     private void initEmptyValueKey() {
-        /**
-         * 构造valuerow
-         */
         emptyAggregationBuffer = new UnsafeRow(this.valuefieldCount);
         bufferHolder = new BufferHolder(emptyAggregationBuffer, 0);
         unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valuefieldCount);
@@ -256,9 +250,7 @@ public class UnsafeRowGrouper {
 
     public Iterator<UnsafeRow> getResult(@Nonnull UnsafeExternalRowSorter sorter) throws IOException {
         KVIterator<UnsafeRow, UnsafeRow> iter = aggregationMap.iterator();
-        /**
-         * 求平均值
-         */
+
         if (isMergeAvg() && !isMergAvg) {
             try {
                 while (iter.next()) {
@@ -285,19 +277,16 @@ public class UnsafeRowGrouper {
         return sorter.sort();
     }
 
-    /**
-     * 处理AVG列精度
-     */
     private void processAvgFieldPrecision() {
         for (Map.Entry<String, ColMeta> entry : columToIndx.entrySet()) {
-            if (isAvgField(entry.getKey())) { // AVG列的小数点精度默认取SUM小数点精度, 计算和返回的小数点精度应该扩展4
+            if (isAvgField(entry.getKey())) { // AVG's Precision is sum's +4 , HALF_UP
                 entry.getValue().setDecimals(entry.getValue().getDecimals() + 4);
             }
         }
     }
 
     /**
-     * 判断列是否为AVG列
+     * is Avg Field
      *
      * @param columnName
      * @return
@@ -446,15 +435,12 @@ public class UnsafeRowGrouper {
         return 0 == ByteUtil.compareNumberByte(l, r);
     }
 
-    /**
-     * 构造groupKey
-     */
     private UnsafeRow getGroupKey(UnsafeRow row) throws UnsupportedEncodingException {
 
         UnsafeRow key = null;
         if (this.sortColumnsByIndex == null) {
             /**
-             * 针对没有group by关键字
+             * no group by key word
              * select count(*) from table;
              */
             key = new UnsafeRow(this.groupKeyfieldCount + 1);
@@ -523,10 +509,6 @@ public class UnsafeRowGrouper {
         return key;
     }
 
-
-    /**
-     * 构造value
-     */
     private UnsafeRow getValue(UnsafeRow row) throws UnsupportedEncodingException {
 
         UnsafeRow value = new UnsafeRow(this.valuefieldCount);
@@ -847,19 +829,19 @@ public class UnsafeRowGrouper {
             }
             case MergeCol.MERGE_AVG: {
                 /**
-                 * 元素总个数
+                 * count(*)
                  */
                 long count = BytesTools.getLong(bs2);
                 if (colType == ColMeta.COL_TYPE_DOUBLE || colType == ColMeta.COL_TYPE_FLOAT) {
                     /**
-                     * 数值总和
+                     * sum(*)
                      */
                     double sum = BytesTools.getDouble(bs);
                     double value = sum / count;
                     return BytesTools.double2Bytes(value);
                 } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL || colType == ColMeta.COL_TYPE_DECIMAL) {
                     BigDecimal sum = new BigDecimal(new String(bs));
-                    // AVG计算时候小数点精度扩展4, 并且四舍五入
+                    // AVG's Precision is sum's +4 , HALF_UP
                     BigDecimal avg = sum.divide(new BigDecimal(count), sum.scale() + 4, RoundingMode.HALF_UP);
                     return avg.toString().getBytes();
                 }

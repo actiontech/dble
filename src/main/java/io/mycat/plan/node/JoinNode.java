@@ -31,9 +31,6 @@ public class JoinNode extends PlanNode {
         SORTMERGE, NESTLOOP
     }
 
-    /**
-     * 是否是not in
-     */
     private boolean isNotIn = false;
 
     public boolean isNotIn() {
@@ -44,10 +41,10 @@ public class JoinNode extends PlanNode {
         this.isNotIn = notIn;
     }
 
-    // sort-merge-join时左节点的排序属性
+    // left node's order of sort-merge-join
     private List<Order> leftJoinOnOrders = new ArrayList<>();
     private boolean isLeftOrderMatch = false;
-    // sort-merge-join时右节点的排序属性
+    // right node's order of sort-merge-join
     private List<Order> rightJoinOnOrders = new ArrayList<>();
     private boolean isRightOrderMatch = false;
 
@@ -72,9 +69,6 @@ public class JoinNode extends PlanNode {
     private List<ItemFuncEqual> joinFilter;
     private Item otherJoinOnFilter;
 
-    /**
-     * 虚拟化一个节点可以被ER关联的key代表
-     */
     protected List<ERTable> erKeys = new ArrayList<>();
 
     protected Strategy strategy = Strategy.SORTMERGE;
@@ -304,7 +298,7 @@ public class JoinNode extends PlanNode {
     }
 
     /**
-     * 交换左右节点
+     * exchangeLeftAndRight
      */
     public void exchangeLeftAndRight() {
 

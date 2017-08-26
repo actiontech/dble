@@ -41,7 +41,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
 /**
- * 前端认证处理器
+ * FrontendAuthenticator
  *
  * @author mycat
  */
@@ -106,8 +106,7 @@ public class FrontendAuthenticator implements NIOHandler {
         }
     }
 
-    //TODO: add by zhuam
-    //前端 connection 达到该用户设定的阀值后, 立马降级拒绝连接
+    //frontend connection reached the user threshold. service degrade
     protected boolean isDegrade(String user) {
 
         int benchmark = source.getPrivileges().getBenchmark(user);

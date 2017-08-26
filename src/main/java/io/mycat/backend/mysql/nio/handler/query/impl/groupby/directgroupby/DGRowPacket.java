@@ -11,20 +11,20 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 /**
- * proxy层进行group by计算时用到的RowPacket，比传统的rowpacket多保存了聚合函数的结果
- * sum的结果存放在RowPacket的最前面
+ * RowPacket used for group by ,contains the result of aggregate function
+ * the result of sum is in front of origin RowPacket
  */
 public class DGRowPacket extends RowDataPacket {
 
     private int sumSize;
 
     /**
-     * 保存的中间聚合对象
+     * store tmp result
      **/
     private Object[] sumTranObjs;
 
     /**
-     * 保存中间聚合结果的大小
+     * store tmp result size
      **/
     private int[] sumByteSizes;
 
@@ -34,8 +34,8 @@ public class DGRowPacket extends RowDataPacket {
     }
 
     /**
-     * @param fieldCount 原始的field的个数
-     * @param sumSize    要计算的sum的个数
+     * @param fieldCount origin field size
+     * @param sumSize    sum size to calc
      */
     public DGRowPacket(int fieldCount, int sumSize) {
         super(fieldCount);
@@ -64,7 +64,7 @@ public class DGRowPacket extends RowDataPacket {
 
     @Override
     /**
-     * 提供一个不准确的size
+     * inaccurate size
      */
     public int calcPacketSize() {
         int size = super.calcPacketSize();

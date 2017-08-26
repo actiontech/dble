@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
 
 
 /**
- * 对 PhpAdmin's 控制台操作进行支持
+ * MysqlInformationSchemaHandler
  * <p>
- * 如：SELECT * FROM information_schema.CHARACTER_SETS 等相关语句进行模拟返回
+ * :SELECT * FROM information_schema.CHARACTER_SETS
  *
  * @author zhuam
  */
@@ -24,7 +24,6 @@ public final class MysqlInformationSchemaHandler {
     }
 
     /**
-     * 写入数据包
      *
      * @param fieldCount
      * @param fields
@@ -63,7 +62,6 @@ public final class MysqlInformationSchemaHandler {
     public static void handle(SchemaInfo schemaInfo, ServerConnection c) {
         if (schemaInfo != null) {
             if (schemaInfo.getTable().toUpperCase().equals("CHARACTER_SETS")) {
-                // 模拟列头
                 int fieldCount = 4;
                 FieldPacket[] fields = new FieldPacket[fieldCount];
                 fields[0] = PacketUtil.getField("CHARACTER_SET_NAME", Fields.FIELD_TYPE_VAR_STRING);

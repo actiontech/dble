@@ -119,15 +119,11 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
-                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
-                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-                LOGGER.debug("node.getRunOnSlave()-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());
                 innerExecute(conn, node);
             } else {
                 // create new connection
-                LOGGER.debug("node.getRunOnSlave()1-" + node.getRunOnSlave());
-                node.setRunOnSlave(rrs.getRunOnSlave());    // 实现 master/slave注解
-                LOGGER.debug("node.getRunOnSlave()2-" + node.getRunOnSlave());
+                node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
             }
@@ -307,10 +303,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         ServerConnection source = session.getSource();
         boolean inTransaction = !source.isAutocommit() || source.isTxstart();
         if (!inTransaction) {
-            // 普通查询
+            // normal query
             session.releaseConnection(conn);
         }
-        // 显示分布式事务
+        // Explicit distributed transaction
         if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
             source.setTxInterrupt("ROLLBACK");
         }

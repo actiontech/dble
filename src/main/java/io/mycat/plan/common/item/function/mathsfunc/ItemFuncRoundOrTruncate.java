@@ -8,9 +8,6 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.List;
 
-/**
- * round和truncate的父类
- */
 public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
     boolean truncate = false;
 

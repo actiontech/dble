@@ -25,10 +25,10 @@ public final class MyOptimizer {
             if (node.isExsitView() || existGlobal != 1) {
                 // 子查询优化
                 node = SubQueryProcessor.optimize(node);
-                // right join的左右节点进行调换，转换成left join
+                // right join的左右节点进行调换,转换成left join
                 node = JoinPreProcessor.optimize(node);
 
-                // 预处理filter，比如过滤永假式/永真式
+                // 预处理filter,比如过滤永假式/永真式
                 node = FilterPreProcessor.optimize(node);
                 //  只下推有ER关系可能的filter
                 node = FilterJoinColumnPusher.optimize(node);
@@ -65,8 +65,8 @@ public final class MyOptimizer {
      *
      * @param node
      * @return node不存在表名或者node全部为global表时  return 1;
-     * 全部为非global表时，return -1，之后不需要global优化;
-     * 可能需要优化global表，return 0；
+     * 全部为非global表时,return -1,之后不需要global优化;
+     * 可能需要优化global表,return 0；
      */
     public static int checkGlobalTable(PlanNode node) {
         Set<String> dataNodes = null;

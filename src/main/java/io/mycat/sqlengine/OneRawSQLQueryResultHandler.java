@@ -49,7 +49,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
         rowDataPkg.read(rowData);
         String variableName = "";
         String variableValue = "";
-        //fieldcount为2可能是select x也可能是show create table命令
+        //if fieldcount is 2,it may be select x or show create table
         if (fieldCount == 2 && (fetchColPosMap.get("Variable_name") != null || fetchColPosMap.get("Value") != null)) {
             Integer ind = fetchColPosMap.get("Variable_name");
             if (ind != null) {
@@ -84,10 +84,5 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
         SQLQueryResult<Map<String, String>> queryRestl = new SQLQueryResult<>(this.result, !failed, dataNode);
         this.callback.onResult(queryRestl);
 
-    }
-
-    // 子类 MultiRowSQLQueryResultHandler 需要使用
-    protected Map<String, String> getResult() {
-        return result;
     }
 }

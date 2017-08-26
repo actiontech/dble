@@ -201,7 +201,7 @@ public final class ShowDirectMemory {
             if (useOffHeapForMerge == 1) {
 
                 /**
-                 * 结果集合并时，总共消耗的DirectMemory内存
+                 * 结果集合并时,总共消耗的DirectMemory内存
                  */
                 ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
                         getServerMemory().
@@ -212,7 +212,7 @@ public final class ShowDirectMemory {
             }
 
             /**
-             * 网络packet处理，在buffer pool 已经使用DirectMemory内存
+             * 网络packet处理,在buffer pool 已经使用DirectMemory内存
              */
             for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
                 usedforNetworkd += entry.getValue();
@@ -225,9 +225,9 @@ public final class ShowDirectMemory {
 
             if (useOffHeapForMerge == 1) {
                 /**
-                 * 设置使用off-heap内存处理结果集时，防止客户把MaxDirectMemorySize设置到物理内存的极限。
-                 * Mycat能使用的DirectMemory是MaxDirectMemorySize*DIRECT_SAFETY_FRACTION大小，
-                 * DIRECT_SAFETY_FRACTION为安全系数，为OS，Heap预留空间，避免因大结果集造成系统物理内存被耗尽！
+                 * 设置使用off-heap内存处理结果集时,防止客户把MaxDirectMemorySize设置到物理内存的极限.
+                 * Mycat能使用的DirectMemory是MaxDirectMemorySize*DIRECT_SAFETY_FRACTION大小,
+                 * DIRECT_SAFETY_FRACTION为安全系数,为OS,Heap预留空间,避免因大结果集造成系统物理内存被耗尽！
                  */
                 totalAvailable = (long) (Platform.getMaxDirectMemory() * MyCatMemory.DIRECT_SAFETY_FRACTION);
             } else {

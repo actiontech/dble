@@ -13,7 +13,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 /**
- * min_max函数的父函数，通过cmp_sign来区分是min还是max函数
+ * min_max's parent
  */
 public abstract class ItemFuncMinMax extends ItemFunc {
     ItemResult cmpType;

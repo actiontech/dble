@@ -14,15 +14,11 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * 处理情况 sql hint: mycat:db_type=master/slave<br/>
- * 后期可能会考虑增加 mycat:db_type=slave_newest，实现走延迟最小的slave
+ *  sql hint: mycat:db_type=master/slave<br/>
+ *  maybe add mycat:db_type=slave_newest in feature
  *
  * @author digdeep@126.com
  */
-// /*#mycat:db_type=master*/
-// /*#mycat:db_type=slave*/
-// /*#mycat:db_type=slave_newest*/
-// 强制走 master 和 强制走 slave
 public class HintMasterDBHandler implements HintHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
@@ -33,17 +29,11 @@ public class HintMasterDBHandler implements HintHandler {
                                 ServerConnection sc, LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
-        //LOGGER.debug("realSQL: " + realSQL); // select * from travelrecord limit 1
-        //LOGGER.debug("sqlType: " + sqlType); // 7
-        //LOGGER.debug("schema.getName(): " + schema.getName()); // TESTDB
-        //LOGGER.debug("schema.getName(): " + schema.getDataNode()); // null
-        //LOGGER.debug("hintSQLValue: " + hintSQLValue); // master/slave
-
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
                 schema, sqlType, realSQL, charset, sc, cachePool);
 
         LOGGER.debug("schema.rrs(): " + rrs); // master
-        Boolean isRouteToMaster = null;    // 默认不施加任何影响
+        Boolean isRouteToMaster = null;
 
         LOGGER.debug("hintSQLValue:::::::::" + hintSQLValue); // slave
 
@@ -56,23 +46,23 @@ public class HintMasterDBHandler implements HintHandler {
                         sqlType == ServerParse.REPLACE || sqlType == ServerParse.UPDATE ||
                         sqlType == ServerParse.DDL) {
                     LOGGER.error("should not use hint 'db_type' to route 'delete', 'insert', 'replace', 'update', 'ddl' to a slave db.");
-                    isRouteToMaster = null;    // 不施加任何影响
+                    isRouteToMaster = null;
                 } else {
                     isRouteToMaster = false;
                 }
             }
         }
 
-        if (isRouteToMaster == null) {    // 默认不施加任何影响
+        if (isRouteToMaster == null) {
             LOGGER.warn(" sql hint 'db_type' error, ignore this hint.");
             return rrs;
         }
 
-        if (isRouteToMaster) { // 强制走 master
+        if (isRouteToMaster) {
             rrs.setRunOnSlave(false);
         }
 
-        if (!isRouteToMaster) { // 强制走slave
+        if (!isRouteToMaster) {
             rrs.setRunOnSlave(true);
         }
 

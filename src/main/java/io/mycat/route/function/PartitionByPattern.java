@@ -41,11 +41,11 @@ import java.util.regex.Pattern;
  */
 public class PartitionByPattern extends AbstractPartitionAlgorithm implements RuleAlgorithm {
     private static final int PARTITION_LENGTH = 1024;
-    private int patternValue = PARTITION_LENGTH; // 分区长度，取模数值
+    private int patternValue = PARTITION_LENGTH; // mod value
     private String mapFile;
     private LongRange[] longRongs;
     private Integer[] allNode;
-    private int defaultNode = -1; // 包含非数值字符，默认存储节点
+    private int defaultNode = -1; // default node for unexpected value
     private static final Pattern PATTERN = Pattern.compile("[0-9]*");
 
     @Override

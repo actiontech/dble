@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * @author ActionTech
- * @CreateTime 2015年12月15日
+ * @CreateTime 2015/12/15
  */
 public class ReplaceableStringBuilder {
     private List<Element> elements;

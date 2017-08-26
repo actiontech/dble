@@ -3,13 +3,12 @@ package io.mycat.backend.mysql.store.memalloc;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 内存使用大小控制器
+ * MemSizeController
  *
  * @author ActionTech
- * @CreateTime 2016年1月19日
+ * @CreateTime 2016/1/19
  */
 public class MemSizeController {
-    // 当前内存大小
     private AtomicLong size;
     private long maxSize;
 
@@ -19,10 +18,10 @@ public class MemSizeController {
     }
 
     /**
-     * 增加了大小
+     * addSize
      *
      * @param incre
-     * @return 是否已经到达内存控制器极限, true:当前是ok的, false:not ok, need flush to disk
+     * @return reache limit?, if false:not ok, need flush to disk
      */
     public boolean addSize(long incre) {
         for (; ; ) {

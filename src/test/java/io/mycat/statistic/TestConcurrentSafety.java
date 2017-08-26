@@ -14,18 +14,18 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 测试SQLstat相关元素并发安全性
+ * test SQLstat thread safety
  * <p>
  * <p>
  * <p>
  * <p>
  * <p>
  * <p>
- * 此单元测试会造成服务器上build运行时间过长一直通不过，最多build了6天还没结束，所以先忽略
+ * FIXME 此单元测试会造成服务器上build运行时间过长一直通不过,最多build了6天还没结束,所以先忽略
  * <p>
  * <p>
  * <p>
- * 后续修复好了再打开
+ *
  *
  * @author Hash Zhang
  * @version 1.0

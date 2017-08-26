@@ -68,7 +68,7 @@ public class ItemSumAvg extends ItemSumSum {
 
     @Override
     public boolean pushDownAdd(RowDataPacket row) {
-        // 聚合函数下发的情况，avg(n)被下发成sum(n) 和 count(n);
+        // avg(n) will be push down as sum(n) and count(n);
         assert (getArgCount() == 2);
         count += args.get(1).valInt().longValue();
         return super.add(row, null);

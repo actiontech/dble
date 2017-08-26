@@ -49,11 +49,10 @@ public class ItemFuncUnhex extends ItemStrFunc {
     }
 
     /*
-     * 将16进制数字解码成字符串,适用于所有字符（包括中文）
+     * decode form hexString to String ,include chinese
      */
     public static String decode(String hexString) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream(hexString.length() / 2);
-        // 将每2位16进制整数组装成一个字节
         for (int i = 0; i < hexString.length(); i += 2)
             baos.write((hexString.indexOf(hexString.charAt(i)) << 4 | hexString.indexOf(hexString.charAt(i + 1))));
         return new String(baos.toByteArray());

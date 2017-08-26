@@ -1,43 +1,42 @@
 package io.mycat.config.loader.zkprocess.comm;
 
 /**
- * 当前zk的配制参数信息
- * 源文件名：ZkParamCfg.java
- * 文件版本：1.0.0
- * 创建作者：liujun
- * 创建日期：2016年9月17日
- * 修改作者：liujun
- * 修改日期：2016年9月17日
- * 文件描述：TODO
- * 版权所有：Copyright 2016 zjhz, Inc. All Rights Reserved.
+ *
+ *
+ * author:liujun
+ * Created:2016/9/17
+ *
+ *
+ *
+ *
  */
 public enum ZkParamCfg {
 
     /**
-     * zk是否启用标识
+     * enable zk?
      *
-     * @字段说明 ZK_CFG_OPEN
+     *
      */
     ZK_CFG_FLAG("loadZk"),
 
     /**
-     * zk配制的url地址信息
+     * the url of zk
      *
-     * @字段说明 ZK_CFG_URL
+     *
      */
     ZK_CFG_URL("zkURL"),
 
     /**
-     * 集群的id
+     * clusterId
      *
-     * @字段说明 ZK_CFG_CLUSTERID
+     *
      */
     ZK_CFG_CLUSTERID("clusterId"),
 
     /**
-     * 当前mycat节点的id
+     * node id
      *
-     * @字段说明 zk_CFG_MYID
+     *
      */
     ZK_CFG_MYID("myid"),;
 

@@ -93,21 +93,20 @@ public class PhysicalDBNode {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-            if (rrs.getRunOnSlave() != null) {  // 带有 /*db_type=master/slave*/ 注解
-                // 强制走 slave
+            if (rrs.getRunOnSlave() != null) {  // hint like /*db_type=master/slave*/
+                // the hint is slave
                 if (rrs.getRunOnSlave()) {
                     LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBlanceFlag());
-                    if (rrs.isHasBlanceFlag()) {  // 带有 /*balance*/ 注解(目前好像只支持一个注解...)
-                        dbPool.getReadBanlanceCon(schema, autoCommit, handler,
+                    if (rrs.isHasBlanceFlag()) {  // hint like /*balance*/ (only support one?)
+                        dbPool.getReadBalanceCon(schema, autoCommit, handler,
                                 attachment);
-                    } else {    // 没有 /*balance*/ 注解
+                    } else {    // without /*balance*/
                         LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());
                         if (!dbPool.getReadCon(schema, autoCommit, handler,
                                 attachment)) {
                             LOGGER.warn("Do not have slave connection to use, " +
                                     "use master connection instead.");
                             PhysicalDatasource writeSource = dbPool.getSource();
-                            //记录写节点写负载值
                             writeSource.setWriteCount();
                             writeSource.getConnection(schema, autoCommit,
                                     handler, attachment);
@@ -115,22 +114,19 @@ public class PhysicalDBNode {
                             rrs.setCanRunInReadDB(false);
                         }
                     }
-                } else { // 强制走 master
-                    // 默认获得的是 writeSource，也就是 走master
+                } else {
                     LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
                     PhysicalDatasource writeSource = dbPool.getSource();
-                    //记录写节点写负载值
                     writeSource.setReadCount();
                     writeSource.getConnection(schema, autoCommit, handler, attachment);
                     rrs.setCanRunInReadDB(false);
                 }
-            } else {    // 没有  /*db_type=master/slave*/ 注解，按照原来的处理方式
-                LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());    // null
+            } else {    // without hint like /*db_type=master/slave*/
+                LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
                 if (rrs.canRunnINReadDB(autoCommit)) {
                     dbPool.getRWBanlanceCon(schema, autoCommit, handler, attachment);
                 } else {
                     PhysicalDatasource writeSource = dbPool.getSource();
-                    //记录写节点写负载值
                     writeSource.setWriteCount();
                     writeSource.getConnection(schema, autoCommit, handler, attachment);
                 }
@@ -145,7 +141,6 @@ public class PhysicalDBNode {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             PhysicalDatasource writeSource = dbPool.getSource();
-            // 记录写节点写负载值
             writeSource.setWriteCount();
             return writeSource.getConnection(schema, autoCommit);
         } else {

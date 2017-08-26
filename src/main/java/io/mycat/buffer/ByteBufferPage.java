@@ -5,7 +5,7 @@ import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
- * 用来保存一个一个ByteBuffer为底层存储的内存页
+ * ByteBufferPage
  */
 @SuppressWarnings("restriction")
 public class ByteBufferPage {

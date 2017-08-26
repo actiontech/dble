@@ -12,17 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TODO: 增加描述
  *
  * @author user
  * @version 0.1.0
- * @date 2015-6-2 下午5:50:25
+ * @date 2015-6-2 17:50:25
  * @copyright wonhigh.cn
  */
 public class MycatSchemaStatVisitorTest {
 
     /**
-     * 3层嵌套or语句
+     * 3 nest or
      */
     @Test
     public void test1() {
@@ -60,7 +59,7 @@ public class MycatSchemaStatVisitorTest {
     }
 
     /**
-     * 1层嵌套or语句
+     * or
      */
     @Test
     public void test2() {
@@ -85,7 +84,7 @@ public class MycatSchemaStatVisitorTest {
     }
 
     /**
-     * 1层嵌套or语句
+     * OR
      */
     @Test
     public void test3() {
@@ -113,7 +112,7 @@ public class MycatSchemaStatVisitorTest {
 
         MycatSchemaStatVisitor visitor = null;
         SQLStatement statement = null;
-        //解析出现问题统一抛SQL语法错误
+        //throw exception
         try {
             statement = parser.parseStatement();
             visitor = new MycatSchemaStatVisitor();
@@ -123,11 +122,9 @@ public class MycatSchemaStatVisitorTest {
         statement.accept(visitor);
 
         List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-        if (visitor.hasOrCondition()) {//包含or语句
-            //TODO
-            //根据or拆分
+        if (visitor.hasOrCondition()) {//contains OR
             mergedConditionList = visitor.splitConditions();
-        } else {//不包含OR语句
+        } else {
             mergedConditionList.add(visitor.getConditions());
         }
 

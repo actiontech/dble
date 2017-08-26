@@ -84,7 +84,7 @@ public final class ExpressionUtil {
     }
 
     /**
-     * 非严格DNF检查，允许出现 (A and B) and C
+     * 非严格DNF检查,允许出现 (A and B) and C
      *
      * @param expr
      * @return

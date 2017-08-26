@@ -9,7 +9,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 /**
- * 全局序列号测试
+ * SequenceTest
  *
  * @author Hash Zhang
  * @version 1.0

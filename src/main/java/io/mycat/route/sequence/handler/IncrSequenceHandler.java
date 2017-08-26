@@ -30,11 +30,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * 递增序列号处理器
+ * IncrSequenceHandler
  *
  * @author <a href="http://www.micmiu.com">Michael</a>
  * @version 1.0
- * @time Create on 2013-12-29 下午10:42:39
+ * @time Create on 2013-12-29 22:42:39
  */
 public abstract class IncrSequenceHandler implements SequenceHandler {
 

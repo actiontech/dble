@@ -181,7 +181,7 @@ public final class UnsafeInMemorySorter {
             throw new IllegalStateException("There is no space for new record");
         }
         /**
-         * 先插入recordPointer，然后插入keyPrefix值
+         * INSERT recordPointer FIRST,THEN keyPrefix
          * */
         array.set(pos, recordPointer);
         pos++;
@@ -253,9 +253,6 @@ public final class UnsafeInMemorySorter {
             return position / 2 < numRecords;
         }
 
-        /**
-         * 更新迭代器相关指针信息，和当前记录内容的大小
-         */
         @Override
         public void loadNext() {
             // This pointer points to a 4-byte record length, followed by the record's bytes

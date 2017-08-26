@@ -25,7 +25,7 @@ package io.mycat.config.model;
 
 public class DBHostConfig {
 
-    private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT; // 连接池中连接空闲超时时间
+    private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT;
     private final String hostName;
     private final String ip;
     private final int port;

@@ -89,7 +89,7 @@ public final class MycatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger("Server");
     private AtomicBoolean backupLocked;
 
-    //全局序列号
+    //global sequence
     private final SequenceHandler sequenceHandler;
     private final RouteService routerService;
     private final CacheService cacheService;
@@ -97,7 +97,6 @@ public final class MycatServer {
     private ProxyMetaManager tmManager;
     private TxnLogProcessor txnLogProcessor;
 
-    //AIO连接群组
     private AsynchronousChannelGroup[] asyncChannelGroups;
     private AtomicInteger channelIndex = new AtomicInteger();
 
@@ -107,12 +106,11 @@ public final class MycatServer {
     private BufferPool bufferPool;
     private boolean aio = false;
 
-    //XA事务全局ID生成
     private final AtomicLong xaIDInc = new AtomicLong();
 
 
     /**
-     * Mycat 内存管理类
+     * Memory Manager
      */
     private MyCatMemory serverMemory = null;
 
@@ -137,31 +135,24 @@ public final class MycatServer {
     private XASessionCheck xaSessionCheck;
 
     private MycatServer() {
-
-        //读取文件配置
         this.config = new MycatConfig();
-
-        //定时线程池，单线程线程池
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
 
         /**
-         * 是否在线，MyCat manager中有命令控制
-         * | offline | Change MyCat status to OFF |
-         * | online | Change MyCat status to ON |
+         * | offline | Change Server status to OFF |
+         * | online | Change Server status to ON |
          */
         this.isOnline = new AtomicBoolean(true);
 
-        //缓存服务初始化
+        //initialized the cache service
         cacheService = new CacheService(config.getSystem().isLowerCaseTableNames());
 
-        //路由计算初始化
+        //initialized the router cache and primary cache
         routerService = new RouteService(cacheService);
 
-        // load datanode active index from properties
+        // load data node active index from properties
         dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
 
-
-        //记录启动时间
         this.startupTime = TimeUtil.currentTimeMillis();
         if (isUseZkSwitch()) {
             dnindexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
@@ -336,7 +327,7 @@ public final class MycatServer {
 
 
         /**
-         * Off Heap For Merge/Order/Group/Limit 初始化
+         * Off Heap For Merge/Order/Group/Limit
          */
         if (system.getUseOffHeapForMerge() == 1) {
             try {
@@ -445,15 +436,14 @@ public final class MycatServer {
         scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
-        //定期清理结果集排行榜，控制拒绝策略
         scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, system.getClearBigSqLResultSetMapMs(), TimeUnit.MILLISECONDS);
         if (system.getUseSqlStat() == 1) {
             //sql record detail timing clean
             scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
         }
 
-        if (system.getUseGlobleTableCheck() == 1) {    // 全局表一致性检测是否开启  will be influence by dataHostWithoutWR
-            scheduler.scheduleWithFixedDelay(glableTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
+        if (system.getUseGlobleTableCheck() == 1) {    // will be influence by dataHostWithoutWR
+            scheduler.scheduleWithFixedDelay(globalTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
         }
 
 
@@ -474,7 +464,7 @@ public final class MycatServer {
 
 
         if (isUseZkSwitch()) {
-            //首次启动如果发现zk上dnindex为空，则将本地初始化上zk
+            //upload the dnindex data to zk
             try {
                 File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
                 dnindexLock.acquire(30, TimeUnit.SECONDS);
@@ -535,7 +525,7 @@ public final class MycatServer {
 
 
     /**
-     * 清理 reload @@config_all 后，老的 connection 连接
+     * after reload @@config_all ,clean old connection
      *
      * @return
      */
@@ -548,8 +538,7 @@ public final class MycatServer {
                     public void run() {
 
                         long sqlTimeout = MycatServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
-
-                        //根据 lastTime 确认事务的执行， 超过 sqlExecuteTimeout 阀值 close connection
+                        //close connection if now -lastTime>sqlExecuteTimeout
                         long currentTime = TimeUtil.currentTimeMillis();
                         Iterator<BackendConnection> iter = NIOProcessor.BACKENDS_OLD.iterator();
                         while (iter.hasNext()) {
@@ -569,8 +558,7 @@ public final class MycatServer {
 
 
     /**
-     * 在bufferpool使用率大于使用率阈值时不清理
-     * 在bufferpool使用率小于使用率阈值时清理大结果集清单内容
+     * clean up the data in UserStatAnalyzer
      */
     private Runnable resultSetMapClear() {
         return new Runnable() {
@@ -588,7 +576,6 @@ public final class MycatServer {
                             UserStat userStat = map.get(user);
                             if (userStat != null) {
                                 SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
-                                //System.out.println(recorder.getSqlResultSet().size());
                                 recorder.clearSqlResultSet();
                             }
                         }
@@ -732,7 +719,6 @@ public final class MycatServer {
         }
     }
 
-    // 系统时间定时更新任务
     private Runnable updateTime() {
         return new Runnable() {
             @Override
@@ -742,7 +728,7 @@ public final class MycatServer {
         };
     }
 
-    // XA session定时检查任务
+    // XA session check job
     private Runnable xaSessionCheck() {
         return new Runnable() {
             @Override
@@ -771,7 +757,7 @@ public final class MycatServer {
         };
     }
 
-    // 处理器定时检查任务
+    // check the closed/overtime connection
     private Runnable processorCheck() {
         return new Runnable() {
             @Override
@@ -804,7 +790,7 @@ public final class MycatServer {
         };
     }
 
-    // 数据节点定时连接空闲超时检查任务
+    // heartbeat for idle connection
     private Runnable dataNodeConHeartBeatCheck(final long heartPeriod) {
         return new Runnable() {
             @Override
@@ -831,7 +817,7 @@ public final class MycatServer {
         };
     }
 
-    // 数据节点定时心跳任务
+    // heartbeat for data node
     private Runnable dataNodeHeartbeat() {
         return new Runnable() {
             @Override
@@ -852,7 +838,7 @@ public final class MycatServer {
         };
     }
 
-    //定时清理保存SqlStat中的数据
+    //clean up the old data in SqlStat
     private Runnable recycleSqlStat() {
         return new Runnable() {
             @Override
@@ -868,8 +854,8 @@ public final class MycatServer {
         };
     }
 
-    //  全局表一致性检查任务
-    private Runnable glableTableConsistencyCheck() {
+    //  Table Consistency Check for global table
+    private Runnable globalTableConsistencyCheck() {
         return new Runnable() {
             @Override
             public void run() {

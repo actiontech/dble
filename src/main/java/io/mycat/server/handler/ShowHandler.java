@@ -38,7 +38,7 @@ public final class ShowHandler {
 
     public static void handle(String stmt, ServerConnection c, int offset) {
 
-        // 排除 “ ` ” 符号
+        // remove `
         stmt = StringUtil.replaceChars(stmt, "`", null);
 
         int type = ServerParseShow.parse(stmt, offset);

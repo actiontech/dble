@@ -1,17 +1,18 @@
 package io.mycat.cache.impl;
 
 
-import io.mycat.cache.CachePool;
-import io.mycat.cache.CachePoolFactory;
+import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import io.mycat.cache.CachePool;
+import io.mycat.cache.CachePoolFactory;
 
 public class LevelDBCachePooFactory extends CachePoolFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(LevelDBCachePooFactory.class);
@@ -20,7 +21,7 @@ public class LevelDBCachePooFactory extends CachePoolFactory {
     public CachePool createCachePool(String poolName, int cacheSize,
                                      int expireSeconds) {
         Options options = new Options();
-        options.cacheSize(1048576L * cacheSize); //cacheSize M 大小
+        options.cacheSize(1048576L * cacheSize); //cacheSize M
         options.createIfMissing(true);
         DB db = null;
         String filePath = "leveldb\\" + poolName;

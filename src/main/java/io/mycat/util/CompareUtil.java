@@ -92,27 +92,23 @@ public final class CompareUtil {
     private static int compareStringForChinese(String s1, String s2) {
         String mS1 = null, mS2 = null;
         try {
-            //先将两字符串编码成GBK
+            //use GBK
             mS1 = new String(s1.getBytes("GB2312"), "GBK");
             mS2 = new String(s2.getBytes("GB2312"), "GBK");
         } catch (Exception ex) {
             LOGGER.error("compareStringForChineseError", ex);
             return s1.compareTo(s2);
         }
-        int res = chineseCompareTo(mS1, mS2);
-
-        //              System.out.println("比较：" + s1 + " | " + s2 + "==== Result: " + res);
-        return res;
+        return chineseCompareTo(mS1, mS2);
     }
 
-    //获取一个汉字/字母的Char值
     private static int getCharCode(String s) {
         if (s == null || s.length() == 0) {
-            return -1; //保护代码
+            return -1;
         }
         byte[] b = s.getBytes();
         int value = 0;
-        //保证取第一个字符（汉字或者英文）
+        //get first char
         for (int i = 0; i < b.length && i <= 2; i++) {
             value = value * 100 + b[i];
         }
@@ -123,7 +119,6 @@ public final class CompareUtil {
         return value;
     }
 
-    //比较两个字符串
     private static int chineseCompareTo(String s1, String s2) {
         int len1 = s1.length();
         int len2 = s2.length();

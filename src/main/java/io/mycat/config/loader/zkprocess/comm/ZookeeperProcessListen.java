@@ -1,15 +1,19 @@
 package io.mycat.config.loader.zkprocess.comm;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
 /**
- * 进行zookeeper操作的监控器器父类信息
+ * ZookeeperProcessListen
  *
  * @author liujun
- * @date 2015年2月4日
+ * @date 2015/2/4
  * @vsersion 0.0.1
  */
 public class ZookeeperProcessListen {
@@ -31,16 +35,10 @@ public class ZookeeperProcessListen {
         watchMap.put(key, service);
     }
 
-    /**
-     * 返回路径集合
-     */
     public Set<String> getWatchPath() {
         return watchMap.keySet();
     }
 
-    /**
-     * 进行缓存更新通知
-     */
     public boolean notify(String key) {
         boolean result = false;
         if (null != key && !"".equals(key)) {
@@ -56,15 +54,11 @@ public class ZookeeperProcessListen {
         return result;
     }
 
-    /**
-     * 进行通知所有缓存进行更新操作
-     */
     public void initAllNode() {
         Iterator<NotifyService> notifyIter = initCache.iterator();
         NotifyService item;
         while (notifyIter.hasNext()) {
             item = notifyIter.next();
-            // 进行缓存更新通知操作
             try {
                 item.notifyProcess();
             } catch (Exception e) {

@@ -7,9 +7,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * SQL R/W 执行状态
- * 因为这里的所有元素都近似为非必须原子更新的，即：
- * 例如：rCount和netInBytes没有必要非得保持同步更新，在同一个事务内
- * 只要最后更新了即可，所以将其中的元素拆成一个一个原子类，没必要保证精确的保持原样不加任何锁
+ * 因为这里的所有元素都近似为非必须原子更新的,即:
+ * 例如:rCount和netInBytes没有必要非得保持同步更新,在同一个事务内
+ * 只要最后更新了即可,所以将其中的元素拆成一个一个原子类,没必要保证精确的保持原样不加任何锁
  *
  * @author zhuam
  */
@@ -54,7 +54,7 @@ public class UserSqlRWStat {
 
     /**
      * 最后执行时间
-     * 不用很精确，所以不加任何锁
+     * 不用很精确,所以不加任何锁
      */
     private long lastExecuteTime;
 

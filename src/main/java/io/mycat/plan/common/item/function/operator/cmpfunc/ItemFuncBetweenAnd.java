@@ -48,97 +48,137 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
 
     @Override
     public BigInteger valInt() {
+        if ((nullValue = args.get(0).isNull())) {
+            return BigInteger.ZERO;
+        }
         if (compareAsDatesWithStrings) {
-            int geRes, leRes;
-
-            geRes = geCmp.compare();
-            if ((nullValue = args.get(0).isNull()))
-                return BigInteger.ZERO;
-            leRes = leCmp.compare();
-
-            if (!args.get(1).isNull() && !args.get(2).isNull())
-                return ((geRes >= 0 && leRes <= 0)) != negated ? BigInteger.ONE : BigInteger.ZERO;
-            else if (args.get(1).isNull()) {
-                nullValue = leRes > 0; // not null if false range.
-            } else {
-                nullValue = geRes < 0;
-            }
+            return cmpDatesWithString();
         } else if (cmpType.get() == ItemResult.STRING_RESULT) {
-            String value = args.get(0).valStr();
-            if (nullValue = args.get(0).isNull())
-                return BigInteger.ZERO;
-            String a = args.get(1).valStr();
-            String b = args.get(2).valStr();
-            if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (value.compareTo(a) >= 0 && value.compareTo(b) <= 0) != negated ? BigInteger.ONE : BigInteger.ZERO;
-            if (args.get(1).isNull() && args.get(2).isNull())
-                nullValue = true;
-            else if (args.get(1).isNull()) {
-                // Set to not null if false range.
-                nullValue = value.compareTo(b) <= 0;
-            } else {
-                // Set to not null if false range.
-                nullValue = value.compareTo(a) >= 0;
-            }
+            return cmpString();
         } else if (cmpType.get() == ItemResult.INT_RESULT) {
-            long a, b, value;
-            value = compareAsTemporalTimes ? args.get(0).valTimeTemporal() :
-                    compareAsTemporalDates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
-            if (nullValue = args.get(0).isNull())
-                return BigInteger.ZERO; /* purecov: inspected */
-            if (compareAsTemporalTimes) {
-                a = args.get(1).valTimeTemporal();
-                b = args.get(2).valTimeTemporal();
-            } else if (compareAsTemporalDates) {
-                a = args.get(1).valDateTemporal();
-                b = args.get(2).valDateTemporal();
-            } else {
-                a = args.get(1).valInt().longValue();
-                b = args.get(2).valInt().longValue();
-            }
-            if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (value >= a && value <= b) != negated ? BigInteger.ONE : BigInteger.ZERO;
-            if (args.get(1).isNull() && args.get(2).isNull())
-                nullValue = true;
-            else if (args.get(1).isNull()) {
-                nullValue = value <= b; // not null if false range.
-            } else {
-                nullValue = value >= a;
-            }
+            return cmpInt();
         } else if (cmpType.get() == ItemResult.DECIMAL_RESULT) {
-            BigDecimal dec = args.get(0).valDecimal();
-            BigDecimal aDec, bDec;
-            if (nullValue = args.get(0).isNull())
-                return BigInteger.ZERO; /* purecov: inspected */
-            aDec = args.get(1).valDecimal();
-            bDec = args.get(2).valDecimal();
-            if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (dec.compareTo(aDec) >= 0 && dec.compareTo(bDec) <= 0) != negated ?
-                        BigInteger.ONE : BigInteger.ZERO;
-            if (args.get(1).isNull() && args.get(2).isNull())
-                nullValue = true;
-            else if (args.get(1).isNull())
-                nullValue = dec.compareTo(bDec) <= 0;
-            else
-                nullValue = dec.compareTo(aDec) >= 0;
+            return cmpDecimal();
         } else {
-            double value = args.get(0).valReal().doubleValue(), a, b;
-            if (nullValue = args.get(0).isNull())
-                return BigInteger.ZERO; /* purecov: inspected */
-            a = args.get(1).valReal().doubleValue();
-            b = args.get(2).valReal().doubleValue();
-            if (!args.get(1).isNull() && !args.get(2).isNull())
-                return (value >= a && value <= b) != negated ? BigInteger.ONE : BigInteger.ZERO;
-            if (args.get(1).isNull() && args.get(2).isNull())
-                nullValue = true;
-            else if (args.get(1).isNull()) {
-                nullValue = value <= b; // not null if false range.
-            } else {
-                nullValue = value >= a;
-            }
+            return cmpDouble();
+        }
+
+    }
+
+    private BigInteger cmpDouble() {
+        double value = args.get(0).valReal().doubleValue();
+        double a = args.get(1).valReal().doubleValue();
+        double b = args.get(2).valReal().doubleValue();
+        if (!args.get(1).isNull() && !args.get(2).isNull()) {
+            return (value >= a && value <= b) != negated ? BigInteger.ONE : BigInteger.ZERO;
+        }
+        return varNullValue(value, a, b);
+    }
+
+    private BigInteger cmpDecimal() {
+        BigDecimal dec = args.get(0).valDecimal();
+        BigDecimal aDec = args.get(1).valDecimal();
+        BigDecimal bDec = args.get(2).valDecimal();
+        if (!args.get(1).isNull() && !args.get(2).isNull()) {
+            return (dec.compareTo(aDec) >= 0 && dec.compareTo(bDec) <= 0) != negated ? BigInteger.ONE : BigInteger.ZERO;
+        }
+        return varNullValue(dec, aDec, bDec);
+    }
+
+    private BigInteger cmpInt() {
+        long value = compareAsTemporalTimes ? args.get(0).valTimeTemporal() :
+                compareAsTemporalDates ? args.get(0).valDateTemporal() : args.get(0).valInt().longValue();
+        long a = getValByItem(args.get(1));
+        long b = getValByItem(args.get(2));
+        if (!args.get(1).isNull() && !args.get(2).isNull()) {
+            return (value >= a && value <= b) != negated ? BigInteger.ONE : BigInteger.ZERO;
+        }
+        return varNullValue(a, b, value);
+    }
+
+    private BigInteger cmpString() {
+        String a = args.get(1).valStr();
+        String b = args.get(2).valStr();
+        String value = args.get(0).valStr();
+        if (!args.get(1).isNull() && !args.get(2).isNull()) {
+            return (value.compareTo(a) >= 0 && value.compareTo(b) <= 0) != negated ? BigInteger.ONE : BigInteger.ZERO;
+        }
+        return varNullValue(value, a, b);
+    }
+
+    private BigInteger cmpDatesWithString() {
+        int geRes = geCmp.compare();
+        int leRes = leCmp.compare();
+        if (!args.get(1).isNull() && !args.get(2).isNull()) {
+            return ((geRes >= 0 && leRes <= 0)) != negated ? BigInteger.ONE : BigInteger.ZERO;
+        }
+        return varNullValue(geRes, leRes);
+    }
+
+    private long getValByItem(Item item) {
+        long val;
+        if (compareAsTemporalTimes) {
+            val = item.valTimeTemporal();
+        } else if (compareAsTemporalDates) {
+            val = item.valDateTemporal();
+        } else {
+            val = item.valInt().longValue();
+        }
+        return val;
+    }
+    private BigInteger varNullValue(int geRes, int leRes) {
+        if (args.get(1).isNull()) {
+            nullValue = leRes > 0; // not null if false range.
+        } else {
+            nullValue = geRes < 0;
         }
         return !nullValue ? BigInteger.ONE : BigInteger.ZERO;
+    }
 
+    private BigInteger varNullValue(double value, double a, double b) {
+        if (args.get(1).isNull() && args.get(2).isNull())
+            nullValue = true;
+        else if (args.get(1).isNull()) {
+            nullValue = value <= b; // not null if false range.
+        } else {
+            nullValue = value >= a;
+        }
+        return !nullValue ? BigInteger.ONE : BigInteger.ZERO;
+    }
+
+    private BigInteger varNullValue(BigDecimal dec, BigDecimal aDec, BigDecimal bDec) {
+        if (args.get(1).isNull() && args.get(2).isNull()) {
+            nullValue = true;
+        } else if (args.get(1).isNull()) {
+            nullValue = dec.compareTo(bDec) <= 0;
+        } else {
+            nullValue = dec.compareTo(aDec) >= 0;
+        }
+        return !nullValue ? BigInteger.ONE : BigInteger.ZERO;
+    }
+
+    private BigInteger varNullValue(long a, long b, long value) {
+        if (args.get(1).isNull() && args.get(2).isNull()) {
+            nullValue = true;
+        } else if (args.get(1).isNull()) {
+            nullValue = value <= b; // not null if false range.
+        } else {
+            nullValue = value >= a;
+        }
+        return !nullValue ? BigInteger.ONE : BigInteger.ZERO;
+    }
+
+    private BigInteger varNullValue(String value, String a, String b) {
+        if (args.get(1).isNull() && args.get(2).isNull()) {
+            nullValue = true;
+        } else if (args.get(1).isNull()) {
+            // Set to not null if false range.
+            nullValue = value.compareTo(b) <= 0;
+        } else {
+            // Set to not null if false range.
+            nullValue = value.compareTo(a) >= 0;
+        }
+        return !nullValue ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Override

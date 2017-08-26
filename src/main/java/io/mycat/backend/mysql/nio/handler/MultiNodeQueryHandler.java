@@ -51,6 +51,7 @@ import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -351,12 +352,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.netOutBytes += eof.length;
 
         if (errorRepsponsed.get()) {
-            // the connection has been closed or set to "txInterrupt" properly
-            //in tryErrorFinished() method! If we close it here, it can
-            // lead to tx error such as blocking rollback tx for ever.
-            // @author Uncle-pan
-            // @since 2016-03-25
-            // conn.close(this.error);
             return;
         }
 
@@ -380,38 +375,45 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 }
             }
-            if (dataMergeSvr != null) {
-                try {
-                    dataMergeSvr.outputMergeResult(session, eof);
-                } catch (Exception e) {
-                    handleDataProcessException(e);
-                }
-
-            } else {
-                try {
-                    lock.lock();
-                    eof[3] = ++packetId;
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("last packet id:" + packetId);
-                    }
-                    source.write(eof);
-                } finally {
-                    lock.unlock();
-
-                }
-            }
-            if (MycatServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
-                int resultSize = source.getWriteQueue().size() * MycatServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
-                if (rrs != null && rrs.getStatement() != null) {
-                    netInBytes += rrs.getStatement().getBytes().length;
-                }
-                // 查询结果派发
-                QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
-                        rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
-                QueryResultDispatcher.dispatchQuery(queryResult);
-            }
+            writeEofResult(eof, source);
+            doSqlStat(source);
         }
 
+    }
+
+    private void writeEofResult(byte[] eof, ServerConnection source) {
+        if (dataMergeSvr != null) {
+            try {
+                dataMergeSvr.outputMergeResult(session, eof);
+            } catch (Exception e) {
+                handleDataProcessException(e);
+            }
+
+        } else {
+            try {
+                lock.lock();
+                eof[3] = ++packetId;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("last packet id:" + packetId);
+                }
+                source.write(eof);
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    private void doSqlStat(ServerConnection source) {
+        if (MycatServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+            int resultSize = source.getWriteQueue().size() * MycatServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
+            if (rrs != null && rrs.getStatement() != null) {
+                netInBytes += rrs.getStatement().getBytes().length;
+            }
+            // 查询结果派发
+            QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
+                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
+            QueryResultDispatcher.dispatchQuery(queryResult);
+        }
     }
 
     /**
@@ -550,14 +552,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-
-
         this.netOutBytes += header.length;
         this.netOutBytes += eof.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
         }
-
         ServerConnection source = null;
 
         if (fieldsReturned) {
@@ -569,111 +568,117 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 return;
             }
             fieldsReturned = true;
-
-            boolean needMerg = (dataMergeSvr != null) && dataMergeSvr.getRrs().needMerge();
-            Set<String> shouldRemoveAvgField = new HashSet<>();
-            Set<String> shouldRenameAvgField = new HashSet<>();
-            if (needMerg) {
-                Map<String, Integer> mergeColsMap = dataMergeSvr.getRrs().getMergeCols();
-                if (mergeColsMap != null) {
-                    for (Map.Entry<String, Integer> entry : mergeColsMap.entrySet()) {
-                        String key = entry.getKey();
-                        int mergeType = entry.getValue();
-                        if (MergeCol.MERGE_AVG == mergeType && mergeColsMap.containsKey(key + "SUM")) {
-                            shouldRemoveAvgField.add((key + "COUNT").toUpperCase());
-                            shouldRenameAvgField.add((key + "SUM").toUpperCase());
-                        }
-                    }
-                }
-
-            }
-
-            source = session.getSource();
-            ByteBuffer buffer = source.allocate();
-            fieldCount = fields.size();
-            if (shouldRemoveAvgField.size() > 0) {
-                ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
-                packet.setPacketId(++packetId);
-                packet.setFieldCount(fieldCount - shouldRemoveAvgField.size());
-                buffer = packet.write(buffer, source, true);
-            } else {
-
-                header[3] = ++packetId;
-                buffer = source.writeToBuffer(header, buffer);
-            }
-
-            String primaryKey = null;
-            if (rrs.hasPrimaryKeyToCache()) {
-                String[] items = rrs.getPrimaryKeyItems();
-                priamaryKeyTable = items[0];
-                primaryKey = items[1];
-            }
-
-            Map<String, ColMeta> columToIndx = new HashMap<>(
-                    fieldCount);
-
-            for (int i = 0, len = fieldCount; i < len; ++i) {
-                boolean shouldSkip = false;
-                byte[] field = fields.get(i);
-                if (needMerg) {
-                    FieldPacket fieldPkg = new FieldPacket();
-                    fieldPkg.read(field);
-                    fieldPackets.add(fieldPkg);
-                    String fieldName = new String(fieldPkg.getName()).toUpperCase();
-                    if (columToIndx != null && !columToIndx.containsKey(fieldName)) {
-                        if (shouldRemoveAvgField.contains(fieldName)) {
-                            shouldSkip = true;
-                            fieldPackets.remove(fieldPackets.size() - 1);
-                        }
-                        if (shouldRenameAvgField.contains(fieldName)) {
-                            String newFieldName = fieldName.substring(0,
-                                    fieldName.length() - 3);
-                            fieldPkg.setName(newFieldName.getBytes());
-                            fieldPkg.setPacketId(++packetId);
-                            shouldSkip = true;
-                            // 处理AVG字段位数和精度, AVG位数 = SUM位数 - 14
-                            fieldPkg.setLength(fieldPkg.getLength() - 14);
-                            // AVG精度 = SUM精度 + 4
-                            fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() + 4));
-                            buffer = fieldPkg.write(buffer, source, false);
-
-                            // 还原精度
-                            fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() - 4));
-                        }
-
-                        ColMeta colMeta = new ColMeta(i, fieldPkg.getType());
-                        colMeta.setDecimals(fieldPkg.getDecimals());
-                        columToIndx.put(fieldName, colMeta);
-                    }
-                } else {
-                    FieldPacket fieldPkg = new FieldPacket();
-                    fieldPkg.read(field);
-                    fieldPackets.add(fieldPkg);
-                    fieldCount = fields.size();
-                    if (primaryKey != null && primaryKeyIndex == -1) {
-                        // find primary key index
-                        String fieldName = new String(fieldPkg.getName());
-                        if (primaryKey.equalsIgnoreCase(fieldName)) {
-                            primaryKeyIndex = i;
-                        }
-                    }
-                }
-                if (!shouldSkip) {
-                    field[3] = ++packetId;
-                    buffer = source.writeToBuffer(field, buffer);
-                }
-            }
-            eof[3] = ++packetId;
-            buffer = source.writeToBuffer(eof, buffer);
-            source.write(buffer);
             if (dataMergeSvr != null) {
-                dataMergeSvr.onRowMetaData(columToIndx, fieldCount);
-
+                mergeFieldEof(fields, eof);
+            } else {
+                executeFieldEof(header, fields, eof);
             }
         } catch (Exception e) {
             handleDataProcessException(e);
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
+        ServerConnection source = session.getSource();
+        ByteBuffer buffer = source.allocate();
+        fieldCount = fields.size();
+        header[3] = ++packetId;
+        buffer = source.writeToBuffer(header, buffer);
+        String primaryKey = null;
+        if (rrs.hasPrimaryKeyToCache()) {
+            String[] items = rrs.getPrimaryKeyItems();
+            priamaryKeyTable = items[0];
+            primaryKey = items[1];
+        }
+
+        for (int i = 0, len = fieldCount; i < len; ++i) {
+            byte[] field = fields.get(i);
+            FieldPacket fieldPkg = new FieldPacket();
+            fieldPkg.read(field);
+            fieldPackets.add(fieldPkg);
+            fieldCount = fields.size();
+            if (primaryKey != null && primaryKeyIndex == -1) {
+                // find primary key index
+                String fieldName = new String(fieldPkg.getName());
+                if (primaryKey.equalsIgnoreCase(fieldName)) {
+                    primaryKeyIndex = i;
+                }
+            }
+            field[3] = ++packetId;
+            buffer = source.writeToBuffer(field, buffer);
+        }
+        eof[3] = ++packetId;
+        buffer = source.writeToBuffer(eof, buffer);
+        source.write(buffer);
+    }
+
+    private void mergeFieldEof(List<byte[]> fields, byte[] eof) throws IOException {
+        Set<String> shouldRemoveAvgField = new HashSet<>();
+        Set<String> shouldRenameAvgField = new HashSet<>();
+        Map<String, Integer> mergeColsMap = dataMergeSvr.getRrs().getMergeCols();
+        if (mergeColsMap != null) {
+            for (Map.Entry<String, Integer> entry : mergeColsMap.entrySet()) {
+                String key = entry.getKey();
+                int mergeType = entry.getValue();
+                if (MergeCol.MERGE_AVG == mergeType && mergeColsMap.containsKey(key + "SUM")) {
+                    shouldRemoveAvgField.add((key + "COUNT").toUpperCase());
+                    shouldRenameAvgField.add((key + "SUM").toUpperCase());
+                }
+            }
+        }
+        fieldCount = fields.size();
+        ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
+        packet.setPacketId(++packetId);
+        packet.setFieldCount(fieldCount - shouldRemoveAvgField.size());
+        ServerConnection source = session.getSource();
+        ByteBuffer buffer = source.allocate();
+        buffer = packet.write(buffer, source, true);
+
+        Map<String, ColMeta> columToIndx = new HashMap<>(fieldCount);
+        for (int i = 0, len = fieldCount; i < len; ++i) {
+            boolean shouldSkip = false;
+            byte[] field = fields.get(i);
+            FieldPacket fieldPkg = new FieldPacket();
+            fieldPkg.read(field);
+            fieldPackets.add(fieldPkg);
+            String fieldName = new String(fieldPkg.getName()).toUpperCase();
+            if (columToIndx != null && !columToIndx.containsKey(fieldName)) {
+                if (shouldRemoveAvgField.contains(fieldName)) {
+                    shouldSkip = true;
+                    fieldPackets.remove(fieldPackets.size() - 1);
+                }
+                if (shouldRenameAvgField.contains(fieldName)) {
+                    String newFieldName = fieldName.substring(0,
+                            fieldName.length() - 3);
+                    fieldPkg.setName(newFieldName.getBytes());
+                    fieldPkg.setPacketId(++packetId);
+                    shouldSkip = true;
+                    // 处理AVG字段位数和精度, AVG位数 = SUM位数 - 14
+                    fieldPkg.setLength(fieldPkg.getLength() - 14);
+                    // AVG精度 = SUM精度 + 4
+                    fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() + 4));
+                    buffer = fieldPkg.write(buffer, source, false);
+
+                    // 还原精度
+                    fieldPkg.setDecimals((byte) (fieldPkg.getDecimals() - 4));
+                }
+
+                ColMeta colMeta = new ColMeta(i, fieldPkg.getType());
+                colMeta.setDecimals(fieldPkg.getDecimals());
+                columToIndx.put(fieldName, colMeta);
+            }
+            if (!shouldSkip) {
+                field[3] = ++packetId;
+                buffer = source.writeToBuffer(field, buffer);
+            }
+        }
+        eof[3] = ++packetId;
+        buffer = source.writeToBuffer(eof, buffer);
+        source.write(buffer);
+        if (dataMergeSvr != null) {
+            dataMergeSvr.onRowMetaData(columToIndx, fieldCount);
         }
     }
 

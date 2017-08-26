@@ -57,7 +57,7 @@ public final class SchemaUtil {
             schemaInfo.schema = schema;
             schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {
-                schemaInfo.dualFlag = true;
+                schemaInfo.dual = true;
                 return schemaInfo;
             }
         }
@@ -194,7 +194,7 @@ public final class SchemaUtil {
         private String table;
         private String schema;
         private SchemaConfig schemaConfig;
-        private boolean dualFlag = false;
+        private boolean dual = false;
 
         @Override
         public String toString() {
@@ -227,12 +227,12 @@ public final class SchemaUtil {
             this.schemaConfig = schemaConfig;
         }
 
-        public boolean isDualFlag() {
-            return dualFlag;
+        public boolean isDual() {
+            return dual;
         }
 
-        public void setDualFlag(boolean dualFlag) {
-            this.dualFlag = dualFlag;
+        public void setDual(boolean dual) {
+            this.dual = dual;
         }
     }
 }

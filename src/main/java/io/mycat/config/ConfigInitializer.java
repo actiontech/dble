@@ -151,6 +151,25 @@ public class ConfigInitializer {
             }
         }
 
+        deleteRedundancyConf(allUseDataNode);
+        checkWriteHost();
+
+    }
+
+    private void checkWriteHost() {
+        Iterator<String> dataHost = this.dataHosts.keySet().iterator();
+        while (dataHost.hasNext()) {
+            String dataHostName = dataHost.next();
+            if (dataHosts.get(dataHostName).getSources() == null ||
+                    dataHosts.get(dataHostName).getSources().length == 0) {
+                LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
+                this.dataHostWithoutWH = true;
+                dataHost.remove();
+            }
+        }
+    }
+
+    private void deleteRedundancyConf(Set<String> allUseDataNode) {
         Set<String> allUseHost = new HashSet<>();
         //删除冗余dataNode
         Iterator<Map.Entry<String, PhysicalDBNode>> iterator = this.dataNodes.entrySet().iterator();
@@ -176,19 +195,7 @@ public class ConfigInitializer {
                 }
             }
         }
-
-        Iterator<String> dataHost = this.dataHosts.keySet().iterator();
-        while (dataHost.hasNext()) {
-            String dataHostName = dataHost.next();
-            if (dataHosts.get(dataHostName).getSources() == null ||
-                    dataHosts.get(dataHostName).getSources().length == 0) {
-                LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
-                this.dataHostWithoutWH = true;
-                dataHost.remove();
-            }
-        }
         allUseHost.clear();
-
     }
 
     public void testConnection() {

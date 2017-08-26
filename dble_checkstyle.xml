@@ -128,9 +128,12 @@
         </module>
 
         <!-- Checks for metrics. -->
-        <!--<module name="CyclomaticComplexity">-->
-            <!--<property name="switchBlockAsSingleDecisionPoint" value="true"/>-->
-        <!--</module>-->
+        <module name="CyclomaticComplexity">
+            <property name="max" value="20"/>
+            <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+            <property name="tokens"
+                      value="LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_SWITCH, LITERAL_CASE, LITERAL_CATCH, QUESTION, LAND"/>
+        </module>
 
         <!-- Miscellaneous other checks. -->
         <module name="ArrayTypeStyle"/>

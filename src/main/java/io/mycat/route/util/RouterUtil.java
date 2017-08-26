@@ -531,7 +531,7 @@ public final class RouterUtil {
         Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
         if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
             //为分库表找路由
-            RouterUtil.findRouteWithcConditionsForTables(schema, rrs, tablesAndConditions, tablesRouteMap, cachePool, isSelect, false);
+            RouterUtil.findRouterWithConditionsForTables(schema, rrs, tablesAndConditions, tablesRouteMap, cachePool, isSelect, false);
             if (rrs.isFinishedRoute()) {
                 return rrs;
             }
@@ -607,7 +607,7 @@ public final class RouterUtil {
                 //每个表对应的路由映射
                 Map<String, Set<String>> tablesRouteMap = new HashMap<>();
                 if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
-                    RouterUtil.findRouteWithcConditionsForTables(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, cachePool, isSelect, true);
+                    RouterUtil.findRouterWithConditionsForTables(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, cachePool, isSelect, true);
                     if (rrs.isFinishedRoute()) {
                         return rrs;
                     }
@@ -664,7 +664,7 @@ public final class RouterUtil {
     /**
      * 处理分库表路由
      */
-    public static void findRouteWithcConditionsForTables(SchemaConfig schema, RouteResultset rrs,
+    public static void findRouterWithConditionsForTables(SchemaConfig schema, RouteResultset rrs,
                                                          Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
                                                          Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool,
                                                          boolean isSelect, boolean isSingleTable) throws SQLNonTransientException {
@@ -699,98 +699,23 @@ public final class RouterUtil {
                 }
 
                 String joinKey = tableConfig.getJoinKey();
-                String partionCol = tableConfig.getPartitionColumn();
-                boolean isFoundPartitionValue = partionCol != null && columnsMap.get(partionCol) != null;
+                String partitionCol = tableConfig.getPartitionColumn();
+                boolean isFoundPartitionValue = partitionCol != null && columnsMap.get(partitionCol) != null;
 
                 // where filter contains partition column
                 if (isFoundPartitionValue) {
-                    Set<ColumnRoutePair> partitionValue = columnsMap.get(partionCol);
+                    Set<ColumnRoutePair> partitionValue = columnsMap.get(partitionCol);
                     if (partitionValue.size() == 0) {
                         if (tablesRouteMap.get(tableName) == null) {
                             tablesRouteMap.put(tableName, new HashSet<String>());
                         }
                         tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
                     } else {
-                        for (ColumnRoutePair pair : partitionValue) {
-                            AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
-                            if (pair.colValue != null) {
-                                Integer nodeIndex = algorithm.calculate(pair.colValue);
-                                if (nodeIndex == null) {
-                                    String msg = "can't find any valid datanode :" + tableConfig.getName() +
-                                            " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
-                                    LOGGER.warn(msg);
-                                    throw new SQLNonTransientException(msg);
-                                }
-
-                                ArrayList<String> dataNodes = tableConfig.getDataNodes();
-                                String node;
-                                if (nodeIndex >= 0 && nodeIndex < dataNodes.size()) {
-                                    node = dataNodes.get(nodeIndex);
-
-                                } else {
-                                    node = null;
-                                    String msg = "Can't find a valid data node for specified node index :" +
-                                            tableConfig.getName() + " -> " + tableConfig.getPartitionColumn() +
-                                            " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
-                                    LOGGER.warn(msg);
-                                    throw new SQLNonTransientException(msg);
-                                }
-                                if (node != null) {
-                                    if (tablesRouteMap.get(tableName) == null) {
-                                        tablesRouteMap.put(tableName, new HashSet<String>());
-                                    }
-                                    tablesRouteMap.get(tableName).add(node);
-                                }
-                            }
-                            if (pair.rangeValue != null) {
-                                Integer[] nodeIndexs = algorithm.calculateRange(
-                                        pair.rangeValue.getBeginValue().toString(), pair.rangeValue.getEndValue().toString());
-                                ArrayList<String> dataNodes = tableConfig.getDataNodes();
-                                String node;
-                                for (Integer idx : nodeIndexs) {
-                                    if (idx >= 0 && idx < dataNodes.size()) {
-                                        node = dataNodes.get(idx);
-                                    } else {
-                                        String msg = "Can't find valid data node(s) for some of specified node indexes :" +
-                                                tableConfig.getName() + " -> " + tableConfig.getPartitionColumn();
-                                        LOGGER.warn(msg);
-                                        throw new SQLNonTransientException(msg);
-                                    }
-                                    if (node != null) {
-                                        if (tablesRouteMap.get(tableName) == null) {
-                                            tablesRouteMap.put(tableName, new HashSet<String>());
-                                        }
-                                        tablesRouteMap.get(tableName).add(node);
-
-                                    }
-                                }
-                            }
-                        }
+                        routeWithPartition(tablesRouteMap, tableName, tableConfig, partitionValue);
                     }
                 } else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {
-                    //childTable  (如果是select 语句的父子表join)之前要找到root table,将childTable移除,只留下root table
-                    Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
-
-                    Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinKeyValue);
-
-                    if (dataNodeSet.isEmpty()) {
-                        throw new SQLNonTransientException(
-                                "parent key can't find any valid datanode ");
-                    }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  " +
-                                Arrays.toString(dataNodeSet.toArray()) + " sql :" + rrs.getStatement());
-                    }
-                    if (dataNodeSet.size() > 1) {
-                        routeToMultiNode(rrs.isCacheAble(), rrs, dataNodeSet);
-                        rrs.setFinishedRoute(true);
-                        return;
-                    } else {
-                        rrs.setCacheAble(true);
-                        routeToSingleNode(rrs, dataNodeSet.iterator().next());
-                        return;
-                    }
-
+                    routerForJoinTable(rrs, tableConfig, columnsMap, joinKey);
+                    return;
                 } else {
                     //没找到拆分字段，该表的所有节点都路由
                     if (tablesRouteMap.get(tableName) == null) {
@@ -799,6 +724,87 @@ public final class RouterUtil {
                     tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
                 }
             }
+        }
+    }
+
+    private static void routeWithPartition(Map<String, Set<String>> tablesRouteMap, String tableName, TableConfig tableConfig, Set<ColumnRoutePair> partitionValue) throws SQLNonTransientException {
+        for (ColumnRoutePair pair : partitionValue) {
+            AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+            if (pair.colValue != null) {
+                Integer nodeIndex = algorithm.calculate(pair.colValue);
+                if (nodeIndex == null) {
+                    String msg = "can't find any valid datanode :" + tableConfig.getName() +
+                            " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
+                    LOGGER.warn(msg);
+                    throw new SQLNonTransientException(msg);
+                }
+
+                ArrayList<String> dataNodes = tableConfig.getDataNodes();
+                String node;
+                if (nodeIndex >= 0 && nodeIndex < dataNodes.size()) {
+                    node = dataNodes.get(nodeIndex);
+
+                } else {
+                    node = null;
+                    String msg = "Can't find a valid data node for specified node index :" +
+                            tableConfig.getName() + " -> " + tableConfig.getPartitionColumn() +
+                            " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
+                    LOGGER.warn(msg);
+                    throw new SQLNonTransientException(msg);
+                }
+                if (node != null) {
+                    if (tablesRouteMap.get(tableName) == null) {
+                        tablesRouteMap.put(tableName, new HashSet<String>());
+                    }
+                    tablesRouteMap.get(tableName).add(node);
+                }
+            }
+            if (pair.rangeValue != null) {
+                Integer[] nodeIndexs = algorithm.calculateRange(
+                        pair.rangeValue.getBeginValue().toString(), pair.rangeValue.getEndValue().toString());
+                ArrayList<String> dataNodes = tableConfig.getDataNodes();
+                String node;
+                for (Integer idx : nodeIndexs) {
+                    if (idx >= 0 && idx < dataNodes.size()) {
+                        node = dataNodes.get(idx);
+                    } else {
+                        String msg = "Can't find valid data node(s) for some of specified node indexes :" +
+                                tableConfig.getName() + " -> " + tableConfig.getPartitionColumn();
+                        LOGGER.warn(msg);
+                        throw new SQLNonTransientException(msg);
+                    }
+                    if (node != null) {
+                        if (tablesRouteMap.get(tableName) == null) {
+                            tablesRouteMap.put(tableName, new HashSet<String>());
+                        }
+                        tablesRouteMap.get(tableName).add(node);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void routerForJoinTable(RouteResultset rrs, TableConfig tableConfig, Map<String, Set<ColumnRoutePair>> columnsMap, String joinKey) throws SQLNonTransientException {
+        //childTable  (如果是select 语句的父子表join)之前要找到root table,将childTable移除,只留下root table
+        Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
+        Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinKeyValue);
+
+        if (dataNodeSet.isEmpty()) {
+            throw new SQLNonTransientException(
+                    "parent key can't find any valid datanode ");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  " +
+                    Arrays.toString(dataNodeSet.toArray()) + " sql :" + rrs.getStatement());
+        }
+        if (dataNodeSet.size() > 1) {
+            routeToMultiNode(rrs.isCacheAble(), rrs, dataNodeSet);
+            rrs.setFinishedRoute(true);
+            return;
+        } else {
+            rrs.setCacheAble(true);
+            routeToSingleNode(rrs, dataNodeSet.iterator().next());
+            return;
         }
     }
 

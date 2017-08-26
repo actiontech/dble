@@ -388,9 +388,10 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
+
+            String dataNode = tableElement.getAttribute("dataNode");
             //distribute函数，重新编排dataNode
             String distPrex = "distribute(";
-            String dataNode = tableElement.getAttribute("dataNode");
             boolean distTableDns = dataNode.startsWith(distPrex);
             if (distTableDns) {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
@@ -416,9 +417,9 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             //只有tableName配置的是单个表（没有逗号）的时候才能有子表
             if (tableNames.length == 1) {
-                TableConfig table = tables.get(tableNames[0]);
+                TableConfig parentTable = tables.get(tableNames[0]);
                 // process child tables
-                processChildTables(tables, table, dataNode, tableElement, isLowerCaseNames);
+                processChildTables(tables, parentTable, dataNode, tableElement, isLowerCaseNames);
             }
         }
         return tables;

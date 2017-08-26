@@ -430,37 +430,9 @@ public class DruidInsertParser extends DefaultDruidParser {
                 autoIncrement = getPrimaryKeyIndex(schemaInfo, tc.getPrimaryKey());
             }
             colSize = orgTbMeta.getColumnsList().size();
-            sb.append("(");
-            for (int i = 0; i < colSize; i++) {
-                String column = orgTbMeta.getColumnsList().get(i).getName();
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(column);
-                if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                    idxGlobal = i; // 找到 内部列的索引位置
-                }
-            }
-            sb.append(")");
+            idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else { // insert 语句带有 列名
-            sb.append("(");
-            for (int i = 0; i < columns.size(); i++) {
-                if (i < columns.size() - 1)
-                    sb.append(columns.get(i).toString()).append(",");
-                else
-                    sb.append(columns.get(i).toString());
-                String column = StringUtil.removeBackQuote(insert.getColumns().get(i).toString());
-                if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                    String msg = "In insert Syntax, you can't set value for Global check column!";
-                    LOGGER.warn(msg);
-                    throw new SQLNonTransientException(msg);
-                }
-                if (isAutoIncrement && column.equalsIgnoreCase(tc.getPrimaryKey())) {
-                    String msg = "In insert Syntax, you can't set value for Autoincrement column!";
-                    LOGGER.warn(msg);
-                    throw new SQLNonTransientException(msg);
-                }
-            }
+            genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement) {
                 autoIncrement = columns.size();
@@ -492,32 +464,76 @@ public class DruidInsertParser extends DefaultDruidParser {
 
         List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
         if (dku != null && dku.size() > 0) {
-            boolean flag = false;
-            sb.append(" on duplicate key update ");
-            for (int i = 0; i < dku.size(); i++) {
-                SQLExpr exp = dku.get(i);
-                if (!(exp instanceof SQLBinaryOpExpr)) {
-                    String msg = "not supported! on duplicate key update exp is " + exp.getClass();
-                    LOGGER.warn(msg);
-                    throw new SQLNonTransientException(msg);
-                }
-                SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) exp;
-                if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
-                    flag = true;
-                    onDuplicateGlobalColumn(sb);
-                } else {
-                    sb.append(binaryOpExpr.toString());
-                }
-                if (i < dku.size() - 1) {
-                    sb.append(",");
-                }
-            }
-            if (isGlobalCheck && !flag) {
-                sb.append(",");
-                onDuplicateGlobalColumn(sb);
-            }
+            genDuplicate(isGlobalCheck, sb, dku);
         }
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
+    }
+
+    private void genColumnNames(TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+        sb.append("(");
+        for (int i = 0; i < columns.size(); i++) {
+            String columnName = columns.get(i).toString();
+            if (i < columns.size() - 1) {
+                sb.append(columnName).append(",");
+            } else {
+                sb.append(columnName);
+            }
+            String simpleColumnName = StringUtil.removeBackQuote(columnName);
+            if (isGlobalCheck && simpleColumnName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                String msg = "In insert Syntax, you can't set value for Global check column!";
+                LOGGER.warn(msg);
+                throw new SQLNonTransientException(msg);
+            }
+            if (isAutoIncrement && simpleColumnName.equalsIgnoreCase(tc.getPrimaryKey())) {
+                String msg = "In insert Syntax, you can't set value for Autoincrement column!";
+                LOGGER.warn(msg);
+                throw new SQLNonTransientException(msg);
+            }
+        }
+    }
+
+    private void genDuplicate(boolean isGlobalCheck, StringBuilder sb, List<SQLExpr> dku) throws SQLNonTransientException {
+        boolean flag = false;
+        sb.append(" on duplicate key update ");
+        for (int i = 0; i < dku.size(); i++) {
+            SQLExpr exp = dku.get(i);
+            if (!(exp instanceof SQLBinaryOpExpr)) {
+                String msg = "not supported! on duplicate key update exp is " + exp.getClass();
+                LOGGER.warn(msg);
+                throw new SQLNonTransientException(msg);
+            }
+            SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) exp;
+            if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
+                flag = true;
+                onDuplicateGlobalColumn(sb);
+            } else {
+                sb.append(binaryOpExpr.toString());
+            }
+            if (i < dku.size() - 1) {
+                sb.append(",");
+            }
+        }
+        if (isGlobalCheck && !flag) {
+            sb.append(",");
+            onDuplicateGlobalColumn(sb);
+        }
+    }
+
+    private int getIdxGlobalByMeta(boolean isGlobalCheck, TableMeta orgTbMeta, StringBuilder sb, int colSize) {
+        int idxGlobal = -1;
+        sb.append("(");
+        for (int i = 0; i < colSize; i++) {
+            String column = orgTbMeta.getColumnsList().get(i).getName();
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append(column);
+            if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                idxGlobal = i; // 找到 内部列的索引位置
+            }
+        }
+        sb.append(")");
+        return idxGlobal;
     }
 
     private static void onDuplicateGlobalColumn(StringBuilder sb) {

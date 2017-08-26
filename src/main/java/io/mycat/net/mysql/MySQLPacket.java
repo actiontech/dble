@@ -227,7 +227,7 @@ public abstract class MySQLPacket {
         return packetId;
     }
 
-    public void setPacketId(byte packetId) {
-        this.packetId = packetId;
+    public void setPacketId(int packetID) {
+        this.packetId = (byte) packetID;
     }
 }

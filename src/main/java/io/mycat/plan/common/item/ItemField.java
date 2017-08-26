@@ -211,31 +211,10 @@ public class ItemField extends ItemIdent {
         String tmpFieldTable = null;
         String tmpFieldName = getItemName();
         PlanNode planNode = context.getPlanNode();
-        Item column = null;
-        Item columnFromMeta = null;
         if (context.getPlanNode().type() == PlanNodeType.MERGE) {
-            // select union only found in outerfields
-            if (StringUtils.isEmpty(getTableName())) {
-                PlanNode firstNode = planNode.getChild();
-                boolean found = false;
-                for (NamedField coutField : firstNode.getOuterFields().keySet()) {
-                    if (tmpFieldName.equalsIgnoreCase(coutField.getName())) {
-                        if (!found) {
-                            tmpFieldTable = coutField.getTable();
-                            found = true;
-                        } else {
-                            throw new MySQLOutPutException(ErrorCode.ER_BAD_FIELD_ERROR, "(42S22",
-                                    "Unknown column '" + tmpFieldName + "' in 'order clause'");
-                        }
-                    }
-                }
-                column = planNode.getOuterFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
-            } else {
-                throw new MySQLOutPutException(ErrorCode.ER_TABLENAME_NOT_ALLOWED_HERE, "42000",
-                        "Table '" + getTableName() + "' from one of the SELECTs cannot be used in global ORDER clause");
-            }
-            return column;
+            return getMergeNodeColumn(tmpFieldTable, tmpFieldName, planNode);
         }
+        Item column = null;
         if (context.isFindInSelect()) {
             // 尝试从selectlist中查找一次
             if (StringUtils.isEmpty(getTableName())) {
@@ -255,7 +234,9 @@ public class ItemField extends ItemIdent {
         if (column != null && context.isSelectFirst()) {
             return column;
         }
+
         // find from inner fields
+        Item columnFromMeta = null;
         if (StringUtils.isEmpty(getTableName())) {
             for (NamedField namedField : planNode.getInnerFields().keySet()) {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
@@ -296,6 +277,31 @@ public class ItemField extends ItemIdent {
             return column;
         }
 
+    }
+
+    private Item getMergeNodeColumn(String tmpFieldTable, String tmpFieldName, PlanNode planNode) {
+        // select union only found in outerfields
+        Item column;
+        if (StringUtils.isEmpty(getTableName())) {
+            PlanNode firstNode = planNode.getChild();
+            boolean found = false;
+            for (NamedField coutField : firstNode.getOuterFields().keySet()) {
+                if (tmpFieldName.equalsIgnoreCase(coutField.getName())) {
+                    if (!found) {
+                        tmpFieldTable = coutField.getTable();
+                        found = true;
+                    } else {
+                        throw new MySQLOutPutException(ErrorCode.ER_BAD_FIELD_ERROR, "(42S22",
+                                "Unknown column '" + tmpFieldName + "' in 'order clause'");
+                    }
+                }
+            }
+            column = planNode.getOuterFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_TABLENAME_NOT_ALLOWED_HERE, "42000",
+                    "Table '" + getTableName() + "' from one of the SELECTs cannot be used in global ORDER clause");
+        }
+        return column;
     }
 
     @Override

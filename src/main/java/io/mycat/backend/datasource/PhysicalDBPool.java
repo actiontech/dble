@@ -718,9 +718,7 @@ public class PhysicalDBPool {
      */
     private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean includeCurWriteNode,
                                                                 boolean filterWithSlaveThreshold) {
-
         int curActive = activeIndex;
-
         Collection<PhysicalDatasource> all;
         Map<Integer, PhysicalDatasource[]> rs;
         adjustLock.readLock().lock();
@@ -751,52 +749,28 @@ public class PhysicalDBPool {
                         okSources.add(theSource);
                     }
                 }
-
-                if (!readSources.isEmpty()) {
-                    // check all slave nodes
-                    PhysicalDatasource[] allSlaves = rs.get(i);
-                    if (allSlaves != null) {
-                        for (PhysicalDatasource slave : allSlaves) {
-                            if (isAlive(slave)) {
-                                if (filterWithSlaveThreshold) {
-                                    boolean selected = canSelectAsReadNode(slave);
-                                    if (selected) {
-                                        okSources.add(slave);
-                                    } else {
-                                        continue;
-                                    }
-                                } else {
-                                    okSources.add(slave);
-                                }
-                            }
-                        }
-                    }
-                }
+                addReadSource(filterWithSlaveThreshold, rs, okSources, i);
             } else {
-                // TODO : add by zhuam
-                // 如果写节点不OK, 也要保证临时的读服务正常
-                if (this.dataHostConfig.isTempReadHostAvailable() && !rs.isEmpty()) {
-                    // check all slave nodes
-                    PhysicalDatasource[] allSlaves = rs.get(i);
-                    if (allSlaves != null) {
-                        for (PhysicalDatasource slave : allSlaves) {
-                            if (isAlive(slave)) {
-                                if (filterWithSlaveThreshold) {
-                                    if (canSelectAsReadNode(slave)) {
-                                        okSources.add(slave);
-                                    } else {
-                                        continue;
-                                    }
-                                } else {
-                                    okSources.add(slave);
-                                }
-                            }
-                        }
-                    }
+                if (this.dataHostConfig.isTempReadHostAvailable()) {
+                    addReadSource(filterWithSlaveThreshold, rs, okSources, i);
                 }
             }
         }
         return okSources;
+    }
+
+    private void addReadSource(boolean filterWithSlaveThreshold, Map<Integer, PhysicalDatasource[]> rs, ArrayList<PhysicalDatasource> okSources, int i) {
+        if (!rs.isEmpty()) {
+            // check all slave nodes
+            PhysicalDatasource[] allSlaves = rs.get(i);
+            if (allSlaves != null) {
+                for (PhysicalDatasource slave : allSlaves) {
+                    if (isAlive(slave) && (!filterWithSlaveThreshold || canSelectAsReadNode(slave))) {
+                        okSources.add(slave);
+                    }
+                }
+            }
+        }
     }
 
     public String[] getSchemas() {

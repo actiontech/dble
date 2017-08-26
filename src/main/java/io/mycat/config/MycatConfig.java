@@ -243,8 +243,7 @@ public class MycatConfig {
 
             Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
             Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
-            Map<Integer, ArrayList<PhysicalDatasource>> idel =
-                    new HashMap<>(2);
+            Map<Integer, ArrayList<PhysicalDatasource>> idel = new HashMap<>(2);
             boolean haveOne = false;
             for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
                 boolean doadd = false;
@@ -278,11 +277,17 @@ public class MycatConfig {
         }
 
         // added datasource
+        if (addedDatasource(newDataHosts, diff)) return null;
+
+        return diff;
+    }
+
+    private boolean addedDatasource(Map<String, PhysicalDBPool> newDataHosts, DsDiff diff) {
         for (PhysicalDBPool npool : newDataHosts.values()) {
             PhysicalDBPool opool = dataHosts.get(npool.getHostName());
             if (opool == null) {
                 LOGGER.warn("reload -add- failed, use old datasources ");
-                return null;
+                return true;
             }
 
             Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
@@ -320,8 +325,7 @@ public class MycatConfig {
                 diff.added.put(opool, iadd);
             }
         }
-
-        return diff;
+        return false;
     }
 
     private void apply(Map<String, UserConfig> newUsers,

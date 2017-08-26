@@ -104,31 +104,32 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
                 months -= 1;
         }
 
-        if (intType == MySqlIntervalUnit.YEAR)
-            return BigInteger.valueOf(months / 12 * neg);
-        if (intType == MySqlIntervalUnit.QUARTER)
-            return BigInteger.valueOf(months / 3 * neg);
-        if (intType == MySqlIntervalUnit.MONTH)
-            return BigInteger.valueOf(months * neg);
-        if (intType == MySqlIntervalUnit.WEEK)
-            return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H / 7L * neg);
-        if (intType == MySqlIntervalUnit.DAY)
-            return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H * neg);
-        if (intType == MySqlIntervalUnit.HOUR)
-            return BigInteger.valueOf(seconds / 3600L * neg);
-        if (intType == MySqlIntervalUnit.MINUTE)
-            return BigInteger.valueOf(seconds / 60L * neg);
-        if (intType == MySqlIntervalUnit.SECOND)
-            return BigInteger.valueOf(seconds * neg);
-        if (intType == MySqlIntervalUnit.MICROSECOND)
-            /*
-             * In MySQL difference between any two valid datetime values in
-             * microseconds fits into longlong.
-             */
-            return BigInteger.valueOf((seconds * 1000000L + microseconds) * neg);
-        else {
-            nullValue = true;
-            return BigInteger.ZERO;
+        switch (intType) {
+            case YEAR:
+                return BigInteger.valueOf(months / 12 * neg);
+            case QUARTER:
+                return BigInteger.valueOf(months / 3 * neg);
+            case MONTH:
+                return BigInteger.valueOf(months * neg);
+            case WEEK:
+                return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H / 7L * neg);
+            case DAY:
+                return BigInteger.valueOf(seconds / MyTime.SECONDS_IN_24H * neg);
+            case HOUR:
+                return BigInteger.valueOf(seconds / 3600L * neg);
+            case MINUTE:
+                return BigInteger.valueOf(seconds / 60L * neg);
+            case SECOND:
+                return BigInteger.valueOf(seconds * neg);
+            case MICROSECOND:
+                /*
+                 * In MySQL difference between any two valid datetime values in
+                 * microseconds fits into longlong.
+                 */
+                return BigInteger.valueOf((seconds * 1000000L + microseconds) * neg);
+            default:
+                nullValue = true;
+                return BigInteger.ZERO;
         }
     }
 

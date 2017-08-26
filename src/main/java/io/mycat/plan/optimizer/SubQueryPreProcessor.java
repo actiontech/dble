@@ -69,135 +69,154 @@ public final class SubQueryPreProcessor {
         } else if (filter instanceof ItemCondOr) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support 'or' when condition subquery");
         } else if (filter instanceof ItemCondAnd) {
-            ItemCondAnd andFilter = (ItemCondAnd) filter;
-            for (int index = 0; index < andFilter.getArgCount(); index++) {
-                SubQueryAndFilter result = buildSubQuery(qtn, andFilter.arguments().get(index));
-                if (result != qtn) {
-                    if (result.filter == null) {
-                        result.filter = new ItemInt(1);
-                    }
-                    andFilter.arguments().set(index, result.filter);
-                    qtn = result;
-                }
-            }
-            qtn.filter = andFilter;
+            return buildSubQueryWithAndFilter(qtn, (ItemCondAnd) filter);
         } else {
-            Item leftColumn;
-            PlanNode query;
-            boolean isNotIn = false;
-            boolean neeEexchange = false;
-            if (filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
-                    filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
-                    filter instanceof ItemFuncStrictEqual) {
-                ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
-                Item arg0 = eqFilter.arguments().get(0);
-                Item arg1 = eqFilter.arguments().get(1);
-                boolean arg0IsSubQuery = arg0.type().equals(ItemType.SUBSELECT_ITEM);
-                boolean arg1IsSubQuery = arg1.type().equals(ItemType.SUBSELECT_ITEM);
-                if (arg0IsSubQuery && arg1IsSubQuery) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                            "left and right both condition subquery,not supported...");
-                }
-                neeEexchange = arg0IsSubQuery;
-                leftColumn = arg0IsSubQuery ? arg1 : arg0;
-                query = arg0IsSubQuery ? ((ItemSubselect) arg0).getPlanNode() : ((ItemSubselect) arg1).getPlanNode();
-            } else if (filter instanceof ItemInSubselect) {
-                ItemInSubselect inSub = (ItemInSubselect) filter;
-                leftColumn = inSub.getLeftOprand();
-                query = inSub.getPlanNode();
-                isNotIn = inSub.isNeg();
-            } else {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
-            }
-            query = findComparisonsSubQueryToJoinNode(query);
-            if (StringUtils.isEmpty(query.getAlias()))
-                query.alias(AUTOALIAS + query.getPureName());
-            if (query.getColumnsSelected().size() != 1)
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
-            query.setSubQuery(true).setDistinct(true);
-
-            final List<Item> newSelects = qtn.query.getColumnsSelected();
-            SubQueryAndFilter result = new SubQueryAndFilter();
-            Item rightColumn = query.getColumnsSelected().get(0);
-            qtn.query.setColumnsSelected(new ArrayList<Item>());
-            String rightJoinName = rightColumn.getAlias();
-            // add 聚合函数类型的支持
-            if (StringUtils.isEmpty(rightJoinName)) {
-                if (rightColumn instanceof ItemField) {
-                    rightJoinName = rightColumn.getItemName();
-                } else {
-                    rightColumn.setAlias(AUTONAME);
-                    rightJoinName = AUTONAME;
-                }
-            }
-
-            ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
-            // left column的table名称需要改变
-            result.query = new JoinNode(qtn.query, query);
-            // 保留原sql至新的join节点
-            result.query.setSql(qtn.query.getSql());
-            qtn.query.setSql(null);
-            result.query.select(newSelects);
-            if (!qtn.query.getOrderBys().isEmpty()) {
-                List<Order> orderBys = new ArrayList<>();
-                orderBys.addAll(qtn.query.getOrderBys());
-                result.query.setOrderBys(orderBys);
-                qtn.query.getOrderBys().clear();
-            }
-            if (!qtn.query.getGroupBys().isEmpty()) {
-                List<Order> groupBys = new ArrayList<>();
-                groupBys.addAll(qtn.query.getGroupBys());
-                result.query.setGroupBys(groupBys);
-                qtn.query.getGroupBys().clear();
-            }
-            if (qtn.query.getLimitFrom() != -1) {
-                result.query.setLimitFrom(qtn.query.getLimitFrom());
-                qtn.query.setLimitFrom(-1);
-            }
-            if (qtn.query.getLimitTo() != -1) {
-                result.query.setLimitTo(qtn.query.getLimitTo());
-                qtn.query.setLimitTo(-1);
-            }
-            if (isNotIn) {
-                ((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
-                ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
-                ((JoinNode) result.query).addJoinFilter(joinFilter);
-                result.filter = null;
-            } else {
-                Item joinFilter = null;
-                if (((filter instanceof ItemFuncGt) && !neeEexchange) ||
-                        ((filter instanceof ItemFuncLt) && neeEexchange)) {
-                    joinFilter = FilterUtils.greaterThan(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncLt) && !neeEexchange) ||
-                        ((filter instanceof ItemFuncGt) && neeEexchange)) {
-                    joinFilter = FilterUtils.lessThan(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncGe) && !neeEexchange) ||
-                        ((filter instanceof ItemFuncLe) && neeEexchange)) {
-                    joinFilter = FilterUtils.greaterEqual(leftColumn, rightJoinColumn);
-                } else if (((filter instanceof ItemFuncLe) && !neeEexchange) ||
-                        ((filter instanceof ItemFuncGe) && neeEexchange)) {
-                    joinFilter = FilterUtils.lessEqual(leftColumn, rightJoinColumn);
-                } else if (filter instanceof ItemFuncNe) {
-                    joinFilter = FilterUtils.notEqual(leftColumn, rightJoinColumn);
-                } else {
-                    //equal or in
-                    joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
-                }
-                result.query.query(joinFilter);
-                result.filter = joinFilter;
-            }
-            if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {
-                result.query.setAlias(qtn.query.getPureName());
-            } else {
-                String queryAlias = qtn.query.getAlias();
-                qtn.query.alias(null);
-                if (queryAlias == null)
-                    queryAlias = qtn.query.getSubAlias();
-                result.query.setAlias(queryAlias);
-            }
-            result.query.setUpFields();
-            return result;
+            return buildSubQueryByFilter(qtn, filter);
         }
+        return qtn;
+    }
+
+    private static SubQueryAndFilter buildSubQueryByFilter(SubQueryAndFilter qtn, Item filter) {
+        Item leftColumn;
+        PlanNode query;
+        boolean isNotIn = false;
+        boolean needExchange = false;
+        if (isCmpFunc(filter)) {
+            ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
+            Item arg0 = eqFilter.arguments().get(0);
+            Item arg1 = eqFilter.arguments().get(1);
+            boolean arg0IsSubQuery = arg0.type().equals(ItemType.SUBSELECT_ITEM);
+            boolean arg1IsSubQuery = arg1.type().equals(ItemType.SUBSELECT_ITEM);
+            if (arg0IsSubQuery && arg1IsSubQuery) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "left and right both condition subquery,not supported...");
+            }
+            needExchange = arg0IsSubQuery;
+            leftColumn = arg0IsSubQuery ? arg1 : arg0;
+            query = arg0IsSubQuery ? ((ItemSubselect) arg0).getPlanNode() : ((ItemSubselect) arg1).getPlanNode();
+        } else if (filter instanceof ItemInSubselect) {
+            ItemInSubselect inSub = (ItemInSubselect) filter;
+            leftColumn = inSub.getLeftOprand();
+            query = inSub.getPlanNode();
+            isNotIn = inSub.isNeg();
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+        }
+        query = findComparisonsSubQueryToJoinNode(query);
+        if (StringUtils.isEmpty(query.getAlias()))
+            query.alias(AUTOALIAS + query.getPureName());
+        if (query.getColumnsSelected().size() != 1)
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
+        query.setSubQuery(true).setDistinct(true);
+
+        final List<Item> newSelects = qtn.query.getColumnsSelected();
+        SubQueryAndFilter result = new SubQueryAndFilter();
+        Item rightColumn = query.getColumnsSelected().get(0);
+        qtn.query.setColumnsSelected(new ArrayList<Item>());
+        String rightJoinName = rightColumn.getAlias();
+        // add 聚合函数类型的支持
+        if (StringUtils.isEmpty(rightJoinName)) {
+            if (rightColumn instanceof ItemField) {
+                rightJoinName = rightColumn.getItemName();
+            } else {
+                rightColumn.setAlias(AUTONAME);
+                rightJoinName = AUTONAME;
+            }
+        }
+
+        ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
+        // left column的table名称需要改变
+        result.query = new JoinNode(qtn.query, query);
+        // 保留原sql至新的join节点
+        result.query.setSql(qtn.query.getSql());
+        qtn.query.setSql(null);
+        result.query.select(newSelects);
+        if (!qtn.query.getOrderBys().isEmpty()) {
+            List<Order> orderBys = new ArrayList<>();
+            orderBys.addAll(qtn.query.getOrderBys());
+            result.query.setOrderBys(orderBys);
+            qtn.query.getOrderBys().clear();
+        }
+        if (!qtn.query.getGroupBys().isEmpty()) {
+            List<Order> groupBys = new ArrayList<>();
+            groupBys.addAll(qtn.query.getGroupBys());
+            result.query.setGroupBys(groupBys);
+            qtn.query.getGroupBys().clear();
+        }
+        if (qtn.query.getLimitFrom() != -1) {
+            result.query.setLimitFrom(qtn.query.getLimitFrom());
+            qtn.query.setLimitFrom(-1);
+        }
+        if (qtn.query.getLimitTo() != -1) {
+            result.query.setLimitTo(qtn.query.getLimitTo());
+            qtn.query.setLimitTo(-1);
+        }
+        if (isNotIn) {
+            ((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
+            ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+            ((JoinNode) result.query).addJoinFilter(joinFilter);
+            result.filter = null;
+        } else {
+            Item joinFilter = calcJoinFilter(filter, leftColumn, needExchange, rightJoinColumn);
+            result.query.query(joinFilter);
+            result.filter = joinFilter;
+        }
+        if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {
+            result.query.setAlias(qtn.query.getPureName());
+        } else {
+            String queryAlias = qtn.query.getAlias();
+            qtn.query.alias(null);
+            if (queryAlias == null) {
+                queryAlias = qtn.query.getSubAlias();
+            }
+            result.query.setAlias(queryAlias);
+        }
+        result.query.setUpFields();
+        return result;
+    }
+
+    private static boolean isCmpFunc(Item filter) {
+        return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
+                filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
+                filter instanceof ItemFuncStrictEqual;
+    }
+
+    private static Item calcJoinFilter(Item filter, Item leftColumn, boolean needExchange, ItemField rightJoinColumn) {
+        Item joinFilter;
+        if (((filter instanceof ItemFuncGt) && !needExchange) ||
+                ((filter instanceof ItemFuncLt) && needExchange)) {
+            joinFilter = FilterUtils.greaterThan(leftColumn, rightJoinColumn);
+        } else if (((filter instanceof ItemFuncLt) && !needExchange) ||
+                ((filter instanceof ItemFuncGt) && needExchange)) {
+            joinFilter = FilterUtils.lessThan(leftColumn, rightJoinColumn);
+        } else if (((filter instanceof ItemFuncGe) && !needExchange) ||
+                ((filter instanceof ItemFuncLe) && needExchange)) {
+            joinFilter = FilterUtils.greaterEqual(leftColumn, rightJoinColumn);
+        } else if (((filter instanceof ItemFuncLe) && !needExchange) ||
+                ((filter instanceof ItemFuncGe) && needExchange)) {
+            joinFilter = FilterUtils.lessEqual(leftColumn, rightJoinColumn);
+        } else if (filter instanceof ItemFuncNe) {
+            joinFilter = FilterUtils.notEqual(leftColumn, rightJoinColumn);
+        } else {
+            //equal or in
+            joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+        }
+        return joinFilter;
+    }
+
+    private static SubQueryAndFilter buildSubQueryWithAndFilter(SubQueryAndFilter qtn, ItemCondAnd filter) {
+        ItemCondAnd andFilter = filter;
+        for (int index = 0; index < andFilter.getArgCount(); index++) {
+            SubQueryAndFilter result = buildSubQuery(qtn, andFilter.arguments().get(index));
+            if (result != qtn) {
+                if (result.filter == null) {
+                    result.filter = new ItemInt(1);
+                }
+                andFilter.arguments().set(index, result.filter);
+                qtn = result;
+            }
+        }
+        qtn.filter = andFilter;
         return qtn;
     }
 

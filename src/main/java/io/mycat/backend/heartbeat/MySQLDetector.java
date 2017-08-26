@@ -120,45 +120,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             Map<String, String> resultResult = result.getResult();
 
             if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS && source.getHostConfig().isShowSlaveSql()) {
-                String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
-                String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
-                if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
-                    heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
-                    String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
-                    if (null != secondsBehindMaster && !"".equals(secondsBehindMaster)) {
-                        int behindMaster = Integer.parseInt(secondsBehindMaster);
-                        if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
-                            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " +
-                                    heartbeat.getSource().getConfig() + ", binlog sync time delay: " +
-                                    behindMaster + "s");
-                        }
-                        heartbeat.setSlaveBehindMaster(behindMaster);
-                    }
-                } else if (source.isSalveOrRead()) {
-                    //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
-                            heartbeat.getSource().getConfig() + ", " + resultResult);
-                    heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
-                }
-                heartbeat.getAsynRecorder().set(resultResult, switchType);
-                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+                setStatusBySlave(source, switchType, resultResult);
             } else if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS && source.getHostConfig().isShowClusterSql()) {
-                //String Variable_name = resultResult != null ? resultResult.get("Variable_name") : null;
-                String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null; // Primary
-                String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null; // ON
-                String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
-                if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
-                    heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
-                    heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
-                } else {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
-                            heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
-                            " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
-                    );
-                    heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
-                }
-                heartbeat.getAsynRecorder().set(resultResult, switchType);
+                setStatusByCluster(switchType, resultResult);
             } else {
                 heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
                 //监测数据库同步状态，在 switchType=-1或者1的情况下，也需要收集主从同步状态
@@ -169,6 +133,50 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
         lasstReveivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lasstReveivedQryTime - lastSendQryTime));
+    }
+
+    private void setStatusByCluster(int switchType, Map<String, String> resultResult) {
+        //String Variable_name = resultResult != null ? resultResult.get("Variable_name") : null;
+        String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null; // Primary
+        String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null; // ON
+        String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
+        if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
+            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
+            heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+        } else {
+            MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
+                    heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
+                    " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
+            );
+            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
+        }
+        heartbeat.getAsynRecorder().set(resultResult, switchType);
+    }
+
+    private void setStatusBySlave(PhysicalDatasource source, int switchType, Map<String, String> resultResult) {
+        String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
+        String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
+        if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
+            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
+            String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
+            if (null != secondsBehindMaster && !"".equals(secondsBehindMaster)) {
+                int behindMaster = Integer.parseInt(secondsBehindMaster);
+                if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
+                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " +
+                            heartbeat.getSource().getConfig() + ", binlog sync time delay: " +
+                            behindMaster + "s");
+                }
+                heartbeat.setSlaveBehindMaster(behindMaster);
+            }
+        } else if (source.isSalveOrRead()) {
+            //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
+            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
+                    heartbeat.getSource().getConfig() + ", " + resultResult);
+            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
+        }
+        heartbeat.getAsynRecorder().set(resultResult, switchType);
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
     }
 
     public void close(String msg) {

@@ -39,29 +39,14 @@ public final class GlobalTableProcessor {
             newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
             tn.setNoshardNode(newSet);
         } else {
-            int unGlobalCount = 0;
-            for (PlanNode tnChild : tn.getChildren()) {
-                if (tnChild != null) {
-                    if (tn.getNoshardNode() == null) {
-                        if (tnChild.getNoshardNode() != null) {
-                            Set<String> parentSet = new HashSet<>();
-                            parentSet.addAll(tnChild.getNoshardNode());
-                            tn.setNoshardNode(parentSet);
-                        }
-                    }
-                    if (tn.getNoshardNode() != null) {
-                        tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
-                    }
-                    unGlobalCount += tnChild.getUnGlobalTableCount();
-                }
-            }
+            int unGlobalCount  = calcUnGlobalCount(tn);
             tn.setUnGlobalTableCount(unGlobalCount);
             if (tn.getNoshardNode() != null && tn.getNoshardNode().size() == 0) {
                 tn.setNoshardNode(null);
             }
             if (!status) {
                 tn.setNoshardNode(null);
-                return status;
+                return false;
             }
             if (unGlobalCount == 1 && tn instanceof JoinNode) { // joinNode
                 JoinNode jn = (JoinNode) tn;
@@ -96,6 +81,26 @@ public final class GlobalTableProcessor {
             }
         }
         return status;
+    }
+
+    private static int calcUnGlobalCount(PlanNode tn) {
+        int unGlobalCount = 0;
+        for (PlanNode tnChild : tn.getChildren()) {
+            if (tnChild != null) {
+                if (tn.getNoshardNode() == null) {
+                    if (tnChild.getNoshardNode() != null) {
+                        Set<String> parentSet = new HashSet<>();
+                        parentSet.addAll(tnChild.getNoshardNode());
+                        tn.setNoshardNode(parentSet);
+                    }
+                }
+                if (tn.getNoshardNode() != null) {
+                    tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
+                }
+                unGlobalCount += tnChild.getUnGlobalTableCount();
+            }
+        }
+        return unGlobalCount;
     }
 
     private static boolean isGlobalTableBigEnough(JoinNode jn) {

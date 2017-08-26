@@ -291,42 +291,21 @@ public abstract class AbstractConnection implements NIOConnection {
                 }
                 break;
             }
-
             if (position >= offset + length && readBuffer != null) {
-
                 // handle this package
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
                 handle(data);
-
                 // maybe handle stmt_close
                 if (isClosed()) {
                     return;
                 }
-
                 // offset to next position
                 offset += length;
-
                 // reached end
                 if (position == offset) {
-                    // if cur buffer is temper none direct byte buffer and not
-                    // received large message in recent 30 seconds
-                    // then change to direct buffer for performance
-                    if (readBuffer != null && !readBuffer.isDirect() &&
-                            lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
-                        }
-                        recycle(readBuffer);
-                        readBuffer = processor.getBufferPool().allocate(readBufferChunk);
-                    } else {
-                        if (readBuffer != null) {
-                            readBuffer.clear();
-                        }
-                    }
-                    // no more data ,break
-                    readBufferOffset = 0;
+                    readReachEnd();
                     break;
                 } else {
                     // try next package parse
@@ -336,8 +315,6 @@ public abstract class AbstractConnection implements NIOConnection {
                     }
                     continue;
                 }
-
-
             } else {
                 // not read whole message package ,so check if buffer enough and
                 // compact readbuffer
@@ -347,6 +324,26 @@ public abstract class AbstractConnection implements NIOConnection {
                 break;
             }
         }
+    }
+
+    private void readReachEnd() {
+        // if cur buffer is temper none direct byte buffer and not
+        // received large message in recent 30 seconds
+        // then change to direct buffer for performance
+        if (readBuffer != null && !readBuffer.isDirect() &&
+                lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
+            }
+            recycle(readBuffer);
+            readBuffer = processor.getBufferPool().allocate(readBufferChunk);
+        } else {
+            if (readBuffer != null) {
+                readBuffer.clear();
+            }
+        }
+        // no more data ,break
+        readBufferOffset = 0;
     }
 
 

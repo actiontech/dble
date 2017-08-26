@@ -79,71 +79,21 @@ public class HintSQLHandler implements HintHandler {
         Procedure procedure = new Procedure();
         procedure.setOriginSql(sql);
         procedure.setResultList(isResultList);
-        List<String> sqls = Splitter.on(";").trimResults().splitToList(sql);
+        List<String> sqlList = Splitter.on(";").trimResults().splitToList(sql);
         Set<String> outSet = new HashSet<>();
-        for (int i = sqls.size() - 1; i >= 0; i--) {
-            String s = sqls.get(i);
-            if (Strings.isNullOrEmpty(s)) {
+        for (int i = sqlList.size() - 1; i >= 0; i--) {
+            String query = sqlList.get(i);
+            if (Strings.isNullOrEmpty(query)) {
                 continue;
             }
-            SQLStatementParser parser = new MySqlStatementParser(s);
+            SQLStatementParser parser = new MySqlStatementParser(query);
             SQLStatement statement = parser.parseStatement();
             if (statement instanceof SQLSelectStatement) {
-                MySqlSelectQueryBlock selectQuery = (MySqlSelectQueryBlock) ((SQLSelectStatement) statement).getSelect().getQuery();
-                if (selectQuery != null) {
-                    List<SQLSelectItem> selectItems = selectQuery.getSelectList();
-                    for (SQLSelectItem selectItem : selectItems) {
-                        String select = selectItem.toString();
-                        outSet.add(select);
-                        procedure.getSelectColumns().add(select);
-                    }
-                }
-                procedure.setSelectSql(s);
+                parseProcedureForSelect(procedure, outSet, query, (SQLSelectStatement) statement);
             } else if (statement instanceof SQLCallStatement) {
-                SQLCallStatement sqlCallStatement = (SQLCallStatement) statement;
-                procedure.setName(sqlCallStatement.getProcedureName().getSimpleName());
-                List<SQLExpr> paramterList = sqlCallStatement.getParameters();
-                for (int i1 = 0; i1 < paramterList.size(); i1++) {
-                    SQLExpr sqlExpr = paramterList.get(i1);
-                    String pName = sqlExpr.toString();
-                    String pType = outSet.contains(pName) ? ProcedureParameter.OUT : ProcedureParameter.IN;
-                    ProcedureParameter parameter = new ProcedureParameter();
-                    parameter.setIndex(i1 + 1);
-                    parameter.setName(pName);
-                    parameter.setParameterType(pType);
-                    if (pName.startsWith("@")) {
-                        procedure.getParameterMap().put(pName, parameter);
-                    } else {
-                        procedure.getParameterMap().put(String.valueOf(i1 + 1), parameter);
-                    }
-
-
-                }
-                procedure.setCallSql(s);
+                parseProcedureForCall(procedure, outSet, query, (SQLCallStatement) statement);
             } else if (statement instanceof SQLSetStatement) {
-                procedure.setSetSql(s);
-                SQLSetStatement setStatement = (SQLSetStatement) statement;
-                List<SQLAssignItem> sets = setStatement.getItems();
-                for (SQLAssignItem set : sets) {
-                    String name = set.getTarget().toString();
-                    SQLExpr value = set.getValue();
-                    ProcedureParameter parameter = procedure.getParameterMap().get(name);
-                    if (parameter != null) {
-                        if (value instanceof SQLIntegerExpr) {
-                            parameter.setValue(((SQLIntegerExpr) value).getNumber());
-                            parameter.setJdbcType(Types.INTEGER);
-                        } else if (value instanceof SQLNumberExpr) {
-                            parameter.setValue(((SQLNumberExpr) value).getNumber());
-                            parameter.setJdbcType(Types.NUMERIC);
-                        } else if (value instanceof SQLTextLiteralExpr) {
-                            parameter.setValue(((SQLTextLiteralExpr) value).getText());
-                            parameter.setJdbcType(Types.VARCHAR);
-                        } else if (value instanceof SQLValuableExpr) {
-                            parameter.setValue(((SQLValuableExpr) value).getValue());
-                            parameter.setJdbcType(Types.VARCHAR);
-                        }
-                    }
-                }
+                parseProcedureForSet(procedure, query, (SQLSetStatement) statement);
             }
 
         }
@@ -163,5 +113,67 @@ public class HintSQLHandler implements HintHandler {
             procedure.getListFields().addAll(listFields);
         }
         return procedure;
+    }
+
+    private void parseProcedureForSet(Procedure procedure, String query, SQLSetStatement statement) {
+        procedure.setSetSql(query);
+        SQLSetStatement setStatement = statement;
+        List<SQLAssignItem> sets = setStatement.getItems();
+        for (SQLAssignItem set : sets) {
+            String name = set.getTarget().toString();
+            SQLExpr value = set.getValue();
+            ProcedureParameter parameter = procedure.getParameterMap().get(name);
+            if (parameter != null) {
+                if (value instanceof SQLIntegerExpr) {
+                    parameter.setValue(((SQLIntegerExpr) value).getNumber());
+                    parameter.setJdbcType(Types.INTEGER);
+                } else if (value instanceof SQLNumberExpr) {
+                    parameter.setValue(((SQLNumberExpr) value).getNumber());
+                    parameter.setJdbcType(Types.NUMERIC);
+                } else if (value instanceof SQLTextLiteralExpr) {
+                    parameter.setValue(((SQLTextLiteralExpr) value).getText());
+                    parameter.setJdbcType(Types.VARCHAR);
+                } else if (value instanceof SQLValuableExpr) {
+                    parameter.setValue(((SQLValuableExpr) value).getValue());
+                    parameter.setJdbcType(Types.VARCHAR);
+                }
+            }
+        }
+    }
+
+    private void parseProcedureForCall(Procedure procedure, Set<String> outSet, String query, SQLCallStatement statement) {
+        SQLCallStatement sqlCallStatement = statement;
+        procedure.setName(sqlCallStatement.getProcedureName().getSimpleName());
+        List<SQLExpr> paramterList = sqlCallStatement.getParameters();
+        for (int i1 = 0; i1 < paramterList.size(); i1++) {
+            SQLExpr sqlExpr = paramterList.get(i1);
+            String pName = sqlExpr.toString();
+            String pType = outSet.contains(pName) ? ProcedureParameter.OUT : ProcedureParameter.IN;
+            ProcedureParameter parameter = new ProcedureParameter();
+            parameter.setIndex(i1 + 1);
+            parameter.setName(pName);
+            parameter.setParameterType(pType);
+            if (pName.startsWith("@")) {
+                procedure.getParameterMap().put(pName, parameter);
+            } else {
+                procedure.getParameterMap().put(String.valueOf(i1 + 1), parameter);
+            }
+
+
+        }
+        procedure.setCallSql(query);
+    }
+
+    private void parseProcedureForSelect(Procedure procedure, Set<String> outSet, String query, SQLSelectStatement statement) {
+        MySqlSelectQueryBlock selectQuery = (MySqlSelectQueryBlock) statement.getSelect().getQuery();
+        if (selectQuery != null) {
+            List<SQLSelectItem> selectItems = selectQuery.getSelectList();
+            for (SQLSelectItem selectItem : selectItems) {
+                String select = selectItem.toString();
+                outSet.add(select);
+                procedure.getSelectColumns().add(select);
+            }
+        }
+        procedure.setSelectSql(query);
     }
 }

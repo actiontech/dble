@@ -87,7 +87,7 @@ public final class ServerParse {
                             stmt.charAt(length - 1) == '/') {
                         return MYSQL_CMD_COMMENT;
                     }
-                    continue;
+                //fall through
                 case '#':
                     i = ParseUtil.comment(stmt, i);
                     if (i + 1 == length) {
@@ -97,104 +97,66 @@ public final class ServerParse {
                 case 'A':
                 case 'a':
                     rt = aCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'B':
                 case 'b':
                     rt = beginCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'C':
                 case 'c':
                     rt = commitOrCallCheckOrCreate(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'D':
                 case 'd':
                     rt = deleteOrdCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'E':
                 case 'e':
                     rt = explainCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'I':
                 case 'i':
                     rt = insertCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'M':
                 case 'm':
                     rt = migrateCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'R':
                 case 'r':
                     rt = rCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'S':
                 case 's':
                     rt = sCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'T':
                 case 't':
                     rt = tCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'U':
                 case 'u':
                     rt = uCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'K':
                 case 'k':
                     rt = killCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'H':
                 case 'h':
                     rt = helpCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 case 'L':
                 case 'l':
                     rt = lCheck(stmt, i);
-                    if (rt != OTHER) {
-                        return rt;
-                    }
-                    continue;
+                    break;
                 default:
-                    continue;
+                    break;
             }
+            if (rt != OTHER) {
+                return rt;
+            }
+            continue;
         }
         return OTHER;
     }

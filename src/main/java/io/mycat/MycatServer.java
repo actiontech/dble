@@ -353,8 +353,7 @@ public final class MycatServer {
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 
         for (int i = 0; i < processors.length; i++) {
-            processors[i] = new NIOProcessor("Processor" + i, bufferPool,
-                    businessExecutor);
+            processors[i] = new NIOProcessor("Processor" + i, bufferPool, businessExecutor);
         }
 
         if (aio) {
@@ -900,12 +899,10 @@ public final class MycatServer {
         for (CoordinatorLogEntry coordinatorLogEntry : coordinatorLogEntries) {
             boolean needRollback = false;
             boolean needCommit = false;
-            StringBuilder xacmd = new StringBuilder();
             if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE ||
                     // will committing, may send but failed receiving, should commit agagin
                     coordinatorLogEntry.getTxState() == TxState.TX_COMMITING_STATE) {
                 needCommit = true;
-                xacmd.append("XA COMMIT ");
             } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE ||
                     //don't konw prepare is successed or not ,should rollback
                     coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE ||
@@ -914,48 +911,57 @@ public final class MycatServer {
                     // will preparing, may send but failed receiving,should rollback agagin
                     coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
                 needRollback = true;
-                xacmd.append("XA ROLLBACK ");
+
             }
             if (needCommit || needRollback) {
+                tryRecovery(coordinatorLogEntry, needCommit);
+            }
+        }
+    }
 
-                boolean finished = true;
-                for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
-                    ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
-                    // XA commit
-                    if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE &&
-                            participantLogEntry.getTxState() != TxState.TX_COMMITING_STATE &&
-                            participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
-                            participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
-                            participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
-                            participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE) {
-                        continue;
-                    }
-                    finished = false;
-                    outloop:
-                    for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
-                        for (TableConfig table : schema.getTables().values()) {
-                            for (String dataNode : table.getDataNodes()) {
-                                PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
-                                if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
-                                    OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit, participantLogEntry));
-                                    xacmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
-                                    xacmd.append(".");
-                                    xacmd.append(dn.getDatabase());
-                                    xacmd.append("'");
-                                    SQLJob sqlJob = new SQLJob(xacmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
-                                    sqlJob.run();
-                                    LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xacmd, dn.getName(), dn.getDatabase()));
-                                    break outloop;
-                                }
-                            }
+    private void tryRecovery(CoordinatorLogEntry coordinatorLogEntry, boolean needCommit) {
+        StringBuilder xacmd = new StringBuilder();
+        if (needCommit) {
+            xacmd.append("XA COMMIT ");
+        } else {
+            xacmd.append("XA ROLLBACK ");
+        }
+        boolean finished = true;
+        for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
+            ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
+            // XA commit
+            if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_COMMITING_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE) {
+                continue;
+            }
+            finished = false;
+            outloop:
+            for (SchemaConfig schema : MycatServer.getInstance().getConfig().getSchemas().values()) {
+                for (TableConfig table : schema.getTables().values()) {
+                    for (String dataNode : table.getDataNodes()) {
+                        PhysicalDBNode dn = MycatServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                        if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
+                            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit, participantLogEntry));
+                            xacmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
+                            xacmd.append(".");
+                            xacmd.append(dn.getDatabase());
+                            xacmd.append("'");
+                            SQLJob sqlJob = new SQLJob(xacmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+                            sqlJob.run();
+                            LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xacmd, dn.getName(), dn.getDatabase()));
+                            break outloop;
                         }
                     }
                 }
-                if (finished) {
-                    XAStateLog.saveXARecoverylog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITED_STATE : TxState.TX_ROLLBACKED_STATE);
-                    XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
-                }
             }
+        }
+        if (finished) {
+            XAStateLog.saveXARecoverylog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITED_STATE : TxState.TX_ROLLBACKED_STATE);
+            XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
         }
     }
 

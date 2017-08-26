@@ -290,100 +290,111 @@ public class MycatSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (expr instanceof SQLPropertyExpr) {
-            SQLExpr owner = ((SQLPropertyExpr) expr).getOwner();
-            String column = ((SQLPropertyExpr) expr).getName();
-
-            if (owner instanceof SQLIdentifierExpr || owner instanceof SQLPropertyExpr) {
-                String tableName;
-                if (owner instanceof SQLPropertyExpr) {
-                    tableName = ((SQLPropertyExpr) owner).getName();
-                } else {
-                    tableName = ((SQLIdentifierExpr) owner).getName();
-                }
-                String table = tableName;
-                if (aliasMap.containsKey(table)) {
-                    table = aliasMap.get(table);
-                }
-
-                if (variants.containsKey(table)) {
-                    return null;
-                }
-
-                if (table != null) {
-                    return new Column(table, column);
-                }
-
-                return handleSubQueryColumn(tableName, column);
-            }
-
-            return null;
+            return getColumn((SQLPropertyExpr) expr, aliasMap);
         }
 
         if (expr instanceof SQLIdentifierExpr) {
-            Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
-            if (attrColumn != null) {
-                return attrColumn;
+            return getColumn(expr, aliasMap);
+        }
+
+        if (expr instanceof SQLBetweenExpr) {
+            return getColumn((SQLBetweenExpr) expr, aliasMap);
+        }
+        return null;
+    }
+
+    private Column getColumn(SQLBetweenExpr expr, Map<String, String> aliasMap) {
+        SQLBetweenExpr betweenExpr = expr;
+
+        if (betweenExpr.getTestExpr() != null) {
+            String tableName = null;
+            String column = null;
+            if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //字段带别名的
+                tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
+                column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
+                SQLObject query = this.subQueryMap.get(tableName);
+                if (query == null) {
+                    if (aliasMap.containsKey(tableName)) {
+                        tableName = aliasMap.get(tableName);
+                    }
+                    return new Column(tableName, column);
+                }
+                return handleSubQueryColumn(tableName, column);
+            } else if (betweenExpr.getTestExpr() instanceof SQLIdentifierExpr) {
+                column = ((SQLIdentifierExpr) betweenExpr.getTestExpr()).getName();
+                //字段不带别名的,此处如果是多表，容易出现ambiguous，
+                //不知道这个字段是属于哪个表的,fdbparser用了defaultTable，即join语句的leftTable
+                tableName = getOwnerTableName(betweenExpr, column);
+            }
+            String table = tableName;
+            if (aliasMap.containsKey(table)) {
+                table = aliasMap.get(table);
             }
 
-            String column = ((SQLIdentifierExpr) expr).getName();
-            String table = getCurrentTable();
-            if (table != null && aliasMap.containsKey(table)) {
+            if (variants.containsKey(table)) {
+                return null;
+            }
+
+            if (table != null && !"".equals(table)) {
+                return new Column(table, column);
+            }
+        }
+        return null;
+    }
+
+    private Column getColumn(SQLExpr expr, Map<String, String> aliasMap) {
+        Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
+        if (attrColumn != null) {
+            return attrColumn;
+        }
+
+        String column = ((SQLIdentifierExpr) expr).getName();
+        String table = getCurrentTable();
+        if (table != null && aliasMap.containsKey(table)) {
+            table = aliasMap.get(table);
+            if (table == null) {
+                return null;
+            }
+        }
+
+        if (table != null) {
+            return new Column(table, column);
+        }
+
+        if (variants.containsKey(column)) {
+            return null;
+        }
+
+        return new Column("UNKNOWN", column);
+    }
+
+    private Column getColumn(SQLPropertyExpr expr, Map<String, String> aliasMap) {
+        SQLExpr owner = expr.getOwner();
+        String column = expr.getName();
+
+        if (owner instanceof SQLIdentifierExpr || owner instanceof SQLPropertyExpr) {
+            String tableName;
+            if (owner instanceof SQLPropertyExpr) {
+                tableName = ((SQLPropertyExpr) owner).getName();
+            } else {
+                tableName = ((SQLIdentifierExpr) owner).getName();
+            }
+            String table = tableName;
+            if (aliasMap.containsKey(table)) {
                 table = aliasMap.get(table);
-                if (table == null) {
-                    return null;
-                }
+            }
+
+            if (variants.containsKey(table)) {
+                return null;
             }
 
             if (table != null) {
                 return new Column(table, column);
             }
 
-            if (variants.containsKey(column)) {
-                return null;
-            }
-
-            return new Column("UNKNOWN", column);
+            return handleSubQueryColumn(tableName, column);
         }
 
-        if (expr instanceof SQLBetweenExpr) {
-            SQLBetweenExpr betweenExpr = (SQLBetweenExpr) expr;
-
-            if (betweenExpr.getTestExpr() != null) {
-                String tableName = null;
-                String column = null;
-                if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //字段带别名的
-                    tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
-                    column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
-                    SQLObject query = this.subQueryMap.get(tableName);
-                    if (query == null) {
-                        if (aliasMap.containsKey(tableName)) {
-                            tableName = aliasMap.get(tableName);
-                        }
-                        return new Column(tableName, column);
-                    }
-                    return handleSubQueryColumn(tableName, column);
-                } else if (betweenExpr.getTestExpr() instanceof SQLIdentifierExpr) {
-                    column = ((SQLIdentifierExpr) betweenExpr.getTestExpr()).getName();
-                    //字段不带别名的,此处如果是多表，容易出现ambiguous，
-                    //不知道这个字段是属于哪个表的,fdbparser用了defaultTable，即join语句的leftTable
-                    tableName = getOwnerTableName(betweenExpr, column);
-                }
-                String table = tableName;
-                if (aliasMap.containsKey(table)) {
-                    table = aliasMap.get(table);
-                }
-
-                if (variants.containsKey(table)) {
-                    return null;
-                }
-
-                if (table != null && !"".equals(table)) {
-                    return new Column(table, column);
-                }
-            }
-
-
-        }
         return null;
     }
 

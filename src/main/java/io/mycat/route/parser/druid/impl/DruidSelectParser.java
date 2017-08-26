@@ -61,11 +61,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (mysqlSelectQuery.getInto() != null) {
                 throw new SQLNonTransientException("select ... into is not supported!");
             }
-            for (SQLSelectItem item : mysqlSelectQuery.getSelectList()) {
-                if (item.getExpr() instanceof SQLQueryExpr) {
-                    throw new SQLNonTransientException("query statement as column is not supported!");
-                }
-            }
+            checkSelectList(mysqlSelectQuery);
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
                 RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
@@ -75,36 +71,14 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (mysqlFrom instanceof SQLExprTableSource) {
                 SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
                 schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-                if (schemaInfo.isDualFlag()) {
+                if (schemaInfo.isDual()) {
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
                 }
-                // 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
-                //TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
-                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema())) {
-                    MysqlInformationSchemaHandler.handle(schemaInfo, sc);
-                    rrs.setFinishedExecute(true);
+                if (matchSysTable(rrs, sc, schemaInfo)) {
                     return schema;
                 }
 
-                if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.getSchema()) &&
-                        SchemaUtil.TABLE_PROC.equals(schemaInfo.getTable())) {
-                    // 兼容MySQLWorkbench
-                    MysqlProcHandler.handle(sc);
-                    rrs.setFinishedExecute(true);
-                    return schema;
-                }
-                // fix navicat SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS
-                // `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
-                // `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
-                // GROUP BY STATE ORDER BY SEQ
-                if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema()) &&
-                        SchemaUtil.TABLE_PROFILING.equals(schemaInfo.getTable()) &&
-                        rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-                    InformationSchemaProfiling.response(sc);
-                    rrs.setFinishedExecute(true);
-                    return schema;
-                }
                 if (schemaInfo.getSchemaConfig() == null) {
                     String msg = "No Supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
@@ -140,20 +114,51 @@ public class DruidSelectParser extends DefaultDruidParser {
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
-                schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
-                if (rrs.isFinishedRoute()) {
-                    return schema;
-                }
+                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
             }
         } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-            schema = executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
-            if (rrs.isFinishedRoute()) {
-                return schema;
-            }
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
         }
 
         return schema;
+    }
+
+    private void checkSelectList(MySqlSelectQueryBlock mysqlSelectQuery) throws SQLNonTransientException {
+        for (SQLSelectItem item : mysqlSelectQuery.getSelectList()) {
+            if (item.getExpr() instanceof SQLQueryExpr) {
+                throw new SQLNonTransientException("query statement as column is not supported!");
+            }
+        }
+    }
+
+    private boolean matchSysTable(RouteResultset rrs, ServerConnection sc, SchemaInfo schemaInfo) {
+        // 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
+        //TODO:refactor INFORMATION_SCHEMA,MYSQL 等系統表的去向？？？
+        if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema())) {
+            MysqlInformationSchemaHandler.handle(schemaInfo, sc);
+            rrs.setFinishedExecute(true);
+            return true;
+        }
+
+        if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.getSchema()) &&
+                SchemaUtil.TABLE_PROC.equals(schemaInfo.getTable())) {
+            // 兼容MySQLWorkbench
+            MysqlProcHandler.handle(sc);
+            rrs.setFinishedExecute(true);
+            return true;
+        }
+        // fix navicat SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS
+        // `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
+        // `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
+        // GROUP BY STATE ORDER BY SEQ
+        if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema()) &&
+                SchemaUtil.TABLE_PROFILING.equals(schemaInfo.getTable()) &&
+                rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
+            InformationSchemaProfiling.response(sc);
+            rrs.setFinishedExecute(true);
+            return true;
+        }
+        return false;
     }
 
     private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,

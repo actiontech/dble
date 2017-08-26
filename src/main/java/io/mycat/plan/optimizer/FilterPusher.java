@@ -111,97 +111,110 @@ public final class FilterPusher {
         }
 
         if (qtn.type() == PlanNodeType.QUERY) {
-            refreshPdFilters(qtn, dnfNodeToPush);
-            PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
-            ((QueryNode) qtn).setChild(child);
+            return getQueryNode(qtn, dnfNodeToPush);
         } else if (qtn.type() == PlanNodeType.JOIN) {
-            JoinNode jn = (JoinNode) qtn;
-            List<Item> dnfNodetoPushToLeft = new LinkedList<>();
-            List<Item> dnfNodetoPushToRight = new LinkedList<>();
-            List<Item> leftCopyedPushFilters = new LinkedList<>();
-            List<Item> rightCopyedPushFilters = new LinkedList<>();
-            List<Item> dnfNodeToCurrent = new LinkedList<>();
-
-            PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
-            for (Item filter : dnfNodeToPush) {
-                // ex. 1 = -1
-                if (filter.getReferTables().size() == 0) {
-                    dnfNodetoPushToLeft.add(filter);
-                    dnfNodetoPushToRight.add(filter);
-                    continue;
-                }
-                if (PlanUtil.canPush(filter, jn.getLeftNode(), jn)) {
-                    dnfNodetoPushToLeft.add(filter);
-                } else if (PlanUtil.canPush(filter, jn.getRightNode(), jn)) {
-                    dnfNodetoPushToRight.add(filter);
-                } else {
-                    dnfNodeToCurrent.add(filter);
-                }
-            }
-            if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
-                // 将左条件的表达式，推导到join filter的右条件上
-                rightCopyedPushFilters.addAll(
-                        copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
-
-                // 将右条件的表达式，推导到join filter的左条件上
-                leftCopyedPushFilters.addAll(
-                        copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
-            }
-
-            // 针对不能下推的，合并到当前的where
-            Item node = FilterUtils.and(dnfNodeToCurrent);
-            if (node != null) {
-                qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
-            }
-
-            if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
-                if (jn.isLeftOuterJoin()) {
-                    // left join，把right join下推之后，还得把right join的条件留下来
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToRight)));
-                }
-                if (jn.isRightOuterJoin()) {
-                    // right join，把right join下推之后，还得把left join的条件留下来
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToLeft)));
-                }
-                // 合并起来
-                dnfNodetoPushToRight.addAll(rightCopyedPushFilters);
-                dnfNodetoPushToLeft.addAll(leftCopyedPushFilters);
-
-                refreshPdFilters(jn, dnfNodetoPushToLeft);
-                refreshPdFilters(jn, dnfNodetoPushToRight);
-                jn.setLeftNode(pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft));
-                jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight));
-            } else {
-                if (!dnfNodeToPush.isEmpty()) {
-                    jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodeToPush)));
-                }
-            }
-            return jn;
+            return getJoinNode(qtn, dnfNodeToPush);
         } else if (qtn.type() == PlanNodeType.MERGE) {
-            // union语句的where条件可以下推，但是要替换成相应的child节点的过滤条件
-
-            Item node = FilterUtils.and(dnfNodeToPush);
-            if (node != null) {
-                qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
-            }
-            Item mergeWhere = qtn.getWhereFilter();
-            // 加速优化，将merge的条件挨个下推
-            qtn.query(null);
-            List<Item> pushFilters = PlanUtil.getPushItemsToUnionChild((MergeNode) qtn, mergeWhere,
-                    ((MergeNode) qtn).getColIndexs());
-            List<PlanNode> childs = qtn.getChildren();
-            for (int index = 0; index < childs.size(); index++) {
-                PlanNode child = childs.get(index);
-                if (pushFilters != null) {
-                    Item pushFilter = pushFilters.get(index);
-                    child.query(FilterUtils.and(child.getWhereFilter(), pushFilter));
-                }
-                FilterPusher.optimize(child);
-            }
-            return qtn;
+            return getMergeNode(qtn, dnfNodeToPush);
         }
 
         return qtn;
+    }
+
+    private static PlanNode getQueryNode(PlanNode qtn, List<Item> dnfNodeToPush) {
+        refreshPdFilters(qtn, dnfNodeToPush);
+        PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
+        ((QueryNode) qtn).setChild(child);
+        return qtn;
+    }
+
+    private static PlanNode getMergeNode(PlanNode qtn, List<Item> dnfNodeToPush) {
+        // union语句的where条件可以下推，但是要替换成相应的child节点的过滤条件
+
+        Item node = FilterUtils.and(dnfNodeToPush);
+        if (node != null) {
+            qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+        }
+        Item mergeWhere = qtn.getWhereFilter();
+        // 加速优化，将merge的条件挨个下推
+        qtn.query(null);
+        List<Item> pushFilters = PlanUtil.getPushItemsToUnionChild((MergeNode) qtn, mergeWhere,
+                ((MergeNode) qtn).getColIndexs());
+        List<PlanNode> childs = qtn.getChildren();
+        for (int index = 0; index < childs.size(); index++) {
+            PlanNode child = childs.get(index);
+            if (pushFilters != null) {
+                Item pushFilter = pushFilters.get(index);
+                child.query(FilterUtils.and(child.getWhereFilter(), pushFilter));
+            }
+            FilterPusher.optimize(child);
+        }
+        return qtn;
+    }
+
+    private static PlanNode getJoinNode(PlanNode qtn, List<Item> dnfNodeToPush) {
+        JoinNode jn = (JoinNode) qtn;
+        List<Item> dnfNodetoPushToLeft = new LinkedList<>();
+        List<Item> dnfNodetoPushToRight = new LinkedList<>();
+        List<Item> leftCopyedPushFilters = new LinkedList<>();
+        List<Item> rightCopyedPushFilters = new LinkedList<>();
+        List<Item> dnfNodeToCurrent = new LinkedList<>();
+
+        PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+        for (Item filter : dnfNodeToPush) {
+            // ex. 1 = -1
+            if (filter.getReferTables().size() == 0) {
+                dnfNodetoPushToLeft.add(filter);
+                dnfNodetoPushToRight.add(filter);
+                continue;
+            }
+            if (PlanUtil.canPush(filter, jn.getLeftNode(), jn)) {
+                dnfNodetoPushToLeft.add(filter);
+            } else if (PlanUtil.canPush(filter, jn.getRightNode(), jn)) {
+                dnfNodetoPushToRight.add(filter);
+            } else {
+                dnfNodeToCurrent.add(filter);
+            }
+        }
+        if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
+            // 将左条件的表达式，推导到join filter的右条件上
+            rightCopyedPushFilters.addAll(
+                    copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
+
+            // 将右条件的表达式，推导到join filter的左条件上
+            leftCopyedPushFilters.addAll(
+                    copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
+        }
+
+        // 针对不能下推的，合并到当前的where
+        Item node = FilterUtils.and(dnfNodeToCurrent);
+        if (node != null) {
+            qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+        }
+
+        if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
+            if (jn.isLeftOuterJoin()) {
+                // left join，把right join下推之后，还得把right join的条件留下来
+                jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToRight)));
+            }
+            if (jn.isRightOuterJoin()) {
+                // right join，把right join下推之后，还得把left join的条件留下来
+                jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToLeft)));
+            }
+            // 合并起来
+            dnfNodetoPushToRight.addAll(rightCopyedPushFilters);
+            dnfNodetoPushToLeft.addAll(leftCopyedPushFilters);
+
+            refreshPdFilters(jn, dnfNodetoPushToLeft);
+            refreshPdFilters(jn, dnfNodetoPushToRight);
+            jn.setLeftNode(pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft));
+            jn.setRightNode(pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight));
+        } else {
+            if (!dnfNodeToPush.isEmpty()) {
+                jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodeToPush)));
+            }
+        }
+        return jn;
     }
 
     /**

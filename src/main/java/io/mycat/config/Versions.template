@@ -31,7 +31,7 @@ public abstract class Versions {
     /**协议版本**/
     public static final byte PROTOCOL_VERSION = 10;
 
-    public static byte[] serverVersion = "@server-version@".getBytes();
+    private static byte[] serverVersion = "@server-version@".getBytes();
     public static final byte[] VERSION_COMMENT = "@version-comment@".getBytes();
     public static final String ANNOTATION_NAME = "@annotation-name@";
     public static final String ROOT_PREFIX = "@root_prefix@";

@@ -214,23 +214,11 @@ public class MycatConfig {
     }
 
     public boolean canRollbackAll() {
-        if (status != RELOAD_ALL) {
-            return false;
-        } else if (users2 == null || schemas2 == null || firewall2 == null || dataNodes2 == null || dataHosts2 == null) {
-            return false;
-        } else {
-            return true;
-        }
+        return status == RELOAD_ALL && users2 != null && schemas2 != null && firewall2 != null && dataNodes2 != null && dataHosts2 != null;
     }
 
     public boolean canRollback() {
-        if (status != RELOAD) {
-            return false;
-        } else if (users2 == null || schemas2 == null || firewall2 == null) {
-            return false;
-        } else {
-            return true;
-        }
+        return status == RELOAD && users2 != null && schemas2 != null && firewall2 != null;
     }
 
     public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,

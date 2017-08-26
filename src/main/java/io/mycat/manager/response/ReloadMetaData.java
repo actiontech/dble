@@ -6,7 +6,9 @@ import io.mycat.net.mysql.OkPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReloadMetaData {
+public final class ReloadMetaData {
+    private ReloadMetaData() {
+    }
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
 
     public static void execute(ManagerConnection c) {
@@ -17,10 +19,10 @@ public class ReloadMetaData {
         }
         LOGGER.info(msg);
         OkPacket ok = new OkPacket();
-        ok.packetId = 1;
-        ok.affectedRows = 1;
-        ok.serverStatus = 2;
-        ok.message = msg.getBytes();
+        ok.setPacketId(1);
+        ok.setAffectedRows(1);
+        ok.setServerStatus(2);
+        ok.setMessage(msg.getBytes());
         ok.write(c);
     }
 }

@@ -49,7 +49,7 @@ public class DDLRouteTest {
         String sql = " ALTER TABLE COMPANY\r\nADD COLUMN TEST  VARCHAR(255) NULL AFTER CREATE_DATE,\r\n CHARACTER SET = UTF8";
         sql = RouterUtil.getFixedSql(sql);
         List<String> dataNodes = new ArrayList<>();
-        String tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(sql, 0));
+        String tablename = "COMPANY";
         Map<String, TableConfig> tables = schema.getTables();
         TableConfig tc;
         if (tables != null && (tc = tables.get(tablename)) != null) {
@@ -82,7 +82,7 @@ public class DDLRouteTest {
         String upsql = sql.toUpperCase();
 
         //TODO : modify by zhuam
-        String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
+        String tablename = "company";
         tablename = tablename.toUpperCase();
 
         List<String> dataNodes = new ArrayList<>();
@@ -104,7 +104,7 @@ public class DDLRouteTest {
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
 
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -121,7 +121,7 @@ public class DDLRouteTest {
         sql = "   alter table COMPANY add COLUMN name int ;";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -137,7 +137,7 @@ public class DDLRouteTest {
         sql = " truncate table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -253,7 +253,7 @@ public class DDLRouteTest {
         sql = RouterUtil.getFixedSql(sql);
         String upsql = sql.toUpperCase();
 
-        String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
+        String tablename = "COMPANY";
         tablename = tablename.toUpperCase();
 
         List<String> dataNodes = new ArrayList<>();
@@ -277,7 +277,7 @@ public class DDLRouteTest {
         sql = " drop table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -296,7 +296,7 @@ public class DDLRouteTest {
         sql = " drop table if exists COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getDropTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -315,7 +315,7 @@ public class DDLRouteTest {
         sql = "   alter table COMPANY add COLUMN name int ;";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getAlterTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();
@@ -335,7 +335,7 @@ public class DDLRouteTest {
         sql = " truncate table COMPANY";
         sql = RouterUtil.getFixedSql(sql);
         upsql = sql.toUpperCase();
-        tablename = RouterUtil.getTableName(sql, RouterUtil.getTruncateTablePos(upsql, 0));
+        tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
             dataNodes = tc.getDataNodes();

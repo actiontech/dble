@@ -1,9 +1,9 @@
 package io.mycat.plan.common.item.function.primary;
 
+import java.util.ArrayList;
+
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.time.MySQLTime;
-
-import java.util.ArrayList;
 
 /**
  * Base class for operations like '+', '-', '*'
@@ -17,7 +17,7 @@ public abstract class ItemNumOp extends ItemFuncNumhybrid {
     }
 
     /**
-     * 计算结果总长度
+     * resultPrecision
      */
     public abstract void resultPrecision();
 

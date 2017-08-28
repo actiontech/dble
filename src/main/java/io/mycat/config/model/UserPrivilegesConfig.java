@@ -5,7 +5,7 @@ import java.util.Map;
 
 
 /**
- * 用户 SQL 权限配置
+ * UserPrivilegesConfig
  *
  * @author zhuam
  */
@@ -32,9 +32,6 @@ public class UserPrivilegesConfig {
         return schemaPrivilege;
     }
 
-    /**
-     * 库级权限
-     */
     public static class SchemaPrivilege {
 
         private int[] dml = new int[]{0, 0, 0, 0};
@@ -59,9 +56,6 @@ public class UserPrivilegesConfig {
         }
     }
 
-    /**
-     * 表级权限
-     */
     public static class TablePrivilege {
         private int[] dml = new int[]{0, 0, 0, 0};
 

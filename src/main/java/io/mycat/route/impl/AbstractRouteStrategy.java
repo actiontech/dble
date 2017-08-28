@@ -1,5 +1,10 @@
 package io.mycat.route.impl;
 
+import java.sql.SQLException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.RouteResultset;
@@ -8,10 +13,6 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.sqlengine.mpp.LoadData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.SQLException;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 
@@ -24,7 +25,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
         /*
-         * 优化debug loaddata输出cache的志会极大降低性能
+         * debug mode and load data ,no cache
          */
         if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.LOAD_DATA_HINT)) {
             rrs.setCacheAble(false);
@@ -46,7 +47,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
 
     /**
-     * 通过解析AST语法树类来寻找路由
+     * routeNormalSqlWithAST
      */
     public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
                                                          String charset, LayerCachePool cachePool, ServerConnection sc) throws SQLException;

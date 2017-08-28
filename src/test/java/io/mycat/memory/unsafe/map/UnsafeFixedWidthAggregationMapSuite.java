@@ -17,6 +17,17 @@
 
 package io.mycat.memory.unsafe.map;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import org.apache.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Test;
+
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.KVIterator;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
@@ -28,12 +39,6 @@ import io.mycat.memory.unsafe.row.UnsafeRowWriter;
 import io.mycat.memory.unsafe.utils.BytesTools;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Created by zagnix on 2016/6/4.
@@ -50,15 +55,13 @@ public class UnsafeFixedWidthAggregationMapSuite {
 
     @Test
     public void testAggregateMap() throws NoSuchFieldException, IllegalAccessException, IOException {
-        /**
-         * 创造上文环境
-         */
+        
         MyCatMemory myCatMemory = new MyCatMemory();
         MemoryManager memoryManager = myCatMemory.getResultMergeMemoryManager();
         DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
 
         /**
-         * 构造数据字段group key
+         * group key
          */
 
         int fieldCount = 2;
@@ -78,7 +81,7 @@ public class UnsafeFixedWidthAggregationMapSuite {
 
 
         /**
-         * 构造数据字段value key
+         * value key
          */
         fieldCount = 4;
         colMeta = null;
@@ -127,9 +130,6 @@ public class UnsafeFixedWidthAggregationMapSuite {
                 true);
 
 
-        /**
-         * 造数据
-         */
 
         int i;
 

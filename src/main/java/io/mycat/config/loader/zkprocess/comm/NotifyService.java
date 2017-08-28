@@ -1,7 +1,6 @@
 package io.mycat.config.loader.zkprocess.comm;
 
 /**
- * 通过接口
  *
  * @author liujun
  * @date 2015/2/4

@@ -1,20 +1,30 @@
 package io.mycat.plan.optimizer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.Item.ItemType;
 import io.mycat.plan.common.item.ItemInt;
 import io.mycat.plan.common.item.function.ItemFunc.Functype;
 import io.mycat.plan.common.item.function.operator.ItemBoolFunc2;
-import io.mycat.plan.common.item.function.operator.cmpfunc.*;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncGt;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncIn;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLe;
+import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncLt;
 import io.mycat.plan.common.item.function.operator.logic.ItemCond;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondOr;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.plan.util.FilterUtils;
 import io.mycat.plan.util.PlanUtil;
-
-import java.util.*;
 
 /**
  * http://dev.mysql.com/doc/refman/5.7/en/where-optimizations.html
@@ -55,13 +65,13 @@ public final class FilterPreProcessor {
         }
 
         root = shortestFilter(root);
-        root = processOneFilter(root); // 做一下转换处理
+        root = processOneFilter(root);
         root = convertOrToIn(root);
         return root;
     }
 
     /**
-     * 将0=1/1=1/true的恒等式进行优化
+     * optimizer 0=1/1=1/true
      */
     private static Item shortestFilter(Item root) {
         if (root == null)
@@ -103,7 +113,7 @@ public final class FilterPreProcessor {
     }
 
     /**
-     * 尽量将const op column统一改为column op const这种
+     * change "const op column" to "column op const"
      *
      * @param root
      * @return
@@ -149,7 +159,7 @@ public final class FilterPreProcessor {
     }
 
     /**
-     * 将单个的Logicalfilter【or】尽可能的转换成in
+     * change single Logicalfilter(or) into in
      *
      * @param filter
      */

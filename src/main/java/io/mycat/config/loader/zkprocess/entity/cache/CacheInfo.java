@@ -6,15 +6,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * 缓存CacheInfo信息
- *
- *
  * author:liujun
  * Created:2016/9/19
- *
- *
- *
- *
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "defaultCache")
@@ -25,59 +18,45 @@ public class CacheInfo {
 
     /**
      * eternal:if true ,ignore the timeout
-     *
-     *
      */
     @XmlAttribute
     private boolean eternal;
 
     /**
      * overflowToDisk
-     *
-     *
      */
     @XmlAttribute
     private boolean overflowToDisk;
 
     /**
      * diskSpoolBufferSizeMB:for DiskStore .the default is 30MB.
-     *
-     *
      */
     @XmlAttribute
     private int diskSpoolBufferSizeMB;
 
     /**
      * maxElementsOnDisk:
-     *
-     *
      */
     @XmlAttribute
     private int maxElementsOnDisk;
 
     /**
      * diskPersistent
-     *
-     *
      */
     @XmlAttribute
     private boolean diskPersistent;
 
     /**
      * diskExpiryThreadIntervalSeconds
-     *
-     *
      */
     @XmlAttribute
     private int diskExpiryThreadIntervalSeconds;
 
     /**
      * memoryStoreEvictionPolicy:
-	 * when reached maxElementsInMemory,
+     * when reached maxElementsInMemory,
      * Ehcache will clean the memory.the default is LRU.
      * Other Policy is FIFO Or LFU.
-     *
-     *
      */
     @XmlAttribute
     private String memoryStoreEvictionPolicy;

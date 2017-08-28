@@ -1,13 +1,13 @@
 package io.mycat.memory.unsafe.utils.sort;
 
 
+import java.io.UnsupportedEncodingException;
+
 import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.memory.unsafe.utils.BytesTools;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
-
-import java.io.UnsupportedEncodingException;
 
 /**
  * Created by zagnix on 2016/6/20.
@@ -18,7 +18,7 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
     public RowPrefixComputer(StructType schema) {
         StructType schema1 = schema;
         /**
-         * 通过计算得到排序关键词的第一个在行的索引下标
+         * get the index of the first key word of order
          */
         int orderIndex = 0;
         OrderCol[] orderCols = schema.getOrderCols();
@@ -52,7 +52,7 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
             rowIndexElem = row.getBinary(colMeta.getColIndex());
 
             /**
-             * 这里注意一下,order by 排序的第一个字段
+             * the first order by column
              */
             switch (orderIndexType) {
                 case ColMeta.COL_TYPE_INT:
@@ -78,11 +78,11 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
                 case ColMeta.COL_TYPE_BIT:
                 case ColMeta.COL_TYPE_VAR_STRING:
                 case ColMeta.COL_TYPE_STRING:
-                    // ENUM和SET类型都是字符串,按字符串处理
+                // ENUM and SET ar all string
                 case ColMeta.COL_TYPE_ENUM:
                 case ColMeta.COL_TYPE_SET:
                     return PrefixComparators.BinaryPrefixComparator.computePrefix(rowIndexElem);
-                // BLOB相关类型和GEOMETRY类型不支持排序,略掉
+                // not support BLOB,GEOMETRY
                 default:
                     break;
             }

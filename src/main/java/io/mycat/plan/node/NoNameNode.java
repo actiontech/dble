@@ -1,17 +1,17 @@
 package io.mycat.plan.node;
 
-import io.mycat.MycatServer;
-import io.mycat.config.model.SchemaConfig;
-import io.mycat.plan.PlanNode;
-import io.mycat.plan.util.ToStringUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import io.mycat.MycatServer;
+import io.mycat.config.model.SchemaConfig;
+import io.mycat.plan.PlanNode;
+import io.mycat.plan.util.ToStringUtil;
+
 /**
- * 匿名表,比如select 1,only exists selecteditems
+ * NoNameNode eg:select 1,only exists selecteditems
  *
  * @author ActionTech
  */

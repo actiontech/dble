@@ -15,7 +15,7 @@ import io.mycat.plan.util.PlanUtil;
 import java.util.*;
 
 /**
- * 尽量使得select项在传输过程中最少
+ * make select as fewer as possible
  *
  * @author ActionTech
  */
@@ -29,8 +29,9 @@ public final class SelectedProcessor {
     }
 
     /**
-     * 将topushColumns列下推到当前节点上 父节点的selectedrefered为A.id,A.name,B.id,B.name,
-     * name子节点A只要提供父节点的selectcolumn为 A.id,A.name即可
+     * pushSelected
+     * if parent's  selected refered isA.id,A.name,B.id,B.name,
+     * node of A only need push A.id,A.nam
      *
      * @param qtn
      * @param toPushColumns
@@ -39,7 +40,7 @@ public final class SelectedProcessor {
     private static PlanNode pushSelected(PlanNode qtn, Collection<Item> toPushColumns) {
         boolean isPushDownNode = false;
         if (PlanUtil.isGlobalOrER(qtn)) {
-            // 这边应该循环遍历它的child然后每个进行buildColumnRefers,先不处理了
+            // TODO:buildColumnRefers for every child
             List<Item> selList = qtn.getColumnsSelected();
             for (Item pdSel : toPushColumns) {
                 if (!selList.contains(pdSel)) {
@@ -73,7 +74,7 @@ public final class SelectedProcessor {
                     existSum |= toPush.type().equals(ItemType.SUM_FUNC_ITEM);
                 }
                 // @bug select sum(id) from (select id,sum(id) from t1) t
-                // 如果直接将id下推,少去了sum(id)则出错
+                // if only push id,it will miss sum(id)
                 if (!existSum && qtn.getSumFuncs().size() > 0) {
                     selList.add(qtn.getSumFuncs().iterator().next());
                 }
@@ -116,7 +117,7 @@ public final class SelectedProcessor {
         return oldNewMap.values();
     }
 
-    // union的push须区别于普通的push,toPushColumn.isEmpty时需保持merge的select属性不能被修改
+    // union's push is different , when toPushColumn.isEmpty,   merge's select can't be change
     private static PlanNode mergePushSelected(MergeNode merge, Collection<Item> toPushColumns) {
         if (toPushColumns.isEmpty() && merge.getOrderBys().isEmpty()) {
             for (PlanNode child : merge.getChildren()) {
@@ -128,7 +129,7 @@ public final class SelectedProcessor {
         final Map<String, Integer> colIndexs = merge.getColIndexs();
         List<Item> mergeSelects = null;
         if (toPushColumns.isEmpty()) {
-            // 不修改merge的select属性
+            //  merge's select can't be change
             mergeSelects = new ArrayList<>();
             merge.setComeInFields(mergeSelects);
             mergeSelects.addAll(merge.getColumnsSelected());
@@ -145,21 +146,21 @@ public final class SelectedProcessor {
                 }
             }
         }
-        // 把order by添加进来
+        // add order by
         for (Order orderby : merge.getOrderBys()) {
             Item orderSel = orderby.getItem();
             mergePushOrderBy(orderSel, mergeSelects);
         }
-        // 将mergeselect中的内容下推到child中去
+        // push down the merge's select
         List<List<Item>> allChildPushs = new ArrayList<>(toPushColumns.size());
         for (Item toPush : mergeSelects) {
-            // union的order by必须从selects中直接查找
+            // union's order by must be found in selects
             if (toPush.getPushDownName() == null && !toPush.type().equals(ItemType.FIELD_ITEM))
                 toPush.setPushDownName(toPush.getItemName());
             List<Item> childPushs = PlanUtil.getPushItemsToUnionChild(merge, toPush, colIndexs);
             allChildPushs.add(childPushs);
         }
-        // 保证每个child的下推个数都是一致的
+        // make all child's count of pushing down is equal
         for (int index = 0; index < merge.getChildren().size(); index++) {
             List<Item> colSels = merge.getChildren().get(index).getColumnsSelected();
             colSels.clear();
@@ -172,7 +173,7 @@ public final class SelectedProcessor {
     }
 
     /**
-     * 检查merge下的subchild是否存在distinct或者聚合函数
+     * check merge's subchild have distinct or aggregate function
      *
      * @param merge
      * @return
@@ -202,7 +203,7 @@ public final class SelectedProcessor {
                 if (!mergeSelects.contains(func)) {
                     mergeSelects.add(func);
                 }
-                // union的order by必须从selects中直接查找
+                // union's order by must be found from selects
                 func.setPushDownName(func.getItemName());
             }
         } else if (orderSel instanceof ItemSum) {

@@ -1,60 +1,55 @@
 package io.mycat.statistic.stat;
 
-import io.mycat.server.parser.ServerParse;
-
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.mycat.server.parser.ServerParse;
+
 /**
- * SQL R/W 执行状态
- * 因为这里的所有元素都近似为非必须原子更新的,即:
- * 例如:rCount和netInBytes没有必要非得保持同步更新,在同一个事务内
- * 只要最后更新了即可,所以将其中的元素拆成一个一个原子类,没必要保证精确的保持原样不加任何锁
- *
+ * UserSqlRWStat
  * @author zhuam
  */
 public class UserSqlRWStat {
 
 
     /**
-     * R/W 次数
+     * R/W count
      */
     private AtomicLong rCount = new AtomicLong(0L);
     private AtomicLong wCount = new AtomicLong(0L);
 
     /**
-     * 每秒QPS
+     * QPS
      */
     private int qps = 0;
 
     /**
-     * Net In/Out 字节数
+     * Net In/Out
      */
     private AtomicLong netInBytes = new AtomicLong(0L);
     private AtomicLong netOutBytes = new AtomicLong(0L);
 
     /**
-     * 最大的并发
+     * concurrentMax
      */
     private int concurrentMax = 1;
 
     /**
-     * 执行耗时
+     * execute time
      * <p>
-     * 10毫秒内、 10 - 200毫秒内、 1秒内、 超过 1秒
+     * 10milliseconds,between 10 and 200milliseconds, in 1 second,>1s
      */
     private final Histogram timeHistogram = new Histogram(10, 200, 1000, 2000);
 
     /**
-     * 执行所在时段
+     * period
      * <p>
-     * 22-06 夜间、 06-13 上午、 13-18下午、 18-22 晚间
+     * 22pm-06am,06am-13pm,13-18pm, 18-22pm
      */
     private final Histogram executeHistogram = new Histogram(6, 13, 18, 22);
 
     /**
-     * 最后执行时间
-     * 不用很精确,所以不加任何锁
+     * no lock for performance
      */
     private long lastExecuteTime;
 
@@ -93,7 +88,7 @@ public class UserSqlRWStat {
                 break;
         }
 
-        //SQL执行所在的耗时区间
+        //SQL execute time
         if (executeTime <= 10) {
             this.timeHistogram.record(10);
 
@@ -107,7 +102,7 @@ public class UserSqlRWStat {
             this.timeHistogram.record(2000);
         }
 
-        //SQL执行所在的时间区间
+        //SQL period
         int oneHour = 3600 * 1000;
         long hour0 = endTime / (24L * (long) oneHour) * (24L * (long) oneHour) - (long) timeZoneOffset;
         long hour06 = hour0 + 6L * (long) oneHour - 1L;

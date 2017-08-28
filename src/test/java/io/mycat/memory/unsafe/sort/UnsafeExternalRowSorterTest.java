@@ -1,5 +1,18 @@
 package io.mycat.memory.unsafe.sort;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.memory.mm.MemoryManager;
@@ -14,13 +27,6 @@ import io.mycat.memory.unsafe.utils.sort.RowPrefixComputer;
 import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
-import org.junit.Assert;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Created by zagnix on 2016/6/19.
@@ -31,8 +37,7 @@ public class UnsafeExternalRowSorterTest {
     public static final Logger LOGGER = LoggerFactory.getLogger(UnsafeExternalRowSorterTest.class);
 
     /**
-     * 测试类型 LONG,INT,SHORT,Float,Double,String,Binary
-     * 经测试基数排序可以适用上述数据类型,大大提高排序速度
+     * test type LONG,INT,SHORT,Float,Double,String,Binary
      */
     @Test
     public void testUnsafeExternalRowSorter() throws NoSuchFieldException, IllegalAccessException, IOException {
@@ -41,10 +46,7 @@ public class UnsafeExternalRowSorterTest {
         MycatPropertyConf conf = myCatMemory.getConf();
         DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
                 Thread.currentThread().getId());
-        /**
-         * 1.schema ,模拟一个field字段值
-         *
-         */
+        
         int fieldCount = 3;
         ColMeta colMeta = null;
         Map<String, ColMeta> colMetaMap = new HashMap<String, ColMeta>(fieldCount);
@@ -69,9 +71,7 @@ public class UnsafeExternalRowSorterTest {
         UnsafeExternalRowSorter.PrefixComputer prefixComputer =
                 new RowPrefixComputer(schema);
 
-        /**
-         * 3 .PrefixComparator 默认是ASC,可以选择DESC
-         */
+        
         final PrefixComparator prefixComparator = PrefixComparators.LONG;
 
         UnsafeExternalRowSorter sorter =
@@ -81,7 +81,7 @@ public class UnsafeExternalRowSorterTest {
                         prefixComparator,
                         prefixComputer,
                         conf.getSizeAsBytes("mycat.buffer.pageSize", "1m"),
-                        true, /**使用基数排序？true or false*/
+                        true,
                         true);
 
         UnsafeRow unsafeRow;
@@ -143,7 +143,7 @@ public class UnsafeExternalRowSorterTest {
         Assert.assertEquals(TEST_SIZE, indexprint);
     }
 
-    public static String getRandomString(int length) { //length表示生成字符串的长度
+    public static String getRandomString(int length) {
         String base = "abcdefghijklmnopqrstuvwxyz0123456789";
         Random random = new Random();
         StringBuffer sb = new StringBuffer();

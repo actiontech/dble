@@ -1,8 +1,8 @@
 package io.mycat.plan.common.field;
 
-import io.mycat.plan.common.item.FieldTypes;
-
 import java.util.List;
+
+import io.mycat.plan.common.item.FieldTypes;
 
 public class FieldUtil {
     public static final int NOT_NULL_FLAG = 1; /* Field can't be NULL */
@@ -15,7 +15,7 @@ public class FieldUtil {
     public static final int BINARY_FLAG = 128; /* Field is binary */
 
     /**
-     * b1,b2代表的是整数型数字,进行比较,b1,b2非null
+     * b1,b2 are int
      *
      * @param b1
      * @param b2
@@ -24,13 +24,13 @@ public class FieldUtil {
     public static int compareIntUsingStringBytes(byte[] b1, byte[] b2) {
         char b1c0 = (char) b1[0];
         char b2c0 = (char) b2[0];
-        if (b1c0 == '-') { // b1为负数
-            if (b2c0 == '-') { // b2为负数
+        if (b1c0 == '-') { // b1<0
+            if (b2c0 == '-') { // b2<0
                 return -compareUnIntUsingStringBytes(b1, 1, b2, 1);
             } else {
                 return -1;
             }
-        } else { // b1为正数
+        } else { // b1>0
             if (b2c0 == '-') {
                 return 1;
             } else {
@@ -39,7 +39,7 @@ public class FieldUtil {
         }
     }
 
-    /* 不考虑符号的b1,b2的比较 , b1,b2代表整数 */
+    /* b1,b2 are unsigned int*/
     private static int compareUnIntUsingStringBytes(byte[] b1, int startb1, byte[] b2, int startb2) {
         int b1len = b1.length - startb1;
         int b2len = b2.length - startb2;
@@ -48,7 +48,7 @@ public class FieldUtil {
         else if (b1len > b2len)
             return 1;
         else {
-            // 长度相等
+            // the length is equal
             for (int i = 0; i < b1len; i++) {
                 byte bb1 = b1[startb1 + i];
                 byte bb2 = b2[startb2 + i];

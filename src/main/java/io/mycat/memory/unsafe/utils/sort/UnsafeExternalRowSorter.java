@@ -17,6 +17,16 @@
 
 package io.mycat.memory.unsafe.utils.sort;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
@@ -24,14 +34,6 @@ import io.mycat.memory.unsafe.row.StructType;
 import io.mycat.memory.unsafe.row.UnsafeRow;
 import io.mycat.sqlengine.mpp.OrderCol;
 import io.mycat.sqlengine.mpp.RowDataPacketSorter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.Iterator;
-import java.util.List;
 
 public final class UnsafeExternalRowSorter {
 
@@ -257,17 +259,16 @@ public final class UnsafeExternalRowSorter {
                 return 0;
             }
 
-            /**取出一行数据*/
             row1.pointTo(baseObj1, baseOff1, -1);
             row2.pointTo(baseObj2, baseOff2, -1);
             int cmp = 0;
             int len = orderCols.length;
 
-            int type = OrderCol.COL_ORDER_TYPE_ASC; /**升序*/
+            int type = OrderCol.COL_ORDER_TYPE_ASC;
 
             for (OrderCol orderCol : orderCols) {
                 int colIndex = orderCol.colMeta.getColIndex();
-                /**取出一行数据中的列值,进行大小比对*/
+                /**compare*/
                 byte[] left = null;
                 byte[] right = null;
 

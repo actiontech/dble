@@ -4,7 +4,7 @@ import io.mycat.route.RouteStrategy;
 import io.mycat.route.impl.DruidMycatRouteStrategy;
 
 /**
- * 路由策略工厂类
+ * RouteStrategyFactory
  *
  * @author wang.dw
  */

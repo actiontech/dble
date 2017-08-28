@@ -1,13 +1,14 @@
 package io.mycat.config.util;
 
-import io.mycat.config.model.SystemConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.config.model.SystemConfig;
 
 /**
  * @author yanglixue
@@ -19,9 +20,9 @@ public final class DnPropertyUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger("DnPropertyUtil");
 
     /**
-     * 加载dnindex.properties属性文件
+     * loadDnIndexProps
      *
-     * @return 属性文件
+     * @return Properties
      */
     public static Properties loadDnIndexProps() {
         Properties prop = new Properties();

@@ -14,7 +14,6 @@ public class DruidShardingParseInfo {
 
     private List<RouteCalculateUnit> routeCalculateUnits = new ArrayList<>();
 
-    //tables为路由计算共享属性,多组RouteCalculateUnit使用同样的tables
     private List<String> tables = new ArrayList<>();
 
     /**

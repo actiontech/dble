@@ -3,7 +3,7 @@ package io.mycat.config.model;
 import java.util.HashMap;
 
 /**
- * 支持表名中包含引号[`]
+ * support[`] in table
  *
  * @author BEN GONG
  */
@@ -14,7 +14,6 @@ public class TableConfigMap extends HashMap<String, TableConfig> {
     @Override
     public TableConfig get(Object key) {
         String tableName = key.toString();
-        // 忽略表名中的引号.
         if (tableName.contains("`")) {
             tableName = tableName.replaceAll("`", "");
         }
@@ -25,7 +24,6 @@ public class TableConfigMap extends HashMap<String, TableConfig> {
     @Override
     public boolean containsKey(Object key) {
         String tableName = key.toString();
-        // 忽略表名中的引号.
         if (tableName.contains("`")) {
             tableName = tableName.replaceAll("`", "");
         }

@@ -25,21 +25,21 @@ import java.util.Set;
 
 public class ERJoinChooser {
     /**
-     * 保存整个join树的join关系 ex: t1 inner join t2 on t1.id=t2.id inner join t3 on
-     * t1.name=t3.name and t1.id=t3.id 则 sel[0]: t1.id,t2.id,t3.id sel[1]:
+     * record all join relation in join node ex: t1 inner join t2 on t1.id=t2.id inner join t3 on
+     * t1.name=t3.name and t1.id=t3.id then sel[0]: t1.id,t2.id,t3.id sel[1]:
      * t1.name,t3.name
      */
     private List<ArrayList<JoinKeyInfo>> selLists = new ArrayList<>();
 
-    // 当前正在对selLists的那一行做er尝试
+    // the index  selLists for trying ER
     private int trySelListIndex = 0;
 
     private List<PlanNode> joinUnits = new ArrayList<>();
 
-    // global表
+    // global table
     private List<PlanNode> globals = new ArrayList<>();
 
-    // 生成的若干的er joinnode
+    // make er joinnode
     private List<JoinNode> makedERJnList = new ArrayList<>();
 
     private List<Item> otherJoinOns = new ArrayList<>();
@@ -68,9 +68,10 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer start -------------------- */
 
     /**
-     * left join时也可以进行ER优化,但是策略和inner join不同
-     * ex:t1,t2中,t1.id和t2.id是外键关联,且是拆分ER规则(同一个拆分规则),那么t1 left join t2 on
-     * t1.id=t2.id是可以下发的 <leftjoin我们不更改join节点的结构,仅是做出判断,该left join是否可以ER优化>
+     * left join's ER is different from inner join's
+     * ex:t1,t2 ,if t1 left join t2 on
+     * t1.id=t2.id can be pushed
+     * < we cna't change left join's structure>
      *
      * @return
      */
@@ -123,7 +124,7 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer end -------------------- */
 
     /**
-     * inner join的er优化,将inner join的unit拆分进行重新拼接
+     * inner join's ER, rebuild inner joi's unit
      *
      * @return
      */
@@ -140,30 +141,30 @@ public class ERJoinChooser {
             if (erJoinNode == null) {
                 trySelListIndex++;
             } else {
-                // 重新扫描
+                // re scanning
                 this.makedERJnList.add(erJoinNode);
             }
         }
         if (makedERJnList.isEmpty())
-            // 未发现er关系join
+            // no er join
             return jn;
 
         List<PlanNode> others = new ArrayList<>();
-        // makedErJnList放在前面,这样可以和ER进行join
+        // make makedErJnList at the beginning,join with ER
         others.addAll(makedERJnList);
         others.addAll(joinUnits);
         for (int i = 0; i < others.size(); i++) {
-            // 这个地方需要将这些无法再进一步优化的unit尽量和global组合
+            // make up the unit which cna;t optimized  and global table
             PlanNode tnewOther = others.get(i);
             PlanNode newT0 = joinWithGlobal(tnewOther, globals);
             others.set(i, newT0);
         }
-        // 到这儿为止,就剩下others和globals中有可能有node了,而且other中的和global中的已经都尝试过join了
+        // only others and globals may have node and have been tried to ER JOIN
         if (globals.size() > 0) {
             PlanNode globalJoin = makeJoinNode(globals);
             others.add(globalJoin);
         }
-        // others中的节点都是无法进行优化的join units,随意将他们进行组合即可
+        // others' node is the join units which can not optimize, just merge them
         JoinNode ret = (JoinNode) makeJoinNode(others);
         ret.setOrderBys(jn.getOrderBys());
         ret.setGroupBys(jn.getGroupBys());
@@ -174,7 +175,7 @@ public class ERJoinChooser {
         Item unFoundSelFilter = makeRestFilter();
         if (unFoundSelFilter != null)
             ret.setOtherJoinOnFilter(FilterUtils.and(ret.getOtherJoinOnFilter(), unFoundSelFilter));
-        // 需要将原来的where以及selLists中未处理掉的条件and起来
+        // and the origin where and the remain condition in selLists
         ret.having(jn.getHavingFilter());
         ret.setWhereFilter(jn.getWhereFilter());
         ret.setAlias(jn.getAlias());
@@ -185,8 +186,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 根据selList以及joinUnits的信息尝试生成ERJoin
-     *
+     * tryMakeERJoin by  selList and join Unitss info
      * @return
      */
     private JoinNode tryMakeERJoin(List<JoinKeyInfo> selList) {
@@ -210,7 +210,7 @@ public class ERJoinChooser {
         return null;
     }
 
-    // 生成er join节点,删除selListIndex中的erKeyIndexs的jk,替换其余selList中的tn节点
+    // generate er join node ,remove jk of rKeyIndexs in selListIndex,replace the other selList's tn
     private JoinNode makeERJoin(List<JoinKeyInfo> erKeys) {
         PlanNode t0 = erKeys.get(0).tn;
         PlanNode t1 = erKeys.get(1).tn;
@@ -236,7 +236,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 将units中的join节点随意组合生成join节点
+     * just makeJoinNode according with wishes
      *
      * @param units
      * @return
@@ -254,12 +254,13 @@ public class ERJoinChooser {
     }
 
     /**
-     * t0和t1进行join,在selLists中查找他们之间存在的join关系,并将这些关系进行组合形成joinfilter
-     * [假设不会出现a.id=b.id and a.id = b.name这种无意义的join语句]
+     * join t0 and t1, find relation in selLists and make joinfilter
+     * [if a.id=b.id and a.id = b.name would not appear]
      *
-     * @param tmp
+     * @param join
      * @param t0
-     * @param ti
+     * @param t1
+     * @param replaceSelList
      * @return
      */
     private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList) {
@@ -274,7 +275,7 @@ public class ERJoinChooser {
                     jkit1 = jki;
                 }
             }
-            // 这一行sellist里t0和t1可以按照jkit0 jkit1 join
+            // t0and t1 in sel list can make jkit0 jkit1 join
             if (jkit0 != null && jkit1 != null) {
                 JoinKeyInfo newJki = new JoinKeyInfo(jkit0.key);
                 newJki.tn = join;
@@ -300,11 +301,11 @@ public class ERJoinChooser {
             boolean foundJoin = false;
             for (int i = 0; i < globalList.size(); i++) {
                 PlanNode global = globalList.get(i);
-                // 尝试做他们的join
+                // try join
                 JoinNode joinNode = new JoinNode(newT, global);
                 List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false);
-                // @如果没有可以join的join列,证明剩下的都是cross join
-                if (jnFilter.size() > 0 || selLists.size() == 0) { // 可以join
+                // @if no join column, then the other is cross join
+                if (jnFilter.size() > 0 || selLists.size() == 0) { // join
                     replaceSelListReferedTn(newT, global, joinNode);
                     foundJoin = true;
                     joinNode.setJoinFilter(jnFilter);
@@ -320,14 +321,15 @@ public class ERJoinChooser {
     }
 
     /**
-     * 尝试着对t0和global的节点进行join,和erjoin不同的是,t0是已经被er优化唰下来的,不可以再ER优化了
+     * try join t0 and global , the different to erjoin is ,we konw t0 can not be ER node
      *
      * @param t0
-     * @param global
+     * @param t1
+     * @param join
      * @return
      */
 
-    // 将selList中引用到t0以及t1的节点改成引用join节点
+    // change t0 and t1 in selList to join node
     private void replaceSelListReferedTn(PlanNode t0, PlanNode t1, PlanNode join) {
         for (List<JoinKeyInfo> list : selLists)
             for (JoinKeyInfo jki : list) {
@@ -337,8 +339,8 @@ public class ERJoinChooser {
     }
 
     /**
-     * 初始化sellist中的JoinKeyInfo,selList刚组建好时,里面的JoinKeyInfo只有key属性,这个函数
-     * 就是对其它的两个属性赋值
+     * init sellis's JoinKeyInfo,JoinKeyInfo only has key selList when just build ,
+     * set values for them
      */
     private void initJoinKeyInfo() {
         for (List<JoinKeyInfo> selList : selLists) {
@@ -356,7 +358,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 查找node中最小的join units
+     * find the smallest join units in node
      *
      * @param node innerjoin
      */
@@ -384,13 +386,13 @@ public class ERJoinChooser {
     }
 
     /**
-     * 遍历node
+     * visitJoinOns
      *
-     * @param node
+     * @param joinNode
      */
     private void visitJoinOns(JoinNode joinNode) {
         for (PlanNode unit : joinUnits) {
-            // 已经是最小节点
+            // is unit
             if (unit == joinNode) {
                 return;
             }
@@ -403,7 +405,7 @@ public class ERJoinChooser {
         for (PlanNode child : joinNode.getChildren()) {
             if ((!isUnit(child)) && (child.type().equals(PlanNodeType.JOIN))) {
                 // a join b on a.id=b.id and a.id+b.id=10 join c on
-                // a.id=c.id,将a.id+b.id提上来
+                // a.id=c.id,push up a.id+b.id
                 JoinNode jnChild = (JoinNode) child;
                 if (jnChild.getOtherJoinOnFilter() != null)
                     otherJoinOns.add(jnChild.getOtherJoinOnFilter());
@@ -413,7 +415,7 @@ public class ERJoinChooser {
     }
 
     /**
-     * 将joinfilter串解析,得到的key放置到selLists中
+     * parser joinfilter ,add key to selLists
      *
      * @param filter
      */
@@ -444,10 +446,11 @@ public class ERJoinChooser {
     }
 
     /**
-     * 将一个新的ISelectable放置到selLists中,因为存在这种情况: 先插入的是 sellist[0] test3.id,test2.id
-     * sellist[1] test4.id,test5.id,test6.id
-     * 这个时候如果有joinfilter是test3.id=test4.id,
-     * 显然需要将test4.id放置到sellist[0]中,同时,要将sellist[1] 中剩余的项也放置到sel[0]中
+     * put an new ISelectable into selLists ,
+     * eg: insert sellist[0] test3.id,test2.id
+     * sellist[1] test4.id,test5.id,test6.id firstly
+     * now there is a joinfilter is test3.id=test4.id,
+     * we must put test4.id into sellist[0] ,add put all sellist[1]'s item into sel[0]
      *
      * @param s
      * @param listIndex
@@ -468,8 +471,8 @@ public class ERJoinChooser {
     }
 
     /**
-     * 由于join节点的变化,有可能导致有一些filter原来是join on
-     * filter的,但是现在成为不了joinfilter了,把他们丢到other join on中
+     * the origin filter is  join on filter
+     * ,now join is changed ,and the filter is not join filter any more ,add it to other join on
      *
      * @return
      */
@@ -561,7 +564,6 @@ public class ERJoinChooser {
             return null;
         } else {
             String table = col.getTableName();
-            // 存在col名称
             if (child.getAlias() == null) {
                 for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
                     if (StringUtil.equals(table, entry.getKey().getTable()) &&
@@ -595,14 +597,14 @@ public class ERJoinChooser {
     }
 
     /**
-     * 记录joinkey的关联属性
+     * JoinKeyInfo
      *
-     * @author chenzifei
+     * @author ActionTech
      */
     private static class JoinKeyInfo {
-        private Item key; // join on的on key
-        private PlanNode tn; // 该joinkey属于哪个treenode
-        private ERTable cm; // 该joinkey是否有er关联,如果有er关联的话,保存它的parentkey
+        private Item key; // join on's on key
+        private PlanNode tn; // treenode of the joinkey belong to
+        private ERTable cm; //  joinkey is er ,if so,save th parentkey
 
         JoinKeyInfo(Item key) {
             this.key = key;

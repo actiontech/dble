@@ -1,5 +1,10 @@
 package io.mycat.manager.response;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
@@ -12,13 +17,8 @@ import io.mycat.net.mysql.FieldPacket;
 import io.mycat.net.mysql.ResultSetHeaderPacket;
 import io.mycat.net.mysql.RowDataPacket;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-
 /**
- * 实现show@@directmemory功能
+ * show@@directmemory
  *
  * @author zagnix
  * @version 1.0
@@ -125,7 +125,7 @@ public final class ShowDirectMemory {
                     long value = entry.getValue();
                     row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                     /**
-                     * 该DIRECTMEMORY内存被结果集处理使用了
+                     * DIRECTMEMORY used by result
                      */
                     row.add("MergeMemoryPool".getBytes(c.getCharset()));
                     row.add(value > 0 ?
@@ -140,7 +140,7 @@ public final class ShowDirectMemory {
                 long value = entry.getValue();
                 row.add(String.valueOf(entry.getKey()).getBytes(c.getCharset()));
                 /**
-                 * 该DIRECTMEMORY内存属于Buffer Pool管理的！
+                 * DIRECTMEMORY belong to Buffer Pool
                  */
                 row.add("NetWorkBufferPool".getBytes(c.getCharset()));
                 row.add(value > 0 ?
@@ -194,14 +194,14 @@ public final class ShowDirectMemory {
         try {
 
             /**
-             * 通过-XX:MaxDirectMemorySize=2048m设置的值
+             * the value of -XX:MaxDirectMemorySize
              */
             row.add(JavaUtils.bytesToString2(Platform.getMaxDirectMemory()).getBytes(c.getCharset()));
 
             if (useOffHeapForMerge == 1) {
 
                 /**
-                 * 结果集合并时,总共消耗的DirectMemory内存
+                 * used DirectMemory for merge
                  */
                 ConcurrentMap<Long, Long> concurrentHashMap = MycatServer.getInstance().
                         getServerMemory().
@@ -212,7 +212,7 @@ public final class ShowDirectMemory {
             }
 
             /**
-             * 网络packet处理,在buffer pool 已经使用DirectMemory内存
+             * IO packet used in DirectMemory in buffer pool
              */
             for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
                 usedforNetworkd += entry.getValue();
@@ -225,9 +225,8 @@ public final class ShowDirectMemory {
 
             if (useOffHeapForMerge == 1) {
                 /**
-                 * 设置使用off-heap内存处理结果集时,防止客户把MaxDirectMemorySize设置到物理内存的极限.
-                 * Mycat能使用的DirectMemory是MaxDirectMemorySize*DIRECT_SAFETY_FRACTION大小,
-                 * DIRECT_SAFETY_FRACTION为安全系数,为OS,Heap预留空间,避免因大结果集造成系统物理内存被耗尽！
+                 * when use off-heap , avoid that MaxDirectMemorySize reached the limit of Physical memory.
+                 * so the valid DirectMemory is MaxDirectMemorySize*DIRECT_SAFETY_FRACTION
                  */
                 totalAvailable = (long) (Platform.getMaxDirectMemory() * MyCatMemory.DIRECT_SAFETY_FRACTION);
             } else {
@@ -237,9 +236,6 @@ public final class ShowDirectMemory {
             row.add(JavaUtils.bytesToString2(totalAvailable - usedforMerge - usedforNetworkd).getBytes(c.getCharset()));
 
             if (useOffHeapForMerge == 1) {
-                /**
-                 * 输出安全系统DIRECT_SAFETY_FRACTION
-                 */
                 row.add(("" + MyCatMemory.DIRECT_SAFETY_FRACTION).getBytes(c.getCharset()));
             } else {
                 row.add(("1.0").getBytes(c.getCharset()));
@@ -250,7 +246,7 @@ public final class ShowDirectMemory {
 
             if (useOffHeapForMerge == 1) {
                 /**
-                 * 预留OS系统部分内存！！！
+                 * saved for OS
                  */
                 resevedForOs = (long) ((1 - MyCatMemory.DIRECT_SAFETY_FRACTION) *
                         (Platform.getMaxDirectMemory() -

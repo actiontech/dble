@@ -1,21 +1,23 @@
 package io.mycat.config.loader.zkprocess.zookeeper.process;
 
-import com.google.gson.Gson;
-import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
-import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+import com.google.gson.Gson;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
+import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
 
 /**
- * 进行zk获取数据类信息
+ * ZkMultLoader
  *
  *
  * author:liujun
@@ -30,23 +32,12 @@ public class ZkMultLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
 
-    /**
-     * zk连接信息
-     *
-     *
-     */
     private CuratorFramework curator;
 
-    /**
-     * 进行数据转换操作
-     *
-     *
-     */
     private Gson gson = new Gson();
 
     /**
-     * 得到树形节点信息
-     * 方法描述
+     * getTreeDirectory
      *
      * @param path
      * @param zkDirectory
@@ -57,33 +48,26 @@ public class ZkMultLoader {
 
         boolean check = this.checkPathExists(path);
 
-        // 如果文件存在,则继续遍历
         if (check) {
-            // 首先获取当前节点的数据,然后再递归
             String currDate = this.getDataToString(path);
 
             List<String> childPathList = this.getChildNames(path);
 
-            // 如果存在子目录信息,则进行
             if (null != childPathList && !childPathList.isEmpty()) {
                 DiretoryInf directory = new ZkDirectoryImpl(name, currDate);
 
-                // 添加目录节点信息
                 zkDirectory.add(directory);
 
                 for (String childPath : childPathList) {
                     this.getTreeDirectory(ZKPaths.makePath(path, childPath), childPath, directory);
                 }
             } else {
-                // 添加当前的数据节点信息
                 zkDirectory.add(new ZkDataImpl(name, currDate));
             }
         }
     }
 
     /**
-     * 检查文件是否存在
-     * 方法描述
      *
      * @param path
      * @return
@@ -143,12 +127,10 @@ public class ZkMultLoader {
 
     public boolean createPath(String path) {
 
-        // 得到当前的目录信息
         LOGGER.trace("createPath child path is {}", path);
 
         boolean result = true;
         try {
-            // 进行目录的创建操作
             ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), path);
         } catch (Exception e) {
             LOGGER.error(" createPath error", e);
@@ -177,8 +159,7 @@ public class ZkMultLoader {
     }
 
     /**
-     * 通过名称数据节点信息
-     * 方法描述
+     * getZkData
      *
      * @param zkDirectory
      * @param name
@@ -205,8 +186,7 @@ public class ZkMultLoader {
     }
 
     /**
-     * 通过名称获得目录节点信息
-     * 方法描述
+     * getZkDirectory
      *
      * @param zkDirectory
      * @param name

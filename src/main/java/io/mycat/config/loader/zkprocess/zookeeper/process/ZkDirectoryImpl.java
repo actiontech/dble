@@ -1,13 +1,13 @@
 package io.mycat.config.loader.zkprocess.zookeeper.process;
 
-import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
-import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mycat.config.loader.zkprocess.zookeeper.DataInf;
+import io.mycat.config.loader.zkprocess.zookeeper.DiretoryInf;
+
 /**
- * zk的目录节点信息
+ * ZkDirectoryImpl
  *
  *
  * author:liujun
@@ -19,25 +19,10 @@ import java.util.List;
  */
 public class ZkDirectoryImpl implements DiretoryInf {
 
-    /**
-     * 整个节点信息
-     *
-     *
-     */
     private List<Object> subordinateInfoList = new ArrayList<>();
 
-    /**
-     * 节点的名称信息
-     *
-     *
-     */
     private String name;
 
-    /**
-     * 当前节点的数据信息
-     *
-     *
-     */
     private String value;
 
     public ZkDirectoryImpl(String name, String value) {

@@ -1,10 +1,14 @@
 package io.mycat.statistic.stat;
 
-import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 public class UserSqlHighStat {
 
@@ -21,7 +25,6 @@ public class UserSqlHighStat {
         String newSql = this.sqlParser.mergeSql(sql);
         SqlFrequency frequency = this.sqlFrequencyMap.get(newSql);
         if (frequency == null) {
-            //防止新建的时候的并发问题,只有新建的时候有锁
             if (lock.tryLock()) {
                 try {
                     frequency = new SqlFrequency();
@@ -37,14 +40,14 @@ public class UserSqlHighStat {
         }
         frequency.setLastTime(endTime);
         frequency.incCount();
-        //TODO 目前setExecuteTime方法由于弃用锁,所以某些参数不准确,为了性能,放弃这些参数的准确性.下一步期待更多优化
+        //TODO setExecuteTime has thread safe problem
         frequency.setExecuteTime(executeTime);
         this.sqlFrequencyMap.put(newSql, frequency);
     }
 
 
     /**
-     * 获取 SQL 访问频率
+     * getSqlFrequency
      */
     public List<SqlFrequency> getSqlFrequency(boolean isClear) {
         List<SqlFrequency> list = new ArrayList<>(this.sqlFrequencyMap.values());

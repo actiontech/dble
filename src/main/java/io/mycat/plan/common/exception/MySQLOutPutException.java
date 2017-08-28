@@ -1,7 +1,7 @@
 package io.mycat.plan.common.exception;
 
 /**
- * 表示mysql的标准输出信息
+ * MySQLOutPutException
  *
  * @author ActionTech
  */

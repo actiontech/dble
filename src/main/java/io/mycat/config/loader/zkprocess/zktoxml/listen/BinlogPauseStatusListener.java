@@ -1,5 +1,15 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
+import static io.mycat.util.KVPathUtil.BINLOG_PAUSE_STATUS;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.MycatServer;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
@@ -13,15 +23,6 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.manager.response.ShowBinlogStatus;
 import io.mycat.util.KVPathUtil;
 import io.mycat.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
-
-import static io.mycat.util.KVPathUtil.BINLOG_PAUSE_STATUS;
 
 /**
  * Created by huqing.yan on 2017/5/25.
@@ -38,11 +39,8 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
 
     @Override
     public boolean notifyProcess() throws Exception {
-        // 通过组合模式进行zk目录树的加载
         DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
-        // 进行递归的数据获取
         this.getTreeDirectory(currZkPath, BINLOG_PAUSE_STATUS, statusDirectory);
-        // 从当前的下一级开始进行遍历,获得到
         ZkDataImpl zkDdata = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
         String strPauseInfo = zkDdata.getDataValue();
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);

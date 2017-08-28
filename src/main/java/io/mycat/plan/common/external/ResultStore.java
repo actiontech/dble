@@ -14,9 +14,9 @@ public interface ResultStore {
 
     int getRowCount();
 
-    /* 关闭result */
+    /* close result */
     void close();
 
-    /* 清楚数据 */
+    /* clear data */
     void clear();
 }

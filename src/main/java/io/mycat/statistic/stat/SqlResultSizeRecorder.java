@@ -1,12 +1,12 @@
 package io.mycat.statistic.stat;
 
-import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
+
 /**
- * 大结果集 SQL
+ * SqlResultSizeRecorder
  */
 public class SqlResultSizeRecorder {
 
@@ -33,7 +33,7 @@ public class SqlResultSizeRecorder {
 
 
     /**
-     * 获取 SQL 大结果集记录
+     * get big  SqlResult
      */
     public ConcurrentMap<String, SqlResultSet> getSqlResultSet() {
 

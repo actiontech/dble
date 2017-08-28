@@ -46,10 +46,11 @@ public class BinaryRowDataPacket extends MySQLPacket {
     }
 
     /**
-     * 从UnsafeRow转换成BinaryRowDataPacket
+     * transform from UnsafeRow to BinaryRowDataPacket
      * <p>
-     * 说明: 当开启<b>isOffHeapuseOffHeapForMerge</b>参数时,会使用UnsafeRow封装数据,
-     * 因此需要从这个对象里面将数据封装成BinaryRowDataPacket
+     * Notice: when <b>isOffHeapuseOffHeapForMerge</b>is enable,
+     * UnsafeRow package the data,
+     * so now need to unpackage to BinaryRowDataPacket
      *
      * @param fields
      * @param unsafeRow
@@ -73,10 +74,10 @@ public class BinaryRowDataPacket extends MySQLPacket {
     }
 
     /**
-     * 从RowDataPacket转换成BinaryRowDataPacket
+     * transfor from RowDataPacket to BinaryRowDataPacket
      *
-     * @param fields 字段包集合
-     * @param rowDataPk    文本协议行数据包
+     * @param fields
+     * @param rowDataPk
      */
     public void read(List<FieldPacket> fields, RowDataPacket rowDataPk) {
         this.fieldPackets = fields;
@@ -88,7 +89,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = values.get(i);
             FieldPacket fieldPk = fields.get(i);
-            if (fv == null) { // 字段值为null,根据协议规定存储nullBitMap
+            if (fv == null) {
                 storeNullBitMap(i);
                 this.fieldValues.add(fv);
             } else {
@@ -104,7 +105,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     }
 
     /**
-     * 从RowDataPacket的fieldValue的数据转化成BinaryRowDataPacket的fieldValue数据
+     * transform from RowDataPacket's fieldValue to BinaryRowDataPacket's fieldValue
      *
      * @param fv
      * @param fieldPk
@@ -196,7 +197,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                     Date dateVar = DateUtil.parseDate(ByteUtil.getDate(fv), DateUtil.DATE_PATTERN_ONLY_DATE);
                     this.fieldValues.add(ByteUtil.getBytes(dateVar, false));
                 } catch (org.joda.time.IllegalFieldValueException e1) {
-                    // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
+                    // when time is 0000-00-00 00:00:00 , return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), false));
                 } catch (ParseException e) {
                     LOGGER.error("error", e);
@@ -215,7 +216,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                         this.fieldValues.add(ByteUtil.getBytes(dateTimeVar, false));
                     }
                 } catch (org.joda.time.IllegalFieldValueException e1) {
-                    // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
+                    // when time is 0000-00-00 00:00:00 , return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), false));
 
                 } catch (ParseException e) {
@@ -235,7 +236,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                     }
 
                 } catch (org.joda.time.IllegalFieldValueException e1) {
-                    // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
+                    //when time is 0000-00-00 00:00:00,return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), true));
 
                 } catch (ParseException e) {
@@ -279,7 +280,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                     case Fields.FIELD_TYPE_BIT:
                     case Fields.FIELD_TYPE_DECIMAL:
                     case Fields.FIELD_TYPE_NEW_DECIMAL:
-                        // 长度编码的字符串需要一个字节来存储长度(0表示空字符串)
+                        // a byte for length (0 means empty)
                         BufferUtil.writeLength(bb, fv.length);
                         break;
                     default:
@@ -323,7 +324,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                     case Fields.FIELD_TYPE_BIT:
                     case Fields.FIELD_TYPE_DECIMAL:
                     case Fields.FIELD_TYPE_NEW_DECIMAL:
-                        // 长度编码的字符串需要一个字节来存储长度(0表示空字符串)
+                        // a byte for length (0 means empty)
                         BufferUtil.writeLength(bb, fv.length);
                         break;
                     default:
@@ -361,7 +362,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
                     case Fields.FIELD_TYPE_DECIMAL:
                     case Fields.FIELD_TYPE_NEW_DECIMAL:
                         /*
-                         * 长度编码的字符串需要计算存储长度, 根据mysql协议文档描述
                          * To convert a length-encoded integer into its numeric value, check the first byte:
                          * If it is < 0xfb, treat it as a 1-byte integer.
                          * If it is 0xfc, it is followed by a 2-byte integer.
@@ -372,7 +372,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
                         if (value.length != 0) {
                             size = size + BufferUtil.getLength(value);
                         } else {
-                            size = size + 1; // 处理空字符串,只计算长度1个字节
+                            size = size + 1; //empty string
                         }
                         break;
                     default:

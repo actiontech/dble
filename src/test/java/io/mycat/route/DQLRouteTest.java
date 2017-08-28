@@ -1,10 +1,21 @@
 package io.mycat.route;
 
+import java.lang.reflect.Method;
+import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
+
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
@@ -15,15 +26,6 @@ import io.mycat.route.parser.druid.DruidShardingParseInfo;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
 import io.mycat.route.parser.druid.RouteCalculateUnit;
 import junit.framework.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.lang.reflect.Method;
-import java.sql.SQLSyntaxErrorException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Ignore
 public class DQLRouteTest {
@@ -71,11 +73,9 @@ public class DQLRouteTest {
         stmt.accept(visitor);
 
         List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-        if (visitor.hasOrCondition()) {// 包含or语句
-            // TODO
-            // 根据or拆分
+        if (visitor.hasOrCondition()) {//contains or
             mergedConditionList = visitor.splitConditions();
-        } else {// 不包含OR语句
+        } else {
             mergedConditionList.add(visitor.getConditions());
         }
 
@@ -89,7 +89,7 @@ public class DQLRouteTest {
                 if (value != null && value.indexOf("`") >= 0) {
                     value = value.replaceAll("`", "");
                 }
-                // 表名前面带database的,去掉
+                // remove the database of table
                 if (key != null) {
                     int pos = key.indexOf(".");
                     if (pos > 0) {
@@ -109,7 +109,6 @@ public class DQLRouteTest {
             ctx.setTableAliasMap(tableAliasMap);
         }
 
-        //利用反射机制单元测试DefaultDruidParser类的私有方法buildRouteCalculateUnits
         Class<?> clazz = Class.forName("io.mycat.route.parser.druid.impl.DefaultDruidParser");
         Method buildRouteCalculateUnits = clazz.getDeclaredMethod("buildRouteCalculateUnits",
                 new Class[]{SchemaStatVisitor.class, List.class});

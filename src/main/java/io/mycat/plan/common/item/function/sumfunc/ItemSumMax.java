@@ -1,13 +1,14 @@
 package io.mycat.plan.common.item.function.sumfunc;
 
+import java.io.Serializable;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.Item;
-
-import java.io.Serializable;
-import java.util.List;
 
 
 public class ItemSumMax extends ItemSumHybrid {
@@ -48,7 +49,7 @@ public class ItemSumMax extends ItemSumHybrid {
     }
 
     /**
-     * max(id)的pushdown为max(id)
+     * max(id)'s push-down is max(id)
      */
     @Override
     public boolean pushDownAdd(RowDataPacket row) {

@@ -1,5 +1,9 @@
 package io.mycat.manager.response;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
@@ -14,12 +18,8 @@ import io.mycat.util.IntegerUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-
 /**
- * show 大结果集 SQL
+ * ShowSqlResultSet
  *
  * @author songgw
  */

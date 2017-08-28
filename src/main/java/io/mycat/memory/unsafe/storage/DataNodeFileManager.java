@@ -18,11 +18,6 @@
 package io.mycat.memory.unsafe.storage;
 
 
-import io.mycat.memory.unsafe.utils.JavaUtils;
-import io.mycat.memory.unsafe.utils.MycatPropertyConf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +25,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.memory.unsafe.utils.JavaUtils;
+import io.mycat.memory.unsafe.utils.MycatPropertyConf;
 
 
 /**
@@ -42,7 +43,7 @@ public class DataNodeFileManager {
     private static final Logger LOG = LoggerFactory.getLogger(DataNodeFileManager.class);
     private boolean deleteFilesOnStop;
     /**
-     * TODO 操作完成之后,需要删除临时文件
+     * TODO: delete tmp file
      */
     // The content of subDirs is immutable but the content of subDirs(i) is mutable. And the content
     // of subDirs(i) is protected by the lock of subDirs(i)
@@ -118,9 +119,6 @@ public class DataNodeFileManager {
             }
         }
 
-        /**
-         *类似二维数组
-         */
         return new File(subDirs.get(dirId).get(subDirId), filename);
     }
 

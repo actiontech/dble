@@ -1,20 +1,39 @@
 package io.mycat.plan.common.field;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+import org.apache.log4j.Logger;
+
 import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.net.mysql.FieldPacket;
 import io.mycat.plan.common.MySQLcom;
-import io.mycat.plan.common.field.num.*;
-import io.mycat.plan.common.field.string.*;
-import io.mycat.plan.common.field.temporal.*;
+import io.mycat.plan.common.field.num.FieldBit;
+import io.mycat.plan.common.field.num.FieldDecimal;
+import io.mycat.plan.common.field.num.FieldDouble;
+import io.mycat.plan.common.field.num.FieldFloat;
+import io.mycat.plan.common.field.num.FieldLong;
+import io.mycat.plan.common.field.num.FieldLonglong;
+import io.mycat.plan.common.field.num.FieldMedium;
+import io.mycat.plan.common.field.num.FieldNewdecimal;
+import io.mycat.plan.common.field.num.FieldShort;
+import io.mycat.plan.common.field.num.FieldTiny;
+import io.mycat.plan.common.field.string.FieldBlob;
+import io.mycat.plan.common.field.string.FieldEnum;
+import io.mycat.plan.common.field.string.FieldSet;
+import io.mycat.plan.common.field.string.FieldString;
+import io.mycat.plan.common.field.string.FieldVarchar;
+import io.mycat.plan.common.field.string.FieldVarstring;
+import io.mycat.plan.common.field.temporal.FieldDate;
+import io.mycat.plan.common.field.temporal.FieldDatetime;
+import io.mycat.plan.common.field.temporal.FieldTime;
+import io.mycat.plan.common.field.temporal.FieldTimestamp;
+import io.mycat.plan.common.field.temporal.FieldYear;
 import io.mycat.plan.common.item.FieldTypes;
 import io.mycat.plan.common.item.Item.ItemResult;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.common.time.MyTime;
-import org.apache.log4j.Logger;
-
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public abstract class Field {
     public static Field getFieldItem(byte[] name, byte[] table, int type, int charsetIndex, int fieldLength,
@@ -72,7 +91,7 @@ public abstract class Field {
                 return new FieldVarstring(name, table, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_STRING:
                 return new FieldString(name, table, charsetIndex, fieldLength, decimals, flags);
-            /** --下列的类型函数目前不支持,因为select *出来的mysql都转化成string了,无法知晓它们在数据库中的type-- **/
+            /** --not support below, because select * change to string, can't get the origin type-- **/
             case MYSQL_TYPE_ENUM:
                 return new FieldEnum(name, table, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_SET:
@@ -140,7 +159,7 @@ public abstract class Field {
     }
 
     /**
-     * 是否有可能为空
+     * maybeNull
      *
      * @return
      */
@@ -183,7 +202,7 @@ public abstract class Field {
     }
 
     /**
-     * 计算出实际的对象的内部值
+     * get inner value
      */
     protected abstract void internalJob();
 
@@ -231,7 +250,7 @@ public abstract class Field {
     }
 
     /**
-     * -- field的长度 --
+     * -- the length of field --
      **/
     public String getName() {
         return name;

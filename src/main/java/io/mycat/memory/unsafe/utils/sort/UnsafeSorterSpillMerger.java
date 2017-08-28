@@ -45,10 +45,6 @@ final class UnsafeSorterSpillMerger {
             }
         };
 
-        /**
-         * 使用优先级队列实现多个Spill File 合并排序,并且支持已经排序内存记录
-         * 重新写入一个排序文件中.
-         */
         priorityQueue = new PriorityQueue<>(numSpills, comparator);
     }
 
@@ -56,9 +52,7 @@ final class UnsafeSorterSpillMerger {
      * Add an UnsafeSorterIterator to this merger
      */
     public void addSpillIfNotEmpty(UnsafeSorterIterator spillReader) throws IOException {
-        /**
-         * 添加迭代器到priorityQueue中
-         */
+
         if (spillReader.hasNext()) {
             // We only add the spillReader to the priorityQueue if it is not empty. We do this to
             // make sure the hasNext method of UnsafeSorterIterator returned by getSortedIterator
@@ -73,16 +67,13 @@ final class UnsafeSorterSpillMerger {
     }
 
     /**
-     * 非常重要的一个排序迭代器
      *
      * @return
      * @throws IOException
      */
     public UnsafeSorterIterator getSortedIterator() throws IOException {
         return new UnsafeSorterIterator() {
-            /**
-             * 当前迭代器
-             */
+
             private UnsafeSorterIterator spillReader;
 
             @Override
@@ -101,17 +92,16 @@ final class UnsafeSorterSpillMerger {
                     if (spillReader.hasNext()) {
                         spillReader.loadNext();
                         /**
-                         *添加一个完整迭代器集合给优先级队列,
-                         *优先级队列为根据比较器自动调整想要的数据大小
-                         * 每次都将spillReader添加到队列中进行新的调整
-                         * 最后得到最小的元素,为出优先级队列做准备
+                         * priorityQueue will change the order in it.
+                         * when spillReader add to it
+                         * the smallest ready to pop forASC
                          */
                         priorityQueue.add(spillReader);
                     }
                 }
 
                 /**
-                 * 出队列,当前spillreader最小的元素出优先级队列
+                 * pop from the queue, spillreader
                  */
                 spillReader = priorityQueue.remove();
             }

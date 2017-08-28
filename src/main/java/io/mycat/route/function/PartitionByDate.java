@@ -1,15 +1,20 @@
 package io.mycat.route.function;
 
-import io.mycat.config.model.rule.RuleAlgorithm;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import io.mycat.config.model.rule.RuleAlgorithm;
 
 /**
- * 例子 按期列分区  格式 between操作解析的范例
+ * PartitionByDate
  *
  * @author lxy
  */

@@ -1,12 +1,12 @@
 package io.mycat.plan.common.field.string;
 
-import io.mycat.plan.common.MySQLcom;
-import io.mycat.plan.common.field.Field;
-import io.mycat.plan.common.item.Item.ItemResult;
-
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+
+import io.mycat.plan.common.MySQLcom;
+import io.mycat.plan.common.field.Field;
+import io.mycat.plan.common.item.Item.ItemResult;
 
 public abstract class FieldStr extends Field {
 
@@ -106,7 +106,7 @@ public abstract class FieldStr extends Field {
             return 1;
         }
         try {
-            // mysql order by,>,<字符串使用的是排序值,正常是用大写作为比较
+            // mysql order by,>,< use UpperCase to compare
             String sval1 = MySQLcom.getFullString(charsetName, v1).toUpperCase();
             String sval2 = MySQLcom.getFullString(charsetName, v2).toUpperCase();
             return sval1.compareTo(sval2);

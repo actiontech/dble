@@ -1,13 +1,14 @@
 package io.mycat.plan.common.item.function.sumfunc;
 
+import java.math.BigInteger;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.Item;
-
-import java.math.BigInteger;
-import java.util.List;
 
 
 public class ItemSumOr extends ItemSumBit {
@@ -31,7 +32,7 @@ public class ItemSumOr extends ItemSumBit {
     }
 
     /**
-     * or的pushdown为or
+     * or's push-down isor
      */
     @Override
     public boolean pushDownAdd(RowDataPacket row) {

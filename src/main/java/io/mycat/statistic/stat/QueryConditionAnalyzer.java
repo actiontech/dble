@@ -1,13 +1,5 @@
 package io.mycat.statistic.stat;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.stat.TableStat.Condition;
-import io.mycat.server.parser.ServerParse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,22 +7,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
+import com.alibaba.druid.stat.TableStat.Condition;
+
+import io.mycat.server.parser.ServerParse;
+
 /**
- * 特定 SQL 查询条件的统计分析
+ * QueryConditionAnalyzer
  * --------------------------------------------------
  * <p>
- * 例:
+ * ge:
  * SELECT * FROM v1user Where userName=? AND cityName =?
  * SELECT * FROM v1user Where userName=?
  * SELECT * FROM v1user Where userName=? AND age > 20
  * <p>
- * SELECT * FROM v1user Where userName = "张三" AND cityName = "北京";
- * SELECT * FROM v1user Where userName = "李四"
- * SELECT * FROM v1user Where userName = "张三" AND age > 20
+ * SELECT * FROM v1user Where userName = "A" AND cityName = "BEIJING";
+ * SELECT * FROM v1user Where userName = "B"
+ * SELECT * FROM v1user Where userName = "A" AND age > 20
  * <p>
- * 现在我们希望知道DB 中 业务比较关注的 userName 有哪些,次数是多少, 怎么处理哩,如下
+ * If we want to konw the userName frequency
  * <p>
- * 设置: 表名&条件列  ( v1user&userName ) 即可,取消请设置 NULL
+ * set: tablename&column  ( v1user&userName ), set NULL for cancel
  *
  * @author zhuam
  */
@@ -125,11 +127,10 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
     }
 
 
-    // SQL 解析
     class SQLParser {
 
         /**
-         * 去掉库名、去掉``
+         * fixName :schema and `
          *
          * @param table
          * @return
@@ -146,7 +147,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
         }
 
         /**
-         * 解析 SQL 获取指定表及条件列的值
+         * parseConditionValues
          *
          * @param sql
          * @param table

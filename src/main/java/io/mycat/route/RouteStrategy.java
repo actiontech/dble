@@ -1,15 +1,16 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
+
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.server.ServerConnection;
 
-import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
-
 /**
- * 路由策略接口
+ * RouteStrategy
  *
  * @author wang.dw
  */

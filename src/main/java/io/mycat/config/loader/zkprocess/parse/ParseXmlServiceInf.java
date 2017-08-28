@@ -1,7 +1,7 @@
 package io.mycat.config.loader.zkprocess.parse;
 
 /**
- * xml转化服务
+ * ParseXmlServiceInf
  *
  *
  * author:liujun
@@ -14,8 +14,7 @@ package io.mycat.config.loader.zkprocess.parse;
 public interface ParseXmlServiceInf<T> {
 
     /**
-     * 将对象T写入xml文件
-     * 方法描述
+     *parseToXmlWrite
      *
      * @param data
      * @return
@@ -24,10 +23,9 @@ public interface ParseXmlServiceInf<T> {
     void parseToXmlWrite(T data, String outputPath, String dataName);
 
     /**
-     * 将指定的xml转换为javabean对象
-     * 方法描述
+     * parseXmlToBean
      *
-     * @param path xml文件路径信息
+     * @param path xml
      * @return
      * @Created 2016/9/16
      */

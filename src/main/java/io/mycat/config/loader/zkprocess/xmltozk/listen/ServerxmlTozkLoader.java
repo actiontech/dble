@@ -1,5 +1,11 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
+import java.util.List;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -16,14 +22,9 @@ import io.mycat.config.loader.zkprocess.parse.entryparse.server.json.UserJsonPar
 import io.mycat.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.util.KVPathUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
- * 进行从server.xml加载到zk中加载
+ * ServerxmlTozkLoader
  *
  *
  * author:liujun
@@ -38,30 +39,15 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerxmlTozkLoader.class);
 
-    /**
-     * 当前文件中的zkpath信息
-     */
     private final String currZkPath;
 
-    /**
-     * server文件的路径信息
-     */
     private static final String SERVER_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "server.xml";
 
 
-    /**
-     * server的xml的转换信息
-     */
     private ParseXmlServiceInf<Server> parseServerXMl;
 
-    /**
-     * system信息
-     */
     private ParseJsonServiceInf<System> parseJsonSystem = new SystemJsonParse();
 
-    /**
-     * user信息
-     */
     private ParseJsonServiceInf<List<User>> parseJsonUser = new UserJsonParse();
 
     private ParseJsonServiceInf<FireWall> parseJsonFireWall = new FireWallJsonParse();
@@ -70,18 +56,14 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
                                XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfServerPath();
-        // 将当前自己注册为事件接收对象
         zookeeperListen.addToInit(this);
-        // 生成xml与类的转换信息
         parseServerXMl = new ServerParseXmlImpl(xmlParseBase);
     }
 
     @Override
     public boolean notifyProcess() throws Exception {
-        // 1,读取本地的xml文件
         Server server = this.parseServerXMl.parseXmlToBean(SERVER_PATH);
         LOGGER.info("ServerxmlTozkLoader notifyProcessxml to zk server Object  :" + server);
-        // 将实体信息写入至zk中
         this.xmlTozkServerJson(currZkPath, server);
 
         LOGGER.info("ServerxmlTozkLoader notifyProcess xml to zk is success");
@@ -90,26 +72,22 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
     }
 
     /**
-     * 将xml文件的信息写入到zk中
-     * 方法描述
+     * xmlTozkServerJson
      *
-     * @param basePath 基本路径
-     * @param server   server文件的信息
-     * @throws Exception 异常信息
+     * @param basePath
+     * @param server
+     * @throws Exception
      * @Created 2016/9/17
      */
     private void xmlTozkServerJson(String basePath, Server server) throws Exception {
-        // 设置默认的节点信息
         String defaultSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
         this.checkAndwriteString(basePath, KVPathUtil.DEFAULT, defaultSystemValue);
 
-        // 设置firewall信息
         String firewallValueStr = this.parseJsonFireWall.parseBeanToJson(server.getFirewall());
         if (firewallValueStr == null) {
             firewallValueStr = "{}";
         }
         this.checkAndwriteString(basePath, KVPathUtil.FIREWALL, firewallValueStr);
-        // 设置用户信息
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
         this.checkAndwriteString(basePath, KVPathUtil.USER, userValueStr);
 

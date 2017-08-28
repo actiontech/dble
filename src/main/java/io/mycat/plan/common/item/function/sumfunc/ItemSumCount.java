@@ -1,14 +1,15 @@
 package io.mycat.plan.common.item.function.sumfunc;
 
+import java.math.BigInteger;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.Item;
-
-import java.math.BigInteger;
-import java.util.List;
 
 
 public class ItemSumCount extends ItemSumInt {
@@ -51,7 +52,7 @@ public class ItemSumCount extends ItemSumInt {
     }
 
     /**
-     * count(id)的pushdown为count(id)然后将他们的值进行相加
+     * count(id)'spush-down is count(id),and sum them
      */
     @Override
     public boolean pushDownAdd(RowDataPacket row) {

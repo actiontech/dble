@@ -1,5 +1,13 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.MycatServer;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
 import io.mycat.config.loader.zkprocess.comm.ZkConfig;
@@ -13,13 +21,6 @@ import io.mycat.manager.response.ReloadConfig;
 import io.mycat.manager.response.RollbackConfig;
 import io.mycat.util.KVPathUtil;
 import io.mycat.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by huqing.yan on 2017/6/23.
@@ -43,11 +44,8 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
     @Override
     public boolean notifyProcess() throws Exception {
         if (MycatServer.getInstance().getProcessors() != null) {
-            // 通过组合模式进行zk目录树的加载
             DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
-            // 进行递归的数据获取
             this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
-            // 从当前的下一级开始进行遍历,获得到
             ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) statusDirectory.getSubordinateInfo().get(0);
             ConfStatus status = new ConfStatus(zkDdata.getValue());
             if (status.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {

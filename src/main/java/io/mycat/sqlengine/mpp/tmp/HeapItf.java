@@ -1,8 +1,8 @@
 package io.mycat.sqlengine.mpp.tmp;
 
-import io.mycat.net.mysql.RowDataPacket;
-
 import java.util.List;
+
+import io.mycat.net.mysql.RowDataPacket;
 
 /**
  * @author coderczp-2014-12-17
@@ -10,47 +10,47 @@ import java.util.List;
 public interface HeapItf {
 
     /**
-     * 构建堆
+     * buildHeap
      */
     void buildHeap();
 
     /**
-     * 获取堆根节点
+     * getRoot
      *
      * @return
      */
     RowDataPacket getRoot();
 
     /**
-     * 向堆添加元素
+     * ADD ITEM
      *
      * @param row
      */
     void add(RowDataPacket row);
 
     /**
-     * 获取堆数据
+     * getData
      *
      * @return
      */
     List<RowDataPacket> getData();
 
     /**
-     * 设置根节点元素
+     * setRoot
      *
      * @param root
      */
     void setRoot(RowDataPacket root);
 
     /**
-     * 向已满的堆添加元素
+     * addIfRequired
      *
      * @param row
      */
     boolean addIfRequired(RowDataPacket row);
 
     /**
-     * 堆排序
+     * heapSort
      */
     void heapSort(int size);
 

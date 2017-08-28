@@ -1,5 +1,15 @@
 package io.mycat.memory.unsafe.sort;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.memory.MyCatMemory;
 import io.mycat.memory.unsafe.memory.mm.DataNodeMemoryManager;
 import io.mycat.memory.unsafe.memory.mm.MemoryManager;
@@ -14,15 +24,6 @@ import io.mycat.memory.unsafe.utils.sort.RowPrefixComputer;
 import io.mycat.memory.unsafe.utils.sort.UnsafeExternalRowSorter;
 import io.mycat.sqlengine.mpp.ColMeta;
 import io.mycat.sqlengine.mpp.OrderCol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by zagnix on 16-7-9.
@@ -40,7 +41,7 @@ public class TestSorter implements Runnable {
         DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
                 Thread.currentThread().getId());
         /**
-         * 1.schema ,模拟一个field字段值
+         * 1.schema ,mock a field
          *
          */
         int fieldCount = 3;
@@ -68,7 +69,7 @@ public class TestSorter implements Runnable {
                 new RowPrefixComputer(schema);
 
         /**
-         * 3 .PrefixComparator 默认是ASC,可以选择DESC
+         * 3 .PrefixComparator defalut is ASC, or set DESC
          */
         final PrefixComparator prefixComparator = PrefixComparators.LONG;
 
@@ -79,7 +80,7 @@ public class TestSorter implements Runnable {
                         prefixComparator,
                         prefixComputer,
                         conf.getSizeAsBytes("mycat.buffer.pageSize", "1m"),
-                        true, /**使用基数排序？true or false*/
+                        true,
                         true);
         UnsafeRow unsafeRow;
         BufferHolder bufferHolder;
@@ -116,7 +117,7 @@ public class TestSorter implements Runnable {
     }
 
 
-    public static String getRandomString(int length) { //length表示生成字符串的长度
+    public static String getRandomString(int length) { //length of string
         String base = "abcdefghijklmnopqrstuvwxyz0123456789";
         Random random = new Random();
         StringBuffer sb = new StringBuffer();

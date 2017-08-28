@@ -1,8 +1,18 @@
 package io.mycat.route;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
@@ -12,14 +22,6 @@ import io.mycat.route.parser.druid.impl.ddl.DruidCreateTableParser;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Ignore
 public class DDLRouteTest {
@@ -80,7 +82,6 @@ public class DDLRouteTest {
         String upsql = sql.toUpperCase();
 
         //TODO : modify by zhuam
-        // 小写表名,需要额外转为 大写 做比较
         String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 
@@ -185,7 +186,7 @@ public class DDLRouteTest {
                 "CREATE TABLE SUNTEST(XX VARCHAR(40),YY VARCHAR(40),ID INT) PARTITION BY KEY(XX) PARTITIONS 4"
 
         };
-        //测试分片的状态
+        //test sharding status
         for (int i = 0; i < createSqls.length; i++) {
             SQLStatementParser parser = new MySqlStatementParser(createSqls[i]);
             testSQLStatement[i] = (SQLCreateTableStatement) parser.parseStatement();
@@ -252,7 +253,6 @@ public class DDLRouteTest {
         sql = RouterUtil.getFixedSql(sql);
         String upsql = sql.toUpperCase();
 
-        //TODO:modify by zhuam 小写表名,转为大写比较
         String tablename = RouterUtil.getTableName(sql, RouterUtil.getCreateTablePos(upsql, 0));
         tablename = tablename.toUpperCase();
 

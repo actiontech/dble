@@ -6,9 +6,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 忽略部分SET 指令
+ * SetIgnoreUtil
  * <p>
- * 实际使用中PHP用户经常会操作多个SET指令组成一个Stmt , 所以该指令检测功能独立出来
+ *  PHP user use multi SET
  *
  * @author zhuam
  */
@@ -20,7 +20,7 @@ public final class SetIgnoreUtil {
 
     static {
 
-        //TODO: 忽略部分 SET 指令, 避免WARN 不断的刷志
+        //TODO: ignore SET
         String[] ignores = new String[]{
                 "(?i)set (sql_mode)",
                 "(?i)set (interactive_timeout|wait_timeout|net_read_timeout|net_write_timeout|lock_wait_timeout|slave_net_timeout)",

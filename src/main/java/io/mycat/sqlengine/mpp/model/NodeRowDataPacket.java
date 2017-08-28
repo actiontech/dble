@@ -1,10 +1,10 @@
 package io.mycat.sqlengine.mpp.model;
 
-import io.mycat.net.mysql.RowDataPacket;
-import io.mycat.route.RouteResultsetNode;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import io.mycat.net.mysql.RowDataPacket;
+import io.mycat.route.RouteResultsetNode;
 
 public class NodeRowDataPacket {
 
@@ -82,7 +82,7 @@ public class NodeRowDataPacket {
                 if (lastPacket.isTrim()) {
                     lastPacket.combine(packet);
                 } else {
-                    //异常
+                    //FIXME :exception
                 }
             }
         }

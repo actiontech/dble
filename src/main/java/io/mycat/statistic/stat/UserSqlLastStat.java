@@ -6,7 +6,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * 最后执行的 Sql
+ * UserSqlLastStat
  *
  * @author zhuam
  */
@@ -53,7 +53,7 @@ public class UserSqlLastStat {
     }
 
     /**
-     * 记录SQL
+     * SqlLast
      */
     public static class SqlLast implements Comparable<SqlLast> {
 

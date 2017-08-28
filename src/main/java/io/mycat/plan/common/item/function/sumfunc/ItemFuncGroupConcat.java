@@ -1,11 +1,16 @@
 package io.mycat.plan.common.item.function.sumfunc;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateOption;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.plan.Order;
 import io.mycat.plan.common.field.Field;
@@ -14,16 +19,12 @@ import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.ItemFuncKeyWord;
 import io.mycat.plan.common.time.MySQLTime;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.List;
-
 
 public class ItemFuncGroupConcat extends ItemSum {
     protected StringBuilder resultSb;
     protected String seperator;
     private List<Order> orders;
-    protected boolean alwaysNull; // 如果参数存在null时
+    protected boolean alwaysNull; // if contains null
 
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
                                boolean isPushDown, List<Field> fields) {

@@ -1,18 +1,5 @@
 package io.mycat.config.loader.zkprocess.parse;
 
-import io.mycat.config.Versions;
-import io.mycat.util.ResourceUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,8 +13,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.stream.StreamSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.config.Versions;
+import io.mycat.util.ResourceUtil;
+
 /**
- * xml文件操作转换的类的信息
+ * XmlProcessBase
  *
  *
  * author:liujun
@@ -42,31 +44,14 @@ public class XmlProcessBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlProcessBase.class);
 
-    /**
-     * 转换对象
-     *
-     *
-     */
     private JAXBContext jaxContext;
 
-    /**
-     * 反序列化xml文件的对象
-     *
-     *
-     */
     private Unmarshaller unmarshaller;
 
-    /**
-     * 转换的实体对象的class信息
-     *
-     *
-     */
     @SuppressWarnings("rawtypes")
     private List<Class> parseXmlClass = new ArrayList<>();
 
     /**
-     * 添加转换的class信息
-     * 方法描述
      *
      * @param parseClass
      * @Created 2016/9/15
@@ -77,8 +62,7 @@ public class XmlProcessBase {
     }
 
     /**
-     * 进行jaxb对象的初始化
-     * 方法描述
+     * initJaxbClass
      *
      * @throws JAXBException
      * @Created 2016/9/15
@@ -86,7 +70,6 @@ public class XmlProcessBase {
     @SuppressWarnings("rawtypes")
     public void initJaxbClass() throws JAXBException {
 
-        // 将集合转换为数组
         Class[] classArray = new Class[parseXmlClass.size()];
         parseXmlClass.toArray(classArray);
 
@@ -97,17 +80,16 @@ public class XmlProcessBase {
             throw e;
         }
 
-        // 创建解反序化对象
+        // Deserialization
         unmarshaller = jaxContext.createUnmarshaller();
     }
 
     /**
-     * 默认将bean序列化为xml对象信息并写入文件
-     * 方法描述
+     *baseParseAndWriteToXml
      *
-     * @param user      用户对象
+     * @param user
      * @param inputPath
-     * @param name      当前的转换xml的dtd文件的信息
+     * @param name
      * @Created 2016/9/15
      */
     public void baseParseAndWriteToXml(Object user, String inputPath, String name) throws IOException {
@@ -134,12 +116,11 @@ public class XmlProcessBase {
     }
 
     /**
-     * 默认将bean序列化为xml对象信息并写入文件
-     * 方法描述
+     * baseParseAndWriteToXml
      *
-     * @param user      用户对象
+     * @param user
      * @param inputPath
-     * @param name      当前的转换xml的dtd文件的信息
+     * @param name
      * @Created 2016/9/15
      */
     @SuppressWarnings("restriction")
@@ -174,8 +155,7 @@ public class XmlProcessBase {
     }
 
     /**
-     * 默认转换将指定的xml转化为
-     * 方法描述
+     * baseParseXmlToBean
      *
      * @param fileName
      * @return
@@ -184,12 +164,9 @@ public class XmlProcessBase {
      * @Created 2016/9/16
      */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
-        // 搜索当前转化的文件
         InputStream inputStream = ResourceUtil.getResourceAsStreamFromRoot(fileName);
 
-        // 如果能够搜索到文件
         if (inputStream != null) {
-            // 进行文件反序列化信息
             XMLInputFactory xif = XMLInputFactory.newFactory();
             xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);
             XMLStreamReader xmlRead = xif.createXMLStreamReader(new StreamSource(inputStream));

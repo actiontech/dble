@@ -1,13 +1,13 @@
 package io.mycat.plan.common.field.num;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import io.mycat.plan.common.MySQLcom;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.common.time.MyTime;
-
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public abstract class FieldReal extends FieldNum {
     protected BigDecimal decValue = null;
@@ -34,7 +34,7 @@ public abstract class FieldReal extends FieldNum {
     }
 
     /**
-     * 如果是null的对象则是Item_field_null对象,不会是这些对象,所以这里不会返回null
+     * if null,the result is Item_field_null,wo there will not return null
      */
     @Override
     public BigDecimal valDecimal() {

@@ -1,5 +1,11 @@
 package io.mycat.route;
 
+import java.sql.SQLException;
+import java.util.Map;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.LayerCachePool;
 import io.mycat.config.loader.SchemaLoader;
@@ -7,14 +13,8 @@ import io.mycat.config.loader.xml.XMLSchemaLoader;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import junit.framework.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.sql.SQLException;
-import java.util.Map;
 
 /**
- * 修改内容
  *
  * @author lxy
  */
@@ -55,9 +55,8 @@ public class TestSelectBetweenSqlParser {
         schema = schemaMap.get("cndb");
         rrs = RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null,
                 null, cachePool);
-        Assert.assertEquals(2, rrs.getNodes().length);    //这里2个表都有条件路由,取的是交集
+        Assert.assertEquals(2, rrs.getNodes().length);
 
-        //确认大于小于操作符
         sql = "select b.* from  offer_date b " +
                 "where b.col_date > '2014-02-02'";
 //		sql = "select a.* from offer_detail a join offer_date b on a.id=b.id " +

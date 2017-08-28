@@ -1,18 +1,18 @@
 package io.mycat.plan.optimizer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.util.FilterUtils;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public final class MergeHavingFilter {
     private MergeHavingFilter() {
     }
 
     /**
-     * 将having中可合并的条件合并到where
+     * merge having to where if it can be merged
      *
      * @param qtn
      */

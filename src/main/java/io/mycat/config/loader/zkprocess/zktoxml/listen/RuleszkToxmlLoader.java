@@ -1,5 +1,14 @@
 package io.mycat.config.loader.zkprocess.zktoxml.listen;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.config.loader.console.ZookeeperPath;
 import io.mycat.config.loader.zkprocess.comm.ConfFileRWUtils;
 import io.mycat.config.loader.zkprocess.comm.NotifyService;
@@ -21,17 +30,9 @@ import io.mycat.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
 import io.mycat.util.KVPathUtil;
 import io.mycat.util.ResourceUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * 进行rule的文件从zk中加载
+ * RuleszkToxmlLoader
  *
  *
  * author:liujun
@@ -46,62 +47,39 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleszkToxmlLoader.class);
 
-    /**
-     * 当前文件中的zkpath信息
-     */
     private final String currZkPath;
 
-    /**
-     * 写入本地的文件路径
-     */
     private static final String WRITEPATH = "rule.xml";
 
-    /**
-     * Rules的xml的转换信息
-     */
     private ParseXmlServiceInf<Rules> parseRulesXMl;
 
-    /**
-     * 表的路由信息
-     */
     private ParseJsonServiceInf<List<TableRule>> parseJsonTableRuleService = new TableRuleJsonParse();
 
-    /**
-     * 表对应的字段信息
-     */
     private ParseJsonServiceInf<List<Function>> parseJsonFunctionService = new FunctionJsonParse();
 
     public RuleszkToxmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
                               XmlProcessBase xmlParseBase, ConfigStatusListener confListener) {
         this.setCurator(curator);
         currZkPath = KVPathUtil.getConfRulePath();
-        // 将当前自己注册为事件接收对象
         zookeeperListen.addToInit(this);
-        // 生成xml与类的转换信息
         parseRulesXMl = new RuleParseXmlImpl(xmlParseBase);
         confListener.addChild(this);
     }
 
     @Override
     public boolean notifyProcess() throws Exception {
-        // 1,将集群Rules目录下的所有集群按层次结构加载出来
-        // 通过组合模式进行zk目录树的加载
         DiretoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
-        // 进行递归的数据获取
         this.getTreeDirectory(currZkPath, KVPathUtil.RULES, rulesDirectory);
 
-        // 从当前的下一级开始进行遍历,获得到
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) rulesDirectory.getSubordinateInfo().get(0);
         Rules rules = this.zktoRulesBean(zkDirectory);
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess zk to object  zk Rules Object  :" + rules);
 
-        // 将mapfile信息写入到文件 中
         writeMapFileAddFunction(rules.getFunction());
 
         LOGGER.info("RuleszkToxmlLoader notifyProcess write mapFile is success ");
 
-        // 数配制信息写入文件
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         path = new File(path).getPath() + File.separator;
         path = path + WRITEPATH;
@@ -116,8 +94,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     }
 
     /**
-     * 将zk上面的信息转换为javabean对象
-     * 方法描述
+     * zktoRulesBean
      *
      * @param zkDirectory
      * @return
@@ -126,12 +103,12 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     private Rules zktoRulesBean(DiretoryInf zkDirectory) {
         Rules rules = new Rules();
 
-        // tablerule信息
+        // tablerule
         DataInf rulesZkData = this.getZkData(zkDirectory, KVPathUtil.TABLE_RULE);
         List<TableRule> tableRuleData = parseJsonTableRuleService.parseJsonToBean(rulesZkData.getDataValue());
         rules.setTableRule(tableRuleData);
 
-        // 得到function信息
+        // function
         DataInf functionZkData = this.getZkData(zkDirectory, KVPathUtil.FUNCTION);
         List<Function> functionList = parseJsonFunctionService.parseJsonToBean(functionZkData.getDataValue());
         rules.setFunction(functionList);
@@ -140,8 +117,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
     }
 
     /**
-     * 读取序列配制文件便利店
-     * 方法描述
+     * writeMapFileAddFunction
      *
      * @param functionList
      * @Created 2016/9/18
@@ -155,19 +131,15 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
         for (Function function : functionList) {
             List<Property> proList = function.getProperty();
             if (null != proList && !proList.isEmpty()) {
-                // 进行数据遍历
                 for (Property property : proList) {
-                    // 如果为mapfile,则需要去读取数据信息,并存到json中
                     if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
                         tempData.add(property);
                     }
                 }
 
-                // 通过mapfile的名称,找到对应的数据信息
                 if (!tempData.isEmpty()) {
                     for (Property property : tempData) {
                         for (Property prozkdownload : proList) {
-                            // 根据mapfile的文件名去提取数据
                             if (property.getValue().equals(prozkdownload.getName())) {
                                 writeData.add(prozkdownload);
                             }
@@ -175,7 +147,6 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
                     }
                 }
 
-                // 将对应的数据信息写入到磁盘中
                 if (!writeData.isEmpty()) {
                     for (Property writeMsg : writeData) {
                         try {
@@ -186,10 +157,8 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
                     }
                 }
 
-                // 将数据添加的集合中
                 proList.removeAll(writeData);
 
-                // 清空,以进行下一次的添加
                 tempData.clear();
                 writeData.clear();
             }

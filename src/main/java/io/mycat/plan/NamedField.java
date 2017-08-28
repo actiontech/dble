@@ -6,7 +6,7 @@ public class NamedField {
     private final String table;
     private final String name;
     private final int hashCode;
-    // 这个field隶属于哪个节点
+    // which node of the field belong
     public final PlanNode planNode;
 
     public NamedField(String table, String name, PlanNode planNode) {
@@ -14,7 +14,7 @@ public class NamedField {
         this.name = name;
         this.planNode = planNode;
 
-        //初始化hashCode
+        //init hashCode
         int prime = 2;
         int hash = table == null ? 0 : table.hashCode();
         this.hashCode = hash * prime + (name == null ? 0 : name.toLowerCase().hashCode());

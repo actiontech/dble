@@ -1,14 +1,14 @@
 package io.mycat.plan.node.view;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.mycat.meta.protocol.StructureMeta.ColumnMeta;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.node.QueryNode;
 import io.mycat.plan.node.TableNode;
 import io.mycat.plan.util.ToStringUtil;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * present a view
@@ -43,7 +43,7 @@ public class ViewNode extends QueryNode {
     }
 
     /**
-     * 根据编译好的viewnode获取当前view的列
+     * getColumns
      *
      * @return
      */
@@ -59,7 +59,7 @@ public class ViewNode extends QueryNode {
     }
 
     /**
-     * 获得该view应用到的table名
+     * getReferedTables
      *
      * @return
      */

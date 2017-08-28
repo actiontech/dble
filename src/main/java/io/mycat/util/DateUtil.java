@@ -1,13 +1,13 @@
 package io.mycat.util;
 
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-
 import java.text.ParseException;
 import java.util.Date;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+
 /**
- * 使用joda解析date,可以得到date的year,month,day等字段值
+ * DateUtil
  *
  * @author CrazyPig
  */
@@ -22,7 +22,7 @@ public final class DateUtil {
     public static final String TIME_PATTERN_FULL = "HHH:mm:ss.SSSSSS";
 
     /**
-     * 根据期字符串解析得到date类型期
+     * parseDate
      *
      * @param dateStr
      * @return
@@ -33,7 +33,7 @@ public final class DateUtil {
     }
 
     /**
-     * 根据期字符串和期格式解析得到date类型期
+     * parseDate
      *
      * @param dateStr
      * @param datePattern
@@ -46,7 +46,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象/份
+     * getYear
      *
      * @param date
      * @return
@@ -57,7 +57,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象/份
+     * getMonth
      *
      * @param date
      * @return
@@ -68,7 +68,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象天数
+     * getDay
      *
      * @param date
      * @return
@@ -79,7 +79,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象小时数
+     * getHour
      *
      * @param date
      * @return
@@ -90,7 +90,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象分钟数
+     * getMinute
      *
      * @param date
      * @return
@@ -101,7 +101,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象秒数
+     * getSecond
      *
      * @param date
      * @return
@@ -112,7 +112,7 @@ public final class DateUtil {
     }
 
     /**
-     * 获取date对象毫秒数
+     * getMicroSecond
      *
      * @param date
      * @return

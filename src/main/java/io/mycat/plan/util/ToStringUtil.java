@@ -1,9 +1,9 @@
 package io.mycat.plan.util;
 
+import java.util.List;
+
 import io.mycat.plan.Order;
 import io.mycat.plan.common.item.Item;
-
-import java.util.List;
 
 public final class ToStringUtil {
     private ToStringUtil() {
@@ -23,14 +23,14 @@ public final class ToStringUtil {
     }
 
     /**
-     * 拼接换行符
+     * concat \n
      */
     public static void appendln(StringBuilder sb, String v) {
         sb.append(v).append("\n");
     }
 
     /**
-     * 获取itemlist的string表示
+     * get the string of itemlist
      *
      * @param itemList
      * @return
@@ -42,7 +42,7 @@ public final class ToStringUtil {
     }
 
     /**
-     * 获取itemlist的string表示
+     * get the string of itemlist
      *
      * @param itemList
      * @return

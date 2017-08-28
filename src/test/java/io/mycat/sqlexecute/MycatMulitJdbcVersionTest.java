@@ -2,24 +2,29 @@ package io.mycat.sqlexecute;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.DriverPropertyInfo;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * 测试mycat对不同版本的mysql jdbc的兼容性
+ * test mysql jdbc
  * <p>
  * <p>
- * <p>
- * 关联issue: @see https://github.com/MyCATApache/Mycat-Server/issues/1203
  * <p>
  * <p>
  * <b>Note:</b> </br>
- * 1. 请将这个类放到新建的project独立运行, mycat pom.xml里面使用的mysql驱动会影响测试结果 </br>
- * 2. 确保project新建lib子目录并且在lib子目录里面放置了各类版本的mysql jdbc驱动
- * 3. 程序会动态加载不同版本的jdbc驱动, 请不要将任何mysql jdbc驱动加入classpath, 否则也可能影响测试结果
+ * 1. put the class into a new project  </br>
+ * 2. mkdir lib in project/ and add mysql jdbc driver into the dir
+ * 3. don't add mysql jdbc in classpath
  *
  * @author CrazyPig
  * @since 2016-11-13
@@ -32,7 +37,7 @@ public class MycatMulitJdbcVersionTest {
     private static final Map<String, String> jdbcVersionMap = new HashMap<String, String>();
     private static final Map<String, Driver> tmpDriverMap = new HashMap<String, Driver>();
 
-    // 动态加载jdbc驱动
+    // load jdbd river
     private static void dynamicLoadJdbc(String mysqlJdbcFile) throws Exception {
         URL u = new URL("jar:file:lib/" + mysqlJdbcFile + "!/");
         String classname = jdbcVersionMap.get(mysqlJdbcFile);
@@ -43,12 +48,12 @@ public class MycatMulitJdbcVersionTest {
         tmpDriverMap.put(mysqlJdbcFile, driver);
     }
 
-    // 每一次测试完卸载对应版本的jdbc驱动
+    // deregisterDriver
     private static void dynamicUnLoadJdbc(String mysqlJdbcFile) throws SQLException {
         DriverManager.deregisterDriver(tmpDriverMap.get(mysqlJdbcFile));
     }
 
-    // 进行一次测试
+    // test
     private static void testOneVersion(String mysqlJdbcFile) {
 
         System.out.println("start test mysql jdbc version : " + mysqlJdbcFile);
@@ -97,16 +102,16 @@ public class MycatMulitJdbcVersionTest {
 
     public static void main(String[] args) {
 
-        // 多版本mysql jdbc驱动兼容性测试
+        // multi verion mysql jdbc test
 
-        // NOTE: 注意将对应的jar放到lib子目录, 不需要加入classpath!!!
+        // NOTE:put jar into the lib and don't add to classpath
         jdbcVersionMap.put("mysql-connector-java-6.0.3.jar", "com.mysql.cj.jdbc.Driver");
         jdbcVersionMap.put("mysql-connector-java-5.1.6.jar", "com.mysql.jdbc.Driver");
         jdbcVersionMap.put("mysql-connector-java-5.1.31.jar", "com.mysql.jdbc.Driver");
         jdbcVersionMap.put("mysql-connector-java-5.1.35.jar", "com.mysql.jdbc.Driver");
         jdbcVersionMap.put("mysql-connector-java-5.1.39.jar", "com.mysql.jdbc.Driver");
 
-        // 更多的jdbc驱动...
+        // more jdbc driver...
 
         for (String mysqlJdbcFile : jdbcVersionMap.keySet()) {
             testOneVersion(mysqlJdbcFile);

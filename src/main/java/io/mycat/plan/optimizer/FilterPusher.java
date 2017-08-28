@@ -17,33 +17,42 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * 将filter进行下推
+ * push down filter
  * <p>
  * <pre>
- * a. 如果条件中包含||条件则暂不优化,下推时会导致语义不正确 b. 如果条件中的column/value包含function,也不做下推
- * (比较麻烦,需要递归处理函数中的字段信息,同时检查是否符合下推条件,先简答处理) c.
- * 如果条件中的column/value中的字段来自于子节点的函数查询,也不做下推
+ * a. if conditions contains || ,then stop pushing down ,otherwise it is not correct
+ * b. if conditions's column/value contains function,then stop pushing down
+ * (TODO: CHECK FIELD IN FUNCTION TO DECIDE IF IT CAN BE PUSHED)
+ * c.if conditions's column/value is from child's function,then stop pushing down
  *
- * 几种场景: 1. where条件尽可能提前到叶子节点,同时提取出joinFilter 处理类型: JoinNode/QueryNode
- * 注意点:JoinNode如果是outter节点,则不能继续下推
+ * cases: 1. where pushed to leaf, get the joinFilter
+ * node type: JoinNode/QueryNode
+ * Notice:if JoinNode is outter,stop pushing down
  *
- * 如: tabl1.join(table2).query(
- * "table1.id>5 && table2.id<10 && table1.name = table2.name") 优化成:
+ * eg: tabl1.join(table2).query(
+ * "table1.id>5 && table2.id<10 && table1.name = table2.name")
+ * after optimized:
  * table1.query("table1.id>5").join(table2.query("table2.id<10").on(
  * "table1.name = table2.name")
  *
- * 如: table1.join(table2).query("table1.id = table2.id")
- * 优化成:table1.join(table2).on("table1.id = table2.id")
+ * eg: table1.join(table2).query("table1.id = table2.id")
+ * after optimized:
+ * :table1.join(table2).on("table1.id = table2.id")
  *
- * 2. join中的非字段列条件,比如column = 1的常量关系,提前到叶子节点 处理类型:JoinNode 注意点:
+ * 2. join's constant condition,like column = 1,push to leaf
+ * node type:JoinNode
  *
- * 如: tabl1.join(table2).on("table1.id>5&&table2.id<10") 优化成:
- * table1.query("table1.id>5").join(table2.query("table2.id<10")) t但如果条件中包含
+ * eg: tabl1.join(table2).on("table1.id>5&&table2.id<10")
+ * after optimized:
+ * table1.query("table1.id>5").join(table2.query("table2.id<10")) t
  *
- * 3. join filter中的字段进行条件推导到左/右的叶子节点上,在第1和第2步优化中同时处理 处理类型:JoinNode
  *
- * 如: table.join(table2).on(
- * "table1.id = table2.id and table1.id>5 && table2.id<10") 优化成:table1.query(
+ * 3. both 1 and 2
+ * node type:JoinNode
+ *
+ * eg: table.join(table2).on(
+ * "table1.id = table2.id and table1.id>5 && table2.id<10")
+ *  after optimized::table1.query(
  * "table1.id>5 && table1.id<10").join(table2.query(
  * "table2.id>5 && table2.id<10")).on("table1.id = table2.id")
  */
@@ -51,9 +60,6 @@ public final class FilterPusher {
     private FilterPusher() {
     }
 
-    /**
-     * 详细优化见类描述 {@linkplain FilterPusher}
-     */
     public static PlanNode optimize(PlanNode qtn) {
         mergeJoinOnFilter(qtn);
         qtn = pushJoinOnFilter(qtn);
@@ -62,7 +68,7 @@ public final class FilterPusher {
     }
 
     /**
-     * 将inner join中可合并的otheron条件合并到where
+     * merge inner joi's otheron to where if we can
      *
      * @param qtn
      * @return
@@ -93,7 +99,7 @@ public final class FilterPusher {
             dnfNodeToPush.removeAll(subHavingList);
         }
 
-        // 如果是根节点,接收filter做为where条件,否则继续合并当前where条件,然后下推
+        // root node will receive filter as where ,otherwise merge the current where and push down
         if (qtn.getChildren().isEmpty() || PlanUtil.isGlobalOrER(qtn)) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
@@ -129,14 +135,14 @@ public final class FilterPusher {
     }
 
     private static PlanNode getMergeNode(PlanNode qtn, List<Item> dnfNodeToPush) {
-        // union语句的where条件可以下推,但是要替换成相应的child节点的过滤条件
+        // union's where can be pushed down ,but it must be replace to child's condition
 
         Item node = FilterUtils.and(dnfNodeToPush);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
         }
         Item mergeWhere = qtn.getWhereFilter();
-        // 加速优化,将merge的条件挨个下推
+        // push down merge's condition
         qtn.query(null);
         List<Item> pushFilters = PlanUtil.getPushItemsToUnionChild((MergeNode) qtn, mergeWhere,
                 ((MergeNode) qtn).getColIndexs());
@@ -177,16 +183,16 @@ public final class FilterPusher {
             }
         }
         if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
-            // 将左条件的表达式,推导到join filter的右条件上
+            // push the left expr to join filter's right condition
             rightCopyedPushFilters.addAll(
                     copyFilterToJoinOnColumns(dnfNodetoPushToLeft, jn.getLeftKeys(), jn.getRightKeys()));
 
-            // 将右条件的表达式,推导到join filter的左条件上
+            // push the right expr to join filter's left condition
             leftCopyedPushFilters.addAll(
                     copyFilterToJoinOnColumns(dnfNodetoPushToRight, jn.getRightKeys(), jn.getLeftKeys()));
         }
 
-        // 针对不能下推的,合并到当前的where
+        // if it can not push down, merge to current where
         Item node = FilterUtils.and(dnfNodeToCurrent);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
@@ -194,14 +200,14 @@ public final class FilterPusher {
 
         if (jn.isInnerJoin() || jn.isLeftOuterJoin() || jn.isRightOuterJoin()) {
             if (jn.isLeftOuterJoin()) {
-                // left join,把right join下推之后,还得把right join的条件留下来
+                // left join, push down the right join ,but still contains right joins condition
                 jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToRight)));
             }
             if (jn.isRightOuterJoin()) {
-                // right join,把right join下推之后,还得把left join的条件留下来
+                // right join, push down the left join ,but still contains left joins condition
                 jn.query(FilterUtils.and(qtn.getWhereFilter(), FilterUtils.and(dnfNodetoPushToLeft)));
             }
-            // 合并起来
+            // merge
             dnfNodetoPushToRight.addAll(rightCopyedPushFilters);
             dnfNodetoPushToLeft.addAll(leftCopyedPushFilters);
 
@@ -218,9 +224,9 @@ public final class FilterPusher {
     }
 
     /**
-     * inner join的other join on在FilterPre时会被优化成where,只有left join有这个可能性 Left
-     * join时, select * from t1 left jion t2 on t1.id=t2.id and t1.id = 10 and
-     * t2.name = 'aaa' 可以将t2.id=10和t2.name='aaa'进行下推
+     * inner join's other join on would add to where when FilterPre and push down,
+     * when Left join, eg" select * from t1 left join t2 on t1.id=t2.id and t1.id = 10 and
+     * t2.name = 'aaa' push down t2.id=10 and t2.name='aaa'
      */
     private static PlanNode pushJoinOnFilter(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
@@ -270,10 +276,10 @@ public final class FilterPusher {
     }
 
     /**
-     * 将连接列上的约束复制到目标节点内
+     *copyFilterToJoinOnColumns
      *
-     * @param dnf          要复制的DNF filter
-     * @param qnColumns    源节点的join字段
+     * @param dnf          DNF filter to be copied
+     * @param qnColumns    origin node's join column
      * @param otherColumns
      */
     private static List<Item> copyFilterToJoinOnColumns(List<Item> dnf, List<Item> qnColumns, List<Item> otherColumns) {
@@ -304,12 +310,12 @@ public final class FilterPusher {
     }
 
     /**
-     * 将function中的涉及到c1的参数替换成c2
+     * replaceFunctionArg
      *
      * @param f
      * @param sels1
      * @param sels2
-     * @return 如果f中还存在非sels1的selectable,返回null
+     * @return if f also contains selectable which is not sels1 ,return null
      */
     public static ItemFunc replaceFunctionArg(ItemFunc f, List<Item> sels1, List<Item> sels2) {
         ItemFunc ret = (ItemFunc) f.cloneStruct();

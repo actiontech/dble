@@ -31,8 +31,8 @@ public final class UnsafeRowsMerger {
         };
 
         /**
-         * 使用优先级队列实现多个Spill File 合并排序,并且支持已经排序内存记录
-         * 重新写入一个排序文件中.
+         * use priorityQueue to order the Spill File
+         * and it can write to file if finished.
          */
         priorityQueue = new PriorityQueue<>(numSpills, comparator);
     }
@@ -41,9 +41,6 @@ public final class UnsafeRowsMerger {
      * Add an UnsafeSorterIterator to this merger
      */
     public void addSpillIfNotEmpty(UnsafeSorterIterator iterator) throws IOException {
-        /**
-         * 添加迭代器到priorityQueue中
-         */
         if (iterator.hasNext()) {
             iterator.loadNext();
             priorityQueue.add(iterator);

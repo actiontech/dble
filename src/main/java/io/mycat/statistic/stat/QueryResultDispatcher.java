@@ -1,14 +1,15 @@
 package io.mycat.statistic.stat;
 
-import io.mycat.MycatServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.MycatServer;
+
 /**
- * SQL执行后的派发  QueryResult 事件
+ * QueryResultDispatcher
  *
  * @author zhuam
  */
@@ -20,7 +21,7 @@ public final class QueryResultDispatcher {
 
     private static List<QueryResultListener> listeners = new CopyOnWriteArrayList<>();
 
-    // 初始化强制加载
+    // load in int
     static {
         listeners.add(UserStatAnalyzer.getInstance());
         listeners.add(TableStatAnalyzer.getInstance());
@@ -43,7 +44,6 @@ public final class QueryResultDispatcher {
     }
 
     public static void dispatchQuery(final QueryResult queryResult) {
-        //TODO:异步分发,待进一步调优
         MycatServer.getInstance().getBusinessExecutor().execute(new Runnable() {
 
             public void run() {

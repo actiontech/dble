@@ -16,9 +16,9 @@ public final class LimitPusher {
 
     private static PlanNode findChild(PlanNode qtn) {
         if (qtn instanceof MergeNode) {
-            // limit优化
-            // union直接把limit下发到各个子节点
-            // union all下发各个子节点并且加上distinct
+            // optimizer limit
+            // union: push down limit to children
+            // union all:push down limit to children and add distinct
             MergeNode node = (MergeNode) qtn;
             long limitFrom = node.getLimitFrom();
             long limitTo = node.getLimitTo();

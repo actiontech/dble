@@ -1,16 +1,17 @@
 package io.mycat.config.loader.zkprocess.xmltozk.listen;
 
-import io.mycat.config.loader.zkprocess.comm.NotifyService;
-import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
-import io.mycat.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.config.loader.zkprocess.comm.NotifyService;
+import io.mycat.config.loader.zkprocess.comm.ZookeeperProcessListen;
+import io.mycat.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import io.mycat.util.KVPathUtil;
+
 /**
- * 其他一些信息加载到zk中
+ * OthermsgTozkLoader
  *
  *
  * author:liujun
@@ -28,19 +29,16 @@ public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
 
     public OthermsgTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
-        // 将当前自己注册为事件接收对象
         zookeeperListen.addToInit(this);
 
     }
 
     @Override
     public boolean notifyProcess() throws Exception {
-        // 添加line目录,用作集群中节点,在线的基本目录信息
         String line = KVPathUtil.getOnlinePath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), line);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + line + " success");
 
-        // 添加序列目录信息
         String seqLine = KVPathUtil.getSequencesInstancePath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqLine);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLine + " success");

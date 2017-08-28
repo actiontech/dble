@@ -1,39 +1,32 @@
 package io.mycat.statistic.stat;
 
-import io.mycat.server.parser.ServerParse;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.mycat.server.parser.ServerParse;
+
 /**
- * SQL统计中,统计出来每个表的读,写的TPS,分辨出当前最热的表,
- * 并且根据是否有关联JOIN来区分为几个不同的“区域”,是一个重要功能,意味着,某些表可以转移到其他的数据库里,做智能优化.
- * <p>
- * 首先是每个表的读写TPS 2个指标,有时段.然后是 哪那些表有JOIN查询 ,来区分 独立的区域
  *
  * @author zhuam
  */
 public class TableStat implements Comparable<TableStat> {
 
-    //1、读写
-    //2、主表
-    //3、关联表  次数
-    //4、读写 TPS
+    //1 READ
+    //2 WRITE
+    //3 RELEATE
+    //4 R/W TPS
 
     private String table;
 
     private final AtomicLong rCount = new AtomicLong(0);
     private final AtomicLong wCount = new AtomicLong(0);
 
-    // 关联表
+    // relaTable
     private final ConcurrentMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<>();
 
-    /**
-     * 最后执行时间
-     */
     private long lastExecuteTime;
 
 
@@ -51,7 +44,7 @@ public class TableStat implements Comparable<TableStat> {
 
     public void update(int sqlType, String sql, long startTime, long endTime, List<String> relaTables) {
 
-        //记录 RW
+        //RECORD RW
         switch (sqlType) {
             case ServerParse.SELECT:
                 this.rCount.incrementAndGet();
@@ -66,7 +59,6 @@ public class TableStat implements Comparable<TableStat> {
                 break;
         }
 
-        // 记录 关联表执行情况
         for (String tableName : relaTables) {
             RelaTable relaTable = this.relaTableMap.get(tableName);
             if (relaTable == null) {
@@ -135,7 +127,7 @@ public class TableStat implements Comparable<TableStat> {
     }
 
     /**
-     * 关联表
+     * RelaTable
      *
      * @author Ben
      */

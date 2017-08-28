@@ -1,10 +1,10 @@
 package io.mycat.plan.common.item.function.strfunc;
 
-import io.mycat.plan.common.item.Item;
-import io.mycat.plan.common.item.function.ItemFunc;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.function.ItemFunc;
 
 public class ItemFuncSubstrIndex extends ItemStrFunc {
 
@@ -55,7 +55,7 @@ public class ItemFuncSubstrIndex extends ItemStrFunc {
                 ret.append(subs.get(i) + delim);
             }
         }
-        // 得删除最后一个delim
+        // remove the last delim
         int lastDelim = ret.lastIndexOf(delim);
         return ret.substring(0, lastDelim);
     }

@@ -1,10 +1,10 @@
 package io.mycat.sqlengine.mpp.tmp;
 
+import java.util.Comparator;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.sqlengine.mpp.OrderCol;
 import io.mycat.sqlengine.mpp.RowDataPacketSorter;
-
-import java.util.Comparator;
 
 /**
  * @author coderczp-2014-12-8
@@ -22,7 +22,7 @@ public class RowDataCmp implements Comparator<RowDataPacket> {
         OrderCol[] tmp = this.orderCols;
         int cmp = 0;
         int len = tmp.length;
-        //依次比较order by语句上的多个排序字段的值
+        //compare the columns of order by
         int type = OrderCol.COL_ORDER_TYPE_ASC;
         for (OrderCol aTmp : tmp) {
             int colIndex = aTmp.colMeta.getColIndex();

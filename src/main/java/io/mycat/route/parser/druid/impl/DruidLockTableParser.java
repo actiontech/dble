@@ -1,8 +1,12 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLNonTransientException;
+import java.util.List;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement.LockType;
+
 import io.mycat.MycatServer;
 import io.mycat.config.model.SchemaConfig;
 import io.mycat.config.model.TableConfig;
@@ -13,11 +17,8 @@ import io.mycat.server.ServerConnection;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.SplitUtil;
 
-import java.sql.SQLNonTransientException;
-import java.util.List;
-
 /**
- * lock tables [table] [write|read]语句解析器
+ * lock tables [table] [write|read]
  *
  * @author songdabin
  */
@@ -25,14 +26,13 @@ public class DruidLockTableParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, MycatSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLNonTransientException {
-        // 对于lock tables table1 write, table2
-        // read类型的多表锁语句,DruidParser只能解析出table1,
-        // 由于多表锁在分布式场景处理逻辑繁琐,且应用场景较少,因此在此处对这种锁表语句进行拦截.
-        // 多表锁的语句在语义上会有",",这里以此为判断依据
+        // for lock tables table1 write, table2
+        // DruidParser can only parser table1,
+        // use "," to judge
         String sql = rrs.getStatement();
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] stmts = SplitUtil.split(sql, ',', true);
-        // 如果命令中存在",",则按多表锁的语句来处理
+        // contains ","
         if (stmts.length > 1) {
             String tmpStmt = null;
             String[] tmpWords = null;
@@ -41,10 +41,10 @@ public class DruidLockTableParser extends DefaultDruidParser {
                 tmpWords = SplitUtil.split(tmpStmt, ' ', true);
                 if (tmpWords.length == 2 &&
                         ("READ".equalsIgnoreCase(tmpWords[1]) || "WRITE".equalsIgnoreCase(tmpWords[1]))) {
-                    // 如果符合多表锁的语法,则继续,并在最后提示不能多表锁！
+                    // unsupport lock multi-table
                     continue;
                 } else {
-                    // 如果不符合多表锁的语法,则提示语法错误和不能多表锁！
+                    // unsupport lock multi-table
                     throw new SQLNonTransientException(
                             "You have an error in your SQL syntax, don't support lock multi tables!");
                 }

@@ -1,12 +1,12 @@
 package io.mycat.sqlengine.mpp.tmp;
 
-import io.mycat.net.mysql.RowDataPacket;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mycat.net.mysql.RowDataPacket;
+
 /**
- * 最大堆排序,适用于顺序排序
+ * MaxHeap FOR ASC
  *
  * @author coderczp-2014-12-8
  */
@@ -54,7 +54,6 @@ public class MaxHeap implements HeapItf {
 
     }
 
-    // 递归版本
     protected void heapifyRecursive(int i, int size) {
         int l = left(i);
         int r = right(i);
@@ -111,8 +110,8 @@ public class MaxHeap implements HeapItf {
 
     @Override
     public boolean addIfRequired(RowDataPacket row) {
-        // 淘汰堆里最小的数据
         RowDataPacket root = getRoot();
+        // remove the smallest
         if (cmp.compare(row, root) < 0) {
             setRoot(row);
             return true;
@@ -123,13 +122,12 @@ public class MaxHeap implements HeapItf {
     @Override
     public void heapSort(int size) {
         final int total = data.size();
-        // 容错处理
         if (size <= 0 || size > total) {
             size = total;
         }
         final int min = size == total ? 0 : (total - size - 1);
 
-        // 末尾与头交换,交换后调整最大堆
+        // change the tail and head
         for (int i = total - 1; i > min; i--) {
             swap(0, i);
             heapifyRecursive(0, i);

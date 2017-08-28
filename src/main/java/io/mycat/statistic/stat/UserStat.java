@@ -1,14 +1,14 @@
 package io.mycat.statistic.stat;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.mycat.MycatServer;
 import io.mycat.server.parser.ServerParse;
 import io.mycat.statistic.SQLRecord;
 import io.mycat.statistic.SQLRecorder;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
- * 用户状态
+ * UserStat
  *
  * @author Ben
  */
@@ -19,38 +19,38 @@ public class UserStat {
     private String user;
 
     /**
-     * 最大的并发
+     * concurrentMax
      */
     private final AtomicInteger runningCount = new AtomicInteger();
     private final AtomicInteger concurrentMax = new AtomicInteger();
 
     /**
-     * SQL 大集合插入、返回记录
+     * sqlLargeStat
      */
     private UserSqlLargeStat sqlLargeStat = null;
 
     /**
-     * SQL 执行记录
+     * sqlLastStat
      */
     private UserSqlLastStat sqlLastStat = null;
 
     /**
-     * CURD 执行分布
+     * CURD
      */
     private UserSqlRWStat sqlRwStat = null;
 
     /**
-     * 用户高频SQL分析
+     * sqlHighStat
      */
     private UserSqlHighStat sqlHighStat = null;
 
     /**
-     * 慢查询记录器  TOP 10
+     * slow TOP 10
      */
     private SQLRecorder sqlRecorder;
 
     /**
-     * 大结果集记录
+     * big result
      */
     private SqlResultSizeRecorder sqlResultSizeRecorder = null;
     public UserStat(String user) {
@@ -125,8 +125,6 @@ public class UserStat {
     }
 
     /**
-     * 更新状态
-     *
      * @param sqlType
      * @param sql
      * @param startTime
@@ -134,7 +132,6 @@ public class UserStat {
     public void update(int sqlType, String sql, long sqlRows,
                        long netInBytes, long netOutBytes, long startTime, long endTime, int rseultSetSize) {
 
-        //before 计算最大并发数
         //-----------------------------------------------------
         int invoking = runningCount.incrementAndGet();
         for (; ; ) {
@@ -150,7 +147,7 @@ public class UserStat {
         //-----------------------------------------------------
 
 
-        //慢查询记录
+        //slow sql
         long executeTime = endTime - startTime;
         if (executeTime >= sqlSlowTime) {
             SQLRecord record = new SQLRecord();
@@ -160,22 +157,22 @@ public class UserStat {
             this.sqlRecorder.add(record);
         }
 
-        //执行状态记录
+        //sqlRwStat
         this.sqlRwStat.setConcurrentMax(concurrentMax.get());
         this.sqlRwStat.add(sqlType, sql, executeTime, netInBytes, netOutBytes, startTime, endTime);
 
-        //记录最新执行的SQL
+        //sqlLastStatSQL
         this.sqlLastStat.add(sql, executeTime, startTime, endTime);
 
-        //记录高频SQL
+        //sqlHighStat
         this.sqlHighStat.addSql(sql, executeTime, startTime, endTime);
 
-        //记录SQL Select 返回超过 10000 行的 大结果集
+        //sqlLargeStat large than 10000 rows
         if (sqlType == ServerParse.SELECT && sqlRows > 10000) {
             this.sqlLargeStat.add(sql, sqlRows, executeTime, startTime, endTime);
         }
 
-        //记录超过阈值的大结果集sql
+        //big size sql
         if (rseultSetSize >= MycatServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
             this.sqlResultSizeRecorder.addSql(sql, rseultSetSize);
         }

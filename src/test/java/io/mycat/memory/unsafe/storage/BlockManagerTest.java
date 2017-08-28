@@ -1,13 +1,22 @@
 package io.mycat.memory.unsafe.storage;
 
-import com.google.common.io.Closeables;
-import io.mycat.memory.unsafe.utils.MycatPropertyConf;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import com.google.common.io.Closeables;
+
+import io.mycat.memory.unsafe.utils.MycatPropertyConf;
 
 /**
  * Created by zagnix on 2016/6/4.
@@ -22,7 +31,7 @@ public class BlockManagerTest {
         DataNodeDiskManager blockManager = new DataNodeDiskManager(conf, true);
         DataNodeFileManager diskBlockManager = blockManager.diskBlockManager();
         /**
-         * 生成一个文本文件
+         * generate a file
          */
         File file = diskBlockManager.getFile("mycat1");
         FileOutputStream fos = new FileOutputStream(file);
@@ -35,7 +44,7 @@ public class BlockManagerTest {
 
 
         /**
-         * 读刚刚写入的文件
+         * read the file
          */
         File file1 = diskBlockManager.getFile("mycat1");
         FileInputStream ios = new FileInputStream(file1);

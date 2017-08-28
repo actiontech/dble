@@ -1,8 +1,16 @@
 package io.mycat.plan.common.item;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+
 import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.net.mysql.FieldPacket;
@@ -16,18 +24,12 @@ import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.util.StringUtil;
-import org.apache.commons.lang.StringUtils;
-
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.List;
 
 public class ItemField extends ItemIdent {
 
     private Field field;
 
-    /* index如果有值的话,代表这个Item_field真实的下标值,需要在调用val之前调用setField方法 */
+    /* if index!=-1, means the index of Item_field,need setField before val */
     private int index = -1;
 
     public ItemField(String dbName, String tableName, String fieldName) {
@@ -40,7 +42,7 @@ public class ItemField extends ItemIdent {
     }
 
     /**
-     * 保存index
+     * save index
      *
      * @param index
      */
@@ -56,7 +58,7 @@ public class ItemField extends ItemIdent {
 
     protected void setField(Field field) {
         this.field = field;
-        maybeNull = field.maybeNull(); // 有可能为null
+        maybeNull = field.maybeNull();
         decimals = field.getDecimals();
         tableName = field.getTable();
         itemName = field.getName();
@@ -216,7 +218,7 @@ public class ItemField extends ItemIdent {
         }
         Item column = null;
         if (context.isFindInSelect()) {
-            // 尝试从selectlist中查找一次
+            // try to find in selectlist
             if (StringUtils.isEmpty(getTableName())) {
                 for (NamedField namedField : planNode.getOuterFields().keySet()) {
                     if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {

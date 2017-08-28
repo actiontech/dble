@@ -1,5 +1,10 @@
 package io.mycat.route;
 
+import java.util.Map;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
 import io.mycat.SimpleCachePool;
 import io.mycat.cache.CacheService;
 import io.mycat.cache.LayerCachePool;
@@ -9,10 +14,6 @@ import io.mycat.config.model.SchemaConfig;
 import io.mycat.route.factory.RouteStrategyFactory;
 import io.mycat.server.parser.ServerParse;
 import junit.framework.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.util.Map;
 
 @Ignore
 public class HintDBTypeTest {
@@ -29,31 +30,31 @@ public class HintDBTypeTest {
     }
 
     /**
-     * 测试注解
+     * testHint
      *
      * @throws Exception
      */
     @Test
     public void testHint() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        //使用注解（新注解,/*!mycat*/）,runOnSlave=false 强制走主节点
+        //(new hint,/*!mycat*/),runOnSlave=false force master
         String sql = "/*!mycat:db_type=master*/select * from employee where sharding_id=1";
         CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
         RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
-        //使用注解（新注解,/*#mycat*/）,runOnSlave=false 强制走主节点
+        //(new hint,/*#mycat*/),runOnSlave=false force master
         sql = "/*#mycat:db_type=master*/select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
-        //使用注解（新注解,/*mycat*/）,runOnSlave=false 强制走主节点
+        //(new hint,/*mycat*/),runOnSlave=false force master
         sql = "/*mycat:db_type=master*/select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
-        //不使用注解,runOnSlave=null, 根据读写分离策略走主从库
+        //no hint ,runOnSlave=null
         sql = "select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(rrs.getRunOnSlave() == null);

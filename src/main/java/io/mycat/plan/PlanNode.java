@@ -24,7 +24,7 @@ public abstract class PlanNode {
     private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
 
     /**
-     * 聚合函数集合
+     * aggregate function list
      */
     public HashSet<ItemSum> getSumFuncs() {
         return sumFuncs;
@@ -35,7 +35,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 子查询集合
+     * subQuery list
      */
     public List<ItemSubselect> getSubSelects() {
         return subSelects;
@@ -56,42 +56,43 @@ public abstract class PlanNode {
     private boolean isDistinct = false;
 
     /**
-     * select查询中的列
+     * select columns
      */
     protected List<Item> columnsSelected = new ArrayList<>();
 
     /**
-     * 显式的由查询接口指定的orderBy,注意需要保证顺序
+     * orderBy,Notice:field order
      */
     protected List<Order> orderBys = new LinkedList<>();
 
     /**
-     * 显式的由查询接口指定的group by,注意需要保证顺序
+     * group By,Notice:field order
      */
     protected List<Order> groups = new LinkedList<>();
 
     /**
-     * having条件
+     * having condition
      */
     protected Item havingFilter;
     /**
-     * 上一层父节点,比如子查询会依赖父节点的字段信息
+     * parent node ,eg:subquery may use parent's info
+     * TODO:NEED?
      * http://dev.mysql.com/doc/refman/5.0/en/correlated-subqueries.html
      */
     private PlanNode parent;
 
     /**
-     * 子节点
+     * children NODE
      */
     protected List<PlanNode> children = new ArrayList<>();
 
     /**
-     * 从哪里开始
+     * LIMIT FROM
      */
     protected long limitFrom = -1;
 
     /**
-     * 到哪里结束
+     * LIMIT TO
      */
     protected long limitTo = -1;
 
@@ -101,20 +102,18 @@ public abstract class PlanNode {
     protected Item whereFilter = null;
 
     /**
-     * 当前tn的别名,用于进行join等操作的时候辨别到底这一行是从哪个subNode来的.
+     * alias for table node ,used for named subNode when join.
      */
     protected String alias;
 
     /**
-     * 如果出现subQuery,内外都存在别名时,内部的别名为subAlias,外部使用的别名为alias
-     * tablenode自身的这个Alias属性和基类TreeNode的alias属性的作用如下: 按照原本tddl的做法无法区分 select *
-     * from (select* from test1 t1) t当中的两个alias
-     * 当tablenode的tableAlias属性有值时,我们就把这个语句带上tableAlias下发下去
+     * subQuery's inside and outside all have alias,subAlias for inside,alias for outside
+     * eg: select * from (select* from test1 t1) t
      */
     protected String subAlias;
 
     /**
-     * 当前节点是否为子查询
+     * is this node is subQuery
      */
     protected boolean subQuery;
 
@@ -143,7 +142,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 依赖的所有列,保存的是childnode->iselectable
+     * map :childnode->iselectable
      */
     protected LoadingCache<PlanNode, List<Item>> columnsReferedCache = CacheBuilder.newBuilder().build(
             new CacheLoader<PlanNode, List<Item>>() {
@@ -159,20 +158,22 @@ public abstract class PlanNode {
     private boolean existUnPushDownGroup = false;
 
     /**
-     * 是否可全局表优化 ex. TableNode: isGlobaled当且仅当tablename是globaltablename
-     * MergeNode: always false; QueryNode: true <-->subchild is true JoinNode:
-     * 当且仅当所有子节点最多只有一个非globaltable
+     * is global table?
+     * ex. TableNode: isGlobaled when tablename is global tablename
+     * MergeNode: always false;
+     * QueryNode: true <-->subchild is true
+     * JoinNode: all children has only one unglobal table at most
      */
     protected Set<String> noshardNode = null;
 
-    // 这个node涉及到的unglobal的表的个数
+    // unGlobalTableCount for this node(contains children)
     protected int unGlobalTableCount = 0;
 
     protected List<Item> nestLoopFilters = null;
 
     public abstract String getPureName();
 
-    /* 当前节点的高度 */
+    /* height of node */
     public abstract int getHeight();
 
     public final String getCombinedName() {
@@ -245,7 +246,7 @@ public abstract class PlanNode {
                 setUpItemRefer(jn.getOtherJoinOnFilter());
             }
         }
-        // where, pushdown node时无须where条件
+        // where, pushdown node does 't need where
         if (!isPushDownNode) {
             setUpItemRefer(whereFilter);
         }
@@ -302,7 +303,7 @@ public abstract class PlanNode {
             child.setUpFields();
             for (NamedField coutField : child.outerFields.keySet()) {
                 tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
-                // view也会有subAlias
+                // view may has subAlias
                 if (subAlias != null && subAlias.length() != 0)
                     tmpFieldTable = subAlias;
                 tmpFieldName = coutField.getName();
@@ -415,7 +416,7 @@ public abstract class PlanNode {
                             newSels.add(col);
                             found = true;
                         } else if (found) {
-                            // a.* ->a.id,a.id1,b.id 找到b.id时退出
+                            // a.* ->a.id,a.id1,b.id ,break when find b.id
                             break;
                         }
                     }
@@ -544,7 +545,7 @@ public abstract class PlanNode {
     }
 
     public void addSelToReferedMap(PlanNode tn, Item sel) {
-        // 使得相同的refermap中的sel具有相同的columnname
+        // the same ReferedMap's selects have the same columnname
         try {
             this.columnsReferedCache.get(tn).add(sel);
         } catch (ExecutionException e) {
@@ -557,7 +558,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 设置别名,表级别
+     * setAlias for table
      */
     public PlanNode setAlias(String string) {
         this.alias(string);
@@ -565,7 +566,7 @@ public abstract class PlanNode {
     }
 
     /**
-     * 设置别名,表级别
+     * setSubAlias for table
      */
     public PlanNode setSubAlias(String string) {
         this.subAlias(string);
@@ -615,7 +616,7 @@ public abstract class PlanNode {
         this.noshardNode = noshardNode;
     }
 
-    /* 获取改节点下的tablenode集合 */
+    /* get tablenode list */
     public List<TableNode> getReferedTableNodes() {
         return referedTableNodes;
     }

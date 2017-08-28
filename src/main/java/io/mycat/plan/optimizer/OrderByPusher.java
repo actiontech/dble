@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 将merge/join中的order by条件下推,包括隐式的order by条件,比如将groupBy转化为orderBy
+ * push down merge/join's order by ,contains mplicit order byi,eg:groupBy
  *
  * @author ActionTech 2015-07-10
  */
@@ -24,9 +24,6 @@ public final class OrderByPusher {
     private OrderByPusher() {
     }
 
-    /**
-     * 详细优化见类描述
-     */
     public static PlanNode optimize(PlanNode qtn) {
         qtn = preOrderByPusher(qtn);
         qtn = pushOrderBy(qtn);
@@ -48,7 +45,7 @@ public final class OrderByPusher {
         if (PlanUtil.isGlobalOrER(qtn))
             return qtn;
         if (qtn.type() == PlanNodeType.MERGE) {
-            // note:目前不做mergenode的处理
+            // note:do not execute mergenode
             for (PlanNode child : qtn.getChildren()) {
                 pushOrderBy(child);
             }
@@ -56,14 +53,14 @@ public final class OrderByPusher {
         } else if (qtn.type() == PlanNodeType.JOIN) {
             JoinNode join = (JoinNode) qtn;
 
-            // sort merge join中的order by,需要推到左/右节点
+            // sort merge join's order by, need to push down to left/right node
             List<Order> implicitOrders = getOrderBysGroupFirst(join);
             boolean canMatch = getJoinColumnOrders(join.getJoinFilter(), join.getLeftJoinOnOrders(),
                     join.getRightJoinOnOrders(), implicitOrders);
             boolean leftOrderPushSuc = false;
             boolean rightOrderPushSuc = false;
             if (canMatch) {
-                // match的时候,先推join列,在推全部
+                // push down join column first
                 leftOrderPushSuc = tryPushOrderToChild(join, join.getLeftJoinOnOrders(), join.getLeftNode());
                 if (leftOrderPushSuc) {
                     tryPushOrderToChild(join, implicitOrders, join.getLeftNode());
@@ -79,7 +76,7 @@ public final class OrderByPusher {
             join.setLeftOrderMatch(leftOrderPushSuc);
             join.setRightOrderMatch(rightOrderPushSuc);
         } else if (qtn.type() == PlanNodeType.QUERY) {
-            // 可以将order推到子查询
+            // push order to subQuery
             QueryNode query = (QueryNode) qtn;
             tryPushOrderToChild(query, getOrderBysGroupFirst(query), query.getChild());
         }
@@ -94,9 +91,9 @@ public final class OrderByPusher {
     }
 
     /**
-     * 生成joinOnFilters,如果能够调整joinOn的orderBy的顺序并且和implicitOrders顺序吻合,返回true
+     * generatejoinOnFilters,if joinOn's orderBy can change to match implicitOrders ,return true
      *
-     * @param joinOnCondition in
+     * @param joinOnFilters in
      * @param leftOnOrders    out
      * @param rightOnOrders   out
      * @param implicitOrders  in
@@ -110,7 +107,7 @@ public final class OrderByPusher {
             leftOnSels.add(bf.arguments().get(0));
             rightOnSels.add(bf.arguments().get(1));
         }
-        // 是否可以通过调整on的顺序使得on的orderbys和implicitorders相同
+        //is on's orderBy can be changed to match implicitOrders
         boolean canMatch = false;
         if (implicitOrders.size() < leftOnSels.size())
             canMatch = false;
@@ -124,7 +121,7 @@ public final class OrderByPusher {
                 } else if ((index = rightOnSels.indexOf(orderSel)) >= 0) {
                     foundOnIndexs.put(index, orderby.getSortOrder());
                 } else {
-                    // 既不属于leftOn,也不属于rightOn,结束
+                    // neither belong to leftOn nor belong to rightOn
                     break;
                 }
             }
@@ -161,11 +158,11 @@ public final class OrderByPusher {
     }
 
     /**
-     * 尝试将orders下推到child中去
+     * tryPushOrderToChild
      *
      * @param pOrders
      * @param child
-     * @return 最终失败,child的orders和pOrders不吻合
+     * @return false, if child's orders not match pOrders
      */
     private static boolean tryPushOrderToChild(PlanNode parent, List<Order> pOrders, PlanNode child) {
         for (Order pOrder : pOrders) {
@@ -176,32 +173,32 @@ public final class OrderByPusher {
         List<Order> childImplicitOrders = child.getOrderBys();
         boolean childOrderContains = PlanUtil.orderContains(childImplicitOrders, pushedOrders);
         if (child.getLimitTo() == -1) {
-            // 如果child的orders多余parent的orders,保留child的,否则,以parent的为准
+            // if child's orders more than parent's orders,keep child's ,or use parent's
             if (!childOrderContains)
                 child.setOrderBys(pushedOrders);
             return true;
         } else {
-            // 存在limit时,不能下推order by
+            // has limit,order by can not be push down
             return childOrderContains;
         }
     }
 
     /**
-     * 生成该node的最终数据的orderby. 例如不存在orderby属性,但是存在groupby属性时,手动添加上orderby属性
+     * generated node's order by. eg:no order by but exist groupby ,add orderby
      */
     private static void buildImplicitOrderBys(PlanNode node) {
-        // 如果用户没指定order by,则显示index的order by
+        // if  has order by,
         List<Order> newOrderBys = new ArrayList<>();
         if (!node.getOrderBys().isEmpty()) {
             if (!node.getGroupBys().isEmpty()) {
-                // 首先以order by的顺序,查找group by中对应的字段
+                // is order by contains group by
                 for (Order orderBy : node.getOrderBys()) {
                     if (findOrderByByColumn(node.getGroupBys(), orderBy.getItem()) != null) {
                         newOrderBys.add(orderBy.copy());
                     } else {
                         if (newOrderBys.size() == node.getGroupBys().size()) {
-                            // 说明出现order by包含了整个group by
-                            node.setGroupBys(newOrderBys); // 将group by重置一下顺序
+                            // contains
+                            node.setGroupBys(newOrderBys); // reorder group by
                         } else {
                             return;
                         }
@@ -209,15 +206,15 @@ public final class OrderByPusher {
                 }
                 for (Order groupBy : node.getGroupBys()) {
                     if (findOrderByByColumn(newOrderBys, groupBy.getItem()) == null) {
-                        // 添加下order by中没有的字段
+                        // add field which is not in order by
                         newOrderBys.add(groupBy.copy());
                     }
                 }
-                node.setGroupBys(newOrderBys); // 将group by重置一下顺序
+                node.setGroupBys(newOrderBys); // reorder group by
                 node.setOrderBys(newOrderBys);
             }
         } else {
-            // 没有orderby,复制group by
+            // no order by,copy group by
             if (!node.getGroupBys().isEmpty()) {
                 for (Order orderBy : node.getGroupBys()) {
                     newOrderBys.add(orderBy.copy());
@@ -228,7 +225,7 @@ public final class OrderByPusher {
     }
 
     /**
-     * 尝试查找一个同名的排序字段
+     * try to find an column which has the same name to the order by
      */
     private static Order findOrderByByColumn(List<Order> orderbys, Item column) {
         for (Order order : orderbys) {
@@ -241,9 +238,9 @@ public final class OrderByPusher {
     }
 
     /**
-     * 以groupby为优先的order by list
+     * getOrderBysGroupFirst
      *
-     * @param preOrderPushedNode
+     * @param node
      * @return
      */
     private static List<Order> getOrderBysGroupFirst(PlanNode node) {

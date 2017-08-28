@@ -38,15 +38,15 @@ public final class PlanUtil {
     }
 
     /**
-     * 查找obj在node树当中真正属于的tablenode的column 如果obj不是Column类型返回null
-     * <查找的column必须是table的上级的column>
+     * check obj is the column of an real tablenode ,if obj is not Column Type return null
+     * <the column to be found must be  table's parent's column>
      *
      * @param column
      * @param node
-     * @return 找到的那个tablenode以及column属性
+     * @return the target table node and the column
      */
     public static Pair<TableNode, ItemField> findColumnInTableLeaf(ItemField column, PlanNode node) {
-        // union的不可下查
+        // union return
         if (node.type() == PlanNodeType.MERGE)
             return null;
         NamedField tmpField = new NamedField(column.getTableName(), column.getItemName(), null);
@@ -67,7 +67,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 刷新function的refertable
+     * refertable of refreshed function
      *
      * @param f
      */
@@ -90,7 +90,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 判断sel是否可以下推到child中
+     * the sel can be pushed down to child?
      *
      * @param sel
      * @param child
@@ -107,7 +107,7 @@ public final class PlanUtil {
         } else if (referTables.size() == 1) {
             PlanNode referTable = referTables.iterator().next();
             if (referTable == child) {
-                // left join的right 节点的is null不下发
+                // if left join's right node's is null condition will not be pushed down
                 return !sel.isWithIsNull() || parent.type() != PlanNodeType.JOIN || !((JoinNode) parent).isLeftOuterJoin() ||
                         ((JoinNode) parent).getRightNode() != child;
             }
@@ -116,13 +116,13 @@ public final class PlanUtil {
     }
 
     /**
-     * 是否属于可直接下推的函数
+     * isDirectPushDownFunction
      **/
     public static boolean isDirectPushDownFunction(Item func) {
         if (func.isWithSumFunc())
             return false;
         else {
-            // 如果函数涉及的所有的参数仅有一个table,则可以下推
+            // push down if func's related table is only 1
             return func.getReferTables().size() <= 1;
         }
     }
@@ -139,7 +139,7 @@ public final class PlanUtil {
         return pushDownItem(node, sel, false);
     }
 
-    // 将node中的sel进行下推
+    // push down node's sel
     public static Item pushDownItem(PlanNode node, Item sel, boolean subQueryOpt) {
         if (sel == null)
             return null;
@@ -175,14 +175,14 @@ public final class PlanUtil {
     }
 
     /**
-     * 判断bf是否可以做为node的joinkey,并且调整bf的左右位置
+     * is bf can be the joinkey for node?make bf's left related to left to node
      *
      * @param bf
      * @param node
      * @return
      */
     public static boolean isJoinKey(ItemFuncEqual bf, JoinNode node) {
-        // 只有等于的才可能是joinkey
+        // only funEqula may become joinkey
         boolean isJoinKey = false;
         Item selCol = bf.arguments().get(0);
         Item selVal = bf.arguments().get(1);
@@ -205,14 +205,14 @@ public final class PlanUtil {
     }
 
     /**
-     * 将原本的Join的where条件中的a.id=b.id构建为join条件,并从where条件中移除
+     * Join change the a.id=b.id in where filter in join node into join condition, and remove from where
      */
     public static void findJoinKeysAndRemoveIt(List<Item> dnfNode, JoinNode join) {
         if (dnfNode.isEmpty()) {
             return;
         }
         List<Item> joinFilters = new LinkedList<>();
-        for (Item subItem : dnfNode) { // 一定是简单条件
+        for (Item subItem : dnfNode) { // sinple condition
             if (subItem.type().equals(ItemType.FUNC_ITEM) || subItem.type().equals(ItemType.COND_ITEM)) {
                 ItemFunc sub = (ItemFunc) subItem;
                 if (!(sub.functype().equals(Functype.EQ_FUNC)))
@@ -245,11 +245,11 @@ public final class PlanUtil {
     }
 
     /**
-     * 将merge节点上的函数下推到下面的child节点上 目前仅下推filter以及自定义函数
+     * push function in merge node to child node
      *
      * @param mn
      * @param toPush
-     * @return 返回所有child对应的pushdown sel
+     * @return all child's pushdown sel
      */
     public static List<Item> getPushItemsToUnionChild(MergeNode mn, Item toPush, Map<String, Integer> colIndexs) {
         if (toPush == null)
@@ -281,7 +281,7 @@ public final class PlanUtil {
     }
 
     /**
-     * merge的function的每一个arg一定属于child
+     * arg of merge node's function belong to child
      *
      * @param toPush
      * @param colIndexs
@@ -310,7 +310,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 生成node中的orders的pushorders
+     * generate push orders from orders node
      *
      * @param node
      * @param orders
@@ -327,7 +327,7 @@ public final class PlanUtil {
     }
 
     /**
-     * 当order1 包含order2的时候,返回true,要求order2的列在order1中要从第一列开始按照顺序来进行
+     * when order1contains order2,return true, order2's column start from order1's first column
      *
      * @param orders1
      * @param orders2

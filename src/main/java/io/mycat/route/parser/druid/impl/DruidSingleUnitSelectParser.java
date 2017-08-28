@@ -1,9 +1,19 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+
 import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
@@ -15,9 +25,6 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
-
-import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
     @Override
@@ -63,7 +70,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             if (visitor.isHasSubQuery()) {
                 this.getCtx().getRouteCalculateUnits().clear();
             }
-            // 更改canRunInReadDB属性
+            // change canRunInReadDB
             if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             }

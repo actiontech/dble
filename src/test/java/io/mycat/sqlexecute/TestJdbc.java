@@ -1,18 +1,20 @@
 package io.mycat.sqlexecute;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class TestJdbc {
     public static void main(String[] args) throws SQLException {
         try {
-            // 加载MySql的驱动类
+            // load MySql driver
             Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("找不到驱动程序类 ,加载驱动失败！");
             e.printStackTrace();
         }
 
-        // 连接MySql数据库,用户名和密码都是root
         // String url = "jdbc:mysql://192.168.56.101:3309/mycat";
         // String username = "root";
         // String password = "root123";
@@ -23,7 +25,6 @@ public class TestJdbc {
         try {
             con = DriverManager.getConnection(url, username, password);
         } catch (SQLException se) {
-            System.out.println("数据库连接失败！");
             se.printStackTrace();
         }
         PreparedStatement stmt = null;
@@ -37,7 +38,7 @@ public class TestJdbc {
             // boolean flag = stmt.execute(String sql)
             // while(rs.next()){
             // String name = rs.getString("name") ;
-            // String pass = rs.getString(1) ; // 此方法比较高效
+            // String pass = rs.getString(1) ;
             // }
 
             con.setAutoCommit(false);

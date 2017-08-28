@@ -1,7 +1,7 @@
 package io.mycat.config.loader.zkprocess.zookeeper;
 
 /**
- * 数据节点信息
+ * DataInf
  *
  *
  * author:liujun
@@ -14,15 +14,13 @@ package io.mycat.config.loader.zkprocess.zookeeper;
 public interface DataInf {
 
     /**
-     * 获取信息,以:分隔两个值
+     * split by:
      *
      * @return
      */
     String getDataInfo();
 
     /**
-     * 返回数据节点值信息
-     * 方法描述
      *
      * @return
      * @Created 2016/9/17

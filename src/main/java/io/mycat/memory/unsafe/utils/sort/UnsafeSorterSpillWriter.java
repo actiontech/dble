@@ -18,11 +18,16 @@
 package io.mycat.memory.unsafe.utils.sort;
 
 
-import io.mycat.memory.unsafe.Platform;
-import io.mycat.memory.unsafe.storage.*;
-
 import java.io.File;
 import java.io.IOException;
+
+import io.mycat.memory.unsafe.Platform;
+import io.mycat.memory.unsafe.storage.ConnectionId;
+import io.mycat.memory.unsafe.storage.DataNodeDiskManager;
+import io.mycat.memory.unsafe.storage.DataNodeFileManager;
+import io.mycat.memory.unsafe.storage.DiskRowWriter;
+import io.mycat.memory.unsafe.storage.DummySerializerInstance;
+import io.mycat.memory.unsafe.storage.SerializerManager;
 
 /**
  * Spills a list of sorted records to disk. Spill files have the following format:
@@ -106,40 +111,39 @@ public final class UnsafeSorterSpillWriter {
 
         /**
          * [# of records (int)] [[len (int)][prefix (long)][data (bytes)]...]
-         * 一条记录在文件中格式
+         * a row format
          * */
 
         /**
-         * recordLength记录长度 4个bytes
+         * recordLength 4bytes
          */
         writeIntToBuffer(recordLength, 0);
         /**
-         * 排序key,8个bytes
+         *  key,8bytes
          */
         writeLongToBuffer(keyPrefix, 4);
         /**
-         * dataRemaining要写的真实数据长度bytes
+         * dataRemaining real data bytes
          */
         int dataRemaining = recordLength;
         /**
-         * 写buffer剩余的空间
+         * freeSpace
          */
         int freeSpaceInWriteBuffer = DISK_WRITE_BUFFER_SIZE - 4 - 8; // space used by prefix + len
 
         /**
-         *记录在内存中的地址偏移量
+         *recordReadPosition
          */
         long recordReadPosition = baseOffset;
 
         while (dataRemaining > 0) {
             /**
-             * 计算本次需要从内存中读取的实际数据,取freeSpaceInWriteBuffer和dataRemaining
-             * 中的最小值
+             * read real data ,min(freeSpaceInWriteBuffer,dataRemaining)
              */
             final int toTransfer = Math.min(freeSpaceInWriteBuffer, dataRemaining);
 
             /**
-             * 执行数据拷贝动作,将baseObject的数据拷贝到writeBuffer中
+             * copy from baseObjectto writeBuffer
              */
             Platform.copyMemory(
                     baseObject, /**srd*/
@@ -149,25 +153,25 @@ public final class UnsafeSorterSpillWriter {
                     toTransfer);
 
             /**
-             * 将writeBuffer中数据写到磁盘中
+             * write writeBufferto disk
              */
             writer.write(writeBuffer, 0, (DISK_WRITE_BUFFER_SIZE - freeSpaceInWriteBuffer) + toTransfer);
             /**
-             * 读指针移动toTransfer实际写的数据大小
+             * add toTransfer size
              */
             recordReadPosition += toTransfer;
             /**
-             * record还剩下多少数据要写入磁盘中
+             * calc dataRemainingrecord
              */
             dataRemaining -= toTransfer;
             /**
-             * 本次WriteBuffer初始化大小初始化为DISK_WRITE_BUFFER_SIZE
+             * init the WriteBuffer to DISK_WRITE_BUFFER_SIZE
              */
             freeSpaceInWriteBuffer = DISK_WRITE_BUFFER_SIZE;
         }
 
         /**
-         * 写剩余数据到磁盘中
+         * write the remain data to disk
          */
         if (freeSpaceInWriteBuffer < DISK_WRITE_BUFFER_SIZE) {
 
@@ -175,9 +179,6 @@ public final class UnsafeSorterSpillWriter {
 
         }
 
-        /**
-         * writer类中数据统计
-         */
         writer.recordWritten();
     }
 

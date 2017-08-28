@@ -2,7 +2,7 @@ package io.mycat.sqlengine.mpp;
 
 public class RangeValue {
     /*
-     * 左值不包含 右值包含
+     * (]
      */
     public static final Integer NE = 0;
     public static final Integer EE = 1;

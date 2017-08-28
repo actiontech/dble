@@ -1,23 +1,28 @@
 package io.mycat.config;
 
-import io.mycat.backend.datasource.PhysicalDBPool;
-import io.mycat.backend.datasource.PhysicalDatasource;
-import io.mycat.backend.mysql.nio.MySQLDataSource;
-import io.mycat.config.loader.SchemaLoader;
-import io.mycat.config.loader.xml.XMLConfigLoader;
-import io.mycat.config.loader.xml.XMLSchemaLoader;
-import io.mycat.config.model.*;
-import io.mycat.plan.node.JoinNode;
-import io.mycat.plan.optimizer.ERJoinChooser;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.mycat.backend.datasource.PhysicalDBPool;
+import io.mycat.backend.datasource.PhysicalDatasource;
+import io.mycat.backend.mysql.nio.MySQLDataSource;
+import io.mycat.config.loader.SchemaLoader;
+import io.mycat.config.loader.xml.XMLConfigLoader;
+import io.mycat.config.loader.xml.XMLSchemaLoader;
+import io.mycat.config.model.DBHostConfig;
+import io.mycat.config.model.DataHostConfig;
+import io.mycat.config.model.ERTable;
+import io.mycat.config.model.SystemConfig;
+import io.mycat.config.model.UserConfig;
+import io.mycat.plan.node.JoinNode;
+import io.mycat.plan.optimizer.ERJoinChooser;
 
 public class ConfigTest {
 
@@ -127,7 +132,7 @@ public class ConfigTest {
     }
 
     /**
-     * 测试 临时读可用 配置
+     * testTempReadHostAvailable
      */
     @Test
     public void testTempReadHostAvailable() {
@@ -137,7 +142,7 @@ public class ConfigTest {
     }
 
     /**
-     * 测试 用户服务降级 拒连 配置
+     * testReadUserBenchmark
      */
     @Test
     public void testReadUserBenchmark() {
@@ -148,7 +153,7 @@ public class ConfigTest {
 
 
     /**
-     * 测试 读服务的 权重
+     * testReadHostWeight
      *
      * @throws Exception
      */

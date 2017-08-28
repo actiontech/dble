@@ -1,7 +1,7 @@
 package io.mycat.statistic.stat;
 
 /**
- * 结果集记录模型
+ * SqlResultSet
  */
 public class SqlResultSet {
     private String sql;

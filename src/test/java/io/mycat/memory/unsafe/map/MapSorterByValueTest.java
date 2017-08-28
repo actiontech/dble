@@ -1,8 +1,15 @@
 package io.mycat.memory.unsafe.map;
 
-import org.junit.Test;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import org.junit.Test;
 
 /**
  * Created by znix on 2016/7/4.
@@ -16,7 +23,7 @@ public class MapSorterByValueTest {
         map.put("c", 5);
         map.put("d", 6);
 
-        Map<String, Integer> resultMap = mapSorterByValue(map); //按Value进行排序
+        Map<String, Integer> resultMap = mapSorterByValue(map); //order by Value
 
         for (Map.Entry<String, Integer> entry : resultMap.entrySet()) {
             System.out.println(entry.getKey() + " " + entry.getValue());

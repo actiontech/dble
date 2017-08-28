@@ -1,9 +1,9 @@
 package io.mycat.plan.common.item.function.timefunc;
 
+import java.util.List;
+
 import io.mycat.plan.common.item.Item;
 import io.mycat.plan.common.item.function.ItemFunc;
-
-import java.util.List;
 
 
 /**
@@ -22,19 +22,19 @@ public abstract class ItemTemporalFunc extends ItemFunc {
     }
 
     public java.util.Calendar getUTCTime() {
-        // 1、取得本地时间:
+        // 1 get local time
 
         java.util.Calendar cal = java.util.Calendar.getInstance();
 
-        // 2、取得时间偏移量:
+        // 2 get ZONE_OFFSET
 
         int zoneOffset = cal.get(java.util.Calendar.ZONE_OFFSET);
 
-        // 3、取得夏令时差:
+        // 3 get DST_OFFSET
 
         int dstOffset = cal.get(java.util.Calendar.DST_OFFSET);
 
-        // 4、从本地时间里扣除这些差量,即可以取得UTC时间:
+        // 4 calu them
 
         cal.add(java.util.Calendar.MILLISECOND, -(zoneOffset + dstOffset));
         return cal;

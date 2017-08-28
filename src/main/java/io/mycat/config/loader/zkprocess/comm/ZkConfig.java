@@ -1,28 +1,22 @@
 package io.mycat.config.loader.zkprocess.comm;
 
+import com.google.common.base.Strings;
+import io.mycat.config.loader.zkprocess.zktoxml.ZktoXmlMain;
+import io.mycat.util.ResourceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Strings;
-
-import io.mycat.config.loader.zkprocess.zktoxml.ZktoXmlMain;
-import io.mycat.util.ResourceUtil;
-
 
 /**
  * ZkConfig
- *
- *
+ * <p>
+ * <p>
  * author:liujun
  * Created:2016/9/15
- *
- *
- *
- *
  */
 public final class ZkConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkConfig.class);
@@ -56,7 +50,6 @@ public final class ZkConfig {
     }
 
     /**
-     *
      * @return
      * @Created 2016/9/15
      */
@@ -66,7 +59,7 @@ public final class ZkConfig {
     }
 
     /**
-     * get property from myid 
+     * get property from myid
      *
      * @param param
      * @return
@@ -81,7 +74,6 @@ public final class ZkConfig {
     }
 
     /**
-     *
      * @return
      * @Created 2016/9/15
      */

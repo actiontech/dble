@@ -1,5 +1,9 @@
 package io.mycat.manager.response;
 
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
+
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
@@ -14,12 +18,8 @@ import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-
 /**
- * 查询每个用户大集合返回的 SQL
+ * ShowSQLLarge
  *
  * @author zhuam
  */
@@ -85,7 +85,7 @@ public final class ShowSQLLarge {
             }
 
             if (isClear) {
-                userStat.getSqlLargeRowStat().clear(); //读取大结果集SQL后,清理
+                userStat.getSqlLargeRowStat().clear();
             }
         }
 

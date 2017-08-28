@@ -1,5 +1,9 @@
 package io.mycat.manager.response;
 
+import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.util.Map;
+
 import io.mycat.backend.mysql.PacketUtil;
 import io.mycat.config.Fields;
 import io.mycat.manager.ManagerConnection;
@@ -14,17 +18,13 @@ import io.mycat.util.FormatUtil;
 import io.mycat.util.LongUtil;
 import io.mycat.util.StringUtil;
 
-import java.nio.ByteBuffer;
-import java.text.DecimalFormat;
-import java.util.Map;
-
 /**
- * 查询用户的 SQL 执行情况
+ * ShowSQLSumUser
  * <p>
- * 1、用户 R/W数、读占比、并发数
- * 2、请求时间范围
- * 3、请求的耗时范围
- * 4、Net 进/出 字节数
+ * 1.R/W read /write
+ * 2.TIME_COUNT
+ * 3.TTL_COUNT
+ * 4.Net in/out bytes
  *
  * @author zhuam
  */

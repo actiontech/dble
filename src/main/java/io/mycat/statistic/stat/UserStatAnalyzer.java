@@ -1,12 +1,12 @@
 package io.mycat.statistic.stat;
 
-import io.mycat.server.parser.ServerParse;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import io.mycat.server.parser.ServerParse;
+
 /**
- * 按访问用户 计算SQL的运行状态
+ * UserStatAnalyzer
  *
  * @author Ben
  */

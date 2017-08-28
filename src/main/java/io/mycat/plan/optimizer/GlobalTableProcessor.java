@@ -1,12 +1,12 @@
 package io.mycat.plan.optimizer;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.PlanNode.PlanNodeType;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.plan.util.PlanUtil;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public final class GlobalTableProcessor {
     private GlobalTableProcessor() {
@@ -19,7 +19,7 @@ public final class GlobalTableProcessor {
 
     /**
      * @param tn
-     * @return true:parent node有可能是global;false parent node没有可能是global
+     * @return true:parent node maybe is global;false parent node must not be global
      */
     private static boolean initGlobalStatus(PlanNode tn) {
         if (tn == null || tn.type() == PlanNodeType.TABLE)
@@ -33,7 +33,7 @@ public final class GlobalTableProcessor {
             }
         }
         if (PlanUtil.isERNode(tn)) {
-            // 是erjoin,只能算一个unglobaltable
+            // treat erjoin as an unglobaltable
             tn.setUnGlobalTableCount(1);
             Set<String> newSet = new HashSet<>();
             newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
@@ -61,7 +61,7 @@ public final class GlobalTableProcessor {
                 } else {
                     // left join
                     PlanNode left = jn.getLeftNode();
-                    if (left.getUnGlobalTableCount() == 0) { // 左边是global,leftjoin不下发
+                    if (left.getUnGlobalTableCount() == 0) { // left node is global,left join will not push down
                         tn.setNoshardNode(null);
                         status = false;
                     } else if (left.type() == PlanNode.PlanNodeType.TABLE || !PlanUtil.isERNode(left)) {
@@ -70,7 +70,7 @@ public final class GlobalTableProcessor {
                             status = false;
                         }
                     } else {
-                        // 左边既不是单体表,也不是ER表
+                        // left node is not single table or er table
                         tn.setNoshardNode(null);
                         status = false;
                     }

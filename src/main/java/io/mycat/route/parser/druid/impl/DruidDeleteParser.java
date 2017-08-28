@@ -1,10 +1,14 @@
 package io.mycat.route.parser.druid.impl;
 
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+
 import io.mycat.MycatServer;
 import io.mycat.config.MycatPrivileges;
 import io.mycat.config.MycatPrivileges.Checktype;
@@ -17,9 +21,6 @@ import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.util.SchemaUtil;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
-
-import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html
@@ -63,7 +64,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             }
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) { //整个schema都不分库或者该表不拆分
+            if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
                 if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, new StringPtr(schemaInfo.getSchema()))) {
                     String msg = "DELETE query with sub-query is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);

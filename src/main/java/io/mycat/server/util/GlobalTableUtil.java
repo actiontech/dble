@@ -1,10 +1,24 @@
 package io.mycat.server.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastjson.JSON;
+
 import io.mycat.MycatServer;
 import io.mycat.backend.datasource.PhysicalDBNode;
 import io.mycat.backend.datasource.PhysicalDBPool;
@@ -19,18 +33,10 @@ import io.mycat.meta.protocol.StructureMeta.TableMeta;
 import io.mycat.server.util.SchemaUtil.SchemaInfo;
 import io.mycat.sqlengine.SQLQueryResult;
 import io.mycat.util.StringUtil;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author digdeep@126.com
- * 全局表一致性检查 和 拦截
+ * check GlobalTable consistency
  */
 public final class GlobalTableUtil {
     private GlobalTableUtil() {
@@ -39,7 +45,8 @@ public final class GlobalTableUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTableUtil.class);
     private static Map<String, TableConfig> globalTableMap = new ConcurrentHashMap<>();
     /**
-     * 全局表 保存修改时间戳 的字段名,用于全局表一致性检查
+     * the field of timpstamp,
+     * for check GlobalTable consistency
      */
     public static final String GLOBAL_TABLE_CHECK_COLUMN = "_mycat_op_time";
     public static final String COUNT_COLUMN = "record_count";
@@ -54,14 +61,14 @@ public final class GlobalTableUtil {
     }
 
     static {
-        getGlobalTable();    // 初始化 globalTableMap
+        getGlobalTable();    // init globalTableMap
     }
 
     public static SQLColumnDefinition createCheckColumn() {
         SQLColumnDefinition column = new SQLColumnDefinition();
         column.setDataType(new SQLCharacterDataType("bigint"));
         column.setName(new SQLIdentifierExpr(GLOBAL_TABLE_CHECK_COLUMN));
-        column.setComment(new SQLCharExpr("全局表保存修改时间戳的字段名"));
+        column.setComment(new SQLCharExpr("field for checking consistency"));
         return column;
     }
 
@@ -74,7 +81,7 @@ public final class GlobalTableUtil {
         String warnStr = schemaInfo.getSchema() + "." + schemaInfo.getTable() +
                 " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
         LOGGER.warn(warnStr);
-        return false; // tableName 全局表没有内部列
+        return false; // tableName witout inner column
     }
 
     private static void getGlobalTable() {
@@ -139,7 +146,7 @@ public final class GlobalTableUtil {
                             }
                         }
                         LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
-                        // 一种 check 完成之后,再进行另一种 check
+                        // check another measure
                         checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
                         isColumnCountCheckFinished = 0;
                         checker.checkRecordCout();
@@ -161,7 +168,7 @@ public final class GlobalTableUtil {
     }
 
     /**
-     * 每次处理 一种 check 的结果,不会交叉同时处理 多种不同 check 的结果
+     * check one measure for one time
      *
      * @param list
      * @return

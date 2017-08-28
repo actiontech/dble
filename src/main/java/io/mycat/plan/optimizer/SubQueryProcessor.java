@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 将View进行处理,将虚拟的merge node变成其它的三种类型的node
+ * change View,change query node to other three type node
  *
  * @author ActionTech
  */
@@ -33,7 +33,7 @@ public final class SubQueryProcessor {
     }
 
     /**
-     * 尝试找出qtn中的querynode,并将他们转换为对应的三种node
+     * find query node in qtn ,change to other 3 type node
      *
      * @param qtn
      * @return
@@ -57,7 +57,7 @@ public final class SubQueryProcessor {
     }
 
     /**
-     * 转换一个querynode
+     * transformerQuery
      *
      * @param query
      * @return
@@ -65,7 +65,7 @@ public final class SubQueryProcessor {
     private static PlanNode transformerQuery(QueryNode query, BoolPtr boolptr) {
         boolean canBeMerged = ViewUtil.canBeMerged(query.getChild());
         if (canBeMerged) {
-            // 需要将viewnode的属性merge到view的child,从而实现优化
+            // merge viewnode's property to view's child
             PlanNode newNode = mergeNode(query, query.getChild());
             boolptr.set(true);
             return newNode;
@@ -75,7 +75,8 @@ public final class SubQueryProcessor {
     }
 
     /**
-     * 将parent的属性merge到child,并返回新的child前提是child是canBeMerged
+     * merge parent's property to child,and return new child,
+     * of course ,the child is  canBeMerged
      *
      * @param parent
      * @param child
@@ -103,8 +104,8 @@ public final class SubQueryProcessor {
      * sql:select idd + 1 from v_t1 ==> select (id+1) + 1 from t1 tt1 order by
      * id+1
      *
-     * @return 返回child应该保留的新的select信息
-     * @notice 交给Mysqlvisitor执行
+     * @return child should contains new select's infos
+     * @notice
      */
 
     private static List<Item> mergeSelect(PlanNode parent, PlanNode child) {
@@ -115,7 +116,7 @@ public final class SubQueryProcessor {
             String selName = pSel.getAlias();
             if (StringUtils.isEmpty(selName)) {
                 selName = pSel.getItemName();
-                // 下推时,父节点是函数,且函数无别名,mysql不允许select func() as func()这种
+                // parent is func and func has no alias,mysql not allow select func() as func()
                 if (pSel.type() == ItemType.FUNC_ITEM || pSel.type() == ItemType.COND_ITEM ||
                         pSel.type() == ItemType.SUM_FUNC_ITEM)
                     selName = Item.FNAF + selName;

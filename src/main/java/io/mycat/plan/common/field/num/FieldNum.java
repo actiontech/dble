@@ -1,5 +1,9 @@
 package io.mycat.plan.common.field.num;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import io.mycat.plan.common.MySQLcom;
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.field.FieldUtil;
@@ -7,12 +11,8 @@ import io.mycat.plan.common.item.Item.ItemResult;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.common.time.MyTime;
 
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-
 /**
- * 整数的基类
+ * FieldNum
  *
  * @author ActionTech
  */
@@ -72,7 +72,7 @@ public abstract class FieldNum extends Field {
 
     @Override
     protected void internalJob() {
-        /** --计算出zero_ptrstr-- **/
+        /** zero_ptrstr**/
         String res = null;
         try {
             res = MySQLcom.getFullString(charsetName, ptr);
@@ -87,7 +87,7 @@ public abstract class FieldNum extends Field {
             }
         zeroptrStr = res;
 
-        /** -- 计算出intValue -- **/
+        /** -- intValue -- **/
 
         if (res == null)
             intValue = BigInteger.ZERO;

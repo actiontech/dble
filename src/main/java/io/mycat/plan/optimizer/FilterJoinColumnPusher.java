@@ -17,7 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * 只下推有ER关系可能的filter
+ * push down the filter which may contains ER KEY
  */
 public final class FilterJoinColumnPusher {
     private FilterJoinColumnPusher() {
@@ -30,7 +30,7 @@ public final class FilterJoinColumnPusher {
     }
 
     private static PlanNode pushFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
-        // 如果是叶节点,接收filter做为where条件,否则继续合并当前where条件,然后下推
+        // the leaf node receive  filter as where , or merge the current where and push down
         if (qtn.getChildren().isEmpty()) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
@@ -52,7 +52,7 @@ public final class FilterJoinColumnPusher {
                 }
             }
             if (nonJoinFilter.size() != splits.size()) {
-                //不可能join的条件放回
+                //rollbakc nonJoinFilter
                 qtn.query(FilterUtils.and(nonJoinFilter));
             }
         }
@@ -81,7 +81,7 @@ public final class FilterJoinColumnPusher {
         if (dnfNodeToPush.isEmpty()) {
             return qtn;
         }
-        // 无法完成下推的filters
+        // filters which can not push down
         List<Item> dnfNodeToCurrent = new LinkedList<>();
         List<Item> dnfNodetoPushToLeft = new LinkedList<>();
         List<Item> dnfNodetoPushToRight = new LinkedList<>();
@@ -94,7 +94,7 @@ public final class FilterJoinColumnPusher {
                 dnfNodeToCurrent.add(filter);
             }
         }
-        // 针对不能下推的,合并到当前的where
+        // if can not push down,merge to current where
         Item node = FilterUtils.and(dnfNodeToCurrent);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
@@ -108,13 +108,13 @@ public final class FilterJoinColumnPusher {
             refreshPdFilters(jn, dnfNodetoPushToLeft);
             pushFilter(jn.getLeftNode(), dnfNodetoPushToLeft);
             if (!dnfNodeToPush.isEmpty()) {
-                jn.query(FilterUtils.and(dnfNodetoPushToRight)); // 在父节点完成filter,不能下推
+                jn.query(FilterUtils.and(dnfNodetoPushToRight)); // the parent's filter,don't push down
             }
         } else if (jn.isRightOuterJoin()) {
             refreshPdFilters(jn, dnfNodetoPushToRight);
             pushFilter(((JoinNode) qtn).getRightNode(), dnfNodetoPushToRight);
             if (!dnfNodeToPush.isEmpty()) {
-                jn.query(FilterUtils.and(dnfNodetoPushToLeft)); // 在父节点完成filter,不能下推
+                jn.query(FilterUtils.and(dnfNodetoPushToLeft)); //  the parent's filter,don't push down
             }
         } else {
             if (!dnfNodeToPush.isEmpty()) {
@@ -135,8 +135,8 @@ public final class FilterJoinColumnPusher {
     }
 
     /**
-     * 是否是可能得ER关系Filter: 1.Filter必须是=关系 2.Filter必须是Column = Column
-     * 3.Filter的key和value必须来自于不同的两张表 ex:a.id=b.id true a.id=b.id+1 false
+     * is ER Filter: 1.Filter must be equal(=) 2.Filter must be Column = Column
+     * 3.Filter's key and value must be belong different table ex:a.id=b.id true a.id=b.id+1 false
      */
     private static boolean isPossibleERJoinColumnFilter(PlanNode node, Item ifilter) {
         if (!(ifilter instanceof ItemFuncEqual))
@@ -150,7 +150,7 @@ public final class FilterJoinColumnPusher {
             if (foundColumn != null && foundValue != null) {
                 String columnTable = foundColumn.getValue().getTableName();
                 String valueTable = foundValue.getValue().getTableName();
-                // 不是同一张表才可以
+                // the table must be different
                 return !StringUtils.equals(columnTable, valueTable);
             } else {
                 return false;

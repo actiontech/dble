@@ -1,7 +1,6 @@
 package io.mycat.config.loader.zkprocess.parse;
 
 /**
- * json转化服务
  *
  *
  * author:liujun
@@ -14,8 +13,7 @@ package io.mycat.config.loader.zkprocess.parse;
 public interface ParseJsonServiceInf<T> {
 
     /**
-     * 将对象T转换为json字符串
-     * 方法描述
+     * parseBeanToJson
      *
      * @param data
      * @return
@@ -24,8 +22,7 @@ public interface ParseJsonServiceInf<T> {
     String parseBeanToJson(T t);
 
     /**
-     * 将json字符串转换为javabean对象
-     * 方法描述
+     * parseJsonToBean
      *
      * @param json
      * @return

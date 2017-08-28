@@ -54,7 +54,7 @@ public class UserSqlLargeStat {
     }
 
     /**
-     * 记录 SQL 及返回行数
+     * SqlLarge
      */
     public static class SqlLarge implements Comparable<SqlLarge> {
 

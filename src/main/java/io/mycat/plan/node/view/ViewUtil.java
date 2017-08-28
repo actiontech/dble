@@ -17,7 +17,7 @@ public final class ViewUtil {
      * Check whether the merging algorithm can be used on this VIEW see
      * LEX::can_be_merged() in sql_lex.cc
      *
-     * @param viewSelNode view的真实selectnode
+     * @param viewSelNode view's real selectnode
      * @return FALSE - only temporary table algorithm can be used TRUE - merge
      * algorithm can be used
      */

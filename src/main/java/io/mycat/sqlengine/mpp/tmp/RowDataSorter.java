@@ -1,26 +1,26 @@
 package io.mycat.sqlengine.mpp.tmp;
 
+import java.util.Collections;
+import java.util.List;
+
 import io.mycat.net.mysql.RowDataPacket;
 import io.mycat.sqlengine.mpp.OrderCol;
 import io.mycat.sqlengine.mpp.RowDataPacketSorter;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author coderczp-2014-12-8
  */
 public class RowDataSorter extends RowDataPacketSorter {
 
-    // 记录总数(=offset+limit)
+    // total(=offset+limit)
     private volatile int total;
-    // 查询的记录数(=limit)
+    // record size(=limit)
     private volatile int size;
-    // 堆
+    // heap
     private volatile HeapItf heap;
-    // 多列比较器
+    // compartor
     private volatile RowDataCmp cmp;
-    // 是否执行过buildHeap
+    // has been buildHeap
     private volatile boolean hasBuild;
 
     public RowDataSorter(OrderCol[] orderCols) {
@@ -29,7 +29,6 @@ public class RowDataSorter extends RowDataPacketSorter {
     }
 
     public synchronized void setLimit(int start, int offset) {
-        // 容错处理
         if (start < 0) {
             start = 0;
         }
@@ -39,7 +38,7 @@ public class RowDataSorter extends RowDataPacketSorter {
             this.total = start + offset;
             this.size = offset;
         }
-        // 统一采用顺序,order by 条件交给比较器去处理
+        // use ASC, comparer will know ASC/DESC
         this.heap = new MaxHeap(cmp, total);
     }
 
@@ -49,7 +48,6 @@ public class RowDataSorter extends RowDataPacketSorter {
             heap.add(row);
             return true;
         }
-        // 堆已满,构建最大堆,并执行淘汰元素逻辑
         if (heap.getData().size() == total && !hasBuild) {
             heap.buildHeap();
             hasBuild = true;
@@ -68,7 +66,6 @@ public class RowDataSorter extends RowDataPacketSorter {
             return Collections.emptyList();
         }
 
-        // 构建最大堆并排序
         if (!hasBuild) {
             heap.buildHeap();
         }

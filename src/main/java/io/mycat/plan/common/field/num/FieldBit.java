@@ -1,11 +1,11 @@
 package io.mycat.plan.common.field.num;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.item.FieldTypes;
 import io.mycat.plan.common.item.Item.ItemResult;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public class FieldBit extends Field {
     private BigInteger intValue = null;
@@ -44,7 +44,7 @@ public class FieldBit extends Field {
 
     @Override
     protected void internalJob() {
-        // 比如一个bit(16)的数据类型,存储的值为8737(=34*256+33)那么客户端传递给我们的byte[]为[34,33]
+        // eg an bit(16) data type,the value is 8737(=34*256+33),we will receive byte[34,33]
         if (ptr != null) {
             long lv = getBitInt(ptr);
             intValue = BigInteger.valueOf(lv);
@@ -89,7 +89,7 @@ public class FieldBit extends Field {
     }
 
     /**
-     * 高位在前
+     * Big endian
      *
      * @param b
      * @return

@@ -1,7 +1,8 @@
 package io.mycat.util;
 
 
-import io.mycat.config.loader.zkprocess.comm.ZkConfig;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -12,7 +13,7 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import io.mycat.config.loader.zkprocess.comm.ZkConfig;
 
 public final class ZKUtils {
     private ZKUtils() {
@@ -63,7 +64,7 @@ public final class ZKUtils {
 
     public static void addChildPathCache(String path, PathChildrenCacheListener listener) {
         try {
-            //监听子节点的变化情况
+            //watch the child status
             final PathChildrenCache childrenCache = new PathChildrenCache(getConnection(), path, true);
             childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
             childrenCache.getListenable().addListener(listener);

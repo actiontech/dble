@@ -7,16 +7,15 @@ import java.sql.SQLException;
 
 public class TestPrepareSql {
 
-    private static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true"; // 使用服务端预处理
+    private static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true"; // useServerPrepStmts
     private static String user = "zhuam";
     private static String password = "zhuam";
 
     static {
         try {
-            // 加载MySql的驱动类
+            // load MySql drive
             Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("找不到驱动程序类 ,加载驱动失败！");
             e.printStackTrace();
         }
     }
@@ -26,7 +25,7 @@ public class TestPrepareSql {
     }
 
     /**
-     * 测试服务端预处理批量插入,动态绑定插入参数
+     * testServerPrepareInsertWithBingParam
      */
     public static void testServerPrepareInsertWithBingParam() {
         Connection conn = null;

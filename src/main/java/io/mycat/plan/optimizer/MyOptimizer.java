@@ -19,18 +19,18 @@ public final class MyOptimizer {
     public static PlanNode optimize(PlanNode node) {
 
         try {
-            // 预先处理子查询
+            // PreProcessor SubQuery
             node = SubQueryPreProcessor.optimize(node);
             int existGlobal = checkGlobalTable(node);
             if (node.isExsitView() || existGlobal != 1) {
-                // 子查询优化
+                // optimizer subquery
                 node = SubQueryProcessor.optimize(node);
-                // right join的左右节点进行调换,转换成left join
+                // transform right join to left join
                 node = JoinPreProcessor.optimize(node);
 
-                // 预处理filter,比如过滤永假式/永真式
+                //  filter expr which is always true/false
                 node = FilterPreProcessor.optimize(node);
-                //  只下推有ER关系可能的filter
+                //  push down the filter which may contains ER KEY
                 node = FilterJoinColumnPusher.optimize(node);
 
                 node = JoinERProcessor.optimize(node);
@@ -38,9 +38,8 @@ public final class MyOptimizer {
                 if (existGlobal == 0) {
                     node = GlobalTableProcessor.optimize(node);
                 }
-                //  将filter进行下推
+                //  push down filter
                 node = FilterPusher.optimize(node);
-
 
                 node = OrderByPusher.optimize(node);
 
@@ -64,9 +63,9 @@ public final class MyOptimizer {
      * existShardTable
      *
      * @param node
-     * @return node不存在表名或者node全部为global表时  return 1;
-     * 全部为非global表时,return -1,之后不需要global优化;
-     * 可能需要优化global表,return 0；
+     * @return return 1 if it's all no name table or all global table node;
+     *  return -1 if all the table is not global table,need not global optimizer;
+     *  return 0 for other ,may need to global optimizer ;
      */
     public static int checkGlobalTable(PlanNode node) {
         Set<String> dataNodes = null;

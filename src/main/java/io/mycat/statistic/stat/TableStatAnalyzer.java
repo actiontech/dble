@@ -1,24 +1,35 @@
 package io.mycat.statistic.stat;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
 import com.alibaba.druid.util.JdbcConstants;
+
 import io.mycat.server.parser.ServerParse;
 import io.mycat.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 按SQL表名进行计算
+ * TableStatAnalyzer
  *
  * @author zhuam
  */
@@ -29,7 +40,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
     private Map<String, TableStat> tableStatMap = new ConcurrentHashMap<>();
     private ReentrantLock lock = new ReentrantLock();
 
-    //解析SQL 提取表名
+    //PARSER SQL TO GET NAME
     private SQLParser sqlParser = new SQLParser();
 
     private static final TableStatAnalyzer INSTANCE = new TableStatAnalyzer();
@@ -53,7 +64,6 @@ public final class TableStatAnalyzer implements QueryResultListener {
             case ServerParse.DELETE:
             case ServerParse.REPLACE:
 
-                //关联表提取
                 String masterTable = null;
                 List<String> relaTables = new ArrayList<>();
 
@@ -103,9 +113,6 @@ public final class TableStatAnalyzer implements QueryResultListener {
         return map;
     }
 
-    /**
-     * 获取 table 访问排序统计
-     */
     public List<TableStat> getTableStats(boolean isClear) {
         SortedSet<TableStat> tableStatSortedSet = new TreeSet<>(tableStatMap.values());
         List<TableStat> list = new ArrayList<>(tableStatSortedSet);
@@ -118,7 +125,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
 
 
     /**
-     * 解析 table name
+     * PARSER table name
      */
     private static class SQLParser {
 
@@ -129,7 +136,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
         }
 
         /**
-         * 去掉库名、去掉``
+         * fix SCHEMA,`
          *
          * @param tableName
          * @return
@@ -146,7 +153,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
         }
 
         /**
-         * 解析 SQL table name
+         *  PARSER SQL table name
          */
         public List<String> parseTableNames(String sql) {
             final List<String> tables = new ArrayList<>();

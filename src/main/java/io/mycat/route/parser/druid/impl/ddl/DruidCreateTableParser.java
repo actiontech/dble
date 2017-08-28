@@ -95,13 +95,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
     /**
      */
     private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
-        //TODO:DELETE
-        if (createStmt.getPartitioning() != null) {
-            String msg = "create table with Partition not supported:" + createStmt;
-            LOGGER.warn(msg);
-            throw new SQLNonTransientException(msg);
-        }
-
         //ALLOW InnoDB ONLY
         SQLObject engine = createStmt.getTableOptions().get("ENGINE");
         if (engine != null) {

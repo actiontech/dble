@@ -357,9 +357,9 @@ public class MySQLPlanNodeVisitor {
             Item column = filter.arguments().get(0);
             Item value = filter.arguments().get(1);
             if (column != null && column instanceof ItemField && value != null && value instanceof ItemField) {
-                joinNode.addJoinFilter((ItemFuncEqual) ifilter);
+                joinNode.addJoinFilter(filter);
             } else {
-                joinNode.setOtherJoinOnFilter(ifilter);
+                joinNode.setOtherJoinOnFilter(filter);
             }
         } else if (ifilter instanceof ItemCondAnd) {
             ItemCondAnd ilfand = (ItemCondAnd) ifilter;

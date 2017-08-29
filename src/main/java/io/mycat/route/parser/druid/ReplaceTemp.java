@@ -3,6 +3,7 @@ package io.mycat.route.parser.druid;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class ReplaceTemp extends MySqlReplaceStatement {
 
     private List<SQLExpr> columns = new ArrayList();
 
-    public  ReplaceTemp (MySqlReplaceStatement statement) {
+    public ReplaceTemp(MySqlReplaceStatement statement) {
         this.setLowPriority(statement.isLowPriority());
         this.setDelayed(statement.isDelayed());
         this.setValuesList(statement.getValuesList());
@@ -45,7 +46,7 @@ public class ReplaceTemp extends MySqlReplaceStatement {
         this.attributes = statement.getAttributes();
     }
 
-    public String toString(){
+    public String toString() {
         return super.toString();
     }
 

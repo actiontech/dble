@@ -24,7 +24,7 @@ import io.mycat.route.RouteResultset;
 import io.mycat.route.RouteResultsetNode;
 import io.mycat.route.function.AbstractPartitionAlgorithm;
 import io.mycat.route.parser.druid.MycatSchemaStatVisitor;
-import io.mycat.route.parser.util.RouteParseUtil;
+import io.mycat.route.parser.util.ReplaceInsertUtil;
 import io.mycat.route.util.RouterUtil;
 import io.mycat.server.ServerConnection;
 import io.mycat.server.util.GlobalTableUtil;
@@ -146,7 +146,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
-        RouteResultset theRrs = RouteParseUtil.routeByERParentKey(rrs, tc, realVal);
+        RouteResultset theRrs = ReplaceInsertUtil.routeByERParentKey(rrs, tc, realVal);
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
             return theRrs;
@@ -179,7 +179,7 @@ public class DruidInsertParser extends DefaultDruidParser {
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn, MySqlInsertStatement insertStmt) throws SQLNonTransientException {
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        String shardingValue = RouteParseUtil.shardingValueToSting(valueExpr);
+        String shardingValue = ReplaceInsertUtil.shardingValueToSting(valueExpr);
         TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         Integer nodeIndex = algorithm.calculate(shardingValue);
@@ -240,7 +240,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = RouteParseUtil.shardingValueToSting(expr);
+            String shardingValue = ReplaceInsertUtil.shardingValueToSting(expr);
             Integer nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
             if (nodeIndex == null) {
@@ -391,7 +391,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 autoIncrement = getPrimaryKeyIndex(schemaInfo, tc.getPrimaryKey());
             }
             colSize = orgTbMeta.getColumnsList().size();
-            idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
+            idxGlobal = ReplaceInsertUtil.getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else {
             genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
             colSize = columns.size();
@@ -478,23 +478,6 @@ public class DruidInsertParser extends DefaultDruidParser {
             sb.append(",");
             onDuplicateGlobalColumn(sb);
         }
-    }
-
-    private int getIdxGlobalByMeta(boolean isGlobalCheck, TableMeta orgTbMeta, StringBuilder sb, int colSize) {
-        int idxGlobal = -1;
-        sb.append("(");
-        for (int i = 0; i < colSize; i++) {
-            String column = orgTbMeta.getColumnsList().get(i).getName();
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append(column);
-            if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                idxGlobal = i; // find the index of inner column
-            }
-        }
-        sb.append(")");
-        return idxGlobal;
     }
 
     private static void onDuplicateGlobalColumn(StringBuilder sb) {

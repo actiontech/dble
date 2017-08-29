@@ -198,7 +198,7 @@ public final class ReloadConfig {
          *  2.1 old dataSource continue to work
          *  2.2 init the new dataSource
          *  2.3 transform
-         *  2.4 execute the old connection
+         *  2.4  put the old connection into a queue
          */
         MycatConfig config = MycatServer.getInstance().getConfig();
 
@@ -234,17 +234,7 @@ public final class ReloadConfig {
             /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, loader.isDataHostWithoutWH(), true);
 
-            /* 2.4 execute the old connection */
-            LOGGER.info("1.clear old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
-
-            // clear old Cons
-            // FIXME: THE NIOProcessor.BACKENDS_OLD IS EMPTY
-            Iterator<BackendConnection> iter = NIOProcessor.BACKENDS_OLD.iterator();
-            while (iter.hasNext()) {
-                BackendConnection con = iter.next();
-                con.close("clear old datasources");
-                iter.remove();
-            }
+            /* 2.4 put the old connection into a queue */
             Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
             for (PhysicalDBPool dbPool : oldDataHosts.values()) {
                 dbPool.stopHeartbeat();
@@ -262,7 +252,7 @@ public final class ReloadConfig {
                     }
                 }
             }
-            LOGGER.info("2.to be recycled old backend connection(size): " + NIOProcessor.BACKENDS_OLD.size());
+            LOGGER.info("the size of old backend connection to be recycled is: " + NIOProcessor.BACKENDS_OLD.size());
 
         } else {
             // INIT FAILED

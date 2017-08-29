@@ -14,6 +14,7 @@ import io.mycat.config.ErrorCode;
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.common.exception.MySQLOutPutException;
 import io.mycat.plan.common.item.Item;
+import io.mycat.plan.common.item.ItemField;
 import io.mycat.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import io.mycat.plan.common.item.function.operator.logic.ItemCondAnd;
 import io.mycat.plan.node.*;
@@ -352,7 +353,14 @@ public class MySQLPlanNodeVisitor {
 
     private void addJoinOnColumns(Item ifilter, JoinNode joinNode) {
         if (ifilter instanceof ItemFuncEqual) {
-            joinNode.addJoinFilter((ItemFuncEqual) ifilter);
+            ItemFuncEqual filter = (ItemFuncEqual) ifilter;
+            Item column = filter.arguments().get(0);
+            Item value = filter.arguments().get(1);
+            if (column != null && column instanceof ItemField && value != null && value instanceof ItemField) {
+                joinNode.addJoinFilter((ItemFuncEqual) ifilter);
+            } else {
+                joinNode.setOtherJoinOnFilter(ifilter);
+            }
         } else if (ifilter instanceof ItemCondAnd) {
             ItemCondAnd ilfand = (ItemCondAnd) ifilter;
             List<Item> subFilter = ilfand.arguments();

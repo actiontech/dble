@@ -2,7 +2,6 @@ package io.mycat.memory.unsafe.array;
 
 import io.mycat.memory.unsafe.Platform;
 import io.mycat.memory.unsafe.memory.MemoryBlock;
-import io.mycat.memory.unsafe.memory.mm.MemoryConsumer;
 
 /**
  * @author Hash Zhang
@@ -18,13 +17,12 @@ public class CharArray {
 
     private final long length;
 
-    public CharArray(MemoryBlock memory, MemoryConsumer memoryConsumer) {
+    public CharArray(MemoryBlock memory) {
         assert memory.size() < (long) Integer.MAX_VALUE * 2 : "Array size > 4 billion elements";
         this.memory = memory;
         this.baseObj = memory.getBaseObject();
         this.baseOffset = memory.getBaseOffset();
         this.length = memory.size() / WIDTH;
-        MemoryConsumer memoryConsumer1 = memoryConsumer;
     }
 
 

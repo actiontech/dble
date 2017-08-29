@@ -397,6 +397,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (rrs != null && rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
             }
+            assert rrs != null;
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
                     rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
             QueryResultDispatcher.dispatchQuery(queryResult);
@@ -658,9 +659,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         eof[3] = ++packetId;
         buffer = source.writeToBuffer(eof, buffer);
         source.write(buffer);
-        if (dataMergeSvr != null) {
-            dataMergeSvr.onRowMetaData(columToIndx, fieldCount);
-        }
+        dataMergeSvr.onRowMetaData(columToIndx, fieldCount);
     }
 
     public void handleDataProcessException(Exception e) {

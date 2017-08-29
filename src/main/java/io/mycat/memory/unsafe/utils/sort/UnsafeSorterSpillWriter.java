@@ -63,7 +63,7 @@ public final class UnsafeSorterSpillWriter {
         // Our write path doesn't actually use this serializer (since we end up calling the `write()`
         // OutputStream methods), but DiskRowWriter still calls some methods on it. To work
         // around this, we pass a dummy no-op serializer.
-        writer = blockManager.getDiskWriter(conId, file, DummySerializerInstance.INSTANCE, fileBufferSize/**,writeMetrics*/);
+        writer = blockManager.getDiskWriter(file, DummySerializerInstance.INSTANCE, fileBufferSize/**,writeMetrics*/);
         // Write the number of records
         writeIntToBuffer(numRecordsToWrite, 0);
         writer.write(writeBuffer, 0, 4);

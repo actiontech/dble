@@ -30,26 +30,20 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
 
     public TwoTableComparator(List<FieldPacket> fps1, List<FieldPacket> fps2, List<Order> leftOrders,
                               List<Order> rightOrders, boolean isAllPushDown, HandlerType type, String charset) {
-        boolean isAllPushDown1 = isAllPushDown;
-        HandlerType type1 = type;
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
         ascs = new ArrayList<>();
         for (Order order : leftOrders) {
             ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
         }
-        List<Item> leftCmpItems = new ArrayList<>();
-        List<Item> rightCmpItems = new ArrayList<>();
         cmptors = new ArrayList<>();
         for (int index = 0; index < ascs.size(); index++) {
             Order leftOrder = leftOrders.get(index);
             Order rightOrder = rightOrders.get(index);
-            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown1, type1,
+            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown, type,
                     charset);
-            leftCmpItems.add(leftCmpItem);
-            Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown1,
-                    type1, charset);
-            rightCmpItems.add(rightCmpItem);
+            Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown,
+                    type, charset);
             ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
             cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
             cmptors.add(cmptor);

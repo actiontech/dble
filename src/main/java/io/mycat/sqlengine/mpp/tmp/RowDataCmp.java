@@ -21,7 +21,6 @@ public class RowDataCmp implements Comparator<RowDataPacket> {
     public int compare(RowDataPacket o1, RowDataPacket o2) {
         OrderCol[] tmp = this.orderCols;
         int cmp = 0;
-        int len = tmp.length;
         //compare the columns of order by
         int type = OrderCol.COL_ORDER_TYPE_ASC;
         for (OrderCol aTmp : tmp) {

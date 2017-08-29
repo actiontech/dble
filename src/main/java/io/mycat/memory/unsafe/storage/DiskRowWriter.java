@@ -80,19 +80,15 @@ public class DiskRowWriter extends OutputStream {
             File file,
             SerializerInstance serializerInstance,
             int bufferSize,
-            OutputStream compressStream,
-            boolean syncWrites,
-            ConnectionId blockId) throws IOException {
+            boolean syncWrites) throws IOException {
 
         this.file = file;
         this.serializerInstance = serializerInstance;
         this.bufferSize = bufferSize;
-        OutputStream compressStream1 = compressStream;
         this.syncWrites = syncWrites;
         /*
       ShuffleWriteMetrics  writeMetrics,
      */
-        ConnectionId blockId1 = blockId;
         initialPosition = file.length();
         reportedPosition = initialPosition;
     }
@@ -148,20 +144,13 @@ public class DiskRowWriter extends OutputStream {
      * Flush the partial writes and commit them as a single atomic block.
      */
     public void commitAndClose() throws IOException {
-        long finalPosition = -1;
         if (initialized) {
             // NOTE: Because Kryo doesn’t flush the underlying stream we explicitly flush both the
             // serializer stream and the lower level stream.
             objOut.flush();
             bs.flush();
             close();
-            finalPosition = file.length();
-            // In certain compression codecs, more bytes are written after close() is called
-            //writeMetrics.incBytesWritten(finalPosition - reportedPosition)
-        } else {
-            finalPosition = file.length();
         }
-        boolean commitAndCloseHasBeenCalled = true;
     }
 
 

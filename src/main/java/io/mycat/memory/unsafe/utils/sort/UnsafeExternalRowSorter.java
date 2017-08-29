@@ -262,7 +262,6 @@ public final class UnsafeExternalRowSorter {
             row1.pointTo(baseObj1, baseOff1, -1);
             row2.pointTo(baseObj2, baseOff2, -1);
             int cmp = 0;
-            int len = orderCols.length;
 
             int type = OrderCol.COL_ORDER_TYPE_ASC;
 

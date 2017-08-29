@@ -122,3 +122,4 @@ conf/dnindex.properties
 version.txt
 copyResources.bat
 dependency-reduced-pom.xml
+checkstyle-result.out

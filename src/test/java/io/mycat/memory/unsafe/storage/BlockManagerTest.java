@@ -61,7 +61,7 @@ public class BlockManagerTest {
         File file2 = diskBlockManager.getFile("mycat1");
 
         DiskRowWriter writer = blockManager.
-                getDiskWriter(null, file2, DummySerializerInstance.INSTANCE, 1024 * 1024);
+                getDiskWriter(file2, DummySerializerInstance.INSTANCE, 1024 * 1024);
         byte[] writeBuffer = new byte[4];
         int v = 4;
         writeBuffer[0] = (byte) (v >>> 24);

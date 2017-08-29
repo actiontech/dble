@@ -17,7 +17,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
-        <sever.comment>MyCat Server (OpenCloundDB)</sever.comment>
+        <sever.comment>MyCat Server (OpenCloudDB)</sever.comment>
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>

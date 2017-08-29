@@ -157,7 +157,7 @@ public final class RollbackConfig {
                 }
             }
             // INIT FAILED
-            if (!rollbackStatus && dataHosts != null) {
+            if (!rollbackStatus) {
                 for (PhysicalDBPool dn : dataHosts.values()) {
                     dn.clearDataSources("rollbackup config");
                     dn.stopHeartbeat();

@@ -30,10 +30,6 @@
         <Class name="io.mycat.sqlengine.mpp.RowDataPacketGrouper"/>
     </Match>
 
-    <!-- need refactor -->
-    <Match>
-        <Package name="io.mycat.util.dataMigrator"/>
-    </Match>
     <Match>
         <Package name="io.mycat.util.dataMigrator.dataIOImpl"/>
     </Match>
@@ -87,30 +83,6 @@
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.route.sequence.handler.SequenceVal"/>
-    </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.typelib.TypeLib"/>
-    </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.locale.MyLocaleErrMsgs"/>
-    </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="io.mycat.plan.common.locale.MyLocale"/>
-    </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
         <Class name="io.mycat.backend.mysql.BindValue"/>
     </Match>
     <!-- need refactor -->
@@ -156,7 +128,7 @@
     <Match>
         <Bug category="STYLE"/>
         <Class name="io.mycat.plan.common.time.MyTime"/>
-        <Method name="extract_date_time"/>
+        <Method name="extractDateTime"/>
         <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
     </Match>
     <Match>
@@ -173,10 +145,35 @@
     </Match>
     <!-- STYLE end -->
 
-    <!-- PERFORMANCE system.gc() is needed? -->
+    <!-- PERFORMANCE -->
+    <!-- system.gc() is needed?-->
     <Match>
         <Bug category="PERFORMANCE"/>
         <Bug pattern="DM_GC"/>
+    </Match>
+    <!-- need refactor -->
+    <Match>
+        <Bug category="PERFORMANCE"/>
+        <Class name="io.mycat.plan.common.locale.MyLocale"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+    <!-- need refactor -->
+    <Match>
+        <Bug category="PERFORMANCE"/>
+        <Class name="io.mycat.plan.common.locale.MyLocaleErrMsgs"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+    <!-- need refactor -->
+    <Match>
+        <Bug category="PERFORMANCE"/>
+        <Class name="io.mycat.plan.common.typelib.TypeLib"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+    <!-- need refactor -->
+    <Match>
+        <Bug category="PERFORMANCE"/>
+        <Class name="io.mycat.route.sequence.handler.SequenceVal"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
     <!-- PERFORMANCE end -->
 
@@ -187,13 +184,14 @@
         <Method name="setRightNode"/>
         <Bug pattern="NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS"/>
     </Match>
+
     <!-- CORRECTNESS end -->
 
     <!-- MT_CORRECTNESS start num:7 -->
     <Match>
         <Bug category="MT_CORRECTNESS"/>
         <Class name="io.mycat.MycatServer"/>
-        <Method name="genXATXID"/>
+        <Method name="genXaTxId"/>
         <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
     </Match>
     <Match>

@@ -16,7 +16,6 @@ public class RowPrefixComputer extends UnsafeExternalRowSorter.PrefixComputer {
     private final ColMeta colMeta;
 
     public RowPrefixComputer(StructType schema) {
-        StructType schema1 = schema;
         /**
          * get the index of the first key word of order
          */

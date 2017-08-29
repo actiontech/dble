@@ -4,7 +4,6 @@ package io.mycat.memory.unsafe.storage;
 import io.mycat.memory.unsafe.utils.MycatPropertyConf;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
@@ -31,12 +30,11 @@ public class DataNodeDiskManager {
      * cases.
      */
     public DiskRowWriter getDiskWriter(
-            ConnectionId blockId,
             File file,
             SerializerInstance serializerInstance,
             int bufferSize) throws IOException {
         boolean syncWrites = conf.getBoolean("server.merge.sync", false);
-        return new DiskRowWriter(file, serializerInstance, bufferSize, new FileOutputStream(file),
-                syncWrites, blockId);
+        return new DiskRowWriter(file, serializerInstance, bufferSize,
+                syncWrites);
     }
 }

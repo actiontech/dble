@@ -116,7 +116,7 @@ public abstract class MemoryConsumer {
             throw new OutOfMemoryError("Unable to acquire " + required + " bytes of memory, got " + got);
         }
         used += required;
-        return new CharArray(page, this);
+        return new CharArray(page);
     }
 
     /**

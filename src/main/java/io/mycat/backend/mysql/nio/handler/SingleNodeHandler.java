@@ -161,20 +161,19 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.handleSpecial(rrs, session.getSource().getSchema(), false);
 
         /**
-         * TODO: 修复全版本BUG
          *
-         * BUG复现:
-         * 1、MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2、MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3、MysqlClient: ERROR 2013 (HY000): Lost connection to MySQL server during query
-         *
-         * Fixed后
-         * 1、MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2、MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3、MysqlClient: ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
+         * BUG:
+         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
+         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
+         * 3. MysqlClient: ERROR 2013 (HY000): Lost connection to MySQL server during query
+         * because of  pakcetId != 1
+         * Fixed:
+         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
+         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
+         * 3. MysqlClient: ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
          *
          */
-        // 由于 pakcetId != 1 造成的问题
+        //
         if (waitingResponse) {
             errPkg.setPacketId(1);
             errPkg.write(source);

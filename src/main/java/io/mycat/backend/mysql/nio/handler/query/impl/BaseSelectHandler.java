@@ -122,7 +122,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     /**
-     * 1、if some connection's thread status is await. 2、if some connection's
+     * 1. if some connection's thread status is await. 2. if some connection's
      * thread status is running.
      */
     @Override

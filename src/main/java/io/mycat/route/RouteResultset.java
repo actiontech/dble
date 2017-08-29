@@ -57,7 +57,7 @@ public final class RouteResultset implements Serializable {
 
     private boolean callStatement = false; // is Call Statement
 
-    // used for insert、update、delete、ddl statement for affect rows.
+    // used for insert. update. delete. ddl statement for affect rows.
     private boolean globalTableFlag = false;
 
     // FinishedRoute

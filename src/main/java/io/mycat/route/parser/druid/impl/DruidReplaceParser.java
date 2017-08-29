@@ -493,7 +493,6 @@ public class DruidReplaceParser extends DefaultDruidParser {
         TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
         Integer nodeIndex = algorithm.calculate(shardingValue);
-        //没找到插入的分片
         if (nodeIndex == null) {
             String msg = "can't find any valid datanode :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
             LOGGER.warn(msg);

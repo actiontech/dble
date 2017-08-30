@@ -237,11 +237,15 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        if (node.getNoshardNode() != null)
+        if (isGlobal(node)) {
             return true;
-        else {
+        } else {
             return isERNode(node);
         }
+    }
+
+    public static boolean isGlobal(PlanNode node) {
+        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0;
     }
 
     /**

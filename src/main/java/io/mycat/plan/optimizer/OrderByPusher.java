@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * push down merge/join's order by ,contains mplicit order byi,eg:groupBy
+ * push down merge/join's order by ,contains implicit order byi,eg:groupBy
  *
  * @author ActionTech 2015-07-10
  */

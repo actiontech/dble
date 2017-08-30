@@ -71,7 +71,7 @@ abstract class BaseHandlerBuilder {
         boolean isNestLoopJoin = isNestLoopStrategy(node);
         if (isNestLoopJoin) {
             nestLoopBuild();
-        } else if (!node.isExsitView() && node.getUnGlobalTableCount() == 0 && node.getNoshardNode() != null) {
+        } else if (!node.isExsitView() && PlanUtil.isGlobal(node)) {
             // the query can be send to a certain node
             noShardBuild();
         } else if (canDoAsMerge()) {

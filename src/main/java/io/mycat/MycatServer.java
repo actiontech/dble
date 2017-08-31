@@ -269,6 +269,10 @@ public final class MycatServer {
         return confLock;
     }
 
+    public ReentrantReadWriteLock getMetaLock() {
+        return metaLock;
+    }
+
     public MycatConfig getConfig() {
         confLock.readLock().lock();
         try {

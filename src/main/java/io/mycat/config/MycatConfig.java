@@ -332,6 +332,8 @@ public class MycatConfig {
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall,
                        boolean newDataHostWithoutWR, boolean isLoadAll) {
+        boolean metaLocked = false;
+        final ReentrantReadWriteLock  metaLock = MycatServer.getInstance().getMetaLock();
         final ReentrantReadWriteLock confLock = MycatServer.getInstance().getConfLock();
         confLock.writeLock().lock();
         try {
@@ -386,10 +388,18 @@ public class MycatConfig {
             this.erRelations = newErRelations;
             MycatServer.getInstance().getCacheService().clearCache();
             if (!newDataHostWithoutWR) {
-                MycatServer.getInstance().reloadMetaData(this);
+                metaLock.writeLock().lock();
+                metaLocked = true;
             }
         } finally {
             confLock.writeLock().unlock();
+        }
+        if (!newDataHostWithoutWR && metaLocked) {
+            try {
+                MycatServer.getInstance().reloadMetaData(this);
+            } finally {
+                metaLock.writeLock().unlock();
+            }
         }
     }
 

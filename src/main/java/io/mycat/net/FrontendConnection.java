@@ -296,7 +296,10 @@ public abstract class FrontendConnection extends AbstractConnection {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(this) + " " + sql);
         }
-
+        // remove last ';'
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
         // record SQL
         this.setExecuteSql(sql);
 

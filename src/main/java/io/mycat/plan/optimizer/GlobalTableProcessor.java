@@ -1,12 +1,12 @@
 package io.mycat.plan.optimizer;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import io.mycat.plan.PlanNode;
 import io.mycat.plan.PlanNode.PlanNodeType;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.plan.util.PlanUtil;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public final class GlobalTableProcessor {
     private GlobalTableProcessor() {
@@ -39,7 +39,7 @@ public final class GlobalTableProcessor {
             newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
             tn.setNoshardNode(newSet);
         } else {
-            int unGlobalCount  = calcUnGlobalCount(tn);
+            int unGlobalCount = calcUnGlobalCount(tn);
             tn.setUnGlobalTableCount(unGlobalCount);
             if (tn.getNoshardNode() != null && tn.getNoshardNode().size() == 0) {
                 tn.setNoshardNode(null);

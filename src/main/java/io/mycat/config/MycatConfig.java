@@ -333,7 +333,7 @@ public class MycatConfig {
                        FirewallConfig newFirewall,
                        boolean newDataHostWithoutWR, boolean isLoadAll) {
         boolean metaLocked = false;
-        final ReentrantReadWriteLock  metaLock = MycatServer.getInstance().getMetaLock();
+        final ReentrantReadWriteLock metaLock = MycatServer.getInstance().getMetaLock();
         final ReentrantReadWriteLock confLock = MycatServer.getInstance().getConfLock();
         confLock.writeLock().lock();
         try {

@@ -35,10 +35,14 @@
         <module name="MethodName"/>
         <module name="PackageName"/>
         <module name="ParameterName"/>
+        <module name="SingleSpaceSeparator"/>
         <module name="StaticVariableName"/>
         <module name="TypeName"/>
         <module name="AbbreviationAsWordInName">
             <property name="allowedAbbreviations" value="HPUX"/>
+        </module>
+        <module name="CatchParameterName"><!-- as google's -->
+            <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
         </module>
         <module name="ClassTypeParameterName"/>
         <module name="MethodTypeParameterName"/>

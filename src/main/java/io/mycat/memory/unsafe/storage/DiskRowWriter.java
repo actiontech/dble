@@ -86,6 +86,7 @@ public class DiskRowWriter extends OutputStream {
         this.serializerInstance = serializerInstance;
         this.bufferSize = bufferSize;
         this.syncWrites = syncWrites;
+        new FileOutputStream(file, false).close();  // for clean file
         /*
       ShuffleWriteMetrics  writeMetrics,
      */

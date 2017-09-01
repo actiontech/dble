@@ -34,7 +34,6 @@ public class DataNodeDiskManager {
             SerializerInstance serializerInstance,
             int bufferSize) throws IOException {
         boolean syncWrites = conf.getBoolean("server.merge.sync", false);
-        return new DiskRowWriter(file, serializerInstance, bufferSize,
-                syncWrites);
+        return new DiskRowWriter(file, serializerInstance, bufferSize, syncWrites);
     }
 }

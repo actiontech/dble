@@ -1,16 +1,8 @@
 package io.mycat.plan.common.item;
 
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-
 import io.mycat.backend.mysql.CharsetUtil;
 import io.mycat.config.ErrorCode;
 import io.mycat.net.mysql.FieldPacket;
@@ -24,6 +16,12 @@ import io.mycat.plan.common.field.Field;
 import io.mycat.plan.common.time.MySQLTime;
 import io.mycat.plan.node.JoinNode;
 import io.mycat.util.StringUtil;
+import org.apache.commons.lang.StringUtils;
+
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
 
 public class ItemField extends ItemIdent {
 
@@ -75,7 +73,7 @@ public class ItemField extends ItemIdent {
 
     @Override
     public ItemResult resultType() {
-        return field.resultType();
+        return field == null ? null : field.resultType();
     }
 
     @Override

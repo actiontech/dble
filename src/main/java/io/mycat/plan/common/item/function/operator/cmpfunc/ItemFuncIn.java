@@ -13,6 +13,7 @@ import java.util.List;
 
 
 public class ItemFuncIn extends ItemFuncOptNeg {
+    //TODO :DELETE
     private ItemResult leftResultType;
 
     /**
@@ -22,7 +23,6 @@ public class ItemFuncIn extends ItemFuncOptNeg {
      */
     public ItemFuncIn(List<Item> args, boolean isNegation) {
         super(args, isNegation);
-        leftResultType = args.get(0).resultType();
     }
 
     @Override

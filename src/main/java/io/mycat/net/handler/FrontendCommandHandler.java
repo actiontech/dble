@@ -28,7 +28,10 @@ import io.mycat.config.ErrorCode;
 import io.mycat.net.FrontendConnection;
 import io.mycat.net.NIOHandler;
 import io.mycat.net.mysql.MySQLPacket;
+import io.mycat.server.NonBlockingSession;
 import io.mycat.statistic.CommandCount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author mycat
  */
 public class FrontendCommandHandler implements NIOHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
     protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
@@ -131,6 +135,7 @@ public class FrontendCommandHandler implements NIOHandler {
                             handleData(data);
                         }
                     } catch (Exception e) {
+                        LOGGER.warn("maybe occur a bug,", e);
                         source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
                         dataQueue.clear();
                     } finally {

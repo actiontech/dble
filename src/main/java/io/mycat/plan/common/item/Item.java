@@ -104,7 +104,7 @@ public abstract class Item {
     public ItemResult getCmpContext() {
         return cmpContext;
     }
-
+    //TODO DELETE
     public void setCmpContext(ItemResult cmpContext) {
         this.cmpContext = cmpContext;
     }

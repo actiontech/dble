@@ -54,7 +54,7 @@ public final class MetaHelper {
                 tmBuilder.addIndex(makeIndexMeta(indexName, IndexType.MUL, index.getColumns()));
             } else if (tableElement instanceof MySqlKey) {
                 MySqlKey index = (MySqlKey) tableElement;
-                String indexName = genIndexName(index.getName(), index.getColumns(), indexNames);
+                String indexName = genIndexName(index.getIndexName(), index.getColumns(), indexNames);
                 tmBuilder.addIndex(makeIndexMeta(indexName, IndexType.MUL, index.getColumns()));
             } else {
                 // ignore
@@ -68,8 +68,13 @@ public final class MetaHelper {
         if (srcIndexName != null) {
             indexName = StringUtil.removeBackQuote(srcIndexName.getSimpleName());
         } else {
-            SQLIdentifierExpr column = (SQLIdentifierExpr) columnExprs.get(0);
-            String columnName = StringUtil.removeBackQuote(column.getName());
+            SQLExpr firstColumn = columnExprs.get(0);
+            String columnName = firstColumn.toString();
+            if (firstColumn instanceof SQLIdentifierExpr) {
+                columnName = StringUtil.removeBackQuote(((SQLIdentifierExpr) firstColumn).getName());
+            } else if (firstColumn instanceof SQLMethodInvokeExpr) {
+                columnName = StringUtil.removeBackQuote(((SQLMethodInvokeExpr) firstColumn).getMethodName());
+            }
             indexName = columnName;
             int indexNum = 1;
             while (indexNames.contains(indexName)) {

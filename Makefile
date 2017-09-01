@@ -18,5 +18,5 @@ upload_mycat:
 upload_ushard:
 	curl -T $(shell pwd)/target/*-linux.tar.gz -u admin:ftpadmin ftp://release-ftpd/actiontech-${PROJECT_NAME}/qa/${VERSION}/actiontech-ushard-core.tar.gz
 
-upload_ushard_ushard_obfuscate:
+upload_ushard_obfuscate:
 	curl -T $(shell pwd)/target/*-linux.tar.gz -u admin:ftpadmin ftp://release-ftpd/actiontech-${PROJECT_NAME}/qa/${VERSION}/actiontech-ushard-core-obfuscate.tar.gz

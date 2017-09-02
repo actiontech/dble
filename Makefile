@@ -4,7 +4,7 @@ DOCKER        := $(shell which docker)
 DOCKER_IMAGE  := docker-registry:5000/maven:3.3-jdk-8
 
 docker_mvn_mycat:
-	$(DOCKER) run -v $(shell pwd)/:/opt/code --rm -w /opt/code $(DOCKER_IMAGE) mvn clean install -Dmaven.test.skip=true
+	$(DOCKER) run -v $(shell pwd)/:/opt/code --rm -w /opt/code $(DOCKER_IMAGE) mvn clean install
 
 docker_mvn_ushard:
 	$(DOCKER) run -v $(shell pwd)/:/opt/code --rm -w /opt/code $(DOCKER_IMAGE) mvn clean install -f ushard.xml -Dmaven.test.skip=true -Dneed.obfuscate=false

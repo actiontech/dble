@@ -454,6 +454,7 @@ public class DruidReplaceParser extends DefaultDruidParser {
             temp.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
                     RouterUtil.removeSchema(temp.toString(), schemaInfo.getSchema()));
+            count++;
         }
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);

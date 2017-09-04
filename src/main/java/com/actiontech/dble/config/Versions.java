@@ -30,7 +30,7 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-idle-2.17.08.0-dev-20170904173947".getBytes();
+    private static byte[] serverVersion = "5.6.29-idle-2.17.08.0-dev-20170904220535".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (OpenCloudDB)".getBytes();
     public static final String ANNOTATION_NAME = "idle:";
     public static final String ROOT_PREFIX = "idle";

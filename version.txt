@@ -1,5 +1,5 @@
-BuildTime  2017-09-04 09:39:38
+BuildTime  2017-09-04 14:05:32
 MavenVersion 2.17.08.0-dev
 GitUrl https://github.com/actiontech/dble
-WebSite todo
-QQGroup todo
+WebSite http://io.dble/
+QQGroup http://io.dble/

@@ -66,13 +66,6 @@
                 <exclude>**/*</exclude>
             </excludes>
         </fileSet>
-        <fileSet>
-            <directory>${basedir}/catlet</directory>
-            <outputDirectory>dble/catlet</outputDirectory>
-            <excludes>
-                <exclude>**/*</exclude>
-            </excludes>
-        </fileSet>
     </fileSets>
 
 </assembly>

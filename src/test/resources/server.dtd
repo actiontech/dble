@@ -13,8 +13,8 @@
          - See the License for the specific language governing permissions and
          - limitations under the License.
         -->
-        <!ELEMENT mycat:server (system?,firewall?,user+,cluster?)>
-        <!ATTLIST mycat:server xmlns:mycat CDATA #FIXED "http://io.mycat/">
+        <!ELEMENT dble:server (system?,firewall?,user+,cluster?)>
+        <!ATTLIST dble:server xmlns:dble CDATA #FIXED "http://io.dble/">
 
         <!ELEMENT system (property*) >
 

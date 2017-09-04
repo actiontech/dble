@@ -2,7 +2,7 @@
 
 echo "check JAVA_HOME & java"
 JAVA_CMD=$JAVA_HOME/bin/java
-MAIN_CLASS=io.mycat.config.loader.zkprocess.xmltozk.XmltoZkMain
+MAIN_CLASS=com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain
 if [ ! -d "$JAVA_HOME" ]; then
     echo ---------------------------------------------------
     echo WARN: JAVA_HOME environment variable is not set. 
@@ -13,7 +13,7 @@ fi
 echo "---------set HOME_DIR------------"
 CURR_DIR=`pwd`
 cd ..
-MYCAT_HOME=`pwd`
+DBLE_HOME=`pwd`
 cd $CURR_DIR
-$JAVA_CMD -Xms256M -Xmx1G -XX:MaxPermSize=64M  -DMYCAT_HOME=$MYCAT_HOME -cp "$MYCAT_HOME/conf:$MYCAT_HOME/lib/*" $MAIN_CLASS
+$JAVA_CMD -Xms256M -Xmx1G -XX:MaxPermSize=64M  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
 echo "---------finished------------"

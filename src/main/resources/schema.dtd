@@ -13,8 +13,8 @@
          - See the License for the specific language governing permissions and
          - limitations under the License.
         -->
-        <!ELEMENT mycat:schema (schema*,dataNode*,dataHost*)>
-        <!ATTLIST mycat:schema xmlns:mycat CDATA #FIXED "http://io.mycat/">
+        <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
+        <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://io.dble/">
 
         <!-- checkSQLschema will be ignored,just for compatibility -->
         <!ELEMENT schema (table*)>

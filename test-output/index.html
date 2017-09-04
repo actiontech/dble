@@ -9,10 +9,10 @@
     <script type="text/javascript" src="testng-reports.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type='text/javascript'>
-      google.load('visualization', '1', {packages:['table']});
-      google.setOnLoadCallback(drawTable);
-      var suiteTableInitFunctions = new Array();
-      var suiteTableData = new Array();
+        google.load('visualization', '1', {packages: ['table']});
+        google.setOnLoadCallback(drawTable);
+        var suiteTableInitFunctions = new Array();
+        var suiteTableData = new Array();
 
     </script>
     <!--
@@ -115,7 +115,7 @@
 &lt;suite name=&quot;Default suite&quot;&gt;
   &lt;test verbose=&quot;2&quot; name=&quot;Default test&quot;&gt;
     &lt;classes&gt;
-      &lt;class name=&quot;io.mycat.route.function.PartitionByStringTest&quot;/&gt;
+      &lt;class name=&quot;PartitionByStringTest&quot;/&gt;
     &lt;/classes&gt;
   &lt;/test&gt; &lt;!-- Default test --&gt;
 &lt;/suite&gt; &lt;!-- Default suite --&gt;
@@ -148,17 +148,21 @@
             <div class="main-panel-content rounded-window-bottom">
                 <div class="times-div">
                     <script type="text/javascript">
-suiteTableInitFunctions.push('tableData_Default_suite');
-function tableData_Default_suite() {
-var data = new google.visualization.DataTable();
-data.addColumn('number', 'Number');
-data.addColumn('string', 'Method');
-data.addColumn('string', 'Class');
-data.addColumn('number', 'Time (ms)');
-data.addRows(0);
-window.suiteTableData['Default_suite']= { tableData: data, tableDiv: 'times-div-Default_suite'}
-return data;
-}
+                        suiteTableInitFunctions.push('tableData_Default_suite');
+
+                        function tableData_Default_suite() {
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('number', 'Number');
+                            data.addColumn('string', 'Method');
+                            data.addColumn('string', 'Class');
+                            data.addColumn('number', 'Time (ms)');
+                            data.addRows(0);
+                            window.suiteTableData['Default_suite'] = {
+                                tableData: data,
+                                tableDiv: 'times-div-Default_suite'
+                            }
+                            return data;
+                        }
 
                     </script>
                     <div id="times-div-Default_suite">

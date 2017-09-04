@@ -7,8 +7,8 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
-<!DOCTYPE mycat:server SYSTEM "server.dtd">
-<mycat:server xmlns:mycat="http://io.mycat/">
+<!DOCTYPE dble:server SYSTEM "server.dtd">
+<dble:server xmlns:dble="http://io.dble/">
     <system>
         <!-- serverBacklog size,default 2048-->
         <property name="serverBacklog">2048</property>
@@ -105,4 +105,4 @@
         <property name="readOnly">true</property>
     </user>
 
-</mycat:server>
+</dble:server>

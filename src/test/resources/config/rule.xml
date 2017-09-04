@@ -13,8 +13,8 @@
  - See the License for the specific language governing permissions and
  - limitations under the License.
 -->
-<!DOCTYPE mycat:rule SYSTEM "rule.dtd">
-<mycat:rule xmlns:mycat="http://io.mycat/">
+<!DOCTYPE dble:rule SYSTEM "rule.dtd">
+<dble:rule xmlns:dble="http://io.dble/">
 
     <!-- 路由规则定义，定义什么表，什么字段，采用什么路由算法 -->
     <tableRule name="rule1">
@@ -26,9 +26,9 @@
 
     <!-- 路由函数定义 -->
     <function name="func1"
-              class="io.mycat.route.function.PartitionByLong">
+              class="com.actiontech.dble.route.function.PartitionByLong">
         <property name="partitionCount">2</property>
         <property name="partitionLength">512</property>
     </function>
 
-</mycat:rule>
+</dble:rule>

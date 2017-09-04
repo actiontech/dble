@@ -2,13 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.mycat</groupId>
-    <artifactId>Action_Mycat</artifactId>
+    <groupId>com.actiontech</groupId>
+    <artifactId>dble</artifactId>
     <version>2.17.08.0-dev</version>
     <packaging>jar</packaging>
-    <name>Mycat-server</name>
-    <description>The project of Mycat-server</description>
-    <url>http://io.mycat</url>
+    <name>dble-server</name>
+    <description>The project of dble-server</description>
 
     <properties>
         <app.encoding>UTF-8</app.encoding>
@@ -17,26 +16,16 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
-        <sever.comment>MyCat Server (OpenCloudDB)</sever.comment>
+        <sever.comment>dble Server (OpenCloudDB)</sever.comment>
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
     </properties>
-    <scm>
-        <connection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</connection>
-        <developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</developerConnection>
-        <url>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat-Server.git</url>
-    </scm>
     <repositories>
         <repository>
-            <id>nexus-actiontech</id>
-            <name>nexus-actiontech</name>
-            <url>http://10.186.19.52:8081/nexus/content/groups/public</url>
-        </repository>
-        <repository>
-            <id>nexus</id>
-            <name>local private nexus</name>
-            <url>http://nexus.mycat.io/content/groups/public</url>
+            <id>UK</id>
+            <name>UK Central</name>
+            <url>http://uk.maven.org/maven2</url>
         </repository>
         <repository>
             <id>jenkins</id>
@@ -46,14 +35,9 @@
     </repositories>
     <pluginRepositories>
         <pluginRepository>
-            <id>nexus-actiontech</id>
-            <name>nexus-actiontech</name>
-            <url>http://10.186.19.52:8081/nexus/content/groups/public</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>nexus</id>
-            <name>local private nexus</name>
-            <url>http://nexus.mycat.io/content/groups/public</url>
+            <id>UK</id>
+            <name>UK Central</name>
+            <url>http://uk.maven.org/maven2</url>
         </pluginRepository>
         <pluginRepository>
             <id>jenkins</id>
@@ -62,18 +46,6 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <name>Internal Releases</name>
-            <url>http://nexus.mycat.io/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>Internal Snapshots</name>
-            <url>http://nexus.mycat.io/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
     <dependencies>
         <!-- <dependency> <groupId>com.google.guava</groupId> <artifactId>guava-parent</artifactId>
             <version>18.0</version> </dependency> -->
@@ -256,12 +228,6 @@
         </dependency>
     </dependencies>
 
-
-    <issueManagement>
-        <system>JIRA</system>
-        <url>http://io.mycat</url>
-    </issueManagement>
-
     <build>
         <!-- finalName>${artifactId}-${version}-${buildNumber}</finalName -->
         <resources>
@@ -283,6 +249,9 @@
                 <directory>src/test/resources</directory>
                 <excludes>
                     <exclude>**/.svn/**</exclude>
+                    <exclude>rule_template.xml</exclude>
+                    <exclude>schema_template.xml</exclude>
+                    <exclude>server_template.xml</exclude>
                 </excludes>
             </testResource>
         </testResources>
@@ -378,10 +347,6 @@
                             <outputFile>${project.basedir}/${version.file}</outputFile>
                             <replacements>
                                 <replacement>
-                                    <token>@buildnumber@</token>
-                                    <value>${buildNumber}</value>
-                                </replacement>
-                                <replacement>
                                     <token>@buildtime@</token>
                                     <value>${maven.build.timestamp}</value>
                                 </replacement>
@@ -391,15 +356,15 @@
                                 </replacement>
                                 <replacement>
                                     <token>@giturl@</token>
-                                    <value>https://github.com/MyCATApache/Mycat-Server.git</value>
+                                    <value>https://github.com/actiontech/dble</value>
                                 </replacement>
                                 <replacement>
-                                    <token>@mycatsite@</token>
-                                    <value>http://www.mycat.org.cn</value>
+                                    <token>@website@</token>
+                                    <value>http://io.dble/</value>
                                 </replacement>
                                 <replacement>
                                     <token>@qqgroup@</token>
-                                    <value>106088787</value>
+                                    <value>http://io.dble/</value>
                                 </replacement>
                             </replacements>
                         </configuration>
@@ -412,12 +377,13 @@
                             <goal>replace</goal>
                         </goals>
                         <configuration>
-                            <file>${project.basedir}/src/main/java/io/mycat/config/Versions.template</file>
-                            <outputFile>${project.basedir}/src/main/java/io/mycat/config/Versions.java</outputFile>
+                            <file>${project.basedir}/src/main/java/com/actiontech/dble/config/Versions.template</file>
+                            <outputFile>${project.basedir}/src/main/java/com/actiontech/dble/config/Versions.java
+                            </outputFile>
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-mycat-${project.version}-${timestamp}</value>
+                                    <value>5.6.29-idle-${project.version}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
@@ -425,11 +391,11 @@
                                 </replacement>
                                 <replacement>
                                     <token>@annotation-name@</token>
-                                    <value>mycat:</value>
+                                    <value>idle:</value>
                                 </replacement>
                                 <replacement>
                                     <token>@root_prefix@</token>
-                                    <value>mycat</value>
+                                    <value>idle</value>
                                 </replacement>
                             </replacements>
                         </configuration>
@@ -508,8 +474,8 @@
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <daemons>
                         <daemon>
-                            <id>mycat</id>
-                            <mainClass>io.mycat.MycatStartup</mainClass>
+                            <id>dble</id>
+                            <mainClass>com.actiontech.dble.DbleStartup</mainClass>
                             <commandLineArguments>
                                 <commandLineArgument>start</commandLineArgument>
                             </commandLineArguments>
@@ -520,7 +486,7 @@
                                 <!-- 启动内存配置 -->
                                 <maxStackSize>128</maxStackSize>
                                 <systemProperties>
-                                    <systemProperty>MYCAT_HOME=.</systemProperty>
+                                    <systemProperty>DBLE_HOME=.</systemProperty>
                                 </systemProperties>
                                 <extraArguments>
                                     <extraArgument>-server</extraArgument>
@@ -540,21 +506,9 @@
                                 <generatorConfiguration>
                                     <generator>jsw</generator>
                                     <includes>
-                                        <include>aix-ppc-32</include>
-                                        <include>aix-ppc-64</include>
-                                        <include>hpux-parisc-64</include>
                                         <include>linux-x86-32</include>
                                         <include>linux-x86-64</include>
                                         <include>linux-ppc-64</include>
-                                        <include>macosx-ppc-32</include>
-                                        <include>macosx-x86-universal-32</include>
-                                        <include>macosx-universal-32</include>
-                                        <include>macosx-universal-64</include>
-                                        <include>solaris-sparc-32</include>
-                                        <include>solaris-sparc-64</include>
-                                        <include>solaris-x86-32</include>
-                                        <include>windows-x86-32</include>
-                                        <include>windows-x86-64</include>
                                     </includes>
 
                                     <configuration>
@@ -597,12 +551,7 @@
                 <version>3.0.0</version>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/main/assembly/assembly-win.xml</descriptor>
                         <descriptor>src/main/assembly/assembly-linux.xml</descriptor>
-                        <descriptor>src/main/assembly/assembly-mac.xml</descriptor>
-                        <descriptor>src/main/assembly/assembly-solaris.xml</descriptor>
-                        <descriptor>src/main/assembly/assembly-unix.xml</descriptor>
-                        <descriptor>src/main/assembly/assembly-testtool.xml</descriptor>
                     </descriptors>
                 </configuration>
                 <executions>
@@ -640,37 +589,13 @@
                     <execution>
                         <phase>validate</phase>
                         <goals>
-                            <goal>create</goal>
+                            <goal>create-timestamp</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <format>{1}</format>
-                    <items>
-                        <item>timestamp</item>
-                        <item>scmVersion</item>
-                    </items>
-                    <doCheck>false</doCheck>
-                    <doUpdate>false</doUpdate>
-                    <timestampFormat>{0,date,yyyyMMddHHmmss}</timestampFormat>
-                    <providerImplementations>
-                        <git>git</git>
-                    </providerImplementations>
-
+                    <timestampFormat>yyyyMMddHHmmss</timestampFormat>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.scm</groupId>
-                        <artifactId>maven-scm-provider-gitexe</artifactId>
-                        <version>RELEASE</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.tmatesoft.svnkit</groupId>
-                        <artifactId>svnkit</artifactId>
-                        <version>RELEASE</version>
-                    </dependency>
-                </dependencies>
-
             </plugin>
 
             <plugin>

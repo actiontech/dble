@@ -1,5 +1,5 @@
-$(document).ready(function() {
-    $('a.navigator-link').click(function() {
+$(document).ready(function () {
+    $('a.navigator-link').click(function () {
         // Extract the panel for this link
         var panel = getPanelName($(this));
 
@@ -14,7 +14,7 @@ $(document).ready(function() {
     installMethodHandlers('skipped');
     installMethodHandlers('passed', true); // hide passed methods by default
 
-    $('a.method').click(function() {
+    $('a.method').click(function () {
         showMethod($(this));
         return false;
     });
@@ -25,7 +25,7 @@ $(document).ready(function() {
     $('.navigator-link').first().click();
 
     // Collapse/expand the suites
-    $('a.collapse-all-link').click(function() {
+    $('a.collapse-all-link').click(function () {
         var contents = $('.navigator-suite-content');
         if (contents.css('display') == 'none') {
             contents.show();
@@ -38,7 +38,7 @@ $(document).ready(function() {
 // The handlers that take care of showing/hiding the methods
 function installMethodHandlers(name, hide) {
     function getContent(t) {
-    return $('.method-list-content.' + name + "." + t.attr('panel-name'));
+        return $('.method-list-content.' + name + "." + t.attr('panel-name'));
     }
 
     function getHideLink(t, name) {
@@ -52,25 +52,25 @@ function installMethodHandlers(name, hide) {
 
     function getMethodPanelClassSel(element, name) {
         var panelName = getPanelName(element);
-    var sel = '.' + panelName + "-class-" + name;
+        var sel = '.' + panelName + "-class-" + name;
         return $(sel);
     }
 
-    $('a.hide-methods.' + name).click(function() {
+    $('a.hide-methods.' + name).click(function () {
         var w = getContent($(this));
         w.hide();
         getHideLink($(this), name).hide();
         getShowLink($(this), name).show();
-    getMethodPanelClassSel($(this), name).hide();
+        getMethodPanelClassSel($(this), name).hide();
     });
 
-    $('a.show-methods.' + name).click(function() {
+    $('a.show-methods.' + name).click(function () {
         var w = getContent($(this));
         w.show();
         getHideLink($(this), name).show();
         getShowLink($(this), name).hide();
-    showPanel(getPanelName($(this)));
-    getMethodPanelClassSel($(this), name).show();
+        showPanel(getPanelName($(this)));
+        getMethodPanelClassSel($(this), name).show();
     });
 
     if (hide) {
@@ -116,7 +116,7 @@ function drawTable() {
         var data = v.tableData
         var table = new google.visualization.Table(document.getElementById(div));
         table.draw(data, {
-            showRowNumber : false
+            showRowNumber: false
         });
     }
 }

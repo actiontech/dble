@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<!DOCTYPE mycat:schema SYSTEM "schema.dtd">
-<mycat:schema xmlns:mycat="http://io.mycat/">
+<!DOCTYPE dble:schema SYSTEM "schema.dtd">
+<dble:schema xmlns:dble="http://io.dble/">
 
     <schema name="TESTDB">
         <!-- auto sharding by id (long) -->
@@ -53,4 +53,4 @@
                    password="123456"/>
         <!-- <writeHost host="hostM2" url="localhost:3316" user="root" password="123456"/> -->
     </dataHost>
-</mycat:schema>
+</dble:schema>

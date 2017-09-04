@@ -1,0 +1,46 @@
+syntax = "proto2";
+package com.actiontech.dble.meta.protocol;
+
+option java_package = "com.actiontech.dble.meta.protocol";
+option java_outer_classname = "StructureMeta";
+option optimize_for = SPEED;
+ 
+
+message IndexMeta{
+	required string				name		= 1;
+	required string             type        = 2;//PRI,UNI,MUI
+	repeated string             columns      = 3;
+	
+	
+}
+message ColumnMeta{
+	required string            name           = 1;
+	required string            dataType       = 2; 
+	optional bool              isUnsigned     = 3;
+	optional int32             length         = 4;
+	optional int32             precision      = 5;
+	optional int32             scale          = 6;
+	optional bool              canNull        = 7;
+	optional string            sdefault       = 8;
+	optional bool              auto_incre     = 9; 
+	optional string            charsetname    = 10 [default = "utf8"];
+	//[COMMENT 'string']
+	//[COLUMN_FORMAT {FIXED|DYNAMIC|DEFAULT}]
+    //[STORAGE {DISK|MEMORY|DEFAULT}]
+    //[reference_definition]
+    //[GENERATED ALWAYS] AS (expression)
+}
+
+message TableMeta{
+	optional string            tableName      = 1;//tableName without dbName
+	repeated ColumnMeta        columns     = 2;//Columns
+	optional bool              isView         = 3[default = false];
+	optional string            createSql      = 4;
+	optional int64             version        = 5;
+	optional int64             aiOffset       = 6[default=-1];
+	optional int32             type           = 7;
+	optional int32             aiColPos       = 8[default=-1];
+	optional IndexMeta		   primary	      = 9;
+	repeated IndexMeta		   uniIndex		  = 10;
+	repeated IndexMeta		   index		  = 11;
+}

@@ -7,8 +7,8 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
-<!DOCTYPE mycat:rule SYSTEM "rule.dtd">
-<mycat:rule xmlns:mycat="http://io.mycat/">
+<!DOCTYPE dble:rule SYSTEM "rule.dtd">
+<dble:rule xmlns:dble="http://io.dble/">
     <tableRule name="sharding-by-enum">
         <rule>
             <columns>id</columns>
@@ -61,7 +61,7 @@
 
     <!-- 枚举方式分区 -->
     <function name="enum"
-              class="io.mycat.route.function.PartitionByFileMap">
+              class="com.actiontech.dble.route.function.PartitionByFileMap">
         <property name="mapFile">partition-hash-int.txt</property>
         <property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
         <property name="type">0</property><!--默认为0 表示key为数字类型，如果是其他类型，请设为其他值-->
@@ -69,14 +69,14 @@
 
     <!-- 数字范围方式分区 -->
     <function name="rangeLong"
-              class="io.mycat.route.function.AutoPartitionByLong">
+              class="com.actiontech.dble.route.function.AutoPartitionByLong">
         <property name="mapFile">autopartition-long.txt</property>
         <property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
     </function>
 
     <!-- 固定Hash 分区,当partitionLength全为1时，退化为求模分区-->
     <!--MAX(sum(count*length[i]) must not more then 1024-->
-    <function name="hashLong" class="io.mycat.route.function.PartitionByLong">
+    <function name="hashLong" class="com.actiontech.dble.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
         <!-- <property name="partitionCount">2,3</property>
@@ -84,13 +84,13 @@
     </function>
 
     <!-- 对8求模-->
-    <function name="hashmod" class="io.mycat.route.function.PartitionByLong">
+    <function name="hashmod" class="com.actiontech.dble.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
         <property name="partitionLength">1</property>
     </function>
 
     <!-- 固定Hash 分区 ，string 类型-->
-    <function name="hashString" class="io.mycat.route.function.PartitionByString">
+    <function name="hashString" class="com.actiontech.dble.route.function.PartitionByString">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
         <property name="hashSlice">0:2</property>
@@ -105,7 +105,7 @@
     4.不设置sEndDate和defaultNode: 小于sBeginDate报错，大于sBeginDate+ 节点数*sPartionDay-1 会在外层报错
      -->
     <function name="partbydate"
-              class="io.mycat.route.function.PartitionByDate">
+              class="com.actiontech.dble.route.function.PartitionByDate">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
         <property name="sEndDate">2015-01-31
@@ -116,11 +116,11 @@
 
     <!-- 模式方式分区 -->
     <function name="pattern"
-              class="io.mycat.route.function.PartitionByPattern">
+              class="com.actiontech.dble.route.function.PartitionByPattern">
         <property name="mapFile">partition-pattern.txt</property>
         <property name="patternValue">1024</property>
         <property name="defaultNode">0</property><!--默认为-1,数据范围超出则报错-->
     </function>
 
 
-</mycat:rule>
+</dble:rule>

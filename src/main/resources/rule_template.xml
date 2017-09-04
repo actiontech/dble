@@ -7,8 +7,8 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
-<!DOCTYPE mycat:rule SYSTEM "rule.dtd">
-<mycat:rule xmlns:mycat="http://io.mycat/">
+<!DOCTYPE dble:rule SYSTEM "rule.dtd">
+<dble:rule xmlns:dble="http://io.dble/">
     <tableRule name="sharding-by-enum">
         <rule>
             <columns>id</columns>
@@ -61,7 +61,7 @@
 
     <!-- enum partition -->
     <function name="enum"
-              class="io.mycat.route.function.PartitionByFileMap">
+              class="com.actiontech.dble.route.function.PartitionByFileMap">
         <property name="mapFile">partition-hash-int.txt</property>
         <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
         <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
@@ -69,14 +69,14 @@
 
     <!-- number range partition -->
     <function name="rangeLong"
-              class="io.mycat.route.function.AutoPartitionByLong">
+              class="com.actiontech.dble.route.function.AutoPartitionByLong">
         <property name="mapFile">autopartition-long.txt</property>
         <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
     </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
     <!--MAX(sum(count*length[i]) must not more then 1024-->
-    <function name="hashLong" class="io.mycat.route.function.PartitionByLong">
+    <function name="hashLong" class="com.actiontech.dble.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
         <!-- <property name="partitionCount">2,3</property>
@@ -84,13 +84,13 @@
     </function>
 
     <!-- eg:  mod 8 -->
-    <function name="hashmod" class="io.mycat.route.function.PartitionByLong">
+    <function name="hashmod" class="com.actiontech.dble.route.function.PartitionByLong">
         <property name="partitionCount">8</property>
         <property name="partitionLength">1</property>
     </function>
 
     <!-- Hash partition for string-->
-    <function name="hashString" class="io.mycat.route.function.PartitionByString">
+    <function name="hashString" class="com.actiontech.dble.route.function.PartitionByString">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
         <property name="hashSlice">0:2</property>
@@ -105,7 +105,7 @@
     4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sEndDate + (node size)*sPartionDay-1 will report error
      -->
     <function name="partbydate"
-              class="io.mycat.route.function.PartitionByDate">
+              class="com.actiontech.dble.route.function.PartitionByDate">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
         <property name="sEndDate">2015-01-31
@@ -117,11 +117,11 @@
     <!-- pattern partition -->
     <!--mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
     <function name="pattern"
-              class="io.mycat.route.function.PartitionByPattern">
+              class="com.actiontech.dble.route.function.PartitionByPattern">
         <property name="mapFile">partition-pattern.txt</property>
         <property name="patternValue">1024</property>
         <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
     </function>
 
 
-</mycat:rule>
+</dble:rule>

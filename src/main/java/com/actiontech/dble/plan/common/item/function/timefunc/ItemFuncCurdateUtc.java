@@ -1,0 +1,38 @@
+package com.actiontech.dble.plan.common.item.function.timefunc;
+
+import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.time.MySQLTime;
+
+import java.util.List;
+
+
+public class ItemFuncCurdateUtc extends ItemDateFunc {
+
+    public ItemFuncCurdateUtc(List<Item> args) {
+        super(args);
+    }
+
+    @Override
+    public final String funcName() {
+        return "utc_date";
+    }
+
+    @Override
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        java.util.Calendar cal = getUTCTime();
+        ltime.setYear(cal.get(java.util.Calendar.YEAR));
+        ltime.setMonth(cal.get(java.util.Calendar.MONTH) + 1);
+        ltime.setDay(cal.get(java.util.Calendar.DAY_OF_MONTH) + 1);
+        ltime.setSecondPart(0);
+        ltime.setSecond(0);
+        ltime.setMinute(0);
+        ltime.setHour(0);
+        return false;
+    }
+
+    @Override
+    public ItemFunc nativeConstruct(List<Item> realArgs) {
+        return new ItemFuncCurdateUtc(realArgs);
+    }
+}

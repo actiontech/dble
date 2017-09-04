@@ -11,7 +11,4 @@
     <suppress checks="CyclomaticComplexity" files="TimSort.java"/>
 
 
-
-
-
 </suppressions>

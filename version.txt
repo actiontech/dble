@@ -1,6 +1,5 @@
-BuildTime  2017-08-24 05:43:29
-GitVersion   6af0ee54670fee34af55f4fc583de3f6f7cc001a
+BuildTime  2017-09-04 09:39:38
 MavenVersion 2.17.08.0-dev
-GitUrl https://github.com/MyCATApache/Mycat-Server.git
-MyCatSite http://www.mycat.org.cn
-QQGroup 106088787
+GitUrl https://github.com/actiontech/dble
+WebSite todo
+QQGroup todo

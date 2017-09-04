@@ -85,9 +85,9 @@ leveldb
 mapdb  
 来指代原有类名(不区分大小写)，mycat分支下兼容原有方式和简称方式。  
 原有方式如下，按顺序与简称方式一一对应。  
-io.mycat.cache.impl.EnchachePooFactory  
-io.mycat.cache.impl.LevelDBCachePooFactory  
-io.mycat.cache.impl.MapDBCachePooFactory   
+EnchachePooFactory  
+LevelDBCachePooFactory  
+MapDBCachePooFactory   
 和简称方式。  
 ##### 4.4.3 rule.xml  
 rule.xml配置当中需要指定类名用于反射加载拆分算法，可使用简称    
@@ -99,12 +99,12 @@ Date
 PatternRange  
 来指代原有类名(不区分大小写)，mycat分支下兼容原有方式和简称方式。  
 原有方式如下，按顺序与简称方式一一对应。  
-io.mycat.route.function.PartitionByLong(固定Hash 分区)  
-io.mycat.route.function.PartitionByString(String固定Hash 分区)   
-io.mycat.route.function.PartitionByFileMap(枚举方式)  
-io.mycat.route.function.AutoPartitionByLong(数字范围)  
-io.mycat.route.function.PartitionByDate(日期分区)  
-io.mycat.route.function.PartitionByPattern(取模范围约束)  
+PartitionByLong(固定Hash 分区)  
+PartitionByString(String固定Hash 分区)   
+PartitionByFileMap(枚举方式)  
+AutoPartitionByLong(数字范围)  
+PartitionByDate(日期分区)  
+PartitionByPattern(取模范围约束)  
 #### 4.5 全局表检查  
 启用全局表检查时候，列名由_mycat_op_time改为_ushard_op_time  
 #### 4.6 日志

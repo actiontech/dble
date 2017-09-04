@@ -1,0 +1,55 @@
+package com.actiontech.dble.route.impl;
+
+import com.actiontech.dble.cache.LayerCachePool;
+import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.RouteStrategy;
+import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.sqlengine.mpp.LoadData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+
+public abstract class AbstractRouteStrategy implements RouteStrategy {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
+
+    @Override
+    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
+                                String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
+
+        RouteResultset rrs = new RouteResultset(origSQL, sqlType);
+
+        /*
+         * debug mode and load data ,no cache
+         */
+        if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.LOAD_DATA_HINT)) {
+            rrs.setCacheAble(false);
+        }
+
+        if (schema == null) {
+            rrs = routeNormalSqlWithAST(null, origSQL, rrs, charset, cachePool, sc);
+        } else {
+            if (sqlType == ServerParse.SHOW) {
+                rrs.setStatement(origSQL);
+                rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            } else {
+                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
+            }
+        }
+
+        return rrs;
+    }
+
+
+    /**
+     * routeNormalSqlWithAST
+     */
+    public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
+                                                         String charset, LayerCachePool cachePool, ServerConnection sc) throws SQLException;
+
+
+}

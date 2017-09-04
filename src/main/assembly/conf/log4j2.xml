@@ -5,8 +5,8 @@
             <PatternLayout pattern="%d [%-5p][%t] %m %throwable{full} (%C:%F:%L) %n"/>
         </Console>
 
-        <RollingRandomAccessFile name="RollingFile" fileName="${sys:MYCAT_HOME}/logs/mycat.log"
-                                 filePattern="${sys:MYCAT_HOME}/logs/$${date:yyyy-MM}/mycat-%d{MM-dd}-%i.log.gz">
+        <RollingRandomAccessFile name="RollingFile" fileName="${sys:DBLE_HOME}/logs/dble.log"
+                                 filePattern="${sys:DBLE_HOME}/logs/$${date:yyyy-MM}/dble-%d{MM-dd}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
             </PatternLayout>

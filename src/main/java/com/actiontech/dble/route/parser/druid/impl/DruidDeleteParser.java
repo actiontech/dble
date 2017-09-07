@@ -78,7 +78,9 @@ public class DruidDeleteParser extends DefaultDruidParser {
             }
             TableConfig tc = schema.getTables().get(schemaInfo.getTable());
             if (tc != null && tc.isGlobalTable()) {
-                rrs.setGlobalTable(true);
+                RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
+                rrs.setFinishedRoute(true);
+                return schema;
             }
         }
         return schema;

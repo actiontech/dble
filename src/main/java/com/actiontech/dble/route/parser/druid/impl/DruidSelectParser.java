@@ -523,6 +523,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
+                if (rrsTmp.isGlobalTable()) {
+                    break;
+                }
             }
         }
         if (nodeSet.size() == 0) {

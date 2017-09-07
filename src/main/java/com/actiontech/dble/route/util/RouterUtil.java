@@ -487,6 +487,7 @@ public final class RouterUtil {
             if (isSelect) {
                 // global select ,not cache route result
                 rrs.setCacheAble(false);
+                rrs.setGlobalTable(true);
                 return routeToSingleNode(rrs, tc.getRandomDataNode());
             } else { //insert into all global table's node
                 return routeToMultiNode(false, rrs, tc.getDataNodes(), true);

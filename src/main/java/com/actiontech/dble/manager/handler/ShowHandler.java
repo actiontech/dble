@@ -76,7 +76,6 @@ public final class ShowHandler {
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 } else {
-                    name = name.replaceAll("'", "");
                     ShowDataNode.execute(c, name);
                 }
                 break;

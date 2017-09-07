@@ -376,7 +376,13 @@ public class DruidInsertParser extends DefaultDruidParser {
             }
         }
 
-        StringBuilder sb = new StringBuilder(200).append("insert into ").append(tableName);
+        StringBuilder sb = new StringBuilder(200);
+        sb.append("insert ");
+        if (insert.isIgnore()) {
+            sb.append("ignore ");
+        }
+        sb.append("into ");
+        sb.append(tableName);
 
         List<SQLExpr> columns = insert.getColumns();
 

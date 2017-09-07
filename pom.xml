@@ -383,7 +383,7 @@
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-idle-${project.version}-${timestamp}</value>
+                                    <value>5.6.29-dble-${project.version}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
@@ -391,11 +391,11 @@
                                 </replacement>
                                 <replacement>
                                     <token>@annotation-name@</token>
-                                    <value>idle:</value>
+                                    <value>dble:</value>
                                 </replacement>
                                 <replacement>
                                     <token>@root_prefix@</token>
-                                    <value>idle</value>
+                                    <value>dble</value>
                                 </replacement>
                             </replacements>
                         </configuration>

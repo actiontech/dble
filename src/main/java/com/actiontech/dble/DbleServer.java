@@ -658,7 +658,7 @@ public final class DbleServer {
     }
 
     private boolean isUseZkSwitch() {
-        return isUseZK() && DbleServer.getInstance().getConfig().getSystem().isUseZKSwitch();
+        return isUseZK() && this.config.getSystem().isUseZKSwitch();
     }
 
     public boolean isUseZK() {

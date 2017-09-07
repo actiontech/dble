@@ -1339,10 +1339,7 @@ public final class ManagerParseShow {
 
                         if ((c2 == 'U' || c2 == 'u') && (c3 == 'S' || c3 == 's') &&
                                 (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r')) {
-                            if (ParseUtil.isErrorTail(++offset, stmt)) {
-                                return OTHER;
-                            }
-                            return SQL_SUM_USER;
+                            return boolTailCheck(stmt, offset, SQL_SUM_USER);
 
                         } else if ((c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
                                 (c4 == 'B' || c4 == 'b') && (c5 == 'L' || c5 == 'l') &&
@@ -1358,7 +1355,7 @@ public final class ManagerParseShow {
 
                     return OTHER;
                 }
-                return boolTailCheck(stmt, offset, SQL_SUM_TABLE);
+                return boolTailCheck(stmt, offset, SQL_SUM_USER);
             }
         }
         return OTHER;

@@ -105,7 +105,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
     public List<TableStat> getTableStats(boolean isClear) {
         SortedSet<TableStat> tableStatSortedSet = new TreeSet<>(tableStatMap.values());
         List<TableStat> list = new ArrayList<>(tableStatSortedSet);
-        if(isClear){
+        if (isClear) {
             tableStatMap = new ConcurrentHashMap<>();
         }
         return list;

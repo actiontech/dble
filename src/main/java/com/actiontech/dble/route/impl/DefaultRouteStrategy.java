@@ -37,9 +37,9 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
             return list.get(0);
         } catch (Exception t) {
             LOGGER.error("routeNormalSqlWithAST", t);
-            if(t.getMessage() != null) {
+            if (t.getMessage() != null) {
                 throw new SQLSyntaxErrorException(t.getMessage());
-            }else {
+            } else {
                 throw new SQLSyntaxErrorException(t);
             }
         }

@@ -36,7 +36,7 @@ Read the [Roadmap](./docs/ROADMAP.md).
 
 ## Architecture
 
-![architecture](./docs/architecture.png)
+![architecture](./docs/architecture.PNG)
 
 ## Quick start 
 Read the [Quick Start](./docs/QUICKSTART.md).

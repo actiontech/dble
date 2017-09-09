@@ -1,5 +1,5 @@
 # Contribution Guide
-Dble is a community driven open source project and we welcome any contributor.This guide documents the best way to make various types of contribution to Dble, including what is required before submitting a code change.  
+dble is a community driven open source project and we welcome any contributor.This guide documents the best way to make various types of contribution to dble, including what is required before submitting a code change.  
 Of course, contributing doesn't just mean writing code. Improving documentation and reporting bugs are also welcome.
 
 ## Contributing Bug Reports  
@@ -158,7 +158,7 @@ review.
 
 ## Commit message style
 
-Please follow this style to make Dble easy to review, maintain and develop.
+Please follow this style to make dble easy to review, maintain and develop.
 
 ```
 <what changed>

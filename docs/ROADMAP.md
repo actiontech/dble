@@ -1,6 +1,6 @@
 # Roadmap
 
-This document defines the roadmap for DBLE development.
+This document defines the roadmap for dble development.
 ##### __SQL Layer__  
 - [x] DDL
 - [x] Query Plan

@@ -1,19 +1,19 @@
-# DBLE
+# dble
 
-DBLE (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
+dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
 
-## What is DBLE?
+## What is dble?
 
-DBLE is a high scalability middle-ware for MySQL sharding. 
+dble is a high scalability middle-ware for MySQL sharding. 
 
 - __Sharding__
-As your business grows, you can use DBLE to replace the origin single MySQL instance. 
+As your business grows, you can use dble to replace the origin single MySQL instance. 
 
 - __Compatible with MySQL protocol__
-Use DBLE as same as MySQL. You can replace MySQL with DBLE to power your application without changing a single line of code in most cases.
+Use dble as same as MySQL. You can replace MySQL with dble to power your application without changing a single line of code in most cases.
 
 - __High availability__
-DBLE server can used as clustered, business will not suffer with single node fail.
+dble server can used as clustered, business will not suffer with single node fail.
 
 - __SQL Support__
 Support(some in Roadmap) SQL 92 standard and MySQL dialect. We support complex SQL query like group by, order by, distinct, join ,union, sub-query(in Roadmap) and so on.
@@ -26,7 +26,7 @@ Support Distributed Transaction using two-phase commit. You can choose normal mo
 
 
 ## History
-DBLE is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). First we should thanks to MyCat's contributors.
+dble is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). First we should thanks to MyCat's contributors.
 
 For us, focus on MySQL is a better choice. So we cancelled the support for other databases, deeply improved/optimized its behavior on compatibility, complex query and distributed transaction. And of course, fixed lots of bugs.
 

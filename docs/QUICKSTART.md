@@ -1,6 +1,6 @@
 # Quick Start
-## 1.Download DBLE Release 
-Get package from https://github.com/actiontech/DBLE/releases
+## 1.Download dble Release 
+Get package from https://github.com/actiontech/dble/releases
 
 ## 2.Prepare
 ### 2.1 MySQL 
@@ -63,7 +63,7 @@ You should see "Server startup successfully. see logs in logs/dble.log".
 
 ## 5.connect
 As a distributed-database imitate mysql,you can use all Mysql classic connection.  
-In this case you can connect to the DBLE using command:
+In this case you can connect to the dble using command:
 ```
 mysql -p -P8066 -h 127.0.0.1 -u root
 ```  

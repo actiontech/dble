@@ -1,5 +1,7 @@
 # dble
 
+<img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
+
 dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
 
 ## What is dble?

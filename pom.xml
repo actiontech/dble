@@ -360,11 +360,11 @@
                                 </replacement>
                                 <replacement>
                                     <token>@website@</token>
-                                    <value>http://io.dble/</value>
+                                    <value>http://dble.cloud/</value>
                                 </replacement>
                                 <replacement>
                                     <token>@qqgroup@</token>
-                                    <value>http://io.dble/</value>
+                                    <value>http://dble.cloud/</value>
                                 </replacement>
                             </replacements>
                         </configuration>

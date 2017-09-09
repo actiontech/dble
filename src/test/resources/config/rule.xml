@@ -14,7 +14,7 @@
  - limitations under the License.
 -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
-<dble:rule xmlns:dble="http://io.dble/">
+<dble:rule xmlns:dble="http://dble.cloud/">
 
     <!-- 路由规则定义，定义什么表，什么字段，采用什么路由算法 -->
     <tableRule name="rule1">

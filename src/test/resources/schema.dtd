@@ -14,7 +14,7 @@
          - limitations under the License.
         -->
         <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
-        <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://io.dble/">
+        <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://dble.cloud/">
 
         <!-- checkSQLschema will be ignored,just for compatibility -->
         <!ELEMENT schema (table*)>

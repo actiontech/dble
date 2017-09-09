@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://io." + Versions.ROOT_PREFIX + "/", name = "schema")
+@XmlRootElement(namespace = "http://" + Versions.ROOT_PREFIX + ".cloud/", name = "schema")
 public class Schemas {
     private List<Schema> schema;
 

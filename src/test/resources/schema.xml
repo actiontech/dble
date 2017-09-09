@@ -8,7 +8,7 @@
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://io.dble/">
+<dble:schema xmlns:dble="http://dble.cloud/">
 
     <schema name="cndb" checkSQLschema="true">
         <table name="offer" dataNode="offer_dn$0-127" rule="offerRule"/>

@@ -14,7 +14,7 @@
  - limitations under the License.
 -->
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://io.dble/">
+<dble:schema xmlns:dble="http://dble.cloud/">
 
     <!-- schema定义 -->
     <schema name="dbtest">

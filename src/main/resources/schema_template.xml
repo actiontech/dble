@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://io.dble/">
+<dble:schema xmlns:dble="http://dble.cloud/">
 
     <schema name="TESTDB">
         <!-- auto sharding by id (long) -->

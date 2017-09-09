@@ -15,7 +15,7 @@
  - limitations under the License.
 -->
 <!DOCTYPE dble:server SYSTEM "server.dtd">
-<dble:server xmlns:dble="http://io.dble/">
+<dble:server xmlns:dble="http://dble.cloud/">
 
     <!-- 系统参数定义，服务端口、管理端口，处理器个数、线程池等。 -->
     <!--

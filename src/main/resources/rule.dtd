@@ -14,7 +14,7 @@
          - limitations under the License.
         -->
         <!ELEMENT dble:rule (tableRule*,function*)>
-        <!ATTLIST dble:rule xmlns:dble CDATA #FIXED "http://io.dble/">
+        <!ATTLIST dble:rule xmlns:dble CDATA #FIXED "http://dble.cloud/">
 
         <!ELEMENT tableRule (rule+)>
         <!ATTLIST tableRule name CDATA #REQUIRED>

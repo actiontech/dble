@@ -8,7 +8,7 @@
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
-<dble:rule xmlns:dble="http://io.dble/">
+<dble:rule xmlns:dble="http://dble.cloud/">
     <tableRule name="rule1">
         <rule>
             <columns>id</columns>

@@ -1,11 +1,11 @@
 # Quick Start
 ## 1.Download DBLE Release 
-Get packages from https://github.com/actiontech/DBLE/releases
+Get package from https://github.com/actiontech/DBLE/releases
 
 ## 2.Pepare
 ### 2.1 MySQL 
-Make Sure there is at least one MySQL Instance with url $url(like:localhost:3306) ,$user(like:test) and $password（like:testPsw） in your machine.  
-Add 3 database ,the SQL as below: 
+Make sure there is at least one MySQL Instance with url $url(e.g, localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.  
+Add 4 database ,the SQL as below: 
  
 ```
 create database db1;  

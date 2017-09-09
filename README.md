@@ -25,10 +25,11 @@ Support Distributed Transaction using two-phase commit. You can choose normal mo
 
 
 ## History
-DBLE is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). Thanks to its good contributors.
+DBLE is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). First we should thanks to MyCat's contributors.
+
 For us, focus on MySQL is a better choice. So we cancelled the support for other databases, deeply improved/optimized its behavior on compatibility, complex query and distributed transaction. And of course, fixed lots of bugs.
 
-For more details, see[Roadmap](./docs/ROADMAP.md) and [Issues](https://github.com/actiontech/dble/issues) . 
+For more details, see [Roadmap](./docs/ROADMAP.md) and [Issues](https://github.com/actiontech/dble/issues) . 
 
 ## Roadmap
 

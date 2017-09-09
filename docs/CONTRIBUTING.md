@@ -1,6 +1,6 @@
 # Contribution Guide
 Dble is a community driven open source project and we welcome any contributor.This guide documents the best way to make various types of contribution to Dble, including what is required before submitting a code change.  
-Of couse, contributing doesn’t just mean writing code. Improving documentation and reporting bugs are also welcome.
+Of course, contributing doesn't just mean writing code. Improving documentation and reporting bugs are also welcome.
 
 ## Contributing Bug Reports  
 Ideally, bug reports are accompanied by a proposed code change to fix the bug. This isn’t always possible, as those who discover a bug may not have the experience to fix it. A bug may be reported but without creating a pull request (see below).
@@ -20,7 +20,7 @@ This part outlines some conventions about development workflow, commit message f
 
 Before you move on, please make sure what your issue and/or pull request is, a bug fix or an architecture change.
 
-You konw that review can take hours or days of committer time, so
+You know that review can take hours or days of committer time, so
 everyone benefits if contributors focus on changes that are useful, clear, easy to evaluate, and already pass basic checks.
 
 Besides all above, each issue should be filed with template.
@@ -29,7 +29,7 @@ Besides all above, each issue should be filed with template.
 ### Is this a bug fix?
 
 Bug fixes usually come with tests. With the help of continuous integration test, patches can be easy to review. Please update the unit tests so that they catch the bug!  
-Issue example will comming soon.
+IMPORTANT:Issue example will be comming soon.
 
 ### Is this an architecture improvement?
 
@@ -37,11 +37,12 @@ Some examples of "Architecture" improvements:
 
 - Improving test coverage.
 - Decoupling logic or creation of new utilities.
-- Making code more resilient (sleeps, backoffs, reducing flakiness, etc).
+- Making code more resilient (sleeps, back offs, reducing flakiness, etc).
 - Improving performance.
 
 
-If you are improving the quality of code, then justify/state exactly what you are 'cleaning up' in your Pull Request so as to save reviewers' time. An example will be comming soon.
+If you are improving the quality of code, then justify/state exactly what you are 'cleaning up' in your Pull Request so as to save reviewers' time.   
+IMPORTANT: An example will be comming soon.
 
 If you're making code more resilient, test it locally to demonstrate how exactly your patch changes things.
 
@@ -130,7 +131,7 @@ in a few cycles.
 
 ### Step 6: Push
 
-When ready to review (or just to establish an offsite backup or your work),
+When ready to review (or just to establish an off-site backup or your work),
 push your branch to your fork on `github.com`:
 
 ```sh

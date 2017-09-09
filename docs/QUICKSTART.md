@@ -2,9 +2,9 @@
 ## 1.Download DBLE Release 
 Get package from https://github.com/actiontech/DBLE/releases
 
-## 2.Pepare
+## 2.Prepare
 ### 2.1 MySQL 
-Make sure there is at least one MySQL Instance with url $url(e.g, localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.  
+Make sure there is at least one MySQL Instance with url $url(e.g., localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.  
 Add 4 database ,the SQL as below: 
  
 ```
@@ -33,7 +33,7 @@ cp server_template.xml server.xml
 
 ## 4.Config
 Edit the file schema.xml.  
-Find the dataHost element ,delete all the writeHost/readHost element below.
+Find the dataHost element, delete all the writeHost/readHost element below.
 Create a new writeHost element like 
 ```  
   <writeHost host="hostM1" url="$url" user="$user" password="$password"/>
@@ -63,7 +63,7 @@ You should see "Server startup successfully. see logs in logs/dble.log".
 
 ## 5.connect
 As a distributed-database imitate mysql,you can use all Mysql classic connection.  
-In this case you can connect to the DBLE where commond:
+In this case you can connect to the DBLE using command:
 ```
 mysql -p -P8066 -h 127.0.0.1 -u root
 ```  

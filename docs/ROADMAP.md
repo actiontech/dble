@@ -9,8 +9,8 @@ This document defines the roadmap for DBLE development.
 - [x] REPLACE Syntax
 - [x] Join (LEFT JOIN / RIGHT JOIN / CROSS JOIN)
 - [x] Union
-- [x] Simple Subquery
-- [ ] Correlated Subquery 
+- [x] Simple Sub-query
+- [ ] Correlated Sub-Query 
 - [x] Functions support 
 	- [x] Type Conversion in Expression Evaluation
 	- [x] Operators
@@ -41,7 +41,7 @@ This document defines the roadmap for DBLE development.
 - [ ] Smooth Offline
 
 ##### __Optimization__ 
-- [x] Global tablle
+- [x] Global table
 - [x] ER table
 - [x] Push down Where Filter 
 - [x] Simplify Where Filter 

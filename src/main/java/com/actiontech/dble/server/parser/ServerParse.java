@@ -663,7 +663,7 @@ public final class ServerParse {
                 case 't':
                     if (stmt.length() > ++offset) {
                         //support QUERY like this
-                        //  /*!mycat: sql=SELECT * FROM test where id=99 */set @pin=1;
+                        //  /*!dble: sql=SELECT * FROM test where id=99 */set @pin=1;
                         //  call p_test(@pin,@pout);
                         //  select @pout;
                         if (stmt.startsWith("/*!" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*#" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*" + Versions.ANNOTATION_NAME)) {

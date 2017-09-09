@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * Creates and maintains the logical mapping between logical blocks and physical on-disk
  * locations. One block is mapped to one file with a name given by its BlockId.
  * <p>
- * Block files are hashed among the directories listed in mycat.local.dir
+ * Block files are hashed among the directories listed in local.dir
  */
 public class DataNodeFileManager {
     private static final Logger LOG = LoggerFactory.getLogger(DataNodeFileManager.class);

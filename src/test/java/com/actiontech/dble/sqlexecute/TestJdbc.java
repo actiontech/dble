@@ -11,9 +11,6 @@ public class TestJdbc {
             e.printStackTrace();
         }
 
-        // String url = "jdbc:mysql://192.168.56.101:3309/mycat";
-        // String username = "root";
-        // String password = "root123";
         String url = "jdbc:mysql://127.0.0.1:8066/TESTDB";
         String username = "test";
         String password = "test";

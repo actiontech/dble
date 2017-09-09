@@ -47,11 +47,6 @@ public class SeverMemory {
 
         assert resultSetBufferSize > 0;
 
-        /**
-         * mycat.merge.memory.offHeap.enabled mycat.buffer.pageSize
-         * mycat.memory.offHeap.size mycat.merge.file.buffer
-         * mycat.direct.output.result mycat.local.dir
-         */
 
         if (system.getUseOffHeapForMerge() == 1) {
             conf.set("server.memory.offHeap.enabled", "true");
@@ -96,11 +91,6 @@ public class SeverMemory {
         resultSetBufferSize = (long) ((Platform.getMaxDirectMemory()) * DIRECT_SAFETY_FRACTION);
 
         assert resultSetBufferSize > 0;
-        /**
-         * mycat.memory.offHeap.enabled mycat.buffer.pageSize
-         * mycat.memory.offHeap.size mycat.testing.memory
-         * mycat.merge.file.buffer mycat.direct.output.result mycat.local.dir
-         */
         conf.set("server.memory.offHeap.enabled", "true").set("server.pointer.array.len", "8K").set("server.buffer.pageSize", "1m").set("server.memory.offHeap.size", JavaUtils.bytesToString2(resultSetBufferSize));
 
         LOGGER.info("resultSetBufferSize: " + JavaUtils.bytesToString2(resultSetBufferSize));

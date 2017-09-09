@@ -18,10 +18,6 @@
         </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
-        <!--<AsyncLogger name="io.mycat" level="info" includeLocation="true" additivity="false">-->
-        <!--<AppenderRef ref="Console"/>-->
-        <!--<AppenderRef ref="RollingFile"/>-->
-        <!--</AsyncLogger>-->
         <asyncRoot level="debug" includeLocation="true">
 
             <AppenderRef ref="Console"/>

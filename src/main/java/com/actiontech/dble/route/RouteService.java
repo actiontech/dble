@@ -75,13 +75,13 @@ public class RouteService {
             }
         }
 
-        /*!mycat: sql = select name from aa */
-        /*!mycat: schema = test */
+        /*!dble: sql = select name from aa */
+        /*!dble: schema = test */
         int hintLength = RouteService.isHintSql(stmt);
         if (hintLength != -1) {
             int endPos = stmt.indexOf("*/");
             if (endPos > 0) {
-                // router by hint of !mycat:
+                // router by hint of !dble:
                 String hint = stmt.substring(hintLength, endPos).trim();
 
                 String hintSplit = "=";
@@ -136,7 +136,7 @@ public class RouteService {
         int len = sql.length();
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             char c = sql.charAt(j);
-            // support: "/** !mycat: */" for mysql  and "/** #mycat: */"  for mybatis
+            // support: "/** !dble: */" for mysql  and "/** #dble: */"  for mybatis
             while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
                 c = sql.charAt(++j);
             }

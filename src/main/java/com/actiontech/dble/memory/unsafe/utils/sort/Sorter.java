@@ -23,7 +23,6 @@ import java.util.Comparator;
  * A simple wrapper over the Java implementation [[TimSort]].
  * <p>
  * The Java implementation is package private, and hence it cannot be called outside package
- * org.opencloudb.memory.unsafe.utils.sort. This is a simple wrapper of it that is available to mycat.
  */
 public class Sorter<K, B> {
 

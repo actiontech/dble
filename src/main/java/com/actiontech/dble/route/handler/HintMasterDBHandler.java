@@ -14,8 +14,8 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * sql hint: mycat:db_type=master/slave<br/>
- * maybe add mycat:db_type=slave_newest in feature
+ * sql hint: dble:db_type=master/slave<br/>
+ * maybe add dble:db_type=slave_newest in feature
  *
  * @author digdeep@126.com
  */

@@ -36,19 +36,19 @@ public class HintDBTypeTest {
     @Test
     public void testHint() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        //(new hint,/*!mycat*/),runOnSlave=false force master
+        //(new hint,/*!dble*/),runOnSlave=false force master
         String sql = "/*!dble:db_type=master*/select * from employee where sharding_id=1";
         CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
         RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
-        //(new hint,/*#mycat*/),runOnSlave=false force master
+        //(new hint,/*#dble*/),runOnSlave=false force master
         sql = "/*#dble:db_type=master*/select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
-        //(new hint,/*mycat*/),runOnSlave=false force master
+        //(new hint,/*dble*/),runOnSlave=false force master
         sql = "/*dble:db_type=master*/select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
         Assert.assertTrue(!rrs.getRunOnSlave());

@@ -12,11 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <function name="mod-long" class="io.mycat.route.function.PartitionByMod">
- * * <property name="count">3</property>
- * </function>
- * <p>
- * <p>
  * author:liujun
  * Created:2016/9/18
  */

@@ -161,11 +161,6 @@ public class XMLRuleLoader {
     }
 
     /**
-     * function tag:
-     * <function name="partbymonth" class="io.mycat.route.function.PartitionByMonth">
-     * <property name="dateFormat">yyyy-MM-dd</property>
-     * <property name="sBeginDate">2015-01-01</property>
-     * </function>
      *
      * @param root
      * @throws ClassNotFoundException

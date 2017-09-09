@@ -30,7 +30,7 @@ import com.actiontech.dble.net.BackendAIOConnection;
 import java.nio.ByteBuffer;
 
 /**
- * From client to server when the client do heartbeat between mycat cluster.
+ * From client to server when the client do heartbeat between cluster.
  * <p>
  * <pre>
  * Bytes         Name

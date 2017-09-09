@@ -407,21 +407,6 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     /**
-     * <br>
-     * eg::<br>
-     * {@code
-     * <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2"
-     * rule="mod-long" />
-     * }
-     * <br>
-     * algorithm:<br>
-     * {@code
-     * <function name="mod-long" class="io.mycat.route.function.PartitionByMod">
-     * <!-- how many data nodes -->
-     * <property name="count">3</property>
-     * </function>
-     * }
-     * <br>
      * shard table datanode(2) < function count(3) and check failed
      */
     private void checkRuleSuitTable(TableConfig tableConf) {

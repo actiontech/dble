@@ -30,7 +30,7 @@ import com.actiontech.dble.net.FrontendConnection;
 import java.nio.ByteBuffer;
 
 /**
- * From mycat server to client during initial handshake.
+ * From server to client during initial handshake.
  * <p>
  * <pre>
  * Bytes                        Name

@@ -4,22 +4,17 @@
 
     <schema name="TESTDB">
         <!-- auto sharding by id (long) -->
-        <table name="travelrecord" dataNode="dn1,dn2,dn3" rule="auto-sharding-long"/>
+        <table name="travelrecord" dataNode="dn1,dn2" rule="sharding-by-hash2"/>
 
         <!-- global table is auto cloned to all defined data nodes ,so can join
             with any table whose sharding node is in the same data node -->
-        <table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3"/>
+        <table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3,dn4"/>
         <table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2"/>
         <!-- random sharding using mod sharind rule -->
-        <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2,dn3"
-               rule="mod-long"/>
-        <!-- <table name="dual" primaryKey="ID" dataNode="dnx,dnoracle2" type="global"
-            needAddLimit="false"/> <table name="worker" primaryKey="ID" dataNode="jdbc_dn1,jdbc_dn2,jdbc_dn3"
-            rule="mod-long" /> -->
-        <table name="employee" primaryKey="ID" dataNode="dn1,dn2"
-               rule="sharding-by-intfile"/>
+        <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2,dn3,dn4"
+               rule="sharding-by-mod"/>
         <table name="customer" primaryKey="ID" dataNode="dn1,dn2"
-               rule="sharding-by-intfile">
+               rule="sharding-by-mod">
             <childTable name="orders" primaryKey="ID" joinKey="customer_id"
                         parentKey="id">
                 <childTable name="order_items" joinKey="order_id"
@@ -28,18 +23,13 @@
             <childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
                         parentKey="id"/>
         </table>
-        <!-- <table name="oc_call" primaryKey="ID" dataNode="dn1$0-743" rule="latest-month-calldate"
-            /> -->
     </schema>
     <!-- <dataNode name="dn1$0-743" dataHost="localhost1" database="db$0-743"
         /> -->
     <dataNode name="dn1" dataHost="localhost1" database="db1"/>
     <dataNode name="dn2" dataHost="localhost1" database="db2"/>
     <dataNode name="dn3" dataHost="localhost1" database="db3"/>
-    <!--<dataNode name="dn4" dataHost="sequoiadb1" database="SAMPLE" />
-     <dataNode name="jdbc_dn1" dataHost="jdbchost" database="db1" />
-    <dataNode	name="jdbc_dn2" dataHost="jdbchost" database="db2" />
-    <dataNode name="jdbc_dn3" 	dataHost="jdbchost" database="db3" /> -->
+    <dataNode name="dn4" dataHost="localhost1" database="db4"/>
     <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
               writeType="0" switchType="1" slaveThreshold="100">
         <heartbeat>select user()</heartbeat>

@@ -30,6 +30,13 @@
         </rule>
     </tableRule>
 
+    <tableRule name="sharding-by-hash2">
+        <rule>
+            <columns>id</columns>
+            <algorithm>hashLong2</algorithm>
+        </rule>
+    </tableRule>
+
     <tableRule name="sharding-by-mod">
         <rule>
             <columns>id</columns>
@@ -83,9 +90,18 @@
         <property name="partitionLength">4,5</property>-->
     </function>
 
-    <!-- eg:  mod 8 -->
+    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
+    <!--MAX(sum(count*length[i]) must not more then 1024-->
+    <function name="hashLong2" class="Hash">
+        <property name="partitionCount">2</property>
+        <property name="partitionLength">512</property>
+        <!-- <property name="partitionCount">2,3</property>
+        <property name="partitionLength">4,5</property>-->
+    </function>
+
+    <!-- eg:  mod 4 -->
     <function name="hashmod" class="Hash">
-        <property name="partitionCount">8</property>
+        <property name="partitionCount">4</property>
         <property name="partitionLength">1</property>
     </function>
 

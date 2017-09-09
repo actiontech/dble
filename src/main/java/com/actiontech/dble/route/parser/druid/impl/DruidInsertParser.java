@@ -367,7 +367,6 @@ public class DruidInsertParser extends DefaultDruidParser {
 
         boolean isAutoIncrement = tc.isAutoIncrement();
 
-        String tableName = schemaInfo.getTable();
         if (isGlobalCheck && !GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta)) {
             if (!isAutoIncrement) {
                 return originSql;
@@ -382,7 +381,7 @@ public class DruidInsertParser extends DefaultDruidParser {
             sb.append("ignore ");
         }
         sb.append("into ");
-        sb.append(tableName);
+        sb.append(schemaInfo.getTable());
 
         List<SQLExpr> columns = insert.getColumns();
 

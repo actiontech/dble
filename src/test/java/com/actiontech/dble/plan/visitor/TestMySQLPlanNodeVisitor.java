@@ -9,7 +9,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * this test must setup mycat server, because TableNode need the metadata of tables.
+ * this test must start server, because TableNode need the metadata of tables.
  * Curent, we skip it.
  */
 public class TestMySQLPlanNodeVisitor {

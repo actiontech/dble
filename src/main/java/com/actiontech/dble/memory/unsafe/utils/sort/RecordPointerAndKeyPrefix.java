@@ -23,8 +23,7 @@ public final class RecordPointerAndKeyPrefix {
     private long keyPrefix;
 
     /**
-     * A pointer to a record; see {@link io.mycat.memory.unsafe.memory} for a
-     * description of how these addresses are encoded.
+     * A pointer to a record;
      */
     public long getRecordPointer() {
         return recordPointer;

@@ -30,7 +30,7 @@ public final class ErrorCode {
     private ErrorCode() {
     }
 
-    // mycat error code
+    // error code
     public static final int ERR_BAD_LOGICDB = 3000;
     public static final int ERR_OPEN_SOCKET = 3001;
     public static final int ERR_CONNECT_SOCKET = 3002;

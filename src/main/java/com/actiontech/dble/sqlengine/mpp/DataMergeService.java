@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author wuzhih /modify by coder_czp/2015/11/2
  * <p>
- * Fixbug: mycat sql timeout and hang problem.
+ * Fixbug: sql timeout and hang problem.
  * @author Uncle-pan
  * @since 2016-03-23
  */

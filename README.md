@@ -1,7 +1,5 @@
 # DBLE
 
-[![Visit our IRC channel](https://kiwiirc.com/buttons/irc.freenode.net/dble.png)](https://kiwiirc.com/client/irc.freenode.net/?nick=user|?&theme=cli#dble)
-
 ## What is DBLE?
 
 DBLE (pronouced "double", less bug and no "ou") is a high scalability middle-ware for MySQL sharding.
@@ -50,5 +48,7 @@ Read the [Quick Start](./docs/QUICKSTART.md).
 Contributions are welcomed and greatly appreciated. See [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
 for details on submitting patches and the contribution workflow.
 
+## Community
 
-
+* IRC: [![Visit our IRC channel](https://kiwiirc.com/buttons/irc.freenode.net/dble.png)](https://kiwiirc.com/client/irc.freenode.net/?nick=user|?&theme=cli#dble)
+* QQ group: 669663113

@@ -1,9 +1,10 @@
 # DBLE
 
+DBLE (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
+
 ## What is DBLE?
 
-DBLE (pronouced "double", less bug and no "ou") is a high scalability middle-ware for MySQL sharding.
-
+DBLE is a high scalability middle-ware for MySQL sharding. 
 
 - __Sharding__
 As your business grows, you can use DBLE to replace the origin single MySQL instance. 

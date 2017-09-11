@@ -25,7 +25,7 @@ public final class FirewallConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(FirewallConfig.class);
 
     private Map<String, List<UserConfig>> whitehost;
-    private boolean check = false;
+    private boolean blackListCheck = false;
 
     private WallConfig wallConfig = new WallConfig();
 
@@ -35,7 +35,7 @@ public final class FirewallConfig {
     }
 
     public void init() {
-        if (check) {
+        if (blackListCheck) {
             provider = new MySqlWallProvider(wallConfig);
             provider.setBlackListEnable(true);
         }
@@ -71,12 +71,12 @@ public final class FirewallConfig {
 
     }
 
-    public boolean isCheck() {
-        return this.check;
+    public boolean isBlackListCheck() {
+        return this.blackListCheck;
     }
 
-    public void setCheck(boolean check) {
-        this.check = check;
+    public void setBlackListCheck(boolean blackListCheck) {
+        this.blackListCheck = blackListCheck;
     }
 
 }

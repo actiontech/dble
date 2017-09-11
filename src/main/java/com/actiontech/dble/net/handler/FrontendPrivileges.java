@@ -62,5 +62,4 @@ public interface FrontendPrivileges {
      * @return
      */
     boolean checkFirewallSQLPolicy(String user, String sql);
-
 }

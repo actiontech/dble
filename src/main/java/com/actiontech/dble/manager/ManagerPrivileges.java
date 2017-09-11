@@ -5,10 +5,7 @@
 */
 package com.actiontech.dble.manager;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.model.UserConfig;
 
 /**
  * @author mycat
@@ -25,9 +22,7 @@ public final class ManagerPrivileges extends ServerPrivileges {
     }
 
     protected boolean checkManagerPrivilege(String user) {
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        UserConfig rUser = config.getUsers().get(user);
         // Manager privilege must be assign explicitly
-        return rUser != null && rUser.isManager();
+        return isManagerUser(user);
     }
 }

@@ -99,23 +99,19 @@ public class ServerPrivileges implements FrontendPrivileges {
     }
 
     protected boolean checkManagerPrivilege(String user) {
-        //  normal user don't neet manager privilege
+        //  normal user don't need manager privilege
         return true;
     }
 
     @Override
     public boolean checkFirewallWhiteHostPolicy(String user, String host) {
-
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        FirewallConfig firewallConfig = config.getFirewall();
-
         if (!checkManagerPrivilege(user)) {
-            // return and don't trigger firewall alarm
+            // normal user try to login by manager port
             return false;
         }
-
         boolean isPassed = false;
-
+        ServerConfig config = DbleServer.getInstance().getConfig();
+        FirewallConfig firewallConfig = config.getFirewall();
         Map<String, List<UserConfig>> whitehost = firewallConfig.getWhitehost();
         if (whitehost == null || whitehost.size() == 0) {
             Map<String, UserConfig> users = config.getUsers();
@@ -143,17 +139,21 @@ public class ServerPrivileges implements FrontendPrivileges {
 
 
     /**
-     * @see https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE-wallfilter
+     *
+     * @see <a href="https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE-wallfilter">wallfilter config guide</a>
      */
     @Override
     public boolean checkFirewallSQLPolicy(String user, String sql) {
-
+        if (isManagerUser(user)) {
+            // manager User will ignore firewall blacklist
+            return true;
+        }
         boolean isPassed = true;
 
         if (CONTEXT_LOCAL.get() == null) {
             FirewallConfig firewallConfig = DbleServer.getInstance().getConfig().getFirewall();
             if (firewallConfig != null) {
-                if (firewallConfig.isCheck()) {
+                if (firewallConfig.isBlackListCheck()) {
                     CONTEXT_LOCAL.set(firewallConfig.getProvider());
                     check = true;
                 }
@@ -169,6 +169,12 @@ public class ServerPrivileges implements FrontendPrivileges {
             }
         }
         return isPassed;
+    }
+
+    protected boolean isManagerUser(String user) {
+        ServerConfig conf = DbleServer.getInstance().getConfig();
+        UserConfig uc = conf.getUsers().get(user);
+        return uc != null && uc.isManager();
     }
 
     public enum Checktype {

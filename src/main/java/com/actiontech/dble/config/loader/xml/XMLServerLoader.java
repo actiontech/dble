@@ -129,7 +129,7 @@ public class XMLServerLoader {
                 Element e = (Element) node;
                 String check = e.getAttribute("check");
                 if (null != check) {
-                    firewall.setCheck(Boolean.parseBoolean(check));
+                    firewall.setBlackListCheck(Boolean.parseBoolean(check));
                 }
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);

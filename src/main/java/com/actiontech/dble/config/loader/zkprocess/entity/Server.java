@@ -12,7 +12,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://" + Versions.ROOT_PREFIX + ".cloud/", name = "server")
+@XmlRootElement(namespace = Versions.DOMAIN, name = "server")
 public class Server {
 
     @XmlElement(required = true)

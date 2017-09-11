@@ -16,7 +16,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
-        <sever.comment>dble Server (ActionTech)</sever.comment>
+        <server.comment>dble Server (ActionTech)</server.comment>
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
@@ -387,7 +387,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
-                                    <value>${sever.comment}</value>
+                                    <value>${server.comment}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@annotation-name@</token>
@@ -396,6 +396,10 @@
                                 <replacement>
                                     <token>@root_prefix@</token>
                                     <value>dble</value>
+                                </replacement>
+                                <replacement>
+                                    <token>@domain@</token>
+                                    <value>http://dble.cloud/</value>
                                 </replacement>
                             </replacements>
                         </configuration>

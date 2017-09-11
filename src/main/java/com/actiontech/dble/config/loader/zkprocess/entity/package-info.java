@@ -1,4 +1,4 @@
-@XmlSchema(xmlns = @XmlNs(prefix = Versions.ROOT_PREFIX, namespaceURI = "http://" + Versions.ROOT_PREFIX + ".cloud/"), elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
+@XmlSchema(xmlns = @XmlNs(prefix = Versions.ROOT_PREFIX, namespaceURI = Versions.DOMAIN), elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
 
 package com.actiontech.dble.config.loader.zkprocess.entity;
 

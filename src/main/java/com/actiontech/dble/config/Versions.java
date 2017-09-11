@@ -34,6 +34,7 @@ public abstract class Versions {
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
+    public static final String DOMAIN = "http://dble.cloud/";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

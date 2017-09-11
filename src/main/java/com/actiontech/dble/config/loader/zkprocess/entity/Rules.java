@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(namespace = "http://" + Versions.ROOT_PREFIX + ".cloud/", name = "rule")
+@XmlRootElement(namespace = Versions.DOMAIN, name = "rule")
 public class Rules {
 
     protected List<TableRule> tableRule;

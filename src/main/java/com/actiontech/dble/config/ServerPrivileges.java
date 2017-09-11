@@ -12,7 +12,6 @@ import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.net.handler.FrontendPrivileges;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.wall.WallCheckResult;
-import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +26,6 @@ public class ServerPrivileges implements FrontendPrivileges {
     private static ServerPrivileges instance = new ServerPrivileges();
 
     private static final Logger ALARM = LoggerFactory.getLogger("alarm");
-
-    private boolean check = false;
-    private static final ThreadLocal<WallProvider> CONTEXT_LOCAL = new ThreadLocal<>();
 
     public static ServerPrivileges instance() {
         return instance;
@@ -149,19 +145,9 @@ public class ServerPrivileges implements FrontendPrivileges {
             return true;
         }
         boolean isPassed = true;
-
-        if (CONTEXT_LOCAL.get() == null) {
-            FirewallConfig firewallConfig = DbleServer.getInstance().getConfig().getFirewall();
-            if (firewallConfig != null) {
-                if (firewallConfig.isBlackListCheck()) {
-                    CONTEXT_LOCAL.set(firewallConfig.getProvider());
-                    check = true;
-                }
-            }
-        }
-
-        if (check) {
-            WallCheckResult result = CONTEXT_LOCAL.get().check(sql);
+        FirewallConfig firewallConfig = DbleServer.getInstance().getConfig().getFirewall();
+        if (firewallConfig != null && firewallConfig.isBlackListCheck()) {
+            WallCheckResult result = firewallConfig.getProvider().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
                 ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +

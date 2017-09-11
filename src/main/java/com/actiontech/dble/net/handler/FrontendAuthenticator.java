@@ -67,6 +67,12 @@ public class FrontendAuthenticator implements NIOHandler {
         AuthPacket auth = new AuthPacket();
         auth.read(data);
 
+        //check mysql_native_password
+        if (!"mysql_native_password".equals(auth.getAuthPlugin())) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "only mysql_native_password auth check is supported");
+            return;
+        }
+
         // check user
         if (!checkUser(auth.getUser(), source.getHost())) {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "' with host '" + source.getHost() + "'");

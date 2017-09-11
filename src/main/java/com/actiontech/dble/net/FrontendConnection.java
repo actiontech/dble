@@ -420,33 +420,18 @@ public abstract class FrontendConnection extends AbstractConnection {
             System.arraycopy(rand2, 0, rand, rand1.length, rand2.length);
             this.seed = rand;
 
-            // send auth data
-            boolean useHandshakeV10 = DbleServer.getInstance().getConfig().getSystem().getUseHandshakeV10() == 1;
-            if (useHandshakeV10) {
-                HandshakeV10Packet hs = new HandshakeV10Packet();
-                hs.setPacketId(0);
-                hs.setProtocolVersion(Versions.PROTOCOL_VERSION);
-                hs.setServerVersion(Versions.getServerVersion());
-                hs.setThreadId(id);
-                hs.setSeed(rand1);
-                hs.setServerCapabilities(getServerCapabilities());
-                hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
-                hs.setServerStatus(2);
-                hs.setRestOfScrambleBuff(rand2);
-                hs.write(this);
-            } else {
-                HandshakePacket hs = new HandshakePacket();
-                hs.setPacketId(0);
-                hs.setProtocolVersion(Versions.PROTOCOL_VERSION);
-                hs.setServerVersion(Versions.getServerVersion());
-                hs.setThreadId(id);
-                hs.setSeed(rand1);
-                hs.setServerCapabilities(getServerCapabilities());
-                hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
-                hs.setServerStatus(2);
-                hs.setRestOfScrambleBuff(rand2);
-                hs.write(this);
-            }
+
+            HandshakeV10Packet hs = new HandshakeV10Packet();
+            hs.setPacketId(0);
+            hs.setProtocolVersion(Versions.PROTOCOL_VERSION);  // [0a] protocol version   V10
+            hs.setServerVersion(Versions.getServerVersion());  // 版本号
+            hs.setThreadId(id);
+            hs.setSeed(rand1);
+            hs.setServerCapabilities(getServerCapabilities());
+            hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
+            hs.setServerStatus(2);
+            hs.setRestOfScrambleBuff(rand2);
+            hs.write(this);
 
             // asynread response
             this.asynRead();
@@ -510,10 +495,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         flag |= Capabilities.CLIENT_SECURE_CONNECTION;
         flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
         flag |= Capabilities.CLIENT_MULTI_RESULTS;
-        boolean useHandshakeV10 = DbleServer.getInstance().getConfig().getSystem().getUseHandshakeV10() == 1;
-        if (useHandshakeV10) {
-            flag |= Capabilities.CLIENT_PLUGIN_AUTH;
-        }
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         return flag;
     }
 

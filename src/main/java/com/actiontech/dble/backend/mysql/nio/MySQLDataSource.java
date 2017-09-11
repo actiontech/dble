@@ -81,7 +81,7 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
 
-    private byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {
+    private byte[] passwd(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;
         }
@@ -119,7 +119,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             BinaryPacket bin1 = new BinaryPacket();
             bin1.read(in);
 
-            HandshakePacket handshake = new HandshakePacket();
+            HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
 
             /**

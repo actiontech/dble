@@ -61,7 +61,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         try {
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
-                    HandshakePacket packet = source.getHandshake();
+                    HandshakeV10Packet packet = source.getHandshake();
                     if (packet == null) {
                         processHandShakePacket(data);
                         // send auth packet
@@ -114,7 +114,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     }
 
     private void processHandShakePacket(byte[] data) {
-        HandshakePacket packet = new HandshakePacket();
+        HandshakeV10Packet packet = new HandshakeV10Packet();
         packet.read(data);
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());

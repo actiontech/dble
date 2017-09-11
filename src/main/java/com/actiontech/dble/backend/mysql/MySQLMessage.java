@@ -322,4 +322,12 @@ public class MySQLMessage {
         return cal;
     }
 
+
+    public byte[] readBytesWithInputLength(int size) {
+        byte[] ab = new byte[size];
+        System.arraycopy(data, position, ab, 0, ab.length);
+        position += size;
+        return ab;
+    }
+
 }

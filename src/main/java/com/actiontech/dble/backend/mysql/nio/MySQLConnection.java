@@ -133,7 +133,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private MySQLDataSource pool;
     private boolean fromSlaveDB;
     private long threadId;
-    private HandshakePacket handshake;
+    private HandshakeV10Packet handshake;
     private long clientFlags;
     private boolean isAuthenticated;
     private String user;
@@ -212,11 +212,11 @@ public class MySQLConnection extends BackendAIOConnection {
         this.password = password;
     }
 
-    public HandshakePacket getHandshake() {
+    public HandshakeV10Packet getHandshake() {
         return handshake;
     }
 
-    public void setHandshake(HandshakePacket handshake) {
+    public void setHandshake(HandshakeV10Packet handshake) {
         this.handshake = handshake;
     }
 
@@ -526,7 +526,7 @@ public class MySQLConnection extends BackendAIOConnection {
         }
     }
 
-    private static byte[] passwd(String pass, HandshakePacket hs)
+    private static byte[] passwd(String pass, HandshakeV10Packet hs)
             throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;

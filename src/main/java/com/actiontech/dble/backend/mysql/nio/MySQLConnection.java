@@ -422,7 +422,6 @@ public class MySQLConnection extends BackendAIOConnection {
         if (isQuit.compareAndSet(false, true) && !isClosed()) {
             if (isAuthenticated) {
                 write(writeToBuffer(QuitPacket.QUIT, allocate()));
-                write(allocate());
             } else {
                 close("normal");
             }

@@ -118,7 +118,7 @@ public class RouteService {
         int len = sql.length();
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             char c = sql.charAt(j);
-            // support: "/** !dble: */" for mysql  and "/** #dble: */"  for mybatis
+            // support: "/** !dble: */" for mybatis and "/** #dble: */"  for mysql
             while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
                 c = sql.charAt(++j);
             }

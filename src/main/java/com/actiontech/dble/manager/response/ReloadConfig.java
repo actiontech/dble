@@ -223,14 +223,17 @@ public final class ReloadConfig {
             Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
             for (PhysicalDBPool dbPool : oldDataHosts.values()) {
                 dbPool.stopHeartbeat();
-
                 for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                     for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
                         for (BackendConnection con : processor.getBackends().values()) {
                             if (con instanceof MySQLConnection) {
                                 MySQLConnection mysqlCon = (MySQLConnection) con;
-                                if (mysqlCon.getPool() == ds && con.isBorrowed()) {
-                                    NIOProcessor.BACKENDS_OLD.add(con);
+                                if (mysqlCon.getPool() == ds) {
+                                    if (con.isBorrowed()) {
+                                        NIOProcessor.BACKENDS_OLD.add(con);
+                                    } else {
+                                        con.close("old idle conn for reload");
+                                    }
                                 }
                             }
                         }

@@ -117,8 +117,12 @@ public class FrontendCommandHandler implements NIOHandler {
                             handleData(data);
                         }
                     } catch (Exception e) {
-                        LOGGER.warn("maybe occur a bug,", e);
-                        source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+                        if (e instanceof RuntimeException) {
+                            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+                        } else {
+                            LOGGER.warn("maybe occur a bug,", e);
+                            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+                        }
                         dataQueue.clear();
                     } finally {
                         handleStatus.set(false);

@@ -19,10 +19,7 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.util.ToStringUtil;
 import com.actiontech.dble.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class JoinNode extends PlanNode {
@@ -226,16 +223,18 @@ public class JoinNode extends PlanNode {
      */
     private void buildJoinKeys(boolean clearName) {
         List<Item> otherJoinOnFilters = new ArrayList<>(getJoinFilter().size());
-        for (ItemFuncEqual bf : joinFilter) {
+        Iterator<ItemFuncEqual> iterator = joinFilter.iterator();
+        while (iterator.hasNext()) {
+            ItemFuncEqual bf = iterator.next();
             if (clearName)
                 bf.setItemName(null);
             boolean isJoinKey = PlanUtil.isJoinKey(bf, this);
             if (!isJoinKey) {
                 otherJoinOnFilters.add(bf);
                 otherJoinOnFilter = FilterUtils.and(otherJoinOnFilter, bf);
+                iterator.remove();
             }
         }
-        getJoinFilter().removeAll(otherJoinOnFilters);
     }
 
     public List<Item> getLeftKeys() {

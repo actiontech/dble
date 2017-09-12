@@ -10,60 +10,101 @@
 <!DOCTYPE dble:server SYSTEM "server.dtd">
 <dble:server xmlns:dble="http://dble.cloud/">
     <system>
-        <!-- serverBacklog size,default 2048-->
-        <property name="serverBacklog">2048</property>
-        <!-- true is use JoinStrategy, default false-->
-        <property name="useJoinStrategy">true</property>
+        <!-- base config -->
+        <!--<property name="bindIp">0.0.0.0</property>-->
+        <!-- property name="serverPort">8066</property> -->
+        <!--<property name="managerPort">9066</property> -->
         <!-- true is not case sensitive ,false is case sensitive -->
         <property name="lowerCaseTableNames">true</property>
+        <!-- <property name="processors">1</property>-->
+        <!--<property name="processorExecutor">32</property> -->
+        <!--<property name="fakeMySQLVersion">5.6.20</property>-->
+        <property name="sequnceHandlerType">2</property>
+        <!-- serverBacklog size,default 2048-->
+        <property name="serverBacklog">2048</property>
+        <!--<property name="serverNodeId">1</property>-->
+        <property name="useHandshakeV10">1</property>
+        <!--<property name="showBinlogStatusTimeout">60000</property>-->
+
+        <!--option-->
+        <!--<property name="useCompression">1</property>-->
+        <!--<property name="usingAIO">0</property>-->
+        <!--<property name="useZKSwitch">true</property>-->
+
+        <!--connection -->
+        <!--<property name="charset">utf-8</property>-->
+        <!--<property name="maxPacketSize">16777216</property>-->
+        <!--<property name="txIsolation">3</property>-->
+
+        <!--consistency-->
+        <!-- check the consistency of table structure between nodes,default not -->
+        <property name="checkTableConsistency">0</property>
+        <!-- check periodt, he default period is 60000 milliseconds -->
+        <property name="checkTableConsistencyPeriod">60000</property>
+        <!-- 1 check the consistency of global table, 0 is not -->
+        <property name="useGlobleTableCheck">0</property>
+        <property name="glableTableCheckPeriod">86400000</property>
+
+        <!-- heartbeat check period -->
+        <property name="dataNodeIdleCheckPeriod">300000</property>
+        <property name="dataNodeHeartbeatPeriod">10000</property>
+
+        <!-- processor check conn-->
+        <property name="processorCheckPeriod">1000</property><!-- unit millisecond -->
+        <property name="sqlExecuteTimeout">300</property><!-- unit second -->
+        <property name="idleTimeout">1800000</property><!-- unit millisecond -->
+
+        <!-- transaction log -->
+        <!-- 1 enable record the transaction log, 0 disable -->
+        <property name="recordTxn">0</property>
+        <!--<property name="transactionLogBaseDir">/txlogs</property>-->
+        <!--<property name="transactionLogBaseName">server-tx</property>-->
+        <!--<property name="transactionRatateSize">16</property>&lt;!&ndash; unit M &ndash;&gt;-->
+
+        <!-- XA transaction -->
         <!-- use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times
        it is the check period for ,default is 1000 milliseconds-->
         <property name="xaSessionCheckPeriod">1000</property>
         <!-- use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds-->
         <property name="xaLogCleanPeriod">1000</property>
-        <!-- check the consistency of table structure between nodes,default not -->
-        <property name="checkTableConsistency">0</property>
-        <!-- check periodt, he default period is 60000 milliseconds -->
-        <property name="checkTableConsistencyPeriod">60000</property>
-        <property name="useHandshakeV10">1</property>
-        <!-- 1 means use SQL statistics, 0 means not -->
-        <property name="useSqlStat">0</property>
-        <!-- 1 check the consistency of global table, 0 is not -->
-        <property name="useGlobleTableCheck">0</property>
-        <!-- 1 enable record the transaction log, 0 disable -->
-        <property name="recordTxn">0</property>
-        <property name="sequnceHandlerType">2</property>
-        <property name="bufferPoolPageSize">512</property>
-        <!--  <property name="useCompression">1</property>-->
-        <!--  <property name="fakeMySQLVersion">5.6.20</property>-->
-        <!-- <property name="processors">1</property>-->
-        <!--<property name="processorExecutor">32</property> -->
-        <!--the max length of sql for parser ,default is 65535/64K  -->
-        <!--<property name="maxStringLiteralLength">65535</property>-->
-        <!--<property name="sequnceHandlerType">0</property>-->
-        <!--<property name="backSocketNoDelay">1</property>-->
-        <!--<property name="frontSocketNoDelay">1</property>-->
-        <!--<property name="processorExecutor">16</property>-->
-        <!-- property name="serverPort">8066</property> -->
-        <!--<property name="managerPort">9066</property> -->
-        <!--<property name="idleTimeout">300000</property> -->
-        <!--<property name="bindIp">0.0.0.0</property>-->
-        <!--<property name="frontWriteQueueSize">4096</property> -->
-
-
-        <!-- off heap for merge/order/group/limit      1enable   0 disable-->
-        <property name="useOffHeapForMerge">1</property>
-
-        <property name="memoryPageSize">1m</property>
-
-        <property name="spillsFileBufferSize">1k</property>
-
-
         <!-- XA Recovery Log path -->
-        <!--<property name="XARecoveryLogBaseDir">./</property>-->
-
+        <!--<property name="XARecoveryLogBaseDir">/tmlogs/</property>-->
         <!-- XA Recovery Log name -->
         <!--<property name="XARecoveryLogBaseName">tmlog</property>-->
+
+        <!-- true is use JoinStrategy, default false-->
+        <property name="useJoinStrategy">true</property>
+        <property name="nestLoopConnSize">4</property>
+        <property name="nestLoopRowsSize">2000</property>
+
+        <!-- off Heap unit:bytes-->
+        <property name="bufferPoolChunkSize ">4096</property>
+        <property name="bufferPoolPageNumber ">512</property>
+        <property name="bufferPoolPageSize ">2097152</property>
+        <!-- off heap for merge/order/group/limit  1:enable,0:disable-->
+        <property name="useOffHeapForMerge">1</property>
+        <!--<property name="memoryPageSize">1m</property>-->
+        <!--<property name="spillsFileBufferSize">2K</property>-->
+        <!--<property name="dataNodeSortedTempDir">/sortDirs</property>-->
+
+        <!-- sql statistics-->
+        <!-- 1 means use SQL statistics, 0 means not -->
+        <property name="useSqlStat">0</property>
+        <!--<property name="bufferUsagePercent">80</property>-->
+        <!--<property name="clearBigSqLResultSetMapMs">600000</property>-->
+        <!--<property name="sqlRecordCount">10</property>-->
+        <!--<property name="maxResultSet">524288</property>-->
+
+        <!-- backSocket unit:bytes-->
+        <!--<property name="backSocketSoRcvbuf ">4194304</property>-->
+        <!--<property name="backSocketSoSndbuf">1048576</property>-->
+        <!--<property name="backSocketNoDelay ">1</property>-->
+
+        <!-- frontSocket-->
+        <!--<property name="frontSocketSoRcvbuf ">1048576</property>-->
+        <!--<property name="frontSocketSoSndbuf">4194304</property>-->
+        <!--<property name="frontSocketNoDelay ">1</property>-->
+
 
     </system>
 

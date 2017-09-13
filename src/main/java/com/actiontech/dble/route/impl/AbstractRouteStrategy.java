@@ -24,7 +24,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
-                                String charset, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
+                                ServerConnection sc, LayerCachePool cachePool) throws SQLException {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
@@ -36,13 +36,13 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         }
 
         if (schema == null) {
-            rrs = routeNormalSqlWithAST(null, origSQL, rrs, charset, cachePool, sc);
+            rrs = routeNormalSqlWithAST(null, origSQL, rrs, cachePool, sc);
         } else {
             if (sqlType == ServerParse.SHOW) {
                 rrs.setStatement(origSQL);
                 rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
             } else {
-                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, charset, cachePool, sc);
+                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, cachePool, sc);
             }
         }
 
@@ -54,7 +54,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
      * routeNormalSqlWithAST
      */
     public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
-                                                         String charset, LayerCachePool cachePool, ServerConnection sc) throws SQLException;
+                                                         LayerCachePool cachePool, ServerConnection sc) throws SQLException;
 
 
 }

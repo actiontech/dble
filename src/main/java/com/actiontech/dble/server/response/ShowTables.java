@@ -116,8 +116,7 @@ public final class ShowTables {
                 MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharsetIndex());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
-                Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE,
-                        c.getCharset());
+                Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
                 packetId = writeFullTablesRow(buffer, c, tableMap, packetId, whereItem, sourceFields);
             } else {
                 packetId = writeFullTablesRow(buffer, c, tableMap, packetId, null, null);

@@ -50,7 +50,7 @@ public class HintSchemaHandler implements HintHandler {
             throws SQLException {
         SchemaConfig tempSchema = DbleServer.getInstance().getConfig().getSchemas().get(hintSQLValue);
         if (tempSchema != null) {
-            return routeStrategy.route(tempSchema, sqlType, realSQL, charset, sc, cachePool);
+            return routeStrategy.route(tempSchema, sqlType, realSQL, sc, cachePool);
         } else {
             String msg = "can't find hint schema:" + hintSQLValue;
             LOGGER.warn(msg);

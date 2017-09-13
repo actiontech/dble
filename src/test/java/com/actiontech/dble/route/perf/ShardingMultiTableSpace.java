@@ -37,7 +37,7 @@ public class ShardingMultiTableSpace {
         SchemaConfig schema = getSchema();
         String sql = "select id,member_id,gmt_create from offer where member_id in ('1','22','333','1124','4525')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null, null, cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null, cachePool);
         }
     }
 

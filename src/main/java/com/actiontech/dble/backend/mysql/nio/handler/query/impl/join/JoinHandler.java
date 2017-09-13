@@ -112,8 +112,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         this.joinRowFields = HandlerTool.createFields(rowpackets);
         if (otherJoinOn == null)
             return null;
-        Item ret = HandlerTool.createItem(this.otherJoinOn, this.joinRowFields, 0, this.isAllPushDown(), this.type(),
-                conn.getCharset());
+        Item ret = HandlerTool.createItem(this.otherJoinOn, this.joinRowFields, 0, this.isAllPushDown(), this.type());
         return ret;
     }
 

@@ -85,7 +85,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         for (ItemSum sumFunc : referedSumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
-                    this.type(), conn.getCharset()));
+                    this.type()));
             sums.add(sum);
         }
         cmptor = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type(),

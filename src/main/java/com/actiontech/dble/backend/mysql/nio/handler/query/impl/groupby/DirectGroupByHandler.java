@@ -94,7 +94,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
         for (ItemSum sumFunc : referedSumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
-                    this.type(), conn.getCharset()));
+                    this.type()));
             sums.add(sum);
         }
         prepareSumAggregators(sums, true);
@@ -214,8 +214,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<Field> localFields = HandlerTool.createFields(localResultFps);
         List<ItemSum> sendSums = new ArrayList<>();
         for (ItemSum selSum : referedSumFunctions) {
-            ItemSum sum = (ItemSum) HandlerTool.createItem(selSum, localFields, 0, false, HandlerType.GROUPBY,
-                    conn.getCharset());
+            ItemSum sum = (ItemSum) HandlerTool.createItem(selSum, localFields, 0, false, HandlerType.GROUPBY);
             sendSums.add(sum);
         }
         prepareSumAggregators(sendSums, true);
@@ -277,8 +276,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     /**
      * Call ::setup for all sum functions.
      *
-     * @param thd      thread handler
-     * @param func_ptr sum function list
+     * @param funcs sum function list
      * @retval FALSE ok
      * @retval TRUE error
      */

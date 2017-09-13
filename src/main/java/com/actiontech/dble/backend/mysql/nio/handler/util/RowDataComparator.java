@@ -35,7 +35,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             cmpFields = new ArrayList<>();
             cmpItems = new ArrayList<>();
             for (Order order : orders) {
-                Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type, charset);
+                Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
                 cmpItems.add(cmpItem);
                 FieldPacket tmpFp = new FieldPacket();
                 cmpItem.makeField(tmpFp);

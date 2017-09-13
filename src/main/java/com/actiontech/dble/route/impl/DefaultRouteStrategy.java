@@ -52,7 +52,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
     @Override
     public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
-                                                String originSql, RouteResultset rrs, String charset,
+                                                String originSql, RouteResultset rrs,
                                                 LayerCachePool cachePool, ServerConnection sc) throws SQLException {
         SQLStatement statement = parserSQL(originSql);
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());

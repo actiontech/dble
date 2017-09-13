@@ -35,7 +35,7 @@ public class HintMasterDBHandler implements HintHandler {
             throws SQLException {
 
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
-                schema, sqlType, realSQL, charset, sc, cachePool);
+                schema, sqlType, realSQL, sc, cachePool);
 
         LOGGER.debug("schema.rrs(): " + rrs); // master
         Boolean isRouteToMaster = null;

@@ -45,10 +45,9 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
         for (int index = 0; index < ascs.size(); index++) {
             Order leftOrder = leftOrders.get(index);
             Order rightOrder = rightOrders.get(index);
-            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown, type,
-                    charset);
+            Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown, type);
             Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown,
-                    type, charset);
+                    type);
             ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
             cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
             cmptors.add(cmptor);

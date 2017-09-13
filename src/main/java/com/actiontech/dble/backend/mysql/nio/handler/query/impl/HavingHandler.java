@@ -51,8 +51,7 @@ public class HavingHandler extends BaseDMLHandler {
         /**
          * having will not be pushed down because of aggregate function
          */
-        this.havingItem = HandlerTool.createItem(this.having, this.sourceFields, 0, false, this.type(),
-                conn.getCharset());
+        this.havingItem = HandlerTool.createItem(this.having, this.sourceFields, 0, false, this.type());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 

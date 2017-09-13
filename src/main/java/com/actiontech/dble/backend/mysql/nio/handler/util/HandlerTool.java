@@ -78,8 +78,7 @@ public final class HandlerTool {
      * @param type
      * @return
      */
-    public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type,
-                                  String charset) {
+    public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
         Item ret;
         if (sel.basicConstItem())
             return sel;
@@ -87,7 +86,7 @@ public final class HandlerTool {
         if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
             ItemFunc func = (ItemFunc) sel;
             if (func.getPushDownName() == null || func.getPushDownName().length() == 0) {
-                ret = createFunctionItem(func, fields, startIndex, allPushDown, type, charset);
+                ret = createFunctionItem(func, fields, startIndex, allPushDown, type);
             } else {
                 ret = createFieldItem(func, fields, startIndex);
             }
@@ -97,7 +96,7 @@ public final class HandlerTool {
             if (type != HandlerType.GROUPBY) {
                 ret = createFieldItem(sumFunc, fields, startIndex);
             } else if (sumFunc.getPushDownName() == null || sumFunc.getPushDownName().length() == 0) {
-                ret = createSumItem(sumFunc, fields, startIndex, allPushDown, type, charset);
+                ret = createSumItem(sumFunc, fields, startIndex, allPushDown, type);
             } else {
                 ret = createPushDownGroupBy(sumFunc, fields, startIndex);
             }
@@ -200,7 +199,7 @@ public final class HandlerTool {
     }
 
     protected static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
-                                                 HandlerType type, String charset) {
+                                                 HandlerType type) {
         ItemFunc ret = null;
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
@@ -209,7 +208,7 @@ public final class HandlerTool {
             if (arg.isWild())
                 newArg = new ItemInt(0);
             else
-                newArg = createItem(arg, fields, startIndex, allPushDown, type, charset);
+                newArg = createItem(arg, fields, startIndex, allPushDown, type);
             if (newArg == null)
                 throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);
@@ -220,16 +219,15 @@ public final class HandlerTool {
     }
 
     /**
-     * @param func
+     * @param f
      * @param fields
      * @param startIndex
      * @param allPushDown
      * @param type
-     * @param charset
      * @return
      */
     private static ItemSum createSumItem(ItemSum f, List<Field> fields, int startIndex, boolean allPushDown,
-                                         HandlerType type, String charset) {
+                                         HandlerType type) {
         ItemSum ret = null;
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
@@ -238,7 +236,7 @@ public final class HandlerTool {
             if (arg.isWild())
                 newArg = new ItemInt(0);
             else
-                newArg = createItem(arg, fields, startIndex, allPushDown, type, charset);
+                newArg = createItem(arg, fields, startIndex, allPushDown, type);
             if (newArg == null)
                 throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);

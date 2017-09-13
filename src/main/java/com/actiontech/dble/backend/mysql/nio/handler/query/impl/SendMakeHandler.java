@@ -59,8 +59,7 @@ public class SendMakeHandler extends BaseDMLHandler {
             this.fieldPackets = fieldPackets;
             this.sourceFields = HandlerTool.createFields(this.fieldPackets);
             for (Item sel : sels) {
-                Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type(),
-                        conn.getCharset());
+                Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type());
                 tmpItem.setItemName(sel.getItemName());
                 if (sel.getAlias() != null || tbAlias != null) {
                     String selAlias = sel.getAlias();

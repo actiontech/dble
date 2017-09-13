@@ -51,7 +51,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
         this.sums = new ArrayList<>();
         for (ItemSum sumFunc : sumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, fields, 0, isAllPushDown,
-                    HandlerType.GROUPBY, charset));
+                    HandlerType.GROUPBY));
             this.sums.add(sum);
         }
         Logger logger = Logger.getLogger(GroupResultDiskBuffer.class);

@@ -49,7 +49,7 @@ public class HintSQLHandler implements HintHandler {
             throws SQLException {
 
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
-                hintSQLValue, charset, sc, cachePool);
+                hintSQLValue, sc, cachePool);
 
         // replace the sql of RRS
         RouteResultsetNode[] oldRsNodes = rrs.getNodes();

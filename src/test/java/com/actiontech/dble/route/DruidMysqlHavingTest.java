@@ -36,23 +36,23 @@ public class DruidMysqlHavingTest {
     public void testHaving() throws SQLException {
         String sql = "select avg(offer_id) avgofferid, member_id from offer_detail group by member_id having avgofferid > 100";
         SchemaConfig schema = schemaMap.get("cndb");
-        RouteResultset rrs = routeStrategy.route(schema, -1, sql, null,
-                null, cachePool);
+        RouteResultset rrs = routeStrategy.route(schema, -1, sql,
+				null, cachePool);
         Assert.assertEquals(3, rrs.getSqlMerge().getHavingColsName().length);
 
         sql = "select avg(offer_id) avgofferid, member_id from offer_detail group by member_id having avg(offer_id) > 100";
-        rrs = routeStrategy.route(schema, -1, sql, null,
-                null, cachePool);
+        rrs = routeStrategy.route(schema, -1, sql,
+				null, cachePool);
         Assert.assertEquals(3, rrs.getSqlMerge().getHavingColsName().length);
 
         sql = "select count(offer_id) countofferid, member_id from offer_detail group by member_id having countofferid > 100";
-        rrs = routeStrategy.route(schema, -1, sql, null,
-                null, cachePool);
+        rrs = routeStrategy.route(schema, -1, sql,
+				null, cachePool);
         Assert.assertEquals(3, rrs.getSqlMerge().getHavingColsName().length);
 
         sql = "select count(offer_id) countofferid, member_id from offer_detail group by member_id having count(offer_id) > 100";
-        rrs = routeStrategy.route(schema, -1, sql, null,
-                null, cachePool);
+        rrs = routeStrategy.route(schema, -1, sql,
+				null, cachePool);
         Assert.assertEquals(3, rrs.getSqlMerge().getHavingColsName().length);
 
     }

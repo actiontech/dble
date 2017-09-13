@@ -62,7 +62,7 @@ public class DruidMysqlCreateTableTest {
     public void testCreate() throws SQLException {
 
         SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(schema, -1, originSql1, null, sc, cachePool);
+        RouteResultset rrs = routeStrategy.route(schema, -1, originSql1, sc, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
         String sql = rrs.getNodes()[0].getStatement();
 
@@ -73,7 +73,7 @@ public class DruidMysqlCreateTableTest {
     // @Test
     public void testInsert() throws SQLException {
         SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(schema, -1, "insert into autoslot (id,sid) values(1,2) ", null, sc, cachePool);
+        RouteResultset rrs = routeStrategy.route(schema, -1, "insert into autoslot (id,sid) values(1,2) ", sc, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
 
         //Assert.assertTrue(isInsertHasSlot(rrs.getStatement()));

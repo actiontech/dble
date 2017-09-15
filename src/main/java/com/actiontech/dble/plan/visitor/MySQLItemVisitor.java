@@ -65,7 +65,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private int charsetIndex;
 
     public MySQLItemVisitor(String currentDb) {
-        this(currentDb, CharsetUtil.getIndex("utf8"));
+        this(currentDb, CharsetUtil.getCharsetDefaultIndex("utf8"));
     }
 
     public MySQLItemVisitor(String currentDb, int charsetIndex) {

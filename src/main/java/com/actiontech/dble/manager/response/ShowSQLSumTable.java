@@ -96,7 +96,7 @@ public final class ShowSQLSumTable {
             int i = 1;
             for (TableStat tableStat : list) {
                 if (tableStat != null) {
-                    RowDataPacket row = getRow(tableStat, i, c.getCharset());
+                    RowDataPacket row = getRow(tableStat, i, c.getCharset().getResults());
                     i++;
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
@@ -116,7 +116,7 @@ public final class ShowSQLSumTable {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(idx));
         if (tableStat == null) {
-            row.add(StringUtil.encode(("not fond"), charset));
+            row.add(StringUtil.encode("not found", charset));
             return row;
         }
 

@@ -43,8 +43,7 @@ public class HintSQLHandler implements HintHandler {
     }
 
     @Override
-    public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String realSQL, String charset, ServerConnection sc,
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
                                 LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 

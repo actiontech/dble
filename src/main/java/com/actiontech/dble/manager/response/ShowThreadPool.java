@@ -85,7 +85,7 @@ public final class ShowThreadPool {
         List<NameableExecutor> executors = getExecutors();
         for (NameableExecutor exec : executors) {
             if (exec != null) {
-                RowDataPacket row = getRow(exec, c.getCharset());
+                RowDataPacket row = getRow(exec, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }

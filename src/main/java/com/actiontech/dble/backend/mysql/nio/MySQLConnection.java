@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
@@ -223,7 +224,10 @@ public class MySQLConnection extends BackendAIOConnection {
         packet.setPacketId(1);
         packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
-        packet.setCharsetIndex(this.charsetIndex);
+        //TODO:CHECK
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getDefaultValue("character_set_server"));
+        packet.setCharsetIndex(charsetIndex);
+
         packet.setUser(user);
         try {
             packet.setPassword(passwd(password, handshake));
@@ -250,12 +254,12 @@ public class MySQLConnection extends BackendAIOConnection {
         return isClosed() || isQuit.get();
     }
 
-    protected void sendQueryCmd(String query) {
+    protected void sendQueryCmd(String query, CharsetNames clientCharset) {
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
         try {
-            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(charset)));
+            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(clientCharset.getClient())));
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -263,8 +267,14 @@ public class MySQLConnection extends BackendAIOConnection {
         packet.write(this);
     }
 
-    private static void getCharsetCommand(StringBuilder sb, int clientCharIndex) {
-        sb.append("SET names ").append(CharsetUtil.getCharset(clientCharIndex)).append(";");
+    private static void getCharsetCommand(StringBuilder sb, CharsetNames clientCharset) {
+        sb.append("SET CHARACTER_SET_CLIENT = ");
+        sb.append(clientCharset.getClient());
+        sb.append(",CHARACTER_SET_RESULTS = ");
+        sb.append(clientCharset.getResults());
+        sb.append(",COLLATION_CONNECTION = ");
+        sb.append(clientCharset.getCollation());
+        sb.append(";");
     }
 
     private static void getTxIsolationCommand(StringBuilder sb, int txIsolation) {
@@ -306,7 +316,7 @@ public class MySQLConnection extends BackendAIOConnection {
         if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
             sc.setTxstart(true);
         }
-        synAndDoExecute(xaTxId, rrn, sc.getCharsetIndex(), sc.getTxIsolation(), isAutoCommit);
+        synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit);
     }
 
     public String getConnXID(NonBlockingSession session) {
@@ -319,7 +329,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
-                                 int clientCharSetIndex, int clientTxIsoLation,
+                                 CharsetNames clientCharset, int clientTxIsoLation,
                                  boolean expectAutocommit) {
         String xaCmd = null;
         boolean conAutoComit = this.autocommit;
@@ -332,20 +342,13 @@ public class MySQLConnection extends BackendAIOConnection {
             xaSyn = 1;
         }
         int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
-        int charsetSyn = 0;
-        if (this.charsetIndex != clientCharSetIndex) {
-            //need to syn the charset of connection.
-            //set current connection charset to client charset.
-            //otherwise while sending commend to server the charset will not coincidence.
-            setCharset(CharsetUtil.getCharset(clientCharSetIndex));
-            charsetSyn = 1;
-        }
+        int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
         int txIsoLationSyn = (txIsolation == clientTxIsoLation) ? 0 : 1;
         int autoCommitSyn = (conAutoComit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txIsoLationSyn + autoCommitSyn + xaSyn;
         if (synCount == 0) {
             // not need syn connection
-            sendQueryCmd(rrn.getStatement());
+            sendQueryCmd(rrn.getStatement(), clientCharset);
             return;
         }
         CommandPacket schemaCmd = null;
@@ -356,7 +359,7 @@ public class MySQLConnection extends BackendAIOConnection {
         }
 
         if (charsetSyn == 1) {
-            getCharsetCommand(sb, clientCharSetIndex);
+            getCharsetCommand(sb, clientCharset);
         }
         if (txIsoLationSyn == 1) {
             getTxIsolationCommand(sb, clientTxIsoLation);
@@ -374,7 +377,7 @@ public class MySQLConnection extends BackendAIOConnection {
         }
         metaDataSyned = false;
         statusSync = new StatusSync(conSchema,
-                clientCharSetIndex, clientTxIsoLation, expectAutocommit,
+                clientCharset, clientTxIsoLation, expectAutocommit,
                 synCount);
         // syn schema
         if (schemaCmd != null) {
@@ -383,7 +386,7 @@ public class MySQLConnection extends BackendAIOConnection {
         // and our query sql to multi command at last
         sb.append(rrn.getStatement() + ";");
         // syn and execute others
-        this.sendQueryCmd(sb.toString());
+        this.sendQueryCmd(sb.toString(), clientCharset);
         // waiting syn result...
 
     }
@@ -406,7 +409,7 @@ public class MySQLConnection extends BackendAIOConnection {
         RouteResultsetNode rrn = new RouteResultsetNode("default",
                 ServerParse.SELECT, query);
 
-        synAndDoExecute(null, rrn, this.charsetIndex, this.txIsolation, true);
+        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, true);
 
     }
 
@@ -456,13 +459,12 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     public void commit() {
-
         COMMIT.write(this);
 
     }
 
     public void execCmd(String cmd) {
-        this.sendQueryCmd(cmd);
+        this.sendQueryCmd(cmd, this.charsetName);
     }
 
     public void rollback() {
@@ -541,7 +543,7 @@ public class MySQLConnection extends BackendAIOConnection {
     public String toString() {
         return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema +
                 ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId=" +
-                threadId + ", charset=" + charset + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
+                threadId + "," + charsetName.toString() + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
                 ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port +
                 ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size() +
                 ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
@@ -586,17 +588,17 @@ public class MySQLConnection extends BackendAIOConnection {
 
     private static class StatusSync {
         private final String schema;
-        private final Integer charsetIndex;
+        private final CharsetNames clientCharset;
         private final Integer txtIsolation;
         private final Boolean autocommit;
         private final AtomicInteger synCmdCount;
 
         StatusSync(String schema,
-                   Integer charsetIndex, Integer txtIsolation, Boolean autocommit,
+                   CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
                    int synCount) {
             super();
             this.schema = schema;
-            this.charsetIndex = charsetIndex;
+            this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;
             this.autocommit = autocommit;
             this.synCmdCount = new AtomicInteger(synCount);
@@ -619,8 +621,8 @@ public class MySQLConnection extends BackendAIOConnection {
                 conn.schema = schema;
                 conn.oldSchema = conn.schema;
             }
-            if (charsetIndex != null) {
-                conn.setCharset(CharsetUtil.getCharset(charsetIndex));
+            if (clientCharset != null) {
+                conn.setCharsetName(clientCharset);
             }
             if (txtIsolation != null) {
                 conn.txIsolation = txtIsolation;

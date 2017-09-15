@@ -94,7 +94,7 @@ public final class ShowDatasourceSynDetail {
         byte packetId = EOF.getPacketId();
 
         String name = ManagerParseShow.getWhereParameter(stmt);
-        for (RowDataPacket row : getRows(name, c.getCharset())) {
+        for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

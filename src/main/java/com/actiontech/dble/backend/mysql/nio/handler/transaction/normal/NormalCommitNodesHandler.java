@@ -55,7 +55,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("backend connect", e);
-        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset()));
+        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errmsg);
         conn.quit();
         if (decrementCountBy(1)) {

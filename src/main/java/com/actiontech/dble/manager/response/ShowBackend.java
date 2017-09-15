@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.net.BackendAIOConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -33,7 +32,7 @@ public final class ShowBackend {
     private ShowBackend() {
     }
 
-    private static final int FIELD_COUNT = 16;
+    private static final int FIELD_COUNT = 18;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -71,12 +70,16 @@ public final class ShowBackend {
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("CHARACTER_SET_CLIENT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("COLLATION_CONNECTION", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("CHARACTER_SET_RESULTS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("AUTOCOMMIT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
     }
 
@@ -88,13 +91,14 @@ public final class ShowBackend {
         }
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
-        String charset = c.getCharset();
         for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 if (bc != null) {
-                    RowDataPacket row = getRow(bc, charset);
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
+                    RowDataPacket row = getRow(bc, c.getCharset().getResults());
+                    if (row != null) {
+                        row.setPacketId(++packetId);
+                        buffer = row.write(buffer, c, true);
+                    }
                 }
             }
         }
@@ -106,17 +110,13 @@ public final class ShowBackend {
 
     private static RowDataPacket getRow(BackendConnection c, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        if (c instanceof BackendAIOConnection) {
-            row.add(((BackendAIOConnection) c).getProcessor().getName().getBytes());
-        } else {
-            row.add("N/A".getBytes());
+        if (!(c instanceof MySQLConnection)) {
+            return null;
         }
+        MySQLConnection conn = (MySQLConnection) c;
+        row.add(conn.getProcessor().getName().getBytes());
         row.add(LongUtil.toBytes(c.getId()));
-        long threadId = 0;
-        if (c instanceof MySQLConnection) {
-            threadId = ((MySQLConnection) c).getThreadId();
-        }
-        row.add(LongUtil.toBytes(threadId));
+        row.add(LongUtil.toBytes(conn.getThreadId()));
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
@@ -124,29 +124,14 @@ public final class ShowBackend {
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
         row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
-        // boolean isRunning = c.isRunning();
-        // row.add(isRunning ? "true".getBytes() : "false".getBytes());
-        boolean isBorrowed = c.isBorrowed();
-        row.add(isBorrowed ? "true".getBytes() : "false".getBytes());
-        int writeQueueSize = 0;
-        String schema = "";
-        String charsetInf = "";
-        String txLevel = "";
-        String txAutommit = "";
-
-        if (c instanceof MySQLConnection) {
-            MySQLConnection mysqlC = (MySQLConnection) c;
-            writeQueueSize = mysqlC.getWriteQueue().size();
-            schema = mysqlC.getSchema();
-            charsetInf = mysqlC.getCharset();
-            txLevel = mysqlC.getTxIsolation() + "";
-            txAutommit = mysqlC.isAutocommit() + "";
-        }
-        row.add(IntegerUtil.toBytes(writeQueueSize));
-        row.add(schema.getBytes());
-        row.add(charsetInf.getBytes());
-        row.add(txLevel.getBytes());
-        row.add(txAutommit.getBytes());
+        row.add(c.isBorrowed() ? "true".getBytes() : "false".getBytes());
+        row.add(IntegerUtil.toBytes(conn.getWriteQueue().size()));
+        row.add(conn.getSchema().getBytes());
+        row.add(conn.getCharset().getClient().getBytes());
+        row.add(conn.getCharset().getCollation().getBytes());
+        row.add(conn.getCharset().getResults().getBytes());
+        row.add((conn.getTxIsolation() + "").getBytes());
+        row.add((conn.isAutocommit() + "").getBytes());
         return row;
     }
 }

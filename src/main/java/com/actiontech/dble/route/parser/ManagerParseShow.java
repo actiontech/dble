@@ -18,7 +18,7 @@ public final class ManagerParseShow {
     public static final int COMMAND = 1;
     public static final int CONNECTION = 2;
     public static final int DATABASE = 3;
-    public static final int DATANODE = 4;
+    public static final int DATA_NODE = 4;
     public static final int DATASOURCE = 5;
     public static final int HELP = 6;
     public static final int PROCESSOR = 8;
@@ -737,7 +737,7 @@ public final class ManagerParseShow {
                             return OTHER;
                     }
                 }
-                return DATANODE;
+                return DATA_NODE;
             }
         }
         return OTHER;

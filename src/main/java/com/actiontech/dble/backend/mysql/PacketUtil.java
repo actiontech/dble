@@ -41,7 +41,7 @@ public final class PacketUtil {
 
     public static FieldPacket getField(String name, String orgName, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.setCharsetIndex(CharsetUtil.getIndex(UTF8));
+        packet.setCharsetIndex(CharsetUtil.getCharsetDefaultIndex(UTF8));
         packet.setName(encode(name, UTF8));
         packet.setOrgName(encode(orgName, UTF8));
         packet.setType(type);
@@ -50,7 +50,7 @@ public final class PacketUtil {
 
     public static FieldPacket getField(String name, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.setCharsetIndex(CharsetUtil.getIndex(UTF8));
+        packet.setCharsetIndex(CharsetUtil.getCharsetDefaultIndex(UTF8));
         packet.setName(encode(name, UTF8));
         packet.setType(type);
         return packet;

@@ -19,7 +19,7 @@ import java.util.Map;
 public interface HintHandler {
 
     RouteResultset route(SchemaConfig schema,
-                         int sqlType, String realSQL, String charset, ServerConnection sc,
+                         int sqlType, String realSQL, ServerConnection sc,
                          LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException;
 }

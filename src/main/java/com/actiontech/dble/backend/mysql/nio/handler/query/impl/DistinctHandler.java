@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -70,8 +71,8 @@ public class DistinctHandler extends BaseDMLHandler {
         List<Order> orders = this.fixedOrders;
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distincts);
-        RowDataComparator cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type(), conn.getCharset());
-        localResult = new DistinctLocalResult(pool, sourceFields.size(), cmptor, conn.getCharset()).
+        RowDataComparator cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
+        localResult = new DistinctLocalResult(pool, sourceFields.size(), cmptor, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }

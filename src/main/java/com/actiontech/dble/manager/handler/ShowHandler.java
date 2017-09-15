@@ -50,7 +50,7 @@ public final class ShowHandler {
             case ManagerParseShow.DATABASE:
                 ShowDatabase.execute(c);
                 break;
-            case ManagerParseShow.DATANODE:
+            case ManagerParseShow.DATA_NODE:
                 ShowDataNode.execute(c, null);
                 break;
             case ManagerParseShow.DATANODE_WHERE: {

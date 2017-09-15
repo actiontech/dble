@@ -216,7 +216,7 @@ public final class ConfFileHandler {
     private static PackageBufINf showInfo(ManagerConnection c,
                                           ByteBuffer buffer, byte packetId, String string) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(string, c.getCharset()));
+        row.add(StringUtil.encode(string, c.getCharset().getResults()));
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 
@@ -239,7 +239,7 @@ public final class ConfFileHandler {
                     continue;
                 }
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(line, c.getCharset()));
+                row.add(StringUtil.encode(line, c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -250,7 +250,7 @@ public final class ConfFileHandler {
         } catch (Exception e) {
             LOGGER.error("showConfigFileError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(e.toString(), c.getCharset()));
+            row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             bufINf.setBuffer(buffer);
@@ -282,7 +282,7 @@ public final class ConfFileHandler {
                         row.add(StringUtil.encode(
                                 (i++) + " : " + f.getName() + "  time:" +
                                         df.format(new Date(f.lastModified())),
-                                c.getCharset()));
+                                c.getCharset().getResults()));
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
@@ -295,7 +295,7 @@ public final class ConfFileHandler {
         } catch (Exception e) {
             LOGGER.error("listConfigFilesError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(e.toString(), c.getCharset()));
+            row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             bufINf.setBuffer(buffer);

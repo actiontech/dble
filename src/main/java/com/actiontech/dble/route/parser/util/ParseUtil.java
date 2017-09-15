@@ -12,8 +12,17 @@ public final class ParseUtil {
     private ParseUtil() {
     }
 
-    public static boolean isEOF(char c) {
+    private static boolean isEOF(char c) {
         return (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ';');
+    }
+
+    public static boolean isEOF(String stmt, int offset) {
+        for (; offset < stmt.length(); offset++) {
+            if (!ParseUtil.isEOF(stmt.charAt(offset))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean isSpace(char space) {
@@ -35,7 +44,7 @@ public final class ParseUtil {
         }
         return false;
     }
-
+    //FIXME SIZE CHECK
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
         while (stmt.charAt(++offset) == ' ') {

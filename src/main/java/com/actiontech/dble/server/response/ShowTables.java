@@ -113,7 +113,7 @@ public final class ShowTables {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             byte packetId = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharsetIndex());
+                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
@@ -157,8 +157,8 @@ public final class ShowTables {
     public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
         for (Map.Entry<String, String> entry : tableMap.entrySet()) {
             RowDataPacket row = new RowDataPacket(2);
-            row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset()));
-            row.add(StringUtil.encode(entry.getValue(), c.getCharset()));
+            row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset().getResults()));
+            row.add(StringUtil.encode(entry.getValue(), c.getCharset().getResults()));
             if (whereItem != null) {
                 HandlerTool.initFields(sourceFields, row.fieldValues);
                 /* filter by where condition */
@@ -196,7 +196,7 @@ public final class ShowTables {
         eof.write(buffer, c, true);
         for (String name : tableMap.keySet()) {
             RowDataPacket row = new RowDataPacket(fieldCount);
-            row.add(StringUtil.encode(name.toLowerCase(), c.getCharset()));
+            row.add(StringUtil.encode(name.toLowerCase(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

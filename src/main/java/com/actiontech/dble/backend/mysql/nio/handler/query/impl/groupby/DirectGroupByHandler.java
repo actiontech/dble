@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.directgroupby.DGRowPacket;
@@ -104,16 +105,16 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         // row in localresult is DGRowPacket which is added aggregate functions result from origin rowdatapacket
         localResultFps = this.fieldPackets;
         List<ItemSum> localResultReferedSums = referedSumFunctions;
-        RowDataComparator cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type(),
-                conn.getCharset());
+        RowDataComparator cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
+        );
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), cmptor, localResultFps,
-                localResultReferedSums, this.isAllPushDown(), conn.getCharset()).
+                localResultReferedSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
             RowDataComparator tmpcmptor = new RowDataComparator(this.localResultFps, this.groupBys,
-                    this.isAllPushDown(), this.type(), conn.getCharset());
+                    this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpcmptor,
-                    localResultFps, localResultReferedSums, this.isAllPushDown(), conn.getCharset());
+                    localResultFps, localResultReferedSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
             bucket.setMemSizeController(session.getOtherBufferMC());
             buckets.add(bucket);
             bucket.start();

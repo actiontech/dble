@@ -184,7 +184,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
-        errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset()));
+        errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
         lock.lock();
         try {
@@ -211,7 +211,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
-        errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset()));
+        errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
         lock.lock();
         try {

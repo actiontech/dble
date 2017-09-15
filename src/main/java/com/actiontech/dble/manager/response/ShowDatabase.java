@@ -65,7 +65,7 @@ public final class ShowDatabase {
         Map<String, SchemaConfig> schemas = DbleServer.getInstance().getConfig().getSchemas();
         for (String name : new TreeSet<>(schemas.keySet())) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(name, c.getCharset()));
+            row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

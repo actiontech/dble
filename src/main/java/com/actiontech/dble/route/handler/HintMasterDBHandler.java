@@ -29,9 +29,8 @@ public class HintMasterDBHandler implements HintHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
 
     @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType,
-                                String realSQL, String charset,
-                                ServerConnection sc, LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
+                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(

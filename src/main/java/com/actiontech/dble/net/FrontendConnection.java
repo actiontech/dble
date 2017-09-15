@@ -12,9 +12,14 @@ import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.net.handler.*;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.HandshakeV10Packet;
+import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +51,8 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected boolean isAccepted;
     protected boolean isAuthenticated;
+    private boolean userReadOnly = true;
+    private boolean sessionReadOnly = false;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -130,12 +137,20 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.privileges = privileges;
     }
 
+    public void setSessionReadOnly(boolean sessionReadOnly) {
+        this.sessionReadOnly = sessionReadOnly;
+    }
+
     public String getUser() {
         return user;
     }
 
     public void setUser(String user) {
         this.user = user;
+        Boolean result = privileges.isReadOnly(user);
+        if (result != null) {
+            this.userReadOnly = result;
+        }
     }
 
     public String getSchema() {
@@ -162,12 +177,11 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public boolean setCharsetIndex(int ci) {
-        String charset = CharsetUtil.getCharset(ci);
-        if (charset != null) {
-            return setCharset(charset);
-        } else {
-            return false;
-        }
+        String name = CharsetUtil.getCharset(ci);
+        charsetName.setClient(name);
+        charsetName.setResults(name);
+        charsetName.setCollation(SystemVariables.getDefaultValue("collation_database"));
+        return true;
     }
 
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
@@ -186,8 +200,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrno(vendorCode);
-        err.setSqlState(encodeString(sqlState, charset));
-        err.setMessage(encodeString(msg, charset));
+        err.setSqlState(StringUtil.encode(sqlState, charsetName.getResults()));
+        err.setMessage(StringUtil.encode(msg, charsetName.getResults()));
         err.write(this);
     }
 
@@ -197,9 +211,9 @@ public abstract class FrontendConnection extends AbstractConnection {
         mm.position(5);
         String db = null;
         try {
-            db = mm.readString(charset);
+            db = mm.readString(charsetName.getClient());
         } catch (UnsupportedEncodingException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
         if (db != null && DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
@@ -292,10 +306,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
         // execute
         if (queryHandler != null) {
-            Boolean result = privileges.isReadOnly(user);
-            if (result != null) {
-                queryHandler.setReadOnly(result);
-            }
+            queryHandler.setReadOnly(userReadOnly || sessionReadOnly);
             queryHandler.query(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Query unsupported!");
@@ -308,9 +319,9 @@ public abstract class FrontendConnection extends AbstractConnection {
         try {
             MySQLMessage mm = new MySQLMessage(data);
             mm.position(5);
-            sql = mm.readString(charset);
+            sql = mm.readString(charsetName.getClient());
         } catch (UnsupportedEncodingException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
 
@@ -323,10 +334,10 @@ public abstract class FrontendConnection extends AbstractConnection {
             mm.position(5);
             String sql = null;
             try {
-                sql = mm.readString(charset);
+                sql = mm.readString(charsetName.getClient());
             } catch (UnsupportedEncodingException e) {
                 writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET,
-                        "Unknown charset '" + charset + "'");
+                        "Unknown charset '" + charsetName.getClient() + "'");
                 return;
             }
             if (sql == null || sql.length() == 0) {
@@ -402,20 +413,21 @@ public abstract class FrontendConnection extends AbstractConnection {
             System.arraycopy(rand2, 0, rand, rand1.length, rand2.length);
             this.seed = rand;
 
-
             HandshakeV10Packet hs = new HandshakeV10Packet();
             hs.setPacketId(0);
             hs.setProtocolVersion(Versions.PROTOCOL_VERSION);  // [0a] protocol version   V10
-            hs.setServerVersion(Versions.getServerVersion());  // 版本号
+            hs.setServerVersion(Versions.getServerVersion());
             hs.setThreadId(id);
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
+            //TODO:CHECK
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getDefaultValue("character_set_server"));
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);
             hs.write(this);
 
-            // asynread response
+            // async read response
             this.asynRead();
         }
     }
@@ -488,20 +500,6 @@ public abstract class FrontendConnection extends AbstractConnection {
                 getClass().getSimpleName() + ",id=" + id +
                 ",host=" + host + ",port=" + port +
                 ",schema=" + schema + ']';
-    }
-
-    private static byte[] encodeString(String src, String charset) {
-        if (src == null) {
-            return null;
-        }
-        if (charset == null) {
-            return src.getBytes();
-        }
-        try {
-            return src.getBytes(CharsetUtil.getJavaCharset(charset));
-        } catch (UnsupportedEncodingException e) {
-            return src.getBytes();
-        }
     }
 
     @Override

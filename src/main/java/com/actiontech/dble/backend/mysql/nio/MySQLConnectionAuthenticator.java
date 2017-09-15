@@ -104,7 +104,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         int charsetIndex = (packet.getServerCharsetIndex() & 0xff);
         String charset = CharsetUtil.getCharset(charsetIndex);
         if (charset != null) {
-            source.setCharset(charset);
+            source.setCharacterSet(charset);
         } else {
             throw new RuntimeException("Unknown charsetIndex:" + charsetIndex);
         }

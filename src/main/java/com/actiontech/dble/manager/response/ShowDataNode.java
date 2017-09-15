@@ -121,7 +121,7 @@ public final class ShowDataNode {
             }
         });
         for (String key : keys) {
-            RowDataPacket row = getRow(dataNodes.get(key), c.getCharset());
+            RowDataPacket row = getRow(dataNodes.get(key), c.getCharset().getResults());
             if (row != null) {
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);

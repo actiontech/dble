@@ -79,11 +79,10 @@ public final class ShowConnectionSQL {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        String charset = c.getCharset();
         for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (!fc.isClosed()) {
-                    RowDataPacket row = getRow(fc, charset);
+                    RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }

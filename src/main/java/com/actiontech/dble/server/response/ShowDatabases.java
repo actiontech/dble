@@ -74,7 +74,7 @@ public final class ShowDatabases {
             }
             for (String name : schemaSet) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(name, c.getCharset()));
+                row.add(StringUtil.encode(name, c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }

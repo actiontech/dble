@@ -76,7 +76,7 @@ public final class ShowSession {
                     continue;
                 }
                 ServerConnection sc = (ServerConnection) front;
-                RowDataPacket row = getRow(sc, c.getCharset());
+                RowDataPacket row = getRow(sc, c.getCharset().getResults());
                 if (row != null) {
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

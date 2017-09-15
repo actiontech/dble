@@ -59,7 +59,7 @@ public final class ShowTime {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        RowDataPacket row = getRow(type, c.getCharset());
+        RowDataPacket row = getRow(type, c.getCharset().getResults());
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 

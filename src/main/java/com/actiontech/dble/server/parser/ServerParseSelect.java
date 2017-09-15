@@ -464,7 +464,7 @@ public final class ServerParseSelect {
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') && (c4 == '(') &&
                     (c5 == ')') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return USER;
             }
         }

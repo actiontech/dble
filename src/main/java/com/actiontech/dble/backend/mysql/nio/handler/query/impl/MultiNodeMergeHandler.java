@@ -274,8 +274,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     private RowDataComparator makeRowDataSorter(MySQLConnection conn) {
         if (!isEasyMerge)
-            return new RowDataComparator(this.fieldPackets, orderBys, this.isAllPushDown(), this.type(),
-                    conn.getCharset());
+            return new RowDataComparator(this.fieldPackets, orderBys, this.isAllPushDown(), this.type());
         return null;
     }
 

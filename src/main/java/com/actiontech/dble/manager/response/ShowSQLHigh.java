@@ -96,7 +96,7 @@ public final class ShowSQLHigh {
                     if (sqlFrequency != null) {
                         RowDataPacket row = getRow(i, user, sqlFrequency.getSql(), sqlFrequency.getCount(),
                                 sqlFrequency.getAvgTime(), sqlFrequency.getMaxTime(), sqlFrequency.getMinTime(),
-                                sqlFrequency.getExecuteTime(), sqlFrequency.getLastTime(), c.getCharset());
+                                sqlFrequency.getExecuteTime(), sqlFrequency.getLastTime(), c.getCharset().getResults());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                         i++;

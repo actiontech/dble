@@ -85,7 +85,7 @@ public final class ShowSQL {
             int i = 1;
             for (UserSqlLastStat.SqlLast sqlLast : sqls) {
                 if (sqlLast != null) {
-                    RowDataPacket row = getRow(user, sqlLast, i, c.getCharset());
+                    RowDataPacket row = getRow(user, sqlLast, i, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     i++;
                     buffer = row.write(buffer, c, true);

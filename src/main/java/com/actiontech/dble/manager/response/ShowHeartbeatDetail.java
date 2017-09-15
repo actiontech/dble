@@ -91,7 +91,7 @@ public final class ShowHeartbeatDetail {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        for (RowDataPacket row : getRows(name, c.getCharset())) {
+        for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

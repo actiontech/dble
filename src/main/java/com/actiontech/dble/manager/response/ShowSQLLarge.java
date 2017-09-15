@@ -83,7 +83,7 @@ public final class ShowSQLLarge {
             List<UserSqlLargeStat.SqlLarge> sqls = userStat.getSqlLargeRowStat().getSqls();
             for (UserSqlLargeStat.SqlLarge sql : sqls) {
                 if (sql != null) {
-                    RowDataPacket row = getRow(user, sql, c.getCharset());
+                    RowDataPacket row = getRow(user, sql, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }

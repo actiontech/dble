@@ -106,7 +106,7 @@ public final class ManagerParse {
                     (c2 == 'i' || c2 == 'I') &&
                     (c3 == 'n' || c3 == 'N') &&
                     (c4 == 'e' || c4 == 'E') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return ONLINE;
             }
         }
@@ -125,7 +125,7 @@ public final class ManagerParse {
                     (c3 == 'i' || c3 == 'I') &&
                     (c4 == 'n' || c4 == 'N') &&
                     (c5 == 'e' || c5 == 'E') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return OFFLINE;
             }
         }

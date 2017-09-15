@@ -59,7 +59,7 @@ public final class SelectUser {
     }
 
     private static byte[] getUser(ServerConnection c) {
-        return StringUtil.encode(c.getUser() + '@' + c.getHost(), c.getCharset());
+        return StringUtil.encode(c.getUser() + '@' + c.getHost(), c.getCharset().getResults());
     }
 
 }

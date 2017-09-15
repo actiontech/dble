@@ -60,10 +60,10 @@ public class ManagerParserTest {
 
     @Test
     public void testShowDataNode() {
-        Assert.assertEquals(ManagerParseShow.DATANODE, ManagerParseShow.parse("show @@datanode", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE, ManagerParseShow.parse("SHOW @@DATANODE", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE, ManagerParseShow.parse("show @@DATANODE", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE, ManagerParseShow.parse("show @@DATANODE   ", 5));
+        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@datanode", 5));
+        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("SHOW @@DATANODE", 5));
+        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE", 5));
+        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE   ", 5));
         Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA=1", 5));
         Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,

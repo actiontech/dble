@@ -345,7 +345,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);
         err.setErrno(ErrorCode.ER_ERROR_ON_CLOSE);
-        err.setMessage(StringUtil.encode(reason, session.getSource().getCharset()));
+        err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         this.backConnectionErr(err, conn);
         session.getSource().close(reason);
     }

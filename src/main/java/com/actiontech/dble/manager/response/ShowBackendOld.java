@@ -59,7 +59,7 @@ public final class ShowBackendOld {
         FIELDS[i] = PacketUtil.getField("LASTTIME", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
     }
 
@@ -71,11 +71,10 @@ public final class ShowBackendOld {
         }
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
-        String charset = c.getCharset();
 
         for (BackendConnection bc : NIOProcessor.BACKENDS_OLD) {
             if (bc != null) {
-                RowDataPacket row = getRow(bc, charset);
+                RowDataPacket row = getRow(bc, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }

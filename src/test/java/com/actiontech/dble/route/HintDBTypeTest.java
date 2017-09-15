@@ -45,22 +45,22 @@ public class HintDBTypeTest {
         String sql = "/*!dble:db_type=master*/select * from employee where sharding_id=1";
         CacheService cacheService = new CacheService(false);
         RouteService routerService = new RouteService(cacheService);
-        RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
+        RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
         //(new hint,/*#dble*/),runOnSlave=false force master
         sql = "/*#dble:db_type=master*/select * from employee where sharding_id=1";
-        rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
         //(new hint,/*dble*/),runOnSlave=false force master
         sql = "/*dble:db_type=master*/select * from employee where sharding_id=1";
-        rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 
         //no hint ,runOnSlave=null
         sql = "select * from employee where sharding_id=1";
-        rrs = routerService.route(schema, ServerParse.SELECT, sql, "UTF-8", null);
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(rrs.getRunOnSlave() == null);
     }
 }

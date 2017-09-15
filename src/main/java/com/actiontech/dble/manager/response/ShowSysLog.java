@@ -73,8 +73,8 @@ public final class ShowSysLog {
         for (String line : lines) {
             if (line != null) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(line.substring(0, 19), c.getCharset()));
-                row.add(StringUtil.encode(line.substring(19, line.length()), c.getCharset()));
+                row.add(StringUtil.encode(line.substring(0, 19), c.getCharset().getResults()));
+                row.add(StringUtil.encode(line.substring(19, line.length()), c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
 
@@ -84,8 +84,8 @@ public final class ShowSysLog {
 
         if (linesIsEmpty) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode("NULL", c.getCharset()));
-            row.add(StringUtil.encode("NULL", c.getCharset()));
+            row.add(StringUtil.encode("NULL", c.getCharset().getResults()));
+            row.add(StringUtil.encode("NULL", c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

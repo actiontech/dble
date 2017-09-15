@@ -57,6 +57,9 @@ public final class StringUtil {
         if (src == null) {
             return null;
         }
+        if (charset == null) {
+            return src.getBytes();
+        }
         try {
             return src.getBytes(CharsetUtil.getJavaCharset(charset));
         } catch (UnsupportedEncodingException e) {
@@ -71,7 +74,7 @@ public final class StringUtil {
     public static String decode(byte[] src, int offset, int length,
                                 String charset) {
         try {
-            return new String(src, offset, length, charset);
+            return new String(src, offset, length, CharsetUtil.getJavaCharset(charset));
         } catch (UnsupportedEncodingException e) {
             return new String(src, offset, length);
         }
@@ -481,6 +484,24 @@ public final class StringUtil {
         if (str.length() > 1) {
             char firstValue = str.charAt(0);
             if ((firstValue == '\'') && (firstValue == str.charAt(str.length() - 1))) {
+                return str.substring(1, str.length() - 1);
+            } else {
+                return str;
+            }
+        }
+        return str;
+    }
+
+    /**
+     * remove ' from 'value'
+     *
+     * @param str
+     * @return
+     */
+    public static String removeApostropheOrBackQuote(String str) {
+        if (str.length() > 1) {
+            char firstValue = str.charAt(0);
+            if (((firstValue == '\'') || (firstValue == '`')) && (firstValue == str.charAt(str.length() - 1))) {
                 return str.substring(1, str.length() - 1);
             } else {
                 return str;

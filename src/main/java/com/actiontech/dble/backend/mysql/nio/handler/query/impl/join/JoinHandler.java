@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.join;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -88,16 +89,14 @@ public class JoinHandler extends OwnThreadDMLHandler {
         if (isLeft) {
             // logger.debug("field eof left");
             leftFieldPackets = fieldPackets;
-            leftCmptor = new RowDataComparator(leftFieldPackets, leftOrders, this.isAllPushDown(), this.type(),
-                    conn.getCharset());
+            leftCmptor = new RowDataComparator(leftFieldPackets, leftOrders, this.isAllPushDown(), this.type());
         } else {
             // logger.debug("field eof right");
             rightFieldPackets = fieldPackets;
-            rightCmptor = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type(),
-                    conn.getCharset());
+            rightCmptor = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
         if (!fieldSent.compareAndSet(false, true)) {
-            this.charset = conn.getCharset();
+            this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
             newFieldPacket.addAll(rightFieldPackets);
@@ -171,7 +170,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         LocalResult leftLocal = null, rightLocal = null;
         try {
             Comparator<RowDataPacket> joinCmptor = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), conn.getCharset());
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type());
 
             // logger.debug("merge Join start");
             leftLocal = takeFirst(leftQueue);

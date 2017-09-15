@@ -191,7 +191,7 @@ public class ServerConnection extends FrontendConnection {
 
         RouteResultset rrs;
         try {
-            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
+            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this);
         } catch (Exception e) {
             executeException(e, sql);
             return null;
@@ -229,7 +229,7 @@ public class ServerConnection extends FrontendConnection {
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
         RouteResultset rrs;
         try {
-            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this.charset, this);
+            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this);
             if (rrs == null) {
                 return;
             }

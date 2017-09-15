@@ -20,6 +20,7 @@ import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
@@ -115,7 +116,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         SQLTextLiteralExpr escapseExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
         String escapse = escapseExpr == null ? "\\" : escapseExpr.getText();
         loadData.setEscape(escapse);
-        String charset = statement.getCharset() != null ? statement.getCharset() : serverConnection.getCharset();
+        String charset = statement.getCharset() != null ? statement.getCharset() : SystemVariables.getDefaultValue("character_set_filesystem");
         loadData.setCharset(charset);
         loadData.setFileName(fileName);
     }

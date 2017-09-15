@@ -5,8 +5,10 @@
 */
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.net.mysql.CharsetNames;
+
 public interface ClosableConnection {
-    String getCharset();
+    CharsetNames getCharset();
 
     /**
      * close connection

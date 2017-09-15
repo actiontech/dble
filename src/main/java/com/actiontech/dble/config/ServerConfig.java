@@ -110,7 +110,7 @@ public class ServerConfig {
 
         con.setMaxPacketSize(system.getMaxPacketSize());
         con.setIdleTimeout(system.getIdleTimeout());
-        con.setCharset(system.getCharset());
+        con.setCharacterSet(system.getCharset());
         con.setReadBufferChunk(sorcvbuf);
     }
 

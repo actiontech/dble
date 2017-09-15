@@ -89,8 +89,8 @@ public final class Explain2Handler {
 
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(stmt, c.getCharset()));
-        row.add(StringUtil.encode(msg, c.getCharset()));
+        row.add(StringUtil.encode(stmt, c.getCharset().getResults()));
+        row.add(StringUtil.encode(msg, c.getCharset().getResults()));
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 

@@ -27,8 +27,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     private List<Boolean> ascs;
 
 
-    public RowDataComparator(List<FieldPacket> fps, List<Order> orders, boolean allPushDown, DMLResponseHandler.HandlerType type,
-                             String charset) {
+    public RowDataComparator(List<FieldPacket> fps, List<Order> orders, boolean allPushDown, DMLResponseHandler.HandlerType type) {
         sourceFields = HandlerTool.createFields(fps);
         if (orders != null && orders.size() > 0) {
             ascs = new ArrayList<>();

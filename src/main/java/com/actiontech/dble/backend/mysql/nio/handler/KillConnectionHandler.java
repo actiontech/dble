@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -72,7 +73,7 @@ public class KillConnectionHandler implements ResponseHandler {
         err.read(data);
         String msg = null;
         try {
-            msg = new String(err.getMessage(), conn.getCharset());
+            msg = new String(err.getMessage(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
         } catch (UnsupportedEncodingException e) {
             msg = new String(err.getMessage());
         }

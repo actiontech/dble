@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
@@ -68,9 +69,9 @@ public class TempTableHandler extends BaseDMLHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
-                tempTable.setCharset(conn.getCharset());
+                tempTable.setCharset(conn.getCharset().getResults());
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), DbleServer.getInstance().getBufferPool(),
-                        conn.getCharset()).setMemSizeController(session.getOtherBufferMC()));
+                        CharsetUtil.getJavaCharset(conn.getCharset().getResults())).setMemSizeController(session.getOtherBufferMC()));
                 List<Field> fields = HandlerTool.createFields(this.fieldPackets);
                 sourceSelIndex = HandlerTool.findField(sourceSel, fields, 0);
                 if (sourceSelIndex < 0)

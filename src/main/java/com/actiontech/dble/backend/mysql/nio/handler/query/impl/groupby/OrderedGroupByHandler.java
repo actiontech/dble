@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -76,7 +77,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
                                  byte[] eofnull, boolean isLeft, BackendConnection conn) {
-        this.charset = conn.getCharset();
+        this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -88,8 +89,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                     this.type()));
             sums.add(sum);
         }
-        cmptor = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type(),
-                conn.getCharset());
+        cmptor = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type());
         prepareSumAggregators(sums, this.referedSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
         setupSumFuncs(sums);
         sendGroupFieldPackets(conn);
@@ -197,8 +197,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             if (func.hasWithDistinct()) {
                 ItemSum selFunc = sumfuncs.get(i);
                 List<Order> orders = HandlerTool.makeOrder(selFunc.arguments());
-                RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type(),
-                        conn.getCharset());
+                RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type());
                 store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset).
                         setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
@@ -212,8 +211,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     /**
      * Call ::setup for all sum functions.
      *
-     * @param thd      thread handler
-     * @param func_ptr sum function list
+     * @param funcs sum function list
      * @retval FALSE ok
      * @retval TRUE error
      */

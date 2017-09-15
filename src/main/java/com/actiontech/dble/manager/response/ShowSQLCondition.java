@@ -85,16 +85,16 @@ public final class ShowSQLCondition {
                 Long count = entry.getValue().get();
                 total += count;
 
-                RowDataPacket row = getRow(i, key, value.toString(), count, c.getCharset());
+                RowDataPacket row = getRow(i, key, value.toString(), count, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
 
-            RowDataPacket vkRow = getRow(size + 1, key + ".valuekey", "size", size, c.getCharset());
+            RowDataPacket vkRow = getRow(size + 1, key + ".valuekey", "size", size, c.getCharset().getResults());
             vkRow.setPacketId(++packetId);
             buffer = vkRow.write(buffer, c, true);
 
-            RowDataPacket vcRow = getRow(size + 2, key + ".valuecount", "total", total, c.getCharset());
+            RowDataPacket vcRow = getRow(size + 2, key + ".valuecount", "total", total, c.getCharset().getResults());
             vcRow.setPacketId(++packetId);
             buffer = vcRow.write(buffer, c, true);
 

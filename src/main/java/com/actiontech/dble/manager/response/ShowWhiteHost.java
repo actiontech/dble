@@ -71,7 +71,7 @@ public final class ShowWhiteHost {
                 }
                 users.append(userConfigs.get(i).getName());
             }
-            RowDataPacket row = getRow(entry.getKey(), users.toString(), c.getCharset());
+            RowDataPacket row = getRow(entry.getKey(), users.toString(), c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

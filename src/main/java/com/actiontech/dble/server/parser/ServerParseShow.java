@@ -22,7 +22,6 @@ public final class ServerParseShow {
 
     public static final int OTHER = -1;
     public static final int DATABASES = 1;
-    public static final int DATASOURCES = 2;
     public static final int TABLES = 5;
     public static final int CHARSET = 7;
     public static final int COLUMNS = 8;
@@ -135,9 +134,6 @@ public final class ServerParseShow {
                     case 'B':
                     case 'b':
                         return showDatabases(stmt, offset);
-                    case 'S':
-                    case 's':
-                        return showDataSources(stmt, offset);
                     default:
                         return OTHER;
                 }
@@ -196,7 +192,7 @@ public final class ServerParseShow {
                     (c2 == 'S' || c2 == 's') &&
                     (c3 == 'E' || c3 == 'e') &&
                     (c4 == 'S' || c4 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return DATABASES;
             }
         }
@@ -218,7 +214,7 @@ public final class ServerParseShow {
                     (c4 == 'M' || c4 == 'm') &&
                     (c5 == 'A' || c5 == 'a') &&
                     (c6 == 'S' || c6 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return DATABASES;
             }
         }
@@ -238,30 +234,8 @@ public final class ServerParseShow {
                     (c4 == 'S' || c4 == 's') &&
                     (c5 == 'E' || c5 == 'e') &&
                     (c6 == 'T' || c6 == 't') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return CHARSET;
-            }
-        }
-        return OTHER;
-    }
-
-    // SHOW DATASOURCES
-    private static int showDataSources(String stmt, int offset) {
-        if (stmt.length() > offset + "ources".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') &&
-                    (c2 == 'U' || c2 == 'u') &&
-                    (c3 == 'R' || c3 == 'r') &&
-                    (c4 == 'C' || c4 == 'c') &&
-                    (c5 == 'E' || c5 == 'e') &&
-                    (c6 == 'S' || c6 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
-                return DATASOURCES;
             }
         }
         return OTHER;

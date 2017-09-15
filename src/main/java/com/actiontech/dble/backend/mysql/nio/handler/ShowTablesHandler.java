@@ -56,7 +56,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             packetId = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharsetIndex());
+                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex());
                 info.getWhereExpr().accept(mev);
                 sourceFields = HandlerTool.createFields(fieldPackets);
                 whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
@@ -73,7 +73,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         RowDataPacket rowDataPacket = new RowDataPacket(1);
         rowDataPacket.read(row);
-        String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getSource().getCharset());
+        String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getSource().getCharset().getResults());
         if (shardingTablesMap.containsKey(table)) {
             this.netOutBytes += row.length;
             this.selectRows++;

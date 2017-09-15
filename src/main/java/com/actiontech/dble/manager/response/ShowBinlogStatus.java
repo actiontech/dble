@@ -123,7 +123,7 @@ public final class ShowBinlogStatus {
                                 preparedList = zkConn.getChildren().forPath(binlogPause);
                             }
                             if (isAllPaused) {
-                                getQueryResult(c.getCharset());
+                                getQueryResult(c.getCharset().getResults());
                             }
                             writeResponse(c);
                             BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
@@ -156,7 +156,7 @@ public final class ShowBinlogStatus {
                 try {
                     errMsg = null;
                     if (waitAllSession(c, timeout, TimeUtil.currentTimeMillis())) {
-                        getQueryResult(c.getCharset());
+                        getQueryResult(c.getCharset().getResults());
                     }
                     writeResponse(c);
                 } finally {

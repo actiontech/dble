@@ -121,7 +121,7 @@ public final class ShowDatasourceCluster {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        for (RowDataPacket row : getRows(c.getCharset())) {
+        for (RowDataPacket row : getRows(c.getCharset().getResults())) {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

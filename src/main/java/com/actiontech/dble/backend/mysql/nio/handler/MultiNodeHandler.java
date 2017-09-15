@@ -118,7 +118,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             lock.unlock();
         }
         err.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
-        err.setMessage(StringUtil.encode(errmgs, session.getSource().getCharset()));
+        err.setMessage(StringUtil.encode(errmgs, session.getSource().getCharset().getResults()));
         return err;
     }
 

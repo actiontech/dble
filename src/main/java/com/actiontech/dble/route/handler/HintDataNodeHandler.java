@@ -28,8 +28,8 @@ public class HintDataNodeHandler implements HintHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HintDataNodeHandler.class);
 
     @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL,
-                                String charset, ServerConnection sc, LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
+                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route datanode sql hint from " + realSQL);

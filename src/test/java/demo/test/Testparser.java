@@ -14,6 +14,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
+import java.io.UnsupportedEncodingException;
+
 public class Testparser {
     public static void main(String args[]) {
         Testparser obj = new Testparser();
@@ -21,9 +23,31 @@ public class Testparser {
         //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("drop table char_columns_test;");
         //		obj.test("truncate table char_columns_test;");
-        String strShowSql = "";
-        strShowSql = "show create table a;";
-        obj.test(strShowSql);
+        String strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
+        obj.test(strSetSql);
+        strSetSql = "SET @@session.sql_mode = 'TRADITIONAL';";
+        obj.test(strSetSql);
+        strSetSql = "SET @@sql_mode = 'TRADITIONAL';";
+        obj.test(strSetSql);
+        strSetSql = "SET GLOBAL sql_log_bin = ON;";
+        obj.test(strSetSql);
+        strSetSql = "SET max_connections = 1000;";
+        obj.test(strSetSql);
+        strSetSql = "SET @x = 1;";
+        obj.test(strSetSql);
+        strSetSql = "SET @x = 1, SESSION sql_mode = '';";
+        obj.test(strSetSql);
+        strSetSql = "SET GLOBAL sort_buffer_size = 1000000, SESSION sort_buffer_size = 1000000;";
+        obj.test(strSetSql);
+        strSetSql = "SET GLOBAL max_connections = 1000, sort_buffer_size = 1000000;";
+        obj.test(strSetSql);
+        strSetSql = "SET xa =0 ;";
+        obj.test(strSetSql);
+        strSetSql = "SET xa = off ;";
+        obj.test(strSetSql);
+        //String strShowSql = "";
+        //strShowSql = "show create table a;";
+        //obj.test(strShowSql);
         //		strShowSql ="show full columns from char_columns2 from ares_test like 'i%';";
         //		obj.test(strShowSql);
         //		strShowSql ="show full columns from char_columns2 from ares_test where Field='id';";
@@ -531,6 +555,17 @@ public class Testparser {
             mySqlShowKeysStatement.toString();
             System.out.println("change to 1->" + mySqlShowKeysStatement.toString());
             System.out.println("change to 2->" + SQLUtils.toMySqlString(mySqlShowKeysStatement));
+        } else if (statement instanceof SQLSetStatement) {
+            SQLSetStatement mySqlSetStatement = (SQLSetStatement) statement;
+            for(SQLAssignItem assignItem:mySqlSetStatement.getItems()){
+                System.out.println("value is "+assignItem.getValue()+", class is "+assignItem.getValue().getClass());
+                if(assignItem.getTarget() instanceof SQLVariantRefExpr){
+                    SQLVariantRefExpr target =  (SQLVariantRefExpr)assignItem.getTarget();
+                    System.out.println("target is " + target + ", global is " + target.isGlobal());
+                }else {
+                    System.out.println("target is " + assignItem.getTarget() + ", class is " + assignItem.getTarget().getClass());
+                }
+            }
         } else {
             System.out.println("statement:" + statement + "," + statement.getClass().toString());
         }

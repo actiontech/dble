@@ -88,7 +88,7 @@ public final class ShowServer {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        RowDataPacket row = getRow(c.getCharset());
+        RowDataPacket row = getRow(c.getCharset().getResults());
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 

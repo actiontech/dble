@@ -81,12 +81,12 @@ public final class ShowCache {
             if (cachePool != null) {
                 if (cachePool instanceof LayerCachePool) {
                     for (Map.Entry<String, CacheStatic> staticsEntry : ((LayerCachePool) cachePool).getAllCacheStatic().entrySet()) {
-                        RowDataPacket row = getRow(cacheName + '.' + staticsEntry.getKey(), staticsEntry.getValue(), c.getCharset());
+                        RowDataPacket row = getRow(cacheName + '.' + staticsEntry.getKey(), staticsEntry.getValue(), c.getCharset().getResults());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
                 } else {
-                    RowDataPacket row = getRow(cacheName, cachePool.getCacheStatic(), c.getCharset());
+                    RowDataPacket row = getRow(cacheName, cachePool.getCacheStatic(), c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }

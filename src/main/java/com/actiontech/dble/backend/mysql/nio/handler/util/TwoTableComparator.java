@@ -34,7 +34,7 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
     private List<Boolean> ascs;
 
     public TwoTableComparator(List<FieldPacket> fps1, List<FieldPacket> fps2, List<Order> leftOrders,
-                              List<Order> rightOrders, boolean isAllPushDown, DMLResponseHandler.HandlerType type, String charset) {
+                              List<Order> rightOrders, boolean isAllPushDown, DMLResponseHandler.HandlerType type) {
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
         ascs = new ArrayList<>();

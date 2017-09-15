@@ -80,7 +80,7 @@ public final class ShowSQLSlow {
             List<SQLRecord> keyList = userStat.getSqlRecorder().getRecords();
             for (SQLRecord key : keyList) {
                 if (key != null) {
-                    RowDataPacket row = getRow(user, key, c.getCharset());
+                    RowDataPacket row = getRow(user, key, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }

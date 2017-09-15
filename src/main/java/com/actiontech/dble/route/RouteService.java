@@ -41,7 +41,7 @@ public class RouteService {
     }
 
     public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String stmt, String charset, ServerConnection sc)
+                                int sqlType, String stmt, ServerConnection sc)
             throws SQLException {
         RouteResultset rrs = null;
         String cacheKey = null;
@@ -84,10 +84,10 @@ public class RouteService {
 
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
-                            rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
 
                         } else {
-                            rrs = hintHandler.route(schema, sqlType, realSQL, charset, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
                         }
 
                     } else {

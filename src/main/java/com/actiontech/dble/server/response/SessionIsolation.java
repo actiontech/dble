@@ -65,7 +65,7 @@ public final class SessionIsolation {
             default:
                 break;
         }
-        row.add(StringUtil.encode(value, c.getCharset()));
+        row.add(StringUtil.encode(value, c.getCharset().getResults()));
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();

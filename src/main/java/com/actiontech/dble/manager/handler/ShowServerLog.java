@@ -140,7 +140,7 @@ public final class ShowServerLog {
                                 (key != null && line.toLowerCase().contains(key)))) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode(curLine + "->" + line,
-                            c.getCharset()));
+                            c.getCharset().getResults()));
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
@@ -152,7 +152,7 @@ public final class ShowServerLog {
         } catch (Exception e) {
             LOGGER.error("showLogRangeError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(e.toString(), c.getCharset()));
+            row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             bufINf.setBuffer(buffer);
@@ -201,19 +201,19 @@ public final class ShowServerLog {
             }
 
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode("files in log dir:" + totalLines + fileNames, c.getCharset()));
+            row.add(StringUtil.encode("files in log dir:" + totalLines + fileNames, c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode("Total lines " + totalLines + " ,tail " +
-                    queue.size() + " line is following:", c.getCharset()));
+                    queue.size() + " line is following:", c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             int size = queue.size() - 1;
             for (int i = size; i >= 0; i--) {
                 String data = queue.get(i);
                 row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(data, c.getCharset()));
+                row.add(StringUtil.encode(data, c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -224,7 +224,7 @@ public final class ShowServerLog {
         } catch (Exception e) {
             LOGGER.error("showLogSumError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(e.toString(), c.getCharset()));
+            row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             bufINf.setBuffer(buffer);

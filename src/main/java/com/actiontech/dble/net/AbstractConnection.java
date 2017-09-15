@@ -6,7 +6,9 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -32,8 +34,7 @@ public abstract class AbstractConnection implements NIOConnection {
     protected int localPort;
     protected int port;
     protected long id;
-    protected volatile String charset;
-    protected volatile int charsetIndex;
+    protected volatile CharsetNames charsetName = new CharsetNames();
 
     protected final NetworkChannel channel;
     protected NIOProcessor processor;
@@ -82,26 +83,74 @@ public abstract class AbstractConnection implements NIOConnection {
         this.isClosed = new AtomicBoolean(false);
         this.socketWR = null;
     }
-
-    public String getCharset() {
-        return charset;
-    }
-
-    public boolean setCharset(String strCharset) {
-
-        // support PHP eg:set names 'utf8'
-        if (strCharset != null) {
-            strCharset = strCharset.replace("'", "");
-        }
-
-        int ci = CharsetUtil.getIndex(strCharset);
-        if (ci > 0) {
-            this.charset = strCharset;
-            this.charsetIndex = ci;
-            return true;
-        } else {
+    public boolean setCollationConnection(String collation) {
+        int ci = CharsetUtil.getCollationIndex(collation);
+        if (ci <= 0) {
             return false;
         }
+        charsetName.setCollation(collation);
+        return true;
+    }
+
+    public boolean setCharacterConnection(String charset) {
+        String collationName = CharsetUtil.getDefaultCollation(charset);
+        if (collationName == null) {
+            return false;
+        }
+        charsetName.setCollation(collationName);
+        return true;
+    }
+
+    public boolean setCharacterResults(String name) {
+        int ci = CharsetUtil.getCharsetDefaultIndex(name);
+        if (ci <= 0 && !name.equals("null")) {
+            return false;
+        }
+        charsetName.setResults(name);
+        return true;
+    }
+
+
+    public void setCharsetName(CharsetNames charsetName) {
+        this.charsetName = charsetName.clone();
+    }
+
+    public boolean setCharacterClient(String name) {
+        int ci = CharsetUtil.getCharsetDefaultIndex(name);
+        if (ci <= 0) {
+            return false;
+        }
+        charsetName.setClient(name);
+        return true;
+    }
+
+    public boolean setCharacterSet(String name) {
+        int ci = CharsetUtil.getCharsetDefaultIndex(name);
+        if (ci <= 0) {
+            return false;
+        }
+        charsetName.setClient(name);
+        charsetName.setResults(name);
+        charsetName.setCollation(SystemVariables.getDefaultValue("collation_database"));
+        return true;
+    }
+
+    public boolean setNames(String name, String collationName) {
+        int ci = CharsetUtil.getCharsetDefaultIndex(name);
+        if (ci <= 0) {
+            return false;
+        }
+        if (collationName == null) {
+            collationName = CharsetUtil.getDefaultCollation(name);
+        } else if (CharsetUtil.getCollationIndex(collationName) <= 0) {
+            return false;
+        }
+        charsetName.setNames(name, collationName);
+        return true;
+    }
+
+    public CharsetNames getCharset() {
+        return charsetName;
     }
 
     public boolean isSupportCompress() {
@@ -110,10 +159,6 @@ public abstract class AbstractConnection implements NIOConnection {
 
     public void setSupportCompress(boolean supportCompress) {
         this.isSupportCompress = supportCompress;
-    }
-
-    public int getCharsetIndex() {
-        return charsetIndex;
     }
 
     public SocketWR getSocketWR() {

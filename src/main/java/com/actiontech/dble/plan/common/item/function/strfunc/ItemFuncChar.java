@@ -28,7 +28,7 @@ public class ItemFuncChar extends ItemStrFunc {
     public ItemFuncChar(List<Item> args, String charset) {
         super(args);
         this.mysqlCharset = charset;
-        this.charsetIndex = CharsetUtil.getIndex(charset);
+        this.charsetIndex = CharsetUtil.getCharsetDefaultIndex(charset);
     }
 
     @Override

@@ -91,9 +91,9 @@ public final class ShowSysParam {
 
         for (int i = 0; i < PARAMNAMES.length; i++) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(PARAMNAMES[i], c.getCharset()));
-            row.add(StringUtil.encode(paramValues.get(i), c.getCharset()));
-            row.add(StringUtil.encode(PARAM_DESCRIPTION[i], c.getCharset()));
+            row.add(StringUtil.encode(PARAMNAMES[i], c.getCharset().getResults()));
+            row.add(StringUtil.encode(paramValues.get(i), c.getCharset().getResults()));
+            row.add(StringUtil.encode(PARAM_DESCRIPTION[i], c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

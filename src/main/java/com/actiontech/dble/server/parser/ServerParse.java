@@ -394,7 +394,7 @@ public final class ServerParse {
                     (c2 == 'G' || c2 == 'g') &&
                     (c3 == 'I' || c3 == 'i') &&
                     (c4 == 'N' || c4 == 'n') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return BEGIN;
             }
         }
@@ -414,7 +414,7 @@ public final class ServerParse {
                     (c3 == 'M' || c3 == 'm') &&
                     (c4 == 'I' || c4 == 'i') &&
                     (c5 == 'T' || c5 == 't') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return COMMIT;
             }
         }
@@ -584,7 +584,7 @@ public final class ServerParse {
                     (c4 == 'A' || c4 == 'a') &&
                     (c5 == 'C' || c5 == 'c') &&
                     (c6 == 'K' || c6 == 'k') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return ROLLBACK;
             }
         }

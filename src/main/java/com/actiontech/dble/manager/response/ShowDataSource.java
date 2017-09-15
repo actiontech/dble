@@ -44,10 +44,6 @@ public final class ShowDataSource {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        /*fields[i] = PacketUtil.getField("DATANODE",
-                Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;*/
-
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
@@ -102,7 +98,7 @@ public final class ShowDataSource {
         if (null != name) {
             PhysicalDBNode dn = conf.getDataNodes().get(name);
             for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
-                RowDataPacket row = getRow(w, c.getCharset());
+                RowDataPacket row = getRow(w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -114,12 +110,12 @@ public final class ShowDataSource {
                 PhysicalDBPool datahost = entry.getValue();
 
                 for (int i = 0; i < datahost.getSources().length; i++) {
-                    RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset());
+                    RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                     if (datahost.getrReadSources().get(i) != null) {
                         for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
-                            RowDataPacket rsow = getRow(w, c.getCharset());
+                            RowDataPacket rsow = getRow(w, c.getCharset().getResults());
                             rsow.setPacketId(++packetId);
                             buffer = rsow.write(buffer, c, true);
                         }

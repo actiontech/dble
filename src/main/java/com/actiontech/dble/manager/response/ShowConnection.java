@@ -33,7 +33,7 @@ public final class ShowConnection {
     private ShowConnection() {
     }
 
-    private static final int FIELD_COUNT = 15;
+    private static final int FIELD_COUNT = 17;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -65,7 +65,13 @@ public final class ShowConnection {
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("CHARACTER_SET_CLIENT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("COLLATION_CONNECTION", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("CHARACTER_SET_RESULTS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
@@ -89,7 +95,7 @@ public final class ShowConnection {
 
         FIELDS[i] = PacketUtil.getField("AUTOCOMMIT",
                 Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -110,12 +116,11 @@ public final class ShowConnection {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        String charset = c.getCharset();
         NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
         for (NIOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (fc != null) {
-                    RowDataPacket row = getRow(fc, charset);
+                    RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }
@@ -140,7 +145,9 @@ public final class ShowConnection {
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
         row.add(StringUtil.encode(c.getUser(), charset));
         row.add(StringUtil.encode(c.getSchema(), charset));
-        row.add(StringUtil.encode(c.getCharset(), charset));
+        row.add(StringUtil.encode(c.getCharset().getClient(), charset));
+        row.add(StringUtil.encode(c.getCharset().getCollation(), charset));
+        row.add(StringUtil.encode(c.getCharset().getResults(), charset));
         row.add(LongUtil.toBytes(c.getNetInBytes()));
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));

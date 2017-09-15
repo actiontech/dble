@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.config.ServerConfig;
@@ -146,7 +147,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         errPacket.read(err);
         String errMsg;
         try {
-            errMsg = new String(errPacket.getMessage(), conn.getCharset());
+            errMsg = new String(errPacket.getMessage(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
         } catch (UnsupportedEncodingException e) {
             errMsg = "UnsupportedEncodingException:" + conn.getCharset();
         }

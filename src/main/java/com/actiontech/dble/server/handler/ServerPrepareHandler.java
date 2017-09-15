@@ -116,7 +116,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         } else {
             ExecutePacket packet = new ExecutePacket(pstmt);
             try {
-                packet.read(data, source.getCharset());
+                packet.read(data, source.getCharset().getClient());
             } catch (UnsupportedEncodingException e) {
                 source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, e.getMessage());
                 return;

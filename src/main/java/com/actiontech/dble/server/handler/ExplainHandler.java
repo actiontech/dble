@@ -89,7 +89,7 @@ public final class ExplainHandler {
         if (!rrs.isNeedOptimizer()) {
             // write rows
             for (RouteResultsetNode node : rrs.getNodes()) {
-                RowDataPacket row = getRow(node, c.getCharset());
+                RowDataPacket row = getRow(node, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -97,9 +97,9 @@ public final class ExplainHandler {
             List<String[]> results = getComplexQueryResult(rrs, c);
             for (String[] result : results) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result[0], c.getCharset()));
-                row.add(StringUtil.encode(result[1], c.getCharset()));
-                row.add(StringUtil.encode(result[2].replaceAll("[\\t\\n\\r]", " "), c.getCharset()));
+                row.add(StringUtil.encode(result[0], c.getCharset().getResults()));
+                row.add(StringUtil.encode(result[1], c.getCharset().getResults()));
+                row.add(StringUtil.encode(result[2].replaceAll("[\\t\\n\\r]", " "), c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -242,7 +242,7 @@ public final class ExplainHandler {
 
     private static DMLResponseHandler buildNode(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharsetIndex());
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -279,7 +279,7 @@ public final class ExplainHandler {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
-            return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c.getCharset(), c);
+            return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c);
         } catch (Exception e) {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqle = (SQLException) e;

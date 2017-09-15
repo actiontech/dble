@@ -97,12 +97,6 @@
         <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
         <Class name="com.actiontech.dble.server.parser.ServerParseSelect"/>
     </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
-        <Class name="com.actiontech.dble.server.response.CharacterSet"/>
-    </Match>
 
     <!-- use enum? -->
     <Match>

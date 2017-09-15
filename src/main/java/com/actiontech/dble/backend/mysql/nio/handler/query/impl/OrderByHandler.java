@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -54,8 +55,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             this.pool = DbleServer.getInstance().getBufferPool();
 
         this.fieldPackets = fieldPackets;
-        RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type(), conn.getCharset());
-        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, conn.getCharset()).
+        RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());
+        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOrderBufferMC());
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
         startOwnThread(conn);

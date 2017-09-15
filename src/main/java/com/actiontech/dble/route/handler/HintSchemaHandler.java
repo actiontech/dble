@@ -36,7 +36,6 @@ public class HintSchemaHandler implements HintHandler {
      * @param schema
      * @param sqlType
      * @param realSQL
-     * @param charset
      * @param sc
      * @param cachePool
      * @param hintSQLValue
@@ -44,8 +43,7 @@ public class HintSchemaHandler implements HintHandler {
      * @throws SQLNonTransientException
      */
     @Override
-    public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String realSQL, String charset, ServerConnection sc,
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
                                 LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
         SchemaConfig tempSchema = DbleServer.getInstance().getConfig().getSchemas().get(hintSQLValue);

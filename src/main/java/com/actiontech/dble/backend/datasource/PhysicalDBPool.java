@@ -214,7 +214,7 @@ public class PhysicalDBPool {
                 break;
             }
         }
-        islave = (currentIndex == activeIndex);
+        islave = (currentIndex != activeIndex);
 
         return islave;
     }

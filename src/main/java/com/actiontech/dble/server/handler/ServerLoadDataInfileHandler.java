@@ -87,10 +87,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private static String parseFileName(String sql) {
         String usql = sql.toUpperCase();
         int index0 = usql.indexOf("INFILE");
-        
+
         for (int i = index0 + 6; i < sql.length(); i++) {
             char quoteChar = sql.charAt(i);
-            if (quoteChar > '\u0020') {
+            if (quoteChar > 0x0020) {
                 String quoteStr = String.valueOf(quoteChar);
                 return sql.substring(i + 1, sql.indexOf(quoteStr, i + 1));
             }
@@ -274,7 +274,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
                                                    parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
-                
+
                 try {
                     SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
                     for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
@@ -304,12 +304,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) {
-        if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > '\u0020') {
+        if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
                 line[i] = line[i].trim();
             }
         }
-        
+
         RouteResultset rrs = tryDirectRoute(sql, line);
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             String insertSql = makeSimpleInsert(columns, line, table);
@@ -375,7 +375,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             data.setData(null);
         }
     }
-    
+
 
     private String joinLine(List<String> data, LoadData loaddata) {
         StringBuilder sb = new StringBuilder();
@@ -433,7 +433,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         rrs.setNodes(routeResultsetNodes);
         return rrs;
     }
-    
+
 
     private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table) {
         StringBuilder sb = new StringBuilder();
@@ -461,17 +461,17 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
         sb.append(")");
-        
+
         return sb.toString();
     }
-    
+
 
     private String parseFieldString(String value, String encose, String escape) {
         //avoid null point execption
         if (value == null) {
             return value;
         }
-        
+
         //if the value is cover by enclose char and enclose char is not null, clear the enclose char.
         if (encose != null && !"".equals(encose) && (value.startsWith(encose) && value.endsWith(encose))) {
             return this.escaped(value.substring(encose.length() - 1, value.length() - encose.length()).replace("\\", "\\\\").replace(escape, "\\"));
@@ -479,7 +479,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         //else replace escape because \ is used as escape in insert.
         return this.escaped(value.replace("\\", "\\\\").replace(escape, "\\"));
     }
-    
+
 
     private String escaped(String input) {
         StringBuilder output = new StringBuilder();
@@ -529,7 +529,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         this.packID = packid;
         //empty packet for end
         saveByteOrToFile(null, true);
-        
+
         List<SQLExpr> columns = statement.getColumns();
         String tableSimpleName = statement.getTableName().getSimpleName();
         if (isHasStoreToFile) {
@@ -556,7 +556,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
              *  FIXME : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
              */
             settings.trimValues(false);
-            
+
             CsvParser parser = new CsvParser(settings);
             try {
                 parser.beginParsing(new StringReader(content));
@@ -590,7 +590,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private void parseFileByLine(String file, String encode, String split) {
         List<SQLExpr> columns = statement.getColumns();
-        
+
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
         settings.setMaxCharsPerColumn(65535);
@@ -600,7 +600,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
         }
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
-        
+
         /*
          *  fix #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
          *  不可见字符将在CsvParser被当成whitespace过滤掉, 使用settings.trimValues(false)来避免被过滤掉
@@ -648,7 +648,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
     }
-    
+
 
     /**
      * check if the sql is contain the partition. If the sql contain the partition word then stopped.
@@ -661,7 +661,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         Matcher m = p.matcher(strSql);
         return m.find();
     }
-    
+
 
     /**
      * use a Regular Expression to replace the "IGNORE    1234 LINES" to the " "
@@ -681,7 +681,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         m.appendTail(sb);
         return sb.toString();
     }
-    
+
 
     public void clear() {
         isStartLoadData = false;
@@ -709,19 +709,19 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         statement = null;
         routeResultMap.clear();
     }
-    
+
 
     @Override
     public byte getLastPackId() {
         return packID;
     }
-    
+
 
     @Override
     public boolean isStartLoadData() {
         return isStartLoadData;
     }
-    
+
 
     private String getPartitionColumn() {
         String pColumn;
@@ -732,7 +732,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         return pColumn;
     }
-    
+
 
     /**
      * deleteFile and its children

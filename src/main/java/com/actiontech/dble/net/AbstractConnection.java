@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.net;
 
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.SystemVariables;
@@ -20,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannel;
 import java.nio.channels.NetworkChannel;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,6 +58,8 @@ public abstract class AbstractConnection implements NIOConnection {
     protected volatile boolean isSupportCompress = false;
     protected final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     protected final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+    protected volatile Map<String, String> usrVariables;
+    protected volatile Map<String, String> sysVariables;
 
     private long idleTimeout;
 
@@ -83,31 +85,16 @@ public abstract class AbstractConnection implements NIOConnection {
         this.isClosed = new AtomicBoolean(false);
         this.socketWR = null;
     }
-    public boolean setCollationConnection(String collation) {
-        int ci = CharsetUtil.getCollationIndex(collation);
-        if (ci <= 0) {
-            return false;
-        }
+    public void setCollationConnection(String collation) {
         charsetName.setCollation(collation);
-        return true;
     }
 
-    public boolean setCharacterConnection(String charset) {
-        String collationName = CharsetUtil.getDefaultCollation(charset);
-        if (collationName == null) {
-            return false;
-        }
+    public void setCharacterConnection(String collationName) {
         charsetName.setCollation(collationName);
-        return true;
     }
 
-    public boolean setCharacterResults(String name) {
-        int ci = CharsetUtil.getCharsetDefaultIndex(name);
-        if (ci <= 0 && !name.equals("null")) {
-            return false;
-        }
+    public void setCharacterResults(String name) {
         charsetName.setResults(name);
-        return true;
     }
 
 
@@ -115,36 +102,17 @@ public abstract class AbstractConnection implements NIOConnection {
         this.charsetName = charsetName.clone();
     }
 
-    public boolean setCharacterClient(String name) {
-        int ci = CharsetUtil.getCharsetDefaultIndex(name);
-        if (ci <= 0) {
-            return false;
-        }
+    public void setCharacterClient(String name) {
         charsetName.setClient(name);
-        return true;
     }
 
-    public boolean setCharacterSet(String name) {
-        int ci = CharsetUtil.getCharsetDefaultIndex(name);
-        if (ci <= 0) {
-            return false;
-        }
+    public void setCharacterSet(String name) {
         charsetName.setClient(name);
         charsetName.setResults(name);
         charsetName.setCollation(SystemVariables.getDefaultValue("collation_database"));
-        return true;
     }
 
     public boolean setNames(String name, String collationName) {
-        int ci = CharsetUtil.getCharsetDefaultIndex(name);
-        if (ci <= 0) {
-            return false;
-        }
-        if (collationName == null) {
-            collationName = CharsetUtil.getDefaultCollation(name);
-        } else if (CharsetUtil.getCollationIndex(collationName) <= 0) {
-            return false;
-        }
         charsetName.setNames(name, collationName);
         return true;
     }
@@ -196,6 +164,14 @@ public abstract class AbstractConnection implements NIOConnection {
 
     public boolean isIdleTimeout() {
         return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
+    }
+
+    public Map<String, String> getUsrVariables() {
+        return usrVariables;
+    }
+
+    public Map<String, String> getSysVariables() {
+        return sysVariables;
     }
 
     public NetworkChannel getChannel() {
@@ -583,6 +559,39 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
+    public String getStringOfSysVariables() {
+        StringBuilder sbSysVariables = new StringBuilder();
+        int cnt = 0;
+        if (sysVariables != null) {
+            for (Map.Entry sysVariable : sysVariables.entrySet()) {
+                if (cnt > 0) {
+                    sbSysVariables.append(",");
+                }
+                sbSysVariables.append(sysVariable.getKey());
+                sbSysVariables.append("=");
+                sbSysVariables.append(sysVariable.getValue());
+                cnt++;
+            }
+        }
+        return sbSysVariables.toString();
+    }
+
+    public String getStringOfUsrVariables() {
+        StringBuilder sbUsrVariables = new StringBuilder();
+        int cnt = 0;
+        if (usrVariables != null) {
+            for (Map.Entry usrVariable : usrVariables.entrySet()) {
+                if (cnt > 0) {
+                    sbUsrVariables.append(",");
+                }
+                sbUsrVariables.append(usrVariable.getKey());
+                sbUsrVariables.append("=");
+                sbUsrVariables.append(usrVariable.getValue());
+                cnt++;
+            }
+        }
+        return sbUsrVariables.toString();
+    }
     public void onConnectfinish() {
         LOGGER.debug("The backend conntinon has finished connecting");
     }

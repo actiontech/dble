@@ -49,7 +49,7 @@ public interface BackendConnection extends ClosableConnection {
     void execute(RouteResultsetNode node, ServerConnection source,
                  boolean autocommit);
 
-    boolean syncAndExcute();
+    boolean syncAndExecute();
 
     void rollback();
 

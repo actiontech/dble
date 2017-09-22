@@ -73,7 +73,7 @@ public class LockTablesHandler extends MultiNodeHandler {
 
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             if (clearIfSessionClosed(session)) {
                 return;

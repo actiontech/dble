@@ -56,7 +56,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("execute mutinode query " + rrs.getStatement());
+            LOGGER.debug("execute multiNode query " + rrs.getStatement());
         }
 
         this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.SELECT, STMT);
@@ -138,7 +138,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
-            if (!conn.syncAndExcute()) {
+            if (!conn.syncAndExecute()) {
                 return;
             }
             if (--nodeCount <= 0) {
@@ -167,7 +167,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
-            if (!conn.syncAndExcute()) {
+            if (!conn.syncAndExecute()) {
                 return;
             }
             if (--nodeCount <= 0) {
@@ -196,7 +196,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         try {
             if (!isFail())
                 setFail(err.toString());
-            if (!conn.syncAndExcute()) {
+            if (!conn.syncAndExecute()) {
                 return;
             }
             if (--nodeCount > 0)
@@ -210,7 +210,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     /* arriving here is impossible */
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        if (!conn.syncAndExcute()) {
+        if (!conn.syncAndExecute()) {
             LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
         }
     }
@@ -218,10 +218,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("on row end reseponse " + conn);
+            LOGGER.debug("on row end response " + conn);
         }
 
-        if (errorRepsponsed.get()) {
+        if (errorResponsed.get()) {
             return;
         }
 
@@ -262,14 +262,14 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
         /* It is impossible arriving here, because we set limit to 0 */
-        return errorRepsponsed.get();
+        return errorResponsed.get();
     }
 
     @Override

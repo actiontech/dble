@@ -33,7 +33,7 @@ public final class ShowConnection {
     private ShowConnection() {
     }
 
-    private static final int FIELD_COUNT = 17;
+    private static final int FIELD_COUNT = 19;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -80,8 +80,7 @@ public final class ShowConnection {
         FIELDS[i] = PacketUtil.getField("NET_OUT", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("ALIVE_TIME(S)",
-                Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("ALIVE_TIME(S)", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RECV_BUFFER", Fields.FIELD_TYPE_LONG);
@@ -90,11 +89,16 @@ public final class ShowConnection {
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("TX_ISOLATION_LEVEL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("AUTOCOMMIT",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("AUTOCOMMIT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("SYS_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("USER_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -156,15 +160,16 @@ public final class ShowConnection {
         row.add(IntegerUtil.toBytes(c.getWriteQueue().size()));
 
         String txLevel = "";
-        String txAutommit = "";
+        String autocommit = "";
         if (c instanceof ServerConnection) {
-            ServerConnection mysqlC = (ServerConnection) c;
-            txLevel = mysqlC.getTxIsolation() + "";
-            txAutommit = mysqlC.isAutocommit() + "";
+            ServerConnection serverConn = (ServerConnection) c;
+            txLevel = serverConn.getTxIsolation() + "";
+            autocommit = serverConn.isAutocommit() + "";
         }
         row.add(txLevel.getBytes());
-        row.add(txAutommit.getBytes());
-
+        row.add(autocommit.getBytes());
+        row.add(StringUtil.encode(c.getStringOfSysVariables(), charset));
+        row.add(StringUtil.encode(c.getStringOfUsrVariables(), charset));
         return row;
     }
 

@@ -84,7 +84,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             boolean isEndPack = decrementCountBy(1);
             session.releaseConnection(conn);

@@ -16,7 +16,9 @@ import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
@@ -31,6 +33,9 @@ import java.io.IOException;
 import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -53,10 +58,11 @@ public class ServerConnection extends FrontendConnection {
     private NonBlockingSession session;
     private volatile boolean isLocked = false;
     private AtomicLong txID;
-
+    private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
     public long getAndIncrementXid() {
         return txID.getAndIncrement();
     }
+
 
     public long getXid() {
         return txID.get();
@@ -68,6 +74,8 @@ public class ServerConnection extends FrontendConnection {
         this.txInterrupted = false;
         this.autocommit = true;
         this.txID = new AtomicLong(1);
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
     }
 
     public ServerConnection() {
@@ -131,7 +139,7 @@ public class ServerConnection extends FrontendConnection {
         return session;
     }
 
-    public void setSession2(NonBlockingSession session2) {
+    void setSession2(NonBlockingSession session2) {
         this.session = session2;
     }
 
@@ -139,10 +147,64 @@ public class ServerConnection extends FrontendConnection {
         return isLocked;
     }
 
-    public void setLocked(boolean locked) {
+    void setLocked(boolean locked) {
         this.isLocked = locked;
     }
 
+
+    public List<Pair<SetHandler.KeyType, Pair<String, String>>> getContextTask() {
+        return contextTask;
+    }
+
+    public void setContextTask(List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask) {
+        this.contextTask = contextTask;
+    }
+
+    public void executeTask() {
+        for (Pair<SetHandler.KeyType, Pair<String, String>> task : contextTask) {
+            switch (task.getKey()) {
+                case CHARACTER_SET_CLIENT:
+                    String charsetClient = task.getValue().getKey();
+                    this.setCharacterClient(charsetClient);
+                    break;
+                case CHARACTER_SET_CONNECTION:
+                    String collationName = task.getValue().getKey();
+                    this.setCharacterConnection(collationName);
+                    break;
+                case CHARACTER_SET_RESULTS:
+                    String charsetResult = task.getValue().getKey();
+                    this.setCharacterResults(charsetResult);
+                    break;
+                case COLLATION_CONNECTION:
+                    String collation = task.getValue().getKey();
+                    this.setCollationConnection(collation);
+                    break;
+                case TX_ISOLATION:
+                    String isolationLevel = task.getValue().getKey();
+                    this.setTxIsolation(Integer.parseInt(isolationLevel));
+                    break;
+                case TX_READ_ONLY:
+                    String enable = task.getValue().getKey();
+                    this.setSessionReadOnly(Boolean.parseBoolean(enable));
+                    break;
+                case SYSTEM_VARIABLES:
+                    this.sysVariables.put(task.getValue().getKey(), task.getValue().getValue());
+                    break;
+                case USER_VARIABLES:
+                    this.usrVariables.put(task.getValue().getKey(), task.getValue().getValue());
+                    break;
+                case CHARSET:
+                    this.setCharacterSet(task.getValue().getKey());
+                    break;
+                case NAMES:
+                    this.setNames(task.getValue().getKey(), task.getValue().getValue());
+                    break;
+                default:
+                    //can't happen
+                    break;
+            }
+        }
+    }
     @Override
     public void ping() {
         Ping.response(this);
@@ -319,10 +381,7 @@ public class ServerConnection extends FrontendConnection {
         session.rollback();
     }
 
-    /**
-     * @param sql
-     */
-    public void lockTable(String sql) {
+    void lockTable(String sql) {
         // lock table is disable in transaction
         if (!autocommit) {
             writeErrMessage(ErrorCode.ER_YES, "can't lock table in transaction!");
@@ -339,10 +398,7 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    /**
-     * @param sql
-     */
-    public void unLockTable(String sql) {
+    void unLockTable(String sql) {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
@@ -395,9 +451,31 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public String toString() {
-        return "ServerConnection [id=" + id + ", schema=" + schema + ", host=" + host +
-                ", user=" + user + ",txIsolation=" + txIsolation + ", autocommit=" + autocommit +
-                ", schema=" + schema + "]";
+        StringBuilder result = new StringBuilder();
+        result.append("ServerConnection [id=");
+        result.append(id);
+        result.append(", schema=");
+        result.append(schema);
+        result.append(", host=");
+        result.append(host);
+        result.append(", user=");
+        result.append(user);
+        result.append(",txIsolation=");
+        result.append(txIsolation);
+        result.append(", autocommit=");
+        result.append(autocommit);
+        result.append(", schema=");
+        result.append(schema);
+        if (sysVariables.size() > 0) {
+            result.append(", ");
+            result.append(getStringOfSysVariables());
+        }
+        if (usrVariables.size() > 0) {
+            result.append(", ");
+            result.append(getStringOfUsrVariables());
+        }
+        result.append("]");
+        return result.toString();
     }
 
 }

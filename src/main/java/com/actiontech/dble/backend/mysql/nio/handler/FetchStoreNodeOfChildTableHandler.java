@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * company where id=(select company_id from customer where id=3); the one which
- * return data (id) is the datanode to store child table's records
+ * return data (id) is the data node to store child table's records
  *
  * @author wuzhih, huqing.yan
  */
@@ -73,7 +73,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             PhysicalDBNode mysqlDN = conf.getDataNodes().get(dn);
             try {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("execute in datanode " + dn);
+                    LOGGER.debug("execute in data_node " + dn);
                 }
                 RouteResultsetNode node = new RouteResultsetNode(dn, ServerParse.SELECT, sql);
                 node.setRunOnSlave(false); // get child node from master
@@ -161,7 +161,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("okResponse " + conn);
         }
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             finished.incrementAndGet();
             if (canReleaseConn()) {

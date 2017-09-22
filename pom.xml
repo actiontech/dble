@@ -414,7 +414,6 @@
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.1.2</version>
                 <configuration>
-                    <encoding>${app.encoding}</encoding>
                     <attach>true</attach>
                 </configuration>
                 <executions>

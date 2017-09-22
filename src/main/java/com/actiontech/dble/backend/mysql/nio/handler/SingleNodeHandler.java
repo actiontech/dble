@@ -176,7 +176,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         //
         this.netOutBytes += data.length;
 
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             session.handleSpecial(rrs, session.getSource().getSchema(), true);
             ServerConnection source = session.getSource();

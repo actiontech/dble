@@ -1,5 +1,5 @@
-BuildTime  2017-09-04 14:05:32
-MavenVersion 2.17.08.0-dev
+BuildTime  2017-09-22 05:14:11
+MavenVersion 2.17.08.0
 GitUrl https://github.com/actiontech/dble
 WebSite http://dble.cloud/
 QQGroup 669663113

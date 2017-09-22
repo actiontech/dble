@@ -5,7 +5,10 @@
 */
 package com.actiontech.dble.parser;
 
-import com.actiontech.dble.server.parser.*;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseSelect;
+import com.actiontech.dble.server.parser.ServerParseShow;
+import com.actiontech.dble.server.parser.ServerParseStart;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -134,108 +137,6 @@ public class ServerParserTest {
     }
 
     @Test
-    public void testIsSetAutocommitOn() {
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set autocommit=1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set autoCOMMIT = 1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("SET AUTOCOMMIT=on", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set autoCOMMIT = ON", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@autocommit=1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@autoCOMMIT = 1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("SET @@AUTOCOMMIT=on", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@autoCOMMIT = ON", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@session.autocommit=1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@session.autoCOMMIT = 1", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("SET @@SESSION.AUTOCOMMIT=on", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set @@session.autoCOMMIT = ON", 3));
-    }
-
-    @Test
-    public void testIsSetAutocommitOff() {
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autocommit=0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("SET AUTOCOMMIT= 0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autoCOMMIT =OFF", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autoCOMMIT = off", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@autocommit=0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@autoCOMMIT = 0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("SET @@AUTOCOMMIT=oFF", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@autoCOMMIT = OFF", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@session.autocommit=0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@session.autoCOMMIT = 0", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("SET @@SESSION.AUTOCOMMIT=off", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set @@session.autoCOMMIT = OFF", 3));
-    }
-
-    @Test
-    public void testIsSetAutocommit() {
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autocommit = 0;", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autocommit=0;", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set autocommit=1;", 3));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR, ServerParseSet.parse("set autocommit=10;", 3));
-        //diff from mysql
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR, ServerParseSet.parse("set autocommit=01;", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_ON, ServerParseSet.parse("set autocommit=ON;", 3));
-        Assert.assertEquals(ServerParseSet.AUTOCOMMIT_OFF, ServerParseSet.parse("set autocommit=OFF;", 3));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR, ServerParseSet.parse("set autocommit=ON2;", 3));
-    }
-
-    @Test
-    public void testIsSetDouble() {
-        //not supported
-        Assert.assertEquals(ServerParseSet.MULTI_SET, ServerParseSet.parse("set @@autocommit=0,@@session.TX_ISOLATION = 'READ-UNCOMMITTED'", 3));
-    }
-
-    @Test
-    public void testIsSetNames() {
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("set names utf8", 3));
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("SET NAMES UTF8", 3));
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("set NAMES utf8", 3));
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("SET NAMES 'utf8' COLLATE 'utf8_general_ci';", 3));
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("SET NAMES 'utf8' COLLATE DEFAULT;", 3));
-        Assert.assertEquals(ServerParseSet.NAMES, 0xff & ServerParseSet.parse("SET NAMES DEFAULT COLLATE DEFAULT;", 3));
-
-    }
-
-    @Test
-    public void testIsCharacterSetResults() {
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_RESULTS,
-                0xff & ServerParseSet.parse("SET character_set_results  = NULL", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_RESULTS,
-                0xff & ServerParseSet.parse("SET CHARACTER_SET_RESULTS= NULL", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_RESULTS,
-                0xff & ServerParseSet.parse("Set chARActer_SET_RESults =  NULL", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_CONNECTION,
-                0xff & ServerParseSet.parse("Set chARActer_SET_Connection =  NULL", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_CLIENT,
-                0xff & ServerParseSet.parse("Set chARActer_SET_client =  NULL", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_CLIENT,
-                0xff & ServerParseSet.parse("Set chARActer_SET_client =  NULL", 3));
-        Assert.assertEquals(ServerParseSet.COLLATION_CONNECTION,
-                0xff & ServerParseSet.parse("set collation_connection = gbk_bin;", 3));
-    }
-    @Test
-    public void testIsCharacterSet() {
-        Assert.assertEquals(ServerParseSet.OTHER,
-                ServerParseSet.parse("set CHARACTER", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_NAME,
-                0xff & ServerParseSet.parse("set CHARACTER SET utf8", 3));
-        Assert.assertEquals(ServerParseSet.OTHER,
-                ServerParseSet.parse("set CHARSET", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_NAME,
-                0xff & ServerParseSet.parse("set CHARSET utf8", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_NAME,
-                0xff & ServerParseSet.parse("set CHARSET 'utf8'", 3));
-        Assert.assertEquals(ServerParseSet.CHARACTER_SET_NAME,
-                0xff & ServerParseSet.parse("set CHARSET DEFAULT", 3));
-    }
-
-    @Test
-    public void testIsSetOther() {
-        Assert.assertEquals(ServerParseSet.OTHER, ServerParseSet.parse("set ...", 3));
-        Assert.assertEquals(ServerParseSet.OTHER, ServerParseSet.parse("SET ...", 3));
-        Assert.assertEquals(ServerParseSet.OTHER, ServerParseSet.parse("sEt ...", 3));
-    }
-
-    @Test
     public void testIsKill() {
         Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse(" kill  ..."));
         Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("kill 111111 ..."));
@@ -299,122 +200,6 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse(" select user()  ", 7));
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse("SELECT USER()", 6));
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse(" selECT    USER()  ", 7));
-    }
-    @Test
-    public void testTxReadOnly() {
-        Assert.assertEquals(ServerParseSet.TX_READ_WRITE,
-                ServerParseSet.parse("  SET SESSION TRANSACTION READ write  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET SESSION TRANSACTION READ ONLY  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET TRANSACTION READ ONLY  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.GLOBAL,
-                ServerParseSet.parse("  SET GLOBAL TRANSACTION READ ONLY  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET SESSION transaction_read_only =1;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET SESSION tx_read_only =1;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET @@SESSION.tx_read_only =1;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET @@SESSION.transaction_read_only =1;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET SESSION tx_read_only =on;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET @@SESSION.tx_read_only =on;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_ONLY,
-                ServerParseSet.parse("  SET @@SESSION.transaction_read_only =on;  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET tx_read_only =1;  ", "  SET".length()));
-    }
-    @Test
-    public void testTxReadUncommitted() {
-        Assert.assertEquals(ServerParseSet.TX_READ_UNCOMMITTED,
-                ServerParseSet.parse("  SET SESSION TRANSACTION ISOLATION LEVEL READ  UNCOMMITTED  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_UNCOMMITTED,
-                ServerParseSet.parse(" set session transaction isolation level read  uncommitted  ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_UNCOMMITTED,
-                ServerParseSet.parse(" set session transaCTION ISOLATION LEvel read  uncommitteD ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET TRANSACTION ISOLATION LEVEL READ  UNCOMMITTED  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'UNCOMMITTED' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_UNCOMMITTED,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'READ-UNCOMMITTED' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_UNCOMMITTED,
-                ServerParseSet.parse(" set @@session.tx_isolation = 'read-uncommitted' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse(" set @@TX_ISOLATION = 'READ-UNCOMMITTED' ", " SET".length()));
-    }
-
-    @Test
-    public void testTxReadCommitted() {
-        Assert.assertEquals(ServerParseSet.TX_READ_COMMITTED,
-                ServerParseSet.parse("  SET SESSION TRANSACTION ISOLATION LEVEL READ  COMMITTED  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_COMMITTED,
-                ServerParseSet.parse(" set session transaction isolation level read  committed  ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_COMMITTED,
-                ServerParseSet.parse(" set session transaCTION ISOLATION LEVel read  committed ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET TRANSACTION ISOLATION LEVEL READ  COMMITTED  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'COMMITTED' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_COMMITTED,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'READ-COMMITTED' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_READ_COMMITTED,
-                ServerParseSet.parse(" set @@session.tx_isolation = 'read-committed' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse(" set @@TX_ISOLATION = 'READ-COMMITTED' ", " SET".length()));
-    }
-
-    @Test
-    public void testTxRepeatedRead() {
-        Assert.assertEquals(ServerParseSet.TX_REPEATED_READ,
-                ServerParseSet.parse("  SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE   READ  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_REPEATED_READ,
-                ServerParseSet.parse(" set session transaction isolation level repeatable   read  ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_REPEATED_READ,
-                ServerParseSet.parse(" set session transaction isOLATION LEVEL REPEatable   read ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET TRANSACTION ISOLATION LEVEL READ  COMMITTED  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'REPEATABLE   READ' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_REPEATED_READ,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'REPEATABLE-READ' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_REPEATED_READ,
-                ServerParseSet.parse(" set @@session.tx_isolation = 'repeatable-read' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse(" set @@TX_ISOLATION = 'REPEATABLE-READ' ", " SET".length()));
-    }
-
-    @Test
-    public void testTxSerializable() {
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse("  SET SESSION transaction_isolation='SERIALIZABLE';  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse("  SET SESSION tx_isolation='SERIALIZABLE';  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse("  SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set session transaction   isolation level serializable  ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set session   transaction  isOLATION LEVEL SERIAlizable ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse("  SET TRANSACTION ISOLATION LEVEL SERIALIZABLE  ", "  SET".length()));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'SERIALIZABLE ' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.SYNTAX_ERROR,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = ' SERIALIZABLE' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION =  SERIALIZABLE ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set @@session.TX_ISOLATION = 'SERIALIZABLE' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set @@session.tx_isolation = 'serializable' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_SERIALIZABLE,
-                ServerParseSet.parse(" set @@session.transaction_isolation = 'serializable' ", " SET".length()));
-        Assert.assertEquals(ServerParseSet.TX_WITHOUT_KEYWORD,
-                ServerParseSet.parse(" set @@TX_ISOLATION = 'SERIALIZABLE' ", " SET".length()));
     }
 
     @Test

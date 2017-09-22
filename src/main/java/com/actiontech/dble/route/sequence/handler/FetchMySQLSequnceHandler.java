@@ -82,7 +82,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             ((SequenceVal) conn.getAttachment()).dbfinished = true;
             conn.release();

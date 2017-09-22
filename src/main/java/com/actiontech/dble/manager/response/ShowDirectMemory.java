@@ -18,7 +18,6 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.StringUtil;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -176,8 +175,6 @@ public final class ShowDirectMemory {
         }
         // write eof
         buffer = TOTAL_EOF.write(buffer, c, true);
-        // write rows
-        byte packetId = TOTAL_EOF.getPacketId();
 
         int useOffHeapForMerge = DbleServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();
@@ -250,7 +247,8 @@ public final class ShowDirectMemory {
         }
 
         row.add(StringUtil.encode(resevedForOs > 0 ? JavaUtils.bytesToString2(resevedForOs) : "0", c.getCharset().getResults()));
-
+        // write rows
+        byte packetId = TOTAL_EOF.getPacketId();
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
 

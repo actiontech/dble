@@ -6,7 +6,7 @@
 package com.actiontech.dble.parser;
 
 import com.actiontech.dble.server.parser.ServerParse;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class ServerParseTest {
@@ -201,8 +201,6 @@ public class ServerParseTest {
     public void testCommit() {
         String sql = "COMMIT 'nihao'";
         int result = ServerParse.parse(sql);
-        int sqlType = result & 0xff;
-        Assert.assertEquals(ServerParse.COMMIT, sqlType);
+        Assert.assertEquals(ServerParse.OTHER, result);
     }
-
 }

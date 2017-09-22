@@ -15,10 +15,12 @@ import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.BackendAIOConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,7 +47,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean isDDL = false;
     private volatile boolean isRunning;
     private volatile StatusSync statusSync;
-    private volatile boolean metaDataSyned = true;
+    private volatile boolean metaDataSynced = true;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
     private volatile int txIsolation;
     private volatile boolean autocommit;
@@ -137,8 +140,18 @@ public class MySQLConnection extends BackendAIOConnection {
         *  it need to sync the status firstly for new idle connection*/
         this.txIsolation = -1;
         this.complexQuery = false;
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
     }
 
+    public void resetContextStatus() {
+        this.txIsolation = -1;
+        this.autocommit = true;
+        //TODO:CHECK
+        this.setCharacterSet(SystemVariables.getDefaultValue("character_set_server"));
+        this.usrVariables.clear();
+        this.sysVariables.clear();
+    }
     public void setRunning(boolean running) {
         isRunning = running;
     }
@@ -211,7 +224,7 @@ public class MySQLConnection extends BackendAIOConnection {
         this.threadId = threadId;
     }
 
-    public void setAuthenticated(boolean authenticated) {
+    void setAuthenticated(boolean authenticated) {
         isAuthenticated = authenticated;
     }
 
@@ -219,7 +232,7 @@ public class MySQLConnection extends BackendAIOConnection {
         return password;
     }
 
-    public void authenticate() {
+    void authenticate() {
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
         packet.setClientFlags(clientFlags);
@@ -254,7 +267,7 @@ public class MySQLConnection extends BackendAIOConnection {
         return isClosed() || isQuit.get();
     }
 
-    protected void sendQueryCmd(String query, CharsetNames clientCharset) {
+    public void sendQueryCmd(String query, CharsetNames clientCharset) {
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
@@ -316,7 +329,7 @@ public class MySQLConnection extends BackendAIOConnection {
         if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
             sc.setTxstart(true);
         }
-        synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit);
+        synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }
 
     public String getConnXID(NonBlockingSession session) {
@@ -329,23 +342,26 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
-                                 CharsetNames clientCharset, int clientTxIsoLation,
-                                 boolean expectAutocommit) {
+                                 CharsetNames clientCharset, int clientTxIsolation,
+                                 boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
         String xaCmd = null;
-        boolean conAutoComit = this.autocommit;
+        boolean conAutoCommit = this.autocommit;
         String conSchema = this.schema;
         int xaSyn = 0;
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
-            // clientTxIsoLation = Isolations.SERIALIZABLE;
+            // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
             xaCmd = "XA START " + xaTxID + ';';
             this.xaStatus = TxState.TX_STARTED_STATE;
             xaSyn = 1;
         }
+        Set<String> toResetSys = new HashSet();
+        String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
+        int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
         int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
-        int txIsoLationSyn = (txIsolation == clientTxIsoLation) ? 0 : 1;
-        int autoCommitSyn = (conAutoComit == expectAutocommit) ? 0 : 1;
-        int synCount = schemaSyn + charsetSyn + txIsoLationSyn + autoCommitSyn + xaSyn;
+        int txIsolationSyn = (txIsolation == clientTxIsolation) ? 0 : 1;
+        int autoCommitSyn = (conAutoCommit == expectAutocommit) ? 0 : 1;
+        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
         if (synCount == 0) {
             // not need syn connection
             sendQueryCmd(rrn.getStatement(), clientCharset);
@@ -355,17 +371,18 @@ public class MySQLConnection extends BackendAIOConnection {
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
             schemaCmd = getChangeSchemaCommand(conSchema);
-            // getChangeSchemaCommand(sb, conSchema);
         }
-
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
         }
-        if (txIsoLationSyn == 1) {
-            getTxIsolationCommand(sb, clientTxIsoLation);
+        if (txIsolationSyn == 1) {
+            getTxIsolationCommand(sb, clientTxIsolation);
         }
         if (autoCommitSyn == 1) {
             getAutocommitCommand(sb, expectAutocommit);
+        }
+        if (setSqlFlag == 1) {
+            sb.append(setSql);
         }
         if (xaCmd != null) {
             sb.append(xaCmd);
@@ -375,22 +392,73 @@ public class MySQLConnection extends BackendAIOConnection {
                     " commands " + sb.toString() + "schema change:" +
                     (schemaCmd != null) + " con:" + this);
         }
-        metaDataSyned = false;
+        metaDataSynced = false;
         statusSync = new StatusSync(conSchema,
-                clientCharset, clientTxIsoLation, expectAutocommit,
-                synCount);
+                clientCharset, clientTxIsolation, expectAutocommit,
+                synCount, usrVariables, sysVariables, toResetSys);
         // syn schema
         if (schemaCmd != null) {
             schemaCmd.write(this);
         }
         // and our query sql to multi command at last
-        sb.append(rrn.getStatement() + ";");
+        sb.append(rrn.getStatement()).append(";");
         // syn and execute others
         this.sendQueryCmd(sb.toString(), clientCharset);
         // waiting syn result...
 
     }
 
+    private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
+        //new final var
+        List<Pair<String, String>> setVars = new ArrayList<>();
+        Map<String, String> tmpSysVars = new HashMap<>();
+        //tmp add all backend sysVariables
+        tmpSysVars.putAll(sysVariables);
+        //for all front end sysVariables
+        for (Map.Entry<String, String> entry : sysVars.entrySet()) {
+            if (!tmpSysVars.containsKey(entry.getKey())) {
+                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+            } else {
+                String value = tmpSysVars.remove(entry.getKey());
+                //if backend is not equal frontend, need to reset
+                if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
+                    setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
+        //tmp now = backend -(backend &&frontend)
+        for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
+            String value = SystemVariables.getDefaultValue(entry.getKey());
+            setVars.add(new Pair<>(entry.getKey(), value));
+            toResetSys.add(entry.getKey());
+        }
+
+        for (Map.Entry<String, String> entry : usrVars.entrySet()) {
+            if (!usrVariables.containsKey(entry.getKey())) {
+                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+            } else {
+                if (!StringUtil.equalsIgnoreCase(entry.getValue(), usrVariables.get(entry.getKey()))) {
+                    setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
+
+        if (setVars.size() == 0)
+            return null;
+        StringBuilder sb = new StringBuilder("set ");
+        int cnt = 0;
+        for (Pair<String, String> var : setVars) {
+            if (cnt > 0) {
+                sb.append(",");
+            }
+            sb.append(var.getKey());
+            sb.append("=");
+            sb.append(var.getValue());
+            cnt++;
+        }
+        sb.append(";");
+        return sb.toString();
+    }
     private static CommandPacket getChangeSchemaCommand(String schema) {
         CommandPacket cmd = new CommandPacket();
         cmd.setPacketId(0);
@@ -402,14 +470,11 @@ public class MySQLConnection extends BackendAIOConnection {
     /**
      * by wuzh ,execute a query and ignore transaction settings for performance
      *
-     * @param query
-     * @throws UnsupportedEncodingException
      */
-    public void query(String query) throws UnsupportedEncodingException {
+    public void query(String query) {
         RouteResultsetNode rrn = new RouteResultsetNode("default",
                 ServerParse.SELECT, query);
-
-        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, true);
+        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, true, this.getUsrVariables(), this.getSysVariables());
 
     }
 
@@ -432,7 +497,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
 
-    public boolean isComplexQuery() {
+    boolean isComplexQuery() {
         return complexQuery;
     }
 
@@ -472,18 +537,23 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     public void release() {
-        if (!metaDataSyned) { // indicate connection not normalfinished
+        if (!metaDataSynced) { // indicate connection not normal finished
             // ,and
             // we can't know it's syn status ,so
             // close
             // it
             LOGGER.warn("can't sure connection syn result,so close it " + this);
             this.respHandler = null;
-            this.close("syn status unkown ");
+            this.close("syn status unknown ");
+            return;
+        }
+        if (this.usrVariables.size() > 0) {
+            this.respHandler = null;
+            this.close("close for clear usrVariables");
             return;
         }
         complexQuery = false;
-        metaDataSyned = true;
+        metaDataSynced = true;
         attachment = null;
         statusSync = null;
         modifiedSQLExecuted = false;
@@ -541,12 +611,53 @@ public class MySQLConnection extends BackendAIOConnection {
 
     @Override
     public String toString() {
-        return "MySQLConnection [id=" + id + ", lastTime=" + lastTime + ", user=" + user + ", schema=" + schema +
-                ", old shema=" + oldSchema + ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB + ", threadId=" +
-                threadId + "," + charsetName.toString() + ", txIsolation=" + txIsolation + ", autocommit=" + autocommit +
-                ", attachment=" + attachment + ", respHandler=" + respHandler + ", host=" + host + ", port=" + port +
-                ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().size() +
-                ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
+        StringBuilder result = new StringBuilder();
+        result.append("MySQLConnection [id=");
+        result.append(id);
+        result.append(", lastTime=");
+        result.append(lastTime);
+        result.append(", user=");
+        result.append(user);
+        result.append(", schema=");
+        result.append(schema);
+        result.append(", old schema=");
+        result.append(oldSchema);
+        result.append(", borrowed=");
+        result.append(borrowed);
+        result.append(", fromSlaveDB=");
+        result.append(fromSlaveDB);
+        result.append(", threadId=");
+        result.append(threadId);
+        result.append(",");
+        result.append(charsetName.toString());
+        result.append(", txIsolation=");
+        result.append(txIsolation);
+        result.append(", autocommit=");
+        result.append(autocommit);
+        result.append(", attachment=");
+        result.append(attachment);
+        result.append(", respHandler=");
+        result.append(respHandler);
+        result.append(", host=");
+        result.append(host);
+        result.append(", port=");
+        result.append(port);
+        result.append(", statusSync=");
+        result.append(statusSync);
+        result.append(", writeQueue=");
+        result.append(this.getWriteQueue().size());
+        result.append(", modifiedSQLExecuted=");
+        result.append(modifiedSQLExecuted);
+        if (sysVariables.size() > 0) {
+            result.append(", ");
+            result.append(getStringOfSysVariables());
+        }
+        if (usrVariables.size() > 0) {
+            result.append(", ");
+            result.append(getStringOfUsrVariables());
+        }
+        result.append("]");
+        return result.toString();
     }
 
     public String compactInfo() {
@@ -572,7 +683,7 @@ public class MySQLConnection extends BackendAIOConnection {
      * @return if synchronization finished and execute-sql has already been sent
      * before
      */
-    public boolean syncAndExcute() {
+    public boolean syncAndExecute() {
         StatusSync sync = this.statusSync;
         if (sync == null) {
             return true;
@@ -592,23 +703,30 @@ public class MySQLConnection extends BackendAIOConnection {
         private final Integer txtIsolation;
         private final Boolean autocommit;
         private final AtomicInteger synCmdCount;
+        private final Map<String, String> usrVariables = new LinkedHashMap<>();
+        private final Map<String, String> sysVariables = new LinkedHashMap<>();
 
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
-                   int synCount) {
+                   int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
             super();
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;
             this.autocommit = autocommit;
             this.synCmdCount = new AtomicInteger(synCount);
+            this.usrVariables.putAll(usrVariables);
+            this.sysVariables.putAll(sysVariables);
+            for (String sysVariable : toResetSys) {
+                this.sysVariables.remove(sysVariable);
+            }
         }
 
-        public boolean synAndExecuted(MySQLConnection conn) {
+        boolean synAndExecuted(MySQLConnection conn) {
             int remains = synCmdCount.decrementAndGet();
             if (remains == 0) { // syn command finished
                 this.updateConnectionInfo(conn);
-                conn.metaDataSyned = true;
+                conn.metaDataSynced = true;
                 return false;
             } else if (remains < 0) {
                 return true;
@@ -630,7 +748,8 @@ public class MySQLConnection extends BackendAIOConnection {
             if (autocommit != null) {
                 conn.autocommit = autocommit;
             }
+            conn.sysVariables = sysVariables;
+            conn.usrVariables = usrVariables;
         }
-
     }
 }

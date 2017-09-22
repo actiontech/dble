@@ -36,14 +36,12 @@ public class SQLJob implements ResponseHandler, Runnable {
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
-    private final int id;
     private volatile boolean finished;
 
 
     public SQLJob(String sql, String databaseName, SQLJobHandler jobHandler,
                   PhysicalDatasource ds) {
         super();
-        this.id = 0;
         this.sql = sql;
         this.dataNodeOrDatabase = databaseName;
         this.jobHandler = jobHandler;
@@ -132,7 +130,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        if (conn.syncAndExcute()) {
+        if (conn.syncAndExecute()) {
             conn.release();
             doFinished(false);
         }
@@ -170,14 +168,9 @@ public class SQLJob implements ResponseHandler, Runnable {
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }
-
-    public int getId() {
-        return id;
-    }
-
     @Override
     public String toString() {
-        return "SQLJob [ id=" + id + ",dataNodeOrDatabase=" +
+        return "SQLJob [dataNodeOrDatabase=" +
                 dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

@@ -26,7 +26,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     private AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
     protected byte packetId;
-    protected final AtomicBoolean errorRepsponsed = new AtomicBoolean(false);
+    protected final AtomicBoolean errorResponsed = new AtomicBoolean(false);
 
     public MultiNodeHandler(NonBlockingSession session) {
         if (session == null) {
@@ -48,7 +48,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
 
     protected boolean canClose(BackendConnection conn, boolean tryErrorFinish) {
-        // realse this connection if safe
+        // release this connection if safe
         session.releaseConnectionIfSafe(conn, false);
         boolean allFinished = false;
         if (tryErrorFinish) {
@@ -69,9 +69,9 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         session.releaseConnectionIfSafe(conn, false);
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        String errmsg = new String(err.getMessage());
-        this.setFail(errmsg);
-        LOGGER.warn("error response from " + conn + " err " + errmsg + " code:" + err.getErrno());
+        String errMsg = new String(err.getMessage());
+        this.setFail(errMsg);
+        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + err.getErrno());
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 
@@ -109,7 +109,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         packetId = 0;
     }
 
-    protected ErrorPacket createErrPkg(String errmgs) {
+    protected ErrorPacket createErrPkg(String errMsg) {
         ErrorPacket err = new ErrorPacket();
         lock.lock();
         try {
@@ -118,13 +118,13 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             lock.unlock();
         }
         err.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
-        err.setMessage(StringUtil.encode(errmgs, session.getSource().getCharset().getResults()));
+        err.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         return err;
     }
 
     protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
-            if (errorRepsponsed.compareAndSet(false, true)) {
+            if (errorResponsed.compareAndSet(false, true)) {
                 createErrPkg(this.error).write(session.getSource());
             }
             // clear session resources,release all
@@ -135,7 +135,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
                 session.closeAndClearResources(error);
             } else {
                 session.getSource().setTxInterrupt(this.error);
-                // clear resouces
+                // clear resources
                 clearResources();
             }
         }

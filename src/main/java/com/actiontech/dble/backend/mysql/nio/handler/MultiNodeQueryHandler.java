@@ -263,7 +263,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         this.netOutBytes += data.length;
-        boolean executeResponse = conn.syncAndExcute();
+        boolean executeResponse = conn.syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
         }
@@ -321,7 +321,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         this.netOutBytes += eof.length;
 
-        if (errorRepsponsed.get()) {
+        if (errorResponsed.get()) {
             return;
         }
 
@@ -645,7 +645,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     public void handleDataProcessException(Exception e) {
-        if (!errorRepsponsed.get()) {
+        if (!errorResponsed.get()) {
             this.error = e.toString();
             LOGGER.warn("caught exception ", e);
             setFail(e.toString());
@@ -656,7 +656,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
 
-        if (errorRepsponsed.get()) {
+        if (errorResponsed.get()) {
             // the connection has been closed or set to "txInterrupt" properly
             //in tryErrorFinished() method! If we close it here, it can
             // lead to tx error such as blocking rollback tx for ever.

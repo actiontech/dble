@@ -81,7 +81,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        conn.syncAndExcute();
+        conn.syncAndExecute();
     }
 
     @Override

@@ -32,7 +32,7 @@ public final class ShowBackend {
     private ShowBackend() {
     }
 
-    private static final int FIELD_COUNT = 18;
+    private static final int FIELD_COUNT = 20;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -41,8 +41,7 @@ public final class ShowBackend {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("processor",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("processor", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
@@ -76,10 +75,15 @@ public final class ShowBackend {
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("CHARACTER_SET_RESULTS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("TXLEVEL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("TX_ISOLATION_LEVEL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("AUTOCOMMIT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("SYS_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("USER_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
+
         EOF.setPacketId(++packetId);
     }
 
@@ -132,6 +136,8 @@ public final class ShowBackend {
         row.add(conn.getCharset().getResults().getBytes());
         row.add((conn.getTxIsolation() + "").getBytes());
         row.add((conn.isAutocommit() + "").getBytes());
+        row.add(StringUtil.encode(conn.getStringOfSysVariables(), charset));
+        row.add(StringUtil.encode(conn.getStringOfUsrVariables(), charset));
         return row;
     }
 }

@@ -23,7 +23,6 @@
         <!-- serverBacklog size,default 2048-->
         <property name="serverBacklog">2048</property>
         <!--<property name="serverNodeId">1</property>-->
-        <property name="useHandshakeV10">1</property>
         <!--<property name="showBinlogStatusTimeout">60000</property>-->
 
         <!--option-->

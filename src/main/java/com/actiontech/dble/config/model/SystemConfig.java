@@ -110,8 +110,6 @@ public final class SystemConfig {
     private int useCompression = 0;
     private int useSqlStat = 1;
 
-    //TODO: DELETE ,just USE HandshakeV10Packet
-    private int useHandshakeV10 = 1;
     private int checkTableConsistency = 0;
     private long checkTableConsistencyPeriod = CHECK_TABLE_CONSISTENCY_PERIOD;
     private int useGlobleTableCheck = 1;
@@ -725,15 +723,6 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setCheckTableConsistencyPeriod(long checkTableConsistencyPeriod) {
         this.checkTableConsistencyPeriod = checkTableConsistencyPeriod;
-    }
-
-    public int getUseHandshakeV10() {
-        return useHandshakeV10;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseHandshakeV10(int useHandshakeV10) {
-        this.useHandshakeV10 = useHandshakeV10;
     }
 
     public int getNestLoopRowsSize() {

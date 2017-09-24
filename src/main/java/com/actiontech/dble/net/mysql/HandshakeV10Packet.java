@@ -5,14 +5,16 @@
 */
 package com.actiontech.dble.net.mysql;
 
+
 import com.actiontech.dble.backend.mysql.BufferUtil;
+import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.net.FrontendConnection;
 
 import java.nio.ByteBuffer;
 
 /**
- * From server to client during initial handshake.
+ * From mycat server to client during initial handshake.
  * <p>
  * <pre>
  * Bytes                        Name
@@ -40,7 +42,6 @@ import java.nio.ByteBuffer;
  * string[NUL]    auth-plugin name
  * }
  *
- * @see http://dev.mysql.com/doc/internals/en/connection-phase-packets.html#Protocol::HandshakeV10
  * </pre>
  *
  * @author CrazyPig
@@ -72,28 +73,14 @@ public class HandshakeV10Packet extends MySQLPacket {
         buffer.put(serverCharsetIndex);
         BufferUtil.writeUB2(buffer, serverStatus);
         BufferUtil.writeUB2(buffer, (serverCapabilities >> 16)); // capability flags (upper 2 bytes)
-        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
-            if (restOfScrambleBuff.length <= 13) {
-                buffer.put((byte) (seed.length + 13));
-            } else {
-                buffer.put((byte) (seed.length + restOfScrambleBuff.length));
-            }
-        } else {
+        buffer.put((byte) (seed.length + 13));
+        buffer.put(FILLER_10);
+        buffer.put(restOfScrambleBuff);            //auth-plugin-data-part-2
+        // restOfScrambleBuff.length always to be 12
+        for (int i = 13 - restOfScrambleBuff.length; i > 0; i--) {
             buffer.put((byte) 0);
         }
-        buffer.put(FILLER_10);
-        if ((serverCapabilities & Capabilities.CLIENT_SECURE_CONNECTION) != 0) {
-            buffer.put(restOfScrambleBuff);
-            // restOfScrambleBuff.length always to be 12
-            if (restOfScrambleBuff.length < 13) {
-                for (int i = 13 - restOfScrambleBuff.length; i > 0; i--) {
-                    buffer.put((byte) 0);
-                }
-            }
-        }
-        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
-            BufferUtil.writeWithNull(buffer, authPluginName);
-        }
+        BufferUtil.writeWithNull(buffer, authPluginName);
         c.write(buffer);
     }
 
@@ -110,19 +97,72 @@ public class HandshakeV10Packet extends MySQLPacket {
         size += 2; // capability flags (upper 2 bytes)
         size += 1;
         size += 10; // reserved (all [00])
-        if ((serverCapabilities & Capabilities.CLIENT_SECURE_CONNECTION) != 0) {
-            // restOfScrambleBuff.length always to be 12
-            if (restOfScrambleBuff.length <= 13) {
-                size += 13;
-            } else {
-                size += restOfScrambleBuff.length;
-            }
-        }
-        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
-            size += (authPluginName.length + 1); // auth-plugin name
-        }
+        // restOfScrambleBuff.length always to be 12
+        size += 13;
+        size += (authPluginName.length + 1); // auth-plugin name
         return size;
     }
+
+
+    /**
+     * 这里假设两个方法读取的都是同一个中协议的结果
+     * @param bin
+     */
+    public void read(BinaryPacket bin) {
+        packetLength = bin.packetLength;
+        packetId = bin.packetId;
+        MySQLMessage mm = new MySQLMessage(bin.getData());
+        protocolVersion = mm.read();
+        serverVersion = mm.readBytesWithNull();
+        threadId = mm.readUB4();
+        seed = mm.readBytesWithNull();
+        serverCapabilities = mm.readUB2();
+        serverCharsetIndex = mm.read();
+        serverStatus = mm.readUB2();
+        //get the complete serverCapabilities
+        serverCapabilities = serverCapabilities | (mm.readUB2() << 16);
+        //length of auth-plugin-data for 1 byte
+        int authPluginData = mm.read();
+        mm.move(10);
+        restOfScrambleBuff = mm.readBytesWithInputLength(authPluginData - 9 > 12 ? 12 : authPluginData - 9);
+        mm.move(1);
+        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
+            authPluginName = mm.readBytesWithNull();
+        }
+    }
+
+    public void read(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        packetLength = mm.readUB3();
+        packetId = mm.read();
+        protocolVersion = mm.read();
+        serverVersion = mm.readBytesWithNull();
+        threadId = mm.readUB4();
+        seed = mm.readBytesWithNull();
+        serverCapabilities = mm.readUB2();
+        serverCharsetIndex = mm.read();
+        serverStatus = mm.readUB2();
+        //get the complete serverCapabilities
+        serverCapabilities = serverCapabilities | (mm.readUB2() << 16);
+        //length of auth-plugin-data for 1 byte
+        int authPluginData = mm.read();
+        mm.move(10);
+        restOfScrambleBuff = mm.readBytesWithInputLength(authPluginData - 9 > 12 ? 12 : authPluginData - 9);
+        mm.move(1);
+        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
+            authPluginName = mm.readBytesWithNull();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
     @Override
     protected String getPacketInfo() {

@@ -1,26 +1,8 @@
 /*
- * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software;Designed and Developed mainly by many Chinese
- * opensource volunteers. you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 only, as published by the
- * Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Any questions about this component can be directed to it's project Web address
- * https://code.google.com/p/opencloudb/.
- *
- */
+* Copyright (C) 2016-2017 ActionTech.
+* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+*/
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -30,7 +12,6 @@ import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.net.handler.FrontendPrivileges;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.wall.WallCheckResult;
-import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +26,6 @@ public class ServerPrivileges implements FrontendPrivileges {
     private static ServerPrivileges instance = new ServerPrivileges();
 
     private static final Logger ALARM = LoggerFactory.getLogger("alarm");
-
-    private boolean check = false;
-    private static final ThreadLocal<WallProvider> CONTEXT_LOCAL = new ThreadLocal<>();
 
     public static ServerPrivileges instance() {
         return instance;
@@ -117,23 +95,19 @@ public class ServerPrivileges implements FrontendPrivileges {
     }
 
     protected boolean checkManagerPrivilege(String user) {
-        //  normal user don't neet manager privilege
+        //  normal user don't need manager privilege
         return true;
     }
 
     @Override
     public boolean checkFirewallWhiteHostPolicy(String user, String host) {
-
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        FirewallConfig firewallConfig = config.getFirewall();
-
         if (!checkManagerPrivilege(user)) {
-            // return and don't trigger firewall alarm
+            // normal user try to login by manager port
             return false;
         }
-
         boolean isPassed = false;
-
+        ServerConfig config = DbleServer.getInstance().getConfig();
+        FirewallConfig firewallConfig = config.getFirewall();
         Map<String, List<UserConfig>> whitehost = firewallConfig.getWhitehost();
         if (whitehost == null || whitehost.size() == 0) {
             Map<String, UserConfig> users = config.getUsers();
@@ -161,25 +135,19 @@ public class ServerPrivileges implements FrontendPrivileges {
 
 
     /**
-     * @see https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE-wallfilter
+     *
+     * @see <a href="https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE-wallfilter">wallfilter config guide</a>
      */
     @Override
     public boolean checkFirewallSQLPolicy(String user, String sql) {
-
-        boolean isPassed = true;
-
-        if (CONTEXT_LOCAL.get() == null) {
-            FirewallConfig firewallConfig = DbleServer.getInstance().getConfig().getFirewall();
-            if (firewallConfig != null) {
-                if (firewallConfig.isCheck()) {
-                    CONTEXT_LOCAL.set(firewallConfig.getProvider());
-                    check = true;
-                }
-            }
+        if (isManagerUser(user)) {
+            // manager User will ignore firewall blacklist
+            return true;
         }
-
-        if (check) {
-            WallCheckResult result = CONTEXT_LOCAL.get().check(sql);
+        boolean isPassed = true;
+        FirewallConfig firewallConfig = DbleServer.getInstance().getConfig().getFirewall();
+        if (firewallConfig != null && firewallConfig.isBlackListCheck()) {
+            WallCheckResult result = firewallConfig.getProvider().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
                 ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
@@ -187,6 +155,12 @@ public class ServerPrivileges implements FrontendPrivileges {
             }
         }
         return isPassed;
+    }
+
+    protected boolean isManagerUser(String user) {
+        ServerConfig conf = DbleServer.getInstance().getConfig();
+        UserConfig uc = conf.getUsers().get(user);
+        return uc != null && uc.isManager();
     }
 
     public enum Checktype {

@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2017 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
@@ -52,8 +57,10 @@ public class TableNode extends PlanNode {
         }
         this.referedTableNodes.add(this);
         this.tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
-        boolean isGlobaled = (tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE);
-        if (!isGlobaled) {
+        if (this.tableMeta == null) {
+            throw new RuntimeException("table " + this.tableName + " is not exists! You should create it OR reload metadata");
+        }
+        if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE) {
             this.unGlobalTableCount = 1;
         }
         this.setNoshardNode(new HashSet<>(tableConfig.getDataNodes()));

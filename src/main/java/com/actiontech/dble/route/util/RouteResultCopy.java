@@ -21,7 +21,7 @@ public final class RouteResultCopy {
     public static RouteResultsetNode rrnCopy(RouteResultsetNode node, int sqlType, String stmt) {
         RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
         nn.setRunOnSlave(node.getRunOnSlave());
-        nn.setCanRunInReadDB(true);
+        nn.setCanRunInReadDB(false);
         nn.setLimitSize(0);
         return nn;
     }
@@ -31,7 +31,7 @@ public final class RouteResultCopy {
         rr.setRunOnSlave(rrs.getRunOnSlave());
         rr.setFinishedRoute(rrs.isFinishedRoute());
         rr.setGlobalTable(rrs.isGlobalTable());
-        rr.setCanRunInReadDB(rrs.getCanRunInReadDB());
+        rr.setCanRunInReadDB(false);
 
         RouteResultsetNode[] ns = rrs.getNodes();
         RouteResultsetNode[] nodes = new RouteResultsetNode[ns.length];

@@ -377,6 +377,23 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
+
+
+
+    @Override
+    public void killAndClose(String reason){
+
+       if (session.getSource().isTxstart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
+                  session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+            //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
+            super.close(reason);
+        } else {
+            //not a xa transaction ,close it
+            super.close(reason);
+            session.kill();
+        }
+    }
+
     @Override
     public String toString() {
         return "ServerConnection [id=" + id + ", schema=" + schema + ", host=" + host +

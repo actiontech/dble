@@ -31,10 +31,10 @@ public final class KillConnection {
         int count = 0;
         List<FrontendConnection> list = getList(stmt, offset, mc);
         if (list != null) {
-            for (NIOConnection c : list) {
+            for (FrontendConnection c : list) {
                 StringBuilder s = new StringBuilder();
                 LOGGER.warn(s.append(c).append("killed by manager").toString());
-                c.close("kill by manager");
+                c.killAndClose("kill by manager");
                 count++;
             }
         }

@@ -508,4 +508,8 @@ public abstract class FrontendConnection extends AbstractConnection {
     public void close(String reason) {
         super.close(isAuthenticated ? reason : "");
     }
+
+    public void killAndClose(String reaseon){
+
+    }
 }

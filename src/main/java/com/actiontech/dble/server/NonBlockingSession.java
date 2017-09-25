@@ -497,37 +497,35 @@ public class NonBlockingSession implements Session {
     }
 
     protected void kill() {
-        boolean hooked = false;
-        AtomicInteger count = null;
-        Map<RouteResultsetNode, BackendConnection> killees = null;
+        AtomicInteger count = new AtomicInteger(0);
+        Map<RouteResultsetNode, BackendConnection> killees = new HashMap<>();
+
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
             BackendConnection c = entry.getValue();
-            if (c != null) {
-                if (!hooked) {
-                    hooked = true;
-                    killees = new HashMap<>();
-                    count = new AtomicInteger(0);
-                }
+            if (c != null && !c.isDDL()) {
                 killees.put(entry.getKey(), c);
                 count.incrementAndGet();
+            } else if (c != null && c.isDDL()) {
+                //if the sql executing is a ddl,do not kill the query,just close the connection
+                this.terminate();
+                return;
             }
         }
-        if (hooked) {
-            for (Entry<RouteResultsetNode, BackendConnection> en : killees.entrySet()) {
-                KillConnectionHandler kill = new KillConnectionHandler(
-                        en.getValue(), this);
-                ServerConfig conf = DbleServer.getInstance().getConfig();
-                PhysicalDBNode dn = conf.getDataNodes().get(
-                        en.getKey().getName());
-                try {
-                    dn.getConnectionFromSameSource(null, true, en.getValue(),
-                            kill, en.getKey());
-                } catch (Exception e) {
-                    LOGGER.error(
-                            "get killer connection failed for " + en.getKey(),
-                            e);
-                    kill.connectionError(e, null);
-                }
+
+        for (Entry<RouteResultsetNode, BackendConnection> en : killees.entrySet()) {
+            KillConnectionHandler kill = new KillConnectionHandler(
+                    en.getValue(), this);
+            ServerConfig conf = DbleServer.getInstance().getConfig();
+            PhysicalDBNode dn = conf.getDataNodes().get(
+                    en.getKey().getName());
+            try {
+                dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
+                        kill, en.getKey());
+            } catch (Exception e) {
+                LOGGER.error(
+                        "get killer connection failed for " + en.getKey(),
+                        e);
+                kill.connectionError(e, null);
             }
         }
     }

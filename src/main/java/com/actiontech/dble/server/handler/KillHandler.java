@@ -50,7 +50,11 @@ public final class KillHandler {
                 }
             }
             if (fc != null) {
-                fc.close("killed");
+                if (!fc.getUser().equals(c.getUser())) {
+                    c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+                    return;
+                }
+                fc.killAndClose("killed");
                 getOkPacket().write(c);
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);

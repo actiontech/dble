@@ -8,7 +8,6 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.NIOConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.SplitUtil;
@@ -31,10 +30,10 @@ public final class KillConnection {
         int count = 0;
         List<FrontendConnection> list = getList(stmt, offset, mc);
         if (list != null) {
-            for (NIOConnection c : list) {
+            for (FrontendConnection c : list) {
                 StringBuilder s = new StringBuilder();
                 LOGGER.warn(s.append(c).append("killed by manager").toString());
-                c.close("kill by manager");
+                c.killAndClose("kill by manager");
                 count++;
             }
         }

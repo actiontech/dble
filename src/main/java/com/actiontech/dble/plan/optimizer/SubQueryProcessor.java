@@ -95,10 +95,11 @@ public final class SubQueryProcessor {
         mergeOrderBy(parent, child);
         mergeLimit(parent, child);
         child.setColumnsSelected(newSels);
-        if (!StringUtils.isEmpty(parent.getAlias()))
+        if (!StringUtils.isEmpty(parent.getAlias())) {
             child.setAlias(parent.getAlias());
-        else if (!StringUtils.isEmpty(parent.getSubAlias()))
+        } else if (!StringUtils.isEmpty(parent.getSubAlias())) {
             child.setAlias(parent.getSubAlias());
+        }
         child.setSubQuery(parent.isSubQuery());
         child.setParent(parent.getParent());
         return child;

@@ -8,11 +8,14 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
+import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.net.FrontendConnection;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * From server to client. One packet for each row in the result set.
@@ -42,11 +45,12 @@ public class RowDataPacket extends MySQLPacket {
 
     private int fieldCount;
     public final List<byte[]> fieldValues;
-    private List<byte[]> cmpValue;
+    private Map<RowDataComparator, List<byte[]>> cmpValues;
 
     public RowDataPacket(int fieldCount) {
         this.fieldCount = fieldCount;
         this.fieldValues = new ArrayList<>(fieldCount);
+        cmpValues = new HashMap<>(1);
     }
 
     public void add(byte[] value) {
@@ -140,12 +144,12 @@ public class RowDataPacket extends MySQLPacket {
     }
 
 
-    public List<byte[]> getCmpValue() {
-        return cmpValue;
+    public List<byte[]> getCmpValue(RowDataComparator comparator) {
+        return cmpValues.get(comparator);
     }
 
-    public void setCmpValue(List<byte[]> cmpValue) {
-        this.cmpValue = cmpValue;
+    public void cacheCmpValue(RowDataComparator comparator, List<byte[]> cmpValue) {
+        this.cmpValues.put(comparator, cmpValue);
     }
 
     public int getFieldCount() {

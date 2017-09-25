@@ -72,12 +72,12 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     }
 
     private List<byte[]> getCmpBytes(RowDataPacket o) {
-        if (o.getCmpValue() == null) {
+        if (o.getCmpValue(this) == null) {
             HandlerTool.initFields(sourceFields, o.fieldValues);
             List<byte[]> bo = HandlerTool.getItemListBytes(cmpItems);
-            o.setCmpValue(bo);
+            o.cacheCmpValue(this, bo);
         }
-        return o.getCmpValue();
+        return o.getCmpValue(this);
     }
 
     private int cmp(RowDataPacket o1, RowDataPacket o2, int index) {

@@ -25,7 +25,7 @@ public class AIOSocketWR extends SocketWR {
     }
 
     @Override
-    public void asynRead() {
+    public void asyncRead() {
         ByteBuffer theBuffer = con.readBuffer;
         if (theBuffer == null) {
             theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
@@ -40,7 +40,7 @@ public class AIOSocketWR extends SocketWR {
 
     }
 
-    private void asynWrite(final ByteBuffer buffer) {
+    private void asyncWrite(final ByteBuffer buffer) {
 
         buffer.flip();
         this.channel.write(buffer, this, AIO_WRITE_HANDLER);
@@ -76,7 +76,7 @@ public class AIOSocketWR extends SocketWR {
                     return true;
                 } else {
                     con.writeBuffer = buffer;
-                    asynWrite(buffer);
+                    asyncWrite(buffer);
                     return false;
                 }
             } else {
@@ -86,7 +86,7 @@ public class AIOSocketWR extends SocketWR {
             }
         } else {
             theBuffer.compact();
-            asynWrite(theBuffer);
+            asyncWrite(theBuffer);
             return false;
         }
 

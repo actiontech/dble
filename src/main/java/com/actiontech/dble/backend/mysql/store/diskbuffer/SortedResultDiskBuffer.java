@@ -32,7 +32,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
      */
     protected final ArrayList<ResultDiskTape> tapes;
     /**
-     * the sort cmptor
+     * the sort comparator
      */
     private final RowDataComparator comparator;
     /**

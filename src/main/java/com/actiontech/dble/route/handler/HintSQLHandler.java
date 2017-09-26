@@ -148,9 +148,9 @@ public class HintSQLHandler implements HintHandler {
     private void parseProcedureForCall(Procedure procedure, Set<String> outSet, String query, SQLCallStatement statement) {
         SQLCallStatement sqlCallStatement = statement;
         procedure.setName(sqlCallStatement.getProcedureName().getSimpleName());
-        List<SQLExpr> paramterList = sqlCallStatement.getParameters();
-        for (int i1 = 0; i1 < paramterList.size(); i1++) {
-            SQLExpr sqlExpr = paramterList.get(i1);
+        List<SQLExpr> parameterList = sqlCallStatement.getParameters();
+        for (int i1 = 0; i1 < parameterList.size(); i1++) {
+            SQLExpr sqlExpr = parameterList.get(i1);
             String pName = sqlExpr.toString();
             String pType = outSet.contains(pName) ? ProcedureParameter.OUT : ProcedureParameter.IN;
             ProcedureParameter parameter = new ProcedureParameter();

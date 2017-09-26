@@ -107,17 +107,17 @@ public final class ShowDataSource {
             // add all
             for (Map.Entry<String, PhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
 
-                PhysicalDBPool datahost = entry.getValue();
+                PhysicalDBPool dataHost = entry.getValue();
 
-                for (int i = 0; i < datahost.getSources().length; i++) {
-                    RowDataPacket row = getRow(datahost.getSources()[i], c.getCharset().getResults());
+                for (int i = 0; i < dataHost.getSources().length; i++) {
+                    RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
-                    if (datahost.getrReadSources().get(i) != null) {
-                        for (PhysicalDatasource w : datahost.getrReadSources().get(i)) {
-                            RowDataPacket rsow = getRow(w, c.getCharset().getResults());
-                            rsow.setPacketId(++packetId);
-                            buffer = rsow.write(buffer, c, true);
+                    if (dataHost.getrReadSources().get(i) != null) {
+                        for (PhysicalDatasource w : dataHost.getrReadSources().get(i)) {
+                            RowDataPacket sRow = getRow(w, c.getCharset().getResults());
+                            sRow.setPacketId(++packetId);
+                            buffer = sRow.write(buffer, c, true);
                         }
                     }
                 }

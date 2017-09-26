@@ -10,11 +10,11 @@ import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Created by huqing.yan on 2017/5/25.
  */
-public class BinlogPauseStatusListener extends ZkMultLoader implements NotifyService {
+public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusListener.class);
     private final String currZkPath;
 
@@ -41,7 +41,7 @@ public class BinlogPauseStatusListener extends ZkMultLoader implements NotifySer
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
         this.getTreeDirectory(currZkPath, KVPathUtil.BINLOG_PAUSE_STATUS, statusDirectory);
         ZkDataImpl zkDdata = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
         String strPauseInfo = zkDdata.getDataValue();

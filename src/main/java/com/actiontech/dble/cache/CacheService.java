@@ -26,7 +26,7 @@ import java.util.Properties;
 public class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
 
-    private final Map<String, CachePoolFactory> poolFactorys = new HashMap<>();
+    private final Map<String, CachePoolFactory> poolFactories = new HashMap<>();
     private final Map<String, CachePool> allPools = new HashMap<>();
 
     public CacheService(boolean isLowerCaseTableNames) {
@@ -58,7 +58,7 @@ public class CacheService {
 
         boolean on = isSwitchOn(props);
         if (on) {
-            createRootlayedCachePool(props);
+            createRootLayedCachePool(props);
             createSpecificPool(props, isLowerCaseTableNames);
         } else {
             LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
@@ -80,7 +80,7 @@ public class CacheService {
         return use;
     }
 
-    private void createRootlayedCachePool(Properties props) throws Exception {
+    private void createRootLayedCachePool(Properties props) throws Exception {
         String layedCacheType = props.getProperty("layedpool.TableID2DataNodeCacheType");
         String cacheDefault = props.getProperty("layedpool.TableID2DataNodeCache");
         if (cacheDefault != null && layedCacheType != null) {
@@ -156,21 +156,21 @@ public class CacheService {
         }
     }
 
-    private void createPoolFactory(String factryType, String factryClassName) throws Exception {
+    private void createPoolFactory(String factoryType, String factryClassName) throws Exception {
         String lowerClass = factryClassName.toLowerCase();
         switch (lowerClass) {
             case "ehcache":
-                poolFactorys.put(factryType, new EnchachePooFactory());
+                poolFactories.put(factoryType, new EnchachePooFactory());
                 break;
             case "leveldb":
-                poolFactorys.put(factryType, new LevelDBCachePooFactory());
+                poolFactories.put(factoryType, new LevelDBCachePooFactory());
                 break;
             case "mapdb":
-                poolFactorys.put(factryType, new MapDBCachePooFactory());
+                poolFactories.put(factoryType, new MapDBCachePooFactory());
                 break;
             default:
                 CachePoolFactory factry = (CachePoolFactory) Class.forName(factryClassName).newInstance();
-                poolFactorys.put(factryType, factry);
+                poolFactories.put(factoryType, factry);
         }
     }
 
@@ -182,7 +182,7 @@ public class CacheService {
     }
 
     private CachePoolFactory getCacheFact(String type) {
-        CachePoolFactory facty = this.poolFactorys.get(type);
+        CachePoolFactory facty = this.poolFactories.get(type);
         if (facty == null) {
             throw new RuntimeException("CachePoolFactory not defined for type:" + type);
         }

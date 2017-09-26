@@ -11,48 +11,48 @@ import org.mapdb.HTreeMap;
 
 public class MapDBCachePool implements CachePool {
 
-    private final HTreeMap<Object, Object> htreeMap;
-    private final CacheStatic cacheStati = new CacheStatic();
+    private final HTreeMap<Object, Object> hTreeMap;
+    private final CacheStatic cacheStatistics = new CacheStatic();
     private final long maxSize;
 
-    public MapDBCachePool(HTreeMap<Object, Object> htreeMap, long maxSize) {
-        this.htreeMap = htreeMap;
+    public MapDBCachePool(HTreeMap<Object, Object> hTreeMap, long maxSize) {
+        this.hTreeMap = hTreeMap;
         this.maxSize = maxSize;
-        cacheStati.setMaxSize(maxSize);
+        cacheStatistics.setMaxSize(maxSize);
     }
 
     @Override
     public void putIfAbsent(Object key, Object value) {
-        if (htreeMap.putIfAbsent(key, value) == null) {
-            cacheStati.incPutTimes();
+        if (hTreeMap.putIfAbsent(key, value) == null) {
+            cacheStatistics.incPutTimes();
         }
 
     }
 
     @Override
     public Object get(Object key) {
-        Object value = htreeMap.get(key);
+        Object value = hTreeMap.get(key);
         if (value != null) {
-            cacheStati.incHitTimes();
+            cacheStatistics.incHitTimes();
             return value;
         } else {
-            cacheStati.incAccessTimes();
+            cacheStatistics.incAccessTimes();
             return null;
         }
     }
 
     @Override
     public void clearCache() {
-        htreeMap.clear();
-        cacheStati.reset();
+        hTreeMap.clear();
+        cacheStatistics.reset();
 
     }
 
     @Override
     public CacheStatic getCacheStatic() {
 
-        cacheStati.setItemSize(htreeMap.sizeLong());
-        return cacheStati;
+        cacheStatistics.setItemSize(hTreeMap.sizeLong());
+        return cacheStatistics;
     }
 
     @Override

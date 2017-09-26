@@ -25,7 +25,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     private static final int PARTITION_LENGTH = 1024;
     private int patternValue = PARTITION_LENGTH; // mod value
     private String mapFile;
-    private LongRange[] longRongs;
+    private LongRange[] longRanges;
     private Integer[] allNode;
     private int defaultNode = -1; // default node for unexpected value
     private static final Pattern PATTERN = Pattern.compile("[0-9]*");
@@ -48,9 +48,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     private Integer findNode(long hash) {
-        for (LongRange longRang : this.longRongs) {
+        for (LongRange longRang : this.longRanges) {
             if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
-                return longRang.nodeIndx;
+                return longRang.nodeIndex;
             }
         }
         return null;
@@ -74,14 +74,14 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
  *     L                 type3
  */
     private void calcAux(HashSet<Integer> ids, long begin, long end) {
-        for (LongRange longRang : this.longRongs) {
+        for (LongRange longRang : this.longRanges) {
             if (longRang.valueEnd < begin) {
                 continue;
             }
             if (longRang.valueStart > end) {
                 break;
             }
-            ids.add(longRang.nodeIndx);
+            ids.add(longRang.nodeIndex);
         }
     }
 
@@ -140,7 +140,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     @Override
     public int getPartitionNum() {
-        int nPartition = this.longRongs.length;
+        int nPartition = this.longRanges.length;
         return nPartition;
     }
 
@@ -197,7 +197,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             }
 
             allNode = ids.toArray(new Integer[ids.size()]);
-            longRongs = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -214,13 +214,13 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     static class LongRange implements Serializable {
-        public final int nodeIndx;
+        public final int nodeIndex;
         public final long valueStart;
         public final long valueEnd;
 
-        LongRange(int nodeIndx, long valueStart, long valueEnd) {
+        LongRange(int nodeIndex, long valueStart, long valueEnd) {
             super();
-            this.nodeIndx = nodeIndx;
+            this.nodeIndex = nodeIndex;
             this.valueStart = valueStart;
             this.valueEnd = valueEnd;
         }

@@ -34,7 +34,7 @@ public final class FileCounter {
         return fileCounter;
     }
 
-    public boolean increament() {
+    public boolean increment() {
         lock.lock();
         try {
             if (this.currentNum >= maxFileSize)

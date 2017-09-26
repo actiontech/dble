@@ -542,7 +542,7 @@ public final class ServerParse {
                     return replaceCheck(stmt, offset);
                 case 'O':
                 case 'o':
-                    return rollabckCheck(stmt, offset);
+                    return rollbackCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -570,7 +570,7 @@ public final class ServerParse {
     }
 
     // ROLLBACK
-    static int rollabckCheck(String stmt, int offset) {
+    static int rollbackCheck(String stmt, int offset) {
         if (stmt.length() > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

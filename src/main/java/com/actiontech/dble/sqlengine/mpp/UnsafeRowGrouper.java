@@ -41,34 +41,34 @@ public class UnsafeRowGrouper {
     private static final Logger LOGGER = LoggerFactory.getLogger(UnsafeRowGrouper.class);
 
     private UnsafeFixedWidthAggregationMap aggregationMap = null;
-    private final Map<String, ColMeta> columToIndx;
-    private final MergeCol[] mergCols;
+    private final Map<String, ColMeta> columnToIndexes;
+    private final MergeCol[] mergeCols;
     private String[] sortColumnsByIndex = null;
-    private boolean isMergAvg = false;
+    private boolean isMergeAvg = false;
     private HavingCols havingCols;
     private UnsafeRow valueKey = null;
     private BufferHolder bufferHolder = null;
     private UnsafeRowWriter unsafeRowWriter = null;
-    private final int groupKeyfieldCount;
-    private final int valuefieldCount;
+    private final int groupKeyFieldCount;
+    private final int valueFieldCount;
     private StructType groupKeySchema;
     private StructType aggBufferSchema;
     private UnsafeRow emptyAggregationBuffer;
 
-    public UnsafeRowGrouper(Map<String, ColMeta> columToIndx, String[] columns, MergeCol[] mergCols, HavingCols havingCols) {
+    public UnsafeRowGrouper(Map<String, ColMeta> columnToIndexes, String[] columns, MergeCol[] mergeCols, HavingCols havingCols) {
         super();
         assert columns != null;
-        assert columToIndx != null;
-        assert mergCols != null;
-        this.columToIndx = columToIndx;
+        assert columnToIndexes != null;
+        assert mergeCols != null;
+        this.columnToIndexes = columnToIndexes;
         String[] columns1 = columns;
-        this.mergCols = mergCols;
+        this.mergeCols = mergeCols;
         this.havingCols = havingCols;
-        this.sortColumnsByIndex = columns != null ? toSortColumnsByIndex(columns, columToIndx) : null;
-        this.groupKeyfieldCount = columns != null ? columns.length : 0;
-        this.valuefieldCount = columToIndx != null ? columToIndx.size() : 0;
+        this.sortColumnsByIndex = columns != null ? toSortColumnsByIndex(columns, columnToIndexes) : null;
+        this.groupKeyFieldCount = columns != null ? columns.length : 0;
+        this.valueFieldCount = columnToIndexes != null ? columnToIndexes.size() : 0;
 
-        LOGGER.debug("columToIndx :" + (columToIndx != null ? columToIndx.toString() : "null"));
+        LOGGER.debug("columnToIndex :" + (columnToIndexes != null ? columnToIndexes.toString() : "null"));
 
         SeverMemory serverMemory = DbleServer.getInstance().getServerMemory();
         MemoryManager memoryManager = serverMemory.getResultMergeMemoryManager();
@@ -105,7 +105,7 @@ public class UnsafeRowGrouper {
         }
 
 
-        String[] sortColumnsIndexs = new String[map.size()];
+        String[] sortColumnsIndexes = new String[map.size()];
 
         List<Map.Entry<String, Integer>> entryList = new ArrayList<>(
                 map.entrySet());
@@ -117,32 +117,32 @@ public class UnsafeRowGrouper {
             }
         });
 
-        Iterator<Map.Entry<String, Integer>> iter = entryList.iterator();
+        Iterator<Map.Entry<String, Integer>> iterator = entryList.iterator();
         Map.Entry<String, Integer> tmpEntry = null;
 
         int index = 0;
 
-        while (iter.hasNext()) {
-            tmpEntry = iter.next();
-            sortColumnsIndexs[index++] = tmpEntry.getKey();
+        while (iterator.hasNext()) {
+            tmpEntry = iterator.next();
+            sortColumnsIndexes[index++] = tmpEntry.getKey();
         }
 
-        return sortColumnsIndexs;
+        return sortColumnsIndexes;
     }
 
     private void initGroupKey() {
-        Map<String, ColMeta> groupcolMetaMap = new HashMap<>(this.groupKeyfieldCount);
+        Map<String, ColMeta> groupColMetaMap = new HashMap<>(this.groupKeyFieldCount);
 
-        UnsafeRow groupKey = new UnsafeRow(this.groupKeyfieldCount);
+        UnsafeRow groupKey = new UnsafeRow(this.groupKeyFieldCount);
         bufferHolder = new BufferHolder(groupKey, 0);
-        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyfieldCount);
+        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyFieldCount);
         bufferHolder.reset();
 
         ColMeta curColMeta = null;
 
-        for (int i = 0; i < this.groupKeyfieldCount; i++) {
-            curColMeta = this.columToIndx.get(sortColumnsByIndex[i].toUpperCase());
-            groupcolMetaMap.put(sortColumnsByIndex[i], curColMeta);
+        for (int i = 0; i < this.groupKeyFieldCount; i++) {
+            curColMeta = this.columnToIndexes.get(sortColumnsByIndex[i].toUpperCase());
+            groupColMetaMap.put(sortColumnsByIndex[i], curColMeta);
 
 
             switch (curColMeta.getColType()) {
@@ -178,18 +178,18 @@ public class UnsafeRowGrouper {
         }
         groupKey.setTotalSize(bufferHolder.totalSize());
 
-        groupKeySchema = new StructType(groupcolMetaMap, this.groupKeyfieldCount);
+        groupKeySchema = new StructType(groupColMetaMap, this.groupKeyFieldCount);
         groupKeySchema.setOrderCols(null);
     }
 
     private void initEmptyValueKey() {
-        emptyAggregationBuffer = new UnsafeRow(this.valuefieldCount);
+        emptyAggregationBuffer = new UnsafeRow(this.valueFieldCount);
         bufferHolder = new BufferHolder(emptyAggregationBuffer, 0);
-        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valuefieldCount);
+        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valueFieldCount);
         bufferHolder.reset();
 
         ColMeta curColMeta = null;
-        for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
+        for (Map.Entry<String, ColMeta> fieldEntry : columnToIndexes.entrySet()) {
             curColMeta = fieldEntry.getValue();
 
             switch (curColMeta.getColType()) {
@@ -225,23 +225,23 @@ public class UnsafeRowGrouper {
         }
 
         emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
-        aggBufferSchema = new StructType(columToIndx, this.valuefieldCount);
+        aggBufferSchema = new StructType(columnToIndexes, this.valueFieldCount);
         aggBufferSchema.setOrderCols(null);
     }
 
 
     public Iterator<UnsafeRow> getResult(@Nonnull UnsafeExternalRowSorter sorter) throws IOException {
-        KVIterator<UnsafeRow, UnsafeRow> iter = aggregationMap.iterator();
+        KVIterator<UnsafeRow, UnsafeRow> iterator = aggregationMap.iterator();
 
-        if (isMergeAvg() && !isMergAvg) {
+        if (isMergeAvg() && !isMergeAvg) {
             try {
-                while (iter.next()) {
-                    mergAvg(iter.getValue());
+                while (iterator.next()) {
+                    mergeAvg(iterator.getValue());
                 }
             } catch (IOException e) {
                 LOGGER.error(e.getMessage());
             }
-            isMergAvg = true;
+            isMergeAvg = true;
             processAvgFieldPrecision();
         }
         /**
@@ -260,7 +260,7 @@ public class UnsafeRowGrouper {
     }
 
     private void processAvgFieldPrecision() {
-        for (Map.Entry<String, ColMeta> entry : columToIndx.entrySet()) {
+        for (Map.Entry<String, ColMeta> entry : columnToIndexes.entrySet()) {
             if (isAvgField(entry.getKey())) { // AVG's Precision is sum's +4 , HALF_UP
                 entry.getValue().setDecimals(entry.getValue().getDecimals() + 4);
             }
@@ -282,13 +282,13 @@ public class UnsafeRowGrouper {
 
     public UnsafeRow getAllBinaryRow(UnsafeRow row) throws UnsupportedEncodingException {
 
-        UnsafeRow value = new UnsafeRow(this.valuefieldCount);
+        UnsafeRow value = new UnsafeRow(this.valueFieldCount);
         bufferHolder = new BufferHolder(value, 0);
-        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valuefieldCount);
+        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valueFieldCount);
         bufferHolder.reset();
         ColMeta curColMeta = null;
 
-        for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
+        for (Map.Entry<String, ColMeta> fieldEntry : columnToIndexes.entrySet()) {
             curColMeta = fieldEntry.getValue();
 
             if (!row.isNullAt(curColMeta.getColIndex())) {
@@ -425,9 +425,9 @@ public class UnsafeRowGrouper {
              * no group by key word
              * select count(*) from table;
              */
-            key = new UnsafeRow(this.groupKeyfieldCount + 1);
+            key = new UnsafeRow(this.groupKeyFieldCount + 1);
             bufferHolder = new BufferHolder(key, 0);
-            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyfieldCount + 1);
+            unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyFieldCount + 1);
             bufferHolder.reset();
             unsafeRowWriter.write(0, "same".getBytes());
             key.setTotalSize(bufferHolder.totalSize());
@@ -435,15 +435,15 @@ public class UnsafeRowGrouper {
         }
 
 
-        key = new UnsafeRow(this.groupKeyfieldCount);
+        key = new UnsafeRow(this.groupKeyFieldCount);
         bufferHolder = new BufferHolder(key, 0);
-        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyfieldCount);
+        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.groupKeyFieldCount);
         bufferHolder.reset();
 
 
         ColMeta curColMeta = null;
-        for (int i = 0; i < this.groupKeyfieldCount; i++) {
-            curColMeta = this.columToIndx.get(sortColumnsByIndex[i].toUpperCase());
+        for (int i = 0; i < this.groupKeyFieldCount; i++) {
+            curColMeta = this.columnToIndexes.get(sortColumnsByIndex[i].toUpperCase());
             if (!row.isNullAt(curColMeta.getColIndex())) {
                 switch (curColMeta.getColType()) {
                     case ColMeta.COL_TYPE_BIT:
@@ -493,12 +493,12 @@ public class UnsafeRowGrouper {
 
     private UnsafeRow getValue(UnsafeRow row) throws UnsupportedEncodingException {
 
-        UnsafeRow value = new UnsafeRow(this.valuefieldCount);
+        UnsafeRow value = new UnsafeRow(this.valueFieldCount);
         bufferHolder = new BufferHolder(value, 0);
-        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valuefieldCount);
+        unsafeRowWriter = new UnsafeRowWriter(bufferHolder, this.valueFieldCount);
         bufferHolder.reset();
         ColMeta curColMeta = null;
-        for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
+        for (Map.Entry<String, ColMeta> fieldEntry : columnToIndexes.entrySet()) {
             curColMeta = fieldEntry.getValue();
             if (!row.isNullAt(curColMeta.getColIndex())) {
                 switch (curColMeta.getColType()) {
@@ -576,12 +576,12 @@ public class UnsafeRowGrouper {
 
     private boolean isMergeAvg() {
 
-        if (mergCols == null) {
+        if (mergeCols == null) {
             return false;
         }
 
-        for (MergeCol merg : mergCols) {
-            if (merg.mergeType == MergeCol.MERGE_AVG) {
+        for (MergeCol mergeCol : mergeCols) {
+            if (mergeCol.mergeType == MergeCol.MERGE_AVG) {
                 return true;
             }
         }
@@ -589,20 +589,20 @@ public class UnsafeRowGrouper {
     }
 
     private void aggregateRow(UnsafeRow toRow, UnsafeRow newRow) throws UnsupportedEncodingException {
-        if (mergCols == null) {
+        if (mergeCols == null) {
             return;
         }
 
-        for (MergeCol merg : mergCols) {
-            if (merg.mergeType != MergeCol.MERGE_AVG) {
+        for (MergeCol mergeCol : mergeCols) {
+            if (mergeCol.mergeType != MergeCol.MERGE_AVG) {
                 byte[] result = null;
                 byte[] left = null;
                 byte[] right = null;
-                int type = merg.colMeta.getColType();
-                int index = merg.colMeta.getColIndex();
-                left = unsafeRow2Bytes(toRow, merg);
-                right = unsafeRow2Bytes(newRow, merg);
-                result = mertFields(left, right, type, merg.mergeType);
+                int type = mergeCol.colMeta.getColType();
+                int index = mergeCol.colMeta.getColIndex();
+                left = unsafeRow2Bytes(toRow, mergeCol);
+                right = unsafeRow2Bytes(newRow, mergeCol);
+                result = mergeFields(left, right, type, mergeCol.mergeType);
 
                 if (result != null) {
                     switch (type) {
@@ -638,13 +638,13 @@ public class UnsafeRowGrouper {
         }
     }
 
-    private byte[] unsafeRow2Bytes(UnsafeRow row, MergeCol merg) throws UnsupportedEncodingException {
-        int index = merg.colMeta.getColIndex();
+    private byte[] unsafeRow2Bytes(UnsafeRow row, MergeCol mergeCol) throws UnsupportedEncodingException {
+        int index = mergeCol.colMeta.getColIndex();
         byte[] result = null;
         if (row.isNullAt(index)) {
             return null;
         }
-        int type = merg.colMeta.getColType();
+        int type = mergeCol.colMeta.getColType();
         switch (type) {
             case ColMeta.COL_TYPE_INT:
             case ColMeta.COL_TYPE_LONG:
@@ -664,7 +664,7 @@ public class UnsafeRowGrouper {
                 result = BytesTools.double2Bytes(row.getDouble(index));
                 break;
             case ColMeta.COL_TYPE_NEWDECIMAL:
-                int scale = merg.colMeta.getDecimals();
+                int scale = mergeCol.colMeta.getDecimals();
                 BigDecimal decimalLeft = row.getDecimal(index, scale);
                 result = decimalLeft == null ? null : decimalLeft.toString().getBytes();
                 break;
@@ -674,21 +674,21 @@ public class UnsafeRowGrouper {
         return result;
     }
 
-    private void mergAvg(UnsafeRow toRow) throws UnsupportedEncodingException {
+    private void mergeAvg(UnsafeRow toRow) throws UnsupportedEncodingException {
 
-        if (mergCols == null) {
+        if (mergeCols == null) {
             return;
         }
 
-        for (MergeCol merg : mergCols) {
-            if (merg.mergeType == MergeCol.MERGE_AVG) {
+        for (MergeCol mergeCol : mergeCols) {
+            if (mergeCol.mergeType == MergeCol.MERGE_AVG) {
                 byte[] result = null;
                 byte[] avgSum = null;
                 byte[] avgCount = null;
 
-                int type = merg.colMeta.getColType();
-                int avgSumIndex = merg.colMeta.getAvgSumIndex();
-                int avgCountIndex = merg.colMeta.getAvgCountIndex();
+                int type = mergeCol.colMeta.getColType();
+                int avgSumIndex = mergeCol.colMeta.getAvgSumIndex();
+                int avgCountIndex = mergeCol.colMeta.getAvgCountIndex();
 
                 switch (type) {
                     case ColMeta.COL_TYPE_BIT:
@@ -723,7 +723,7 @@ public class UnsafeRowGrouper {
                     case ColMeta.COL_TYPE_NEWDECIMAL:
                         //avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
                         //avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        int scale = merg.colMeta.getDecimals();
+                        int scale = mergeCol.colMeta.getDecimals();
                         BigDecimal sumDecimal = toRow.getDecimal(avgSumIndex, scale);
                         avgSum = sumDecimal == null ? null : sumDecimal.toString().getBytes();
                         avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
@@ -732,7 +732,7 @@ public class UnsafeRowGrouper {
                         break;
                 }
 
-                result = mertFields(avgSum, avgCount, merg.colMeta.getColType(), merg.mergeType);
+                result = mergeFields(avgSum, avgCount, mergeCol.colMeta.getColType(), mergeCol.mergeType);
 
                 if (result != null) {
                     switch (type) {
@@ -768,7 +768,7 @@ public class UnsafeRowGrouper {
         }
     }
 
-    private byte[] mertFields(byte[] bs, byte[] bs2, int colType, int mergeType) throws UnsupportedEncodingException {
+    private byte[] mergeFields(byte[] bs, byte[] bs2, int colType, int mergeType) throws UnsupportedEncodingException {
 
         if (bs2 == null || bs2.length == 0) {
             return bs;

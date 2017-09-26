@@ -6,7 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class ZkDirectoryImpl implements DiretoryInf {
+public class ZkDirectoryImpl implements DirectoryInf {
 
     private List<Object> subordinateInfoList = new ArrayList<>();
 
@@ -48,12 +48,12 @@ public class ZkDirectoryImpl implements DiretoryInf {
     }
 
     @Override
-    public String getDiretoryInfo() {
+    public String getDirectoryInfo() {
         return name + ":" + value;
     }
 
     @Override
-    public void add(DiretoryInf branch) {
+    public void add(DirectoryInf branch) {
         this.subordinateInfoList.add(branch);
     }
 

@@ -10,10 +10,10 @@ import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.manager.response.ReloadConfig;
 import com.actiontech.dble.manager.response.RollbackConfig;
 import com.actiontech.dble.util.KVPathUtil;
@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  * Created by huqing.yan on 2017/6/23.
  */
-public class ConfigStatusListener extends ZkMultLoader implements NotifyService {
+public class ConfigStatusListener extends ZkMultiLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigStatusListener.class);
     public static final String SUCCESS = "SUCCESS";
     private final String currZkPath;
@@ -48,7 +48,7 @@ public class ConfigStatusListener extends ZkMultLoader implements NotifyService 
     @Override
     public boolean notifyProcess() throws Exception {
         if (DbleServer.getInstance().getProcessors() != null) {
-            DiretoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
+            DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
             this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
             ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) statusDirectory.getSubordinateInfo().get(0);
             ConfStatus status = new ConfStatus(zkDdata.getValue());

@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
 import com.actiontech.dble.backend.mysql.xa.Deserializer;
 import com.actiontech.dble.backend.mysql.xa.Serializer;
 import com.actiontech.dble.backend.mysql.xa.VersionedFile;
-import com.actiontech.dble.backend.mysql.xa.recovery.DeserialisationException;
+import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -147,7 +147,7 @@ public class FileSystemRepository implements Repository {
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
-        } catch (DeserialisationException unexpectedEOF) {
+        } catch (DeserializationException unexpectedEOF) {
             LOGGER.warn("Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
         }
         return coordinatorLogEntries;
@@ -163,7 +163,7 @@ public class FileSystemRepository implements Repository {
     }
 
     private static CoordinatorLogEntry deserialize(String line)
-            throws DeserialisationException {
+            throws DeserializationException {
         return Deserializer.fromJson(line);
     }
 

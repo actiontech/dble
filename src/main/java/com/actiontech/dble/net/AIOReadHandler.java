@@ -16,7 +16,7 @@ class AIOReadHandler implements CompletionHandler<Integer, AIOSocketWR> {
         if (i > 0) {
             try {
                 wr.con.onReadData(i);
-                wr.con.asynRead();
+                wr.con.asyncRead();
             } catch (IOException e) {
                 wr.con.close("handle err:" + e);
             }

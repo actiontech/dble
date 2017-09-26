@@ -125,8 +125,8 @@ public final class ShowHeartbeatDetail {
         }
         if (hb != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Queue<HeartbeatRecorder.Record> heatbeartRecorders = hb.getRecorder().getRecordsAll();
-            for (HeartbeatRecorder.Record record : heatbeartRecorders) {
+            Queue<HeartbeatRecorder.Record> heartbeatRecorders = hb.getRecorder().getRecordsAll();
+            for (HeartbeatRecorder.Record record : heartbeatRecorders) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode(name, charset));
                 row.add(StringUtil.encode(ip, charset));

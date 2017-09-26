@@ -24,12 +24,12 @@ public class MyLocale {
     private int decimalPoint;
     private int thousandSep;
     private String grouping;
-    private MyLocaleErrMsgs errmsgs;
+    private MyLocaleErrMsgs errMsgs;
 
     MyLocale(int numberPar, String namePar, String descrPar, boolean isAsciiPar, TypeLib monthNamesPar,
              TypeLib abMonthNamesPar, TypeLib dayNamesPar, TypeLib abDayNamesPar, int maxMonthNameLengthPar,
              int maxDayNameLengthPar, int decimalPointPar, int thousandSepPar, String groupingPar,
-             MyLocaleErrMsgs errmsgsPar) {
+             MyLocaleErrMsgs errMsgsPar) {
         this.number = (numberPar);
         this.name = namePar;
         this.description = descrPar;
@@ -43,7 +43,7 @@ public class MyLocale {
         this.decimalPoint = decimalPointPar;
         this.thousandSep = thousandSepPar;
         this.grouping = groupingPar;
-        this.errmsgs = errmsgsPar;
+        this.errMsgs = errMsgsPar;
     }
 
     public TypeLib getMonthNames() {

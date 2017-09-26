@@ -104,10 +104,10 @@ public final class GlobalTableUtil {
             // <table name="travelrecord" dataNode="dn1,dn2,dn3"
             for (String nodeName : table.getDataNodes()) {
                 Map<String, PhysicalDBNode> map = config.getDataNodes();
-                for (PhysicalDBNode dBnode : map.values()) {
+                for (PhysicalDBNode dbNode : map.values()) {
                     // <dataNode name="dn1" dataHost="localhost1" database="db1" />
-                    if (nodeName.equals(dBnode.getName())) {    // dn1,dn2,dn3
-                        PhysicalDBPool pool = dBnode.getDbPool();
+                    if (nodeName.equals(dbNode.getName())) {    // dn1,dn2,dn3
+                        PhysicalDBPool pool = dbNode.getDbPool();
                         Collection<PhysicalDatasource> allDS = pool.getAllDataSources();
                         for (PhysicalDatasource pds : allDS) {
                             if (pds instanceof MySQLDataSource) {
@@ -115,7 +115,7 @@ public final class GlobalTableUtil {
                                 if (nodes == null) {
                                     nodes = new ArrayList<>();
                                 }
-                                nodes.add(dBnode);
+                                nodes.add(dbNode);
                                 executedMap.put(pds.getName(), nodes);
                             }
                         }
@@ -147,7 +147,7 @@ public final class GlobalTableUtil {
                         // check another measure
                         checker = new MySQLConsistencyChecker(mds, schemas, table.getName());
                         isColumnCountCheckFinished = 0;
-                        checker.checkRecordCout();
+                        checker.checkRecordCount();
                         while (isColumnCountCheckFinished <= 0) {
                             LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
                             try {
@@ -219,7 +219,7 @@ public final class GlobalTableUtil {
         return list;
     }
 
-    public static boolean useGlobleTableCheck() {
+    public static boolean useGlobalTableCheck() {
         SystemConfig system = DbleServer.getInstance().getConfig().getSystem();
         return system != null && system.getUseGlobleTableCheck() == 1;
     }

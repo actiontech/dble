@@ -19,7 +19,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.DataNodeJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.SchemaJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService {
+public class SchemasxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemasxmlTozkLoader.class);
@@ -87,15 +87,15 @@ public class SchemasxmlTozkLoader extends ZkMultLoader implements NotifyService 
 
         String schemaValueStr = this.parseJsonSchema.parseBeanToJson(schema.getSchema());
 
-        this.checkAndwriteString(basePath, KVPathUtil.SCHEMA_SCHEMA, schemaValueStr);
+        this.checkAndWriteString(basePath, KVPathUtil.SCHEMA_SCHEMA, schemaValueStr);
 
         String dataNodeValueStr = this.parseJsonDataNode.parseBeanToJson(schema.getDataNode());
 
-        this.checkAndwriteString(basePath, KVPathUtil.DATA_NODE, dataNodeValueStr);
+        this.checkAndWriteString(basePath, KVPathUtil.DATA_NODE, dataNodeValueStr);
 
         String dataHostValueStr = this.parseJsonDataHost.parseBeanToJson(schema.getDataHost());
 
-        this.checkAndwriteString(basePath, KVPathUtil.DATA_HOST, dataHostValueStr);
+        this.checkAndWriteString(basePath, KVPathUtil.DATA_HOST, dataHostValueStr);
 
     }
 

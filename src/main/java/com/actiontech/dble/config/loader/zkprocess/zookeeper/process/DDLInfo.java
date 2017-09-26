@@ -27,11 +27,11 @@ public class DDLInfo {
     }
 
     public DDLInfo(String info) {
-        String[] infos = info.split(split);
-        this.schema = infos[0];
-        this.sql = infos[1];
-        this.from = infos[2];
-        this.status = DDLStatus.valueOf(infos[3]);
+        String[] infoDetail = info.split(split);
+        this.schema = infoDetail[0];
+        this.sql = infoDetail[1];
+        this.from = infoDetail[2];
+        this.status = DDLStatus.valueOf(infoDetail[3]);
     }
 
     @Override

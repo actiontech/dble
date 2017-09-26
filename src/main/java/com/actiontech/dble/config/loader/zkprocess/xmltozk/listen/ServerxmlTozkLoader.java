@@ -19,7 +19,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.SystemJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
+public class ServerxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerxmlTozkLoader.class);
@@ -81,15 +81,15 @@ public class ServerxmlTozkLoader extends ZkMultLoader implements NotifyService {
      */
     private void xmlTozkServerJson(String basePath, Server server) throws Exception {
         String defaultSystemValue = this.parseJsonSystem.parseBeanToJson(server.getSystem());
-        this.checkAndwriteString(basePath, KVPathUtil.DEFAULT, defaultSystemValue);
+        this.checkAndWriteString(basePath, KVPathUtil.DEFAULT, defaultSystemValue);
 
         String firewallValueStr = this.parseJsonFireWall.parseBeanToJson(server.getFirewall());
         if (firewallValueStr == null) {
             firewallValueStr = "{}";
         }
-        this.checkAndwriteString(basePath, KVPathUtil.FIREWALL, firewallValueStr);
+        this.checkAndWriteString(basePath, KVPathUtil.FIREWALL, firewallValueStr);
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
-        this.checkAndwriteString(basePath, KVPathUtil.USER, userValueStr);
+        this.checkAndWriteString(basePath, KVPathUtil.USER, userValueStr);
 
 
     }

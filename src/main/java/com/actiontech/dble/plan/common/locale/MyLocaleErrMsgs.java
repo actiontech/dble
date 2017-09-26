@@ -8,11 +8,11 @@ package com.actiontech.dble.plan.common.locale;
 public class MyLocaleErrMsgs {
 
     private String language;
-    private String errmsgs;
+    private String errMsgs;
 
-    public MyLocaleErrMsgs(String language, String errmsgs) {
+    public MyLocaleErrMsgs(String language, String errMsgs) {
         this.language = language;
-        this.errmsgs = errmsgs;
+        this.errMsgs = errMsgs;
     }
 
 }

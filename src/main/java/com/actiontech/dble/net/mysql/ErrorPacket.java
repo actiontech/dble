@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
  * Bytes                       Name
  * -----                       ----
  * 1                           field_count, always = 0xff
- * 2                           errno
+ * 2                           errNo
  * 1                           (sqlstate marker), always '#'
  * 5                           sqlstate (5 characters)
  * n                           message
@@ -35,7 +35,7 @@ public class ErrorPacket extends MySQLPacket {
     private static final byte[] DEFAULT_SQLSTATE = "HY000".getBytes();
 
     private byte fieldCount = FIELD_COUNT;
-    private int errno;
+    private int errNo;
     private byte mark = SQLSTATE_MARKER;
     private byte[] sqlState = DEFAULT_SQLSTATE;
     private byte[] message;
@@ -45,7 +45,7 @@ public class ErrorPacket extends MySQLPacket {
         packetId = bin.packetId;
         MySQLMessage mm = new MySQLMessage(bin.getData());
         fieldCount = mm.read();
-        errno = mm.readUB2();
+        errNo = mm.readUB2();
         if (mm.hasRemaining() && (mm.read(mm.position()) == SQLSTATE_MARKER)) {
             mm.read();
             sqlState = mm.readBytes(5);
@@ -58,7 +58,7 @@ public class ErrorPacket extends MySQLPacket {
         packetLength = mm.readUB3();
         packetId = mm.read();
         fieldCount = mm.read();
-        errno = mm.readUB2();
+        errNo = mm.readUB2();
         if (mm.hasRemaining() && (mm.read(mm.position()) == SQLSTATE_MARKER)) {
             mm.read();
             sqlState = mm.readBytes(5);
@@ -72,7 +72,7 @@ public class ErrorPacket extends MySQLPacket {
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);
-        BufferUtil.writeUB2(buffer, errno);
+        BufferUtil.writeUB2(buffer, errNo);
         buffer.put(mark);
         buffer.put(sqlState);
         if (message != null) {
@@ -94,7 +94,7 @@ public class ErrorPacket extends MySQLPacket {
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(fieldCount);
-        BufferUtil.writeUB2(buffer, errno);
+        BufferUtil.writeUB2(buffer, errNo);
         buffer.put(mark);
         buffer.put(sqlState);
         if (message != null) {
@@ -132,12 +132,12 @@ public class ErrorPacket extends MySQLPacket {
         this.fieldCount = fieldCount;
     }
 
-    public int getErrno() {
-        return errno;
+    public int getErrNo() {
+        return errNo;
     }
 
-    public void setErrno(int errno) {
-        this.errno = errno;
+    public void setErrNo(int errNo) {
+        this.errNo = errNo;
     }
 
     public byte getMark() {

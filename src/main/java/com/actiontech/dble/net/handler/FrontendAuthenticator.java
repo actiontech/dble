@@ -100,13 +100,13 @@ public class FrontendAuthenticator implements NIOHandler {
         int benchmark = source.getPrivileges().getBenchmark(user);
         if (benchmark > 0) {
 
-            int forntedsLength = 0;
+            int frontendsLength = 0;
             NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
             for (NIOProcessor p : processors) {
-                forntedsLength += p.getForntedsLength();
+                frontendsLength += p.getFrontendsLength();
             }
 
-            if (forntedsLength >= benchmark) {
+            if (frontendsLength >= benchmark) {
                 return true;
             }
         }
@@ -167,7 +167,7 @@ public class FrontendAuthenticator implements NIOHandler {
         }
     }
 
-    protected NIOHandler successCommendHander() {
+    protected NIOHandler successCommendHandler() {
         return new FrontendCommandHandler(source);
     }
 
@@ -176,7 +176,7 @@ public class FrontendAuthenticator implements NIOHandler {
         source.setUser(auth.getUser());
         source.setSchema(auth.getDatabase());
         source.setCharsetIndex(auth.getCharsetIndex());
-        source.setHandler(successCommendHander());
+        source.setHandler(successCommendHandler());
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
@@ -197,9 +197,9 @@ public class FrontendAuthenticator implements NIOHandler {
         }
     }
 
-    protected void failure(int errno, String info) {
+    protected void failure(int errNo, String info) {
         LOGGER.error(source.toString() + info);
-        source.writeErrMessage((byte) 2, errno, info);
+        source.writeErrMessage((byte) 2, errNo, info);
     }
 
 }

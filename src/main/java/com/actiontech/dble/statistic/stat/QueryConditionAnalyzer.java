@@ -154,14 +154,14 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
          *
          * @param sql
          * @param table
-         * @param colnumName
+         * @param column
          * @return
          */
-        public List<Object> parseConditionValues(String sql, String table, String colnumName) {
+        public List<Object> parseConditionValues(String sql, String table, String column) {
 
             List<Object> values = null;
 
-            if (sql != null && table != null && columnName != null) {
+            if (sql != null && table != null && QueryConditionAnalyzer.this.columnName != null) {
 
                 values = new ArrayList<>();
 
@@ -180,7 +180,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
                         String ccN = condition.getColumn().getName();
                         ccN = fixName(ccN);
 
-                        if (colnumName.equalsIgnoreCase(ccN)) {
+                        if (column.equalsIgnoreCase(ccN)) {
                             List<Object> ccVL = condition.getValues();
                             values.addAll(ccVL);
                         }

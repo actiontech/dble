@@ -41,12 +41,12 @@ public class RouteCalculateUnit {
             tablesAndConditions.put(tableName, tableColumnsMap);
         }
 
-        String uperColName = columnName.toUpperCase();
-        Set<ColumnRoutePair> columValues = tableColumnsMap.get(uperColName);
+        String upperColName = columnName.toUpperCase();
+        Set<ColumnRoutePair> columnValues = tableColumnsMap.get(upperColName);
 
-        if (columValues == null) {
-            columValues = new LinkedHashSet<>();
-            tablesAndConditions.get(tableName).put(uperColName, columValues);
+        if (columnValues == null) {
+            columnValues = new LinkedHashSet<>();
+            tablesAndConditions.get(tableName).put(upperColName, columnValues);
         }
 
         if (value instanceof Object[]) {
@@ -54,12 +54,12 @@ public class RouteCalculateUnit {
                 if (item == null) {
                     continue;
                 }
-                columValues.add(new ColumnRoutePair(item.toString()));
+                columnValues.add(new ColumnRoutePair(item.toString()));
             }
         } else if (value instanceof RangeValue) {
-            columValues.add(new ColumnRoutePair((RangeValue) value));
+            columnValues.add(new ColumnRoutePair((RangeValue) value));
         } else {
-            columValues.add(new ColumnRoutePair(value.toString()));
+            columnValues.add(new ColumnRoutePair(value.toString()));
         }
     }
 

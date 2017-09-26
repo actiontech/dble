@@ -47,8 +47,8 @@ public class ItemSumSum extends ItemSumNum {
         }
     }
 
-    public Sumfunctype sumType() {
-        return hasWithDistinct() ? Sumfunctype.SUM_DISTINCT_FUNC : Sumfunctype.SUM_FUNC;
+    public SumFuncType sumType() {
+        return hasWithDistinct() ? SumFuncType.SUM_DISTINCT_FUNC : SumFuncType.SUM_FUNC;
     }
 
     @Override

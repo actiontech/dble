@@ -21,7 +21,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.FunctionJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
+public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RulesxmlTozkLoader.class);
@@ -82,12 +82,12 @@ public class RulesxmlTozkLoader extends ZkMultLoader implements NotifyService {
      */
     private void xmlTozkRulesJson(String basePath, Rules rules) throws Exception {
         String tableRuleJson = this.parseJsonTableRuleService.parseBeanToJson(rules.getTableRule());
-        this.checkAndwriteString(basePath, KVPathUtil.TABLE_RULE, tableRuleJson);
+        this.checkAndWriteString(basePath, KVPathUtil.TABLE_RULE, tableRuleJson);
 
         this.readMapFileAddFunction(rules.getFunction());
 
         String functionJson = this.parseJsonFunctionService.parseBeanToJson(rules.getFunction());
-        this.checkAndwriteString(basePath, KVPathUtil.FUNCTION, functionJson);
+        this.checkAndWriteString(basePath, KVPathUtil.FUNCTION, functionJson);
     }
 
     /**

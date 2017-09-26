@@ -243,9 +243,9 @@ public final class RadixSort {
             long key = Platform.getLong(baseObject, offset);
             long prefix = Platform.getLong(baseObject, offset + 8);
             int bucket = (int) ((prefix >>> (byteIdx * 8)) & 0xff);
-            long dest = offsets[bucket];
-            Platform.putLong(baseObject, dest, key);
-            Platform.putLong(baseObject, dest + 8, prefix);
+            long dst = offsets[bucket];
+            Platform.putLong(baseObject, dst, key);
+            Platform.putLong(baseObject, dst + 8, prefix);
             offsets[bucket] += 16;
         }
     }

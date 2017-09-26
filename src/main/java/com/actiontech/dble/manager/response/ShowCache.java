@@ -112,7 +112,7 @@ public final class ShowCache {
         row.add(LongUtil.toBytes(cacheStatic.getAccessTimes()));
         row.add(LongUtil.toBytes(cacheStatic.getHitTimes()));
         row.add(LongUtil.toBytes(cacheStatic.getPutTimes()));
-        row.add(StringUtil.encode(FormatUtil.formatDate(cacheStatic.getLastAccesTime()), charset));
+        row.add(StringUtil.encode(FormatUtil.formatDate(cacheStatic.getLastAccessTime()), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(cacheStatic.getLastPutTime()), charset));
         return row;
     }

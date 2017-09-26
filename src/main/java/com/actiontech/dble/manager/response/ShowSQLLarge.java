@@ -80,8 +80,8 @@ public final class ShowSQLLarge {
         for (UserStat userStat : statMap.values()) {
             String user = userStat.getUser();
 
-            List<UserSqlLargeStat.SqlLarge> sqls = userStat.getSqlLargeRowStat().getSqls();
-            for (UserSqlLargeStat.SqlLarge sql : sqls) {
+            List<UserSqlLargeStat.SqlLarge> queries = userStat.getSqlLargeRowStat().getQueries();
+            for (UserSqlLargeStat.SqlLarge sql : queries) {
                 if (sql != null) {
                     RowDataPacket row = getRow(user, sql, c.getCharset().getResults());
                     row.setPacketId(++packetId);

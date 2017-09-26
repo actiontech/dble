@@ -63,7 +63,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             }
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.Checktype.UPDATE)) {
+            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
@@ -86,7 +86,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             }
             TableConfig tc = schema.getTables().get(tableName);
             if (tc.isGlobalTable()) {
-                if (GlobalTableUtil.useGlobleTableCheck()) {
+                if (GlobalTableUtil.useGlobalTableCheck()) {
                     String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
                     rrs.setStatement(sql);
                 }
@@ -111,14 +111,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
         return schema;
     }
 
-    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String orginSQL) {
+    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String originSQL) {
         long opTimestamp = new Date().getTime();
         StructureMeta.TableMeta orgTbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
-            return orginSQL;
+            return originSQL;
         if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-            return orginSQL; // no inner column
+            return originSQL; // no inner column
         List<SQLUpdateSetItem> items = update.getItems();
         boolean flag = false;
         for (int i = 0; i < items.size(); i++) {

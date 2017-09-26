@@ -47,7 +47,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     private BlockingQueue<RowDataPacket> queue;
 
     private List<Order> groupBys;
-    private List<ItemSum> referedSumFunctions;
+    private List<ItemSum> referredSumFunctions;
 
     private BufferPool pool;
     private LocalResult groupLocalResult;
@@ -65,13 +65,13 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
     /**
      * @param groupBys
-     * @param referedSumFunctions
+     * @param referredSumFunctions
      */
     public DirectGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys,
-                                List<ItemSum> referedSumFunctions) {
+                                List<ItemSum> referredSumFunctions) {
         super(id, session);
         this.groupBys = groupBys;
-        this.referedSumFunctions = referedSumFunctions;
+        this.referredSumFunctions = referredSumFunctions;
         int queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queue = new LinkedBlockingQueue<>(queueSize);
         this.outQueue = new LinkedBlockingQueue<>(queueSize);
@@ -84,8 +84,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -93,28 +93,28 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
-        for (ItemSum sumFunc : referedSumFunctions) {
+        for (ItemSum sumFunc : referredSumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
                     this.type()));
             sums.add(sum);
         }
         prepareSumAggregators(sums, true);
-        setupSumFuncs(sums);
+        setupSumFunctions(sums);
         /* group fieldpackets are front of the origin */
         sendGroupFieldPackets((MySQLConnection) conn);
         // row in localresult is DGRowPacket which is added aggregate functions result from origin rowdatapacket
         localResultFps = this.fieldPackets;
-        List<ItemSum> localResultReferedSums = referedSumFunctions;
-        RowDataComparator cmptor = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
+        List<ItemSum> localResultReferredSums = referredSumFunctions;
+        RowDataComparator comparator = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
         );
-        groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), cmptor, localResultFps,
-                localResultReferedSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+        groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
+                localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
-            RowDataComparator tmpcmptor = new RowDataComparator(this.localResultFps, this.groupBys,
+            RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
-            GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpcmptor,
-                    localResultFps, localResultReferedSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
+            GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,
+                    localResultFps, localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
             bucket.setMemSizeController(session.getOtherBufferMC());
             buckets.add(bucket);
             bucket.start();
@@ -131,9 +131,9 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
-            FieldPacket tmpfp = new FieldPacket();
-            sum.makeField(tmpfp);
-            newFps.add(tmpfp);
+            FieldPacket tmp = new FieldPacket();
+            sum.makeField(tmp);
+            newFps.add(tmp);
         }
         newFps.addAll(this.fieldPackets);
         nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, conn);
@@ -181,13 +181,13 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("rowResponse");
         if (terminate.get())
             return true;
         hasFirstRow.compareAndSet(false, true);
         try {
-            DGRowPacket row = new DGRowPacket(rowPacket, this.referedSumFunctions.size());
+            DGRowPacket row = new DGRowPacket(rowPacket, this.referredSumFunctions.size());
             queue.put(row);
         } catch (InterruptedException e) {
             //ignore error
@@ -214,7 +214,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         RowDataPacket row = null;
         List<Field> localFields = HandlerTool.createFields(localResultFps);
         List<ItemSum> sendSums = new ArrayList<>();
-        for (ItemSum selSum : referedSumFunctions) {
+        for (ItemSum selSum : referredSumFunctions) {
             ItemSum sum = (ItemSum) HandlerTool.createItem(selSum, localFields, 0, false, HandlerType.GROUPBY);
             sendSums.add(sum);
         }
@@ -235,8 +235,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
          * count(*){col1,generated by group by handler},count(*){col2,response from mysql node}
          */
         for (ItemSum sendSum : sendSums) {
-            byte[] tmpb = sendSum.getRowPacketByte();
-            newRp.add(tmpb);
+            byte[] tmp = sendSum.getRowPacketByte();
+            newRp.add(tmp);
         }
         for (int i = 0; i < row.getFieldCount(); i++) {
             newRp.add(row.getValue(i));
@@ -251,8 +251,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
         for (ItemSum sum : this.sums) {
             sum.noRowsInResult();
-            byte[] tmpb = sum.getRowPacketByte();
-            newRp.add(tmpb);
+            byte[] tmp = sum.getRowPacketByte();
+            newRp.add(tmp);
         }
         for (int i = 0; i < this.fieldPackets.size(); i++) {
             newRp.add(null);
@@ -265,9 +265,9 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      *
      * @return
      */
-    protected void prepareSumAggregators(List<ItemSum> funcs, boolean needDistinct) {
+    protected void prepareSumAggregators(List<ItemSum> functions, boolean needDistinct) {
         LOGGER.info("prepare_sum_aggregators");
-        for (ItemSum func : funcs) {
+        for (ItemSum func : functions) {
             func.setAggregator(needDistinct && func.hasWithDistinct() ?
                             Aggregator.AggregatorType.DISTINCT_AGGREGATOR : Aggregator.AggregatorType.SIMPLE_AGGREGATOR,
                     null);
@@ -277,23 +277,23 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     /**
      * Call ::setup for all sum functions.
      *
-     * @param funcs sum function list
+     * @param functions sum function list
      * @retval FALSE ok
      * @retval TRUE error
      */
 
-    protected boolean setupSumFuncs(List<ItemSum> funcs) {
+    protected boolean setupSumFunctions(List<ItemSum> functions) {
         LOGGER.info("setup_sum_funcs");
-        for (ItemSum func : funcs) {
+        for (ItemSum func : functions) {
             if (func.aggregatorSetup())
                 return true;
         }
         return false;
     }
 
-    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
-        for (int index = 0; index < funcs.size(); index++) {
-            ItemSum sum = funcs.get(index);
+    protected void initSumFunctions(List<ItemSum> functions, RowDataPacket row) {
+        for (int index = 0; index < functions.size(); index++) {
+            ItemSum sum = functions.get(index);
             Object transObj = ((DGRowPacket) row).getSumTran(index);
             sum.resetAndAdd(row, transObj);
         }

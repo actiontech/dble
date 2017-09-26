@@ -86,7 +86,7 @@ public abstract class MysqlVisitor {
         StringBuilder whereBuilder = new StringBuilder();
         Item filter = planNode.getWhereFilter();
         if (filter != null) {
-            String pdName = visitUnselPushDownName(filter, false);
+            String pdName = visitUnSelPushDownName(filter, false);
             whereBuilder.append(" where ").append(pdName);
         }
         replaceableWhere.set(whereBuilder.toString());
@@ -109,7 +109,7 @@ public abstract class MysqlVisitor {
     protected abstract String visitPushDownNameSel(Item o);
 
     // pushDown's name of not in select list
-    public final String visitUnselPushDownName(Item item, boolean canUseAlias) {
+    public final String visitUnSelPushDownName(Item item, boolean canUseAlias) {
         String selName = item.getItemName();
         if (item.type().equals(ItemType.FIELD_ITEM)) {
             selName = "`" + item.getTableName() + "`.`" + selName + "`";

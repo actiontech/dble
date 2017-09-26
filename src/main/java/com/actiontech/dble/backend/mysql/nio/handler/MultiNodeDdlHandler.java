@@ -37,7 +37,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     private static final String STMT = "select 1";
     private final RouteResultset rrs;
-    private final RouteResultset orirrs;
+    private final RouteResultset oriRrs;
     private final NonBlockingSession session;
     private final boolean sessionAutocommit;
     private final MultiNodeQueryHandler handler;
@@ -63,7 +63,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
 
-        this.orirrs = rrs;
+        this.oriRrs = rrs;
         this.handler = new MultiNodeQueryHandler(sqlType, rrs, session);
 
         this.lock = new ReentrantLock();
@@ -117,7 +117,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             return;
         }
         conn.setResponseHandler(this);
-        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxstart());
+        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
     }
 
     @Override
@@ -125,7 +125,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         LOGGER.warn("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
 
@@ -154,7 +154,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         LOGGER.warn("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
 
@@ -221,7 +221,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             LOGGER.debug("on row end response " + conn);
         }
 
-        if (errorResponsed.get()) {
+        if (errorResponse.get()) {
             return;
         }
 
@@ -247,7 +247,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     handler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(String.valueOf(source) + orirrs, e);
+                    LOGGER.warn(String.valueOf(source) + oriRrs, e);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {
@@ -269,7 +269,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
         /* It is impossible arriving here, because we set limit to 0 */
-        return errorResponsed.get();
+        return errorResponse.get();
     }
 
     @Override
@@ -283,7 +283,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
         ServerConnection source = session.getSource();
-        boolean inTransaction = !source.isAutocommit() || source.isTxstart();
+        boolean inTransaction = !source.isAutocommit() || source.isTxStart();
         if (!inTransaction) {
             // normal query
             session.releaseConnection(conn);

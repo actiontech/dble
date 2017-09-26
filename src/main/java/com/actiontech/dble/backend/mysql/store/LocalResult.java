@@ -58,11 +58,11 @@ public abstract class LocalResult implements ResultStore {
             lastRow = row;
             rows.add(row);
             rowCount++;
-            int increSize = getRowMemory(row);
-            currentMemory += increSize;
+            int incrementSize = getRowMemory(row);
+            currentMemory += incrementSize;
             boolean needFlush = false;
             if (bufferMC != null) {
-                if (!bufferMC.addSize(increSize)) {
+                if (!bufferMC.addSize(incrementSize)) {
                     needFlush = true;
                 }
             } else if (!needFlush && currentMemory > maxMemory) {

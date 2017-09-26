@@ -31,12 +31,12 @@ public final class MetaHelper {
 
     public static final String PRIMARY = "PRIMARY";
 
-    public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStment, long timeStamp) {
+    public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
         StructureMeta.TableMeta.Builder tmBuilder = StructureMeta.TableMeta.newBuilder();
         tmBuilder.setTableName(table);
         tmBuilder.setVersion(timeStamp);
         Set<String> indexNames = new HashSet<>();
-        for (SQLTableElement tableElement : createStment.getTableElementList()) {
+        for (SQLTableElement tableElement : createStatement.getTableElementList()) {
             if (tableElement instanceof SQLColumnDefinition) {
                 SQLColumnDefinition column = (SQLColumnDefinition) tableElement;
                 StructureMeta.ColumnMeta.Builder cmBuilder = makeColumnMeta(tmBuilder, column, indexNames);

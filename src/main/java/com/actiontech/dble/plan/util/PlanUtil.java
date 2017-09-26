@@ -19,7 +19,7 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.Sumfunctype;
+import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.TableNode;
@@ -133,11 +133,11 @@ public final class PlanUtil {
     }
 
     public static boolean isUnPushDownSum(ItemSum sumFunc) {
-        if (sumFunc.sumType() == Sumfunctype.GROUP_CONCAT_FUNC)
+        if (sumFunc.sumType() == SumFuncType.GROUP_CONCAT_FUNC)
             return true;
         if (sumFunc.hasWithDistinct())
             return true;
-        return sumFunc.sumType() == Sumfunctype.UDF_SUM_FUNC;
+        return sumFunc.sumType() == SumFuncType.UDF_SUM_FUNC;
     }
 
     public static Item pushDownItem(PlanNode node, Item sel) {

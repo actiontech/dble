@@ -29,7 +29,7 @@ public abstract class DBHeartbeat {
     protected int errorCount;
     protected volatile int status;
     protected final HeartbeatRecorder recorder = new HeartbeatRecorder();
-    protected final DataSourceSyncRecorder asynRecorder = new DataSourceSyncRecorder();
+    protected final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
 
     private volatile Integer slaveBehindMaster;
     private volatile int dbSynStatus = DB_SYN_NORMAL;
@@ -108,8 +108,8 @@ public abstract class DBHeartbeat {
         return heartbeatSQL != null;
     }
 
-    public DataSourceSyncRecorder getAsynRecorder() {
-        return this.asynRecorder;
+    public DataSourceSyncRecorder getAsyncRecorder() {
+        return this.asyncRecorder;
     }
 
 }

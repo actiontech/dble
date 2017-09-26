@@ -23,24 +23,24 @@ import java.util.*;
 public class RowDataPacketGrouper {
 
     private List<RowDataPacket> result = Collections.synchronizedList(new ArrayList<RowDataPacket>());
-    private final MergeCol[] mergCols;
-    private final int[] groupColumnIndexs;
-    private boolean isMergAvg = false;
+    private final MergeCol[] mergeCols;
+    private final int[] groupColumnIndexes;
+    private boolean isMergeAvg = false;
     private HavingCols havingCols;
 
-    public RowDataPacketGrouper(int[] groupColumnIndexs, MergeCol[] mergCols, HavingCols havingCols) {
+    public RowDataPacketGrouper(int[] groupColumnIndexes, MergeCol[] mergeCols, HavingCols havingCols) {
         super();
-        this.groupColumnIndexs = groupColumnIndexs;
-        this.mergCols = mergCols;
+        this.groupColumnIndexes = groupColumnIndexes;
+        this.mergeCols = mergeCols;
         this.havingCols = havingCols;
     }
 
     public List<RowDataPacket> getResult() {
-        if (!isMergAvg) {
+        if (!isMergeAvg) {
             for (RowDataPacket row : result) {
-                mergAvg(row);
+                mergeAvg(row);
             }
-            isMergAvg = true;
+            isMergeAvg = true;
         }
 
         if (havingCols != null) {
@@ -165,7 +165,7 @@ public class RowDataPacketGrouper {
 
     public void addRow(RowDataPacket rowDataPkg) {
         for (RowDataPacket row : result) {
-            if (sameGropuColums(rowDataPkg, row)) {
+            if (sameGroupColumns(rowDataPkg, row)) {
                 aggregateRow(row, rowDataPkg);
                 return;
             }
@@ -177,17 +177,17 @@ public class RowDataPacketGrouper {
     }
 
     private void aggregateRow(RowDataPacket toRow, RowDataPacket newRow) {
-        if (mergCols == null) {
+        if (mergeCols == null) {
             return;
         }
-        for (MergeCol merg : mergCols) {
-            if (merg.mergeType != MergeCol.MERGE_AVG) {
-                byte[] mergeValue = mertFields(
-                        toRow.fieldValues.get(merg.colMeta.getColIndex()),
-                        newRow.fieldValues.get(merg.colMeta.getColIndex()),
-                        merg.colMeta.getColType(), merg.mergeType);
+        for (MergeCol mergeCol : mergeCols) {
+            if (mergeCol.mergeType != MergeCol.MERGE_AVG) {
+                byte[] mergeValue = mergeFields(
+                        toRow.fieldValues.get(mergeCol.colMeta.getColIndex()),
+                        newRow.fieldValues.get(mergeCol.colMeta.getColIndex()),
+                        mergeCol.colMeta.getColType(), mergeCol.mergeType);
                 if (mergeValue != null) {
-                    toRow.fieldValues.set(merg.colMeta.getColIndex(), mergeValue);
+                    toRow.fieldValues.set(mergeCol.colMeta.getColIndex(), mergeValue);
                 }
             }
         }
@@ -195,21 +195,21 @@ public class RowDataPacketGrouper {
 
     }
 
-    private void mergAvg(RowDataPacket toRow) {
-        if (mergCols == null) {
+    private void mergeAvg(RowDataPacket toRow) {
+        if (mergeCols == null) {
             return;
         }
 
         Set<Integer> rmIndexSet = new HashSet<>();
-        for (MergeCol merg : mergCols) {
-            if (merg.mergeType == MergeCol.MERGE_AVG) {
-                byte[] mergeValue = mertFields(
-                        toRow.fieldValues.get(merg.colMeta.getAvgSumIndex()),
-                        toRow.fieldValues.get(merg.colMeta.getAvgCountIndex()),
-                        merg.colMeta.getColType(), merg.mergeType);
+        for (MergeCol mergeCol : mergeCols) {
+            if (mergeCol.mergeType == MergeCol.MERGE_AVG) {
+                byte[] mergeValue = mergeFields(
+                        toRow.fieldValues.get(mergeCol.colMeta.getAvgSumIndex()),
+                        toRow.fieldValues.get(mergeCol.colMeta.getAvgCountIndex()),
+                        mergeCol.colMeta.getColType(), mergeCol.mergeType);
                 if (mergeValue != null) {
-                    toRow.fieldValues.set(merg.colMeta.getAvgSumIndex(), mergeValue);
-                    rmIndexSet.add(merg.colMeta.getAvgCountIndex());
+                    toRow.fieldValues.set(mergeCol.colMeta.getAvgSumIndex(), mergeValue);
+                    rmIndexSet.add(mergeCol.colMeta.getAvgCountIndex());
                 }
             }
         }
@@ -221,7 +221,7 @@ public class RowDataPacketGrouper {
 
     }
 
-    private byte[] mertFields(byte[] bs, byte[] bs2, int colType, int mergeType) {
+    private byte[] mergeFields(byte[] bs, byte[] bs2, int colType, int mergeType) {
         // System.out.println("mergeType:"+ mergeType+" colType "+colType+
         // " field:"+Arrays.toString(bs)+ " ->  "+Arrays.toString(bs2));
         if (bs2 == null || bs2.length == 0) {
@@ -292,12 +292,12 @@ public class RowDataPacketGrouper {
 
     // private static final
 
-    private boolean sameGropuColums(RowDataPacket newRow, RowDataPacket existRow) {
-        if (groupColumnIndexs == null) { // select count(*) from aaa , or group
+    private boolean sameGroupColumns(RowDataPacket newRow, RowDataPacket existRow) {
+        if (groupColumnIndexes == null) { // select count(*) from aaa , or group
             // column
             return true;
         }
-        for (int groupColumnIndex : groupColumnIndexs) {
+        for (int groupColumnIndex : groupColumnIndexes) {
             if (!Arrays.equals(newRow.fieldValues.get(groupColumnIndex),
                     existRow.fieldValues.get(groupColumnIndex))) {
                 return false;

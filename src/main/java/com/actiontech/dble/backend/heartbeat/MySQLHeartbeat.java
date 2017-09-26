@@ -57,7 +57,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         if (detector == null) {
             return null;
         }
-        long t = detector.getLasstReveivedQryTime();
+        long t = detector.getLastReceivedQryTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return sdf.format(new Date(t));
     }

@@ -122,7 +122,7 @@ public class DirectByteBufferPool implements BufferPool {
 
     private ByteBuffer allocateBuffer(int theChunkCount, int startPage, int endPage) {
         for (int i = startPage; i < endPage; i++) {
-            ByteBuffer buffer = allPages[i].allocatChunk(theChunkCount);
+            ByteBuffer buffer = allPages[i].allocateChunk(theChunkCount);
             if (buffer != null) {
                 prevAllocatedPage.getAndSet(i);
                 return buffer;

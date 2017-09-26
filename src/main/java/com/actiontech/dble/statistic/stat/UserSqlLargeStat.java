@@ -13,15 +13,15 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public class UserSqlLargeStat {
 
     private final int count;
-    private SortedSet<SqlLarge> sqls;
+    private SortedSet<SqlLarge> queries;
 
     public UserSqlLargeStat(int count) {
         this.count = count;
-        this.sqls = new ConcurrentSkipListSet<>();
+        this.queries = new ConcurrentSkipListSet<>();
     }
 
-    public List<SqlLarge> getSqls() {
-        List<SqlLarge> list = new ArrayList<>(sqls);
+    public List<SqlLarge> getQueries() {
+        List<SqlLarge> list = new ArrayList<>(queries);
         return list;
     }
 
@@ -31,7 +31,7 @@ public class UserSqlLargeStat {
     }
 
     public void add(SqlLarge sql) {
-        sqls.add(sql);
+        queries.add(sql);
     }
 
     public void reset() {
@@ -39,22 +39,22 @@ public class UserSqlLargeStat {
     }
 
     public void clear() {
-        sqls.clear();
+        queries.clear();
     }
 
     public void recycle() {
-        if (sqls.size() > count) {
-            SortedSet<SqlLarge> sqls2 = new ConcurrentSkipListSet<>();
-            List<SqlLarge> keyList = new ArrayList<>(sqls);
+        if (queries.size() > count) {
+            SortedSet<SqlLarge> queries2 = new ConcurrentSkipListSet<>();
+            List<SqlLarge> keyList = new ArrayList<>(queries);
             int i = 0;
             for (SqlLarge key : keyList) {
                 if (i == count) {
                     break;
                 }
-                sqls2.add(key);
+                queries2.add(key);
                 i++;
             }
-            sqls = sqls2;
+            queries = queries2;
         }
     }
 

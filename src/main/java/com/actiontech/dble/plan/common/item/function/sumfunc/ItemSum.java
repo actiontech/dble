@@ -56,7 +56,7 @@ public abstract class ItemSum extends ItemResultField {
         return withDistinct;
     }
 
-    public enum Sumfunctype {
+    public enum SumFuncType {
         COUNT_FUNC, COUNT_DISTINCT_FUNC, SUM_FUNC, SUM_DISTINCT_FUNC, AVG_FUNC, AVG_DISTINCT_FUNC, MIN_FUNC, MAX_FUNC, STD_FUNC, VARIANCE_FUNC, SUM_BIT_FUNC, UDF_SUM_FUNC, GROUP_CONCAT_FUNC
     }
 
@@ -78,7 +78,7 @@ public abstract class ItemSum extends ItemResultField {
         return ItemType.SUM_FUNC_ITEM;
     }
 
-    public abstract Sumfunctype sumType();
+    public abstract SumFuncType sumType();
 
     @Override
     public int hashCode() {

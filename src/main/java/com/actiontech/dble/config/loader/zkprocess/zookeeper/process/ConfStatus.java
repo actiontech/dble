@@ -25,9 +25,9 @@ public class ConfStatus {
     }
 
     public ConfStatus(String info) {
-        String[] infos = info.split(split);
-        this.from = infos[0];
-        this.status = Status.valueOf(infos[1]);
+        String[] infoDetail = info.split(split);
+        this.from = infoDetail[0];
+        this.status = Status.valueOf(infoDetail[1]);
     }
 
     @Override

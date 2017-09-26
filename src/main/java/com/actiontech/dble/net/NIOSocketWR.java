@@ -161,7 +161,7 @@ public class NIOSocketWR extends SocketWR {
     }
 
     @Override
-    public void asynRead() throws IOException {
+    public void asyncRead() throws IOException {
         ByteBuffer theBuffer = con.readBuffer;
         if (theBuffer == null) {
 

@@ -143,7 +143,7 @@ public final class ShowDatasourceCluster {
         for (PhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 DBHeartbeat hb = ds.getHeartbeat();
-                DataSourceSyncRecorder record = hb.getAsynRecorder();
+                DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 if (!states.isEmpty()) {

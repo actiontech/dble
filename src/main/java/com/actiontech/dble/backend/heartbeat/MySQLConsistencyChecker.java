@@ -51,7 +51,7 @@ public class MySQLConsistencyChecker {
         this.columnExistSQL += this.tableName + "' ";
     }
 
-    public void checkRecordCout() {
+    public void checkRecordCount() {
         // ["db3","db2","db1"]
         lock.lock();
         try {

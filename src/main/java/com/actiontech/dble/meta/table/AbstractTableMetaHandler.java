@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractTableMetaHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractTableMetaHandler.class);
-    private static final String[] MYSQL_SHOW_CREATE_TABLE_COLMS = new String[]{
+    private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
     private static final String SQL_PREFIX = "show create table ";
@@ -57,7 +57,7 @@ public abstract class AbstractTableMetaHandler {
             } finally {
                 tbConfig.getReentrantReadWriteLock().writeLock().unlock();
             }
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLMS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
             SQLJob sqlJob = new SQLJob(SQL_PREFIX + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
             sqlJob.run();
@@ -89,7 +89,7 @@ public abstract class AbstractTableMetaHandler {
                     }
                     return;
                 }
-                String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLMS[1]);
+                String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
                 Map<String, List<String>> dataNodeTableStructureSQLMap = tbConfig.getDataNodeTableStructureSQLMap();
                 if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
                     List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
@@ -140,8 +140,8 @@ public abstract class AbstractTableMetaHandler {
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
             SQLStatementParser parser = new MySqlStatementParser(sql);
-            SQLCreateTableStatement createStment = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStment, timeStamp);
+            SQLCreateTableStatement createStatement = parser.parseCreateTable();
+            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
         }
     }
 }

@@ -123,14 +123,14 @@ public final class ExplainHandler {
         String rootName = null;
         for (DMLResponseHandler startHandler : endHandler.getMerges()) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            List<BaseSelectHandler> mergelist = new ArrayList<>();
-            mergelist.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
+            List<BaseSelectHandler> mergeList = new ArrayList<>();
+            mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
             mergeCnt++;
             String mergeNode = "merge." + mergeCnt;
             RefHandlerInfo refInfo = new RefHandlerInfo(mergeNode, "MERGE");
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
-            for (BaseSelectHandler exeHandler : mergelist) {
+            for (BaseSelectHandler exeHandler : mergeList) {
                 RouteResultsetNode rrss = exeHandler.getRrss();
                 String dateNode = rrss.getName() + "." + rrss.getMultiplexNum();
                 result.add(new String[]{dateNode, "BASE SQL", rrss.getStatement()});
@@ -282,11 +282,11 @@ public final class ExplainHandler {
             return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c);
         } catch (Exception e) {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
-                SQLException sqle = (SQLException) e;
+                SQLException sqlException = (SQLException) e;
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + sqle);
-                String msg = sqle.getMessage();
-                c.writeErrMessage(sqle.getErrorCode(), msg == null ? sqle.getClass().getSimpleName() : msg);
+                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + sqlException);
+                String msg = sqlException.getMessage();
+                c.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();

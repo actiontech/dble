@@ -23,7 +23,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private String statement; // the query for node to executr
     private final int sqlType;
     private volatile boolean canRunInReadDB;
-    private final boolean hasBlanceFlag;
+    private final boolean hasBalanceFlag;
     private int limitStart;
     private int limitSize;
     private LoadData loadData;
@@ -39,7 +39,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.sqlType = sqlType;
         this.statement = srcStatement;
         canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
-        hasBlanceFlag = (statement != null) && statement.startsWith("/*balance*/");
+        hasBalanceFlag = (statement != null) && statement.startsWith("/*balance*/");
         this.multiplexNum = new AtomicLong(0);
     }
 
@@ -73,8 +73,8 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
      * @param autocommit
      * @return
      */
-    public boolean canRunnINReadDB(boolean autocommit) {
-        return canRunInReadDB && (autocommit || hasBlanceFlag);
+    public boolean canRunINReadDB(boolean autocommit) {
+        return canRunInReadDB && (autocommit || hasBalanceFlag);
     }
 
     public String getName() {
@@ -165,8 +165,8 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         return this.name.compareTo(obj.name);
     }
 
-    public boolean isHasBlanceFlag() {
-        return hasBlanceFlag;
+    public boolean isHasBalanceFlag() {
+        return hasBalanceFlag;
     }
 
 }

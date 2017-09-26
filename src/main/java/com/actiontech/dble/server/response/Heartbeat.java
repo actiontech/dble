@@ -39,7 +39,7 @@ public final class Heartbeat {
         } else {
             ErrorPacket error = new ErrorPacket();
             error.setPacketId(1);
-            error.setErrno(ErrorCode.ER_SERVER_SHUTDOWN);
+            error.setErrNo(ErrorCode.ER_SERVER_SHUTDOWN);
             error.setMessage(String.valueOf(hp.getId()).getBytes());
             error.write(c);
             if (HEARTBEAT.isInfoEnabled()) {

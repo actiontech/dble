@@ -53,8 +53,8 @@ public final class ShowServerLog {
 
     private static File getLogFile(String logFile) {
 
-        String daasHome = SystemConfig.getHomePath();
-        File file = new File(daasHome, "logs" + File.separator + logFile);
+        String homePath = SystemConfig.getHomePath();
+        File file = new File(homePath, "logs" + File.separator + logFile);
         return file;
     }
 
@@ -93,9 +93,9 @@ public final class ShowServerLog {
             }
             String limitStr = condPairMap.get("limit");
             limitStr = (limitStr != null) ? limitStr : "0," + 100000;
-            String[] limtArry = limitStr.split("\\s|,");
-            int start = Integer.parseInt(limtArry[0]);
-            int page = Integer.parseInt(limtArry[1]);
+            String[] limitArry = limitStr.split("\\s|,");
+            int start = Integer.parseInt(limitArry[0]);
+            int page = Integer.parseInt(limitArry[1]);
             int end = start + page;
             String key = condPairMap.get("key");
             String regex = condPairMap.get("regex");

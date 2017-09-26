@@ -34,8 +34,8 @@ public final class ReloadHandler {
                 ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt));
                 break;
             case ManagerParseReload.QUERY_CF:
-                String filted = ParseUtil.parseString(stmt);
-                ReloadQueryCf.execute(c, filted);
+                String filter = ParseUtil.parseString(stmt);
+                ReloadQueryCf.execute(c, filter);
                 break;
             case ManagerParseReload.META_DATA:
                 ReloadMetaData.execute(c);

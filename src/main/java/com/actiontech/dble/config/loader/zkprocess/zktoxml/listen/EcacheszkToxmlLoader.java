@@ -16,10 +16,10 @@ import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.json.EhcacheJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.xml.EhcacheParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -36,7 +36,7 @@ import java.io.IOException;
  * author:liujun
  * Created:2016/9/15
  */
-public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService {
+public class EcacheszkToxmlLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EcacheszkToxmlLoader.class);
@@ -60,7 +60,7 @@ public class EcacheszkToxmlLoader extends ZkMultLoader implements NotifyService 
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DiretoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DirectoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         this.getTreeDirectory(currZkPath, KVPathUtil.CACHE, rulesDirectory);
 
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) rulesDirectory.getSubordinateInfo().get(0);

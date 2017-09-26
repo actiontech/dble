@@ -23,8 +23,8 @@ public abstract class ItemSumBit extends ItemSumInt {
         bits = BigInteger.valueOf(resetArg);
     }
 
-    public Sumfunctype sumType() {
-        return Sumfunctype.SUM_BIT_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.SUM_BIT_FUNC;
     }
 
     @Override

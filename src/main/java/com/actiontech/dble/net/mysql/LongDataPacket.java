@@ -32,8 +32,8 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
  */
 public class LongDataPacket extends MySQLPacket {
 
-    private static final byte PACKET_FALG = (byte) 24;
-    private long pstmtId;
+    private static final byte PACKET_FLAG = (byte) 24;
+    private long pStmtId;
     private long paramId;
     private byte[] longData = new byte[0];
 
@@ -42,8 +42,8 @@ public class LongDataPacket extends MySQLPacket {
         packetLength = mm.readUB3();
         packetId = mm.read();
         byte code = mm.read();
-        assert code == PACKET_FALG;
-        pstmtId = mm.readUB4();
+        assert code == PACKET_FLAG;
+        pStmtId = mm.readUB4();
         paramId = mm.readUB2();
         this.longData = mm.readBytes(packetLength - (1 + 4 + 2));
     }
@@ -58,8 +58,8 @@ public class LongDataPacket extends MySQLPacket {
         return "MySQL Long Data Packet";
     }
 
-    public long getPstmtId() {
-        return pstmtId;
+    public long getPsStmtId() {
+        return pStmtId;
     }
 
     public long getParamId() {

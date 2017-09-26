@@ -35,9 +35,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class OrderedGroupByHandler extends BaseDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(OrderedGroupByHandler.class);
     private List<Order> groupBys;
-    private List<ItemSum> referedSumFunctions;
+    private List<ItemSum> referredSumFunctions;
 
-    private RowDataComparator cmptor;
+    private RowDataComparator comparator;
 
     private List<ItemSum> sums = new ArrayList<>();
 
@@ -60,12 +60,12 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
 
     /**
      * @param groupBys
-     * @param referedSumFunctions
+     * @param referredSumFunctions
      */
-    public OrderedGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referedSumFunctions) {
+    public OrderedGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referredSumFunctions) {
         super(id, session);
         this.groupBys = groupBys;
-        this.referedSumFunctions = referedSumFunctions;
+        this.referredSumFunctions = referredSumFunctions;
         this.distinctStores = new ArrayList<>();
     }
 
@@ -75,8 +75,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
         if (terminate.get())
             return;
@@ -84,14 +84,14 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             this.pool = DbleServer.getInstance().getBufferPool();
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
-        for (ItemSum sumFunc : referedSumFunctions) {
+        for (ItemSum sumFunc : referredSumFunctions) {
             ItemSum sum = (ItemSum) (HandlerTool.createItem(sumFunc, sourceFields, 0, this.isAllPushDown(),
                     this.type()));
             sums.add(sum);
         }
-        cmptor = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type());
-        prepareSumAggregators(sums, this.referedSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
-        setupSumFuncs(sums);
+        comparator = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type());
+        prepareSumAggregators(sums, this.referredSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
+        setupSumFunctions(sums);
         sendGroupFieldPackets(conn);
     }
 
@@ -102,16 +102,16 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
-            FieldPacket tmpfp = new FieldPacket();
-            sum.makeField(tmpfp);
-            newFps.add(tmpfp);
+            FieldPacket tmp = new FieldPacket();
+            sum.makeField(tmp);
+            newFps.add(tmp);
         }
         newFps.addAll(this.fieldPackets);
         nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, conn);
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("rowresponse");
         if (terminate.get())
             return true;
@@ -122,7 +122,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                 originRp = rowPacket;
                 initSumFunctions(sums, rowPacket);
             } else {
-                boolean sameGroupRow = this.groupBys.size() == 0 || (cmptor.compare(originRp, rowPacket) == 0);
+                boolean sameGroupRow = this.groupBys.size() == 0 || (comparator.compare(originRp, rowPacket) == 0);
                 if (!sameGroupRow) {
                     // send the completed result firstly
                     sendGroupRowPacket((MySQLConnection) conn);
@@ -141,8 +141,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     private void sendGroupRowPacket(MySQLConnection conn) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
         for (ItemSum sum : this.sums) {
-            byte[] tmpb = sum.getRowPacketByte();
-            newRp.add(tmpb);
+            byte[] tmp = sum.getRowPacketByte();
+            newRp.add(tmp);
         }
         for (int i = 0; i < originRp.getFieldCount(); i++) {
             newRp.add(originRp.getValue(i));
@@ -173,8 +173,8 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         // sumfuncs are front
         for (ItemSum sum : this.sums) {
             sum.noRowsInResult();
-            byte[] tmpb = sum.getRowPacketByte();
-            newRp.add(tmpb);
+            byte[] tmp = sum.getRowPacketByte();
+            newRp.add(tmp);
         }
         for (int i = 0; i < this.fieldPackets.size(); i++) {
             newRp.add(null);
@@ -188,14 +188,14 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      *
      * @return
      */
-    protected void prepareSumAggregators(List<ItemSum> funcs, List<ItemSum> sumfuncs, List<FieldPacket> packets,
+    protected void prepareSumAggregators(List<ItemSum> functions, List<ItemSum> sumFunctions, List<FieldPacket> packets,
                                          boolean isAllPushDown, boolean needDistinct, MySQLConnection conn) {
         LOGGER.info("prepare_sum_aggregators");
-        for (int i = 0; i < funcs.size(); i++) {
-            ItemSum func = funcs.get(i);
+        for (int i = 0; i < functions.size(); i++) {
+            ItemSum func = functions.get(i);
             ResultStore store = null;
             if (func.hasWithDistinct()) {
-                ItemSum selFunc = sumfuncs.get(i);
+                ItemSum selFunc = sumFunctions.get(i);
                 List<Order> orders = HandlerTool.makeOrder(selFunc.arguments());
                 RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type());
                 store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset).
@@ -211,28 +211,28 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     /**
      * Call ::setup for all sum functions.
      *
-     * @param funcs sum function list
+     * @param functions sum function list
      * @retval FALSE ok
      * @retval TRUE error
      */
 
-    protected boolean setupSumFuncs(List<ItemSum> funcs) {
+    protected boolean setupSumFunctions(List<ItemSum> functions) {
         LOGGER.info("setup_sum_funcs");
-        for (ItemSum func : funcs) {
+        for (ItemSum func : functions) {
             if (func.aggregatorSetup())
                 return true;
         }
         return false;
     }
 
-    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
-        for (ItemSum func : funcs) {
+    protected void initSumFunctions(List<ItemSum> functions, RowDataPacket row) {
+        for (ItemSum func : functions) {
             func.resetAndAdd(row, null);
         }
     }
 
-    protected void updateSumFunc(List<ItemSum> funcs, RowDataPacket row) {
-        for (ItemSum func : funcs) {
+    protected void updateSumFunc(List<ItemSum> functions, RowDataPacket row) {
+        for (ItemSum func : functions) {
             func.aggregatorAdd(row, null);
         }
     }

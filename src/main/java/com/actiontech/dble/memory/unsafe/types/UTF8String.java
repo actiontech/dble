@@ -594,7 +594,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
     /**
      * Find the `str` from right to left.
      */
-    private int rfind(UTF8String str, int start) {
+    private int rFind(UTF8String str, int start) {
         assert (str.numBytes > 0);
         while (start >= 0) {
             if (ByteArrayMethods.arrayEquals(base, offset + start, str.base, str.offset, str.numBytes)) {
@@ -611,14 +611,14 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
      * returned. If count is negative, every to the right of the final delimiter (counting from the
      * right) is returned. subStringIndex performs a case-sensitive match when searching for delim.
      */
-    public UTF8String subStringIndex(UTF8String delim, int count) {
-        if (delim.numBytes == 0 || count == 0) {
+    public UTF8String subStringIndex(UTF8String delimiter, int count) {
+        if (delimiter.numBytes == 0 || count == 0) {
             return EMPTY_UTF8;
         }
         if (count > 0) {
             int idx = -1;
             while (count > 0) {
-                idx = find(delim, idx + 1);
+                idx = find(delimiter, idx + 1);
                 if (idx >= 0) {
                     count--;
                 } else {
@@ -634,10 +634,10 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
             return fromBytes(bytes);
 
         } else {
-            int idx = numBytes - delim.numBytes + 1;
+            int idx = numBytes - delimiter.numBytes + 1;
             count = -count;
             while (count > 0) {
-                idx = rfind(delim, idx - 1);
+                idx = rFind(delimiter, idx - 1);
                 if (idx >= 0) {
                     count--;
                 } else {
@@ -645,12 +645,12 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
                     return this;
                 }
             }
-            if (idx + delim.numBytes == numBytes) {
+            if (idx + delimiter.numBytes == numBytes) {
                 return EMPTY_UTF8;
             }
-            int size = numBytes - delim.numBytes - idx;
+            int size = numBytes - delimiter.numBytes - idx;
             byte[] bytes = new byte[size];
-            Platform.copyMemory(base, offset + idx + delim.numBytes, bytes, Platform.BYTE_ARRAY_OFFSET, size);
+            Platform.copyMemory(base, offset + idx + delimiter.numBytes, bytes, Platform.BYTE_ARRAY_OFFSET, size);
             return fromBytes(bytes);
         }
     }
@@ -661,7 +661,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
      * ('hi', 5, '??') =&gt; 'hi???'
      * ('hi', 1, '??') =&gt; 'h'
      */
-    public UTF8String rpad(int len, UTF8String pad) {
+    public UTF8String rPad(int len, UTF8String pad) {
         int spaces = len - this.numChars(); // number of char need to pad
         if (spaces <= 0 || pad.numBytes() == 0) {
             // no padding at all, return the substring of the current string
@@ -693,7 +693,7 @@ public final class UTF8String implements Comparable<UTF8String>, Externalizable,
      * ('hi', 5, '??') =&gt; '???hi'
      * ('hi', 1, '??') =&gt; 'h'
      */
-    public UTF8String lpad(int len, UTF8String pad) {
+    public UTF8String lPad(int len, UTF8String pad) {
         int spaces = len - this.numChars(); // number of char need to pad
         if (spaces <= 0 || pad.numBytes() == 0) {
             // no padding at all, return the substring of the current string

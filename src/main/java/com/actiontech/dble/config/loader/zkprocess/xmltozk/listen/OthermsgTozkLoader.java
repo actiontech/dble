@@ -7,7 +7,7 @@ package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * author:liujun
  * Created:2016/9/15
  */
-public class OthermsgTozkLoader extends ZkMultLoader implements NotifyService {
+public class OthermsgTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OthermsgTozkLoader.class);

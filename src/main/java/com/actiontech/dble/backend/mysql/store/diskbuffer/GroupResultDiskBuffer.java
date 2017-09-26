@@ -34,7 +34,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
     /**
      * @param pool
      * @param columnCount
-     * @param cmp          group by cmptor
+     * @param cmp          group by comparator
      * @param packets      packets which already contain sum_function's fieldpacket,
      *                     sum_packets are put in the front
      * @param sumFunctions
@@ -82,25 +82,25 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
      *
      * @return
      */
-    protected void prepareSumAggregators(List<ItemSum> funcs, boolean needDistinct) {
-        for (ItemSum func : funcs) {
+    protected void prepareSumAggregators(List<ItemSum> functions, boolean needDistinct) {
+        for (ItemSum func : functions) {
             func.setAggregator(needDistinct && func.hasWithDistinct() ?
                             AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     null);
         }
     }
 
-    protected void initSumFunctions(List<ItemSum> funcs, RowDataPacket row) {
-        for (int i = 0; i < funcs.size(); i++) {
-            ItemSum sum = funcs.get(i);
+    protected void initSumFunctions(List<ItemSum> functions, RowDataPacket row) {
+        for (int i = 0; i < functions.size(); i++) {
+            ItemSum sum = functions.get(i);
             Object transObj = ((DGRowPacket) row).getSumTran(i);
             sum.resetAndAdd(row, transObj);
         }
     }
 
-    protected void updateSumFunc(List<ItemSum> funcs, RowDataPacket row) {
-        for (int index = 0; index < funcs.size(); index++) {
-            ItemSum sum = funcs.get(index);
+    protected void updateSumFunc(List<ItemSum> functions, RowDataPacket row) {
+        for (int index = 0; index < functions.size(); index++) {
+            ItemSum sum = functions.get(index);
             Object transObj = ((DGRowPacket) row).getSumTran(index);
             sum.aggregatorAdd(row, transObj);
         }

@@ -31,9 +31,9 @@ public class RouteService {
     private final LayerCachePool tableId2DataNodeCache;
 
 
-    public RouteService(CacheService cachService) {
-        sqlRouteCache = cachService.getCachePool("SQLRouteCache");
-        tableId2DataNodeCache = (LayerCachePool) cachService.getCachePool("TableID2DataNodeCache");
+    public RouteService(CacheService cacheService) {
+        sqlRouteCache = cacheService.getCachePool("SQLRouteCache");
+        tableId2DataNodeCache = (LayerCachePool) cacheService.getCachePool("TableID2DataNodeCache");
     }
 
     public LayerCachePool getTableId2DataNodeCache() {

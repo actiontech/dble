@@ -122,19 +122,19 @@ public final class ShowSQLSumTable {
 
         String table = tableStat.getTable();
 
-        StringBuilder relaTableNameBuffer = new StringBuilder();
-        StringBuilder relaTableCountBuffer = new StringBuilder();
-        List<TableStat.RelaTable> relaTables = tableStat.getRelaTables();
-        if (!relaTables.isEmpty()) {
+        StringBuilder relationTableNameBuffer = new StringBuilder();
+        StringBuilder relationTableCountBuffer = new StringBuilder();
+        List<TableStat.RelationTable> relationTables = tableStat.getRelationTables();
+        if (!relationTables.isEmpty()) {
 
-            for (TableStat.RelaTable relaTable : relaTables) {
-                relaTableNameBuffer.append(relaTable.getTableName()).append(", ");
-                relaTableCountBuffer.append(relaTable.getCount()).append(", ");
+            for (TableStat.RelationTable relationTable : relationTables) {
+                relationTableNameBuffer.append(relationTable.getTableName()).append(", ");
+                relationTableCountBuffer.append(relationTable.getCount()).append(", ");
             }
 
         } else {
-            relaTableNameBuffer.append("NULL");
-            relaTableCountBuffer.append("NULL");
+            relationTableNameBuffer.append("NULL");
+            relationTableCountBuffer.append("NULL");
         }
 
         row.add(StringUtil.encode(table, charset));
@@ -146,8 +146,8 @@ public final class ShowSQLSumTable {
 
         String rStr = decimalFormat.format(1.0D * r / (r + w));
         row.add(StringUtil.encode(String.valueOf(rStr), charset));
-        row.add(StringUtil.encode(relaTableNameBuffer.toString(), charset));
-        row.add(StringUtil.encode(relaTableCountBuffer.toString(), charset));
+        row.add(StringUtil.encode(relationTableNameBuffer.toString(), charset));
+        row.add(StringUtil.encode(relationTableCountBuffer.toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(tableStat.getLastExecuteTime()), charset));
 
         return row;

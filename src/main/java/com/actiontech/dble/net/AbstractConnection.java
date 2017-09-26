@@ -254,8 +254,8 @@ public abstract class AbstractConnection implements NIOConnection {
 
     }
 
-    public void asynRead() throws IOException {
-        this.socketWR.asynRead();
+    public void asyncRead() throws IOException {
+        this.socketWR.asyncRead();
     }
 
     public void doNextWriteCheck() throws IOException {
@@ -592,7 +592,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
         return sbUsrVariables.toString();
     }
-    public void onConnectfinish() {
+    public void onConnectFinish() {
         LOGGER.debug("The backend conntinon has finished connecting");
     }
 }

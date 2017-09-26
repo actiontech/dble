@@ -81,9 +81,9 @@ public final class ShowSQL {
         Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             String user = userStat.getUser();
-            List<UserSqlLastStat.SqlLast> sqls = userStat.getSqlLastStat().getSqls();
+            List<UserSqlLastStat.SqlLast> queries = userStat.getSqlLastStat().getQueries();
             int i = 1;
-            for (UserSqlLastStat.SqlLast sqlLast : sqls) {
+            for (UserSqlLastStat.SqlLast sqlLast : queries) {
                 if (sqlLast != null) {
                     RowDataPacket row = getRow(user, sqlLast, i, c.getCharset().getResults());
                     row.setPacketId(++packetId);

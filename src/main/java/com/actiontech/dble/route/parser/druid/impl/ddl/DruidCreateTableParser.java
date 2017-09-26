@@ -58,7 +58,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             return schemaInfo.getSchemaConfig();
         }
         sharingTableCheck(createStmt);
-        if (GlobalTableUtil.useGlobleTableCheck() &&
+        if (GlobalTableUtil.useGlobalTableCheck() &&
                 GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             String sql = addColumnIfCreate(createStmt);
             rrs.setSrcStatement(sql);

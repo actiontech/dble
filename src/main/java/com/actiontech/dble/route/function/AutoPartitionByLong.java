@@ -23,7 +23,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     private static final long serialVersionUID = 5752372920655270639L;
     private String mapFile;
-    private LongRange[] longRongs;
+    private LongRange[] longRanges;
 
     private int defaultNode = -1;
 
@@ -39,13 +39,13 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     @Override
     public Integer calculate(String columnValue) {
-        //columnValue = NumberParseUtil.eliminateQoute(columnValue);
+        //columnValue = NumberParseUtil.eliminateQuote(columnValue);
         try {
             long value = Long.parseLong(columnValue);
             Integer rst = null;
-            for (LongRange longRang : this.longRongs) {
+            for (LongRange longRang : this.longRanges) {
                 if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-                    return longRang.nodeIndx;
+                    return longRang.nodeIndex;
                 }
             }
             // use default node for other value
@@ -66,7 +66,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         try {
             long value = Long.parseLong(columnValue);
             Integer rst = null;
-            for (LongRange longRang : this.longRongs) {
+            for (LongRange longRang : this.longRanges) {
                 if (value <= longRang.valueEnd && value >= longRang.valueStart) {
                     return false;
                 }
@@ -86,7 +86,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         Integer begin = 0, end = 0;
         if (isUseDefaultNode(beginValue) || isUseDefaultNode(endValue)) {
             begin = 0;
-            end = longRongs.length - 1;
+            end = longRanges.length - 1;
         } else {
             begin = calculate(beginValue);
             end = calculate(endValue);
@@ -111,7 +111,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     @Override
     public int getPartitionNum() {
-        int nPartition = longRongs.length;
+        int nPartition = longRanges.length;
         return nPartition;
     }
 
@@ -143,7 +143,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 longRangeList.add(new LongRange(nodeId, longStart, longEnd));
 
             }
-            longRongs = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -165,13 +165,13 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     }
 
     static class LongRange implements Serializable {
-        public final int nodeIndx;
+        public final int nodeIndex;
         public final long valueStart;
         public final long valueEnd;
 
-        LongRange(int nodeIndx, long valueStart, long valueEnd) {
+        LongRange(int nodeIndex, long valueStart, long valueEnd) {
             super();
-            this.nodeIndx = nodeIndx;
+            this.nodeIndex = nodeIndex;
             this.valueStart = valueStart;
             this.valueEnd = valueEnd;
         }

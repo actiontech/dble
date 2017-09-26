@@ -55,11 +55,11 @@ public class PhysicalDBPool {
         this.writeSources = writeSources;
         this.balance = balance;
 
-        Iterator<Map.Entry<Integer, PhysicalDatasource[]>> entryItor = readSources.entrySet().iterator();
-        while (entryItor.hasNext()) {
-            PhysicalDatasource[] values = entryItor.next().getValue();
+        Iterator<Map.Entry<Integer, PhysicalDatasource[]>> iterator = readSources.entrySet().iterator();
+        while (iterator.hasNext()) {
+            PhysicalDatasource[] values = iterator.next().getValue();
             if (values.length == 0) {
-                entryItor.remove();
+                iterator.remove();
             }
         }
 
@@ -95,7 +95,7 @@ public class PhysicalDBPool {
         return allSources;
     }
 
-    public PhysicalDatasource findDatasouce(BackendConnection exitsCon) {
+    public PhysicalDatasource findDatasource(BackendConnection exitsCon) {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
@@ -205,7 +205,7 @@ public class PhysicalDBPool {
 
     public boolean isSlave(PhysicalDatasource ds) {
         int currentIndex = 0;
-        boolean islave = false;
+        boolean isSlave = false;
         // mgj: immediately get the active ds and compare is good???
         for (int i = 0; i < getSources().length; i++) {
             PhysicalDatasource writeHostDatasource = getSources()[i];
@@ -214,9 +214,9 @@ public class PhysicalDBPool {
                 break;
             }
         }
-        islave = (currentIndex != activeIndex);
+        isSlave = (currentIndex != activeIndex);
 
-        return islave;
+        return isSlave;
     }
 
     public boolean isInitSuccess() {
@@ -500,7 +500,7 @@ public class PhysicalDBPool {
      * @param attachment
      * @throws Exception
      */
-    public void getRWBanlanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+    public void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 
         PhysicalDatasource theNode = null;
         ArrayList<PhysicalDatasource> okSources = null;

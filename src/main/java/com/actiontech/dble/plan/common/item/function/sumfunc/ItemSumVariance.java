@@ -64,8 +64,8 @@ public class ItemSumVariance extends ItemSumNum {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return Sumfunctype.VARIANCE_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.VARIANCE_FUNC;
     }
 
     @Override

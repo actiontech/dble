@@ -8,7 +8,7 @@ package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -25,7 +25,7 @@ import java.util.Properties;
  * author:liujun
  * Created:2016/9/15
  */
-public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
+public class SequenceTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTozkLoader.class);
@@ -89,6 +89,6 @@ public class SequenceTozkLoader extends ZkMultLoader implements NotifyService {
             }
         }
         String sequenceZkPath = ZKPaths.makePath(KVPathUtil.SEQUENCE_COMMON, readFile);
-        this.checkAndwriteString(basePath, sequenceZkPath, commSequence);
+        this.checkAndWriteString(basePath, sequenceZkPath, commSequence);
     }
 }

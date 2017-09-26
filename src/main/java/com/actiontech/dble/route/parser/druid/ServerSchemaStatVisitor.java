@@ -35,7 +35,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private boolean hasSubQuery = false;
     private boolean hasOrCondition = false;
     private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
-    private List<WhereUnit> storedwhereUnits = new CopyOnWriteArrayList<>();
+    private List<WhereUnit> storedWhereUnits = new CopyOnWriteArrayList<>();
 
     private void reset() {
         this.conditions.clear();
@@ -455,11 +455,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             splitUntilNoOr(whereUnit);
         }
 
-        this.storedwhereUnits.addAll(whereUnits);
+        this.storedWhereUnits.addAll(whereUnits);
 
         loopFindSubWhereUnit(whereUnits);
 
-        for (WhereUnit whereUnit : storedwhereUnits) {
+        for (WhereUnit whereUnit : storedWhereUnits) {
             this.getConditionsFromWhereUnit(whereUnit);
         }
 
@@ -505,13 +505,13 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private List<List<Condition>> mergedConditions() {
-        if (storedwhereUnits.size() == 0) {
+        if (storedWhereUnits.size() == 0) {
             return new ArrayList<>();
         }
-        for (WhereUnit whereUnit : storedwhereUnits) {
+        for (WhereUnit whereUnit : storedWhereUnits) {
             mergeOneWhereUnit(whereUnit);
         }
-        return getMergedConditionList(storedwhereUnits);
+        return getMergedConditionList(storedWhereUnits);
 
     }
 

@@ -27,7 +27,6 @@ public final class SelectTxReadOnly {
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
-    private static byte[] longbt = LongUtil.toBytes(0);
 
     static {
         int i = 0;
@@ -48,7 +47,8 @@ public final class SelectTxReadOnly {
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(longbt);
+        int result = c.isReadOnly() ? 1 : 0;
+        row.add(LongUtil.toBytes(result));
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();

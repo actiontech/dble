@@ -59,8 +59,8 @@ public class ProxyMetaManager {
     /* catalog,table,tablemeta */
     private final Map<String, SchemaMeta> catalogs;
     private final Set<String> lockTables;
-    private ReentrantLock metalock = new ReentrantLock();
-    private Condition condRelease = metalock.newCondition();
+    private ReentrantLock metaLock = new ReentrantLock();
+    private Condition condRelease = metaLock.newCondition();
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
     private AtomicInteger ddlCount = new AtomicInteger(0);
@@ -79,7 +79,7 @@ public class ProxyMetaManager {
     }
 
     public void addMetaLock(String schema, String tbName) throws InterruptedException {
-        metalock.lock();
+        metaLock.lock();
         try {
             ddlCount.incrementAndGet();
             String lockKey = genLockKey(schema, tbName);
@@ -88,28 +88,28 @@ public class ProxyMetaManager {
             }
             lockTables.add(lockKey);
         } finally {
-            metalock.unlock();
+            metaLock.unlock();
         }
     }
 
     public boolean isMetaLocked(String schema, String tbName) {
-        metalock.lock();
+        metaLock.lock();
         try {
             String lockKey = genLockKey(schema, tbName);
             return lockTables.contains(lockKey);
         } finally {
-            metalock.unlock();
+            metaLock.unlock();
         }
     }
 
     public void removeMetaLock(String schema, String tbName) {
-        metalock.lock();
+        metaLock.lock();
         try {
             lockTables.remove(genLockKey(schema, tbName));
             ddlCount.decrementAndGet();
             condRelease.signalAll();
         } finally {
-            metalock.unlock();
+            metaLock.unlock();
         }
     }
 
@@ -183,7 +183,7 @@ public class ProxyMetaManager {
 
     public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) {
         while (true) {
-            metalock.lock();
+            metaLock.lock();
             try {
                 if (lockTables.contains(genLockKey(schema, tbName))) {
                     LOGGER.warn("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
@@ -194,7 +194,7 @@ public class ProxyMetaManager {
             } catch (InterruptedException e) {
                 return null;
             } finally {
-                metalock.unlock();
+                metaLock.unlock();
             }
         }
     }
@@ -568,10 +568,10 @@ public class ProxyMetaManager {
     }
 
     private void dropIndex(StructureMeta.TableMeta.Builder tmBuilder, String dropName) {
-        List<StructureMeta.IndexMeta> indexs = new ArrayList<>();
-        indexs.addAll(tmBuilder.getIndexList());
-        if (dropIndex(indexs, dropName)) {
-            tmBuilder.clearIndex().addAllIndex(indexs);
+        List<StructureMeta.IndexMeta> indexes = new ArrayList<>();
+        indexes.addAll(tmBuilder.getIndexList());
+        if (dropIndex(indexes, dropName)) {
+            tmBuilder.clearIndex().addAllIndex(indexes);
         } else {
             List<StructureMeta.IndexMeta> uniques = new ArrayList<>();
             uniques.addAll(tmBuilder.getUniIndexList());
@@ -580,17 +580,17 @@ public class ProxyMetaManager {
         }
     }
 
-    private boolean dropIndex(List<StructureMeta.IndexMeta> indexs, String dropName) {
+    private boolean dropIndex(List<StructureMeta.IndexMeta> indexes, String dropName) {
         int index = -1;
-        for (int i = 0; i < indexs.size(); i++) {
-            String indexName = indexs.get(i).getName();
+        for (int i = 0; i < indexes.size(); i++) {
+            String indexName = indexes.get(i).getName();
             if (indexName.equalsIgnoreCase(dropName)) {
                 index = i;
                 break;
             }
         }
         if (index != -1) {
-            indexs.remove(index);
+            indexes.remove(index);
             return true;
         }
         return false;

@@ -71,11 +71,11 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
     }
 
 
-    public void onRowMetaData(Map<String, ColMeta> columToIndx, int fieldSize) throws IOException {
+    public void onRowMetaData(Map<String, ColMeta> columnToIndex, int fieldSize) throws IOException {
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("field metadata keys:" + columToIndx.keySet());
-            LOGGER.debug("field metadata values:" + columToIndx.values());
+            LOGGER.debug("field metadata keys:" + columnToIndex.keySet());
+            LOGGER.debug("field metadata values:" + columnToIndex.values());
         }
 
         OrderCol[] orderCols = null;
@@ -89,7 +89,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         this.fieldCount = fieldSize;
 
         if (rrs.getHavingCols() != null) {
-            ColMeta colMeta = columToIndx.get(rrs.getHavingCols().getLeft().toUpperCase());
+            ColMeta colMeta = columnToIndex.get(rrs.getHavingCols().getLeft().toUpperCase());
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("getHavingCols:" + rrs.getHavingCols().toString());
@@ -100,46 +100,46 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         }
 
         if (rrs.isHasAggrColumn()) {
-            List<MergeCol> mergCols = new LinkedList<>();
+            List<MergeCol> mergeCols = new LinkedList<>();
             Map<String, Integer> mergeColsMap = rrs.getMergeCols();
 
             if (mergeColsMap != null) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("isHasAggrColumn:" + mergeColsMap.toString());
                 }
-                for (Map.Entry<String, Integer> mergEntry : mergeColsMap.entrySet()) {
-                    String colName = mergEntry.getKey().toUpperCase();
-                    int type = mergEntry.getValue();
+                for (Map.Entry<String, Integer> mergeEntry : mergeColsMap.entrySet()) {
+                    String colName = mergeEntry.getKey().toUpperCase();
+                    int type = mergeEntry.getValue();
                     if (MergeCol.MERGE_AVG == type) {
-                        ColMeta sumColMeta = columToIndx.get(colName + "SUM");
-                        ColMeta countColMeta = columToIndx.get(colName + "COUNT");
+                        ColMeta sumColMeta = columnToIndex.get(colName + "SUM");
+                        ColMeta countColMeta = columnToIndex.get(colName + "COUNT");
                         if (sumColMeta != null && countColMeta != null) {
                             ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
                                     countColMeta.getColIndex(),
                                     sumColMeta.getColType());
-                            mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
+                            mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
                         }
                     } else {
-                        ColMeta colMeta = columToIndx.get(colName);
-                        mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
+                        ColMeta colMeta = columnToIndex.get(colName);
+                        mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
                     }
                 }
             }
 
             // add no alias merg column
-            for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
+            for (Map.Entry<String, ColMeta> fieldEntry : columnToIndex.entrySet()) {
                 String colName = fieldEntry.getKey();
                 int result = MergeCol.tryParseAggCol(colName);
                 if (result != MergeCol.MERGE_UNSUPPORT && result != MergeCol.MERGE_NOMERGE) {
-                    mergCols.add(new MergeCol(fieldEntry.getValue(), result));
+                    mergeCols.add(new MergeCol(fieldEntry.getValue(), result));
                 }
             }
 
             /**
              * Group
              */
-            unsafeRowGrouper = new UnsafeRowGrouper(columToIndx, rrs.getGroupByCols(),
-                    mergCols.toArray(new MergeCol[mergCols.size()]),
+            unsafeRowGrouper = new UnsafeRowGrouper(columnToIndex, rrs.getGroupByCols(),
+                    mergeCols.toArray(new MergeCol[mergeCols.size()]),
                     rrs.getHavingCols());
         }
 
@@ -150,7 +150,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             int i = 0;
             for (Map.Entry<String, Integer> entry : orders.entrySet()) {
                 String key = StringUtil.removeBackQuote(entry.getKey().toUpperCase());
-                ColMeta colMeta = columToIndx.get(key);
+                ColMeta colMeta = columnToIndex.get(key);
                 if (colMeta == null) {
                     throw new IllegalArgumentException(
                             "all columns in order by clause should be in the selected column list!" + entry.getKey());
@@ -158,7 +158,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 orderCols[i++] = new OrderCol(colMeta, entry.getValue());
             }
 
-            schema = new StructType(columToIndx, fieldSize);
+            schema = new StructType(columnToIndex, fieldSize);
             schema.setOrderCols(orderCols);
 
             prefixComputer = new RowPrefixComputer(schema);
@@ -186,7 +186,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
          * 1.schema
          */
 
-        schema = new StructType(columToIndx, fieldSize);
+        schema = new StructType(columnToIndex, fieldSize);
         schema.setOrderCols(orderCols);
 
         /**
@@ -272,14 +272,14 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             return;
         }
 
-        boolean nulpack = false;
+        boolean nulPack = false;
 
         try {
             for (; ; ) {
                 final PackWraper pack = packs.poll();
 
                 if (pack == null) {
-                    nulpack = true;
+                    nulPack = true;
                     break;
                 }
                 if (pack == endFlagPack) {
@@ -288,18 +288,18 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                      * means all the data have received
                      */
                     final int warningCount = 0;
-                    final EOFPacket eofp = new EOFPacket();
+                    final EOFPacket eofPacket = new EOFPacket();
                     final ByteBuffer eof = ByteBuffer.allocate(9);
-                    BufferUtil.writeUB3(eof, eofp.calcPacketSize());
-                    eof.put(eofp.getPacketId());
-                    eof.put(eofp.getFieldCount());
+                    BufferUtil.writeUB3(eof, eofPacket.calcPacketSize());
+                    eof.put(eofPacket.getPacketId());
+                    eof.put(eofPacket.getFieldCount());
                     BufferUtil.writeUB2(eof, warningCount);
-                    BufferUtil.writeUB2(eof, eofp.getStatus());
+                    BufferUtil.writeUB2(eof, eofPacket.getStatus());
                     final ServerConnection source = multiQueryHandler.getSession().getSource();
                     final byte[] array = eof.array();
 
 
-                    Iterator<UnsafeRow> iters = null;
+                    Iterator<UnsafeRow> iterator = null;
 
 
                     if (unsafeRowGrouper != null) {
@@ -307,23 +307,23 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                          * group by need order
                          */
                         if (globalSorter != null) {
-                            iters = unsafeRowGrouper.getResult(globalSorter);
+                            iterator = unsafeRowGrouper.getResult(globalSorter);
                         } else {
-                            iters = unsafeRowGrouper.getResult(globalMergeResult);
+                            iterator = unsafeRowGrouper.getResult(globalMergeResult);
                         }
 
                     } else if (globalSorter != null) {
 
-                        iters = globalSorter.sort();
+                        iterator = globalSorter.sort();
 
                     } else {
 
-                        iters = globalMergeResult.sort();
+                        iterator = globalMergeResult.sort();
 
                     }
 
-                    if (iters != null)
-                        multiQueryHandler.outputMergeResult(source, array, iters);
+                    if (iterator != null)
+                        multiQueryHandler.outputMergeResult(source, array, iterator);
 
 
                     if (unsafeRowGrouper != null) {
@@ -383,7 +383,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             multiQueryHandler.handleDataProcessException(e);
         } finally {
             running.set(false);
-            if (nulpack && !packs.isEmpty()) {
+            if (nulPack && !packs.isEmpty()) {
                 this.run();
             }
         }

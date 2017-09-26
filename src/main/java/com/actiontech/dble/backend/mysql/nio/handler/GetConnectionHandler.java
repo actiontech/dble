@@ -27,10 +27,10 @@ public class GetConnectionHandler implements ResponseHandler {
     private final int total;
 
     public GetConnectionHandler(
-            CopyOnWriteArrayList<BackendConnection> connsToStore,
+            CopyOnWriteArrayList<BackendConnection> consToStore,
             int totalNumber) {
         super();
-        this.successCons = connsToStore;
+        this.successCons = consToStore;
         this.total = totalNumber;
     }
 

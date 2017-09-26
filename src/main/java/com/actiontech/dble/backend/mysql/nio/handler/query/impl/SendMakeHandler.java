@@ -27,19 +27,19 @@ public class SendMakeHandler extends BaseDMLHandler {
 
     private final ReentrantLock lock;
 
-    private List<Item> sels;
+    private List<Item> selects;
     private List<Field> sourceFields;
     private List<Item> selItems;
     private String tbAlias;
 
     /**
      * @param session
-     * @param sels
+     * @param selects
      */
-    public SendMakeHandler(long id, NonBlockingSession session, List<Item> sels, String tableAlias) {
+    public SendMakeHandler(long id, NonBlockingSession session, List<Item> selects, String tableAlias) {
         super(id, session);
         lock = new ReentrantLock();
-        this.sels = sels;
+        this.selects = selects;
         this.selItems = new ArrayList<>();
         this.tbAlias = tableAlias;
     }
@@ -50,15 +50,15 @@ public class SendMakeHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
             if (terminate.get())
                 return;
             this.fieldPackets = fieldPackets;
             this.sourceFields = HandlerTool.createFields(this.fieldPackets);
-            for (Item sel : sels) {
+            for (Item sel : selects) {
                 Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type());
                 tmpItem.setItemName(sel.getItemName());
                 if (sel.getAlias() != null || tbAlias != null) {
@@ -86,7 +86,7 @@ public class SendMakeHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
             if (terminate.get())

@@ -123,7 +123,7 @@ public final class ShowDatasourceSyn {
         for (PhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 DBHeartbeat hb = ds.getHeartbeat();
-                DataSourceSyncRecorder record = hb.getAsynRecorder();
+                DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 if (!states.isEmpty()) {
@@ -133,8 +133,8 @@ public final class ShowDatasourceSyn {
                     row.add(StringUtil.encode(states.get("Master_Host"), charset));
                     row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
                     row.add(StringUtil.encode(states.get("Master_User"), charset));
-                    String secords = states.get("Seconds_Behind_Master");
-                    row.add(secords == null ? null : LongUtil.toBytes(Long.parseLong(secords)));
+                    String seconds = states.get("Seconds_Behind_Master");
+                    row.add(seconds == null ? null : LongUtil.toBytes(Long.parseLong(seconds)));
                     row.add(StringUtil.encode(states.get("Slave_IO_Running"), charset));
                     row.add(StringUtil.encode(states.get("Slave_SQL_Running"), charset));
                     row.add(StringUtil.encode(states.get("Slave_IO_State"), charset));

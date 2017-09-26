@@ -86,8 +86,8 @@ public class TxnLogProcessor extends Thread {
         Date date = new Date();
         date.setTime(System.currentTimeMillis());
         log.setExecuteTime(dateFormat.format(date));
-        log.setConnid(c.getId());
-        if (c.isTxstart() || !c.isAutocommit()) {
+        log.setConnId(c.getId());
+        if (c.isTxStart() || !c.isAutocommit()) {
             log.setXid(c.getXid());
         } else {
             log.setXid(c.getAndIncrementXid());

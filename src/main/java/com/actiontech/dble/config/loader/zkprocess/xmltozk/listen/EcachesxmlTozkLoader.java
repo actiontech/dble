@@ -16,7 +16,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.json.EhcacheJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.xml.EhcacheParseXmlImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ import java.io.IOException;
  * author:liujun
  * Created:2016/9/15
  */
-public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService {
+public class EcachesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EcachesxmlTozkLoader.class);
@@ -73,11 +73,11 @@ public class EcachesxmlTozkLoader extends ZkMultLoader implements NotifyService 
      */
     private void xmlTozkEhcacheJson(String basePath, Ehcache ehcache) throws Exception {
         String ehcacheJson = this.parseJsonEhcacheService.parseBeanToJson(ehcache);
-        this.checkAndwriteString(basePath, KVPathUtil.EHCACHE_NAME, ehcacheJson);
+        this.checkAndWriteString(basePath, KVPathUtil.EHCACHE_NAME, ehcacheJson);
 
         try {
             String serviceValue = ConfFileRWUtils.readFile(KVPathUtil.CACHESERVER_NAME);
-            this.checkAndwriteString(basePath, KVPathUtil.CACHESERVER_NAME, serviceValue);
+            this.checkAndWriteString(basePath, KVPathUtil.CACHESERVER_NAME, serviceValue);
         } catch (IOException e) {
             LOGGER.error("EhcachexmlTozkLoader readMapFile IOException", e);
         }

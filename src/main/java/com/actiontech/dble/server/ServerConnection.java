@@ -53,7 +53,7 @@ public class ServerConnection extends FrontendConnection {
     private volatile boolean txStarted;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
-    private volatile String txInterrputMsg = "";
+    private volatile String txInterruptMsg = "";
     private long lastInsertId;
     private NonBlockingSession session;
     private volatile boolean isLocked = false;
@@ -116,11 +116,11 @@ public class ServerConnection extends FrontendConnection {
         this.lastInsertId = lastInsertId;
     }
 
-    public boolean isTxstart() {
+    public boolean isTxStart() {
         return txStarted;
     }
 
-    public void setTxstart(boolean txStart) {
+    public void setTxStart(boolean txStart) {
         if (!txStart && txChainBegin) {
             txChainBegin = false;
         } else {
@@ -131,7 +131,7 @@ public class ServerConnection extends FrontendConnection {
     public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
             txInterrupted = true;
-            this.txInterrputMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
+            this.txInterruptMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
         }
     }
 
@@ -221,7 +221,7 @@ public class ServerConnection extends FrontendConnection {
             return;
         }
         if (txInterrupted) {
-            writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
+            writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
             return;
         }
 
@@ -334,13 +334,13 @@ public class ServerConnection extends FrontendConnection {
 
     private void executeException(Exception e, String sql) {
         if (e instanceof SQLException) {
-            SQLException sqle = (SQLException) e;
-            String msg = sqle.getMessage();
+            SQLException sqlException = (SQLException) e;
+            String msg = sqlException.getMessage();
             StringBuilder s = new StringBuilder();
             LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
-            int vendorCode = sqle.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqle.getErrorCode();
-            String sqlState = StringUtil.isEmpty(sqle.getSQLState()) ? "HY000" : sqle.getSQLState();
-            String errorMsg = msg == null ? sqle.getClass().getSimpleName() : msg;
+            int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
+            String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
+            String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;
             writeErrMessage(sqlState, errorMsg, vendorCode);
         } else {
             StringBuilder s = new StringBuilder();
@@ -355,7 +355,7 @@ public class ServerConnection extends FrontendConnection {
      */
     public void beginInTx(String stmt) {
         if (txInterrupted) {
-            writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
+            writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
             this.txChainBegin = true;
@@ -366,7 +366,7 @@ public class ServerConnection extends FrontendConnection {
 
     public void commit(String logReason) {
         if (txInterrupted) {
-            writeErrMessage(ErrorCode.ER_YES, txInterrputMsg);
+            writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, logReason);
             session.commit();
@@ -414,11 +414,11 @@ public class ServerConnection extends FrontendConnection {
     public void close(String reason) {
 
         //XA transaction in this phase,close it
-        if (session.getSource().isTxstart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
+        if (session.getSource().isTxStart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             super.close(reason);
             session.initiativeTerminate();
-        } else if (session.getSource().isTxstart() &&
+        } else if (session.getSource().isTxStart() &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);
@@ -438,7 +438,7 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public void killAndClose(String reason) {
-        if (session.getSource().isTxstart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
+        if (session.getSource().isTxStart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
                   session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);

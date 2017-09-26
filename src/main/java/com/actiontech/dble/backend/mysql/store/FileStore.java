@@ -221,7 +221,7 @@ public class FileStore {
         String newName = name;
         int index = newName.indexOf(':');
         String scheme = newName.substring(0, index);
-        if (!FileCounter.getInstance().increament() && "nioMapped".equals(scheme)) {
+        if (!FileCounter.getInstance().increment() && "nioMapped".equals(scheme)) {
             newName = "nio:Disk";
         }
         try {

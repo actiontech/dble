@@ -36,54 +36,54 @@ import java.util.Map;
 public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerPrepareHandler.class);
-    private static Escaper varcharEscaper = null;
+    private static Escaper varcharEscape = null;
 
     static {
         Builder escapeBuilder = Escapers.builder();
         escapeBuilder.addEscape('\'', "\\'");
         escapeBuilder.addEscape('\\', "\\\\");
-        varcharEscaper = escapeBuilder.build();
+        varcharEscape = escapeBuilder.build();
     }
 
     private ServerConnection source;
-    private volatile long pstmtId;
-    private Map<String, PreparedStatement> pstmtForSql;
-    private Map<Long, PreparedStatement> pstmtForId;
+    private volatile long pStmtId;
+    private Map<String, PreparedStatement> pStmtForSql;
+    private Map<Long, PreparedStatement> pStmtForId;
 
     public ServerPrepareHandler(ServerConnection source) {
         this.source = source;
-        this.pstmtId = 0L;
-        this.pstmtForSql = new HashMap<>();
-        this.pstmtForId = new HashMap<>();
+        this.pStmtId = 0L;
+        this.pStmtForSql = new HashMap<>();
+        this.pStmtForId = new HashMap<>();
     }
 
     @Override
     public void prepare(String sql) {
         LOGGER.debug("use server prepare, sql: " + sql);
-        PreparedStatement pstmt = null;
-        if ((pstmt = pstmtForSql.get(sql)) == null) {
+        PreparedStatement pStmt = null;
+        if ((pStmt = pStmtForSql.get(sql)) == null) {
             int columnCount = getColumnCount(sql);
             int paramCount = getParamCount(sql);
-            pstmt = new PreparedStatement(++pstmtId, sql, columnCount, paramCount);
-            pstmtForSql.put(pstmt.getStatement(), pstmt);
-            pstmtForId.put(pstmt.getId(), pstmt);
+            pStmt = new PreparedStatement(++pStmtId, sql, columnCount, paramCount);
+            pStmtForSql.put(pStmt.getStatement(), pStmt);
+            pStmtForId.put(pStmt.getId(), pStmt);
         }
-        PreparedStmtResponse.response(pstmt, source);
+        PreparedStmtResponse.response(pStmt, source);
     }
 
     @Override
     public void sendLongData(byte[] data) {
         LongDataPacket packet = new LongDataPacket();
         packet.read(data);
-        long psId = packet.getPstmtId();
-        PreparedStatement pstmt = pstmtForId.get(psId);
-        if (pstmt != null) {
+        long psId = packet.getPsStmtId();
+        PreparedStatement pStmt = pStmtForId.get(psId);
+        if (pStmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("send long data to prepare sql : " + pstmtForId.get(psId));
+                LOGGER.debug("send long data to prepare sql : " + pStmtForId.get(psId));
             }
             long paramId = packet.getParamId();
             try {
-                pstmt.appendLongData(paramId, packet.getLongData());
+                pStmt.appendLongData(paramId, packet.getLongData());
             } catch (IOException e) {
                 source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, e.getMessage());
             }
@@ -94,27 +94,27 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     public void reset(byte[] data) {
         ResetPacket packet = new ResetPacket();
         packet.read(data);
-        long psId = packet.getPstmtId();
-        PreparedStatement pstmt = pstmtForId.get(psId);
-        if (pstmt != null) {
+        long psId = packet.getPsStmtId();
+        PreparedStatement pStmt = pStmtForId.get(psId);
+        if (pStmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("reset prepare sql : " + pstmtForId.get(psId));
+                LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId));
             }
-            pstmt.resetLongData();
+            pStmt.resetLongData();
             source.write(OkPacket.OK);
         } else {
-            source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pstmtForId.get(psId));
+            source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
         }
     }
 
     @Override
     public void execute(byte[] data) {
         long psId = ByteUtil.readUB4(data, 5);
-        PreparedStatement pstmt = null;
-        if ((pstmt = pstmtForId.get(psId)) == null) {
-            source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pstmtId when executing.");
+        PreparedStatement pStmt = null;
+        if ((pStmt = pStmtForId.get(psId)) == null) {
+            source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
-            ExecutePacket packet = new ExecutePacket(pstmt);
+            ExecutePacket packet = new ExecutePacket(pStmt);
             try {
                 packet.read(data, source.getCharset().getClient());
             } catch (UnsupportedEncodingException e) {
@@ -123,7 +123,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             }
             BindValue[] bindValues = packet.getValues();
             // reset the Parameter
-            String sql = prepareStmtBindValue(pstmt, bindValues);
+            String sql = prepareStmtBindValue(pStmt, bindValues);
             source.getSession2().setPrepared(true);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute prepare sql: " + sql);
@@ -139,16 +139,16 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close prepare stmt, stmtId = " + psId);
         }
-        PreparedStatement pstmt = pstmtForId.remove(psId);
-        if (pstmt != null) {
-            pstmtForSql.remove(pstmt.getStatement());
+        PreparedStatement pStmt = pStmtForId.remove(psId);
+        if (pStmt != null) {
+            pStmtForSql.remove(pStmt.getStatement());
         }
     }
 
     @Override
     public void clear() {
-        this.pstmtForId.clear();
-        this.pstmtForSql.clear();
+        this.pStmtForId.clear();
+        this.pStmtForSql.clear();
     }
 
     // TODO:the size of columns of prepared statement
@@ -171,13 +171,13 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     /**
      * build sql
      *
-     * @param pstmt
+     * @param pStmt
      * @param bindValues
      * @return
      */
-    private String prepareStmtBindValue(PreparedStatement pstmt, BindValue[] bindValues) {
-        String sql = pstmt.getStatement();
-        int[] paramTypes = pstmt.getParametersType();
+    private String prepareStmtBindValue(PreparedStatement pStmt, BindValue[] bindValues) {
+        String sql = pStmt.getStatement();
+        int[] paramTypes = pStmt.getParametersType();
         StringBuilder sb = new StringBuilder();
         int idx = 0;
         for (int i = 0, len = sql.length(); i < len; i++) {
@@ -217,7 +217,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 case Fields.FIELD_TYPE_VAR_STRING:
                 case Fields.FIELD_TYPE_STRING:
                 case Fields.FIELD_TYPE_VARCHAR:
-                    bindValue.setValue(varcharEscaper.asFunction().apply(String.valueOf(bindValue.getValue())));
+                    bindValue.setValue(varcharEscape.asFunction().apply(String.valueOf(bindValue.getValue())));
                     sb.append("'" + bindValue.getValue() + "'");
                     break;
                 case Fields.FIELD_TYPE_TINY_BLOB:
@@ -239,7 +239,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                     sb.append("'" + bindValue.getValue() + "'");
                     break;
                 default:
-                    bindValue.setValue(varcharEscaper.asFunction().apply(String.valueOf(bindValue.getValue())));
+                    bindValue.setValue(varcharEscape.asFunction().apply(String.valueOf(bindValue.getValue())));
                     sb.append(bindValue.getValue().toString());
                     break;
             }

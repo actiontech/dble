@@ -47,13 +47,13 @@ public class LimitHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get()) {
             return true;
         }

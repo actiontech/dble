@@ -70,12 +70,12 @@ public class SchemaConfig {
                 if (funcNodeERMap == null) {
                     funcNodeERMap = new HashMap<>();
                 }
-                Set<ERTable> eratables = funcNodeERMap.get(key);
-                if (eratables == null) {
-                    eratables = new HashSet<>();
-                    funcNodeERMap.put(key, eratables);
+                Set<ERTable> eraTables = funcNodeERMap.get(key);
+                if (eraTables == null) {
+                    eraTables = new HashSet<>();
+                    funcNodeERMap.put(key, eraTables);
                 }
-                eratables.add(new ERTable(name, tc.getName(), column));
+                eraTables.add(new ERTable(name, tc.getName(), column));
                 continue;
             }
             if (parent.getDirectRouteTC() == null || tc.getDirectRouteTC() == null) {
@@ -104,13 +104,13 @@ public class SchemaConfig {
                     if (funcNodeERMap == null) {
                         funcNodeERMap = new HashMap<>();
                     }
-                    Set<ERTable> eratables = funcNodeERMap.get(key);
-                    if (eratables == null) {
-                        eratables = new HashSet<>();
-                        funcNodeERMap.put(key, eratables);
+                    Set<ERTable> erTables = funcNodeERMap.get(key);
+                    if (erTables == null) {
+                        erTables = new HashSet<>();
+                        funcNodeERMap.put(key, erTables);
                     }
-                    eratables.add(new ERTable(name, tc.getName(), tc.getJoinKey()));
-                    eratables.add(new ERTable(name, parent.getName(), tc.getParentKey()));
+                    erTables.add(new ERTable(name, tc.getName(), tc.getJoinKey()));
+                    erTables.add(new ERTable(name, parent.getName(), tc.getParentKey()));
                 }
             }
         }

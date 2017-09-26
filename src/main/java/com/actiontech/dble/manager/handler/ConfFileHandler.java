@@ -138,11 +138,11 @@ public final class ConfFileHandler {
         InputStream in = null;
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         try {
-            byte[] tempbytes = new byte[100];
-            int byteread;
+            byte[] tempBytes = new byte[100];
+            int byteRead;
             in = new FileInputStream(fileName);
-            while ((byteread = in.read(tempbytes)) != -1) {
-                outStream.write(tempbytes, 0, byteread);
+            while ((byteRead = in.read(tempBytes)) != -1) {
+                outStream.write(tempBytes, 0, byteRead);
             }
         } catch (Exception e1) {
             LOGGER.error("readFileByBytesError", e1);
@@ -201,8 +201,8 @@ public final class ConfFileHandler {
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
-            File dest = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
-            if (!tempFile.renameTo(dest)) {
+            File dst = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
+            if (!tempFile.renameTo(dst)) {
                 String msg = "rename file failed";
                 LOGGER.warn(msg + " for upload file " + tempFile.getAbsolutePath());
                 return showInfo(c, buffer, packetId, msg);

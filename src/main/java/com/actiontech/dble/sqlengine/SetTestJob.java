@@ -89,7 +89,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
         errPg.read(err);
         doFinished(true);
         conn.release(); //conn context not change
-        sc.writeErrMessage(errPg.getErrno(), new String(errPg.getMessage()));
+        sc.writeErrMessage(errPg.getErrNo(), new String(errPg.getMessage()));
     }
 
     @Override

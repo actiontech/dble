@@ -200,8 +200,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 if (top.isNullItem()) {
                     heap.poll();
                 } else {
-                    BlockingQueue<HeapItem> topitemQueue = queues.get(top.getIndex());
-                    HeapItem item = topitemQueue.take();
+                    BlockingQueue<HeapItem> topItemQueue = queues.get(top.getIndex());
+                    HeapItem item = topItemQueue.take();
                     heap.replaceTop(item);
                     if (filterFinished) {
                         continue;
@@ -212,8 +212,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 }
             }
             if (LOGGER.isInfoEnabled()) {
-                String executeSqls = getRoutesSql(route);
-                LOGGER.info(executeSqls + " heap send eof: ");
+                String executeQueries = getRoutesSql(route);
+                LOGGER.info(executeQueries + " heap send eof: ");
             }
             nextHandler.rowEofResponse(null, this.isLeft, queues.keySet().iterator().next());
         } catch (Exception e) {
@@ -246,14 +246,14 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 }
             }
         }
-        Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iter = this.queues.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iter.next();
+        Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iterator.next();
             // fair lock queue,poll for clear
             while (entry.getValue().poll() != null) {
                 //do nothing
             }
-            iter.remove();
+            iterator.remove();
         }
     }
 

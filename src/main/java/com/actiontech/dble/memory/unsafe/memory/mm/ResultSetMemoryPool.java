@@ -102,12 +102,12 @@ public class ResultSetMemoryPool extends MemoryPool {
 
 
             while (true) {
-                long numActiveConns = memoryForConnection.size();
+                long numActiveCons = memoryForConnection.size();
                 long curMem = memoryForConnection.get(connAttemptId);
 
                 long maxPoolSize = poolSize();
-                long maxMemoryPerTask = maxPoolSize / numActiveConns;
-                long minMemoryPerTask = poolSize() / (8 * numActiveConns);
+                long maxMemoryPerTask = maxPoolSize / numActiveCons;
+                long minMemoryPerTask = poolSize() / (8 * numActiveCons);
 
                 // How much we can grant this connection; keep its share within 0 <= X <= 1 / numActiveConns
                 long maxToGrant = Math.min(numBytes, Math.max(0, maxMemoryPerTask - curMem));

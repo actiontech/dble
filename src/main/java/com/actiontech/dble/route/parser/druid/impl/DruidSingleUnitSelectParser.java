@@ -7,7 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.Checktype;
+import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
@@ -58,7 +58,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 String msg = "No Supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.SELECT)) {
+            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }

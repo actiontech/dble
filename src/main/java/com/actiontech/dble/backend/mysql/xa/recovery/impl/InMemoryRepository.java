@@ -79,7 +79,7 @@ public class InMemoryRepository implements Repository {
     public void remove(String id) {
         lock.lock();
         try {
-            if (storage.get(id).getTxState() == TxState.TX_COMMITED_STATE || storage.get(id).getTxState() == TxState.TX_ROLLBACKED_STATE) {
+            if (storage.get(id).getTxState() == TxState.TX_COMMITTED_STATE || storage.get(id).getTxState() == TxState.TX_ROLLBACKED_STATE) {
                 storage.remove(id);
             }
         } finally {

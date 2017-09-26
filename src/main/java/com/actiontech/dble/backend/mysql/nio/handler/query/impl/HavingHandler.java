@@ -42,8 +42,8 @@ public class HavingHandler extends BaseDMLHandler {
         return HandlerType.HAVING;
     }
 
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
         this.fieldPackets = fieldPackets;
@@ -55,7 +55,7 @@ public class HavingHandler extends BaseDMLHandler {
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
-    public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         lock.lock();

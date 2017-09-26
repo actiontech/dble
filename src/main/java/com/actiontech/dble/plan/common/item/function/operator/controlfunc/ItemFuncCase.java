@@ -183,9 +183,9 @@ public class ItemFuncCase extends ItemFunc {
                 if (args.get(i).type() == ItemType.NULL_ITEM)
                     continue;
                 Item rightCmpItem = args.get(i);
-                ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
-                cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
-                if (cmptor.compare() == 0 && !rightCmpItem.isNullValue())
+                ArgComparator comparator = new ArgComparator(leftCmpItem, rightCmpItem);
+                comparator.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
+                if (comparator.compare() == 0 && !rightCmpItem.isNullValue())
                     return args.get(i + 1);
             }
         }

@@ -33,8 +33,8 @@ public class ItemSumAvg extends ItemSumSum {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return hasWithDistinct() ? Sumfunctype.AVG_DISTINCT_FUNC : Sumfunctype.AVG_FUNC;
+    public SumFuncType sumType() {
+        return hasWithDistinct() ? SumFuncType.AVG_DISTINCT_FUNC : SumFuncType.AVG_FUNC;
     }
 
     @Override

@@ -124,9 +124,9 @@ public final class BytesTools {
 
             int save = s;
             int cutoff = 2147483647 / base;
-            int cutlim = 2147483647 % base;
+            int cutLimit = 2147483647 % base;
             if (negative) {
-                ++cutlim;
+                ++cutLimit;
             }
 
             boolean overflow = false;
@@ -148,7 +148,7 @@ public final class BytesTools {
                     break;
                 }
 
-                if (i <= cutoff && (i != cutoff || c <= cutlim)) {
+                if (i <= cutoff && (i != cutoff || c <= cutLimit)) {
                     i *= base;
                     i += c;
                 } else {
@@ -177,15 +177,15 @@ public final class BytesTools {
         return getLong(buf, 0, buf.length);
     }
 
-    public static long getLong(byte[] buf, int offset, int endpos) throws NumberFormatException {
+    public static long getLong(byte[] buf, int offset, int endPos) throws NumberFormatException {
         byte base = 10;
 
         int s;
-        for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
+        for (s = offset; s < endPos && Character.isWhitespace((char) buf[s]); ++s) {
             //do nothing
         }
 
-        if (s == endpos) {
+        if (s == endPos) {
             throw new NumberFormatException(toString(buf));
         } else {
             boolean negative = false;
@@ -198,15 +198,15 @@ public final class BytesTools {
 
             int save = s;
             long cutoff = 9223372036854775807L / (long) base;
-            long cutlim = (long) ((int) (9223372036854775807L % (long) base));
+            long cutLimit = (long) ((int) (9223372036854775807L % (long) base));
             if (negative) {
-                ++cutlim;
+                ++cutLimit;
             }
 
             boolean overflow = false;
 
             long i;
-            for (i = 0L; s < endpos; ++s) {
+            for (i = 0L; s < endPos; ++s) {
                 char c = (char) buf[s];
                 if (Character.isDigit(c)) {
                     c = (char) (c - 48);
@@ -221,7 +221,7 @@ public final class BytesTools {
                     break;
                 }
 
-                if (i <= cutoff && (i != cutoff || (long) c <= cutlim)) {
+                if (i <= cutoff && (i != cutoff || (long) c <= cutLimit)) {
                     i *= (long) base;
                     i += (long) c;
                 } else {
@@ -250,15 +250,15 @@ public final class BytesTools {
         return getShort(buf, 0, buf.length);
     }
 
-    public static short getShort(byte[] buf, int offset, int endpos) throws NumberFormatException {
+    public static short getShort(byte[] buf, int offset, int endPos) throws NumberFormatException {
         byte base = 10;
 
         int s;
-        for (s = offset; s < endpos && Character.isWhitespace((char) buf[s]); ++s) {
+        for (s = offset; s < endPos && Character.isWhitespace((char) buf[s]); ++s) {
             //do nothing
         }
 
-        if (s == endpos) {
+        if (s == endPos) {
             throw new NumberFormatException(toString(buf));
         } else {
             boolean negative = false;
@@ -271,15 +271,15 @@ public final class BytesTools {
 
             int save = s;
             short cutoff = (short) (32767 / base);
-            short cutlim = (short) (32767 % base);
+            short cutLimit = (short) (32767 % base);
             if (negative) {
-                ++cutlim;
+                ++cutLimit;
             }
 
             boolean overflow = false;
 
             short i;
-            for (i = 0; s < endpos; ++s) {
+            for (i = 0; s < endPos; ++s) {
                 char c = (char) buf[s];
                 if (Character.isDigit(c)) {
                     c = (char) (c - 48);
@@ -295,7 +295,7 @@ public final class BytesTools {
                     break;
                 }
 
-                if (i <= cutoff && (i != cutoff || c <= cutlim)) {
+                if (i <= cutoff && (i != cutoff || c <= cutLimit)) {
                     i = (short) (i * base);
                     i = (short) (i + c);
                 } else {
@@ -346,8 +346,8 @@ public final class BytesTools {
 
 
     public static byte[] long2Bytes(long l) throws UnsupportedEncodingException {
-        String lstr = Long.toString(l);
-        return lstr.getBytes("US-ASCII");
+        String lStr = Long.toString(l);
+        return lStr.getBytes("US-ASCII");
     }
 
     /**
@@ -359,8 +359,8 @@ public final class BytesTools {
      */
 
     public static byte[] int2Bytes(int i) throws UnsupportedEncodingException {
-        String istr = Integer.toString(i);
-        return istr.getBytes("US-ASCII");
+        String iStr = Integer.toString(i);
+        return iStr.getBytes("US-ASCII");
     }
 
     /**
@@ -372,8 +372,8 @@ public final class BytesTools {
      */
 
     public static byte[] short2Bytes(short i) throws UnsupportedEncodingException {
-        String sstr = Short.toString(i);
-        return sstr.getBytes("US-ASCII");
+        String sStr = Short.toString(i);
+        return sStr.getBytes("US-ASCII");
     }
 
     /**
@@ -384,8 +384,8 @@ public final class BytesTools {
      * @throws UnsupportedEncodingException
      */
     public static byte[] float2Bytes(float f) throws UnsupportedEncodingException {
-        String fstr = Float.toString(f);
-        return fstr.getBytes("US-ASCII");
+        String fStr = Float.toString(f);
+        return fStr.getBytes("US-ASCII");
     }
 
     /**
@@ -396,8 +396,8 @@ public final class BytesTools {
      * @throws UnsupportedEncodingException
      */
     public static byte[] double2Bytes(double d) throws UnsupportedEncodingException {
-        String dstr = Double.toString(d);
-        return dstr.getBytes("US-ASCII");
+        String dStr = Double.toString(d);
+        return dStr.getBytes("US-ASCII");
     }
 
     /**

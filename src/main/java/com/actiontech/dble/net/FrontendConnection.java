@@ -56,19 +56,19 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
-        InetSocketAddress localAddr = (InetSocketAddress) channel.getLocalAddress();
-        InetSocketAddress remoteAddr = null;
+        InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
+        InetSocketAddress remoteAddress = null;
         if (channel instanceof SocketChannel) {
-            remoteAddr = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+            remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
         } else if (channel instanceof AsynchronousSocketChannel) {
-            remoteAddr = (InetSocketAddress) ((AsynchronousSocketChannel) channel).getRemoteAddress();
+            remoteAddress = (InetSocketAddress) ((AsynchronousSocketChannel) channel).getRemoteAddress();
         } else {
             throw new RuntimeException("FrontendConnection type is" + channel.getClass());
         }
 
-        this.host = remoteAddr.getHostString();
-        this.port = localAddr.getPort();
-        this.localPort = remoteAddr.getPort();
+        this.host = remoteAddress.getHostString();
+        this.port = localAddress.getPort();
+        this.localPort = remoteAddress.getPort();
         this.handler = new FrontendAuthenticator(this);
     }
 
@@ -141,6 +141,10 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.sessionReadOnly = sessionReadOnly;
     }
 
+    public boolean isReadOnly() {
+        return userReadOnly || sessionReadOnly;
+    }
+
     public String getUser() {
         return user;
     }
@@ -199,7 +203,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     private void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
-        err.setErrno(vendorCode);
+        err.setErrNo(vendorCode);
         err.setSqlState(StringUtil.encode(sqlState, charsetName.getResults()));
         err.setMessage(StringUtil.encode(msg, charsetName.getResults()));
         err.write(this);
@@ -428,7 +432,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.write(this);
 
             // async read response
-            this.asynRead();
+            this.asyncRead();
         }
     }
 
@@ -507,7 +511,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         super.close(isAuthenticated ? reason : "");
     }
 
-    public void killAndClose(String reaseon) {
+    public void killAndClose(String reason) {
 
     }
 }

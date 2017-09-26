@@ -24,7 +24,7 @@ public class XARecoverCallback implements SQLQueryResultListener<SQLQueryResult<
     public XARecoverCallback(boolean isCommit, ParticipantLogEntry logEntry) {
         if (isCommit) {
             operator = "COMMIT";
-            txState = TxState.TX_COMMITED_STATE;
+            txState = TxState.TX_COMMITTED_STATE;
         } else {
             operator = "ROLLBACK";
             txState = TxState.TX_ROLLBACKED_STATE;
@@ -35,7 +35,7 @@ public class XARecoverCallback implements SQLQueryResultListener<SQLQueryResult<
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (result.isSuccess()) {
             LOGGER.debug("[CALLBACK][XA " + operator + "] when server start");
-            XAStateLog.updateXARecoverylog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), txState);
+            XAStateLog.updateXARecoveryLog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), txState);
             XAStateLog.writeCheckpoint(logEntry.getCoordinatorId());
         } else {
             LOGGER.warn("[CALLBACK][XA " + operator + "] when server start,but failed");

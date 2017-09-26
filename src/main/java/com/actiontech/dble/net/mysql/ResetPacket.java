@@ -30,16 +30,16 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
  */
 public class ResetPacket extends MySQLPacket {
 
-    private static final byte PACKET_FALG = (byte) 26;
-    private long pstmtId;
+    private static final byte PACKET_FLAG = (byte) 26;
+    private long pStmtId;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         packetLength = mm.readUB3();
         packetId = mm.read();
         byte code = mm.read();
-        assert code == PACKET_FALG;
-        pstmtId = mm.readUB4();
+        assert code == PACKET_FLAG;
+        pStmtId = mm.readUB4();
     }
 
     @Override
@@ -52,8 +52,8 @@ public class ResetPacket extends MySQLPacket {
         return "MySQL Reset Packet";
     }
 
-    public long getPstmtId() {
-        return pstmtId;
+    public long getPsStmtId() {
+        return pStmtId;
     }
 
 }

@@ -59,8 +59,8 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get()) {
             return;
         }
@@ -78,7 +78,7 @@ public class TempTableHandler extends BaseDMLHandler {
                     throw new TempTableException("sourcesel [" + sourceSel.toString() + "] not found in fields");
                 sourceField = fields.get(sourceSelIndex);
                 if (nextHandler != null) {
-                    nextHandler.fieldEofResponse(headernull, fieldsnull, fieldPackets, eofnull, this.isLeft, conn);
+                    nextHandler.fieldEofResponse(headerNull, fieldsNull, fieldPackets, eofNull, this.isLeft, conn);
                 } else {
                     throw new TempTableException("unexpected nextHandler is null");
                 }
@@ -89,7 +89,7 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
             if (terminate.get()) {
@@ -103,7 +103,7 @@ public class TempTableHandler extends BaseDMLHandler {
             RowDataPacket row = rowPacket;
             if (row == null) {
                 row = new RowDataPacket(this.fieldPackets.size());
-                row.read(rownull);
+                row.read(rowNull);
             }
             tempTable.addRow(row);
             sourceField.setPtr(row.getValue(sourceSelIndex));

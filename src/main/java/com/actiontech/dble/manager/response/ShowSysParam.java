@@ -89,9 +89,9 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getServerPort() + "");
         paramValues.add(sysConfig.getManagerPort() + "");
 
-        for (int i = 0; i < PARAMNAMES.length; i++) {
+        for (int i = 0; i < PARAM_NAMES.length; i++) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            row.add(StringUtil.encode(PARAMNAMES[i], c.getCharset().getResults()));
+            row.add(StringUtil.encode(PARAM_NAMES[i], c.getCharset().getResults()));
             row.add(StringUtil.encode(paramValues.get(i), c.getCharset().getResults()));
             row.add(StringUtil.encode(PARAM_DESCRIPTION[i], c.getCharset().getResults()));
             row.setPacketId(++packetId);
@@ -107,7 +107,7 @@ public final class ShowSysParam {
         c.write(buffer);
     }
 
-    private static final String[] PARAMNAMES = {
+    private static final String[] PARAM_NAMES = {
             "processors",
             "bufferPoolChunkSize",
             "bufferPoolPageSize",

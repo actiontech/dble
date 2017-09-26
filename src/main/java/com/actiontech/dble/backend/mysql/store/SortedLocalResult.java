@@ -14,31 +14,31 @@ import java.util.Collections;
 
 public class SortedLocalResult extends LocalResult {
 
-    protected RowDataComparator rowcmp;
+    protected RowDataComparator rowCmp;
 
-    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowcmp, String charset) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowcmp, charset);
+    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowCmp, String charset) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowCmp, charset);
     }
 
-    public SortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator rowcmp,
+    public SortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator rowCmp,
                              String charset) {
         super(initialCapacity, fieldsCount, pool, charset);
-        this.rowcmp = rowcmp;
+        this.rowCmp = rowCmp;
     }
 
     @Override
     protected ResultExternal makeExternal() {
-        return new SortedResultDiskBuffer(pool, fieldsCount, rowcmp);
+        return new SortedResultDiskBuffer(pool, fieldsCount, rowCmp);
     }
 
     @Override
     protected void beforeFlushRows() {
-        Collections.sort(rows, this.rowcmp);
+        Collections.sort(rows, this.rowCmp);
     }
 
     @Override
     protected void doneOnlyMemory() {
-        Collections.sort(rows, this.rowcmp);
+        Collections.sort(rows, this.rowCmp);
     }
 
 }

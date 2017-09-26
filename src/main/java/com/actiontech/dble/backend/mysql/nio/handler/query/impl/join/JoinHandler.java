@@ -48,8 +48,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
     protected List<FieldPacket> rightFieldPackets;
     private AtomicBoolean fieldSent = new AtomicBoolean(false);
     private BufferPool pool;
-    private RowDataComparator leftCmptor;
-    private RowDataComparator rightCmptor;
+    private RowDataComparator leftComparator;
+    private RowDataComparator rightComparator;
     // @bug 1097
     // only join columns same is not enough
     private List<Field> joinRowFields;
@@ -81,19 +81,19 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, final BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, final BackendConnection conn) {
         if (this.pool == null)
             this.pool = DbleServer.getInstance().getBufferPool();
 
         if (isLeft) {
             // logger.debug("field eof left");
             leftFieldPackets = fieldPackets;
-            leftCmptor = new RowDataComparator(leftFieldPackets, leftOrders, this.isAllPushDown(), this.type());
+            leftComparator = new RowDataComparator(leftFieldPackets, leftOrders, this.isAllPushDown(), this.type());
         } else {
             // logger.debug("field eof right");
             rightFieldPackets = fieldPackets;
-            rightCmptor = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
+            rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
         if (!fieldSent.compareAndSet(false, true)) {
             this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
@@ -107,8 +107,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
         }
     }
 
-    private Item makeOtherJoinOnItem(List<FieldPacket> rowpackets, BackendConnection conn) {
-        this.joinRowFields = HandlerTool.createFields(rowpackets);
+    private Item makeOtherJoinOnItem(List<FieldPacket> rowPackets, BackendConnection conn) {
+        this.joinRowFields = HandlerTool.createFields(rowPackets);
         if (otherJoinOn == null)
             return null;
         Item ret = HandlerTool.createItem(this.otherJoinOn, this.joinRowFields, 0, this.isAllPushDown(), this.type());
@@ -116,7 +116,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         logger.debug("rowresponse");
         if (terminate.get()) {
             return true;
@@ -125,14 +125,14 @@ public class JoinHandler extends OwnThreadDMLHandler {
             if (isLeft) {
                 leftLock.lock();
                 try {
-                    addRowToDeque(rowPacket, leftFieldPackets.size(), leftQueue, leftCmptor);
+                    addRowToDeque(rowPacket, leftFieldPackets.size(), leftQueue, leftComparator);
                 } finally {
                     leftLock.unlock();
                 }
             } else {
                 rightLock.lock();
                 try {
-                    addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightCmptor);
+                    addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightComparator);
                 } finally {
                     rightLock.unlock();
                 }
@@ -154,10 +154,10 @@ public class JoinHandler extends OwnThreadDMLHandler {
         try {
             if (isLeft) {
                 logger.debug("row eof left");
-                addRowToDeque(eofRow, leftFieldPackets.size(), leftQueue, leftCmptor);
+                addRowToDeque(eofRow, leftFieldPackets.size(), leftQueue, leftComparator);
             } else {
                 logger.debug("row eof right");
-                addRowToDeque(eofRow, rightFieldPackets.size(), rightQueue, rightCmptor);
+                addRowToDeque(eofRow, rightFieldPackets.size(), rightQueue, rightComparator);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -169,7 +169,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         MySQLConnection conn = (MySQLConnection) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
-            Comparator<RowDataPacket> joinCmptor = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
+            Comparator<RowDataPacket> joinComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
                     leftOrders, rightOrders, this.isAllPushDown(), this.type());
 
             // logger.debug("merge Join start");
@@ -193,7 +193,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                         break;
                     }
                 }
-                int rs = joinCmptor.compare(leftRow, rightRow);
+                int rs = joinComparator.compare(leftRow, rightRow);
                 if (rs < 0) {
                     if (isLeftJoin) {
                         if (connectLeftAndNull(leftLocal, conn))

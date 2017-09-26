@@ -83,7 +83,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
             return schemaInfo.getSchemaConfig();
         }
-        if (GlobalTableUtil.useGlobleTableCheck() &&
+        if (GlobalTableUtil.useGlobalTableCheck() &&
                 GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
             String sql = modifyColumnIfAlter(schemaInfo, rrs.getStatement(), alterTable);
             rrs.setSrcStatement(sql);
@@ -278,12 +278,12 @@ public class DruidAlterTableParser extends DefaultDruidParser {
     private boolean influenceKeyColumn(SQLName name, SchemaConfig schema, String tableName) {
         String columnName = name.toString();
         Map<String, TableConfig> tableConfig = schema.getTables();
-        TableConfig chanagedTable = tableConfig.get(tableName);
-        if (chanagedTable == null) {
+        TableConfig changedTable = tableConfig.get(tableName);
+        if (changedTable == null) {
             return false;
         }
-        if (columnName.equalsIgnoreCase(chanagedTable.getPartitionColumn()) ||
-                columnName.equalsIgnoreCase(chanagedTable.getJoinKey())) {
+        if (columnName.equalsIgnoreCase(changedTable.getPartitionColumn()) ||
+                columnName.equalsIgnoreCase(changedTable.getJoinKey())) {
             return true;
         }
         // Traversal all the table node to find if some table is the child table of the changedTale

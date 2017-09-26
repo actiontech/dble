@@ -18,7 +18,7 @@ import java.io.*;
 public class LevelDBPool implements CachePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(LevelDBPool.class);
     private final DB cache;
-    private final CacheStatic cacheStati = new CacheStatic();
+    private final CacheStatic cacheStatistics = new CacheStatic();
     private final String name;
     private final long maxSize;
 
@@ -26,14 +26,14 @@ public class LevelDBPool implements CachePool {
         this.cache = db;
         this.name = name;
         this.maxSize = maxSize;
-        cacheStati.setMaxSize(maxSize);
+        cacheStatistics.setMaxSize(maxSize);
     }
 
     @Override
     public void putIfAbsent(Object key, Object value) {
 
         cache.put(toByteArray(key), toByteArray(value));
-        cacheStati.incPutTimes();
+        cacheStatistics.incPutTimes();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(name + " add leveldb cache ,key:" + key + " value:" + value);
         }
@@ -47,13 +47,13 @@ public class LevelDBPool implements CachePool {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(name + " hit cache ,key:" + key);
             }
-            cacheStati.incHitTimes();
+            cacheStatistics.incHitTimes();
             return ob;
         } else {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(name + "  miss cache ,key:" + key);
             }
-            cacheStati.incAccessTimes();
+            cacheStatistics.incAccessTimes();
             return null;
         }
     }
@@ -62,7 +62,7 @@ public class LevelDBPool implements CachePool {
     public void clearCache() {
         LOGGER.info("clear cache " + name);
         //cache.delete(key);
-        cacheStati.reset();
+        cacheStatistics.reset();
         //cacheStati.setMemorySize(cache.g);
 
     }
@@ -84,8 +84,8 @@ public class LevelDBPool implements CachePool {
         //long[] sizes = cache.getApproximateSizes(new Range(bytes("TESTDB"), bytes("TESTDC")));
          */
         //cacheStati.setItemSize(cache.getSize());//sizes[0]);
-        cacheStati.setItemSize(cacheStati.getPutTimes());
-        return cacheStati;
+        cacheStatistics.setItemSize(cacheStatistics.getPutTimes());
+        return cacheStatistics;
     }
 
     @Override

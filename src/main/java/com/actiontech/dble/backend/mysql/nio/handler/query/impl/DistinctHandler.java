@@ -31,8 +31,8 @@ public class DistinctHandler extends BaseDMLHandler {
     private LocalResult localResult;
     private List<Order> fixedOrders;
     private BufferPool pool;
-    /* if distincts is null, distinct the total row */
-    private List<Item> distincts;
+    /* if distinct is null, distinct the total row */
+    private List<Item> distinctCols;
 
     public DistinctHandler(long id, NonBlockingSession session, List<Item> columns) {
         this(id, session, columns, null);
@@ -40,7 +40,7 @@ public class DistinctHandler extends BaseDMLHandler {
 
     public DistinctHandler(long id, NonBlockingSession session, List<Item> columns, List<Order> fixedOrders) {
         super(id, session);
-        this.distincts = columns;
+        this.distinctCols = columns;
         this.fixedOrders = fixedOrders;
     }
 
@@ -52,32 +52,32 @@ public class DistinctHandler extends BaseDMLHandler {
     /**
      * treat all the data from parent as Field Type
      */
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
         if (this.pool == null)
             this.pool = DbleServer.getInstance().getBufferPool();
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);
-        if (this.distincts == null) {
+        if (this.distinctCols == null) {
             // eg:show tables
-            this.distincts = new ArrayList<>();
+            this.distinctCols = new ArrayList<>();
             for (FieldPacket fp : this.fieldPackets) {
                 Item sel = HandlerTool.createItemField(fp);
-                this.distincts.add(sel);
+                this.distinctCols.add(sel);
             }
         }
         List<Order> orders = this.fixedOrders;
         if (orders == null)
-            orders = HandlerTool.makeOrder(this.distincts);
-        RowDataComparator cmptor = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
-        localResult = new DistinctLocalResult(pool, sourceFields.size(), cmptor, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+            orders = HandlerTool.makeOrder(this.distinctCols);
+        RowDataComparator comparator = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
+        localResult = new DistinctLocalResult(pool, sourceFields.size(), comparator, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
-    public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         localResult.add(rowPacket);

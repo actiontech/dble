@@ -708,17 +708,17 @@ class TimSort<K, B> {
 
             int cursor1 = 0;       // Indexes into tmp array
             int cursor2 = base2;   // Indexes int a
-            int dest = base1;      // Indexes int a
+            int dst2 = base1;      // Indexes int a
 
             // Move first element of second run and deal with degenerate cases
-            s.copyElement(src, cursor2++, src, dest++);
+            s.copyElement(src, cursor2++, src, dst2++);
             if (--len2 == 0) {
-                s.copyRange(dst, cursor1, src, dest, len1);
+                s.copyRange(dst, cursor1, src, dst2, len1);
                 return;
             }
             if (len1 == 1) {
-                s.copyRange(src, cursor2, src, dest, len2);
-                s.copyElement(dst, cursor1, src, dest + len2); // Last elt of run 1 to end of merge
+                s.copyRange(src, cursor2, src, dst2, len2);
+                s.copyElement(dst, cursor1, src, dst2 + len2); // Last elt of run 1 to end of merge
                 return;
             }
 
@@ -739,13 +739,13 @@ class TimSort<K, B> {
                 do {
                     assert len1 > 1 && len2 > 0;
                     if (comparator.compare(s.getKey(src, cursor2, key0), s.getKey(dst, cursor1, key1)) < 0) {
-                        s.copyElement(src, cursor2++, src, dest++);
+                        s.copyElement(src, cursor2++, src, dst2++);
                         count2++;
                         count1 = 0;
                         if (--len2 == 0)
                             break outer;
                     } else {
-                        s.copyElement(dst, cursor1++, src, dest++);
+                        s.copyElement(dst, cursor1++, src, dst2++);
                         count1++;
                         count2 = 0;
                         if (--len1 == 1)
@@ -762,27 +762,27 @@ class TimSort<K, B> {
                     assert len1 > 1 && len2 > 0;
                     count1 = gallopRight(s.getKey(src, cursor2, key0), dst, cursor1, len1, 0, comparator);
                     if (count1 != 0) {
-                        s.copyRange(dst, cursor1, src, dest, count1);
-                        dest += count1;
+                        s.copyRange(dst, cursor1, src, dst2, count1);
+                        dst2 += count1;
                         cursor1 += count1;
                         len1 -= count1;
                         if (len1 <= 1) // len1 == 1 || len1 == 0
                             break outer;
                     }
-                    s.copyElement(src, cursor2++, src, dest++);
+                    s.copyElement(src, cursor2++, src, dst2++);
                     if (--len2 == 0)
                         break outer;
 
                     count2 = gallopLeft(s.getKey(dst, cursor1, key0), src, cursor2, len2, 0, comparator);
                     if (count2 != 0) {
-                        s.copyRange(src, cursor2, src, dest, count2);
-                        dest += count2;
+                        s.copyRange(src, cursor2, src, dst2, count2);
+                        dst2 += count2;
                         cursor2 += count2;
                         len2 -= count2;
                         if (len2 == 0)
                             break outer;
                     }
-                    s.copyElement(dst, cursor1++, src, dest++);
+                    s.copyElement(dst, cursor1++, src, dst2++);
                     if (--len1 == 1)
                         break outer;
                     gallop--;
@@ -795,15 +795,15 @@ class TimSort<K, B> {
 
             if (len1 == 1) {
                 assert len2 > 0;
-                s.copyRange(src, cursor2, src, dest, len2);
-                s.copyElement(dst, cursor1, src, dest + len2); //  Last elt of run 1 to end of merge
+                s.copyRange(src, cursor2, src, dst2, len2);
+                s.copyElement(dst, cursor1, src, dst2 + len2); //  Last elt of run 1 to end of merge
             } else if (len1 == 0) {
                 throw new IllegalArgumentException(
                         "Comparison method violates its general contract!");
             } else {
                 assert len2 == 0;
                 assert len1 > 1;
-                s.copyRange(dst, cursor1, src, dest, len1);
+                s.copyRange(dst, cursor1, src, dst2, len1);
             }
         }
 
@@ -828,22 +828,22 @@ class TimSort<K, B> {
 
             int cursor1 = base1 + len1 - 1;  // Indexes into a
             int cursor2 = len2 - 1;          // Indexes into tmp array
-            int dest = base2 + len2 - 1;     // Indexes into a
+            int dst2 = base2 + len2 - 1;     // Indexes into a
 
             K key0 = s.newKey();
             K key1 = s.newKey();
 
             // Move last element of first run and deal with degenerate cases
-            s.copyElement(src, cursor1--, src, dest--);
+            s.copyElement(src, cursor1--, src, dst2--);
             if (--len1 == 0) {
-                s.copyRange(dst, 0, src, dest - (len2 - 1), len2);
+                s.copyRange(dst, 0, src, dst2 - (len2 - 1), len2);
                 return;
             }
             if (len2 == 1) {
-                dest -= len1;
+                dst2 -= len1;
                 cursor1 -= len1;
-                s.copyRange(src, cursor1 + 1, src, dest + 1, len1);
-                s.copyElement(dst, cursor2, src, dest);
+                s.copyRange(src, cursor1 + 1, src, dst2 + 1, len1);
+                s.copyElement(dst, cursor2, src, dst2);
                 return;
             }
 
@@ -861,13 +861,13 @@ class TimSort<K, B> {
                 do {
                     assert len1 > 0 && len2 > 1;
                     if (comparator.compare(s.getKey(dst, cursor2, key0), s.getKey(src, cursor1, key1)) < 0) {
-                        s.copyElement(src, cursor1--, src, dest--);
+                        s.copyElement(src, cursor1--, src, dst2--);
                         count1++;
                         count2 = 0;
                         if (--len1 == 0)
                             break outer;
                     } else {
-                        s.copyElement(dst, cursor2--, src, dest--);
+                        s.copyElement(dst, cursor2--, src, dst2--);
                         count2++;
                         count1 = 0;
                         if (--len2 == 1)
@@ -884,27 +884,27 @@ class TimSort<K, B> {
                     assert len1 > 0 && len2 > 1;
                     count1 = len1 - gallopRight(s.getKey(dst, cursor2, key0), src, base1, len1, len1 - 1, comparator);
                     if (count1 != 0) {
-                        dest -= count1;
+                        dst2 -= count1;
                         cursor1 -= count1;
                         len1 -= count1;
-                        s.copyRange(src, cursor1 + 1, src, dest + 1, count1);
+                        s.copyRange(src, cursor1 + 1, src, dst2 + 1, count1);
                         if (len1 == 0)
                             break outer;
                     }
-                    s.copyElement(dst, cursor2--, src, dest--);
+                    s.copyElement(dst, cursor2--, src, dst2--);
                     if (--len2 == 1)
                         break outer;
 
                     count2 = len2 - gallopLeft(s.getKey(src, cursor1, key0), dst, 0, len2, len2 - 1, comparator);
                     if (count2 != 0) {
-                        dest -= count2;
+                        dst2 -= count2;
                         cursor2 -= count2;
                         len2 -= count2;
-                        s.copyRange(dst, cursor2 + 1, src, dest + 1, count2);
+                        s.copyRange(dst, cursor2 + 1, src, dst2 + 1, count2);
                         if (len2 <= 1)  // len2 == 1 || len2 == 0
                             break outer;
                     }
-                    s.copyElement(src, cursor1--, src, dest--);
+                    s.copyElement(src, cursor1--, src, dst2--);
                     if (--len1 == 0)
                         break outer;
                     gallop--;
@@ -917,17 +917,17 @@ class TimSort<K, B> {
 
             if (len2 == 1) {
                 assert len1 > 0;
-                dest -= len1;
+                dst2 -= len1;
                 cursor1 -= len1;
-                s.copyRange(src, cursor1 + 1, src, dest + 1, len1);
-                s.copyElement(dst, cursor2, src, dest); // Move first elt of run2 to front of merge
+                s.copyRange(src, cursor1 + 1, src, dst2 + 1, len1);
+                s.copyElement(dst, cursor2, src, dst2); // Move first elt of run2 to front of merge
             } else if (len2 == 0) {
                 throw new IllegalArgumentException(
                         "Comparison method violates its general contract!");
             } else {
                 assert len1 == 0;
                 assert len2 > 0;
-                s.copyRange(dst, 0, src, dest - (len2 - 1), len2);
+                s.copyRange(dst, 0, src, dst2 - (len2 - 1), len2);
             }
         }
 

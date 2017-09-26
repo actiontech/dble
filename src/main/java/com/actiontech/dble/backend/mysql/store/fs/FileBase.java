@@ -29,7 +29,7 @@ public abstract class FileBase extends FileChannel {
     }
 
     @Override
-    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+    public long read(ByteBuffer[] dst, int offset, int length) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -43,7 +43,7 @@ public abstract class FileBase extends FileChannel {
     }
 
     @Override
-    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+    public long write(ByteBuffer[] src, int offset, int length) throws IOException {
         throw new UnsupportedOperationException();
     }
 

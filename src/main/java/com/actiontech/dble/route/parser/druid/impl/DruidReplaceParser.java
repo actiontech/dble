@@ -52,7 +52,7 @@ public class DruidReplaceParser extends DefaultDruidParser {
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
 
         //privilege check
-        if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.Checktype.INSERT)) {
+        if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.CheckType.INSERT)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
@@ -80,8 +80,8 @@ public class DruidReplaceParser extends DefaultDruidParser {
         //if the target table is global table than
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
-            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
-                sql = convertReplaceSQL(schemaInfo, replace, sql, tc, GlobalTableUtil.useGlobleTableCheck(), sc);
+            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobalTableCheck()) {
+                sql = convertReplaceSQL(schemaInfo, replace, sql, tc, GlobalTableUtil.useGlobalTableCheck(), sc);
             } else {
                 sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
@@ -207,8 +207,8 @@ public class DruidReplaceParser extends DefaultDruidParser {
                     appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
             }
         } else { // single line insert
-            List<SQLExpr> valuse = replace.getValuesList().get(0).getValues();
-            appendValues(tableKey, valuse, sb, autoIncrement, idxGlobal, colSize);
+            List<SQLExpr> values = replace.getValuesList().get(0).getValues();
+            appendValues(tableKey, values, sb, autoIncrement, idxGlobal, colSize);
         }
 
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
@@ -274,7 +274,7 @@ public class DruidReplaceParser extends DefaultDruidParser {
      * because of the replace can use a
      *
      * @param tableKey
-     * @param valuse
+     * @param values
      * @param sb
      * @param autoIncrement
      * @param idxGlobal
@@ -282,10 +282,10 @@ public class DruidReplaceParser extends DefaultDruidParser {
      * @return
      * @throws SQLNonTransientException
      */
-    private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb,
+    private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb,
                                               int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
         // check the value number & the column number is all right
-        int size = valuse.size();
+        int size = values.size();
         int checkSize = colSize - (idxGlobal < 0 ? 0 : 1);
         if (checkSize < size && idxGlobal >= 0) {
             String msg = "In insert Syntax, you can't set value for Global check column!";
@@ -304,11 +304,11 @@ public class DruidReplaceParser extends DefaultDruidParser {
                     long id = DbleServer.getInstance().getSequenceHandler().nextId(tableKey);
                     sb.append(id);
                 } else {
-                    String value = SQLUtils.toMySqlString(valuse.get(iValue++));
+                    String value = SQLUtils.toMySqlString(values.get(iValue++));
                     sb.append(value);
                 }
             } else {
-                String value = SQLUtils.toMySqlString(valuse.get(iValue++));
+                String value = SQLUtils.toMySqlString(values.get(iValue++));
                 sb.append(value);
             }
             if (i < colSize - 1) {

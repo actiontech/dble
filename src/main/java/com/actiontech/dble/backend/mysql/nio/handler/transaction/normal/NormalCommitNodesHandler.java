@@ -44,8 +44,8 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        String errmsg = new String(errPacket.getMessage());
-        this.setFail(errmsg);
+        String errMsg = new String(errPacket.getMessage());
+        this.setFail(errMsg);
         conn.quit();
         if (decrementCountBy(1)) {
             cleanAndFeedback();
@@ -55,8 +55,8 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("backend connect", e);
-        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
-        this.setFail(errmsg);
+        String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
+        this.setFail(errMsg);
         conn.quit();
         if (decrementCountBy(1)) {
             cleanAndFeedback();

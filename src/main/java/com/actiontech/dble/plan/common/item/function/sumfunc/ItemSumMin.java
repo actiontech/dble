@@ -22,8 +22,8 @@ public class ItemSumMin extends ItemSumHybrid {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return Sumfunctype.MIN_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.MIN_FUNC;
     }
 
     @Override

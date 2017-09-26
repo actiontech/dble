@@ -67,7 +67,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         }
     }
 
-    public void teminate(String reason) {
+    public void terminate(String reason) {
         LOGGER.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
         if (connection != null) {
             connection.close(reason);
@@ -109,14 +109,14 @@ public class SQLJob implements ResponseHandler, Runnable {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
-        String errMsg = "error response errno:" + errPg.getErrno() + ", " + new String(errPg.getMessage()) +
+        String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
 
-        if (errPg.getErrno() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
+        if (errPg.getErrNo() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
             // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
             LOGGER.warn(errMsg);
-        } else if (errPg.getErrno() == ErrorCode.ER_XAER_NOTA) {
+        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
             conn.release();
             doFinished(false);
@@ -145,8 +145,8 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        boolean finsihed = jobHandler.onRowData(dataNodeOrDatabase, row);
-        if (finsihed) {
+        boolean finish = jobHandler.onRowData(dataNodeOrDatabase, row);
+        if (finish) {
             conn.release();
             doFinished(false);
         }

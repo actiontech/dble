@@ -163,12 +163,12 @@ public class ServerPrivileges implements FrontendPrivileges {
         return uc != null && uc.isManager();
     }
 
-    public enum Checktype {
+    public enum CheckType {
         INSERT, UPDATE, SELECT, DELETE
     }
 
     // check SQL Privilege
-    public static boolean checkPrivilege(ServerConnection source, String schema, String tableName, Checktype chekctype) {
+    public static boolean checkPrivilege(ServerConnection source, String schema, String tableName, CheckType chekcType) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig userConfig = conf.getUsers().get(source.getUser());
         if (userConfig == null) {
@@ -187,13 +187,13 @@ public class ServerPrivileges implements FrontendPrivileges {
             return true;
         }
         int index = -1;
-        if (chekctype == Checktype.INSERT) {
+        if (chekcType == CheckType.INSERT) {
             index = 0;
-        } else if (chekctype == Checktype.UPDATE) {
+        } else if (chekcType == CheckType.UPDATE) {
             index = 1;
-        } else if (chekctype == Checktype.SELECT) {
+        } else if (chekcType == CheckType.SELECT) {
             index = 2;
-        } else if (chekctype == Checktype.DELETE) {
+        } else if (chekcType == CheckType.DELETE) {
             index = 3;
         }
         if (tablePrivilege != null) {

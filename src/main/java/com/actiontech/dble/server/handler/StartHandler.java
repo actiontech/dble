@@ -22,10 +22,10 @@ public final class StartHandler {
     public static void handle(String stmt, ServerConnection c, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
             case ServerParseStart.TRANSACTION:
-                if (c.isTxstart() || !c.isAutocommit()) {
+                if (c.isTxStart() || !c.isAutocommit()) {
                     c.beginInTx(stmt);
                 } else {
-                    c.setTxstart(true);
+                    c.setTxStart(true);
                     TxnLogHelper.putTxnLog(c, stmt);
                     c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
                 }

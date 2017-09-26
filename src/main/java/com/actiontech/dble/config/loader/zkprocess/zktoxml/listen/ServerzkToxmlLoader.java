@@ -20,9 +20,9 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -39,7 +39,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
+public class ServerzkToxmlLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerzkToxmlLoader.class);
@@ -67,7 +67,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DiretoryInf serverDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DirectoryInf serverDirectory = new ZkDirectoryImpl(currZkPath, null);
         this.getTreeDirectory(currZkPath, KVPathUtil.SERVER, serverDirectory);
 
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) serverDirectory.getSubordinateInfo().get(0);
@@ -96,7 +96,7 @@ public class ServerzkToxmlLoader extends ZkMultLoader implements NotifyService {
      * @Created 2016/9/17
      * @create
      */
-    private Server zktoServerBean(DiretoryInf zkDirectory) {
+    private Server zktoServerBean(DirectoryInf zkDirectory) {
         Server server = new Server();
 
         DataInf serverZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DEFAULT);

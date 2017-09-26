@@ -112,7 +112,7 @@ public final class DbleServer {
     private NameableExecutor businessExecutor;
     private NameableExecutor complexQueryExecutor;
     private NameableExecutor timerExecutor;
-    private InterProcessMutex dnindexLock;
+    private InterProcessMutex dnIndexLock;
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
 
@@ -137,7 +137,7 @@ public final class DbleServer {
 
         this.startupTime = TimeUtil.currentTimeMillis();
         if (isUseZkSwitch()) {
-            dnindexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
+            dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
         }
         xaSessionCheck = new XASessionCheck();
         sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
@@ -453,7 +453,7 @@ public final class DbleServer {
             //upload the dnindex data to zk
             try {
                 File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
-                dnindexLock.acquire(30, TimeUnit.SECONDS);
+                dnIndexLock.acquire(30, TimeUnit.SECONDS);
                 String path = KVPathUtil.getDnIndexNode();
                 CuratorFramework zk = ZKUtils.getConnection();
                 if (zk.checkExists().forPath(path) == null) {
@@ -464,7 +464,7 @@ public final class DbleServer {
                 throw new RuntimeException(e);
             } finally {
                 try {
-                    dnindexLock.release();
+                    dnIndexLock.release();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -526,13 +526,13 @@ public final class DbleServer {
                         long sqlTimeout = DbleServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
                         //close connection if now -lastTime>sqlExecuteTimeout
                         long currentTime = TimeUtil.currentTimeMillis();
-                        Iterator<BackendConnection> iter = NIOProcessor.BACKENDS_OLD.iterator();
-                        while (iter.hasNext()) {
-                            BackendConnection con = iter.next();
+                        Iterator<BackendConnection> iterator = NIOProcessor.BACKENDS_OLD.iterator();
+                        while (iterator.hasNext()) {
+                            BackendConnection con = iterator.next();
                             long lastTime = con.getLastTime();
                             if (!con.isBorrowed() || currentTime - lastTime > sqlTimeout) {
                                 con.close("clear old backend connection ...");
-                                iter.remove();
+                                iterator.remove();
                             }
                         }
                     }
@@ -606,7 +606,7 @@ public final class DbleServer {
             if (isUseZkSwitch()) {
                 // save to  zk
                 try {
-                    dnindexLock.acquire(30, TimeUnit.SECONDS);
+                    dnIndexLock.acquire(30, TimeUnit.SECONDS);
                     String path = KVPathUtil.getDnIndexNode();
                     CuratorFramework zk = ZKUtils.getConnection();
                     if (zk.checkExists().forPath(path) == null) {
@@ -623,7 +623,7 @@ public final class DbleServer {
                         }
                     }
                 } finally {
-                    dnindexLock.release();
+                    dnIndexLock.release();
                 }
             }
         } catch (Exception e) {
@@ -736,7 +736,7 @@ public final class DbleServer {
                 timerExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
-                        XAStateLog.cleanCompleteRecoverylog();
+                        XAStateLog.cleanCompleteRecoveryLog();
                     }
                 });
             }
@@ -873,7 +873,7 @@ public final class DbleServer {
             boolean needCommit = false;
             if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE ||
                     // will committing, may send but failed receiving, should commit agagin
-                    coordinatorLogEntry.getTxState() == TxState.TX_COMMITING_STATE) {
+                    coordinatorLogEntry.getTxState() == TxState.TX_COMMITTING_STATE) {
                 needCommit = true;
             } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE ||
                     //don't konw prepare is successed or not ,should rollback
@@ -903,7 +903,7 @@ public final class DbleServer {
             ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
             // XA commit
             if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_COMMITING_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_COMMITTING_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
@@ -932,7 +932,7 @@ public final class DbleServer {
             }
         }
         if (finished) {
-            XAStateLog.saveXARecoverylog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITED_STATE : TxState.TX_ROLLBACKED_STATE);
+            XAStateLog.saveXARecoveryLog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITTED_STATE : TxState.TX_ROLLBACKED_STATE);
             XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
         }
     }

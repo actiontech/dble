@@ -59,7 +59,7 @@ public final class PacketUtil {
     public static ErrorPacket getShutdown() {
         ErrorPacket error = new ErrorPacket();
         error.setPacketId(1);
-        error.setErrno(ErrorCode.ER_SERVER_SHUTDOWN);
+        error.setErrNo(ErrorCode.ER_SERVER_SHUTDOWN);
         error.setMessage("The server has been shutdown".getBytes());
         return error;
     }

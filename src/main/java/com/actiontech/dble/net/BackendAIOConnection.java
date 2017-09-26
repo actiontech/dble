@@ -22,7 +22,7 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
     }
 
     public void register() throws IOException {
-        this.asynRead();
+        this.asyncRead();
     }
 
 

@@ -167,15 +167,15 @@ public class PushDownVisitor extends MysqlVisitor {
                 ItemSum funCol = (ItemSum) col;
                 String funName = funCol.funcName().toUpperCase();
                 String colName = pdName;
-                ItemSum.Sumfunctype i = funCol.sumType();
-                if (i == ItemSum.Sumfunctype.AVG_FUNC) {
+                ItemSum.SumFuncType i = funCol.sumType();
+                if (i == ItemSum.SumFuncType.AVG_FUNC) {
                     String colNameSum = colName.replace(funName + "(", "SUM(");
                     colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
                     String colNameCount = colName.replace(funName + "(", "COUNT(");
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
                     sqlBuilder.append(colNameSum).append(",").append(colNameCount).append(",");
                     continue;
-                } else if (i == ItemSum.Sumfunctype.STD_FUNC || i == ItemSum.Sumfunctype.VARIANCE_FUNC) {
+                } else if (i == ItemSum.SumFuncType.STD_FUNC || i == ItemSum.SumFuncType.VARIANCE_FUNC) {
                     String colNameCount = colName.replace(funName + "(", "COUNT(");
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
                     String colNameSum = colName.replace(funName + "(", "SUM(");
@@ -206,7 +206,7 @@ public class PushDownVisitor extends MysqlVisitor {
                         if (groupCol.basicConstItem())
                             pdName = "'" + groupCol.toString() + "'";
                         if (pdName.isEmpty())
-                            pdName = visitUnselPushDownName(groupCol, true);
+                            pdName = visitUnSelPushDownName(groupCol, true);
                         sqlBuilder.append(pdName).append(" ").append(group.getSortOrder()).append(",");
                     }
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
@@ -222,7 +222,7 @@ public class PushDownVisitor extends MysqlVisitor {
                         if (orderSel.basicConstItem())
                             pdName = "'" + orderSel.toString() + "'";
                         if (pdName.isEmpty())
-                            pdName = visitUnselPushDownName(orderSel, true);
+                            pdName = visitUnSelPushDownName(orderSel, true);
                         sqlBuilder.append(pdName).append(" ").append(order.getSortOrder()).append(",");
                     }
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
@@ -243,7 +243,7 @@ public class PushDownVisitor extends MysqlVisitor {
                 if (orderByCol.basicConstItem())
                     pdName = "'" + orderByCol.toString() + "'";
                 if (pdName.isEmpty())
-                    pdName = visitUnselPushDownName(orderByCol, true);
+                    pdName = visitUnSelPushDownName(orderByCol, true);
                 if (realPush) {
                     pushDownOrderBy.add(order.copy());
                     sqlBuilder.append(pdName).append(" ").append(order.getSortOrder()).append(",");

@@ -328,7 +328,7 @@ public final class JavaUtils {
     }
 
 
-    public static File createDirectory(String rootDir, String blockmgr) throws IOException {
+    public static File createDirectory(String rootDir, String blockMgr) throws IOException {
 
         int attempts = 0;
         int maxAttempts = MAX_DIR_CREATION_ATTEMPTS;
@@ -340,7 +340,7 @@ public final class JavaUtils {
                         maxAttempts + " attempts!");
             }
             try {
-                dir = new File(rootDir, blockmgr + "-" + UUID.randomUUID().toString());
+                dir = new File(rootDir, blockMgr + "-" + UUID.randomUUID().toString());
                 if (dir.exists() || !dir.mkdirs()) {
                     dir = null;
                 }

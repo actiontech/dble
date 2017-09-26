@@ -70,7 +70,7 @@ public final class NIOReactor {
                                 con = (AbstractConnection) att;
                                 if (key.isValid() && key.isReadable()) {
                                     try {
-                                        con.asynRead();
+                                        con.asyncRead();
                                     } catch (IOException e) {
                                         con.close("program err:" + e.toString());
                                         continue;

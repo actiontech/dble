@@ -47,8 +47,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, final BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, final BackendConnection conn) {
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -63,7 +63,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         try {

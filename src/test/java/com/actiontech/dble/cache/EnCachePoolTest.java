@@ -40,9 +40,9 @@ public class EnCachePoolTest {
         Assert.assertEquals(statics.getPutTimes(), 2);
         Assert.assertEquals(statics.getAccessTimes(), 3);
         Assert.assertEquals(statics.getHitTimes(), 2);
-        Assert.assertTrue(statics.getLastAccesTime() > 0);
+        Assert.assertTrue(statics.getLastAccessTime() > 0);
         Assert.assertTrue(statics.getLastPutTime() > 0);
-        Assert.assertTrue(statics.getLastAccesTime() > 0);
+        Assert.assertTrue(statics.getLastAccessTime() > 0);
         // wait expire
         try {
             Thread.sleep(4000);

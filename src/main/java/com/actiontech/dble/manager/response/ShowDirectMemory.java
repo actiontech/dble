@@ -86,11 +86,11 @@ public final class ShowDirectMemory {
     }
 
 
-    public static void execute(ManagerConnection c, int showtype) {
+    public static void execute(ManagerConnection c, int showType) {
 
-        if (showtype == 1) {
+        if (showType == 1) {
             showDirectMemoryTotal(c);
-        } else if (showtype == 2) {
+        } else if (showType == 2) {
             showDirectMemoryDetail(c);
         }
     }
@@ -116,13 +116,13 @@ public final class ShowDirectMemory {
 
         int useOffHeapForMerge = DbleServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
 
-        ConcurrentMap<Long, Long> networkbufferpool = DbleServer.getInstance().
+        ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         if (useOffHeapForMerge == 1) {
             ConcurrentMap<Long, Long> map = DbleServer.getInstance().
                     getServerMemory().
-                    getResultMergeMemoryManager().getDirectMemorUsage();
+                    getResultMergeMemoryManager().getDirectMemoryUsage();
             for (Map.Entry<Long, Long> entry : map.entrySet()) {
                 RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
                 long value = entry.getValue();
@@ -137,7 +137,7 @@ public final class ShowDirectMemory {
             }
         }
 
-        for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
+        for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
             RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
             long value = entry.getValue();
             row.add(StringUtil.encode(String.valueOf(entry.getKey()), c.getCharset().getResults()));
@@ -179,12 +179,12 @@ public final class ShowDirectMemory {
         int useOffHeapForMerge = DbleServer.getInstance().getConfig().
                 getSystem().getUseOffHeapForMerge();
 
-        ConcurrentMap<Long, Long> networkbufferpool = DbleServer.getInstance().
+        ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         RowDataPacket row = new RowDataPacket(TOTAL_FIELD_COUNT);
-        long usedforMerge = 0;
-        long usedforNetworkd = 0;
+        long usedForMerge = 0;
+        long usedForNetwork = 0;
 
         /**
          * the value of -XX:MaxDirectMemorySize
@@ -198,20 +198,20 @@ public final class ShowDirectMemory {
              */
             ConcurrentMap<Long, Long> concurrentHashMap = DbleServer.getInstance().
                     getServerMemory().
-                    getResultMergeMemoryManager().getDirectMemorUsage();
+                    getResultMergeMemoryManager().getDirectMemoryUsage();
             for (Map.Entry<Long, Long> entry : concurrentHashMap.entrySet()) {
-                usedforMerge += entry.getValue();
+                usedForMerge += entry.getValue();
             }
         }
 
         /**
          * IO packet used in DirectMemory in buffer pool
          */
-        for (Map.Entry<Long, Long> entry : networkbufferpool.entrySet()) {
-            usedforNetworkd += entry.getValue();
+        for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
+            usedForNetwork += entry.getValue();
         }
 
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(usedforMerge + usedforNetworkd), c.getCharset().getResults()));
+        row.add(StringUtil.encode(JavaUtils.bytesToString2(usedForMerge + usedForNetwork), c.getCharset().getResults()));
 
 
         long totalAvailable = 0;
@@ -226,7 +226,7 @@ public final class ShowDirectMemory {
             totalAvailable = Platform.getMaxDirectMemory();
         }
 
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable - usedforMerge - usedforNetworkd), c.getCharset().getResults()));
+        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable - usedForMerge - usedForNetwork), c.getCharset().getResults()));
 
         if (useOffHeapForMerge == 1) {
             row.add(StringUtil.encode(("" + SeverMemory.DIRECT_SAFETY_FRACTION), c.getCharset().getResults()));
@@ -235,18 +235,18 @@ public final class ShowDirectMemory {
         }
 
 
-        long resevedForOs = 0;
+        long reservedForOs = 0;
 
         if (useOffHeapForMerge == 1) {
             /**
              * saved for OS
              */
-            resevedForOs = (long) ((1 - SeverMemory.DIRECT_SAFETY_FRACTION) *
+            reservedForOs = (long) ((1 - SeverMemory.DIRECT_SAFETY_FRACTION) *
                     (Platform.getMaxDirectMemory() -
                             2 * DbleServer.getInstance().getTotalNetWorkBufferSize()));
         }
 
-        row.add(StringUtil.encode(resevedForOs > 0 ? JavaUtils.bytesToString2(resevedForOs) : "0", c.getCharset().getResults()));
+        row.add(StringUtil.encode(reservedForOs > 0 ? JavaUtils.bytesToString2(reservedForOs) : "0", c.getCharset().getResults()));
         // write rows
         byte packetId = TOTAL_EOF.getPacketId();
         row.setPacketId(++packetId);

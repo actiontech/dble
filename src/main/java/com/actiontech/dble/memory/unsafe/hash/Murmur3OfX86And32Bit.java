@@ -46,7 +46,7 @@ public final class Murmur3OfX86And32Bit {
         int k1 = mixK1(input);
         int h1 = mixH1(seed, k1);
 
-        return fmix(h1, 4);
+        return fMix(h1, 4);
     }
 
     public int hashUnsafeWords(Object base, long offset, int lengthInBytes) {
@@ -57,7 +57,7 @@ public final class Murmur3OfX86And32Bit {
         // This is based on Guava's `Murmur32_Hasher.processRemaining(ByteBuffer)` method.
         assert (lengthInBytes % 8 == 0) : "lengthInBytes must be a multiple of 8 (word-aligned)";
         int h1 = hashBytesByInt(base, offset, lengthInBytes, seed);
-        return fmix(h1, lengthInBytes);
+        return fMix(h1, lengthInBytes);
     }
 
     public static int hashUnsafeBytes(Object base, long offset, int lengthInBytes, int seed) {
@@ -69,7 +69,7 @@ public final class Murmur3OfX86And32Bit {
             int k1 = mixK1(halfWord);
             h1 = mixH1(h1, k1);
         }
-        return fmix(h1, lengthInBytes);
+        return fMix(h1, lengthInBytes);
     }
 
     private static int hashBytesByInt(Object base, long offset, int lengthInBytes, int seed) {
@@ -97,7 +97,7 @@ public final class Murmur3OfX86And32Bit {
         k1 = mixK1(high);
         h1 = mixH1(h1, k1);
 
-        return fmix(h1, 8);
+        return fMix(h1, 8);
     }
 
     private static int mixK1(int k1) {
@@ -115,7 +115,7 @@ public final class Murmur3OfX86And32Bit {
     }
 
     // Finalization mix - force all bits of a hash block to avalanche
-    private static int fmix(int h1, int length) {
+    private static int fMix(int h1, int length) {
         h1 ^= length;
         h1 ^= h1 >>> 16;
         h1 *= 0x85ebca6b;

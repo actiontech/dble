@@ -19,7 +19,7 @@ public class ManagerAuthenticator extends FrontendAuthenticator {
     }
 
     @Override
-    protected NIOHandler successCommendHander() {
+    protected NIOHandler successCommendHandler() {
         return new ManagerCommandHandler(source);
     }
 }

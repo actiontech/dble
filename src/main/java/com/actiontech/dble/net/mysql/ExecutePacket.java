@@ -72,11 +72,11 @@ public class ExecutePacket extends MySQLPacket {
     private byte[] nullBitMap;
     private byte newParameterBoundFlag;
     private BindValue[] values;
-    private PreparedStatement pStmt;
+    private PreparedStatement preStmt;
 
-    public ExecutePacket(PreparedStatement pStmt) {
-        this.pStmt = pStmt;
-        this.values = new BindValue[pStmt.getParametersNumber()];
+    public ExecutePacket(PreparedStatement preStmt) {
+        this.preStmt = preStmt;
+        this.values = new BindValue[preStmt.getParametersNumber()];
     }
 
     public void read(byte[] data, String charset) throws UnsupportedEncodingException {
@@ -99,7 +99,7 @@ public class ExecutePacket extends MySQLPacket {
         newParameterBoundFlag = mm.read();
         if (newParameterBoundFlag == (byte) 1) {
             for (int i = 0; i < parameterCount; i++) {
-                pStmt.getParametersType()[i] = mm.readUB2();
+                preStmt.getParametersType()[i] = mm.readUB2();
             }
         }
 
@@ -107,13 +107,13 @@ public class ExecutePacket extends MySQLPacket {
         byte[] bitMap = this.nullBitMap;
         for (int i = 0; i < parameterCount; i++) {
             BindValue bv = new BindValue();
-            bv.setType(pStmt.getParametersType()[i]);
+            bv.setType(preStmt.getParametersType()[i]);
             if ((bitMap[i / 8] & (1 << (i & 7))) != 0) {
                 bv.setNull(true);
             } else {
                 BindValueUtil.read(mm, bv, charset);
                 if (bv.isLongData()) {
-                    bv.setValue(pStmt.getLongData(i));
+                    bv.setValue(preStmt.getLongData(i));
                 }
             }
             values[i] = bv;
@@ -187,11 +187,12 @@ public class ExecutePacket extends MySQLPacket {
         this.values = values;
     }
 
-    public PreparedStatement getpStmt() {
-        return pStmt;
+    public PreparedStatement getPreStmt() {
+        return preStmt;
     }
 
-    public void setpStmt(PreparedStatement pStmt) {
-        this.pStmt = pStmt;
+    public void setPreStmt(PreparedStatement preStmt) {
+        this.preStmt = preStmt;
     }
+
 }

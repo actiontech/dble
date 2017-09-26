@@ -39,10 +39,10 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     }
 
     public void execute() {
-        Map<RouteResultsetNode, BackendConnection> lockedConns = session.getTargetMap();
-        this.reset(lockedConns.size());
+        Map<RouteResultsetNode, BackendConnection> lockedCons = session.getTargetMap();
+        this.reset(lockedCons.size());
         // if client just send an unlock tables, theres is no lock tables statement, just send back OK
-        if (lockedConns.size() == 0) {
+        if (lockedCons.size() == 0) {
             LOGGER.warn("find no locked backend connection!" + session.getSource());
             OkPacket ok = new OkPacket();
             ok.setPacketId(++packetId);
@@ -51,10 +51,10 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             ok.write(session.getSource());
             return;
         }
-        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : lockedConns.entrySet()) {
+        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : lockedCons.entrySet()) {
             RouteResultsetNode dataNode = entry.getKey();
             RouteResultsetNode node = new RouteResultsetNode(dataNode.getName(), ServerParse.UNLOCK, srcStatement);
-            BackendConnection conn = lockedConns.get(dataNode);
+            BackendConnection conn = lockedCons.get(dataNode);
             if (clearIfSessionClosed(session)) {
                 return;
             }
@@ -116,7 +116,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         LOGGER.warn("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": row data packet");

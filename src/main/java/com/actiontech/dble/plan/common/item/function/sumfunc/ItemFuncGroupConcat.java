@@ -41,8 +41,8 @@ public class ItemFuncGroupConcat extends ItemSum {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return Sumfunctype.GROUP_CONCAT_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.GROUP_CONCAT_FUNC;
     }
 
     @Override

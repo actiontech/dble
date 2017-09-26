@@ -116,12 +116,12 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
 
     private void siftUp(int k, E x) {
         while (k > 0) {
-            int parant = (k - 1) >>> 1;
-            Object e = heap[parant];
+            int parent = (k - 1) >>> 1;
+            Object e = heap[parent];
             if (comparator.compare(x, (E) e) >= 0)
                 break;
             heap[k] = e;
-            k = parant;
+            k = parent;
         }
         heap[k] = x;
     }

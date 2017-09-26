@@ -47,7 +47,7 @@ public class PhysicalDBNode {
                                             BackendConnection exitsCon, ResponseHandler handler,
                                             Object attachment) throws Exception {
 
-        PhysicalDatasource ds = this.dbPool.findDatasouce(exitsCon);
+        PhysicalDatasource ds = this.dbPool.findDatasource(exitsCon);
         if (ds == null) {
             throw new RuntimeException("can't find exits connection, maybe fininshed " + exitsCon);
         } else {
@@ -78,12 +78,12 @@ public class PhysicalDBNode {
             if (rrs.getRunOnSlave() != null) {  // hint like /*db_type=master/slave*/
                 // the hint is slave
                 if (rrs.getRunOnSlave()) {
-                    LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBlanceFlag());
-                    if (rrs.isHasBlanceFlag()) {  // hint like /*balance*/ (only support one?)
+                    LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBalanceFlag());
+                    if (rrs.isHasBalanceFlag()) {  // hint like /*balance*/ (only support one?)
                         dbPool.getReadBalanceCon(schema, autoCommit, handler,
                                 attachment);
                     } else {    // without /*balance*/
-                        LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBlanceFlag());
+                        LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBalanceFlag());
                         if (!dbPool.getReadCon(schema, autoCommit, handler,
                                 attachment)) {
                             LOGGER.warn("Do not have slave connection to use, " +
@@ -105,8 +105,8 @@ public class PhysicalDBNode {
                 }
             } else {    // without hint like /*db_type=master/slave*/
                 LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-                if (rrs.canRunnINReadDB(autoCommit)) {
-                    dbPool.getRWBanlanceCon(schema, autoCommit, handler, attachment);
+                if (rrs.canRunINReadDB(autoCommit)) {
+                    dbPool.getRWBalanceCon(schema, autoCommit, handler, attachment);
                 } else {
                     PhysicalDatasource writeSource = dbPool.getSource();
                     writeSource.setWriteCount();

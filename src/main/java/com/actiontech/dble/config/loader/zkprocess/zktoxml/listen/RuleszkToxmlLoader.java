@@ -21,9 +21,9 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.Fu
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -42,7 +42,7 @@ import java.util.List;
  * author:liujun
  * Created:2016/9/15
  */
-public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
+public class RuleszkToxmlLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleszkToxmlLoader.class);
@@ -68,7 +68,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DiretoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DirectoryInf rulesDirectory = new ZkDirectoryImpl(currZkPath, null);
         this.getTreeDirectory(currZkPath, KVPathUtil.RULES, rulesDirectory);
 
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) rulesDirectory.getSubordinateInfo().get(0);
@@ -100,7 +100,7 @@ public class RuleszkToxmlLoader extends ZkMultLoader implements NotifyService {
      * @return
      * @Created 2016/9/17
      */
-    private Rules zktoRulesBean(DiretoryInf zkDirectory) {
+    private Rules zktoRulesBean(DirectoryInf zkDirectory) {
         Rules rules = new Rules();
 
         // tablerule

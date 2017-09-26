@@ -105,13 +105,13 @@ public final class ShowServer {
         DbleServer server = DbleServer.getInstance();
         long startupTime = server.getStartupTime();
         long now = TimeUtil.currentTimeMillis();
-        long uptime = now - startupTime;
+        long upTime = now - startupTime;
         Runtime rt = Runtime.getRuntime();
         long total = rt.totalMemory();
         long max = rt.maxMemory();
         long used = (total - rt.freeMemory());
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(FormatUtil.formatTime(uptime, 3), charset));
+        row.add(StringUtil.encode(FormatUtil.formatTime(upTime, 3), charset));
         row.add(LongUtil.toBytes(used));
         row.add(LongUtil.toBytes(total));
         row.add(LongUtil.toBytes(max));

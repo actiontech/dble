@@ -34,9 +34,9 @@ public class DailyRotateLogStore {
      * @param baseDir
      * @param baseName
      * @param suffix
-     * @param rolateSize unit:M
+     * @param rotateSize unit:M
      */
-    public DailyRotateLogStore(String baseDir, String baseName, String suffix, int rolateSize) {
+    public DailyRotateLogStore(String baseDir, String baseName, String suffix, int rotateSize) {
         if (!baseDir.endsWith(FILE_SEPARATOR)) {
             baseDir += FILE_SEPARATOR;
         }
@@ -44,7 +44,7 @@ public class DailyRotateLogStore {
         this.suffix = suffix;
         this.fileName = this.prefix + "." + suffix;
         this.mode = "rw";
-        this.maxFileSize = 1024L * 1024 * rolateSize;
+        this.maxFileSize = 1024L * 1024 * rotateSize;
         this.nextCheckTime = System.currentTimeMillis() - 1;
         this.cal = Calendar.getInstance();
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -53,7 +53,7 @@ public class DailyRotateLogStore {
 
     public void open() throws IOException {
         File f = new File(fileName);
-        createDirectorys(f.getAbsoluteFile().getParentFile().getAbsolutePath());
+        createDirectories(f.getAbsoluteFile().getParentFile().getAbsolutePath());
         if (now == null) {
             if (f.exists() && System.currentTimeMillis() > f.lastModified()) {
                 now = new Date(f.lastModified());
@@ -80,12 +80,12 @@ public class DailyRotateLogStore {
         }
     }
 
-    public void createDirectorys(String dir) {
+    public void createDirectories(String dir) {
         if (dir != null) {
             File f = new File(dir);
             if (!f.exists()) {
                 String parent = f.getParent();
-                createDirectorys(parent);
+                createDirectories(parent);
                 f.mkdir();
             }
         }

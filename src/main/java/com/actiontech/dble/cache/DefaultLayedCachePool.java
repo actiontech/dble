@@ -17,18 +17,18 @@ public class DefaultLayedCachePool implements LayerCachePool {
     protected Map<String, CachePool> allCaches = new HashMap<>();
     protected final ReentrantLock lock = new ReentrantLock();
     protected int defaultCacheSize;
-    protected int defaulExpiredSeconds;
+    protected int defaultExpiredSeconds;
     protected static final String DEFAULT_CACHE = "default";
     private final CachePoolFactory poolFactory;
     private final String name;
     private final boolean hasDefaultCache;
 
-    public DefaultLayedCachePool(String name, CachePoolFactory poolFactory, int defaultCacheSize, int defaulExpiredSeconds) {
+    public DefaultLayedCachePool(String name, CachePoolFactory poolFactory, int defaultCacheSize, int defaultExpiredSeconds) {
         super();
         this.name = name;
         this.poolFactory = poolFactory;
         this.defaultCacheSize = defaultCacheSize;
-        this.defaulExpiredSeconds = defaulExpiredSeconds;
+        this.defaultExpiredSeconds = defaultExpiredSeconds;
         this.hasDefaultCache = defaultCacheSize != 0;
     }
 
@@ -39,7 +39,7 @@ public class DefaultLayedCachePool implements LayerCachePool {
             try {
                 pool = allCaches.get(cacheName);
                 if (pool == null) {
-                    pool = this.createChildCache(cacheName, this.defaultCacheSize, this.defaulExpiredSeconds);
+                    pool = this.createChildCache(cacheName, this.defaultCacheSize, this.defaultExpiredSeconds);
                 }
             } finally {
                 lock.unlock();
@@ -109,8 +109,8 @@ public class DefaultLayedCachePool implements LayerCachePool {
             cacheStatic.setHitTimes(cacheStatic.getHitTimes() + singleStatic.getHitTimes());
             cacheStatic.setAccessTimes(cacheStatic.getAccessTimes() + singleStatic.getAccessTimes());
             cacheStatic.setPutTimes(cacheStatic.getPutTimes() + singleStatic.getPutTimes());
-            if (cacheStatic.getLastAccesTime() < singleStatic.getLastAccesTime()) {
-                cacheStatic.setLastAccesTime(singleStatic.getLastAccesTime());
+            if (cacheStatic.getLastAccessTime() < singleStatic.getLastAccessTime()) {
+                cacheStatic.setLastAccessTime(singleStatic.getLastAccessTime());
             }
             if (cacheStatic.getLastPutTime() < singleStatic.getLastPutTime()) {
                 cacheStatic.setLastPutTime(singleStatic.getLastPutTime());

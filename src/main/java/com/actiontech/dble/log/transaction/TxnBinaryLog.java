@@ -12,14 +12,14 @@ public class TxnBinaryLog {
     private long xid;
     private String executeTime;
     private String query;
-    private long connid;
+    private long connId;
 
-    public long getConnid() {
-        return connid;
+    public long getConnId() {
+        return connId;
     }
 
-    public void setConnid(long connid) {
-        this.connid = connid;
+    public void setConnId(long connId) {
+        this.connId = connId;
     }
 
     public String getUser() {
@@ -72,7 +72,7 @@ public class TxnBinaryLog {
 
     @Override
     public String toString() {
-        String builder = executeTime + ", ConnID:" + connid + ", XID:" + xid + ", " +
+        String builder = executeTime + ", ConnID:" + connId + ", XID:" + xid + ", " +
                 "MySQL user " + "'" + user +
                 "'" + "@'" + host + "', " + " Current schema `" + schema +
                 "`, " + "Current query " + "\n" + query + "\n";

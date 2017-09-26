@@ -95,10 +95,10 @@ public final class ShowSession {
 
     private static RowDataPacket getRow(ServerConnection sc, String charset) {
         StringBuilder sb = new StringBuilder();
-        NonBlockingSession ssesion = sc.getSession2();
-        Collection<BackendConnection> backConnections = ssesion.getTargetMap().values();
-        int cncount = backConnections.size();
-        if (cncount == 0) {
+        NonBlockingSession session = sc.getSession2();
+        Collection<BackendConnection> backConnections = session.getTargetMap().values();
+        int cnCount = backConnections.size();
+        if (cnCount == 0) {
             return null;
         }
         for (BackendConnection backCon : backConnections) {
@@ -106,7 +106,7 @@ public final class ShowSession {
         }
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(sc.getId() + "", charset));
-        row.add(StringUtil.encode(cncount + "", charset));
+        row.add(StringUtil.encode(cnCount + "", charset));
         row.add(StringUtil.encode(sb.toString(), charset));
         return row;
     }

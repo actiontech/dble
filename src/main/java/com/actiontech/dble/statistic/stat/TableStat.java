@@ -29,7 +29,7 @@ public class TableStat implements Comparable<TableStat> {
     private final AtomicLong wCount = new AtomicLong(0);
 
     // relaTable
-    private final ConcurrentMap<String, RelaTable> relaTableMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, RelationTable> relationTableMap = new ConcurrentHashMap<>();
 
     private long lastExecuteTime;
 
@@ -42,11 +42,11 @@ public class TableStat implements Comparable<TableStat> {
     public void reset() {
         this.rCount.set(0);
         this.wCount.set(0);
-        this.relaTableMap.clear();
+        this.relationTableMap.clear();
         this.lastExecuteTime = 0;
     }
 
-    public void update(int sqlType, String sql, long startTime, long endTime, List<String> relaTables) {
+    public void update(int sqlType, String sql, long startTime, long endTime, List<String> relationTables) {
 
         //RECORD RW
         switch (sqlType) {
@@ -63,14 +63,14 @@ public class TableStat implements Comparable<TableStat> {
                 break;
         }
 
-        for (String tableName : relaTables) {
-            RelaTable relaTable = this.relaTableMap.get(tableName);
-            if (relaTable == null) {
-                relaTable = new RelaTable(tableName, 1);
+        for (String tableName : relationTables) {
+            RelationTable relationTable = this.relationTableMap.get(tableName);
+            if (relationTable == null) {
+                relationTable = new RelationTable(tableName, 1);
             } else {
-                relaTable.incCount();
+                relationTable.incCount();
             }
-            this.relaTableMap.put(tableName, relaTable);
+            this.relationTableMap.put(tableName, relationTable);
         }
 
         this.lastExecuteTime = endTime;
@@ -92,9 +92,9 @@ public class TableStat implements Comparable<TableStat> {
         return (int) (getRCount() + getWCount());
     }
 
-    public List<RelaTable> getRelaTables() {
-        List<RelaTable> tables = new ArrayList<>();
-        tables.addAll(this.relaTableMap.values());
+    public List<RelationTable> getRelationTables() {
+        List<RelationTable> tables = new ArrayList<>();
+        tables.addAll(this.relationTableMap.values());
         return tables;
     }
 
@@ -131,16 +131,16 @@ public class TableStat implements Comparable<TableStat> {
     }
 
     /**
-     * RelaTable
+     * RelationTable
      *
      * @author Ben
      */
-    public static class RelaTable {
+    public static class RelationTable {
 
         private String tableName;
         private int count;
 
-        public RelaTable(String tableName, int count) {
+        public RelationTable(String tableName, int count) {
             super();
             this.tableName = tableName;
             this.count = count;

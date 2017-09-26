@@ -19,13 +19,13 @@ public class NewConnectionRespHandler implements ResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewConnectionRespHandler.class);
     private BackendConnection backConn;
     private ReentrantLock lock = new ReentrantLock();
-    private Condition inited = lock.newCondition();
+    private Condition initiated = lock.newCondition();
 
     public BackendConnection getBackConn() {
         lock.lock();
         try {
             while (backConn == null) {
-                inited.await();
+                initiated.await();
             }
             return backConn;
         } catch (InterruptedException e) {
@@ -47,7 +47,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
         lock.lock();
         try {
             backConn = conn;
-            inited.signal();
+            initiated.signal();
         } finally {
             lock.unlock();
         }

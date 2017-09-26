@@ -441,21 +441,21 @@ public class RBTreeList<E> extends AbstractList<E> {
         for (int i = 0; i < size; i++)
             elementData[i] = null;
 
-        destory(root);
+        destroy(root);
         root = null;
         size = 0;
     }
 
-    private void destory(RBTNode<E> node) {
+    private void destroy(RBTNode<E> node) {
         if (node == null)
             return;
 
         if (node.left != null) {
-            destory(node.left);
+            destroy(node.left);
             node.left = null;
         }
         if (node.right != null) {
-            destory(node.right);
+            destroy(node.right);
             node.right = null;
         }
         node.parent = null;

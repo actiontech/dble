@@ -46,14 +46,14 @@ public final class Explain2Handler {
         try {
             stmt = stmt.substring(offset);
             if (!stmt.toLowerCase().contains("datanode=") || !stmt.toLowerCase().contains("sql=")) {
-                showerror(stmt, c, "explain2 datanode=? sql=?");
+                showError(stmt, c, "explain2 datanode=? sql=?");
                 return;
             }
             String dataNode = stmt.substring(stmt.indexOf("=") + 1, stmt.indexOf("sql=")).trim();
             String sql = "explain " + stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
 
             if (dataNode == null || dataNode.isEmpty() || sql == null || sql.isEmpty()) {
-                showerror(stmt, c, "dataNode or sql is null or empty");
+                showError(stmt, c, "dataNode or sql is null or empty");
                 return;
             }
 
@@ -65,11 +65,11 @@ public final class Explain2Handler {
             singleNodeHandler.execute();
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e.getCause());
-            showerror(stmt, c, e.getMessage());
+            showError(stmt, c, e.getMessage());
         }
     }
 
-    private static void showerror(String stmt, ServerConnection c, String msg) {
+    private static void showError(String stmt, ServerConnection c, String msg) {
         ByteBuffer buffer = c.allocate();
         // write header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);

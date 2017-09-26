@@ -8,10 +8,10 @@ package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultLoader;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * author:liujun
  * Created:2016/9/15
  */
-public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifyService {
+public class SequenceTopropertiesLoader extends ZkMultiLoader implements NotifyService {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceTopropertiesLoader.class);
@@ -50,10 +50,10 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DiretoryInf sequenceDirectory = new ZkDirectoryImpl(currZkPath, null);
+        DirectoryInf sequenceDirectory = new ZkDirectoryImpl(currZkPath, null);
         this.getTreeDirectory(currZkPath, KVPathUtil.SEQUENCES, sequenceDirectory);
 
-        sequenceDirectory = (DiretoryInf) sequenceDirectory.getSubordinateInfo().get(0);
+        sequenceDirectory = (DirectoryInf) sequenceDirectory.getSubordinateInfo().get(0);
 
         this.sequenceZkToProperties(PROPERTIES_SEQUENCE_CONF, sequenceDirectory);
 
@@ -69,7 +69,7 @@ public class SequenceTopropertiesLoader extends ZkMultLoader implements NotifySe
      * @param name schema
      * @throws Exception
      */
-    private void sequenceZkToProperties(String name, DiretoryInf seqDirectory) throws Exception {
+    private void sequenceZkToProperties(String name, DirectoryInf seqDirectory) throws Exception {
         ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory, KVPathUtil.SEQUENCE_COMMON);
 
         if (null != zkDirectory) {

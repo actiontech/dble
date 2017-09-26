@@ -96,7 +96,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
     public void close(String msg) {
         SQLJob curJob = sqlJob;
         if (curJob != null && !curJob.isFinished()) {
-            curJob.teminate(msg);
+            curJob.terminate(msg);
             sqlJob = null;
         }
     }

@@ -30,17 +30,17 @@ import java.util.concurrent.locks.ReentrantLock;
 public class UnionHandler extends BaseDMLHandler {
     private static final Logger LOGGER = Logger.getLogger(UnionHandler.class);
 
-    public UnionHandler(long id, NonBlockingSession session, List<Item> sels, int nodecount) {
+    public UnionHandler(long id, NonBlockingSession session, List<Item> selects, int nodeCount) {
         super(id, session);
-        this.sels = sels;
-        this.nodeCount = new AtomicInteger(nodecount);
-        this.nodeCountField = new AtomicInteger(nodecount);
+        this.selects = selects;
+        this.nodeCount = new AtomicInteger(nodeCount);
+        this.nodeCountField = new AtomicInteger(nodeCount);
     }
 
     /**
      * union may has multi tables,but the result's columns are same as the first table's
      */
-    private List<Item> sels;
+    private List<Item> selects;
     private AtomicInteger nodeCount;
     /* used for fieldeof */
     private AtomicInteger nodeCountField;
@@ -52,8 +52,8 @@ public class UnionHandler extends BaseDMLHandler {
         return HandlerType.UNION;
     }
 
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
         lock.lock();
@@ -84,9 +84,9 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     private void checkFieldPackets() {
-        for (int i = 0; i < sels.size(); i++) {
+        for (int i = 0; i < selects.size(); i++) {
             FieldPacket fp = this.fieldPackets.get(i);
-            Item sel = sels.get(i);
+            Item sel = selects.get(i);
             fp.setName(sel.getItemName().getBytes());
             fp.setTable(sel.getTableName().getBytes());
         }
@@ -129,7 +129,7 @@ public class UnionHandler extends BaseDMLHandler {
     /**
      * need wait for all field merged
      */
-    public boolean rowResponse(byte[] rownull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return true;
         nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);

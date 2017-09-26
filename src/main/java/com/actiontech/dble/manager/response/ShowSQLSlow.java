@@ -87,7 +87,7 @@ public final class ShowSQLSlow {
             }
 
             if (isClear) {
-                userStat.clearSqlslow();
+                userStat.clearSqlSlow();
             }
         }
 

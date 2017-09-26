@@ -63,7 +63,7 @@ public class ConMap {
         return items.values();
     }
 
-    public int getActiveCountForSchema(String schema, PhysicalDatasource dataSouce) {
+    public int getActiveCountForSchema(String schema, PhysicalDatasource dataSource) {
         int total = 0;
         for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
@@ -71,7 +71,7 @@ public class ConMap {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
                     if (mysqlCon.getSchema().equals(schema) &&
-                            mysqlCon.getPool() == dataSouce &&
+                            mysqlCon.getPool() == dataSource &&
                             mysqlCon.isBorrowed()) {
                         total++;
                     }
@@ -81,14 +81,14 @@ public class ConMap {
         return total;
     }
 
-    public int getActiveCountForDs(PhysicalDatasource dataSouce) {
+    public int getActiveCountForDs(PhysicalDatasource dataSource) {
         int total = 0;
         for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
-                    if (mysqlCon.getPool() == dataSouce && mysqlCon.isBorrowed() && !mysqlCon.isClosed()) {
+                    if (mysqlCon.getPool() == dataSource && mysqlCon.isBorrowed() && !mysqlCon.isClosed()) {
                         total++;
                     }
                 }
@@ -97,18 +97,18 @@ public class ConMap {
         return total;
     }
 
-    public void clearConnections(String reason, PhysicalDatasource dataSouce) {
+    public void clearConnections(String reason, PhysicalDatasource dataSource) {
         for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
             ConcurrentMap<Long, BackendConnection> map = processor.getBackends();
-            Iterator<Entry<Long, BackendConnection>> itor = map.entrySet().iterator();
+            Iterator<Entry<Long, BackendConnection>> iterator = map.entrySet().iterator();
 
-            while (itor.hasNext()) {
-                Entry<Long, BackendConnection> entry = itor.next();
+            while (iterator.hasNext()) {
+                Entry<Long, BackendConnection> entry = iterator.next();
                 BackendConnection con = entry.getValue();
                 if (con instanceof MySQLConnection) {
-                    if (((MySQLConnection) con).getPool() == dataSouce) {
+                    if (((MySQLConnection) con).getPool() == dataSource) {
                         con.close(reason);
-                        itor.remove();
+                        iterator.remove();
                     }
                 }
             }

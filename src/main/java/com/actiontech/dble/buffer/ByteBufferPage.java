@@ -29,32 +29,32 @@ public class ByteBufferPage {
         this.buf = buf;
     }
 
-    public ByteBuffer allocatChunk(int theChunkCount) {
+    public ByteBuffer allocateChunk(int theChunkCount) {
         if (!allocLockStatus.compareAndSet(false, true)) {
             return null;
         }
         int startChunk = -1;
-        int contiueCount = 0;
+        int continueCount = 0;
         try {
             for (int i = 0; i < chunkCount; i++) {
                 if (!chunkAllocateTrack.get(i)) {
                     if (startChunk == -1) {
                         startChunk = i;
-                        contiueCount = 1;
+                        continueCount = 1;
                         if (theChunkCount == 1) {
                             break;
                         }
                     } else {
-                        if (++contiueCount == theChunkCount) {
+                        if (++continueCount == theChunkCount) {
                             break;
                         }
                     }
                 } else {
                     startChunk = -1;
-                    contiueCount = 0;
+                    continueCount = 0;
                 }
             }
-            if (contiueCount == theChunkCount) {
+            if (continueCount == theChunkCount) {
                 int offStart = startChunk * chunkSize;
                 int offEnd = offStart + theChunkCount * chunkSize;
                 buf.limit(offEnd);

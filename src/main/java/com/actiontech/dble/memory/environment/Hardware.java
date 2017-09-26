@@ -153,10 +153,10 @@ public final class Hardware {
 
             while ((line = bi.readLine()) != null) {
                 if (line.startsWith("hw.memsize")) {
-                    long memsize = Long.parseLong(line.split(":")[1].trim());
+                    long memSize = Long.parseLong(line.split(":")[1].trim());
                     bi.close();
                     proc.destroy();
-                    return memsize;
+                    return memSize;
                 }
             }
 
@@ -192,10 +192,10 @@ public final class Hardware {
 
             while ((line = bi.readLine()) != null) {
                 if (line.startsWith("hw.physmem")) {
-                    long memsize = Long.parseLong(line.split(":")[1].trim());
+                    long memSize = Long.parseLong(line.split(":")[1].trim());
                     bi.close();
                     proc.destroy();
-                    return memsize;
+                    return memSize;
                 }
             }
 
@@ -237,16 +237,16 @@ public final class Hardware {
                 return -1L;
             }
 
-            long sizeOfPhyiscalMemory = 0L;
+            long sizeOfPhysicalMemory = 0L;
             while ((line = bi.readLine()) != null) {
                 if (line.isEmpty()) {
                     continue;
                 }
 
                 line = line.replaceAll(" ", "");
-                sizeOfPhyiscalMemory += Long.parseLong(line);
+                sizeOfPhysicalMemory += Long.parseLong(line);
             }
-            return sizeOfPhyiscalMemory;
+            return sizeOfPhysicalMemory;
         } catch (Throwable t) {
             LOG.error("Cannot determine the size of the physical memory for Windows host (using 'wmic memorychip'): " + t.getMessage(), t);
             return -1L;

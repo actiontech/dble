@@ -49,7 +49,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final NonBlockingSession session;
     private final AbstractDataNodeMerge dataMergeSvr;
     private final boolean sessionAutocommit;
-    private String priamaryKeyTable = null;
+    private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
     private int fieldCount = 0;
     private final ReentrantLock lock;
@@ -81,10 +81,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.rrs = rrs;
-        int isOffHeapuseOffHeapForMerge = DbleServer.getInstance().
+        int isOffHeapUseOffHeapForMerge = DbleServer.getInstance().
                 getConfig().getSystem().getUseOffHeapForMerge();
         if (ServerParse.SELECT == sqlType && rrs.needMerge()) {
-            if (isOffHeapuseOffHeapForMerge == 1) {
+            if (isOffHeapUseOffHeapForMerge == 1) {
                 dataMergeSvr = new DataNodeMergeManager(this, rrs);
             } else {
                 dataMergeSvr = new DataMergeService(this, rrs);
@@ -154,7 +154,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             return;
         }
         conn.setResponseHandler(this);
-        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxstart() && !node.isModifySQL());
+        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
     private void handleDdl() {
@@ -183,7 +183,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         LOGGER.warn("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
         lock.lock();
@@ -210,7 +210,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         LOGGER.warn("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrno(ErrorCode.ER_ABORTING_CONNECTION);
+        errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
         lock.lock();
@@ -321,7 +321,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         this.netOutBytes += eof.length;
 
-        if (errorResponsed.get()) {
+        if (errorResponse.get()) {
             return;
         }
 
@@ -336,7 +336,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         if (decrementCountBy(1)) {
             if (!rrs.isCallStatement() || (rrs.isCallStatement() && rrs.getProcedure().isResultSimpleValue())) {
-                if (this.sessionAutocommit && !session.getSource().isTxstart() && !session.getSource().isLocked()) { // clear all connections
+                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
                     session.releaseConnections(false);
                 }
 
@@ -393,7 +393,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
      * @param eof
      * @param
      */
-    public void outputMergeResult(final ServerConnection source, final byte[] eof, Iterator<UnsafeRow> iter) {
+    public void outputMergeResult(final ServerConnection source, final byte[] eof, Iterator<UnsafeRow> iterator) {
         lock.lock();
         try {
             ByteBuffer buffer = session.getSource().allocate();
@@ -413,8 +413,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 end = Integer.MAX_VALUE;
 
             if (prepared) {
-                while (iter.hasNext()) {
-                    UnsafeRow row = iter.next();
+                while (iterator.hasNext()) {
+                    UnsafeRow row = iterator.next();
                     if (index >= start) {
                         row.setPacketId(++packetId);
                         BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
@@ -427,8 +427,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     }
                 }
             } else {
-                while (iter.hasNext()) {
-                    UnsafeRow row = iter.next();
+                while (iterator.hasNext()) {
+                    UnsafeRow row = iterator.next();
                     if (index >= start) {
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, source, true);
@@ -514,7 +514,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
         this.netOutBytes += eof.length;
@@ -553,7 +553,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         String primaryKey = null;
         if (rrs.hasPrimaryKeyToCache()) {
             String[] items = rrs.getPrimaryKeyItems();
-            priamaryKeyTable = items[0];
+            primaryKeyTable = items[0];
             primaryKey = items[1];
         }
 
@@ -600,7 +600,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ByteBuffer buffer = source.allocate();
         buffer = packet.write(buffer, source, true);
 
-        Map<String, ColMeta> columToIndx = new HashMap<>(fieldCount);
+        Map<String, ColMeta> columnToIndex = new HashMap<>(fieldCount);
         for (int i = 0, len = fieldCount; i < len; ++i) {
             boolean shouldSkip = false;
             byte[] field = fields.get(i);
@@ -608,7 +608,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             fieldPkg.read(field);
             fieldPackets.add(fieldPkg);
             String fieldName = new String(fieldPkg.getName()).toUpperCase();
-            if (columToIndx != null && !columToIndx.containsKey(fieldName)) {
+            if (columnToIndex != null && !columnToIndex.containsKey(fieldName)) {
                 if (shouldRemoveAvgField.contains(fieldName)) {
                     shouldSkip = true;
                     fieldPackets.remove(fieldPackets.size() - 1);
@@ -631,7 +631,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
                 ColMeta colMeta = new ColMeta(i, fieldPkg.getType());
                 colMeta.setDecimals(fieldPkg.getDecimals());
-                columToIndx.put(fieldName, colMeta);
+                columnToIndex.put(fieldName, colMeta);
             }
             if (!shouldSkip) {
                 field[3] = ++packetId;
@@ -641,11 +641,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         eof[3] = ++packetId;
         buffer = source.writeToBuffer(eof, buffer);
         source.write(buffer);
-        dataMergeSvr.onRowMetaData(columToIndx, fieldCount);
+        dataMergeSvr.onRowMetaData(columnToIndex, fieldCount);
     }
 
     public void handleDataProcessException(Exception e) {
-        if (!errorResponsed.get()) {
+        if (!errorResponse.get()) {
             this.error = e.toString();
             LOGGER.warn("caught exception ", e);
             setFail(e.toString());
@@ -654,9 +654,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketnull, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
 
-        if (errorResponsed.get()) {
+        if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
             //in tryErrorFinished() method! If we close it here, it can
             // lead to tx error such as blocking rollback tx for ever.
@@ -690,7 +690,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
                     LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
                     if (pool != null) {
-                        pool.putIfAbsent(priamaryKeyTable, primaryKey, dataNode);
+                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
                     }
                 }
                 row[3] = ++packetId;
@@ -742,7 +742,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
         ServerConnection source = session.getSource();
-        if (source.isAutocommit() && !source.isTxstart() && conn.isModifiedSQLExecuted()) {
+        if (source.isAutocommit() && !source.isTxStart() && conn.isModifiedSQLExecuted()) {
             if (nodeCount < 0) {
                 return;
             }
@@ -768,7 +768,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
         } else {
-            boolean inTransaction = !source.isAutocommit() || source.isTxstart();
+            boolean inTransaction = !source.isAutocommit() || source.isTxStart();
             if (!inTransaction) {
                 session.releaseConnection(conn);
             }

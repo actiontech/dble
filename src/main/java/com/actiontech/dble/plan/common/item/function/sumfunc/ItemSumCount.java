@@ -26,8 +26,8 @@ public class ItemSumCount extends ItemSumInt {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return hasWithDistinct() ? Sumfunctype.COUNT_DISTINCT_FUNC : Sumfunctype.COUNT_FUNC;
+    public SumFuncType sumType() {
+        return hasWithDistinct() ? SumFuncType.COUNT_DISTINCT_FUNC : SumFuncType.COUNT_FUNC;
     }
 
     @Override

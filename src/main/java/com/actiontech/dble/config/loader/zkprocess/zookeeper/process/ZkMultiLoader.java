@@ -6,7 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DiretoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -20,16 +20,16 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * ZkMultLoader
+ * ZkMultiLoader
  * <p>
  * <p>
  * author:liujun
  * Created:2016/9/15
  */
-public class ZkMultLoader {
+public class ZkMultiLoader {
 
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultiLoader.class);
 
     private CuratorFramework curator;
 
@@ -43,7 +43,7 @@ public class ZkMultLoader {
      * @throws Exception
      * @Created 2016/9/15
      */
-    public void getTreeDirectory(String path, String name, DiretoryInf zkDirectory) throws Exception {
+    public void getTreeDirectory(String path, String name, DirectoryInf zkDirectory) throws Exception {
 
         boolean check = this.checkPathExists(path);
 
@@ -53,7 +53,7 @@ public class ZkMultLoader {
             List<String> childPathList = this.getChildNames(path);
 
             if (null != childPathList && !childPathList.isEmpty()) {
-                DiretoryInf directory = new ZkDirectoryImpl(name, currDate);
+                DirectoryInf directory = new ZkDirectoryImpl(name, currDate);
 
                 zkDirectory.add(directory);
 
@@ -103,12 +103,12 @@ public class ZkMultLoader {
         return curator.getChildren().forPath(path);
     }
 
-    protected void checkAndwriteString(String parentPath, String currpath, String value) throws Exception {
+    protected void checkAndWriteString(String parentPath, String currPath, String value) throws Exception {
         checkNotNull(parentPath, "data of path" + parentPath + " must be not null!");
-        checkNotNull(currpath, "data of path" + currpath + " must be not null!");
+        checkNotNull(currPath, "data of path" + currPath + " must be not null!");
         checkNotNull(value, "data of value:" + value + " must be not null!");
 
-        String nodePath = ZKPaths.makePath(parentPath, currpath);
+        String nodePath = ZKPaths.makePath(parentPath, currPath);
 
         Stat stat = curator.checkExists().forPath(nodePath);
 
@@ -116,7 +116,7 @@ public class ZkMultLoader {
             this.createPath(nodePath);
         }
 
-        LOGGER.debug("ZkMultLoader write file :" + nodePath + ", value :" + value);
+        LOGGER.debug("ZkMultiLoader write file :" + nodePath + ", value :" + value);
 
         curator.setData().inBackground().forPath(nodePath, value.getBytes());
 
@@ -164,7 +164,7 @@ public class ZkMultLoader {
      * @return
      * @Created 2016/9/16
      */
-    protected DataInf getZkData(DiretoryInf zkDirectory, String name) {
+    protected DataInf getZkData(DirectoryInf zkDirectory, String name) {
         List<Object> list = zkDirectory.getSubordinateInfo();
 
         if (null != list && !list.isEmpty()) {
@@ -191,14 +191,14 @@ public class ZkMultLoader {
      * @return
      * @Created 2016/9/16
      */
-    protected DiretoryInf getZkDirectory(DiretoryInf zkDirectory, String name) {
+    protected DirectoryInf getZkDirectory(DirectoryInf zkDirectory, String name) {
         List<Object> list = zkDirectory.getSubordinateInfo();
 
         if (null != list && !list.isEmpty()) {
             for (Object directObj : list) {
 
-                if (directObj instanceof DiretoryInf) {
-                    DiretoryInf zkDirectoryValue = (DiretoryInf) directObj;
+                if (directObj instanceof DirectoryInf) {
+                    DirectoryInf zkDirectoryValue = (DirectoryInf) directObj;
 
                     if (name.equals(zkDirectoryValue.getDataName())) {
 

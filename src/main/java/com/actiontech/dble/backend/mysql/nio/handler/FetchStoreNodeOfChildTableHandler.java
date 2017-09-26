@@ -119,7 +119,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     private boolean isAutoCommit() {
-        return session.getSource().isAutocommit() && !session.getSource().isTxstart();
+        return session.getSource().isAutocommit() && !session.getSource().isTxStart();
     }
 
     private boolean canReleaseConn() {
@@ -150,7 +150,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         finished.incrementAndGet();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        LOGGER.warn("errorResponse " + err.getErrno() + " " + new String(err.getMessage()));
+        LOGGER.warn("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
         if (canReleaseConn()) {
             conn.release();
         }

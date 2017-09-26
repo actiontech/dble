@@ -120,8 +120,8 @@ public class DataNodeFileManager {
         return new File(subDirs.get(dirId).get(subDirId), filename);
     }
 
-    public File getFile(ConnectionId connid) throws IOException {
-        return getFile(connid.name);
+    public File getFile(ConnectionId connectionId) throws IOException {
+        return getFile(connectionId.name);
     }
 
     /**
@@ -134,14 +134,14 @@ public class DataNodeFileManager {
 
         String rootDirs = conf.getString("server.local.dirs", "datanode");
 
-        String[] rdir = rootDirs.split(",");
+        String[] rootDirArray = rootDirs.split(",");
         List<File> dirs = new ArrayList<>();
-        for (String aRdir : rdir) {
+        for (String rootDir : rootDirArray) {
             try {
-                File localDir = JavaUtils.createDirectory(aRdir, "datenode");
+                File localDir = JavaUtils.createDirectory(rootDir, "datenode");
                 dirs.add(localDir);
             } catch (Exception e) {
-                LOG.error("Failed to create local dir in " + aRdir + ". Ignoring this directory.");
+                LOG.error("Failed to create local dir in " + rootDir + ". Ignoring this directory.");
             }
         }
 

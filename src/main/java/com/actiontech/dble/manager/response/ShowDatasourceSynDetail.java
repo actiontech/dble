@@ -116,10 +116,10 @@ public final class ShowDatasourceSynDetail {
         for (PhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 DBHeartbeat hb = ds.getHeartbeat();
-                DataSourceSyncRecorder record = hb.getAsynRecorder();
+                DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
                 if (name.equals(ds.getName())) {
-                    List<Record> data = record.getAsynRecords();
+                    List<Record> data = record.getAsyncRecords();
                     for (Record r : data) {
                         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 

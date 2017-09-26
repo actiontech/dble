@@ -60,7 +60,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private LoadData loadData;
     private ByteArrayOutputStream tempByteBuffer;
-    private long tempByteBuffrSize = 0;
+    private long tempByteBufferSize = 0;
     private String tempPath;
     private String tempFile;
     private boolean isHasStoreToFile = false;
@@ -86,8 +86,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
     private static String parseFileName(String sql) {
-        String usql = sql.toUpperCase();
-        int index0 = usql.indexOf("INFILE");
+        String uSql = sql.toUpperCase();
+        int index0 = uSql.indexOf("INFILE");
 
         for (int i = index0 + 6; i < sql.length(); i++) {
             char quoteChar = sql.charAt(i);
@@ -113,9 +113,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         String enclose = rawEnclosed == null ? null : rawEnclosed.getText();
         loadData.setEnclose(enclose);
 
-        SQLTextLiteralExpr escapseExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
-        String escapse = escapseExpr == null ? "\\" : escapseExpr.getText();
-        loadData.setEscape(escapse);
+        SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
+        String escaped = escapedExpr == null ? "\\" : escapedExpr.getText();
+        loadData.setEscape(escaped);
         String charset = statement.getCharset() != null ? statement.getCharset() : SystemVariables.getDefaultValue("character_set_filesystem");
         loadData.setCharset(charset);
         loadData.setFileName(fileName);
@@ -212,7 +212,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private synchronized void saveByteOrToFile(byte[] data, boolean isForce) {
         if (data != null) {
-            tempByteBuffrSize = tempByteBuffrSize + data.length;
+            tempByteBufferSize = tempByteBufferSize + data.length;
             try {
                 tempByteBuffer.write(data);
             } catch (IOException e) {
@@ -220,7 +220,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        if ((isForce && isHasStoreToFile) || tempByteBuffrSize > 200 * 1024 * 1024) { //200M
+        if ((isForce && isHasStoreToFile) || tempByteBufferSize > 200 * 1024 * 1024) { //200M
             FileOutputStream channel = null;
             try {
                 File file = new File(tempFile);
@@ -229,7 +229,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
                 tempByteBuffer.writeTo(channel);
                 tempByteBuffer = new ByteArrayOutputStream();
-                tempByteBuffrSize = 0;
+                tempByteBufferSize = 0;
                 isHasStoreToFile = true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -467,15 +467,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private String parseFieldString(String value, String encose, String escape) {
+    private String parseFieldString(String value, String enclose, String escape) {
         //avoid null point execption
         if (value == null) {
             return value;
         }
 
         //if the value is cover by enclose char and enclose char is not null, clear the enclose char.
-        if (encose != null && !"".equals(encose) && (value.startsWith(encose) && value.endsWith(encose))) {
-            return this.escaped(value.substring(encose.length() - 1, value.length() - encose.length()).replace("\\", "\\\\").replace(escape, "\\"));
+        if (enclose != null && !"".equals(enclose) && (value.startsWith(enclose) && value.endsWith(enclose))) {
+            return this.escaped(value.substring(enclose.length() - 1, value.length() - enclose.length()).replace("\\", "\\\\").replace(escape, "\\"));
         }
         //else replace escape because \ is used as escape in insert.
         return this.escaped(value.replace("\\", "\\\\").replace(escape, "\\"));
@@ -525,9 +525,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     @Override
-    public void end(byte packid) {
+    public void end(byte packId) {
         isStartLoadData = false;
-        this.packID = packid;
+        this.packID = packId;
         //empty packet for end
         saveByteOrToFile(null, true);
 
@@ -691,7 +691,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tableConfig = null;
         isHasStoreToFile = false;
         packID = 0;
-        tempByteBuffrSize = 0;
+        tempByteBufferSize = 0;
         tableName = null;
         partitionColumnIndex = -1;
         if (tempFile != null) {

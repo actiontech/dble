@@ -50,7 +50,7 @@ public interface ResponseHandler {
     /**
      * execute after get an row response
      */
-    boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
+    boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
 
     /**
      * execute after get an rowEof response

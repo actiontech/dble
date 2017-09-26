@@ -15,7 +15,7 @@ public final class NumberParseUtil {
      * @param number
      * @return
      */
-    public static String eliminateQoute(String number) {
+    public static String eliminateQuote(String number) {
         number = number.trim();
         if (number.contains("\"")) {
             if (number.charAt(0) == '\"') {
@@ -43,18 +43,18 @@ public final class NumberParseUtil {
      */
     public static long parseLong(String val) {
         val = val.toUpperCase();
-        int indx = val.indexOf("M");
+        int index = val.indexOf("M");
 
         int plus = 10000;
-        if (indx < 0) {
-            indx = val.indexOf("K");
+        if (index < 0) {
+            index = val.indexOf("K");
             plus = 1000;
         }
-        if (indx > 0) {
-            String longVal = val.substring(0, indx);
+        if (index > 0) {
+            String longVal = val.substring(0, index);
 
             long theVale = Long.parseLong(longVal) * plus;
-            String remain = val.substring(indx + 1);
+            String remain = val.substring(index + 1);
             if (remain.length() > 0) {
                 theVale += Integer.parseInt(remain);
             }

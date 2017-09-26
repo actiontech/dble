@@ -27,10 +27,10 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     private long heartbeatTimeout;
     private final AtomicBoolean isQuit;
     private volatile long lastSendQryTime;
-    private volatile long lasstReveivedQryTime;
+    private volatile long lastReceivedQryTime;
     private volatile SQLJob sqlJob;
 
-    private static final String[] MYSQL_SLAVE_STAUTS_COLMS = new String[]{
+    private static final String[] MYSQL_SLAVE_STATUS_COLS = new String[]{
             "Seconds_Behind_Master",
             "Slave_IO_Running",
             "Slave_SQL_Running",
@@ -41,7 +41,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             "Connect_Retry",
             "Last_IO_Error"};
 
-    private static final String[] MYSQL_CLUSTER_STAUTS_COLMS = new String[]{
+    private static final String[] MYSQL_CLUSTER_STATUS_COLS = new String[]{
             "Variable_name",
             "Value"};
 
@@ -56,12 +56,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public boolean isHeartbeatTimeout() {
-        return TimeUtil.currentTimeMillis() > Math.max(lastSendQryTime, lasstReveivedQryTime) + heartbeatTimeout;
+        return TimeUtil.currentTimeMillis() > Math.max(lastSendQryTime, lastReceivedQryTime) + heartbeatTimeout;
     }
 
 
-    public long getLasstReveivedQryTime() {
-        return lasstReveivedQryTime;
+    public long getLastReceivedQryTime() {
+        return lastReceivedQryTime;
     }
 
     public void heartbeat() {
@@ -70,15 +70,15 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         MySQLDataSource ds = heartbeat.getSource();
         String databaseName = ds.getDbPool().getSchemas()[0];
 
-        String[] fetchColms = {};
+        String[] fetchCols = {};
         if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
-            fetchColms = MYSQL_SLAVE_STAUTS_COLMS;
+            fetchCols = MYSQL_SLAVE_STATUS_COLS;
         }
         if (heartbeat.getSource().getHostConfig().isShowClusterSql()) {
-            fetchColms = MYSQL_CLUSTER_STAUTS_COLMS;
+            fetchCols = MYSQL_CLUSTER_STATUS_COLS;
         }
 
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchColms, this);
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
         sqlJob = new SQLJob(heartbeat.getHeartbeatSQL(), databaseName, resultHandler, ds);
         sqlJob.run();
     }
@@ -108,13 +108,13 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             } else {
                 heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
                 //monitor sync status,even switchType=-1 or 1
-                heartbeat.getAsynRecorder().set(resultResult, switchType);
+                heartbeat.getAsyncRecorder().set(resultResult, switchType);
             }
         } else {
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
         }
-        lasstReveivedQryTime = System.currentTimeMillis();
-        heartbeat.getRecorder().set((lasstReveivedQryTime - lastSendQryTime));
+        lastReceivedQryTime = System.currentTimeMillis();
+        heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
     }
 
     private void setStatusByCluster(int switchType, Map<String, String> resultResult) {
@@ -133,7 +133,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
         }
-        heartbeat.getAsynRecorder().set(resultResult, switchType);
+        heartbeat.getAsyncRecorder().set(resultResult, switchType);
     }
 
     private void setStatusBySlave(PhysicalDatasource source, int switchType, Map<String, String> resultResult) {
@@ -157,14 +157,14 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     heartbeat.getSource().getConfig() + ", " + resultResult);
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
         }
-        heartbeat.getAsynRecorder().set(resultResult, switchType);
+        heartbeat.getAsyncRecorder().set(resultResult, switchType);
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
     }
 
     public void close(String msg) {
         SQLJob curJob = sqlJob;
         if (curJob != null && !curJob.isFinished()) {
-            curJob.teminate(msg);
+            curJob.terminate(msg);
             sqlJob = null;
         }
     }

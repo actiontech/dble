@@ -24,7 +24,7 @@ import java.util.Map;
 public class DataSourceSyncRecorder {
 
     private Map<String, String> records;
-    private final List<Record> asynRecords; //value,time
+    private final List<Record> asyncRecords; //value,time
     private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
 
 
@@ -35,33 +35,33 @@ public class DataSourceSyncRecorder {
 
     public DataSourceSyncRecorder() {
         this.records = new HashMap<>();
-        this.asynRecords = new LinkedList<>();
+        this.asyncRecords = new LinkedList<>();
     }
 
     public String get() {
         return records.toString();
     }
 
-    public void set(Map<String, String> resultResult, int switchtype) {
+    public void set(Map<String, String> resultResult, int typeOfSwitch) {
         try {
             long time = TimeUtil.currentTimeMillis();
-            this.switchType = switchtype;
+            this.switchType = typeOfSwitch;
 
             remove(time);
 
             if (resultResult != null && !resultResult.isEmpty()) {
                 this.records = resultResult;
-                if (switchtype == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
-                    String sencords = resultResult.get("Seconds_Behind_Master");
+                if (typeOfSwitch == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
+                    String seconds = resultResult.get("Seconds_Behind_Master");
                     long secondsBehindMaster = -1;
-                    if (sencords != null) {
-                        secondsBehindMaster = Long.parseLong(sencords);
+                    if (seconds != null) {
+                        secondsBehindMaster = Long.parseLong(seconds);
                     }
-                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
+                    this.asyncRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
                 }
-                if (switchtype == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
-                    double wsrepLocalRecvQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
-                    this.asynRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecvQueueAvg));
+                if (typeOfSwitch == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
+                    double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
+                    this.asyncRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecQueueAvg));
                 }
 
                 return;
@@ -76,7 +76,7 @@ public class DataSourceSyncRecorder {
      * remove the old data
      */
     private void remove(long time) {
-        final List<Record> recordsAll = this.asynRecords;
+        final List<Record> recordsAll = this.asyncRecords;
         while (recordsAll.size() > 0) {
             Record record = recordsAll.get(0);
             if (time >= record.time + SWAP_TIME) {
@@ -99,8 +99,8 @@ public class DataSourceSyncRecorder {
         return this.records;
     }
 
-    public List<Record> getAsynRecords() {
-        return this.asynRecords;
+    public List<Record> getAsyncRecords() {
+        return this.asyncRecords;
     }
 
     public static SimpleDateFormat getSdf() {

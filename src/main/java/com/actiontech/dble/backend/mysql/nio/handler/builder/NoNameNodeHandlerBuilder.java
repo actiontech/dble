@@ -39,15 +39,15 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
-        PushDownVisitor vistor = new PushDownVisitor(node, true);
-        vistor.visit();
+        PushDownVisitor visitor = new PushDownVisitor(node, true);
+        visitor.visit();
         this.canPushDown = true;
-        String sql = vistor.getSql().toString();
+        String sql = visitor.getSql().toString();
         String schema = session.getSource().getSchema();
-        SchemaConfig schemacfg = config.getSchemas().get(schema);
-        RouteResultsetNode[] rrss = getTableSources(schemacfg.getAllDataNodes(), sql);
+        SchemaConfig schemaConfig = config.getSchemas().get(schema);
+        RouteResultsetNode[] rrss = getTableSources(schemaConfig.getAllDataNodes(), sql);
         hBuilder.checkRRSs(rrss);
-        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxstart(),
+        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
                 session, null);
         addHandler(mh);
     }

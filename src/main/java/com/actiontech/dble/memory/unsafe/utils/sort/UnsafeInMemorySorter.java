@@ -234,13 +234,13 @@ public final class UnsafeInMemorySorter {
         }
 
         public SortedIterator clone() {
-            SortedIterator iter = new SortedIterator(numRecords, offset);
-            iter.position = position;
-            iter.baseObject = baseObject;
-            iter.baseOffset = baseOffset;
-            iter.keyPrefix = keyPrefix;
-            iter.recordLength = recordLength;
-            return iter;
+            SortedIterator iterator = new SortedIterator(numRecords, offset);
+            iterator.position = position;
+            iterator.baseObject = baseObject;
+            iterator.baseOffset = baseOffset;
+            iterator.keyPrefix = keyPrefix;
+            iterator.recordLength = recordLength;
+            return iterator;
         }
 
         @Override

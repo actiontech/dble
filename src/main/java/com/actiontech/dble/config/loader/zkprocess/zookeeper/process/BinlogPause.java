@@ -23,9 +23,9 @@ public class BinlogPause {
     }
 
     public BinlogPause(String info) {
-        String[] infos = info.split(split);
-        this.from = infos[0];
-        this.status = BinlogPauseStatus.valueOf(infos[1]);
+        String[] infoDeatil = info.split(split);
+        this.from = infoDeatil[0];
+        this.status = BinlogPauseStatus.valueOf(infoDeatil[1]);
     }
 
     @Override

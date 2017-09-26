@@ -693,8 +693,8 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
         ChainedIterator(Queue<UnsafeSorterIterator> iterators) {
             assert iterators.size() > 0;
             this.numRecords = 0;
-            for (UnsafeSorterIterator iter : iterators) {
-                this.numRecords += iter.getNumRecords();
+            for (UnsafeSorterIterator iterator : iterators) {
+                this.numRecords += iterator.getNumRecords();
             }
             this.iterators = iterators;
             this.current = iterators.remove();

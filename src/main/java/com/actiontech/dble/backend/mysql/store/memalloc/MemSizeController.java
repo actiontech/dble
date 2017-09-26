@@ -25,13 +25,13 @@ public class MemSizeController {
     /**
      * addSize
      *
-     * @param incre
-     * @return reache limit?, if false:not ok, need flush to disk
+     * @param increment
+     * @return reached limit?, if false:not ok, need flush to disk
      */
-    public boolean addSize(long incre) {
+    public boolean addSize(long increment) {
         for (; ; ) {
             long current = size.get();
-            long next = current + incre;
+            long next = current + increment;
             if (size.compareAndSet(current, next)) {
                 long minLeft = 32;
                 return next + minLeft < maxSize;
@@ -39,10 +39,10 @@ public class MemSizeController {
         }
     }
 
-    public void subSize(long decre) {
+    public void subSize(long decrement) {
         for (; ; ) {
             long current = size.get();
-            long next = current - decre;
+            long next = current - decrement;
             if (next < 0) {
                 throw new RuntimeException("unexpected!");
             }

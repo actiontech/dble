@@ -9,7 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.Checktype;
+import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
@@ -48,7 +48,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = insert.getTableSource();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
-        if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.INSERT)) {
+        if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.INSERT)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
@@ -71,8 +71,8 @@ public class DruidInsertParser extends DefaultDruidParser {
         }
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
-            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobleTableCheck()) {
-                sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobleTableCheck());
+            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobalTableCheck()) {
+                sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobalTableCheck());
             } else {
                 sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
@@ -427,8 +427,8 @@ public class DruidInsertParser extends DefaultDruidParser {
                     appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
             }
         } else {
-            List<SQLExpr> valuse = insert.getValues().getValues();
-            appendValues(tableKey, valuse, sb, autoIncrement, idxGlobal, colSize);
+            List<SQLExpr> values = insert.getValues().getValues();
+            appendValues(tableKey, values, sb, autoIncrement, idxGlobal, colSize);
         }
 
         List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
@@ -495,8 +495,8 @@ public class DruidInsertParser extends DefaultDruidParser {
         sb.append(")");
     }
 
-    private static StringBuilder appendValues(String tableKey, List<SQLExpr> valuse, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
-        int size = valuse.size();
+    private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb, int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
+        int size = values.size();
         int checkSize = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
         if (checkSize != size) {
             String msg = "In insert Syntax, you can't set value for Autoincrement column!";
@@ -515,7 +515,7 @@ public class DruidInsertParser extends DefaultDruidParser {
                 long id = DbleServer.getInstance().getSequenceHandler().nextId(tableKey);
                 sb.append(id);
             } else {
-                String value = SQLUtils.toMySqlString(valuse.get(iValue++));
+                String value = SQLUtils.toMySqlString(values.get(iValue++));
                 sb.append(value);
             }
             if (i < colSize - 1) {

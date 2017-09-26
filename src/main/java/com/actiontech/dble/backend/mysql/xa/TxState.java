@@ -42,17 +42,17 @@ public enum TxState {
      **/
     TX_CONN_QUIT(7),
     /**
-     * XA is commited, just for log
+     * XA is committed, just for log
      */
-    TX_COMMITED_STATE(8),
+    TX_COMMITTED_STATE(8),
     /**
-     * XA is commited, just for log
+     * XA is rollbacked, just for log
      */
     TX_ROLLBACKED_STATE(9),
     /**
      * XA is committing, just for log
      */
-    TX_COMMITING_STATE(10),
+    TX_COMMITTING_STATE(10),
     /**
      * XA is rollbacking, rollback after prepared ,just for log
      */
@@ -67,7 +67,7 @@ public enum TxState {
         this.value = value;
     }
 
-    public static TxState valueof(int value) {
+    public static TxState valueOf(int value) {
         switch (value) {
             case 0:
                 return TX_INITIALIZE_STATE;
@@ -86,11 +86,11 @@ public enum TxState {
             case 7:
                 return TX_CONN_QUIT;
             case 8:
-                return TX_COMMITED_STATE;
+                return TX_COMMITTED_STATE;
             case 9:
                 return TX_ROLLBACKED_STATE;
             case 10:
-                return TX_COMMITING_STATE;
+                return TX_COMMITTING_STATE;
             case 11:
                 return TX_ROLLBACKING_STATE;
             case 12:

@@ -30,33 +30,33 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
     /* origin field, update before calculating the item */
     private List<Field> leftFields;
     private List<Field> rightFields;
-    private List<ArgComparator> cmptors;
-    private List<Boolean> ascs;
+    private List<ArgComparator> comparators;
+    private List<Boolean> ascList;
 
     public TwoTableComparator(List<FieldPacket> fps1, List<FieldPacket> fps2, List<Order> leftOrders,
                               List<Order> rightOrders, boolean isAllPushDown, DMLResponseHandler.HandlerType type) {
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
-        ascs = new ArrayList<>();
+        ascList = new ArrayList<>();
         for (Order order : leftOrders) {
-            ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
+            ascList.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
         }
-        cmptors = new ArrayList<>();
-        for (int index = 0; index < ascs.size(); index++) {
+        comparators = new ArrayList<>();
+        for (int index = 0; index < ascList.size(); index++) {
             Order leftOrder = leftOrders.get(index);
             Order rightOrder = rightOrders.get(index);
             Item leftCmpItem = HandlerTool.createItem(leftOrder.getItem(), leftFields, 0, isAllPushDown, type);
             Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown,
                     type);
-            ArgComparator cmptor = new ArgComparator(leftCmpItem, rightCmpItem);
-            cmptor.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
-            cmptors.add(cmptor);
+            ArgComparator comparator = new ArgComparator(leftCmpItem, rightCmpItem);
+            comparator.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
+            comparators.add(comparator);
         }
     }
 
     @Override
     public int compare(RowDataPacket o1, RowDataPacket o2) {
-        if (ascs == null || ascs.size() == 0) // no join column, all same
+        if (ascList == null || ascList.size() == 0) // no join column, all same
             return 0;
         return compareRecursion(o1, o2, 0);
     }
@@ -64,15 +64,15 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
     private int compareRecursion(RowDataPacket o1, RowDataPacket o2, int i) {
         HandlerTool.initFields(leftFields, o1.fieldValues);
         HandlerTool.initFields(rightFields, o2.fieldValues);
-        ArgComparator cmptor = cmptors.get(i);
-        boolean isAsc = ascs.get(i);
+        ArgComparator comparator = comparators.get(i);
+        boolean isAsc = ascList.get(i);
         int rs;
         if (isAsc) {
-            rs = cmptor.compare();
+            rs = comparator.compare();
         } else {
-            rs = -1 * cmptor.compare();
+            rs = -1 * comparator.compare();
         }
-        if (rs != 0 || ascs.size() == (i + 1)) {
+        if (rs != 0 || ascList.size() == (i + 1)) {
             return rs;
         } else {
             return compareRecursion(o1, o2, i + 1);

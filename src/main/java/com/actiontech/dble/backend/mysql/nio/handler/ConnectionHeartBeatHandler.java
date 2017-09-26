@@ -37,8 +37,8 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         lock.lock();
         try {
             conn.setResponseHandler(this);
-            MySQLConnection mcon = (MySQLConnection) conn;
-            mcon.write(mcon.writeToBuffer(PingPacket.PING, mcon.allocate()));
+            MySQLConnection mCon = (MySQLConnection) conn;
+            mCon.write(mCon.writeToBuffer(PingPacket.PING, mCon.allocate()));
             long validateTime = 2;
             if (!condition.await(validateTime, TimeUnit.SECONDS)) {
                 //if the thread be waked up by timer than close the connection
@@ -141,7 +141,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         // not called
         return false;
     }

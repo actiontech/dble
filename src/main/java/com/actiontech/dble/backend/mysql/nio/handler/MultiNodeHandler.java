@@ -26,7 +26,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     private AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
     protected byte packetId;
-    protected final AtomicBoolean errorResponsed = new AtomicBoolean(false);
+    protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
 
     public MultiNodeHandler(NonBlockingSession session) {
         if (session == null) {
@@ -71,7 +71,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         err.read(data);
         String errMsg = new String(err.getMessage());
         this.setFail(errMsg);
-        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + err.getErrno());
+        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + err.getErrNo());
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 
@@ -117,14 +117,14 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         } finally {
             lock.unlock();
         }
-        err.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
+        err.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         err.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         return err;
     }
 
     protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
-            if (errorResponsed.compareAndSet(false, true)) {
+            if (errorResponse.compareAndSet(false, true)) {
                 createErrPkg(this.error).write(session.getSource());
             }
             // clear session resources,release all

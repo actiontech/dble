@@ -8,7 +8,7 @@ package com.actiontech.dble.backend.mysql.xa.recovery.impl;
 import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
 import com.actiontech.dble.backend.mysql.xa.Deserializer;
 import com.actiontech.dble.backend.mysql.xa.Serializer;
-import com.actiontech.dble.backend.mysql.xa.recovery.DeserialisationException;
+import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
@@ -82,7 +82,7 @@ public class KVStoreRepository implements Repository {
             try {
                 CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJson(log);
                 coordinatorLogEntries.put(coordinatorLogEntry.getId(), coordinatorLogEntry);
-            } catch (DeserialisationException e) {
+            } catch (DeserializationException e) {
                 LOGGER.warn("Unexpected EOF - logfile not closed properly last time? ", e);
             }
         }

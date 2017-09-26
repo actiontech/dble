@@ -310,49 +310,49 @@ public class UTF8StringSuite {
 
     @Test
     public void pad() {
-        assertEquals(UTF8String.fromString("hel"), UTF8String.fromString("hello").lpad(3, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("hello"), UTF8String.fromString("hello").lpad(5, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("?hello"), UTF8String.fromString("hello").lpad(6, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("???????hello"), UTF8String.fromString("hello").lpad(12, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("?????hello"), UTF8String.fromString("hello").lpad(10, UTF8String.fromString("?????")));
-        assertEquals(UTF8String.fromString("???????"), UTF8String.EMPTY_UTF8.lpad(7, UTF8String.fromString("?????")));
+        assertEquals(UTF8String.fromString("hel"), UTF8String.fromString("hello").lPad(3, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("hello"), UTF8String.fromString("hello").lPad(5, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("?hello"), UTF8String.fromString("hello").lPad(6, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("???????hello"), UTF8String.fromString("hello").lPad(12, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("?????hello"), UTF8String.fromString("hello").lPad(10, UTF8String.fromString("?????")));
+        assertEquals(UTF8String.fromString("???????"), UTF8String.EMPTY_UTF8.lPad(7, UTF8String.fromString("?????")));
 
-        assertEquals(UTF8String.fromString("hel"), UTF8String.fromString("hello").rpad(3, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("hello"), UTF8String.fromString("hello").rpad(5, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("hello?"), UTF8String.fromString("hello").rpad(6, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("hello???????"), UTF8String.fromString("hello").rpad(12, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("hello?????"), UTF8String.fromString("hello").rpad(10, UTF8String.fromString("?????")));
-        assertEquals(UTF8String.fromString("???????"), UTF8String.EMPTY_UTF8.rpad(7, UTF8String.fromString("?????")));
+        assertEquals(UTF8String.fromString("hel"), UTF8String.fromString("hello").rPad(3, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("hello"), UTF8String.fromString("hello").rPad(5, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("hello?"), UTF8String.fromString("hello").rPad(6, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("hello???????"), UTF8String.fromString("hello").rPad(12, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("hello?????"), UTF8String.fromString("hello").rPad(10, UTF8String.fromString("?????")));
+        assertEquals(UTF8String.fromString("???????"), UTF8String.EMPTY_UTF8.rPad(7, UTF8String.fromString("?????")));
 
-        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").lpad(3, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("?数据砖头"), UTF8String.fromString("数据砖头").lpad(5, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("??数据砖头"), UTF8String.fromString("数据砖头").lpad(6, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("孙行数据砖头"), UTF8String.fromString("数据砖头").lpad(6, UTF8String.fromString("孙行者")));
-        assertEquals(UTF8String.fromString("孙行者数据砖头"), UTF8String.fromString("数据砖头").lpad(7, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").lPad(3, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("?数据砖头"), UTF8String.fromString("数据砖头").lPad(5, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("??数据砖头"), UTF8String.fromString("数据砖头").lPad(6, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("孙行数据砖头"), UTF8String.fromString("数据砖头").lPad(6, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.fromString("孙行者数据砖头"), UTF8String.fromString("数据砖头").lPad(7, UTF8String.fromString("孙行者")));
         assertEquals(
                 UTF8String.fromString("孙行者孙行者孙行数据砖头"),
-                UTF8String.fromString("数据砖头").lpad(12, UTF8String.fromString("孙行者")));
+                UTF8String.fromString("数据砖头").lPad(12, UTF8String.fromString("孙行者")));
 
-        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").rpad(3, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("数据砖头?"), UTF8String.fromString("数据砖头").rpad(5, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("数据砖头??"), UTF8String.fromString("数据砖头").rpad(6, UTF8String.fromString("????")));
-        assertEquals(UTF8String.fromString("数据砖头孙行"), UTF8String.fromString("数据砖头").rpad(6, UTF8String.fromString("孙行者")));
-        assertEquals(UTF8String.fromString("数据砖头孙行者"), UTF8String.fromString("数据砖头").rpad(7, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").rPad(3, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("数据砖头?"), UTF8String.fromString("数据砖头").rPad(5, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("数据砖头??"), UTF8String.fromString("数据砖头").rPad(6, UTF8String.fromString("????")));
+        assertEquals(UTF8String.fromString("数据砖头孙行"), UTF8String.fromString("数据砖头").rPad(6, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.fromString("数据砖头孙行者"), UTF8String.fromString("数据砖头").rPad(7, UTF8String.fromString("孙行者")));
         assertEquals(
                 UTF8String.fromString("数据砖头孙行者孙行者孙行"),
-                UTF8String.fromString("数据砖头").rpad(12, UTF8String.fromString("孙行者")));
+                UTF8String.fromString("数据砖头").rPad(12, UTF8String.fromString("孙行者")));
 
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").lpad(-10, UTF8String.fromString("孙行者")));
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").lpad(-10, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.fromString("数据砖头"), UTF8String.fromString("数据砖头").lpad(5, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").lpad(3, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8.lpad(3, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").lPad(-10, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").lPad(-10, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.fromString("数据砖头"), UTF8String.fromString("数据砖头").lPad(5, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").lPad(3, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8.lPad(3, UTF8String.EMPTY_UTF8));
 
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").rpad(-10, UTF8String.fromString("孙行者")));
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").rpad(-10, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.fromString("数据砖头"), UTF8String.fromString("数据砖头").rpad(5, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").rpad(3, UTF8String.EMPTY_UTF8));
-        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8.rpad(3, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").rPad(-10, UTF8String.fromString("孙行者")));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.fromString("数据砖头").rPad(-10, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.fromString("数据砖头"), UTF8String.fromString("数据砖头").rPad(5, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.fromString("数据砖"), UTF8String.fromString("数据砖头").rPad(3, UTF8String.EMPTY_UTF8));
+        assertEquals(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8.rPad(3, UTF8String.EMPTY_UTF8));
     }
 
     @Test

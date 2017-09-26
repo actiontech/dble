@@ -48,7 +48,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         ServerConnection source = session.getSource();
         buffer = allocBuffer();

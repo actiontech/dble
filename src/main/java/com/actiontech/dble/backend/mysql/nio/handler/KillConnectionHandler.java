@@ -22,12 +22,12 @@ import java.util.List;
 public class KillConnectionHandler implements ResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(KillConnectionHandler.class);
 
-    private final MySQLConnection killee;
+    private final MySQLConnection toKilled;
     private final NonBlockingSession session;
 
-    public KillConnectionHandler(BackendConnection killee,
+    public KillConnectionHandler(BackendConnection toKilled,
                                  NonBlockingSession session) {
-        this.killee = (MySQLConnection) killee;
+        this.toKilled = (MySQLConnection) toKilled;
         this.session = session;
     }
 
@@ -37,24 +37,24 @@ public class KillConnectionHandler implements ResponseHandler {
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
-        packet.setArg(("KILL " + killee.getThreadId()).getBytes());
+        packet.setArg(("KILL " + toKilled.getThreadId()).getBytes());
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         packet.write(mysqlCon);
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        killee.close("exception:" + e.toString());
+        toKilled.close("exception:" + e.toString());
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("kill connection success connection id:" +
-                    killee.getThreadId());
+                    toKilled.getThreadId());
         }
         conn.release();
-        killee.close("killed");
+        toKilled.close("killed");
 
     }
 
@@ -64,7 +64,7 @@ public class KillConnectionHandler implements ResponseHandler {
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
         conn.quit();
-        killee.close("killed");
+        toKilled.close("killed");
     }
 
     @Override
@@ -77,9 +77,9 @@ public class KillConnectionHandler implements ResponseHandler {
         } catch (UnsupportedEncodingException e) {
             msg = new String(err.getMessage());
         }
-        LOGGER.warn("kill backend connection " + killee + " failed: " + msg + " con:" + conn);
+        LOGGER.warn("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
         conn.release();
-        killee.close("exception:" + msg);
+        toKilled.close("exception:" + msg);
     }
 
     @Override

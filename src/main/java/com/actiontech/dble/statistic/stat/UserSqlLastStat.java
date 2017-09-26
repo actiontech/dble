@@ -17,20 +17,20 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 public class UserSqlLastStat {
     private static final int MAX_RECORDS = 1024;
-    private SortedSet<SqlLast> sqls;
+    private SortedSet<SqlLast> queries;
 
     public UserSqlLastStat(int count) {
-        this.sqls = new ConcurrentSkipListSet<>();
+        this.queries = new ConcurrentSkipListSet<>();
     }
 
-    public List<SqlLast> getSqls() {
-        List<SqlLast> keyList = new ArrayList<>(sqls);
+    public List<SqlLast> getQueries() {
+        List<SqlLast> keyList = new ArrayList<>(queries);
         return keyList;
     }
 
     public void add(String sql, long executeTime, long startTime, long endTime) {
         SqlLast sqlLast = new SqlLast(sql, executeTime, startTime, endTime);
-        sqls.add(sqlLast);
+        queries.add(sqlLast);
     }
 
     public void reset() {
@@ -38,22 +38,22 @@ public class UserSqlLastStat {
     }
 
     public void clear() {
-        sqls.clear();
+        queries.clear();
     }
 
     public void recycle() {
-        if (sqls.size() > MAX_RECORDS) {
-            SortedSet<SqlLast> sqls2 = new ConcurrentSkipListSet<>();
-            List<SqlLast> keyList = new ArrayList<>(sqls);
+        if (queries.size() > MAX_RECORDS) {
+            SortedSet<SqlLast> queries2 = new ConcurrentSkipListSet<>();
+            List<SqlLast> keyList = new ArrayList<>(queries);
             int i = 0;
             for (SqlLast key : keyList) {
                 if (i == MAX_RECORDS) {
                     break;
                 }
-                sqls2.add(key);
+                queries2.add(key);
                 i++;
             }
-            sqls = sqls2;
+            queries = queries2;
         }
     }
 

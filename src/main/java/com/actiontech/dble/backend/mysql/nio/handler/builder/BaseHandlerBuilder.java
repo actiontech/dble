@@ -144,7 +144,7 @@ abstract class BaseHandlerBuilder {
         }
         RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
         hBuilder.checkRRSs(rrss);
-        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxstart(),
+        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
                 session, null);
         addHandler(mh);
     }
@@ -163,7 +163,7 @@ abstract class BaseHandlerBuilder {
             boolean canDirectGroupBy = true;
             List<ItemSum> sumRefs = new ArrayList<>();
             for (ItemSum funRef : node.getSumFuncs()) {
-                if (funRef.hasWithDistinct() || funRef.sumType().equals(ItemSum.Sumfunctype.GROUP_CONCAT_FUNC))
+                if (funRef.hasWithDistinct() || funRef.sumType().equals(ItemSum.SumFuncType.GROUP_CONCAT_FUNC))
                     canDirectGroupBy = false;
                 sumRefs.add(funRef);
             }
@@ -369,7 +369,7 @@ abstract class BaseHandlerBuilder {
         MultiNodeMergeHandler mh = null;
         List<Order> orderBys = planNode.getGroupBys().size() > 0 ? planNode.getGroupBys() : planNode.getOrderBys();
 
-        mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxstart(), session,
+        mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session,
                 orderBys);
         addHandler(mh);
     }

@@ -59,7 +59,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
             case ServerParse.REPLACE:
 
                 String masterTable = null;
-                List<String> relaTables = new ArrayList<>();
+                List<String> relationTables = new ArrayList<>();
 
                 List<String> tables = sqlParser.parseTableNames(sql);
                 for (int i = 0; i < tables.size(); i++) {
@@ -67,13 +67,13 @@ public final class TableStatAnalyzer implements QueryResultListener {
                     if (i == 0) {
                         masterTable = table;
                     } else {
-                        relaTables.add(table);
+                        relationTables.add(table);
                     }
                 }
 
                 if (masterTable != null) {
                     TableStat tableStat = getTableStat(masterTable);
-                    tableStat.update(sqlType, sql, queryResult.getStartTime(), queryResult.getEndTime(), relaTables);
+                    tableStat.update(sqlType, sql, queryResult.getStartTime(), queryResult.getEndTime(), relationTables);
                 }
                 break;
             default:

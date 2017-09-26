@@ -92,8 +92,8 @@ public class OutputHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] headernull, List<byte[]> fieldsnull, List<FieldPacket> fieldPackets,
-                                 byte[] eofnull, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
+                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
         if (terminate.get()) {
             return;
         }
@@ -120,7 +120,7 @@ public class OutputHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rownull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         if (terminate.get()) {
             return true;
         }
@@ -137,7 +137,7 @@ public class OutputHandler extends BaseDMLHandler {
                     rowPacket.setPacketId(++packetId);
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                 } else {
-                    row = rownull;
+                    row = rowNull;
                     row[3] = ++packetId;
                     buffer = session.getSource().writeToBuffer(row, buffer);
                 }
@@ -204,7 +204,7 @@ public class OutputHandler extends BaseDMLHandler {
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
             ErrorPacket err = new ErrorPacket();
-            err.setErrno(ErrorCode.ER_YES);
+            err.setErrNo(ErrorCode.ER_YES);
             err.setMessage(errMsg);
             HandlerTool.terminateHandlerTree(this);
             backendConnError(err);
@@ -217,7 +217,7 @@ public class OutputHandler extends BaseDMLHandler {
             recycleResources();
             if (error == null) {
                 error = new ErrorPacket();
-                error.setErrno(ErrorCode.ER_YES);
+                error.setErrNo(ErrorCode.ER_YES);
                 error.setMessage("unknown error".getBytes());
             }
             error.setPacketId(++packetId);

@@ -9,7 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.Checktype;
+import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
@@ -87,7 +87,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "No Supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
-                if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.SELECT)) {
+                if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
                     String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }

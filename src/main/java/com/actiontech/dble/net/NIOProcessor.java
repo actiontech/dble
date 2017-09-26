@@ -66,8 +66,8 @@ public final class NIOProcessor {
 
     public int getWriteQueueSize() {
         int total = 0;
-        for (FrontendConnection fron : frontends.values()) {
-            total += fron.getWriteQueue().size();
+        for (FrontendConnection frontend : frontends.values()) {
+            total += frontend.getWriteQueue().size();
         }
         for (BackendConnection back : backends.values()) {
             if (back instanceof BackendAIOConnection) {
@@ -111,7 +111,7 @@ public final class NIOProcessor {
         return this.frontends;
     }
 
-    public int getForntedsLength() {
+    public int getFrontendsLength() {
         return this.frontEndsLength.get();
     }
 

@@ -326,8 +326,8 @@ public class MySQLConnection extends BackendAIOConnection {
             isDDL = true;
         }
         String xaTxId = getConnXID(sc.getSession2());
-        if (!sc.isAutocommit() && !sc.isTxstart() && modifiedSQLExecuted) {
-            sc.setTxstart(true);
+        if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
+            sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }

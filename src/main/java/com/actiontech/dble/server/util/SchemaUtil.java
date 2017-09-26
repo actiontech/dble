@@ -154,16 +154,16 @@ public final class SchemaUtil {
     private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, String contextSchema, StringPtr sqlSchema)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
-        ServerPrivileges.Checktype chekctype = ServerPrivileges.Checktype.SELECT;
+        ServerPrivileges.CheckType checkType = ServerPrivileges.CheckType.SELECT;
         if (stmt instanceof MySqlUpdateStatement) {
-            chekctype = ServerPrivileges.Checktype.UPDATE;
+            checkType = ServerPrivileges.CheckType.UPDATE;
         } else if (stmt instanceof SQLSelectStatement) {
-            chekctype = ServerPrivileges.Checktype.SELECT;
+            checkType = ServerPrivileges.CheckType.SELECT;
         } else if (stmt instanceof MySqlDeleteStatement) {
-            chekctype = ServerPrivileges.Checktype.DELETE;
+            checkType = ServerPrivileges.CheckType.DELETE;
         }
 
-        if (!ServerPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, chekctype)) {
+        if (!ServerPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, checkType)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }

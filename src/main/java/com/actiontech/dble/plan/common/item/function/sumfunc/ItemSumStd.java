@@ -25,8 +25,8 @@ public class ItemSumStd extends ItemSumVariance {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return Sumfunctype.STD_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.STD_FUNC;
     }
 
     @Override

@@ -20,15 +20,15 @@ public final class PreparedStmtResponse {
     private PreparedStmtResponse() {
     }
 
-    public static void response(PreparedStatement pstmt, FrontendConnection c) {
+    public static void response(PreparedStatement pStmt, FrontendConnection c) {
         byte packetId = 0;
 
         // write preparedOk packet
         PreparedOkPacket preparedOk = new PreparedOkPacket();
         preparedOk.setPacketId(++packetId);
-        preparedOk.setStatementId(pstmt.getId());
-        preparedOk.setColumnsNumber(pstmt.getColumnsNumber());
-        preparedOk.setParametersNumber(pstmt.getParametersNumber());
+        preparedOk.setStatementId(pStmt.getId());
+        preparedOk.setColumnsNumber(pStmt.getColumnsNumber());
+        preparedOk.setParametersNumber(pStmt.getParametersNumber());
         ByteBuffer buffer = preparedOk.write(c.allocate(), c, true);
 
         // write parameter field packet

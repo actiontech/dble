@@ -72,9 +72,9 @@ public final class BitSetMethods {
      * Returns {@code true} if any bit is set.
      */
     public static boolean anySet(Object baseObject, long baseOffset, long bitSetWidthInWords) {
-        long addr = baseOffset;
-        for (int i = 0; i < bitSetWidthInWords; i++, addr += WORD_SIZE) {
-            if (Platform.getLong(baseObject, addr) != 0) {
+        long address = baseOffset;
+        for (int i = 0; i < bitSetWidthInWords; i++, address += WORD_SIZE) {
+            if (Platform.getLong(baseObject, address) != 0) {
                 return true;
             }
         }
@@ -96,16 +96,16 @@ public final class BitSetMethods {
      * </pre>
      *
      * @param fromIndex         the index to start checking from (inclusive)
-     * @param bitsetSizeInWords the size of the bitset, measured in 8-byte words
+     * @param bitSetSizeInWords the size of the bitset, measured in 8-byte words
      * @return the index of the next set bit, or -1 if there is no such bit
      */
     public static int nextSetBit(
             Object baseObject,
             long baseOffset,
             int fromIndex,
-            int bitsetSizeInWords) {
+            int bitSetSizeInWords) {
         int wi = fromIndex >> 6;
-        if (wi >= bitsetSizeInWords) {
+        if (wi >= bitSetSizeInWords) {
             return -1;
         }
 
@@ -118,7 +118,7 @@ public final class BitSetMethods {
 
         // Find the next set bit in the rest of the words
         wi += 1;
-        while (wi < bitsetSizeInWords) {
+        while (wi < bitSetSizeInWords) {
             word = Platform.getLong(baseObject, baseOffset + wi * WORD_SIZE);
             if (word != 0) {
                 return (wi << 6) + Long.numberOfTrailingZeros(word);

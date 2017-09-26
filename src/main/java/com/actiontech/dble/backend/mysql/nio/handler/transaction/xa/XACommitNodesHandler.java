@@ -45,12 +45,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 CoordinatorLogEntry coordinatorLogEntry = new CoordinatorLogEntry(session.getSessionXaID(), participantLogEntry, session.getXaState());
                 XAStateLog.flushMemoryRepository(session.getSessionXaID(), coordinatorLogEntry);
             }
-            XAStateLog.initRecoverylog(session.getSessionXaID(), position, mysqlCon);
+            XAStateLog.initRecoveryLog(session.getSessionXaID(), position, mysqlCon);
             endPhase(mysqlCon);
         } else if (state == TxState.TX_ENDED_STATE) {
             if (position == 0) {
-                if (!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_PREPARING_STATE)) {
-                    String errMsg = "saveXARecoverylog error, the stage is TX_PREPARING_STATE";
+                if (!XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_PREPARING_STATE)) {
+                    String errMsg = "saveXARecoveryLog error, the stage is TX_PREPARING_STATE";
                     this.setFail(errMsg);
                     sendData = makeErrorPacket(errMsg);
                     nextParse();
@@ -61,8 +61,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             preparePhase(mysqlCon);
         } else if (state == TxState.TX_PREPARED_STATE) {
             if (position == 0) {
-                if (!XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITING_STATE)) {
-                    String errMsg = "saveXARecoverylog error, the stage is TX_COMMITING_STATE";
+                if (!XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTING_STATE)) {
+                    String errMsg = "saveXARecoveryLog error, the stage is TX_COMMITING_STATE";
                     this.setFail(errMsg);
                     sendData = makeErrorPacket(errMsg);
                     nextParse();
@@ -74,7 +74,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_COMMIT_FAILED_STATE) {
             if (position == 0) {
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMIT_FAILED_STATE);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMIT_FAILED_STATE);
             }
             commitPhase(mysqlCon);
         }
@@ -83,7 +83,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private byte[] makeErrorPacket(String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setErrno(ErrorCode.ER_UNKNOWN_ERROR);
+        errPacket.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         return errPacket.toBytes();
     }
@@ -118,7 +118,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         TxState state = mysqlCon.getXaStatus();
         if (state == TxState.TX_STARTED_STATE) {
             mysqlCon.setXaStatus(TxState.TX_ENDED_STATE);
-            XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             if (decrementCountBy(1)) {
                 session.setXaState(TxState.TX_ENDED_STATE);
                 nextParse();
@@ -126,7 +126,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else if (state == TxState.TX_ENDED_STATE) {
             //PREPARE OK
             mysqlCon.setXaStatus(TxState.TX_PREPARED_STATE);
-            XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             if (decrementCountBy(1)) {
                 if (session.getXaState() == TxState.TX_ENDED_STATE) {
                     session.setXaState(TxState.TX_PREPARED_STATE);
@@ -136,8 +136,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else if (state == TxState.TX_COMMIT_FAILED_STATE || state == TxState.TX_PREPARED_STATE) {
             //COMMIT OK
             // XA reset status now
-            mysqlCon.setXaStatus(TxState.TX_COMMITED_STATE);
-            XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+            mysqlCon.setXaStatus(TxState.TX_COMMITTED_STATE);
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
             if (decrementCountBy(1)) {
                 if (session.getXaState() == TxState.TX_PREPARED_STATE) {
@@ -153,15 +153,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        String errmsg = new String(errPacket.getMessage());
-        this.setFail(errmsg);
-        sendData = makeErrorPacket(errmsg);
+        String errMsg = new String(errPacket.getMessage());
+        this.setFail(errMsg);
+        sendData = makeErrorPacket(errMsg);
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
@@ -171,7 +171,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     if (session.getXaState() == TxState.TX_ENDED_STATE) {
                         session.setXaState(TxState.TX_PREPARED_STATE);
@@ -182,7 +182,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 // 'xa commit' err
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
                     cleanAndFeedback();
@@ -194,15 +194,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("backend connect", e);
-        String errmsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
-        this.setFail(errmsg);
-        sendData = makeErrorPacket(errmsg);
+        String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
+        this.setFail(errMsg);
+        sendData = makeErrorPacket(errMsg);
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
@@ -211,7 +211,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 // 'xa prepare' connectionError
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);
                 if (decrementCountBy(1)) {
                     nextParse();
@@ -220,7 +220,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 // 'xa commit' connectionError
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
                     cleanAndFeedback();
@@ -238,7 +238,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
@@ -247,7 +247,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 //  'xa prepare' connectionClose,conn has quit
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);
                 if (decrementCountBy(1)) {
                     nextParse();
@@ -256,7 +256,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 // 'xa commit' connectionClose
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), mysqlCon);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
                     cleanAndFeedback();
@@ -277,7 +277,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
-            XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             byte[] send = sendData;
             session.clearResources(false);
@@ -290,7 +290,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
             MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
             if (errConn != null) {
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
                 if (++tryCommitTimes < COMMIT_TIMES) {
                     // try commit several times
                     commit();
@@ -300,7 +300,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
                 }
             } else {
-                XAStateLog.saveXARecoverylog(session.getSessionXaID(), TxState.TX_COMMITED_STATE);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
                 byte[] toSend = sendData;
@@ -312,7 +312,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
             // need to rollback;
         } else {
-            XAStateLog.saveXARecoverylog(session.getSessionXaID(), session.getXaState());
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
             session.getSource().write(sendData);
             LOGGER.warn("cleanAndFeedback:" + error);
 

@@ -19,7 +19,7 @@ public class ItemFuncLpad extends ItemStrFunc {
 
     @Override
     public final String funcName() {
-        return "lpad";
+        return "lPad";
     }
 
     @Override

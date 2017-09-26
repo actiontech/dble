@@ -7,7 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.Checktype;
+import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
@@ -62,7 +62,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
         } else {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), Checktype.DELETE)) {
+            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.DELETE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }

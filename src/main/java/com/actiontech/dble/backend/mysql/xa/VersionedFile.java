@@ -71,9 +71,9 @@ public class VersionedFile {
 
     private long extractVersion(String name) {
         long ret = 0;
-        int lastpos = name.lastIndexOf('.');
-        int startpos = getBaseName().length();
-        String nameSuffix = name.substring(startpos, lastpos);
+        int lastPos = name.lastIndexOf('.');
+        int startPos = getBaseName().length();
+        String nameSuffix = name.substring(startPos, lastPos);
         try {
 
             ret = Long.parseLong(nameSuffix);
@@ -164,8 +164,8 @@ public class VersionedFile {
     public void rotateFileVersion() {
         File source = new File(getCurrentVersionFileName());
         if (source.exists()) {
-            File dest = new File(getBackupVersionFileName());
-            source.renameTo(dest);
+            File dst = new File(getBackupVersionFileName());
+            source.renameTo(dst);
         }
     }
 

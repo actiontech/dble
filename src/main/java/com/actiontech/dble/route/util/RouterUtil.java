@@ -63,40 +63,40 @@ public final class RouterUtil {
         final String forCmpStmt = isLowerCase ? stmt.toLowerCase() : stmt;
         final String maySchema1 = schema + ".";
         final String maySchema2 = "`" + schema + "`.";
-        int indx1 = forCmpStmt.indexOf(maySchema1, 0);
-        int indx2 = forCmpStmt.indexOf(maySchema2, 0);
-        if (indx1 < 0 && indx2 < 0) {
+        int index1 = forCmpStmt.indexOf(maySchema1, 0);
+        int index2 = forCmpStmt.indexOf(maySchema2, 0);
+        if (index1 < 0 && index2 < 0) {
             return stmt;
         }
-        int strtPos = 0;
+        int startPos = 0;
         boolean flag;
         int firstE = forCmpStmt.indexOf("'");
         int endE = forCmpStmt.lastIndexOf("'");
         StringBuilder result = new StringBuilder();
-        while (indx1 >= 0 || indx2 >= 0) {
+        while (index1 >= 0 || index2 >= 0) {
             //match `schema` or `schema`
-            if (indx1 < 0 && indx2 >= 0) {
+            if (index1 < 0 && index2 >= 0) {
                 flag = true;
-            } else if (indx1 >= 0 && indx2 < 0) {
+            } else if (index1 >= 0 && index2 < 0) {
                 flag = false;
-            } else flag = indx2 < indx1;
+            } else flag = index2 < index1;
             if (flag) {
-                result.append(stmt.substring(strtPos, indx2));
-                strtPos = indx2 + maySchema2.length();
-                if (indx2 > firstE && indx2 < endE && countChar(stmt, indx2) % 2 != 0) {
-                    result.append(stmt.substring(indx2, strtPos));
+                result.append(stmt.substring(startPos, index2));
+                startPos = index2 + maySchema2.length();
+                if (index2 > firstE && index2 < endE && countChar(stmt, index2) % 2 != 0) {
+                    result.append(stmt.substring(index2, startPos));
                 }
-                indx2 = forCmpStmt.indexOf(maySchema2, strtPos);
+                index2 = forCmpStmt.indexOf(maySchema2, startPos);
             } else {
-                result.append(stmt.substring(strtPos, indx1));
-                strtPos = indx1 + maySchema1.length();
-                if (indx1 > firstE && indx1 < endE && countChar(stmt, indx1) % 2 != 0) {
-                    result.append(stmt.substring(indx1, strtPos));
+                result.append(stmt.substring(startPos, index1));
+                startPos = index1 + maySchema1.length();
+                if (index1 > firstE && index1 < endE && countChar(stmt, index1) % 2 != 0) {
+                    result.append(stmt.substring(index1, startPos));
                 }
-                indx1 = forCmpStmt.indexOf(maySchema1, strtPos);
+                index1 = forCmpStmt.indexOf(maySchema1, startPos);
             }
         }
-        result.append(stmt.substring(strtPos));
+        result.append(stmt.substring(startPos));
         return result.toString();
     }
 
@@ -375,13 +375,13 @@ public final class RouterUtil {
         AbstractPartitionAlgorithm algorithm = rule.getRuleAlgorithm();
         for (ColumnRoutePair colPair : colRoutePairSet) {
             if (colPair.colValue != null) {
-                Integer nodeIndx = algorithm.calculate(colPair.colValue);
-                if (nodeIndx == null) {
+                Integer nodeIndex = algorithm.calculate(colPair.colValue);
+                if (nodeIndex == null) {
                     throw new IllegalArgumentException("can't find datanode for sharding column:" + col + " val:" + colPair.colValue);
                 } else {
-                    String dataNode = tc.getDataNodes().get(nodeIndx);
+                    String dataNode = tc.getDataNodes().get(nodeIndex);
                     routeNodeSet.add(dataNode);
-                    colPair.setNodeId(nodeIndx);
+                    colPair.setNodeId(nodeIndex);
                 }
             } else if (colPair.rangeValue != null) {
                 Integer[] nodeRange = algorithm.calculateRange(String.valueOf(colPair.rangeValue.getBeginValue()), String.valueOf(colPair.rangeValue.getEndValue()));
@@ -663,11 +663,11 @@ public final class RouterUtil {
                 }
             }
             if (pair.rangeValue != null) {
-                Integer[] nodeIndexs = algorithm.calculateRange(
+                Integer[] nodeIndexes = algorithm.calculateRange(
                         pair.rangeValue.getBeginValue().toString(), pair.rangeValue.getEndValue().toString());
                 ArrayList<String> dataNodes = tableConfig.getDataNodes();
                 String node;
-                for (Integer idx : nodeIndexs) {
+                for (Integer idx : nodeIndexes) {
                     if (idx >= 0 && idx < dataNodes.size()) {
                         node = dataNodes.get(idx);
                     } else {

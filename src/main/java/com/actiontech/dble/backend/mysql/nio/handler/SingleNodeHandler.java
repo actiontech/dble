@@ -47,7 +47,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     protected long netOutBytes;
     protected long selectRows;
 
-    private String priamaryKeyTable = null;
+    private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
 
     private boolean prepared;
@@ -98,7 +98,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             return;
         }
         conn.setResponseHandler(this);
-        boolean isAutocommit = session.getSource().isAutocommit() && !session.getSource().isTxstart();
+        boolean isAutocommit = session.getSource().isAutocommit() && !session.getSource().isTxStart();
         if (!isAutocommit && node.isModifySQL()) {
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
@@ -133,13 +133,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 
-        String errmgs = " errno:" + errPkg.getErrno() + " " + new String(errPkg.getMessage());
-        LOGGER.warn("execute  sql err :" + errmgs + " con:" + conn +
+        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.warn("execute  sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
         session.releaseConnectionIfSafe(conn, false);
 
-        source.setTxInterrupt(errmgs);
+        source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, session.getSource().getSchema(), false);
 
         /**
@@ -255,7 +255,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsnull, byte[] eof,
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
         for (byte[] field : fields) {
@@ -265,7 +265,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         String primaryKey = null;
         if (rrs.hasPrimaryKeyToCache()) {
             String[] items = rrs.getPrimaryKeyItems();
-            priamaryKeyTable = items[0];
+            primaryKeyTable = items[0];
             primaryKey = items[1];
         }
 
@@ -315,7 +315,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
             if (pool != null) {
-                pool.putIfAbsent(priamaryKeyTable, primaryKey, rNode.getName());
+                pool.putIfAbsent(primaryKeyTable, primaryKey, rNode.getName());
             }
         }
 
@@ -344,7 +344,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void connectionClose(BackendConnection conn, String reason) {
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);
-        err.setErrno(ErrorCode.ER_ERROR_ON_CLOSE);
+        err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         this.backConnectionErr(err, conn);
         session.getSource().close(reason);

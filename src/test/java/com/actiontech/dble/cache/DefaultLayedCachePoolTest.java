@@ -46,9 +46,9 @@ public class DefaultLayedCachePoolTest {
         Assert.assertEquals(statics.getPutTimes(), 6);
         Assert.assertEquals(statics.getAccessTimes(), 9);
         Assert.assertEquals(statics.getHitTimes(), 6);
-        Assert.assertTrue(statics.getLastAccesTime() > 0);
+        Assert.assertTrue(statics.getLastAccessTime() > 0);
         Assert.assertTrue(statics.getLastPutTime() > 0);
-        Assert.assertTrue(statics.getLastAccesTime() > 0);
+        Assert.assertTrue(statics.getLastAccessTime() > 0);
         // wait expire
         try {
             Thread.sleep(2000);

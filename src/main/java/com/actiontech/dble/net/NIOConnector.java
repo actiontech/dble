@@ -96,7 +96,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                 c.setProcessor(processor);
                 NIOReactor reactor = reactorPool.getNextReactor();
                 reactor.postRegister(c);
-                c.onConnectfinish();
+                c.onConnectFinish();
             }
         } catch (Exception e) {
             clearSelectionKey(key);

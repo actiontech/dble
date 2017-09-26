@@ -164,7 +164,7 @@ public abstract class MemoryManager {
     /**
      * Get Direct Memory Usage.
      */
-    public final ConcurrentMap<Long, Long> getDirectMemorUsage() {
+    public final ConcurrentMap<Long, Long> getDirectMemoryUsage() {
         synchronized (this) {
             return offHeapExecutionMemoryPool.getMemoryForConnection();
         }

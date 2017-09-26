@@ -26,7 +26,7 @@ public class DGRowPacket extends RowDataPacket {
     /**
      * store tmp result
      **/
-    private Object[] sumTranObjs;
+    private Object[] sumTranObjects;
 
     /**
      * store tmp result size
@@ -45,7 +45,7 @@ public class DGRowPacket extends RowDataPacket {
     public DGRowPacket(int fieldCount, int sumSize) {
         super(fieldCount);
         this.sumSize = sumSize;
-        sumTranObjs = new Object[sumSize];
+        sumTranObjects = new Object[sumSize];
         sumByteSizes = new int[sumSize];
     }
 
@@ -53,7 +53,7 @@ public class DGRowPacket extends RowDataPacket {
         if (index >= sumSize)
             throw new RuntimeException("Set sumTran out of sumSize index!");
         else {
-            sumTranObjs[index] = trans;
+            sumTranObjects[index] = trans;
             sumByteSizes[index] = transSize;
         }
     }
@@ -62,7 +62,7 @@ public class DGRowPacket extends RowDataPacket {
         if (index >= sumSize)
             throw new RuntimeException("Set sumTran out of sumSize index!");
         else {
-            return sumTranObjs[index];
+            return sumTranObjects[index];
         }
     }
 
@@ -84,7 +84,7 @@ public class DGRowPacket extends RowDataPacket {
         int size = super.calcPacketSize();
         for (int i = 0; i < sumSize; i++) {
             byte[] v = null;
-            Object obj = sumTranObjs[i];
+            Object obj = sumTranObjects[i];
             if (obj != null)
                 v = SerializationUtils.serialize((Serializable) obj);
             size += (v == null || v.length == 0) ? 1 : ByteUtil.decodeLength(v);
@@ -99,7 +99,7 @@ public class DGRowPacket extends RowDataPacket {
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < this.sumSize; i++) {
-            Object obj = sumTranObjs[i];
+            Object obj = sumTranObjects[i];
             byte[] ov = null;
             if (obj != null)
                 ov = SerializationUtils.serialize((Serializable) obj);

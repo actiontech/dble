@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.xa;
 
-import com.actiontech.dble.backend.mysql.xa.recovery.DeserialisationException;
+import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public final class Deserializer {
         return content.substring(start + 1, end);
     }
 
-    public static CoordinatorLogEntry fromJson(String coordinatorLogEntryStr) throws DeserialisationException {
+    public static CoordinatorLogEntry fromJson(String coordinatorLogEntryStr) throws DeserializationException {
         try {
             String jsonContent = coordinatorLogEntryStr.trim();
             validateJsonContent(jsonContent);
@@ -65,20 +65,20 @@ public final class Deserializer {
             for (int i = 0; i < participantLogEntries.length; i++) {
                 participantLogEntries[i] = recreateParticipantLogEntry(coordinatorId, elements.get(i));
             }
-            CoordinatorLogEntry actual = new CoordinatorLogEntry(coordinatorId, participantLogEntries, TxState.valueof(Integer.parseInt(header.get(CoordinatorLogEntry.STATE))));
+            CoordinatorLogEntry actual = new CoordinatorLogEntry(coordinatorId, participantLogEntries, TxState.valueOf(Integer.parseInt(header.get(CoordinatorLogEntry.STATE))));
             return actual;
         } catch (Exception unexpectedEOF) {
-            throw new DeserialisationException(coordinatorLogEntryStr);
+            throw new DeserializationException(coordinatorLogEntryStr);
         }
     }
 
     private static void validateJsonContent(String coordinatorLogEntryStr)
-            throws DeserialisationException {
+            throws DeserializationException {
         if (!coordinatorLogEntryStr.startsWith(OBJECT_START)) {
-            throw new DeserialisationException(coordinatorLogEntryStr);
+            throw new DeserializationException(coordinatorLogEntryStr);
         }
         if (!coordinatorLogEntryStr.endsWith(OBJECT_END)) {
-            throw new DeserialisationException(coordinatorLogEntryStr);
+            throw new DeserializationException(coordinatorLogEntryStr);
         }
     }
 
@@ -107,7 +107,7 @@ public final class Deserializer {
         }
 
         ParticipantLogEntry actual = new ParticipantLogEntry(coordinatorId,
-                content.get(CoordinatorLogEntry.P_HOST), Integer.parseInt(content.get(CoordinatorLogEntry.P_PORT)), Long.parseLong(content.get(CoordinatorLogEntry.P_EXPIRES)), content.get(CoordinatorLogEntry.P_SCHEMA), TxState.valueof(Integer.parseInt(content.get(CoordinatorLogEntry.P_STATE))));
+                content.get(CoordinatorLogEntry.P_HOST), Integer.parseInt(content.get(CoordinatorLogEntry.P_PORT)), Long.parseLong(content.get(CoordinatorLogEntry.P_EXPIRES)), content.get(CoordinatorLogEntry.P_SCHEMA), TxState.valueOf(Integer.parseInt(content.get(CoordinatorLogEntry.P_STATE))));
         return actual;
     }
 

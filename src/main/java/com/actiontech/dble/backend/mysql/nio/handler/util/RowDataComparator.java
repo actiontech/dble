@@ -24,13 +24,13 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     private List<Item> cmpItems;
 
     private List<Field> cmpFields;
-    private List<Boolean> ascs;
+    private List<Boolean> ascList;
 
 
     public RowDataComparator(List<FieldPacket> fps, List<Order> orders, boolean allPushDown, DMLResponseHandler.HandlerType type) {
         sourceFields = HandlerTool.createFields(fps);
         if (orders != null && orders.size() > 0) {
-            ascs = new ArrayList<>();
+            ascList = new ArrayList<>();
             cmpFields = new ArrayList<>();
             cmpItems = new ArrayList<>();
             for (Order order : orders) {
@@ -40,7 +40,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                 cmpItem.makeField(tmpFp);
                 Field cmpField = HandlerTool.createField(tmpFp);
                 cmpFields.add(cmpField);
-                ascs.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
+                ascList.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
             }
         }
     }
@@ -51,7 +51,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 
             @Override
             public int compare(RowDataPacket o1, RowDataPacket o2) {
-                if (RowDataComparator.this.ascs != null && RowDataComparator.this.ascs.size() > 0)
+                if (RowDataComparator.this.ascList != null && RowDataComparator.this.ascList.size() > 0)
                     return RowDataComparator.this.compare(o1, o2);
                 else {
                     return -1;
@@ -63,7 +63,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 
     @Override
     public int compare(RowDataPacket o1, RowDataPacket o2) {
-        if (this.ascs != null && this.ascs.size() > 0) {
+        if (this.ascList != null && this.ascList.size() > 0) {
             int cmpValue = cmp(o1, o2, 0);
             return cmpValue;
         } else {
@@ -83,7 +83,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     private int cmp(RowDataPacket o1, RowDataPacket o2, int index) {
         List<byte[]> bo1 = getCmpBytes(o1);
         List<byte[]> bo2 = getCmpBytes(o2);
-        boolean isAsc = ascs.get(index);
+        boolean isAsc = ascList.get(index);
         Field field = cmpFields.get(index);
         byte[] b1 = bo1.get(index);
         byte[] b2 = bo2.get(index);

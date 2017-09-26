@@ -21,8 +21,8 @@ public class ItemSumMax extends ItemSumHybrid {
     }
 
     @Override
-    public Sumfunctype sumType() {
-        return Sumfunctype.MAX_FUNC;
+    public SumFuncType sumType() {
+        return SumFuncType.MAX_FUNC;
     }
 
     @Override

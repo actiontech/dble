@@ -23,7 +23,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.Checktype;
+import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -241,7 +241,7 @@ public class NonBlockingSession implements Session {
 
     private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {
-            if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), Checktype.SELECT)) {
+            if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
             }
@@ -389,7 +389,7 @@ public class NonBlockingSession implements Session {
 
     public void closeAndClearResources(String reason) {
         // XA MUST BE FINISHED
-        if (source.isTxstart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
             return;
         }
         for (BackendConnection node : target.values()) {
@@ -402,7 +402,7 @@ public class NonBlockingSession implements Session {
     public void releaseConnectionIfSafe(BackendConnection conn, boolean needRollBack) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
-            if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isTxstart() && !this.source.isLocked()) {
+            if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isTxStart() && !this.source.isLocked()) {
                 releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollBack);
             }
         }
@@ -433,11 +433,11 @@ public class NonBlockingSession implements Session {
     }
 
     public void releaseConnection(BackendConnection con) {
-        Iterator<Entry<RouteResultsetNode, BackendConnection>> itor = target.entrySet().iterator();
-        while (itor.hasNext()) {
-            BackendConnection theCon = itor.next().getValue();
+        Iterator<Entry<RouteResultsetNode, BackendConnection>> iterator = target.entrySet().iterator();
+        while (iterator.hasNext()) {
+            BackendConnection theCon = iterator.next().getValue();
             if (theCon == con) {
-                itor.remove();
+                iterator.remove();
                 con.release();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("realse connection " + con);
@@ -471,7 +471,7 @@ public class NonBlockingSession implements Session {
         }
 
         boolean canReUse = false;
-        if (conn.isFromSlaveDB() && (node.canRunnINReadDB(getSource().isAutocommit()) &&
+        if (conn.isFromSlaveDB() && (node.canRunINReadDB(getSource().isAutocommit()) &&
                 (node.getRunOnSlave() == null || node.getRunOnSlave()))) {
             canReUse = true;
         }
@@ -498,12 +498,12 @@ public class NonBlockingSession implements Session {
 
     protected void kill() {
         AtomicInteger count = new AtomicInteger(0);
-        Map<RouteResultsetNode, BackendConnection> killees = new HashMap<>();
+        Map<RouteResultsetNode, BackendConnection> toKilled = new HashMap<>();
 
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
             BackendConnection c = entry.getValue();
             if (c != null && !c.isDDL()) {
-                killees.put(entry.getKey(), c);
+                toKilled.put(entry.getKey(), c);
                 count.incrementAndGet();
             } else if (c != null && c.isDDL()) {
                 //if the sql executing is a ddl,do not kill the query,just close the connection
@@ -512,7 +512,7 @@ public class NonBlockingSession implements Session {
             }
         }
 
-        for (Entry<RouteResultsetNode, BackendConnection> en : killees.entrySet()) {
+        for (Entry<RouteResultsetNode, BackendConnection> en : toKilled.entrySet()) {
             KillConnectionHandler kill = new KillConnectionHandler(
                     en.getValue(), this);
             ServerConfig conf = DbleServer.getInstance().getConfig();
@@ -531,9 +531,9 @@ public class NonBlockingSession implements Session {
     }
 
     private void clearHandlesResources() {
-        SingleNodeHandler singleHander = singleNodeHandler;
-        if (singleHander != null) {
-            singleHander.clearResources();
+        SingleNodeHandler singleHandler = singleNodeHandler;
+        if (singleHandler != null) {
+            singleHandler.clearResources();
             singleNodeHandler = null;
         }
 
@@ -563,7 +563,7 @@ public class NonBlockingSession implements Session {
         this.releaseConnections(needRollback);
         needWaitFinished = false;
         clearHandlesResources();
-        source.setTxstart(false);
+        source.setTxStart(false);
         source.getAndIncrementXid();
     }
 
@@ -634,8 +634,8 @@ public class NonBlockingSession implements Session {
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
         if (rrs.getSqlType() == ServerParse.DDL) {
             String sql = rrs.getSrcStatement();
-            if (source.isTxstart()) {
-                source.setTxstart(false);
+            if (source.isTxStart()) {
+                source.setTxStart(false);
                 source.getAndIncrementXid();
             }
             DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);

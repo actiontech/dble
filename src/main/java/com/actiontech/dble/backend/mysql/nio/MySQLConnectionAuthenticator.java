@@ -66,9 +66,9 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     ErrorPacket err = new ErrorPacket();
                     err.read(data);
                     String errMsg = new String(err.getMessage());
-                    LOGGER.warn("can't connect to mysql server ,errmsg:" + errMsg + " " + source);
+                    LOGGER.warn("can't connect to mysql server ,errMsg:" + errMsg + " " + source);
                     //source.close(errMsg);
-                    throw new ConnectionException(err.getErrno(), errMsg);
+                    throw new ConnectionException(err.getErrNo(), errMsg);
 
                 case EOFPacket.FIELD_COUNT:
                     auth323(data[3]);

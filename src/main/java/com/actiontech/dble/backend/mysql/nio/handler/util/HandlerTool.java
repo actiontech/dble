@@ -143,27 +143,27 @@ public final class HandlerTool {
      * 2.sum(id): sum(id) = sum[sum(id) 0...n];
      * 3.avg(id) avg(id) = sum[sum(id) 0...n]/sum[count(id) 0...n];
      *
-     * @param sumfun aggregate function name
+     * @param sumFunction aggregate function name
      * @param fields
      * @return
      */
-    protected static Item createPushDownGroupBy(ItemSum sumfun, List<Field> fields, int startIndex) {
-        String funName = sumfun.funcName().toUpperCase();
-        String colName = sumfun.getItemName();
-        String pdName = sumfun.getPushDownName();
+    protected static Item createPushDownGroupBy(ItemSum sumFunction, List<Field> fields, int startIndex) {
+        String funName = sumFunction.funcName().toUpperCase();
+        String colName = sumFunction.getItemName();
+        String pdName = sumFunction.getPushDownName();
         Item ret = null;
         List<Item> args = new ArrayList<>();
         if (funName.equalsIgnoreCase("AVG")) {
             String colNameSum = colName.replace(funName + "(", "SUM(");
             String colNameCount = colName.replace(funName + "(", "COUNT(");
-            Item sumfunSum = new ItemField(null, null, colNameSum);
-            sumfunSum.setPushDownName(
+            Item sumFuncSum = new ItemField(null, null, colNameSum);
+            sumFuncSum.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("SUM")));
-            Item sumfunCount = new ItemField(null, null, colNameCount);
-            sumfunCount.setPushDownName(
+            Item sumFuncCount = new ItemField(null, null, colNameCount);
+            sumFuncCount.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("COUNT")));
-            Item itemSum = createFieldItem(sumfunSum, fields, startIndex);
-            Item itemCount = createFieldItem(sumfunCount, fields, startIndex);
+            Item itemSum = createFieldItem(sumFuncSum, fields, startIndex);
+            Item itemCount = createFieldItem(sumFuncCount, fields, startIndex);
             args.add(itemSum);
             args.add(itemCount);
         } else if (funName.equalsIgnoreCase("STD") || funName.equalsIgnoreCase("STDDEV_POP") ||
@@ -174,27 +174,27 @@ public final class HandlerTool {
             String colNameCount = colName.replace(funName + "(", "COUNT(");
             String colNameSum = colName.replace(funName + "(", "SUM(");
             String colNameVar = colName.replace(funName + "(", "VARIANCE(");
-            Item sumfunCount = new ItemField(null, null, colNameCount);
-            sumfunCount.setPushDownName(
+            Item sumFuncCount = new ItemField(null, null, colNameCount);
+            sumFuncCount.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("COUNT")));
-            Item sumfunSum = new ItemField(null, null, colNameSum);
-            sumfunSum.setPushDownName(
+            Item sumFuncSum = new ItemField(null, null, colNameSum);
+            sumFuncSum.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("SUM")));
-            Item sumfunVar = new ItemField(null, null, colNameVar);
-            sumfunVar.setPushDownName(
+            Item sumFuncVar = new ItemField(null, null, colNameVar);
+            sumFuncVar.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("VARIANCE")));
-            Item itemCount = createFieldItem(sumfunCount, fields, startIndex);
-            Item itemSum = createFieldItem(sumfunSum, fields, startIndex);
-            Item itemVar = createFieldItem(sumfunVar, fields, startIndex);
+            Item itemCount = createFieldItem(sumFuncCount, fields, startIndex);
+            Item itemSum = createFieldItem(sumFuncSum, fields, startIndex);
+            Item itemVar = createFieldItem(sumFuncVar, fields, startIndex);
             args.add(itemCount);
             args.add(itemSum);
             args.add(itemVar);
         } else {
-            Item subItem = createFieldItem(sumfun, fields, startIndex);
+            Item subItem = createFieldItem(sumFunction, fields, startIndex);
             args.add(subItem);
         }
-        ret = sumfun.reStruct(args, true, fields);
-        ret.setItemName(sumfun.getPushDownName() == null ? sumfun.getItemName() : sumfun.getPushDownName());
+        ret = sumFunction.reStruct(args, true, fields);
+        ret.setItemName(sumFunction.getPushDownName() == null ? sumFunction.getItemName() : sumFunction.getPushDownName());
         return ret;
     }
 
@@ -285,12 +285,12 @@ public final class HandlerTool {
     /**
      * make order by from distinct
      *
-     * @param sels
+     * @param selects
      * @return
      */
-    public static List<Order> makeOrder(List<Item> sels) {
+    public static List<Order> makeOrder(List<Item> selects) {
         List<Order> orders = new ArrayList<>();
-        for (Item sel : sels) {
+        for (Item sel : selects) {
             Order order = new Order(sel, SQLOrderingSpecification.ASC);
             orders.add(order);
         }

@@ -239,7 +239,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 if (groupCol.basicConstItem())
                     pdName = "'" + groupCol.toString() + "'";
                 if (pdName.isEmpty())
-                    pdName = visitUnselPushDownName(groupCol, true);
+                    pdName = visitUnSelPushDownName(groupCol, true);
                 sqlBuilder.append(pdName).append(" ").append(group.getSortOrder());
             }
         }
@@ -248,7 +248,7 @@ public class GlobalVisitor extends MysqlVisitor {
     protected void buildHaving(PlanNode query) {
         if (query.getHavingFilter() != null) {
             Item filter = query.getHavingFilter();
-            String pdName = visitUnselPushDownName(filter, true);
+            String pdName = visitUnSelPushDownName(filter, true);
             sqlBuilder.append(" having ").append(pdName);
         }
     }
@@ -269,7 +269,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 if (orderByCol.basicConstItem())
                     pdName = "'" + orderByCol.toString() + "'";
                 if (pdName.isEmpty())
-                    pdName = visitUnselPushDownName(orderByCol, true);
+                    pdName = visitUnSelPushDownName(orderByCol, true);
                 sqlBuilder.append(pdName).append(" ").append(order.getSortOrder());
             }
         }

@@ -640,7 +640,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLBinaryExpr x) {
         String binary = x.getValue();
-        item = new ItemInt(Long.parseLong(binary, 2));
+        if (StringUtil.equals(binary, "")) {
+            item = new ItemString(binary);
+        } else {
+            try {
+                item = new ItemInt(Long.parseLong(binary, 2));
+            } catch (NumberFormatException e) {
+                throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near " + x.toString());
+            }
+        }
         initName(x);
     }
 

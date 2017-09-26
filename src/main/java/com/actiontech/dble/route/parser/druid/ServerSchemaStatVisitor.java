@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid;
 
+import com.actiontech.dble.route.parser.druid.sql.visitor.ActionSQLEvalVisitorUtils;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -21,6 +22,7 @@ import com.alibaba.druid.stat.TableStat.Condition;
 import com.alibaba.druid.stat.TableStat.Mode;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -643,6 +645,46 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private void addExprIfNotFalse(WhereUnit whereUnit, SQLExpr expr) {
         if (!RouterUtil.isConditionAlwaysFalse(expr)) {
             whereUnit.addSplitedExpr(expr);
+        }
+    }
+    @Override
+    protected void handleCondition(SQLExpr expr, String operator, SQLExpr... valueExprs) {
+        if (expr instanceof SQLCastExpr) {
+            expr = ((SQLCastExpr) expr).getExpr();
+        }
+
+        Column column = this.getColumn(expr);
+        if (column != null) {
+            Condition condition = null;
+            Iterator var6 = this.getConditions().iterator();
+
+            while (var6.hasNext()) {
+                Condition item = (Condition) var6.next();
+                if (item.getColumn().equals(column) && item.getOperator().equals(operator)) {
+                    condition = item;
+                    break;
+                }
+            }
+
+            if (condition == null) {
+                condition = new Condition();
+                condition.setColumn(column);
+                condition.setOperator(operator);
+                this.conditions.add(condition);
+            }
+
+            SQLExpr[] var12 = valueExprs;
+            int var13 = valueExprs.length;
+
+            for (int var8 = 0; var8 < var13; ++var8) {
+                SQLExpr item = var12[var8];
+                Column valueColumn = this.getColumn(item);
+                if (valueColumn == null) {
+                    Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
+                    condition.getValues().add(value);
+                }
+            }
+
         }
     }
 }

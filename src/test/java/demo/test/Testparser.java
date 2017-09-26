@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 
 public class Testparser {
     public static void main(String args[]) {
+
         Testparser obj = new Testparser();
         //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");

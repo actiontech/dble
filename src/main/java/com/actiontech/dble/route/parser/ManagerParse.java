@@ -16,6 +16,8 @@ public final class ManagerParse {
     }
 
     public static final int OTHER = -1;
+    public static final int SELECT = 1;
+    public static final int SET = 2;
     public static final int SHOW = 3;
     public static final int SWITCH = 4;
     public static final int KILL_CONN = 5;
@@ -135,6 +137,9 @@ public final class ManagerParse {
     private static int sCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
+                case 'E':
+                case 'e':
+                    return seCheck(stmt, offset);
                 case 'H':
                 case 'h':
                     return show(stmt, offset);
@@ -144,6 +149,28 @@ public final class ManagerParse {
                 case 'T':
                 case 't':
                     return stop(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int seCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'L':
+                case 'l':
+                    return select(stmt, offset);
+                case 'T':
+                case 't':
+                    if (stmt.length() > ++offset) {
+                        char c = stmt.charAt(offset);
+                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == '/' || c == '#') {
+                            return SET;
+                        }
+                    }
+                    return OTHER;
                 default:
                     return OTHER;
             }
@@ -199,6 +226,21 @@ public final class ManagerParse {
                     (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k') &&
                     (c7 == ' ' || c7 == '\t' || c7 == '\r' || c7 == '\n')) {
                 return (offset << 8) | ROLLBACK;
+            }
+        }
+        return OTHER;
+    }
+
+    // SELECT' '
+    private static int select(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'C' || c2 == 'c') && (c3 == 'T' || c3 == 't') &&
+                    ParseUtil.isSpace(c4)) {
+                return (offset << 8) | SELECT;
             }
         }
         return OTHER;

@@ -11,6 +11,7 @@ import com.actiontech.dble.manager.response.KillConnection;
 import com.actiontech.dble.manager.response.Offline;
 import com.actiontech.dble.manager.response.Online;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,12 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
         }
         int rs = ManagerParse.parse(sql);
         switch (rs & 0xff) {
+            case ManagerParse.SELECT:
+                SelectHandler.handle(sql, c, rs >>> SHIFT);
+                break;
+            case ManagerParse.SET:
+                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                break;
             case ManagerParse.SHOW:
                 ShowHandler.handle(sql, c, rs >>> SHIFT);
                 break;

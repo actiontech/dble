@@ -47,8 +47,9 @@ public class FrontendAuthenticator implements NIOHandler {
                 source.write(AUTH_OK);
             } else {
                 ErrorPacket errPacket = new ErrorPacket();
-                errPacket.setErrNo(5018);
+                errPacket.setErrNo(ErrorCode.ER_YES);
                 errPacket.setMessage("server is offline.".getBytes());
+                //close the mysql connection if error occur
                 errPacket.setPacketId(2);
                 source.write(errPacket.toBytes());
             }

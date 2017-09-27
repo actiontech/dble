@@ -12,6 +12,7 @@ import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.statistic.CommandCount;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,12 +118,14 @@ public class FrontendCommandHandler implements NIOHandler {
                             handleData(data);
                         }
                     } catch (Exception e) {
-                        if (e instanceof RuntimeException) {
-                            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+                        String msg = e.getMessage();
+                        if (StringUtil.isEmpty(msg)) {
+                            LOGGER.warn("Maybe occur a bug, please check it.", e);
+                            msg = e.toString();
                         } else {
-                            LOGGER.warn("maybe occur a bug,", e);
-                            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+                            LOGGER.info("There is an error you may need know.", e);
                         }
+                        source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
                         dataQueue.clear();
                     } finally {
                         handleStatus.set(false);

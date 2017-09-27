@@ -61,6 +61,9 @@ public class ERJoinChooser {
     }
 
     public JoinNode optimize() {
+        if (erRelations == null) {
+            return jn;
+        }
         if (jn.isLeftOuterJoin() && !jn.isNotIn()) {
             return leftJoinOptimizer();
         } else { // (jn.isInnerJoin()) {

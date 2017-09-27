@@ -67,11 +67,10 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     public void errorResponse(byte[] data, BackendConnection conn) {
         session.releaseConnectionIfSafe(conn, false);
-        ErrorPacket err = new ErrorPacket();
-        err.read(data);
-        String errMsg = new String(err.getMessage());
-        this.setFail(errMsg);
-        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + err.getErrNo());
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.read(data);
+        String errMsg = new String(errPacket.getMessage());
+        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 

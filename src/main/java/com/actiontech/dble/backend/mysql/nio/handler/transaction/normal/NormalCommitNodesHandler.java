@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.util.StringUtil;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
@@ -55,8 +54,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("backend connect", e);
-        String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
-        this.setFail(errMsg);
+        this.setFail(e.getMessage());
         conn.quit();
         if (decrementCountBy(1)) {
             cleanAndFeedback();

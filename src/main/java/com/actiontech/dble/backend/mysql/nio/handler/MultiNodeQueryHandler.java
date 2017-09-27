@@ -248,8 +248,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         err = errPacket;
         lock.lock();
         try {
-            if (!isFail())
-                setFail(err.toString());
+            if (!isFail()) {
+                setFail(new String(err.getMessage()));
+            }
             if (--nodeCount > 0)
                 return;
             handleDdl();

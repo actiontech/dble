@@ -36,4 +36,8 @@ public class ManagerConnection extends FrontendConnection {
         handler.handle(data);
     }
 
+    @Override
+    public void killAndClose(String reason) {
+        this.close(reason);
+    }
 }

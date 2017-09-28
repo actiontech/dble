@@ -21,7 +21,7 @@ public final class ShowVariables {
 
     public static void response(ServerConnection c, String stmt) {
         String db = c.getSchema() != null ? c.getSchema() : SchemaUtil.getRandomDb();
-        
+
         SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
         if (schema == null) {
             c.writeErrMessage("42000", "Unknown database '" + db + "'", ErrorCode.ER_BAD_DB_ERROR);

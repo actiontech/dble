@@ -5,16 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class ShowVariablesHandler extends SingleNodeHandler {

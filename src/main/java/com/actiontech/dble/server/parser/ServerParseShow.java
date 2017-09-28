@@ -66,8 +66,8 @@ public final class ServerParseShow {
                 case 'K':
                 case 'k':
                     return showIndex(stmt);
-            	case 'V':
-            	case 'v':
+               case 'V':
+               case 'v':
                     return showVariables(stmt, i);
                 default:
                     return OTHER;
@@ -156,8 +156,8 @@ public final class ServerParseShow {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') && (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a')
-                && (c5 == 'L' || c5 == 'l')) {
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') && (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
+                (c5 == 'L' || c5 == 'l')) {
                 while (stmt.length() > ++offset) {
                     if (ParseUtil.isSpace(stmt.charAt(offset))) {
                         continue;
@@ -231,12 +231,14 @@ public final class ServerParseShow {
         // the length of "ession" or "chemas" is 6.
         if (stmt.length() > offset + 6) {
             switch (stmt.charAt(++offset)) {
-            case 'C':
-            case 'c':
-                return schemasCheck(stmt, offset);
-            case 'E':
-            case 'e':
-                return sessionCheck(stmt, offset);
+                case 'C':
+                case 'c':
+                    return schemasCheck(stmt, offset);
+                case 'E':
+                case 'e':
+                    return sessionCheck(stmt, offset);
+                default:
+                    return OTHER;
             }
         }
         return OTHER;
@@ -249,8 +251,8 @@ public final class ServerParseShow {
         char c3 = stmt.charAt(++offset);
         char c4 = stmt.charAt(++offset);
         char c5 = stmt.charAt(++offset);
-        if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'M' || c3 == 'm') && (c4 == 'A' || c4 == 'a') && (c5 == 'S' || c5 == 's')
-            && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+        if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'M' || c3 == 'm') && (c4 == 'A' || c4 == 'a') && (c5 == 'S' || c5 == 's') &&
+            (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
             return DATABASES;
         }
         return OTHER;
@@ -335,9 +337,9 @@ public final class ServerParseShow {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
-            if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i')
-                && (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'E')
-                && (c9 == 'S' || c9 == 's')) {
+            if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
+                (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'E') &&
+                (c9 == 'S' || c9 == 's')) {
                 return VARIABLES;
             }
         }

@@ -12,9 +12,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.NIOProcessor;
-import com.actiontech.dble.net.mysql.AuthPacket;
-import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.QuitPacket;
+import com.actiontech.dble.net.mysql.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +41,18 @@ public class FrontendAuthenticator implements NIOHandler {
         // check quit packet
         if (data.length == QuitPacket.QUIT.length && data[4] == MySQLPacket.COM_QUIT) {
             source.close("quit packet");
+            return;
+        } else if (data.length == PingPacket.PING.length && data[4] == PingPacket.COM_PING) {
+            if (DbleServer.getInstance().isOnline()) {
+                source.write(AUTH_OK);
+            } else {
+                ErrorPacket errPacket = new ErrorPacket();
+                errPacket.setErrNo(ErrorCode.ER_YES);
+                errPacket.setMessage("server is offline.".getBytes());
+                //close the mysql connection if error occur
+                errPacket.setPacketId(2);
+                source.write(errPacket.toBytes());
+            }
             return;
         }
 

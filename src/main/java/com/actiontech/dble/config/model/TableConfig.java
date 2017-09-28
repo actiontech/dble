@@ -8,8 +8,9 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.util.SplitUtil;
 
-import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 
 /**
  * @author mycat
@@ -38,9 +39,6 @@ public class TableConfig {
     private final String parentKey;
     private final String locateRTableKeySql;
     private final TableConfig directRouteTC;
-
-    private volatile Map<String, List<String>> dataNodeTableStructureSQLMap;
-    private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
 
     public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired) {
@@ -235,17 +233,4 @@ public class TableConfig {
         return partionKeyIsPrimaryKey;
     }
 
-
-    public ReentrantReadWriteLock getReentrantReadWriteLock() {
-        return reentrantReadWriteLock;
-    }
-
-
-    public Map<String, List<String>> getDataNodeTableStructureSQLMap() {
-        return dataNodeTableStructureSQLMap;
-    }
-
-    public void setDataNodeTableStructureSQLMap(Map<String, List<String>> dataNodeTableStructureSQLMap) {
-        this.dataNodeTableStructureSQLMap = dataNodeTableStructureSQLMap;
-    }
 }

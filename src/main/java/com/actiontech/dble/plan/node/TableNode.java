@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.util.ToStringUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -33,10 +34,6 @@ public class TableNode extends PlanNode {
     private StructureMeta.TableMeta tableMeta;
     private List<SQLHint> hintList;
 
-    /**
-     * @param catalog
-     * @param tableName
-     */
     public TableNode(String catalog, String tableName) {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
@@ -51,19 +48,25 @@ public class TableNode extends PlanNode {
         if (schemaConfig == null) {
             throw new RuntimeException("schema " + this.schema + " is not exists!");
         }
+        this.tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
         TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
-        if (tableConfig == null) {
-            throw new RuntimeException("table " + this.tableName + " is not exists!");
+        if (this.tableMeta == null) {
+            String errorMsg = "table " + this.tableName + " is not exists!";
+            if (tableConfig != null || schemaConfig.getDataNode() != null) {
+                errorMsg += "You should create it OR reload metadata";
+            }
+            throw new RuntimeException(errorMsg);
         }
         this.referedTableNodes.add(this);
-        this.tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
-        if (this.tableMeta == null) {
-            throw new RuntimeException("table " + this.tableName + " is not exists! You should create it OR reload metadata");
-        }
-        if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE) {
+        if (tableConfig == null) {
             this.unGlobalTableCount = 1;
+            this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getDataNode())));
+        } else {
+            if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE) {
+                this.unGlobalTableCount = 1;
+            }
+            this.setNoshardNode(new HashSet<>(tableConfig.getDataNodes()));
         }
-        this.setNoshardNode(new HashSet<>(tableConfig.getDataNodes()));
     }
 
     /**
@@ -92,18 +95,18 @@ public class TableNode extends PlanNode {
 
     @Override
     protected void dealStarColumn() {
-        List<Item> newSels = new ArrayList<>();
+        List<Item> newSelects = new ArrayList<>();
         for (Item sel : columnsSelected) {
             if (!sel.isWild())
-                newSels.add(sel);
+                newSelects.add(sel);
             else {
                 for (NamedField innerField : innerFields.keySet()) {
                     ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
-                    newSels.add(col);
+                    newSelects.add(col);
                 }
             }
         }
-        columnsSelected = newSels;
+        columnsSelected = newSelects;
     }
 
     public TableNode copy() {

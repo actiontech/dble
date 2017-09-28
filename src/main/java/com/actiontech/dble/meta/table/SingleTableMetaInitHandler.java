@@ -5,27 +5,26 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
+import java.util.List;
 import java.util.Set;
 
-public class TableMetaInitHandler extends AbstractTableMetaHandler {
+public class SingleTableMetaInitHandler extends AbstractTableMetaHandler {
     private MultiTableMetaHandler multiTableMetaHandler;
 
-    public TableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, TableConfig tbConfig, Set<String> selfNode) {
-        super(schema, tbConfig, selfNode);
+    SingleTableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, String tableName, List<String> dataNodes, Set<String> selfNode) {
+        super(schema, tableName, dataNodes, selfNode);
         this.multiTableMetaHandler = multiTableMetaHandler;
     }
 
     @Override
     protected void countdown() {
-        multiTableMetaHandler.countDownShardTable();
+        multiTableMetaHandler.countDownSingleTable();
     }
 
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
         multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
     }
-
 }

@@ -30,6 +30,7 @@ import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.HavingCols;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
@@ -466,9 +467,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
+                String strLimit = SQLUtils.toMySqlString(limit);
                 mysqlSelectQuery.setLimit(limit);
                 rrs.setLimitSize(limitSize);
-                String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                String sql = rrs.getStatement() + " " + strLimit;
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
 
             }
@@ -500,9 +502,10 @@ public class DruidSelectParser extends DefaultDruidParser {
 
                         }
                     }
-
+                    String strLimit = SQLUtils.toMySqlString(changedLimit);
                     mysqlSelectQuery.setLimit(changedLimit);
-                    String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                    int iLimit = rrs.getStatement().toLowerCase().lastIndexOf("limit");
+                    String sql = rrs.getStatement().substring(0, iLimit) + strLimit;
                     rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
                 } else {
                     rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
@@ -563,15 +566,6 @@ public class DruidSelectParser extends DefaultDruidParser {
 
         return map;
     }
-
-
-    protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
-        if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
-            return RouterUtil.removeSchema(stmt.toString(), schema);
-        }
-        return rrs.getStatement();
-    }
-
 
     private boolean isNeedChangeLimit(RouteResultset rrs) {
         if (rrs.getNodes() == null) {

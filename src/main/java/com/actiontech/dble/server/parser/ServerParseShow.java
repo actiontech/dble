@@ -48,7 +48,7 @@ public final class ServerParseShow {
                 case 'D':
                 case 'd':
                     return dataCheck(stmt, i);
-            	case 'G':
+                case 'G':
                 case 'g':
                     return showGCheck(stmt, i);
                 case 'T':
@@ -66,8 +66,8 @@ public final class ServerParseShow {
                 case 'K':
                 case 'k':
                     return showIndex(stmt);
-               case 'V':
-               case 'v':
+                case 'V':
+                case 'v':
                     return showVariables(stmt, i);
                 default:
                     return OTHER;

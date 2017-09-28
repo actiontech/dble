@@ -511,7 +511,5 @@ public abstract class FrontendConnection extends AbstractConnection {
         super.close(isAuthenticated ? reason : "");
     }
 
-    public void killAndClose(String reason) {
-
-    }
+    public abstract void killAndClose(String reason);
 }

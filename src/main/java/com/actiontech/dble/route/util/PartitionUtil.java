@@ -59,7 +59,7 @@ public final class PartitionUtil implements Serializable {
         addValue = partitionLength - 1;
         segment = new int[partitionLength];
         if (partitionLength > MAX_PARTITION_LENGTH) {
-            throw new RuntimeException("error,check your partitionScope definition.MAX(sum(count*length[i]) must be less then 1024 ");
+            throw new RuntimeException("error,check your partitionScope definition.Sum(count[i]*length[i]) must be less than " + MAX_PARTITION_LENGTH);
         }
         if ((partitionLength & addValue) == 0) {
             canProfile = true;

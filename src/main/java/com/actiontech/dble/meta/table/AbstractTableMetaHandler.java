@@ -31,35 +31,33 @@ public abstract class AbstractTableMetaHandler {
             "Create Table"};
     private static final String SQL_PREFIX = "show create table ";
 
-
-    private TableConfig tbConfig;
+    private String tableName;
+    private List<String> dataNodes;
     private AtomicInteger nodesNumber;
     protected String schema;
     private Set<String> selfNode;
 
     public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
-        this.tbConfig = tbConfig;
-        this.nodesNumber = new AtomicInteger(tbConfig.getDataNodes().size());
+        this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode);
+    }
+
+    public AbstractTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode) {
+        this.dataNodes = dataNodes;
+        this.nodesNumber = new AtomicInteger(dataNodes.size());
         this.schema = schema;
         this.selfNode = selfNode;
+        this.tableName = tableName;
     }
 
     public void execute() {
-        for (String dataNode : tbConfig.getDataNodes()) {
+        for (String dataNode : dataNodes) {
             if (selfNode != null && selfNode.contains(dataNode)) {
                 this.countdown();
                 return;
             }
-            try {
-                tbConfig.getReentrantReadWriteLock().writeLock().lock();
-                ConcurrentMap<String, List<String>> map = new ConcurrentHashMap<>();
-                tbConfig.setDataNodeTableStructureSQLMap(map);
-            } finally {
-                tbConfig.getReentrantReadWriteLock().writeLock().unlock();
-            }
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), new ConcurrentHashMap<String, List<String>>()));
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tbConfig.getName(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
             sqlJob.run();
         }
     }
@@ -71,62 +69,58 @@ public abstract class AbstractTableMetaHandler {
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private String dataNode;
         private long version;
+        private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
 
-        MySQLTableStructureListener(String dataNode, long version) {
+        MySQLTableStructureListener(String dataNode, long version, ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap) {
             this.dataNode = dataNode;
             this.version = version;
+            this.dataNodeTableStructureSQLMap = dataNodeTableStructureSQLMap;
         }
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
-            try {
-                tbConfig.getReentrantReadWriteLock().writeLock().lock();
-                if (!result.isSuccess()) {
-                    //not thread safe
-                    LOGGER.warn("Can't get table " + tbConfig.getName() + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
-                    if (nodesNumber.decrementAndGet() == 0) {
-                        countdown();
-                    }
-                    return;
-                }
-                String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-                Map<String, List<String>> dataNodeTableStructureSQLMap = tbConfig.getDataNodeTableStructureSQLMap();
-                if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
-                    List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
-                    dataNodeList.add(dataNode);
-                } else {
-                    List<String> dataNodeList = new LinkedList<>();
-                    dataNodeList.add(dataNode);
-                    dataNodeTableStructureSQLMap.put(currentSql, dataNodeList);
-                }
-
+            if (!result.isSuccess()) {
+                //not thread safe
+                LOGGER.warn("Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
-                    StructureMeta.TableMeta tableMeta = null;
-                    if (dataNodeTableStructureSQLMap.size() > 1) {
-                        // Through the SQL is different, the table Structure may still same.
-                        // for example: autoIncreament number
-                        Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
-                        for (String sql : dataNodeTableStructureSQLMap.keySet()) {
-                            tableMeta = initTableMeta(tbConfig.getName(), sql, version);
-                            tableMetas.add(tableMeta);
-                        }
-                        if (tableMetas.size() > 1) {
-                            consistentWarning(dataNodeTableStructureSQLMap);
-                        }
-                        tableMetas.clear();
-                    } else {
-                        tableMeta = initTableMeta(tbConfig.getName(), currentSql, version);
-                    }
-                    handlerTable(tableMeta);
                     countdown();
                 }
-            } finally {
-                tbConfig.getReentrantReadWriteLock().writeLock().unlock();
+                return;
+            }
+            String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
+            if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
+                List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
+                dataNodeList.add(dataNode);
+            } else {
+                List<String> dataNodeList = new LinkedList<>();
+                dataNodeList.add(dataNode);
+                dataNodeTableStructureSQLMap.put(currentSql, dataNodeList);
+            }
+
+            if (nodesNumber.decrementAndGet() == 0) {
+                StructureMeta.TableMeta tableMeta = null;
+                if (dataNodeTableStructureSQLMap.size() > 1) {
+                    // Through the SQL is different, the table Structure may still same.
+                    // for example: autoIncrement number
+                    Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
+                    for (String sql : dataNodeTableStructureSQLMap.keySet()) {
+                        tableMeta = initTableMeta(tableName, sql, version);
+                        tableMetas.add(tableMeta);
+                    }
+                    if (tableMetas.size() > 1) {
+                        consistentWarning();
+                    }
+                    tableMetas.clear();
+                } else {
+                    tableMeta = initTableMeta(tableName, currentSql, version);
+                }
+                handlerTable(tableMeta);
+                countdown();
             }
         }
 
-        private void consistentWarning(Map<String, List<String>> dataNodeTableStructureSQLMap) {
-            LOGGER.warn("Table [" + tbConfig.getName() + "] structure are not consistent!");
+        private void consistentWarning() {
+            LOGGER.warn("Table [" + tableName + "] structure are not consistent!");
             LOGGER.warn("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();

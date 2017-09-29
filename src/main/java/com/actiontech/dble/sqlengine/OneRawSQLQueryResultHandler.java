@@ -90,4 +90,10 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
         this.callback.onResult(queryResult);
 
     }
+    //  MultiRowSQLQueryResultHandler need
+    protected Map<String, String> getResult() {
+        Map<String, String> newResult = new HashMap<>();
+        newResult.putAll(result);
+        return newResult;
+    }
 }

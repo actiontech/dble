@@ -194,8 +194,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         err = errPacket;
         lock.lock();
         try {
-            if (!isFail())
-                setFail(err.toString());
+            if (!isFail()) {
+                setFail(new String(errPacket.getMessage()));
+            }
             if (!conn.syncAndExecute()) {
                 return;
             }

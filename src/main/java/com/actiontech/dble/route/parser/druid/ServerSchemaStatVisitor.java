@@ -135,13 +135,13 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (x.isNot()) {
             return true;
         }
-        String begin = null;
+        String begin;
         if (x.beginExpr instanceof SQLCharExpr) {
             begin = (String) ((SQLCharExpr) x.beginExpr).getValue();
         } else {
             begin = x.beginExpr.toString();
         }
-        String end = null;
+        String end;
         if (x.endExpr instanceof SQLCharExpr) {
             end = (String) ((SQLCharExpr) x.endExpr).getValue();
         } else {
@@ -177,6 +177,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLBinaryOpExpr x) {
+        if (isUnaryParentEffect(x)) return true;
         x.getLeft().setParent(x);
         x.getRight().setParent(x);
 
@@ -194,7 +195,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 if (!RouterUtil.isConditionAlwaysTrue(x)) {
                     hasOrCondition = true;
 
-                    WhereUnit whereUnit = null;
+                    WhereUnit whereUnit;
                     if (conditions.size() > 0) {
                         whereUnit = new WhereUnit();
                         whereUnit.setFinishedParse(true);
@@ -310,9 +311,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return null;
     }
 
-    private Column getColumn(SQLBetweenExpr expr, Map<String, String> aliasMap) {
-        SQLBetweenExpr betweenExpr = expr;
-
+    private Column getColumn(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
         if (betweenExpr.getTestExpr() != null) {
             String tableName = null;
             String column = null;
@@ -584,7 +583,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         List<List<Condition>> retList = new ArrayList<>();
         for (List<Condition> aList1 : list1) {
             for (List<Condition> aList2 : list2) {
-                List<Condition> listTmp = new ArrayList<Condition>();
+                List<Condition> listTmp = new ArrayList<>();
                 listTmp.addAll(aList1);
                 listTmp.addAll(aList2);
                 retList.add(listTmp);
@@ -687,4 +686,20 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         }
     }
+
+    private boolean isUnaryParentEffect(SQLBinaryOpExpr x) {
+        if (x.getParent() instanceof SQLUnaryExpr) {
+            SQLUnaryExpr parent = (SQLUnaryExpr) x.getParent();
+            switch (parent.getOperator()) {
+                case Not:
+                case NOT:
+                case Compl:
+                    return true;
+                default:
+                    break;
+            }
+        }
+        return false;
+    }
+
 }

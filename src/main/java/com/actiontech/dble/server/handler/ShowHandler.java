@@ -41,6 +41,9 @@ public final class ShowHandler {
             case ServerParseShow.CREATE_TABLE:
                 ShowCreateTable.response(c, stmt);
                 break;
+            case ServerParseShow.VARIABLES:
+                ShowVariables.response(c, stmt);
+                break;
             case ServerParseShow.CHARSET:
                 stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
                 // fallthrough

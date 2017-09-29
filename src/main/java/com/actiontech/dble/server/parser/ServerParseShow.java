@@ -27,6 +27,7 @@ public final class ServerParseShow {
     public static final int COLUMNS = 8;
     public static final int INDEX = 9;
     public static final int CREATE_TABLE = 10;
+    public static final int VARIABLES = 11;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -47,12 +48,15 @@ public final class ServerParseShow {
                 case 'D':
                 case 'd':
                     return dataCheck(stmt, i);
+                case 'G':
+                case 'g':
+                    return showGCheck(stmt, i);
                 case 'T':
                 case 't':
                     return showTableType(stmt);
                 case 'S':
                 case 's':
-                    return schemasCheck(stmt, i);
+                    return showSCheck(stmt, i);
                 case 'C':
                 case 'c':
                     return showCCheck(stmt, i);
@@ -62,6 +66,9 @@ public final class ServerParseShow {
                 case 'K':
                 case 'k':
                     return showIndex(stmt);
+                case 'V':
+                case 'v':
+                    return showVariables(stmt, i);
                 default:
                     return OTHER;
             }
@@ -142,6 +149,27 @@ public final class ServerParseShow {
         return OTHER;
     }
 
+    private static int showGCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "lobal".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') && (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
+                (c5 == 'L' || c5 == 'l')) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    return showVariables(stmt, offset);
+                }
+            }
+        }
+
+        return OTHER;
+    }
+
     //show create table
     private static int showCreateTable(String stmt, int offset) {
         if (stmt.length() > offset + "eate".length()) {
@@ -199,23 +227,50 @@ public final class ServerParseShow {
         return OTHER;
     }
 
+    private static int showSCheck(String stmt, int offset) {
+        // the length of "ession" or "chemas" is 6.
+        if (stmt.length() > offset + 6) {
+            switch (stmt.charAt(++offset)) {
+                case 'C':
+                case 'c':
+                    return schemasCheck(stmt, offset);
+                case 'E':
+                case 'e':
+                    return sessionCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     //show schemas
     private static int schemasCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "chemas".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c') &&
-                    (c2 == 'H' || c2 == 'h') &&
-                    (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'M' || c4 == 'm') &&
-                    (c5 == 'A' || c5 == 'a') &&
-                    (c6 == 'S' || c6 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
-                return DATABASES;
+        char c1 = stmt.charAt(++offset);
+        char c2 = stmt.charAt(++offset);
+        char c3 = stmt.charAt(++offset);
+        char c4 = stmt.charAt(++offset);
+        char c5 = stmt.charAt(++offset);
+        if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'M' || c3 == 'm') && (c4 == 'A' || c4 == 'a') && (c5 == 'S' || c5 == 's') &&
+            (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+            return DATABASES;
+        }
+        return OTHER;
+    }
+
+    //show session
+    private static int sessionCheck(String stmt, int offset) {
+        char c1 = stmt.charAt(++offset);
+        char c2 = stmt.charAt(++offset);
+        char c3 = stmt.charAt(++offset);
+        char c4 = stmt.charAt(++offset);
+        char c5 = stmt.charAt(++offset);
+        if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 'S') && (c3 == 'I' || c3 == 'i') && (c4 == 'O' || c4 == 'O') && (c5 == 'N' || c5 == 'n')) {
+            while (stmt.length() > ++offset) {
+                if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                    continue;
+                }
+                return showVariables(stmt, offset);
             }
         }
         return OTHER;
@@ -269,5 +324,25 @@ public final class ServerParseShow {
         } else {
             return OTHER;
         }
+    }
+
+    private static int showVariables(String stmt, int offset) {
+        if (stmt.length() > offset + "ariables".length()) {
+            char c1 = stmt.charAt(offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
+                (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'E') &&
+                (c9 == 'S' || c9 == 's')) {
+                return VARIABLES;
+            }
+        }
+        return OTHER;
     }
 }

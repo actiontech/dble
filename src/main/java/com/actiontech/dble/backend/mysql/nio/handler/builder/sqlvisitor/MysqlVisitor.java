@@ -53,16 +53,16 @@ public abstract class MysqlVisitor {
 
     public abstract void visit();
 
-    /**
-     * @param tableNode
-     */
+
     protected void buildTableName(TableNode tableNode, StringBuilder sb) {
         sb.append(" `").append(tableNode.getPureName()).append("`");
         String alias = tableNode.getAlias();
-        if (alias != null) {
-            sb.append(" `").append(alias).append("`");
-        } else if (tableNode.getSubAlias() != null) {
-            sb.append(" `").append(tableNode.getSubAlias()).append("`");
+        if (tableNode.getSubAlias() != null) {
+            if (alias != null) {
+                sb.append(" `").append(alias).append("`");
+            } else {
+                sb.append(" `").append(tableNode.getSubAlias()).append("`");
+            }
         }
         List<SQLHint> hintList = tableNode.getHintList();
         if (hintList != null && !hintList.isEmpty()) {

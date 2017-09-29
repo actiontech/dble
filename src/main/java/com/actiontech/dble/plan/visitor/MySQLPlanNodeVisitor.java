@@ -237,6 +237,9 @@ public class MySQLPlanNodeVisitor {
         this.tableNode.setSubQuery(true);
         if (subQueryTables.getAlias() != null) {
             tableNode.alias(subQueryTables.getAlias());
+            if (tableNode.getSubAlias() == null) {
+                tableNode.setSubAlias(tableNode.getAlias());
+            }
         }
         return true;
     }

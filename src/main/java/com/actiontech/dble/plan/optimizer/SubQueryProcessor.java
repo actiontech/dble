@@ -40,16 +40,14 @@ public final class SubQueryProcessor {
     /**
      * find query node in qtn ,change to other 3 type node
      *
-     * @param qtn
-     * @return
      */
     private static PlanNode tryTransformerQuery(PlanNode qtn, BoolPtr boolptr) {
         boolean childMerged = false;
         for (int index = 0; index < qtn.getChildren().size(); index++) {
             PlanNode child = qtn.getChildren().get(index);
-            BoolPtr cbptr = new BoolPtr(false);
-            PlanNode newChild = tryTransformerQuery(child, cbptr);
-            if (cbptr.get())
+            BoolPtr boolPtr = new BoolPtr(false);
+            PlanNode newChild = tryTransformerQuery(child, boolPtr);
+            if (boolPtr.get())
                 childMerged = true;
             qtn.getChildren().set(index, newChild);
         }
@@ -64,13 +62,11 @@ public final class SubQueryProcessor {
     /**
      * transformerQuery
      *
-     * @param query
-     * @return
      */
     private static PlanNode transformerQuery(QueryNode query, BoolPtr boolptr) {
         boolean canBeMerged = ViewUtil.canBeMerged(query.getChild());
         if (canBeMerged) {
-            // merge viewnode's property to view's child
+            // merge view node's property to view's child
             PlanNode newNode = mergeNode(query, query.getChild());
             boolptr.set(true);
             return newNode;
@@ -83,18 +79,15 @@ public final class SubQueryProcessor {
      * merge parent's property to child,and return new child,
      * of course ,the child is  canBeMerged
      *
-     * @param parent
-     * @param child
-     * @return
      */
     private static PlanNode mergeNode(PlanNode parent, PlanNode child) {
-        final List<Item> newSels = mergeSelect(parent, child);
+        final List<Item> newSelects = mergeSelect(parent);
         mergeWhere(parent, child);
         mergeGroupBy(parent, child);
         mergeHaving(parent, child);
         mergeOrderBy(parent, child);
         mergeLimit(parent, child);
-        child.setColumnsSelected(newSels);
+        child.setColumnsSelected(newSelects);
         if (!StringUtils.isEmpty(parent.getAlias())) {
             child.setAlias(parent.getAlias());
         } else if (!StringUtils.isEmpty(parent.getSubAlias())) {
@@ -110,14 +103,12 @@ public final class SubQueryProcessor {
      * sql:select idd + 1 from v_t1 ==> select (id+1) + 1 from t1 tt1 order by
      * id+1
      *
-     * @return child should contains new select's infos
-     * @notice
      */
 
-    private static List<Item> mergeSelect(PlanNode parent, PlanNode child) {
-        List<Item> pSels = parent.getColumnsSelected();
-        List<Item> cNewSels = new ArrayList<>();
-        for (Item pSel : pSels) {
+    private static List<Item> mergeSelect(PlanNode parent) {
+        List<Item> pSelects = parent.getColumnsSelected();
+        List<Item> cNewSelects = new ArrayList<>();
+        for (Item pSel : pSelects) {
             Item pSel0 = PlanUtil.pushDownItem(parent, pSel, true);
             String selName = pSel.getAlias();
             if (StringUtils.isEmpty(selName)) {
@@ -128,9 +119,9 @@ public final class SubQueryProcessor {
                     selName = Item.FNAF + selName;
             }
             pSel0.setAlias(selName);
-            cNewSels.add(pSel0);
+            cNewSelects.add(pSel0);
         }
-        return cNewSels;
+        return cNewSelects;
     }
 
     private static void mergeWhere(PlanNode parent, PlanNode child) {

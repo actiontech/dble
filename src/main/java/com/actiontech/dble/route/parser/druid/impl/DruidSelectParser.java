@@ -94,6 +94,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
+
+                if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema.getName()).
+                        getView(schemaInfo.getTable()) != null) {
+                    rrs.setNeedOptimizer(true);
+                    rrs.setSqlStatement(selectStmt);
+                    return schema;
+                }
+
                 if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
                     RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                     return schema;
@@ -105,12 +113,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
                 }
 
+
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
                 if (visitor.isHasSubQuery()) {
                     rrs.setSqlStatement(selectStmt);
                     rrs.setNeedOptimizer(true);
                     return schema;
                 }
+
                 parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
                 // select ...for update /in shard mode /in transaction
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {

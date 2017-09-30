@@ -134,6 +134,8 @@ public final class SystemConfig {
     private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
     private String transactionLogBaseName;
+    private String viewRecoveryConfBaseDir;
+    private String viewRecoveryConfBaseName;
     private int transactionRatateSize;
 
     private int mergeQueueSize;
@@ -177,6 +179,8 @@ public final class SystemConfig {
         this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
         this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
         this.xaRecoveryLogBaseName = "tmlog";
+        this.viewRecoveryConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
+        this.viewRecoveryConfBaseName = "viewJson";
         this.transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + DEFAULT_TRANSACTION_BASE_DIR;
         this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
         this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
@@ -779,6 +783,22 @@ public final class SystemConfig {
         this.orderByQueueSize = orderByQueueSize;
     }
 
+
+    public String getViewRecoveryConfBaseDir() {
+        return viewRecoveryConfBaseDir;
+    }
+
+    public void setViewRecoveryConfBaseDir(String viewRecoveryConfBaseDir) {
+        this.viewRecoveryConfBaseDir = viewRecoveryConfBaseDir;
+    }
+
+    public String getViewRecoveryConfBaseName() {
+        return viewRecoveryConfBaseName;
+    }
+
+    public void setViewRecoveryConfBaseName(String viewRecoveryConfBaseName) {
+        this.viewRecoveryConfBaseName = viewRecoveryConfBaseName;
+    }
 
     @Override
     public String toString() {

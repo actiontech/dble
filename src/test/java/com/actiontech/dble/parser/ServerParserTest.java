@@ -353,4 +353,13 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse(" unlock	 tables"));
     }
 
+
+    @Test
+    public void testCreateView(){
+        Assert.assertEquals(ServerParse.CREATE_VIEW, ServerParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.REPLACE_VIEW, ServerParse.parse("create or replace  view x_xx_xx as select * from suntest"));
+        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create or replace viasdfasdfew asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create   "));
+    }
+
 }

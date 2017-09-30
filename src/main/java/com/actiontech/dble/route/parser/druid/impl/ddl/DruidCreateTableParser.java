@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -44,6 +45,12 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         //disable create table select from
         if (createStmt.getLike() != null) {
             String msg = "create table like other table not supported :" + stmt;
+            LOGGER.warn(msg);
+            throw new SQLNonTransientException(msg);
+        }
+
+        if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema.getName()).getView(createStmt.getTableSource().getExpr().toString()) != null) {
+            String msg = "Table '" + createStmt.getName().toString() + "' already exists";
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }

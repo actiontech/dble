@@ -1,13 +1,11 @@
-/*
- * Copyright (C) 2016-2017 ActionTech.
- * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
- */
-
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.mysql.view.recovery.FileSystemRepository;
+import com.actiontech.dble.backend.mysql.view.recovery.KVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.recovery.Reposoitory;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
@@ -64,6 +62,9 @@ public class ProxyMetaManager {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
     private AtomicInteger ddlCount = new AtomicInteger(0);
+
+
+    private Reposoitory reposoitory = null;
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
@@ -255,22 +256,68 @@ public class ProxyMetaManager {
                 }
                 times++;
             }
+
+
             initMeta(config);
             // online
             ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
             //add watcher
             ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
+            //add watcher
+            ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
             // syncMeta UNLOCK
             zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
+
         } else {
             initMeta(config);
         }
     }
 
+
+    /**
+     * recovery all the view info from KV system
+     */
+    public void recoveryViewFromKV() {
+        reposoitory = new KVStoreRepository();
+        Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
+        recoveryViewMeta(viewCreateSqlMap);
+    }
+
+    /**
+     * recovery all the view info for file system
+     */
+    public void recoveryViewFromFile() {
+        reposoitory = new FileSystemRepository();
+        Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
+        recoveryViewMeta(viewCreateSqlMap);
+    }
+
+    /**
+     * put the create sql in & parse all the tableNode & put into schema-viewMeta
+     *
+     * @param viewCreateSqlMap
+     */
+    public void recoveryViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
+        for (String schemaName : viewCreateSqlMap.keySet()) {
+            Map<String, String> schemaViewMap = viewCreateSqlMap.get(schemaName);
+            for (String viewName : schemaViewMap.keySet()) {
+                ViewMeta vm = new ViewMeta(schemaViewMap.get(viewName), schemaName);
+                vm.init(true);
+                DbleServer.getInstance().getTmManager().getCatalogs().get(schemaName).getViewMetas().put(vm.getViewName(), vm);
+            }
+        }
+    }
+
+
     public void initMeta(ServerConfig config) {
         Set<String> selfNode = getSelfNodes(config);
         SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
         handler.execute();
+        if (DbleServer.getInstance().isUseZK()) {
+            recoveryViewFromKV();
+        } else {
+            recoveryViewFromFile();
+        }
         SystemConfig system = config.getSystem();
         if (system.getCheckTableConsistency() == 1) {
             scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
@@ -705,6 +752,15 @@ public class ProxyMetaManager {
             changeIndex = columnMetas.size();
         }
         return changeIndex;
+    }
+
+
+    public Reposoitory getReposoitory() {
+        return reposoitory;
+    }
+
+    public void setReposoitory(Reposoitory reposoitory) {
+        this.reposoitory = reposoitory;
     }
 
 }

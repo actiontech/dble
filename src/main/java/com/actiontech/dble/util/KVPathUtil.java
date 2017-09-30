@@ -51,6 +51,10 @@ public final class KVPathUtil {
         return BASE_PATH + "ddl";
     }
 
+    public static String getViewPath() {
+        return BASE_PATH + "view";
+    }
+
     //depth:4,grandson node of base_path/ddl/
     public static final String DDL_INSTANCE = "instance";
 

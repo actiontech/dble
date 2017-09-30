@@ -105,6 +105,15 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             case ServerParse.UNLOCK:
                 c.unLockTable(sql);
                 break;
+            case ServerParse.CREATE_VIEW:
+                CreateViewHandler.handle(sql, c, false);
+                break;
+            case ServerParse.REPLACE_VIEW:
+                CreateViewHandler.handle(sql, c, true);
+                break;
+            case ServerParse.DROP_VIEW:
+                DropViewHandler.handle(sql, c);
+                break;
             default:
                 if (readOnly) {
                     LOGGER.warn("User readonly:" + sql);

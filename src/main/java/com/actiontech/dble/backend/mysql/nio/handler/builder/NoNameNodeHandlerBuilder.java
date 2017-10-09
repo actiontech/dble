@@ -33,6 +33,11 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected void handleSubQueries() {
+        handleBlockingSubQuery();
+    }
+
+    @Override
     public List<DMLResponseHandler> buildPre() {
         return new ArrayList<>();
     }

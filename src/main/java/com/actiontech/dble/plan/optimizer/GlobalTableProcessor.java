@@ -7,6 +7,7 @@ package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.PlanNode.PlanNodeType;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 
@@ -27,18 +28,24 @@ public final class GlobalTableProcessor {
      * @return true:parent node maybe is global;false parent node must not be global
      */
     private static boolean initGlobalStatus(PlanNode tn) {
-        if (tn == null || tn.type() == PlanNodeType.TABLE)
+        if (tn == null || ((tn.type() == PlanNodeType.TABLE || tn.type() == PlanNodeType.NONAME) && tn.getSubQueries().size() == 0)) {
             return true;
+        }
         boolean status = true;
-
         for (PlanNode child : tn.getChildren()) {
             boolean ret = initGlobalStatus(child);
             if (status) {
                 status = ret;
             }
         }
+        for (ItemSubQuery subQuery : tn.getSubQueries()) {
+            boolean ret = initGlobalStatus(subQuery.getPlanNode());
+            if (status) {
+                status = ret;
+            }
+        }
         if (PlanUtil.isERNode(tn)) {
-            // treat erjoin as an unglobaltable
+            // treat er join as an un global table
             tn.setUnGlobalTableCount(1);
             Set<String> newSet = new HashSet<>();
             newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
@@ -90,38 +97,47 @@ public final class GlobalTableProcessor {
 
     private static int calcUnGlobalCount(PlanNode tn) {
         int unGlobalCount = 0;
+        for (ItemSubQuery subQuery : tn.getSubQueries()) {
+            PlanNode subNode = subQuery.getPlanNode();
+            resetNoShardNode(tn, subNode);
+            unGlobalCount += subNode.getUnGlobalTableCount();
+        }
         for (PlanNode tnChild : tn.getChildren()) {
             if (tnChild != null) {
-                if (tn.getNoshardNode() == null) {
-                    if (tnChild.getNoshardNode() != null) {
-                        Set<String> parentSet = new HashSet<>();
-                        parentSet.addAll(tnChild.getNoshardNode());
-                        tn.setNoshardNode(parentSet);
-                    }
-                }
-                if (tn.getNoshardNode() != null) {
-                    tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
-                }
+                resetNoShardNode(tn, tnChild);
                 unGlobalCount += tnChild.getUnGlobalTableCount();
             }
         }
         return unGlobalCount;
     }
 
+    private static void resetNoShardNode(PlanNode tn, PlanNode tnChild) {
+        if (tn.getNoshardNode() == null) {
+            if (tnChild.getNoshardNode() != null) {
+                Set<String> parentSet = new HashSet<>();
+                parentSet.addAll(tnChild.getNoshardNode());
+                tn.setNoshardNode(parentSet);
+            }
+        }
+        if (tn.getNoshardNode() != null) {
+            tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
+        }
+    }
+
     private static boolean isGlobalTableBigEnough(JoinNode jn) {
         PlanNode left = jn.getLeftNode();
         PlanNode right = jn.getRightNode();
-        PlanNode global, noraml;
+        PlanNode global, normal;
         if (left.getUnGlobalTableCount() == 0) {
             global = left;
-            noraml = right;
+            normal = right;
         } else {
             global = right;
-            noraml = left;
+            normal = left;
         }
         Set<String> result = new HashSet<>();
         result.addAll(global.getNoshardNode());
-        Set<String> normalSet = noraml.getNoshardNode();
+        Set<String> normalSet = normal.getNoshardNode();
         result.retainAll(normalSet);
         return result.size() == normalSet.size();
     }

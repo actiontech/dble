@@ -14,13 +14,13 @@ import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
-import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
-import com.actiontech.dble.plan.common.item.subquery.ItemInSubselect;
-import com.actiontech.dble.plan.common.item.subquery.ItemSubselect;
+import com.actiontech.dble.plan.common.item.subquery.*;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.util.FilterUtils;
+import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -48,13 +48,13 @@ public final class SubQueryPreProcessor {
             qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode(child));
         }
 
-        SubQueryAndFilter find = new SubQueryAndFilter();
+        SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;
         find.filter = null;
         Item where = qtn.getWhereFilter();
-        SubQueryAndFilter result = buildSubQuery(find, where);
+        SubQueryFilter result = buildSubQuery(qtn, find, where, false);
         if (result != find) {
-            // that means where filter only contains subquery,just replace it
+            // that means where filter only contains sub query,just replace it
             result.query.query(result.filter);
             qtn.query(null);
             // change result.filter and rebuild
@@ -65,47 +65,74 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static SubQueryAndFilter buildSubQuery(SubQueryAndFilter qtn, Item filter) {
+    private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild) {
         if (filter == null)
             return qtn;
         if (!filter.isWithSubQuery()) {
             qtn.filter = filter;
         } else if (filter instanceof ItemCondOr) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support 'or' when condition subquery");
+            return buildSubQueryWithOrFilter(node, qtn, (ItemCondOr) filter);
         } else if (filter instanceof ItemCondAnd) {
-            return buildSubQueryWithAndFilter(qtn, (ItemCondAnd) filter);
+            return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, isOrChild);
         } else {
-            return buildSubQueryByFilter(qtn, filter);
+            return buildSubQueryByFilter(node, qtn, filter, isOrChild);
         }
         return qtn;
     }
 
-    private static SubQueryAndFilter buildSubQueryByFilter(SubQueryAndFilter qtn, Item filter) {
-        Item leftColumn;
-        PlanNode query;
-        boolean isNotIn = false;
-        boolean needExchange = false;
-        if (isCmpFunc(filter)) {
+    private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild) {
+        if (filter instanceof ItemInSubQuery && !isOrChild) {
+            return transformInSubQuery(qtn, (ItemInSubQuery) filter);
+        } else if (filter instanceof ItemInSubQuery) {
+            addSubQuey(node, (ItemInSubQuery) filter);
+            return qtn;
+        } else if (PlanUtil.isCmpFunc(filter)) {
             ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
             Item arg0 = eqFilter.arguments().get(0);
-            Item arg1 = eqFilter.arguments().get(1);
-            boolean arg0IsSubQuery = arg0.type().equals(ItemType.SUBSELECT_ITEM);
-            boolean arg1IsSubQuery = arg1.type().equals(ItemType.SUBSELECT_ITEM);
-            if (arg0IsSubQuery && arg1IsSubQuery) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                        "left and right both condition subquery,not supported...");
+            if (arg0.type().equals(ItemType.SUBSELECT_ITEM)) {
+                if (arg0 instanceof ItemScalarSubQuery) {
+                    addSubQuey(node, ((ItemScalarSubQuery) arg0));
+                } else {
+                    //todo: when happened?
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+                }
             }
-            needExchange = arg0IsSubQuery;
-            leftColumn = arg0IsSubQuery ? arg1 : arg0;
-            query = arg0IsSubQuery ? ((ItemSubselect) arg0).getPlanNode() : ((ItemSubselect) arg1).getPlanNode();
-        } else if (filter instanceof ItemInSubselect) {
-            ItemInSubselect inSub = (ItemInSubselect) filter;
-            leftColumn = inSub.getLeftOprand();
-            query = inSub.getPlanNode();
-            isNotIn = inSub.isNeg();
+
+            Item arg1 = eqFilter.arguments().get(1);
+            if (arg1.type().equals(ItemType.SUBSELECT_ITEM)) {
+                if (arg1 instanceof ItemScalarSubQuery) {
+                    addSubQuey(node, ((ItemScalarSubQuery) arg1));
+                } else if (arg1 instanceof ItemAllAnySubQuery) {
+                    addSubQuey(node, ((ItemAllAnySubQuery) arg1));
+                } else {
+                    //todo: when happened?
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+                }
+            }
+            return qtn;
+        } else if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
+            if (filter instanceof ItemExistsSubQuery) {
+                addSubQuey(node, ((ItemExistsSubQuery) filter));
+            } else {
+                //todo: when happened?
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+            }
+            return qtn;
         } else {
+            //todo: when happened?
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
         }
+    }
+
+    private static void addSubQuey(PlanNode node, ItemSubQuery subQuery) {
+        node.getSubQueries().add(subQuery);
+        PlanNode subNode = findComparisonsSubQueryToJoinNode(subQuery.getPlanNode());
+        subQuery.setPlanNode(subNode);
+    }
+
+    private static SubQueryFilter transformInSubQuery(SubQueryFilter qtn, ItemInSubQuery filter) {
+        Item leftColumn = filter.getLeftOperand();
+        PlanNode query = filter.getPlanNode();
         query = findComparisonsSubQueryToJoinNode(query);
         if (StringUtils.isEmpty(query.getAlias()))
             query.alias(AUTOALIAS + query.getPureName());
@@ -114,7 +141,7 @@ public final class SubQueryPreProcessor {
         query.setSubQuery(true).setDistinct(true);
 
         final List<Item> newSelects = qtn.query.getColumnsSelected();
-        SubQueryAndFilter result = new SubQueryAndFilter();
+        SubQueryFilter result = new SubQueryFilter();
         Item rightColumn = query.getColumnsSelected().get(0);
         qtn.query.setColumnsSelected(new ArrayList<Item>());
         String rightJoinName = rightColumn.getAlias();
@@ -130,7 +157,7 @@ public final class SubQueryPreProcessor {
         ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
         // rename the left column's table name
         result.query = new JoinNode(qtn.query, query);
-        // leave origin sqlto new join node
+        // leave origin sql to new join node
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
         result.query.select(newSelects);
@@ -154,13 +181,13 @@ public final class SubQueryPreProcessor {
             result.query.setLimitTo(qtn.query.getLimitTo());
             qtn.query.setLimitTo(-1);
         }
-        if (isNotIn) {
+        if (filter.isNeg()) {
             ((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
             ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
             ((JoinNode) result.query).addJoinFilter(joinFilter);
             result.filter = null;
         } else {
-            Item joinFilter = calcJoinFilter(filter, leftColumn, needExchange, rightJoinColumn);
+            Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
             result.query.query(joinFilter);
             result.filter = joinFilter;
         }
@@ -178,54 +205,31 @@ public final class SubQueryPreProcessor {
         return result;
     }
 
-    private static boolean isCmpFunc(Item filter) {
-        return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
-                filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
-                filter instanceof ItemFuncStrictEqual;
-    }
-
-    private static Item calcJoinFilter(Item filter, Item leftColumn, boolean needExchange, ItemField rightJoinColumn) {
-        Item joinFilter;
-        if (((filter instanceof ItemFuncGt) && !needExchange) ||
-                ((filter instanceof ItemFuncLt) && needExchange)) {
-            joinFilter = FilterUtils.greaterThan(leftColumn, rightJoinColumn);
-        } else if (((filter instanceof ItemFuncLt) && !needExchange) ||
-                ((filter instanceof ItemFuncGt) && needExchange)) {
-            joinFilter = FilterUtils.lessThan(leftColumn, rightJoinColumn);
-        } else if (((filter instanceof ItemFuncGe) && !needExchange) ||
-                ((filter instanceof ItemFuncLe) && needExchange)) {
-            joinFilter = FilterUtils.greaterEqual(leftColumn, rightJoinColumn);
-        } else if (((filter instanceof ItemFuncLe) && !needExchange) ||
-                ((filter instanceof ItemFuncGe) && needExchange)) {
-            joinFilter = FilterUtils.lessEqual(leftColumn, rightJoinColumn);
-        } else if (filter instanceof ItemFuncNe) {
-            joinFilter = FilterUtils.notEqual(leftColumn, rightJoinColumn);
-        } else {
-            //equal or in
-            joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+    private static SubQueryFilter buildSubQueryWithOrFilter(PlanNode node, SubQueryFilter qtn, ItemCondOr filter) {
+        for (int index = 0; index < filter.getArgCount(); index++) {
+            buildSubQuery(node, qtn, filter.arguments().get(index), true);
         }
-        return joinFilter;
+        return qtn;
     }
 
-    private static SubQueryAndFilter buildSubQueryWithAndFilter(SubQueryAndFilter qtn, ItemCondAnd filter) {
-        ItemCondAnd andFilter = filter;
-        for (int index = 0; index < andFilter.getArgCount(); index++) {
-            SubQueryAndFilter result = buildSubQuery(qtn, andFilter.arguments().get(index));
+    private static SubQueryFilter buildSubQueryWithAndFilter(PlanNode node, SubQueryFilter qtn, ItemCondAnd filter, boolean isOrChild) {
+        for (int index = 0; index < filter.getArgCount(); index++) {
+            SubQueryFilter result = buildSubQuery(node, qtn, filter.arguments().get(index), isOrChild);
             if (result != qtn) {
                 if (result.filter == null) {
                     result.filter = new ItemInt(1);
                 }
-                andFilter.arguments().set(index, result.filter);
+                filter.arguments().set(index, result.filter);
                 qtn = result;
             }
         }
-        qtn.filter = andFilter;
+        qtn.filter = filter;
         return qtn;
     }
 
-    private static class SubQueryAndFilter {
+    private static class SubQueryFilter {
 
-        PlanNode query; // subQuery may change querynode to join node
+        PlanNode query; // subQuery may change query node to join node
         Item filter; // sub query's filter
     }
 

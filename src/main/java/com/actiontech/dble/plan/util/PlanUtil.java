@@ -17,7 +17,7 @@ import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
-import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
 import com.actiontech.dble.plan.node.JoinNode;
@@ -356,4 +356,10 @@ public final class PlanUtil {
             return true;
         }
     }
+    public static boolean isCmpFunc(Item filter) {
+        return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
+                filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
+                filter instanceof ItemFuncStrictEqual;
+    }
+
 }

@@ -33,6 +33,11 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected void handleSubQueries() {
+        handleBlockingSubQuery();
+    }
+
+    @Override
     public List<DMLResponseHandler> buildPre() {
         return new ArrayList<>();
     }
@@ -47,7 +52,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "tablenode buildOwn exception!", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception!", e);
         }
     }
 
@@ -90,5 +95,4 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "", e);
         }
     }
-
 }

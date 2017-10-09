@@ -3,36 +3,30 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-/**
- *
- */
 package com.actiontech.dble.plan.common.item.subquery;
 
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
-import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
-public class ItemSinglerowSubselect extends ItemSubselect {
-    private List<Item> row;
-    /* row item fields*/
-    private List<Field> fields;
-    private Item value;
-    private boolean noRows;
+public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
+    protected Item value;
+    protected Item select;
+    protected boolean isField;
 
-    public ItemSinglerowSubselect(String currentDb, SQLSelectQuery query) {
+    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField) {
         super(currentDb, query);
+        this.select = this.planNode.getColumnsSelected().get(0);
+        this.isField = isField;
     }
 
-    @Override
-    public SubSelectType substype() {
-        return SubSelectType.SINGLEROW_SUBS;
-    }
 
     @Override
     public void reset() {
@@ -43,7 +37,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigDecimal valReal() {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.valReal();
         } else {
@@ -54,7 +48,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigInteger valInt() {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.valInt();
         } else {
@@ -65,7 +59,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public String valStr() {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.valStr();
         } else {
@@ -76,7 +70,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public BigDecimal valDecimal() {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.valDecimal();
         } else {
@@ -87,7 +81,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean getDate(MySQLTime ltime, long fuzzydate) {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.getDate(ltime, fuzzydate);
         } else {
@@ -98,7 +92,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean getTime(MySQLTime ltime) {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.getTime(ltime);
         } else {
@@ -109,7 +103,7 @@ public class ItemSinglerowSubselect extends ItemSubselect {
 
     @Override
     public boolean valBool() {
-        if (!noRows && !execute() && !value.isNullValue()) {
+        if (!execute() && !value.isNullValue()) {
             nullValue = false;
             return value.valBool();
         } else {
@@ -124,24 +118,34 @@ public class ItemSinglerowSubselect extends ItemSubselect {
     }
 
     @Override
-    public SQLExpr toExpression() {
-        // TODO
-        return null;
-    }
-
-    @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
     }
 
     /*--------------------------------------getter/setter-----------------------------------*/
-    public List<Field> getFields() {
-        return fields;
+
+    public Item getValue() {
+        return value;
     }
 
-    public void setFields(List<Field> fields) {
-        this.fields = fields;
+    public void setValue(Item value) {
+        this.value = value;
+    }
+
+    public Item getSelect() {
+        return select;
+    }
+
+    public void setSelect(Item select) {
+        this.select = select;
+    }
+
+    public boolean isField() {
+        return isField;
+    }
+
+    public void setField(boolean field) {
+        isField = field;
     }
 
 }

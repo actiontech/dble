@@ -220,6 +220,12 @@ public class NonBlockingSession implements Session {
             LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
+        } catch (MySQLOutPutException e) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
+            }
+            this.terminate();
+            source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
         } catch (Exception e) {
             LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
             this.terminate();
@@ -232,6 +238,9 @@ public class NonBlockingSession implements Session {
         MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
+        if (node.isCorrelatedSubQuery()) {
+            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Subqueries is not supported ");
+        }
         node.setSql(rrs.getStatement());
         node.setUpFields();
         checkTablesPrivilege(node, ast);
@@ -253,8 +262,13 @@ public class NonBlockingSession implements Session {
     }
 
     public void onQueryError(byte[] message) {
-        if (outputHandler != null)
+        if (outputHandler != null) {
             outputHandler.backendConnError(message);
+        } else {
+            if (LOGGER.isDebugEnabled()) {
+                source.close(new String(message));
+            }
+        }
     }
 
     private CommitNodesHandler createCommitNodesHandler() {

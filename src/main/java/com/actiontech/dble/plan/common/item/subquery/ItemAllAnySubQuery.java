@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2016-2017 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+/*
+ * ALL/ANY/SOME sub Query
+ */
+package com.actiontech.dble.plan.common.item.subquery;
+
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
+import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+
+public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
+    private boolean isAll;
+    private SQLBinaryOperator operator;
+    public ItemAllAnySubQuery(String currentDb, SQLBinaryOperator operator, SQLSelectQuery query, boolean isAll) {
+        super(currentDb, query);
+        this.isAll = isAll;
+        this.operator = operator;
+        if (this.planNode.getColumnsSelected().size() > 1) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
+        }
+        this.select = this.planNode.getColumnsSelected().get(0);
+    }
+
+    @Override
+    public SubSelectType subType() {
+        return isAll ? SubSelectType.ALL_SUBS : SubSelectType.ANY_SUBS;
+    }
+
+
+    @Override
+    public SQLExpr toExpression() {
+        SQLSelect sqlSelect = new SQLSelect(query);
+        if (isAll) {
+            return new SQLAllExpr(sqlSelect);
+        } else {
+            return new SQLAnyExpr(sqlSelect);
+        }
+    }
+
+    public boolean isAll() {
+        return isAll;
+    }
+
+    public SQLBinaryOperator getOperator() {
+        return operator;
+    }
+
+}

@@ -12,7 +12,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.plan.common.item.subquery.ItemSubselect;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
@@ -39,14 +39,10 @@ public abstract class PlanNode {
     }
 
     /**
-     * subQuery list
+     * select subQuery list
      */
-    public List<ItemSubselect> getSubSelects() {
-        return subSelects;
-    }
-
-    public void setSubSelects(List<ItemSubselect> subSelects) {
-        this.subSelects = subSelects;
+    public List<ItemSubQuery> getSubQueries() {
+        return subQueries;
     }
 
     public enum PlanNodeType {
@@ -120,12 +116,13 @@ public abstract class PlanNode {
      * is this node is subQuery
      */
     protected boolean subQuery;
+    protected boolean correlatedSubQuery;
 
     protected boolean exsitView = false;
 
     private HashSet<ItemSum> sumFuncs = new HashSet<>();
 
-    private List<ItemSubselect> subSelects = new ArrayList<>();
+    private List<ItemSubQuery> subQueries = new ArrayList<>();
 
     protected List<TableNode> referedTableNodes = new ArrayList<>();
 
@@ -295,6 +292,7 @@ public abstract class PlanNode {
         to.setLimitTo(this.limitTo);
         to.setSql(this.getSql());
         to.setSubQuery(subQuery);
+        to.setCorrelatedSubQuery(correlatedSubQuery);
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
     }
@@ -588,6 +586,15 @@ public abstract class PlanNode {
     public PlanNode setSubQuery(boolean isSubQuery) {
         this.subQuery = isSubQuery;
         return this;
+    }
+
+
+    public boolean isCorrelatedSubQuery() {
+        return correlatedSubQuery;
+    }
+
+    public void setCorrelatedSubQuery(boolean correlatedSubQuery) {
+        this.correlatedSubQuery = correlatedSubQuery;
     }
 
     public PlanNode having(Item having) {

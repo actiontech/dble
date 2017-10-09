@@ -185,6 +185,8 @@ public final class FilterPreProcessor {
                             if (!inMap.containsKey(a))
                                 inMap.put(a, new HashSet<Item>());
                             inMap.get(a).add(b);
+                        } else { // stop convert
+                            return filter;
                         }
                     } else {
                         Item subNew = convertOrToIn(subFilter);

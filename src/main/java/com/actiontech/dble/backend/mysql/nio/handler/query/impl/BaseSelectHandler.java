@@ -135,8 +135,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        LOGGER.warn(
-                conn.toString() + "|connectionError()|" + e.getMessage());
+        LOGGER.warn(conn.toString() + "|connectionError()|" + e.getMessage());
         session.onQueryError(e.getMessage().getBytes());
     }
 

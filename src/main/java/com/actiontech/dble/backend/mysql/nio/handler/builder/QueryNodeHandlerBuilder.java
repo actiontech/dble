@@ -24,6 +24,10 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected void handleSubQueries() {
+    }
+
+    @Override
     public List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode subNode = node.getChild();

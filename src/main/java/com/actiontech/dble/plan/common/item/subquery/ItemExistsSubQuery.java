@@ -2,21 +2,16 @@
  * Copyright (C) 2016-2017 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
-
-/**
- *
- */
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.common.context.NameResolutionContext;
-import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
@@ -24,39 +19,24 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
-public class ItemInSubselect extends ItemSubselect {
-    private boolean isNeg;
-    private Item leftOprand;
-
-    /**
-     * @param currentDb
-     * @param query
-     */
-    public ItemInSubselect(String currentDb, Item leftOprand, SQLSelectQuery query, boolean isNeg) {
-        super(currentDb, query);
-        this.leftOprand = leftOprand;
-        this.isNeg = isNeg;
+public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
+    private boolean isNot;
+    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot) {
+        super(currentDb, query, false);
+        this.isNot = isNot;
+        if (!this.correlatedSubQuery) {
+            if ((this.planNode.getLimitFrom() == -1)) {
+                this.planNode.setLimitFrom(0);
+                this.planNode.setLimitTo(1);
+            } else if (this.planNode.getLimitTo() > 1) {
+                this.planNode.setLimitTo(1);
+            }
+            this.select = new ItemInt(1L);
+            this.planNode.getColumnsSelected().add(select);
+        }
     }
-
     @Override
     public void fixLengthAndDec() {
-
-    }
-
-    public Item fixFields(NameResolutionContext context) {
-        super.fixFields(context);
-        leftOprand = leftOprand.fixFields(context);
-        return this;
-    }
-
-    /**
-     * added to construct all refers in an item
-     *
-     * @param context
-     */
-    public void fixRefer(ReferContext context) {
-        super.fixRefer(context);
-        leftOprand.fixRefer(context);
     }
 
     @Override
@@ -89,27 +69,22 @@ public class ItemInSubselect extends ItemSubselect {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support yet!");
     }
 
-    public Item getLeftOprand() {
-        return leftOprand;
-    }
-
-    public boolean isNeg() {
-        return isNeg;
-    }
-
     @Override
     public SQLExpr toExpression() {
-        SQLExpr expr = leftOprand.toExpression();
-        SQLSelect select = new SQLSelect(query);
-        SQLInSubQueryExpr insub = new SQLInSubQueryExpr(select);
-        insub.setExpr(expr);
-        insub.setNot(isNeg);
-        return insub;
+        return new SQLExistsExpr(new SQLSelect(query), isNot);
     }
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
+    }
+    @Override
+    public SubSelectType subType() {
+        return SubSelectType.EXISTS_SUBS;
+    }
+
+    public boolean isNot() {
+        return isNot;
     }
 
 }

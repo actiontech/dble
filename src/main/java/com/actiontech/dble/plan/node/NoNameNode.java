@@ -10,10 +10,8 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.util.ToStringUtil;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * NoNameNode eg:select 1,only exists selecteditems
@@ -48,10 +46,6 @@ public class NoNameNode extends PlanNode {
         return "";
     }
 
-    @Override
-    public List<TableNode> getReferedTableNodes() {
-        return new ArrayList<>();
-    }
 
     public String getCatalog() {
         return this.catalog;

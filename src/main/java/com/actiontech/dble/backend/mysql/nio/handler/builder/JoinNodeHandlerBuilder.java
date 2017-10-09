@@ -43,6 +43,11 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected void handleSubQueries() {
+        handleBlockingSubQuery();
+    }
+
+    @Override
     public void mergeBuild() {
         try {
             this.needWhereHandler = false;

@@ -24,6 +24,10 @@ class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected void handleSubQueries() {
+    }
+
+    @Override
     protected List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         for (PlanNode child : node.getChildren()) {

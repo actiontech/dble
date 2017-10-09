@@ -90,6 +90,14 @@ public abstract class Item {
         this.withSubQuery = withSubQuery;
     }
 
+    public boolean isCorrelatedSubQuery() {
+        return correlatedSubQuery;
+    }
+
+    public void setCorrelatedSubQuery(boolean correlatedSubQuery) {
+        this.correlatedSubQuery = correlatedSubQuery;
+    }
+
     public boolean isWithUnValAble() {
         return withUnValAble;
     }
@@ -141,6 +149,7 @@ public abstract class Item {
     protected boolean withSumFunc;
     protected boolean withIsNull;
     protected boolean withSubQuery;
+    protected boolean correlatedSubQuery;
     protected boolean withUnValAble;
     protected boolean fixed;
     protected ItemResult cmpContext;
@@ -323,6 +332,50 @@ public abstract class Item {
         if (nullValue)
             result = null;
         return result;
+    }
+
+    public Item getResultItem() {
+        FieldTypes fType;
+
+        FieldTypes i = fType = fieldType();
+        if (i == FieldTypes.MYSQL_TYPE_TINY || i == FieldTypes.MYSQL_TYPE_SHORT || i == FieldTypes.MYSQL_TYPE_YEAR || i == FieldTypes.MYSQL_TYPE_INT24 || i == FieldTypes.MYSQL_TYPE_LONG || i == FieldTypes.MYSQL_TYPE_LONGLONG) {
+            BigInteger bi = valInt();
+            if (!nullValue) {
+                return new ItemInt(bi.longValue());
+            }
+        } else if (i == FieldTypes.MYSQL_TYPE_FLOAT || i == FieldTypes.MYSQL_TYPE_DOUBLE) {
+            BigDecimal bd = valReal();
+            if (!nullValue) {
+                return new ItemFloat(bd);
+            }
+        } else if (i == FieldTypes.MYSQL_TYPE_DATETIME || i == FieldTypes.MYSQL_TYPE_DATE || i == FieldTypes.MYSQL_TYPE_TIMESTAMP) {
+            MySQLTime tm = new MySQLTime();
+            getDate(tm, MyTime.TIME_FUZZY_DATE);
+            if (!nullValue) {
+                if (fType == FieldTypes.MYSQL_TYPE_DATE) {
+                    return new ItemString(MyTime.myDateToStr(tm));
+                } else {
+                    return new ItemString(MyTime.myDatetimeToStr(tm, decimals));
+                }
+            }
+        } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
+            MySQLTime tm = new MySQLTime();
+            getTime(tm);
+            if (!nullValue)
+                return new ItemString(MyTime.myTimeToStrL(tm, decimals));
+        } else {
+            String res;
+            if ((res = valStr()) != null) {
+                return new ItemString(res);
+            } else {
+                assert (nullValue);
+                BigInteger bi = valInt();
+                if (!nullValue) {
+                    return new ItemInt(bi.longValue());
+                }
+            }
+        }
+        return null;
     }
 
     public boolean valBool() {
@@ -940,6 +993,7 @@ public abstract class Item {
         clone.withSumFunc = withSumFunc;
         clone.withIsNull = withIsNull;
         clone.withSubQuery = withSubQuery;
+        clone.correlatedSubQuery = correlatedSubQuery;
         clone.withUnValAble = withUnValAble;
         clone.pushDownName = pushDownName;
         clone.getReferTables().addAll(getReferTables());

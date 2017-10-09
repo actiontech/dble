@@ -10,7 +10,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.util.ToStringUtil;
 
 /*
- * query a logic table
+ * query a logic table ,in fact, it is derived sub query
  */
 public class QueryNode extends PlanNode {
 

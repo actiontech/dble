@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.plan.node.TableNode;
 import org.apache.commons.lang.StringUtils;
 
@@ -44,6 +45,9 @@ public class PushDownVisitor extends MysqlVisitor {
             } else if (i == PlanNode.PlanNodeType.JOIN) {
                 visit((JoinNode) query);
 
+            } else if (i == PlanNode.PlanNodeType.NONAME) {
+                visit((NoNameNode) query);
+
             } else {
                 throw new RuntimeException("not implement yet!");
             }
@@ -54,6 +58,9 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
+    protected void visit(NoNameNode query) {
+        buildSelect(query);
+    }
 
     protected void visit(TableNode query) {
         if (query.isSubQuery() && !isTopQuery) {
@@ -201,9 +208,13 @@ public class PushDownVisitor extends MysqlVisitor {
     }
     protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
-        List<Item> columns = query.getColumnsRefered();
         if (query.isDistinct()) {
             sqlBuilder.append("DISTINCT ");
+        }
+        List<Item> columns = query.getColumnsRefered();
+        if (columns.size() == 0) {
+            sqlBuilder.append("1");
+            return;
         }
         for (Item col : columns) {
             if (existUnPushDownGroup && col.type().equals(Item.ItemType.SUM_FUNC_ITEM))

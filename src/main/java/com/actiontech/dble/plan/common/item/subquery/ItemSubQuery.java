@@ -8,31 +8,29 @@
  */
 package com.actiontech.dble.plan.common.item.subquery;
 
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemResultField;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
-public abstract class ItemSubselect extends ItemResultField {
+public abstract class ItemSubQuery extends ItemResultField {
     protected SQLSelectQuery query;
     private String currentDb;
-    private PlanNode planNode;
+    protected PlanNode planNode;
 
     public enum SubSelectType {
         UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
     }
 
-    public SubSelectType substype() {
+    public SubSelectType subType() {
         return SubSelectType.UNKNOWN_SUBS;
     }
 
-    public ItemSubselect(String currentDb, SQLSelectQuery query) {
+    public ItemSubQuery(String currentDb, SQLSelectQuery query) {
         this.query = query;
         this.currentDb = currentDb;
         init();
@@ -49,6 +47,12 @@ public abstract class ItemSubselect extends ItemResultField {
         this.planNode = pv.getTableNode();
         if (planNode.type() != PlanNodeType.NONAME) {
             this.withSubQuery = true;
+            PlanNode test = this.planNode.copy();
+            try {
+                test.setUpFields();
+            } catch (Exception e) {
+                this.correlatedSubQuery = true;
+            }
         }
     }
 
@@ -64,7 +68,7 @@ public abstract class ItemSubselect extends ItemResultField {
 
     @Override
     public boolean fixFields() {
-        throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not supported!");
+        return false;
     }
 
     public Item fixFields(NameResolutionContext context) {
@@ -80,8 +84,6 @@ public abstract class ItemSubselect extends ItemResultField {
     public void fixRefer(ReferContext context) {
         if (context.isPushDownNode())
             return;
-        else
-            context.getPlanNode().getSubSelects().add(this);
     }
 
     @Override
@@ -102,8 +104,4 @@ public abstract class ItemSubselect extends ItemResultField {
         this.planNode = planNode;
     }
 
-    @Override
-    public String toString() {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported!");
-    }
 }

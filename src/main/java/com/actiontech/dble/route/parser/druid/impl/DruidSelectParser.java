@@ -65,9 +65,17 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (mysqlSelectQuery.getInto() != null) {
                 throw new SQLNonTransientException("select ... into is not supported!");
             }
-            checkSelectList(mysqlSelectQuery);
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
+                List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
+                for (SQLSelectItem item : selectList) {
+                    SQLExpr itemExpr = item.getExpr();
+                    if (itemExpr instanceof SQLQueryExpr) {
+                        rrs.setSqlStatement(selectStmt);
+                        rrs.setNeedOptimizer(true);
+                        return schema;
+                    }
+                }
                 RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                 return schema;
             }
@@ -127,14 +135,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         return schema;
     }
 
-    private void checkSelectList(MySqlSelectQueryBlock mysqlSelectQuery) throws SQLNonTransientException {
-        for (SQLSelectItem item : mysqlSelectQuery.getSelectList()) {
-            if (item.getExpr() instanceof SQLQueryExpr) {
-                throw new SQLNonTransientException("query statement as column is not supported!");
-            }
-        }
-    }
-
     private boolean matchSysTable(RouteResultset rrs, ServerConnection sc, SchemaInfo schemaInfo) {
         // support PhpAdmin
         //TODO:refactor INFORMATION_SCHEMA,MYSQL
@@ -181,7 +181,10 @@ public class DruidSelectParser extends DefaultDruidParser {
         List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
         for (SQLSelectItem item : selectList) {
             SQLExpr itemExpr = item.getExpr();
-            if (itemExpr instanceof SQLAggregateExpr) {
+            if (itemExpr instanceof SQLQueryExpr) {
+                rrs.setNeedOptimizer(true);
+                return;
+            } else if (itemExpr instanceof SQLAggregateExpr) {
                 /*
                  * MAX,MIN; SUM,COUNT without distinct is not need optimize, but
                  * there is bugs in default Aggregate IN FACT ,ONLY:

@@ -144,10 +144,14 @@ public final class RouterUtil {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool);
-            if (rrsTmp != null) {
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
+                if (rrsTmp.isGlobalTable()) {
+                    break;
+                }
             }
         }
+
 
         RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
         int i = 0;

@@ -12,6 +12,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 
@@ -58,6 +59,11 @@ public final class SelectedProcessor {
         if (qtn.type() == PlanNode.PlanNodeType.MERGE) {
             return mergePushSelected((MergeNode) qtn, toPushColumns);
         } else {
+            if (qtn.getSubQueries().size() > 0) {
+                for (ItemSubQuery itemSubQuery : qtn.getSubQueries()) {
+                    pushSelected(itemSubQuery.getPlanNode(), new HashSet<Item>());
+                }
+            }
             if (toPushColumns.isEmpty()) {
                 qtn.setUpRefers(isPushDownNode);
             } else if (qtn.isDistinct()) {

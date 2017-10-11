@@ -31,6 +31,7 @@ import com.actiontech.dble.net.*;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -104,6 +105,7 @@ public final class DbleServer {
     }
 
     private final ServerConfig config;
+    private final SystemVariables variables;
     private final ScheduledExecutorService scheduler;
     private final AtomicBoolean isOnline;
     private final long startupTime;
@@ -118,6 +120,7 @@ public final class DbleServer {
 
     private DbleServer() {
         this.config = new ServerConfig();
+        this.variables = new SystemVariables();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
 
         /**
@@ -262,6 +265,10 @@ public final class DbleServer {
         } finally {
             confLock.readLock().unlock();
         }
+    }
+
+    public SystemVariables getVariables() {
+        return variables;
     }
 
     public void beforeStart() {

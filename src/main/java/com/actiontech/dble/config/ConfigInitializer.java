@@ -87,6 +87,14 @@ public class ConfigInitializer {
         this.selfChecking0();
     }
 
+    public ConfigInitializer() {
+        SchemaLoader schemaLoader = new XMLSchemaLoader(DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
+        this.schemas = schemaLoader.getSchemas();
+        this.erRelations = schemaLoader.getErRelations();
+        this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
+        this.dataNodes = initDataNodes(schemaLoader);
+    }
+
     private void selfChecking0() throws ConfigException {
         // check 1.user's schemas are all existed in schema's conf
         // 2.schema's conf is not empty

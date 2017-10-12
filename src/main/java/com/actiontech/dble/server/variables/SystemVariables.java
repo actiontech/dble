@@ -85,6 +85,7 @@ public final class SystemVariables {
         sessionVariables.put("lock_wait_timeout", null);
         sessionVariables.put("long_query_time", null);
         sessionVariables.put("low_priority_updates", null);
+        sessionVariables.put("lower_case_table_names", null);
         sessionVariables.put("max_allowed_packet", null);
         sessionVariables.put("max_delayed_threads", null);
         sessionVariables.put("max_error_count", null);

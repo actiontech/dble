@@ -6,6 +6,7 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -70,9 +71,7 @@ public class ServerConfig {
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();
         this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
-        for (PhysicalDBPool dbPool : dataHosts.values()) {
-            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
-        }
+        setSchemasForPool();
 
         this.firewall = confInit.getFirewall();
 
@@ -81,6 +80,32 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
+    }
+
+    private void setSchemasForPool() {
+        for (PhysicalDBPool dbPool : dataHosts.values()) {
+            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
+        }
+    }
+
+    public void reviseSchemas() {
+        Integer icase = Integer.valueOf(SystemVariables.getSysVars().getDefaultValue("lower_case_table_names"));
+        boolean bcase = icase == 1 ? true : false;
+        if (this.system.isLowerCaseTableNames() == bcase) {
+            return;
+        }
+
+        if (this.system.isLowerCaseTableNames() == true) {
+            this.system.setLowerCaseTableNames(false);
+        } else {
+            this.system.setLowerCaseTableNames(true);
+        }
+
+        ConfigInitializer confInit = new ConfigInitializer();
+        this.schemas = confInit.getSchemas();
+        this.dataNodes = confInit.getDataNodes();
+        this.erRelations = confInit.getErRelations();
+        setSchemasForPool();
     }
 
     public SystemConfig getSystem() {

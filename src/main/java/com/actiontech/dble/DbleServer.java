@@ -392,7 +392,7 @@ public final class DbleServer {
         } catch (Exception e) {
             throw new IOException(e);
         }
-        
+
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init tmManager

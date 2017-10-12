@@ -13,7 +13,13 @@ import java.util.Map;
 public final class SystemVariables {
     private Map<String, String> sessionVariables;
     
-    public SystemVariables() {
+    private static final SystemVariables INSTANCE = new SystemVariables();
+
+    public static SystemVariables getSysVars() {
+        return INSTANCE;
+    }
+    
+    private SystemVariables() {
         sessionVariables = new HashMap<>();
         pickVariables();
     }

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.server.variables;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,8 +20,8 @@ public class SysVarsExtractor {
         this.config = config;
     }
 
-    public void extract(SystemVariables variables) {
-        VarsExtractorHandler handler = new VarsExtractorHandler(variables);
+    public void extract() {
+        VarsExtractorHandler handler = new VarsExtractorHandler();
         handler.execute();
         return;
     }

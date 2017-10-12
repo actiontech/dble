@@ -24,13 +24,11 @@ public class VarsExtractorHandler {
             "Variable_name",
             "Value"};
     private static final String  MYSQL_SHOW_VARIABLES = "show variables";
-    private final SystemVariables variables;
     private AtomicBoolean extracting;
     private Lock lock;
     private Condition done;
 
-    public VarsExtractorHandler(SystemVariables variables) {
-        this.variables = variables;
+    public VarsExtractorHandler() {
         this.extracting = new AtomicBoolean(false);
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
@@ -56,7 +54,7 @@ public class VarsExtractorHandler {
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            variables.setDefaultValue(key, value);
+            SystemVariables.getSysVars().setDefaultValue(key, value);
         }
         signalDone();
 

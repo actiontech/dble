@@ -16,7 +16,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.server.SystemVariables;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -184,7 +184,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         String name = CharsetUtil.getCharset(ci);
         charsetName.setClient(name);
         charsetName.setResults(name);
-        charsetName.setCollation(SystemVariables.getDefaultValue("collation_database"));
+        charsetName.setCollation(SystemVariables.getSysVars().getDefaultValue("collation_database"));
         return true;
     }
 
@@ -425,7 +425,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
             //TODO:CHECK
-            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getDefaultValue("character_set_server"));
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getSysVars().getDefaultValue("character_set_server"));
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);

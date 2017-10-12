@@ -31,7 +31,6 @@ import com.actiontech.dble.net.*;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.SysVarsExtractor;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -106,7 +105,6 @@ public final class DbleServer {
     }
 
     private final ServerConfig config;
-    private final SystemVariables variables;
     private final ScheduledExecutorService scheduler;
     private final AtomicBoolean isOnline;
     private final long startupTime;
@@ -121,7 +119,6 @@ public final class DbleServer {
 
     private DbleServer() {
         this.config = new ServerConfig();
-        this.variables = new SystemVariables();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
 
         /**
@@ -268,10 +265,6 @@ public final class DbleServer {
         }
     }
 
-    public SystemVariables getVariables() {
-        return variables;
-    }
-
     public void beforeStart() {
         SystemConfig.getHomePath();
     }
@@ -395,11 +388,10 @@ public final class DbleServer {
 
         SysVarsExtractor extractor = new SysVarsExtractor(config);
         try {
-            extractor.extract(variables);
+            extractor.extract();
         } catch (Exception e) {
             throw new IOException(e);
         }
-        SystemVariables var=variables;
         
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {

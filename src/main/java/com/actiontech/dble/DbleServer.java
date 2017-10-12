@@ -32,6 +32,7 @@ import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
 import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.server.variables.SysVarsExtractor;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -392,7 +393,14 @@ public final class DbleServer {
             txnLogProcessor.start();
         }
 
-
+        SysVarsExtractor extractor = new SysVarsExtractor(config);
+        try {
+            extractor.extract(variables);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+        SystemVariables var=variables;
+        
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init tmManager

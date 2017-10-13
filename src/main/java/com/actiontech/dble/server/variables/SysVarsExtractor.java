@@ -6,8 +6,6 @@
 package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.config.ServerConfig;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

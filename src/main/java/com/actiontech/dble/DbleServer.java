@@ -269,6 +269,27 @@ public final class DbleServer {
         SystemConfig.getHomePath();
     }
 
+    /* the function is only for Cyclomatic complexity of startup() */
+    private void pullVarAndMeta() throws IOException {
+        SysVarsExtractor extractor = new SysVarsExtractor(config);
+        try {
+            extractor.extract();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+        this.config.reviseSchemas();
+
+        tmManager = new ProxyMetaManager();
+        if (!this.getConfig().isDataHostWithoutWR()) {
+            //init tmManager
+            try {
+                tmManager.init(this.getConfig());
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+    }
+
     public void startup() throws IOException {
         SystemConfig system = config.getSystem();
 
@@ -386,24 +407,7 @@ public final class DbleServer {
             txnLogProcessor.start();
         }
 
-        SysVarsExtractor extractor = new SysVarsExtractor(config);
-        try {
-            extractor.extract();
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-        this.config.reviseSchemas();
-
-        tmManager = new ProxyMetaManager();
-        if (!this.getConfig().isDataHostWithoutWR()) {
-            //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-
+        pullVarAndMeta();
 
         //XA Init recovery Log
         LOGGER.info("===============================================");

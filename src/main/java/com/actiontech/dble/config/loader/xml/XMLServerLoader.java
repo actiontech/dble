@@ -5,25 +5,16 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.config.util.ParameterMapping;
-import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
-import com.actiontech.dble.util.SplitUtil;
-import com.alibaba.druid.wall.WallConfig;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -40,7 +31,7 @@ public class XMLServerLoader {
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
 
-        if (load == true) {
+        if (load) {
             this.load(new SystemConfigLoader());
             this.load(new UserConfigLoader());
             this.load(new FirewallConfigLoader());

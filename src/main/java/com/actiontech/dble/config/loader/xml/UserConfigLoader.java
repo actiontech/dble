@@ -23,7 +23,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
         SystemConfig system = xsl.getSystem();
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("user");
-        
+
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
@@ -94,7 +94,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 if (system.isLowerCaseTableNames()) {
                     name1 = name1.toLowerCase();
                 }
-                
+
                 String dml1 = schemaNode.getAttribute("dml");
                 int[] dml1Array = new int[dml1.length()];
                 for (int offset1 = 0; offset1 < dml1.length(); offset1++) {

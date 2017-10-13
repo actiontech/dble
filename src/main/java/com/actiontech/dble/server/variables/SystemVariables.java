@@ -12,13 +12,13 @@ import java.util.Map;
 
 public final class SystemVariables {
     private Map<String, String> sessionVariables;
-    
+
     private static final SystemVariables INSTANCE = new SystemVariables();
 
     public static SystemVariables getSysVars() {
         return INSTANCE;
     }
-    
+
     private SystemVariables() {
         sessionVariables = new HashMap<>();
         pickVariables();
@@ -203,7 +203,7 @@ public final class SystemVariables {
         sessionVariables.replace(variable.toLowerCase(), value);
         return;
     }
-    
+
     public String getDefaultValue(String variable) {
         if (StringUtil.isEmpty(variable))
             return null;

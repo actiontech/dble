@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.loader.xml.XMLConfigLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
@@ -69,6 +68,33 @@ public class ConfigInitializer {
 
         this.firewall = configLoader.getFirewallConfig();
 
+        loadSequence();
+        /**
+         * check config
+         */
+        this.selfChecking0();
+    }
+
+    public ConfigInitializer() {
+        XMLServerLoader serverloader = new XMLServerLoader(false);
+        serverloader.load(new SystemConfigLoader());
+        serverloader.getSystem().setLowerCaseTableNames(DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
+        serverloader.load(new UserConfigLoader());
+        serverloader.load(new FirewallConfigLoader());
+        this.system = serverloader.getSystem();
+        this.users = serverloader.getUsers();
+        this.firewall = serverloader.getFirewall();
+
+        SchemaLoader schemaLoader = new XMLSchemaLoader(serverloader.getSystem().isLowerCaseTableNames());
+        this.schemas = schemaLoader.getSchemas();
+        this.erRelations = schemaLoader.getErRelations();
+        this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
+        this.dataNodes = initDataNodes(schemaLoader);
+
+        loadSequence();
+    }
+
+    private void loadSequence() {
         //load global sequence
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
             IncrSequenceMySQLHandler.getInstance().load(system.isLowerCaseTableNames());
@@ -85,28 +111,6 @@ public class ConfigInitializer {
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
             IncrSequenceZKHandler.getInstance().load(system.isLowerCaseTableNames());
         }
-
-        /**
-         * check config
-         */
-        this.selfChecking0();
-    }
-
-    public ConfigInitializer() {
-        XMLServerLoader serverloader = new XMLServerLoader(false);
-        serverloader.load(new SystemConfigLoader());
-        serverloader.getSystem().setLowerCaseTableNames(DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
-        serverloader.load(new UserConfigLoader());
-        serverloader.load(new FirewallConfigLoader());
-        this.system = serverloader.getSystem();
-        this.users = serverloader.getUsers();
-        this.firewall = serverloader.getFirewall();
-        
-        SchemaLoader schemaLoader = new XMLSchemaLoader(serverloader.getSystem().isLowerCaseTableNames());
-        this.schemas = schemaLoader.getSchemas();
-        this.erRelations = schemaLoader.getErRelations();
-        this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
-        this.dataNodes = initDataNodes(schemaLoader);
     }
 
     private void selfChecking0() throws ConfigException {

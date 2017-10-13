@@ -6,7 +6,6 @@
 package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -23,7 +22,7 @@ public class VarsExtractorHandler {
     private static final String[] MYSQL_SHOW_VARIABLES_COLS = new String[]{
             "Variable_name",
             "Value"};
-    private static final String  MYSQL_SHOW_VARIABLES = "show variables";
+    private static final String MYSQL_SHOW_VARIABLES = "show variables";
     private AtomicBoolean extracting;
     private Lock lock;
     private Condition done;
@@ -37,7 +36,7 @@ public class VarsExtractorHandler {
     public void execute() {
         Map<String, PhysicalDBNode> dataNodes = DbleServer.getInstance().getConfig().getDataNodes();
         for (Map.Entry<String, PhysicalDBNode> entry : dataNodes.entrySet()) {
-            if (extracting.get() == true) {
+            if (extracting.get()) {
                 break;
             }
 
@@ -77,7 +76,7 @@ public class VarsExtractorHandler {
     private void waitDone() {
         lock.lock();
         try {
-            while (extracting.get() != true) {
+            while (!extracting.get()) {
                 done.await();
             }
         } catch (InterruptedException e) {

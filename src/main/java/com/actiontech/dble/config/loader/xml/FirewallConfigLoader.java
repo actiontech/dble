@@ -7,8 +7,6 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;

@@ -28,10 +28,10 @@ public class MysqlVarsListener implements SQLQueryResultListener<SQLQueryResult<
         }
 
         /* the logic is twist */
-        if (! handler.isExtracting()) {
+        if (!handler.isExtracting()) {
             return;
         }
-        
+
         Map<String, String> kvs = result.getResult();
         handler.handleVars(kvs);
         return;

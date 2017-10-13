@@ -95,7 +95,7 @@ public class ServerConfig {
             return;
         }
 
-        if (this.system.isLowerCaseTableNames() == true) {
+        if (this.system.isLowerCaseTableNames()) {
             this.system.setLowerCaseTableNames(false);
         } else {
             this.system.setLowerCaseTableNames(true);

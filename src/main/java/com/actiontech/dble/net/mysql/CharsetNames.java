@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.net.mysql;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.server.variables.SystemVariables;
 import org.apache.commons.lang.StringUtils;

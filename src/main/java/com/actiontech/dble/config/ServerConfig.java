@@ -102,6 +102,9 @@ public class ServerConfig {
         }
 
         ConfigInitializer confInit = new ConfigInitializer();
+        this.system = confInit.getSystem();
+        this.users = confInit.getUsers();
+        this.firewall = confInit.getFirewall();
         this.schemas = confInit.getSchemas();
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();

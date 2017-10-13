@@ -11,8 +11,13 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.loader.xml.XMLConfigLoader;
+import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
+import com.actiontech.dble.config.loader.xml.SystemConfigLoader;
+import com.actiontech.dble.config.loader.xml.UserConfigLoader;
+import com.actiontech.dble.config.loader.xml.FirewallConfigLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
@@ -88,7 +93,16 @@ public class ConfigInitializer {
     }
 
     public ConfigInitializer() {
-        SchemaLoader schemaLoader = new XMLSchemaLoader(DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
+        XMLServerLoader serverloader = new XMLServerLoader(false);
+        serverloader.load(new SystemConfigLoader());
+        serverloader.getSystem().setLowerCaseTableNames(DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
+        serverloader.load(new UserConfigLoader());
+        serverloader.load(new FirewallConfigLoader());
+        this.system = serverloader.getSystem();
+        this.users = serverloader.getUsers();
+        this.firewall = serverloader.getFirewall();
+        
+        SchemaLoader schemaLoader = new XMLSchemaLoader(serverloader.getSystem().isLowerCaseTableNames());
         this.schemas = schemaLoader.getSchemas();
         this.erRelations = schemaLoader.getErRelations();
         this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();

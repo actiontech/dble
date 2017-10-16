@@ -17,12 +17,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implements CommitNodesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
-    protected Lock lock = new ReentrantLock();
+    protected Lock lockForErrorHandle = new ReentrantLock();
+    protected Condition sendFinished = lockForErrorHandle.newCondition();
+    protected boolean sendFinishedFlag = true;
 
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
@@ -49,7 +52,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
         }
 
         try {
-            lock.lock();
+            sendFinishedFlag = false;
             for (RouteResultsetNode rrn : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(rrn);
                 conn.setResponseHandler(this);
@@ -58,7 +61,10 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
                 }
             }
         } finally {
-            lock.unlock();
+            lockForErrorHandle.lock();
+            sendFinishedFlag = true;
+            sendFinished.signalAll();
+            lockForErrorHandle.unlock();
         }
 
     }

@@ -63,7 +63,7 @@ public final class SystemVariables {
 
     public boolean isLowerCaseTableNames() {
         Integer value = Integer.valueOf(globalVariables.get("lower_case_table_names").getVariable());
-        return value == 0 ? true : false;
+        return value != 0 ? true : false;
     }
 
     private void pickSessionVariables() {

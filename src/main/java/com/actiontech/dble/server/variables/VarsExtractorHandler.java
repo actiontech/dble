@@ -55,6 +55,7 @@ public class VarsExtractorHandler {
             String value = entry.getValue();
             SystemVariables.getSysVars().setDefaultValue(key, value);
         }
+        SystemVariables.getSysVars().setInited();
         signalDone();
 
         return;

@@ -7,12 +7,19 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.util.StringUtil;
 
+import java.lang.RuntimeException;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SystemVariables {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemVariables.class);
+
+    private Map<String, SystemGlobalVariable> globalVariables;
     private Map<String, String> sessionVariables;
 
+    private boolean isInited;
     private static final SystemVariables INSTANCE = new SystemVariables();
 
     public static SystemVariables getSysVars() {
@@ -20,11 +27,51 @@ public final class SystemVariables {
     }
 
     private SystemVariables() {
+        isInited = false;
+        globalVariables = new HashMap<>();
+        pickGlobalVariables();
         sessionVariables = new HashMap<>();
-        pickVariables();
+        pickSessionVariables();
     }
 
-    private void pickVariables() {
+    public boolean isInited() {
+        return isInited;
+    }
+
+    public void setInited() {
+        if (isInited) {
+            LOGGER.error("System variables have been inited!");
+        }
+        isInited = true;
+    }
+
+    private void pickGlobalVariables() {
+        globalVariables.put("lower_case_table_names", new SystemGlobalVariable() {
+                String value = "0";
+
+                public void setVariable(String value, SystemVariables sys) throws RuntimeException {
+                    if (sys.isInited()) {
+                        throw new RuntimeException("lower_case_table_names is global static variable, don't been change at run time");
+                    }
+                    this.value = value;
+                }
+
+                public String getVariable() {
+                    return value;
+                }
+            });
+    }
+
+    public boolean isLowerCaseTableNames() {
+        Integer value = Integer.valueOf(globalVariables.get("lower_case_table_names").getVariable());
+        if (value != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void pickSessionVariables() {
         //some may not useful for middle-ware
         sessionVariables.put("audit_log_current_session", null);
         sessionVariables.put("audit_log_filter_id", null);
@@ -85,7 +132,6 @@ public final class SystemVariables {
         sessionVariables.put("lock_wait_timeout", null);
         sessionVariables.put("long_query_time", null);
         sessionVariables.put("low_priority_updates", null);
-        sessionVariables.put("lower_case_table_names", null);
         sessionVariables.put("max_allowed_packet", null);
         sessionVariables.put("max_delayed_threads", null);
         sessionVariables.put("max_error_count", null);
@@ -200,7 +246,15 @@ public final class SystemVariables {
         if (StringUtil.isEmpty(variable))
             return;
 
-        sessionVariables.replace(variable.toLowerCase(), value);
+        String key = variable.toLowerCase();
+        if (sessionVariables.containsKey(key)) {
+            sessionVariables.replace(key, value);
+        } else {
+            SystemGlobalVariable gv = globalVariables.get(key);
+            if (gv != null) {
+                gv.setVariable(value, this);
+            }
+        }
         return;
     }
 
@@ -208,6 +262,16 @@ public final class SystemVariables {
         if (StringUtil.isEmpty(variable))
             return null;
 
-        return sessionVariables.get(variable.toLowerCase());
+        String key = variable.toLowerCase();
+        if (sessionVariables.containsKey(key)) {
+            return sessionVariables.get(variable.toLowerCase());
+        } else {
+            SystemGlobalVariable gv = globalVariables.get(key);
+            if (gv != null) {
+                return gv.getVariable();
+            } else {
+                return null;
+            }
+        }
     }
 }

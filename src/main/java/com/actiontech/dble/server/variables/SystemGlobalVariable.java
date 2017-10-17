@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.server.variables;
 
-import java.lang.RuntimeException;
-
 public interface SystemGlobalVariable {
     void setVariable(String value, SystemVariables sys) throws RuntimeException;
     String getVariable();

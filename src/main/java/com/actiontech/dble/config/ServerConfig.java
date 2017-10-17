@@ -6,7 +6,6 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;

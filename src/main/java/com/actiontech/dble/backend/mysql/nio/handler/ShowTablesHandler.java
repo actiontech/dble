@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;

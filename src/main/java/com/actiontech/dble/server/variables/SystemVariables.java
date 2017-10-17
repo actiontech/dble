@@ -7,7 +7,6 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.util.StringUtil;
 
-import java.lang.RuntimeException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -64,11 +63,7 @@ public final class SystemVariables {
 
     public boolean isLowerCaseTableNames() {
         Integer value = Integer.valueOf(globalVariables.get("lower_case_table_names").getVariable());
-        if (value != 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return value == 0 ? true : false;
     }
 
     private void pickSessionVariables() {

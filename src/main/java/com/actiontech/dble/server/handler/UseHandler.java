@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendPrivileges;

@@ -65,7 +65,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
                 lockForErrorHandle.lock();
                 sendFinishedFlag = true;
                 sendFinished.signalAll();
-            }finally {
+            } finally {
                 lockForErrorHandle.unlock();
             }
         }

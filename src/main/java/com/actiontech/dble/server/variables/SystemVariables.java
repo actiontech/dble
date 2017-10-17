@@ -253,20 +253,18 @@ public final class SystemVariables {
         return;
     }
 
+    public String getGlobalVarValue(String variable) {
+        SystemGlobalVariable gv = globalVariables.get(variable.toLowerCase());
+        if (gv != null) {
+            return gv.getVariable();
+        } else {
+            return null;
+        }
+    }
+
     public String getDefaultValue(String variable) {
         if (StringUtil.isEmpty(variable))
             return null;
 
-        String key = variable.toLowerCase();
-        if (sessionVariables.containsKey(key)) {
-            return sessionVariables.get(variable.toLowerCase());
-        } else {
-            SystemGlobalVariable gv = globalVariables.get(key);
-            if (gv != null) {
-                return gv.getVariable();
-            } else {
-                return null;
-            }
-        }
-    }
+        return sessionVariables.get(variable.toLowerCase());
 }

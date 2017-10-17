@@ -32,6 +32,7 @@ import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
 import com.actiontech.dble.server.variables.SysVarsExtractor;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -128,7 +129,7 @@ public final class DbleServer {
         this.isOnline = new AtomicBoolean(true);
 
         //initialized the cache service
-        cacheService = new CacheService(config.getSystem().isLowerCaseTableNames());
+        cacheService = new CacheService(SystemVariables.getSysVars().isLowerCaseTableNames());
 
         //initialized the router cache and primary cache
         routerService = new RouteService(cacheService);

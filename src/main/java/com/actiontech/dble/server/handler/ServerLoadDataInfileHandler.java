@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -144,7 +145,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         schema = DbleServer.getInstance().getConfig().getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) DbleServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
         tableName = statement.getTableName().getSimpleName();
-        if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
             tableName = tableName.toLowerCase();
         }
 

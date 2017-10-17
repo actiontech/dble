@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
@@ -70,7 +71,7 @@ public class AuthPacket extends MySQLPacket {
         password = mm.readBytesWithLength();
         if (((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0) && mm.hasRemaining()) {
             database = mm.readStringWithNull();
-            if (database != null && DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+            if (database != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
                 database = database.toLowerCase();
             }
         }

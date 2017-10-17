@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -83,7 +84,7 @@ public class DefaultDruidParser implements DruidParser {
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+            if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                 if (key != null) {
                     key = key.toLowerCase();
                 }
@@ -130,7 +131,7 @@ public class DefaultDruidParser implements DruidParser {
                 if (checkConditionValues(values)) {
                     String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
                     String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
-                    if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+                    if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                         tableName = tableName.toLowerCase();
                     }
                     if (tableAliasMap != null && tableAliasMap.get(tableName) == null) {

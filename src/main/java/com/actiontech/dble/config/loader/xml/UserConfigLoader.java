@@ -12,6 +12,7 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.server.variables.SystemVariables;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -57,7 +58,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
                     if (schemas != null) {
-                        if (system.isLowerCaseTableNames()) {
+                        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                             schemas = schemas.toLowerCase();
                         }
                         String[] strArray = SplitUtil.split(schemas, ',', true);
@@ -91,7 +92,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
             for (int j = 0; j < schemaNodeLength; j++) {
                 Element schemaNode = (Element) schemaNodes.item(j);
                 String name1 = schemaNode.getAttribute("name");
-                if (system.isLowerCaseTableNames()) {
+                if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                     name1 = name1.toLowerCase();
                 }
 
@@ -110,7 +111,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
                     Element tableNode = (Element) tableNodes.item(z);
                     String name2 = tableNode.getAttribute("name");
-                    if (system.isLowerCaseTableNames()) {
+                    if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                         name2 = name2.toLowerCase();
                     }
 

@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
@@ -162,7 +163,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public void setSchema(String schema) {
-        if (schema != null && DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (schema != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
             schema = schema.toLowerCase();
         }
         this.schema = schema;
@@ -220,7 +221,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        if (db != null && DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (db != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
             db = db.toLowerCase();
         }
         // check schema

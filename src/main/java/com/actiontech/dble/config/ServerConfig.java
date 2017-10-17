@@ -89,18 +89,6 @@ public class ServerConfig {
     }
 
     public void reviseSchemas() {
-        Integer icase = Integer.valueOf(SystemVariables.getSysVars().getDefaultValue("lower_case_table_names"));
-        boolean bcase = icase == 1 ? true : false;
-        if (this.system.isLowerCaseTableNames() == bcase) {
-            return;
-        }
-
-        if (this.system.isLowerCaseTableNames()) {
-            this.system.setLowerCaseTableNames(false);
-        } else {
-            this.system.setLowerCaseTableNames(true);
-        }
-
         ConfigInitializer confInit = new ConfigInitializer();
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();

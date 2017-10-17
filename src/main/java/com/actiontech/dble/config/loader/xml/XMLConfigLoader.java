@@ -24,7 +24,7 @@ public class XMLConfigLoader {
     private final FirewallConfig firewall;
 
     public XMLConfigLoader() {
-        XMLServerLoader serverLoader = new XMLServerLoader(true);
+        XMLServerLoader serverLoader = new XMLServerLoader();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
         this.firewall = serverLoader.getFirewall();

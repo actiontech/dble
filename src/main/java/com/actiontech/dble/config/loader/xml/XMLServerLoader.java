@@ -26,16 +26,14 @@ public class XMLServerLoader {
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 
-    public XMLServerLoader(boolean load) {
+    public XMLServerLoader() {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
 
-        if (load) {
-            this.load(new SystemConfigLoader());
-            this.load(new UserConfigLoader());
-            this.load(new FirewallConfigLoader());
-        }
+        this.load(new SystemConfigLoader());
+        this.load(new UserConfigLoader());
+        this.load(new FirewallConfigLoader());
     }
 
     public SystemConfig getSystem() {

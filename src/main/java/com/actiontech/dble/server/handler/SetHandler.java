@@ -231,6 +231,9 @@ public final class SetHandler {
                 if (!handleTxIsolationInMultiStmt(c, contextTask, valueExpr)) return false;
                 break;
             case SYSTEM_VARIABLES:
+                if (key.startsWith("@@")) {
+                    key = key.substring(2);
+                }
                 if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                 }
@@ -361,6 +364,9 @@ public final class SetHandler {
             case TX_ISOLATION:
                 return handleTxIsolation(c, valueExpr);
             case SYSTEM_VARIABLES:
+                if (key.startsWith("@@")) {
+                    key = key.substring(2);
+                }
                 if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                     return false;

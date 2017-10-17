@@ -19,6 +19,8 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
 
+import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
+
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
@@ -39,6 +41,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     protected boolean executeCommit(MySQLConnection mysqlCon, int position) {
         TxState state = session.getXaState();
+
         if (state == TxState.TX_STARTED_STATE) {
             if (participantLogEntry == null) {
                 participantLogEntry = new ParticipantLogEntry[nodeCount];
@@ -77,6 +80,20 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMIT_FAILED_STATE);
             }
             commitPhase(mysqlCon);
+        } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
+            final String errorMsg = this.error;
+            if (decrementCountBy(1)) {
+                DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        ErrorPacket error = new ErrorPacket();
+                        error.setErrNo(ER_ERROR_DURING_COMMIT);
+                        error.setMessage(errorMsg.getBytes());
+                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
+                        nextHandler.rollback();
+                    }
+                });
+            }
         }
         return true;
     }
@@ -114,6 +131,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        this.waitUntilSendFinish();
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         TxState state = mysqlCon.getXaStatus();
         if (state == TxState.TX_STARTED_STATE) {
@@ -151,6 +169,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
+        this.waitUntilSendFinish();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
@@ -193,6 +212,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
+        this.waitUntilSendFinish();
         LOGGER.warn("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
@@ -230,7 +250,19 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(final BackendConnection conn, final String reason) {
+        final XACommitNodesHandler thisHandler = this;
+        DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                thisHandler.connectionCloseLocal(conn, reason);
+            }
+        });
+    }
+
+
+    public void connectionCloseLocal(BackendConnection conn, String reason) {
+        this.waitUntilSendFinish();
         this.setFail(reason);
         sendData = makeErrorPacket(reason);
         if (conn instanceof MySQLConnection) {
@@ -265,8 +297,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
+
     protected void nextParse() {
-        if (this.isFail()) {
+        if (this.isFail() && session.getXaState() != TxState.TX_PREPARE_UNCONNECT_STATE) {
             session.getSource().setTxInterrupt(error);
             session.getSource().write(sendData);
             LOGGER.warn("nextParse failed:" + error);
@@ -346,5 +379,19 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             LOGGER.debug("before xa commit sleep error ");
         }
 
+    }
+
+    public void waitUntilSendFinish() {
+        try {
+            this.lockForErrorHandle.lock();
+            if (!this.sendFinishedFlag) {
+                this.sendFinished.await();
+            }
+        } catch (Exception e) {
+            LOGGER.info("back Response is closed by thread interrupted");
+        } finally {
+            lockForErrorHandle.unlock();
+        }
+        return;
     }
 }

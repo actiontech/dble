@@ -267,4 +267,5 @@ public final class SystemVariables {
             return null;
 
         return sessionVariables.get(variable.toLowerCase());
+    }
 }

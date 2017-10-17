@@ -70,9 +70,7 @@ public class ServerConfig {
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();
         this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
-        for (PhysicalDBPool dbPool : dataHosts.values()) {
-            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
-        }
+        setSchemasForPool();
 
         this.firewall = confInit.getFirewall();
 
@@ -81,6 +79,23 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
+    }
+
+    private void setSchemasForPool() {
+        for (PhysicalDBPool dbPool : dataHosts.values()) {
+            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
+        }
+    }
+
+    public void reviseSchemas() {
+        ConfigInitializer confInit = new ConfigInitializer();
+        this.system = confInit.getSystem();
+        this.users = confInit.getUsers();
+        this.firewall = confInit.getFirewall();
+        this.schemas = confInit.getSchemas();
+        this.dataNodes = confInit.getDataNodes();
+        this.erRelations = confInit.getErRelations();
+        setSchemasForPool();
     }
 
     public SystemConfig getSystem() {

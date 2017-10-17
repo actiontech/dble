@@ -48,7 +48,6 @@ public final class SystemConfig {
     private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
     private static final int DEFAULT_SQL_RECORD_COUNT = 10;
     private static final boolean DEFAULT_USE_ZK_SWITCH = true;
-    private static final boolean DEFAULT_LOWER_CASE = true;
     private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
     private static final String DEFAULT_TRANSACTION_BASE_NAME = "server-tx";
     private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
@@ -143,8 +142,6 @@ public final class SystemConfig {
     private int nestLoopConnSize;
     private int mappedFileSize;
     private boolean useZKSwitch = DEFAULT_USE_ZK_SWITCH;
-
-    private boolean lowerCaseTableNames = DEFAULT_LOWER_CASE;
 
     private boolean useJoinStrategy;
 
@@ -272,17 +269,6 @@ public final class SystemConfig {
     public void setUseJoinStrategy(boolean useJoinStrategy) {
         this.useJoinStrategy = useJoinStrategy;
     }
-
-
-    public boolean isLowerCaseTableNames() {
-        return lowerCaseTableNames;
-    }
-
-    @SuppressWarnings("unused")
-    public void setLowerCaseTableNames(boolean lowerCaseTableNames) {
-        this.lowerCaseTableNames = lowerCaseTableNames;
-    }
-
 
     public String getXaRecoveryLogBaseDir() {
         return xaRecoveryLogBaseDir;

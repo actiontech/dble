@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -58,7 +58,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
         }
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         String table = lockTableStat.getTableSource().toString();
-        if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
             table = table.toLowerCase();
         }
         TableConfig tableConfig = schema.getTables().get(table);

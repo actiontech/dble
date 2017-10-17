@@ -31,6 +31,8 @@ import com.actiontech.dble.net.*;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
+import com.actiontech.dble.server.variables.SysVarsExtractor;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -127,7 +129,7 @@ public final class DbleServer {
         this.isOnline = new AtomicBoolean(true);
 
         //initialized the cache service
-        cacheService = new CacheService(config.getSystem().isLowerCaseTableNames());
+        cacheService = new CacheService(SystemVariables.getSysVars().isLowerCaseTableNames());
 
         //initialized the router cache and primary cache
         routerService = new RouteService(cacheService);
@@ -268,6 +270,27 @@ public final class DbleServer {
         SystemConfig.getHomePath();
     }
 
+    /* the function is only for Cyclomatic complexity of startup() */
+    private void pullVarAndMeta() throws IOException {
+        SysVarsExtractor extractor = new SysVarsExtractor(config);
+        try {
+            extractor.extract();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+        this.config.reviseSchemas();
+
+        tmManager = new ProxyMetaManager();
+        if (!this.getConfig().isDataHostWithoutWR()) {
+            //init tmManager
+            try {
+                tmManager.init(this.getConfig());
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+    }
+
     public void startup() throws IOException {
         SystemConfig system = config.getSystem();
 
@@ -385,17 +408,7 @@ public final class DbleServer {
             txnLogProcessor.start();
         }
 
-
-        tmManager = new ProxyMetaManager();
-        if (!this.getConfig().isDataHostWithoutWR()) {
-            //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-
+        pullVarAndMeta();
 
         //XA Init recovery Log
         LOGGER.info("===============================================");

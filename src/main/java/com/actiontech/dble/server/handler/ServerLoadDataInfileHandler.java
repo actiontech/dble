@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -20,7 +21,6 @@ import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
@@ -116,7 +116,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
         String escaped = escapedExpr == null ? "\\" : escapedExpr.getText();
         loadData.setEscape(escaped);
-        String charset = statement.getCharset() != null ? statement.getCharset() : SystemVariables.getDefaultValue("character_set_filesystem");
+        String charset = statement.getCharset() != null ? statement.getCharset() : SystemVariables.getSysVars().getDefaultValue("character_set_filesystem");
         loadData.setCharset(charset);
         loadData.setFileName(fileName);
     }
@@ -144,7 +144,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         schema = DbleServer.getInstance().getConfig().getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) DbleServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
         tableName = statement.getTableName().getSimpleName();
-        if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
             tableName = tableName.toLowerCase();
         }
 

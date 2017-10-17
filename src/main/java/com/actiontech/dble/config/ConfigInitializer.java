@@ -6,12 +6,13 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
-import com.actiontech.dble.config.loader.xml.XMLConfigLoader;
+import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
@@ -44,11 +45,12 @@ public class ConfigInitializer {
 
     public ConfigInitializer(boolean loadDataHost) {
         //load server.xml
-        XMLConfigLoader configLoader = new XMLConfigLoader();
+        XMLServerLoader serverloader = new XMLServerLoader();
+
         //load rule.xml and schema.xml
-        SchemaLoader schemaLoader = new XMLSchemaLoader(configLoader.getSystemConfig().isLowerCaseTableNames());
-        this.system = configLoader.getSystemConfig();
-        this.users = configLoader.getUserConfigs();
+        SchemaLoader schemaLoader = new XMLSchemaLoader(SystemVariables.getSysVars().isLowerCaseTableNames());
+        this.system = serverloader.getSystem();
+        this.users = serverloader.getUsers();
         this.schemas = schemaLoader.getSchemas();
         this.erRelations = schemaLoader.getErRelations();
         // need reload DataHost and DataNode?
@@ -62,11 +64,34 @@ public class ConfigInitializer {
             this.dataHostWithoutWH = DbleServer.getInstance().getConfig().isDataHostWithoutWR();
         }
 
-        this.firewall = configLoader.getFirewallConfig();
+        this.firewall = serverloader.getFirewall();
 
+        loadSequence();
+        /**
+         * check config
+         */
+        this.selfChecking0();
+    }
+
+    public ConfigInitializer() {
+        XMLServerLoader serverloader = new XMLServerLoader();
+        this.system = serverloader.getSystem();
+        this.users = serverloader.getUsers();
+        this.firewall = serverloader.getFirewall();
+
+        SchemaLoader schemaLoader = new XMLSchemaLoader(SystemVariables.getSysVars().isLowerCaseTableNames());
+        this.schemas = schemaLoader.getSchemas();
+        this.erRelations = schemaLoader.getErRelations();
+        this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
+        this.dataNodes = initDataNodes(schemaLoader);
+
+        loadSequence();
+    }
+
+    private void loadSequence() {
         //load global sequence
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            IncrSequenceMySQLHandler.getInstance().load(system.isLowerCaseTableNames());
+            IncrSequenceMySQLHandler.getInstance().load(SystemVariables.getSysVars().isLowerCaseTableNames());
         }
 
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME) {
@@ -78,13 +103,8 @@ public class ConfigInitializer {
         }
 
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            IncrSequenceZKHandler.getInstance().load(system.isLowerCaseTableNames());
+            IncrSequenceZKHandler.getInstance().load(SystemVariables.getSysVars().isLowerCaseTableNames());
         }
-
-        /**
-         * check config
-         */
-        this.selfChecking0();
     }
 
     private void selfChecking0() throws ConfigException {

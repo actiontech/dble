@@ -17,9 +17,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implements CommitNodesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
+    protected Lock lockForErrorHandle = new ReentrantLock();
+    protected Condition sendFinished = lockForErrorHandle.newCondition();
+    protected volatile boolean sendFinishedFlag = true;
 
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
@@ -45,13 +51,25 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
             }
         }
 
-        for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            final BackendConnection conn = session.getTarget(rrn);
-            conn.setResponseHandler(this);
-            if (!executeCommit((MySQLConnection) conn, position++)) {
-                break;
+        try {
+            sendFinishedFlag = false;
+            for (RouteResultsetNode rrn : session.getTargetKeys()) {
+                final BackendConnection conn = session.getTarget(rrn);
+                conn.setResponseHandler(this);
+                if (!executeCommit((MySQLConnection) conn, position++)) {
+                    break;
+                }
+            }
+        } finally {
+            lockForErrorHandle.lock();
+            try {
+                sendFinishedFlag = true;
+                sendFinished.signalAll();
+            } finally {
+                lockForErrorHandle.unlock();
             }
         }
+
     }
 
     @Override

@@ -81,12 +81,14 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             }
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
+            final String errorMsg = this.error;
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         ErrorPacket error = new ErrorPacket();
                         error.setErrNo(ER_ERROR_DURING_COMMIT);
+                        error.setMessage(errorMsg.getBytes());
                         XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
                         nextHandler.rollback();
                     }

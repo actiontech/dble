@@ -82,17 +82,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
             if (decrementCountBy(1)) {
-                Thread theard = new Thread(new Runnable() {
+                DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         ErrorPacket error = new ErrorPacket();
-                        error.setMessage("BACKEND PREPARE UNCONNECTED XA TRANSTION ROLLBACKED".getBytes());
                         error.setErrNo(ER_ERROR_DURING_COMMIT);
                         XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
                         nextHandler.rollback();
                     }
                 });
-                theard.start();
             }
         }
         return true;
@@ -252,13 +250,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
         final XACommitNodesHandler thisHandler = this;
-        Thread newThreadFor = new Thread(new Runnable() {
+        DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 thisHandler.connectionCloseLocal(conn, reason);
             }
         });
-        newThreadFor.start();
     }
 
 

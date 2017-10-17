@@ -25,7 +25,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
     protected Lock lockForErrorHandle = new ReentrantLock();
     protected Condition sendFinished = lockForErrorHandle.newCondition();
-    protected boolean sendFinishedFlag = true;
+    protected volatile boolean sendFinishedFlag = true;
 
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
@@ -61,10 +61,13 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
                 }
             }
         } finally {
-            lockForErrorHandle.lock();
-            sendFinishedFlag = true;
-            sendFinished.signalAll();
-            lockForErrorHandle.unlock();
+            try {
+                lockForErrorHandle.lock();
+                sendFinishedFlag = true;
+                sendFinished.signalAll();
+            }finally {
+                lockForErrorHandle.unlock();
+            }
         }
 
     }

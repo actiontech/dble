@@ -88,7 +88,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     public void run() {
                         ErrorPacket error = new ErrorPacket();
                         error.setErrNo(ER_ERROR_DURING_COMMIT);
-                        error.setMessage(errorMsg.getBytes());
+                        error.setMessage(errorMsg == null ? "unknow error".getBytes() : errorMsg.getBytes());
                         XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
                         nextHandler.rollback();
                     }

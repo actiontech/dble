@@ -42,7 +42,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
         lock.lock();
         try {
             initiated.signal();
-        }finally {
+        } finally {
             lock.unlock();
         }
     }

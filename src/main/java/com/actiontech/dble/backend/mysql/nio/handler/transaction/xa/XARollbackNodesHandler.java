@@ -341,7 +341,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             session.getSource().write(send);
 
             //partitionly commited,must commit again
-        } else if (session.getXaState() == TxState.TX_ROLLBACK_FAILED_STATE || session.getXaState() == TxState.TX_PREPARED_STATE) {
+        } else if (session.getXaState() == TxState.TX_ROLLBACK_FAILED_STATE || session.getXaState() == TxState.TX_PREPARED_STATE
+                || session.getXaState() == TxState.TX_PREPARE_UNCONNECT_STATE) {
             MySQLConnection errConn = session.releaseExcept(session.getXaState());
             if (errConn != null) {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());

@@ -24,7 +24,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     public BackendConnection getBackConn() {
         lock.lock();
         try {
-            while (backConn == null) {
+            if (backConn == null) {
                 initiated.await();
             }
             return backConn;
@@ -39,7 +39,12 @@ public class NewConnectionRespHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn(conn + " connectionError " + e);
-
+        lock.lock();
+        try {
+            initiated.signal();
+        }finally {
+            lock.unlock();
+        }
     }
 
     @Override

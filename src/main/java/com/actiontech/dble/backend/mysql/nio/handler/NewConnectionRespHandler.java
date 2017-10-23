@@ -11,6 +11,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,16 +22,21 @@ public class NewConnectionRespHandler implements ResponseHandler {
     private ReentrantLock lock = new ReentrantLock();
     private Condition initiated = lock.newCondition();
 
-    public BackendConnection getBackConn() {
+    public BackendConnection getBackConn() throws IOException{
         lock.lock();
         try {
             if (backConn == null) {
                 initiated.await();
             }
+            if(backConn == null){
+                throw new IOException("get backend connection error ");
+            }
             return backConn;
         } catch (InterruptedException e) {
             LOGGER.warn("getBackConn " + e);
             return null;
+        } catch(IOException e){
+            throw  e;
         } finally {
             lock.unlock();
         }

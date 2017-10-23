@@ -429,6 +429,11 @@ public class MySQLConnection extends BackendAIOConnection {
         //tmp now = backend -(backend &&frontend)
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = SystemVariables.getDefaultValue(entry.getKey());
+            try {
+                Long.parseLong(value);
+            } catch (NumberFormatException e) {
+                value = "`" + value + "`";
+            }
             setVars.add(new Pair<>(entry.getKey(), value));
             toResetSys.add(entry.getKey());
         }

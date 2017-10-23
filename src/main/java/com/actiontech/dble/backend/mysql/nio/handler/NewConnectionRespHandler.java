@@ -34,9 +34,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
             return backConn;
         } catch (InterruptedException e) {
             LOGGER.warn("getBackConn " + e);
-            return null;
-        } catch (IOException e) {
-            throw e;
+            throw new IOException(e.getMessage());
         } finally {
             lock.unlock();
         }

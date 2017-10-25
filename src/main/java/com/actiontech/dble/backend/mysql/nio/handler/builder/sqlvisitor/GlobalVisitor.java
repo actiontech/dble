@@ -148,10 +148,9 @@ public class GlobalVisitor extends MysqlVisitor {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (join.isSubQuery() || isTopQuery) {
-            buildSelect(join);
-            sqlBuilder.append(" from ");
-        }
+
+        buildSelect(join);
+        sqlBuilder.append(" from ");
 
         PlanNode left = join.getLeftNode();
         MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
@@ -184,22 +183,18 @@ public class GlobalVisitor extends MysqlVisitor {
         }
 
         if (join.getOtherJoinOnFilter() != null) {
-            if (first) {
-                first = false;
-            } else {
+            if (!first) {
                 joinOnFilterStr.append(" and ");
             }
 
             joinOnFilterStr.append(join.getOtherJoinOnFilter());
         }
         sqlBuilder.append(joinOnFilterStr.toString());
-        if (join.isSubQuery() || isTopQuery) {
-            buildWhere(join);
-            buildGroupBy(join);
-            buildHaving(join);
-            buildOrderBy(join);
-            buildLimit(join);
-        }
+        buildWhere(join);
+        buildGroupBy(join);
+        buildHaving(join);
+        buildOrderBy(join);
+        buildLimit(join);
 
         if (!isTopQuery) {
             sqlBuilder.append(" ) ");

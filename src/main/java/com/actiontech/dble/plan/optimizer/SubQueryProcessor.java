@@ -127,7 +127,8 @@ public final class SubQueryProcessor {
     private static void mergeWhere(PlanNode parent, PlanNode child) {
         Item pWhere = parent.getWhereFilter();
         Item pWhere0 = PlanUtil.pushDownItem(parent, pWhere, true);
-        Item mWhere = FilterUtils.and(pWhere0, child.getWhereFilter());
+        Item childWhere = PlanUtil.pushDownItem(child, child.getWhereFilter(), true);
+        Item mWhere = FilterUtils.and(pWhere0, childWhere);
         child.setWhereFilter(mWhere);
     }
 

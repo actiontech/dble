@@ -74,6 +74,8 @@ public class GlobalVisitor extends MysqlVisitor {
             buildHaving(query);
             buildOrderBy(query);
             buildLimit(query);
+        } else {
+            whereFilter = query.getWhereFilter();
         }
 
         if (query.isSubQuery() && !parentIsQuery && !isTopQuery) {
@@ -204,8 +206,8 @@ public class GlobalVisitor extends MysqlVisitor {
             if (join.getAlias() != null)
                 sqlBuilder.append(" ").append(join.getAlias()).append(" ");
         }
-
     }
+
 
     protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");

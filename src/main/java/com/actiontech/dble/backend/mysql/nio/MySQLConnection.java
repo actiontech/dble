@@ -18,8 +18,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
@@ -429,6 +429,11 @@ public class MySQLConnection extends BackendAIOConnection {
         //tmp now = backend -(backend &&frontend)
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = SystemVariables.getSysVars().getDefaultValue(entry.getKey());
+            try {
+                Long.parseLong(value);
+            } catch (NumberFormatException e) {
+                value = "`" + value + "`";
+            }
             setVars.add(new Pair<>(entry.getKey(), value));
             toResetSys.add(entry.getKey());
         }

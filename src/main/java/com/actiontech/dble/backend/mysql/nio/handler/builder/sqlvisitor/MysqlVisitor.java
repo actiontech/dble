@@ -40,8 +40,7 @@ public abstract class MysqlVisitor {
     // tmp sql
     protected StringBuilder sqlBuilder;
     protected StringPtr replaceableWhere = new StringPtr("");
-
-
+    protected Item whereFilter = null;
     public MysqlVisitor(PlanNode query, boolean isTopQuery) {
         this.query = query;
         this.isTopQuery = isTopQuery;
@@ -89,6 +88,7 @@ public abstract class MysqlVisitor {
             String pdName = visitUnSelPushDownName(filter, false);
             whereBuilder.append(" where ").append(pdName);
         }
+
         replaceableWhere.set(whereBuilder.toString());
         // refresh sqlbuilder
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
@@ -125,4 +125,9 @@ public abstract class MysqlVisitor {
         }
         return selName;
     }
+
+    public Item getWhereFilter() {
+        return whereFilter;
+    }
+
 }

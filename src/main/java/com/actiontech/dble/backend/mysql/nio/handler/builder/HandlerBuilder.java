@@ -15,6 +15,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class HandlerBuilder {
@@ -55,9 +56,16 @@ public class HandlerBuilder {
      * @return
      */
     public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode) {
-        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode);
+        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, false);
         builder.build();
         return builder.getEndHandler();
+    }
+
+    public List<DMLResponseHandler> buildNodes(NonBlockingSession nonBlockingSession, PlanNode planNode) {
+        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, true);
+        builder.build();
+        builder.getEndHandlerList().add(builder.getEndHandler());
+        return builder.getEndHandlerList();
     }
 
     public void build(boolean hasNext) throws Exception {
@@ -70,18 +78,18 @@ public class HandlerBuilder {
         logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
     }
 
-    private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode) {
+    private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         PlanNode.PlanNodeType i = planNode.type();
         if (i == PlanNode.PlanNodeType.TABLE) {
-            return new TableNodeHandlerBuilder(nonBlockingSession, (TableNode) planNode, this);
+            return new TableNodeHandlerBuilder(nonBlockingSession, (TableNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.JOIN) {
-            return new JoinNodeHandlerBuilder(nonBlockingSession, (JoinNode) planNode, this);
+            return new JoinNodeHandlerBuilder(nonBlockingSession, (JoinNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.MERGE) {
-            return new MergeNodeHandlerBuilder(nonBlockingSession, (MergeNode) planNode, this);
+            return new MergeNodeHandlerBuilder(nonBlockingSession, (MergeNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.QUERY) {
-            return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this);
+            return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
-            return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this);
+            return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this, isExplain);
         }
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }

@@ -25,8 +25,8 @@ import java.util.List;
 class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
     private NoNameNode node;
 
-    protected NoNameNodeHandlerBuilder(NonBlockingSession session, NoNameNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+    protected NoNameNodeHandlerBuilder(NonBlockingSession session, NoNameNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
         this.needWhereHandler = false;
         this.needCommon = false;

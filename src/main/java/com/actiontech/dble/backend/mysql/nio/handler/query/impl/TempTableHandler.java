@@ -172,6 +172,11 @@ public class TempTableHandler extends BaseDMLHandler {
         return maxPartSize;
     }
 
+
+    public DMLResponseHandler getCreatedHandler() {
+        return createdHandler;
+    }
+
     @Override
     public HandlerType type() {
         return HandlerType.TEMPTABLE;

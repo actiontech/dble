@@ -43,6 +43,7 @@ import org.apache.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -71,17 +72,25 @@ abstract class BaseHandlerBuilder {
     /* it's no need to send maker if sql is just the same as the client origin query  */
     protected boolean needSendMaker = true;
 
-    protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder) {
+    protected boolean isExplain = false;
+    protected List<DMLResponseHandler> endHandlerList = new ArrayList<>(1);
+
+    protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
         this.node = node;
         this.hBuilder = hBuilder;
         this.config = DbleServer.getInstance().getConfig();
+        this.isExplain = isExplain;
         if (config.getSchemas().isEmpty())
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "current router config is empty!");
     }
 
     public DMLResponseHandler getEndHandler() {
         return currentLast;
+    }
+
+    public List<DMLResponseHandler> getEndHandlerList() {
+        return endHandlerList;
     }
 
     /**

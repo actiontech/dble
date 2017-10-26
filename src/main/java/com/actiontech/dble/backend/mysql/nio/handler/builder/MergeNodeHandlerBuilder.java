@@ -18,8 +18,8 @@ import java.util.List;
 class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
     private MergeNode node;
 
-    protected MergeNodeHandlerBuilder(NonBlockingSession session, MergeNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+    protected MergeNodeHandlerBuilder(NonBlockingSession session, MergeNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
     }
 

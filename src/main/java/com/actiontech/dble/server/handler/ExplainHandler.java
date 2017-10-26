@@ -114,30 +114,49 @@ public final class ExplainHandler {
     }
 
     private static List<String[]> getComplexQueryResult(RouteResultset rrs, ServerConnection c) {
-        List<String[]> result = new ArrayList<>();
-        DMLResponseHandler endHandler = buildNode(rrs, c);
-        Map<DMLResponseHandler, RefHandlerInfo> handlerMap = new HashMap<>();
-        Map<String, RefHandlerInfo> refMap = new HashMap<>();
-        int mergeCnt = 0;
-        Map<String, Integer> nameMap = new HashMap<>();
+        List<DMLResponseHandler> endHandlers = buildNodes(rrs, c);
+        if (endHandlers.size() == 1) {
+            DMLResponseHandler endHandler = endHandlers.get(0);
+            Map<String, RefHandlerInfo> refMap = new HashMap<>();
+            String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, RefHandlerInfo>(), new HashMap<String, Integer>(), null);
+            List<RefHandlerInfo> resultList = new ArrayList<>(refMap.size());
+            getDFSHandlers(refMap, rootName, resultList);
+            List<String[]> result = new ArrayList<>();
+            for (int i = resultList.size() - 1; i >= 0; i--) {
+                RefHandlerInfo handlerInfo = resultList.get(i);
+                result.add(new String[]{handlerInfo.name, handlerInfo.type, handlerInfo.getRefOrSQL()});
+            }
+            return result;
+        }
+        return null;
+    }
+
+    private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap, String brotherName) {
         String rootName = null;
         for (DMLResponseHandler startHandler : endHandler.getMerges()) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
             List<BaseSelectHandler> mergeList = new ArrayList<>();
             mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
-            mergeCnt++;
-            String mergeNode = "merge." + mergeCnt;
+            String mergeNode = genHandlerName("MERGE", nameMap);
             RefHandlerInfo refInfo = new RefHandlerInfo(mergeNode, "MERGE");
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
             for (BaseSelectHandler exeHandler : mergeList) {
                 RouteResultsetNode rrss = exeHandler.getRrss();
                 String dateNode = rrss.getName() + "." + rrss.getMultiplexNum();
-                result.add(new String[]{dateNode, "BASE SQL", rrss.getStatement()});
                 refInfo.addChild(dateNode);
+                String type = "BASE SQL";
+                if (brotherName != null) {
+                    type += "(May No Need)";
+                }
+                RefHandlerInfo baseSQLInfo = new RefHandlerInfo(dateNode, type, rrss.getStatement());
+                refMap.put(dateNode, baseSQLInfo);
+                if (brotherName != null) {
+                    baseSQLInfo.addBrother(brotherName);
+                }
             }
-            String mergeRootName = dfsHandler(mergeHandler, handlerMap, refMap, nameMap);
-            if (mergeCnt == 1) {
+            String mergeRootName = getAllNodesFromLeaf(mergeHandler, refMap, handlerMap, nameMap);
+            if (rootName == null) {
                 if (mergeRootName == null) {
                     rootName = mergeNode;
                 } else {
@@ -145,10 +164,11 @@ public final class ExplainHandler {
                 }
             }
         }
-        nameMap.clear();
-        handlerMap.clear();
+        return rootName;
+    }
+
+    private static void getDFSHandlers(Map<String, RefHandlerInfo> refMap, String rootName, List<RefHandlerInfo> resultList) {
         Stack<RefHandlerInfo> stackSearch = new Stack<>();
-        List<RefHandlerInfo> resultList = new ArrayList<>(refMap.size());
         stackSearch.push(refMap.get(rootName));
         while (stackSearch.size() > 0) {
             RefHandlerInfo root = stackSearch.pop();
@@ -161,14 +181,9 @@ public final class ExplainHandler {
             }
         }
         refMap.clear();
-        for (int i = resultList.size() - 1; i >= 0; i--) {
-            RefHandlerInfo handlerInfo = resultList.get(i);
-            result.add(new String[]{handlerInfo.name, handlerInfo.type, handlerInfo.getChildrenNames()});
-        }
-        return result;
     }
 
-    private static String dfsHandler(DMLResponseHandler handler, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, RefHandlerInfo> refMap, Map<String, Integer> nameMap) {
+    private static String getAllNodesFromLeaf(DMLResponseHandler handler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap) {
         DMLResponseHandler nextHandler = skipSendMake(handler.getNextHandler());
         String rootName = null;
         while (nextHandler != null) {
@@ -184,6 +199,12 @@ public final class ExplainHandler {
                 rootName = handlerName;
             } else {
                 handlerMap.get(nextHandler).addChild(childName);
+            }
+            if (handler instanceof TempTableHandler) {
+                TempTableHandler tmp = (TempTableHandler) handler;
+                DMLResponseHandler endHandler = tmp.getCreatedHandler();
+                endHandler.setNextHandler(nextHandler);
+                buildHandlerTree(endHandler, refMap, handlerMap, nameMap, childName + "'s RESULTS add to QUERY's WHERE");
             }
             handler = nextHandler;
             nextHandler = skipSendMake(nextHandler.getNextHandler());
@@ -240,7 +261,7 @@ public final class ExplainHandler {
         return "OTHER";
     }
 
-    private static DMLResponseHandler buildNode(RouteResultset rrs, ServerConnection c) {
+    private static List<DMLResponseHandler> buildNodes(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
         MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex());
         visitor.visit(ast);
@@ -249,7 +270,7 @@ public final class ExplainHandler {
         node.setUpFields();
         node = MyOptimizer.optimize(node);
         HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
-        return builder.buildNode(c.getSession2(), node);
+        return builder.buildNodes(c.getSession2(), node);
     }
 
     private static RowDataPacket getRow(RouteResultsetNode node, String charset) {
@@ -318,22 +339,39 @@ public final class ExplainHandler {
     private static class RefHandlerInfo {
         private String name;
         private String type;
-        private Set<String> children = new TreeSet<>();
+        private String baseSQL;
+        private Set<String> children = new LinkedHashSet<>();
+        private Set<String> brothers = new LinkedHashSet<>();
 
+        RefHandlerInfo(String name, String type, String baseSQL) {
+            this(name, type);
+            this.baseSQL = baseSQL;
+        }
         RefHandlerInfo(String name, String type) {
             this.name = name;
             this.type = type;
         }
 
-        String getChildrenNames() {
+        String getRefOrSQL() {
             StringBuilder names = new StringBuilder("");
-            int i = 0;
-            for (String child : children) {
-                if (i > 0) {
-                    names.append(", ");
+            for (String child : brothers) {
+                if (names.length() > 0) {
+                    names.append("; ");
                 }
                 names.append(child);
-                i++;
+            }
+            for (String child : children) {
+                if (names.length() > 0) {
+                    names.append("; ");
+                }
+                names.append(child);
+            }
+
+            if (baseSQL != null) {
+                if (names.length() > 0) {
+                    names.append("; ");
+                }
+                names.append(baseSQL);
             }
             return names.toString();
         }
@@ -342,6 +380,9 @@ public final class ExplainHandler {
             return children;
         }
 
+        void addBrother(String brother) {
+            this.brothers.add(brother);
+        }
         void addChild(String child) {
             this.children.add(child);
         }

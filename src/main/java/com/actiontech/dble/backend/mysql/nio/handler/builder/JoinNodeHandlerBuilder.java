@@ -29,11 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
+
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private JoinNode node;
 
-    protected JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+    protected JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
     }
 
@@ -104,6 +106,11 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     HandlerBuilder.startHandler(bigLh);
                 }
             };
+            if (isExplain) {
+                buildNestFiltersForExplain(tnBig, keyToPass);
+                DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
+                tempHandler.setCreatedHandler(bigLh);
+            }
             tempHandler.setTempDoneCallBack(tempDone);
 
         } else if (node.getStrategy() == JoinNode.Strategy.SORTMERGE) {
@@ -148,6 +155,16 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     node.getLeftJoinOnOrders(), node.getRightJoinOnOrders(), node.getOtherJoinOnFilter());
             addHandler(jh);
         }
+    }
+
+    private void buildNestFiltersForExplain(PlanNode tnBig, Item keyToPass) {
+        Item keyInBig = PlanUtil.pushDownItem(node, keyToPass);
+        List<Item> strategyFilters = tnBig.getNestLoopFilters();
+        List<Item> argList = new ArrayList<>();
+        argList.add(keyInBig);
+        argList.add(new ItemString(NEED_REPLACE));
+        ItemFuncIn filter = new ItemFuncIn(argList, false);
+        strategyFilters.add(filter);
     }
 
     /**

@@ -18,8 +18,8 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
     private QueryNode node;
 
     protected QueryNodeHandlerBuilder(NonBlockingSession session,
-                                      QueryNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+                                      QueryNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
     }
 

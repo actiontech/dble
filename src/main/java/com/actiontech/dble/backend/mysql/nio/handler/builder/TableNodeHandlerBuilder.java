@@ -24,8 +24,8 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     private TableNode node;
     private TableConfig tableConfig = null;
 
-    protected TableNodeHandlerBuilder(NonBlockingSession session, TableNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+    protected TableNodeHandlerBuilder(NonBlockingSession session, TableNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
         this.canPushDown = !node.existUnPushDownGroup();
         this.needWhereHandler = false;

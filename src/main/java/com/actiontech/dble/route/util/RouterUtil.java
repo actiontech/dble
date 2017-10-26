@@ -6,7 +6,6 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -23,6 +22,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.StringUtil;
@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
+
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 /**
  * ServerRouterUtil
@@ -639,9 +641,12 @@ public final class RouterUtil {
         for (ColumnRoutePair pair : partitionValue) {
             AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
             if (pair.colValue != null) {
+                if (NEED_REPLACE.equals(pair.colValue)) {
+                    return;
+                }
                 Integer nodeIndex = algorithm.calculate(pair.colValue);
                 if (nodeIndex == null) {
-                    String msg = "can't find any valid datanode :" + tableConfig.getName() +
+                    String msg = "can't find any valid data node :" + tableConfig.getName() +
                             " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
                     LOGGER.warn(msg);
                     throw new SQLNonTransientException(msg);

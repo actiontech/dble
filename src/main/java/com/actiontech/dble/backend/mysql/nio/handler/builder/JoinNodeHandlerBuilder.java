@@ -126,7 +126,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     private DMLResponseHandler buildJoinChild(PlanNode child, boolean isLeft) {
-        DMLResponseHandler endHandler = hBuilder.buildNode(session, child);
+        DMLResponseHandler endHandler = hBuilder.buildNode(session, child, isExplain);
         if (isLeft) {
             if (!node.isLeftOrderMatch()) {
                 OrderByHandler oh = new OrderByHandler(getSequenceId(), session, node.getLeftJoinOnOrders());

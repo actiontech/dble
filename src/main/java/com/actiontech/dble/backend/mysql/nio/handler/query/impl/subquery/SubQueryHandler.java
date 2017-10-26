@@ -22,6 +22,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     protected final ReentrantLock lock;
     protected CallBackHandler tempDoneCallBack;
     protected ErrorPacket errorPacket;
+    public abstract void setForExplain();
     public SubQueryHandler(long id, NonBlockingSession session) {
         super(id, session);
         this.lock = new ReentrantLock();

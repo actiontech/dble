@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
@@ -14,6 +15,9 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGr
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -114,24 +118,51 @@ public final class ExplainHandler {
     }
 
     private static List<String[]> getComplexQueryResult(RouteResultset rrs, ServerConnection c) {
-        List<DMLResponseHandler> endHandlers = buildNodes(rrs, c);
-        if (endHandlers.size() == 1) {
-            DMLResponseHandler endHandler = endHandlers.get(0);
-            Map<String, RefHandlerInfo> refMap = new HashMap<>();
-            String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, RefHandlerInfo>(), new HashMap<String, Integer>(), null);
-            List<RefHandlerInfo> resultList = new ArrayList<>(refMap.size());
-            getDFSHandlers(refMap, rootName, resultList);
-            List<String[]> result = new ArrayList<>();
-            for (int i = resultList.size() - 1; i >= 0; i--) {
-                RefHandlerInfo handlerInfo = resultList.get(i);
-                result.add(new String[]{handlerInfo.name, handlerInfo.type, handlerInfo.getRefOrSQL()});
+        List<BaseHandlerBuilder> builderList = getBaseHandlerBuilders(rrs, c);
+        Map<String, Integer> nameMap = new HashMap<>();
+        List<String[]> result = new ArrayList<>();
+
+        Map<BaseHandlerBuilder, String> builderNameMap = new HashMap<>();
+        for (int i = builderList.size() - 1; i >= 0; i--) {
+            BaseHandlerBuilder tmpBuilder = builderList.get(i);
+            Set<String> subQueries = new LinkedHashSet<>();
+            for (BaseHandlerBuilder childBuilder : tmpBuilder.getSubQueryBuilderList()) {
+                subQueries.add(builderNameMap.get(childBuilder));
             }
-            return result;
+            String subQueryRootName = buildResultByEndHandler(subQueries, result, tmpBuilder.getEndHandler(), nameMap);
+            builderNameMap.put(tmpBuilder, subQueryRootName);
         }
-        return null;
+        return result;
     }
 
-    private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap, String brotherName) {
+    private static List<BaseHandlerBuilder> getBaseHandlerBuilders(RouteResultset rrs, ServerConnection c) {
+        BaseHandlerBuilder builder = buildNodes(rrs, c);
+        Queue<BaseHandlerBuilder> queue = new LinkedList<>();
+        queue.add(builder);
+        List<BaseHandlerBuilder> builderList = new ArrayList<>();
+        while (queue.size() > 0) {
+            BaseHandlerBuilder rootBuilder = queue.poll();
+            builderList.add(rootBuilder);
+            if (rootBuilder.getSubQueryBuilderList().size() > 0) {
+                queue.addAll(rootBuilder.getSubQueryBuilderList());
+            }
+        }
+        return builderList;
+    }
+
+    private static String buildResultByEndHandler(Set<String> subQueries, List<String[]> result, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
+        Map<String, RefHandlerInfo> refMap = new HashMap<>();
+        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, RefHandlerInfo>(), nameMap, subQueries);
+        List<RefHandlerInfo> resultList = new ArrayList<>(refMap.size());
+        getDFSHandlers(refMap, rootName, resultList);
+        for (int i = resultList.size() - 1; i >= 0; i--) {
+            RefHandlerInfo handlerInfo = resultList.get(i);
+            result.add(new String[]{handlerInfo.name, handlerInfo.type, handlerInfo.getRefOrSQL()});
+        }
+        return rootName;
+    }
+
+    private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies) {
         String rootName = null;
         for (DMLResponseHandler startHandler : endHandler.getMerges()) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
@@ -146,13 +177,13 @@ public final class ExplainHandler {
                 String dateNode = rrss.getName() + "." + rrss.getMultiplexNum();
                 refInfo.addChild(dateNode);
                 String type = "BASE SQL";
-                if (brotherName != null) {
+                if (dependencies != null && dependencies.size() > 0) {
                     type += "(May No Need)";
                 }
                 RefHandlerInfo baseSQLInfo = new RefHandlerInfo(dateNode, type, rrss.getStatement());
                 refMap.put(dateNode, baseSQLInfo);
-                if (brotherName != null) {
-                    baseSQLInfo.addBrother(brotherName);
+                if (dependencies != null && dependencies.size() > 0) {
+                    baseSQLInfo.addAllStepChildren(dependencies);
                 }
             }
             String mergeRootName = getAllNodesFromLeaf(mergeHandler, refMap, handlerMap, nameMap);
@@ -204,7 +235,7 @@ public final class ExplainHandler {
                 TempTableHandler tmp = (TempTableHandler) handler;
                 DMLResponseHandler endHandler = tmp.getCreatedHandler();
                 endHandler.setNextHandler(nextHandler);
-                buildHandlerTree(endHandler, refMap, handlerMap, nameMap, childName + "'s RESULTS add to QUERY's WHERE");
+                buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
             }
             handler = nextHandler;
             nextHandler = skipSendMake(nextHandler.getNextHandler());
@@ -257,11 +288,17 @@ public final class ExplainHandler {
             return "DIRECT_GROUP";
         } else if (handler instanceof TempTableHandler) {
             return "NEST_LOOP";
+        } else if (handler instanceof InSubQueryHandler) {
+            return "IN_SUB_QUERY";
+        } else if (handler instanceof AllAnySubQueryHandler) {
+            return "ALL_ANY_SUB_QUERY";
+        } else if (handler instanceof SingleRowSubQueryHandler) {
+            return "SCALAR_SUB_QUERY";
         }
         return "OTHER";
     }
 
-    private static List<DMLResponseHandler> buildNodes(RouteResultset rrs, ServerConnection c) {
+    private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
         MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex());
         visitor.visit(ast);
@@ -270,7 +307,7 @@ public final class ExplainHandler {
         node.setUpFields();
         node = MyOptimizer.optimize(node);
         HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
-        return builder.buildNodes(c.getSession2(), node);
+        return builder.getBuilder(c.getSession2(), node, true);
     }
 
     private static RowDataPacket getRow(RouteResultsetNode node, String charset) {
@@ -341,7 +378,7 @@ public final class ExplainHandler {
         private String type;
         private String baseSQL;
         private Set<String> children = new LinkedHashSet<>();
-        private Set<String> brothers = new LinkedHashSet<>();
+        private Set<String> stepChildren = new LinkedHashSet<>();
 
         RefHandlerInfo(String name, String type, String baseSQL) {
             this(name, type);
@@ -354,7 +391,7 @@ public final class ExplainHandler {
 
         String getRefOrSQL() {
             StringBuilder names = new StringBuilder("");
-            for (String child : brothers) {
+            for (String child : stepChildren) {
                 if (names.length() > 0) {
                     names.append("; ");
                 }
@@ -380,8 +417,8 @@ public final class ExplainHandler {
             return children;
         }
 
-        void addBrother(String brother) {
-            this.brothers.add(brother);
+        void addAllStepChildren(Set<String> dependencies) {
+            this.stepChildren.addAll(dependencies);
         }
         void addChild(String child) {
             this.children.add(child);

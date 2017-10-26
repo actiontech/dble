@@ -5,16 +5,12 @@
 
 package com.actiontech.dble.plan.common.item.subquery;
 
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
-import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.List;
 
 public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     protected Item value;
@@ -115,11 +111,6 @@ public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     @Override
     public void fixLengthAndDec() {
 
-    }
-
-    @Override
-    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
     }
 
     /*--------------------------------------getter/setter-----------------------------------*/

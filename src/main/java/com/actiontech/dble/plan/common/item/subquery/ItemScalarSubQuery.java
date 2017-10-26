@@ -52,7 +52,7 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
+        return new ItemScalarSubQuery(this.currentDb, this.query);
     }
 
 

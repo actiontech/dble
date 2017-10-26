@@ -19,7 +19,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 public abstract class ItemSubQuery extends ItemResultField {
     protected SQLSelectQuery query;
-    private String currentDb;
+    protected String currentDb;
     protected PlanNode planNode;
 
     public enum SubSelectType {

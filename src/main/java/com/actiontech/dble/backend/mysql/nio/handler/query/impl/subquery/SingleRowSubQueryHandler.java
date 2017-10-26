@@ -12,11 +12,14 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 public class SingleRowSubQueryHandler extends SubQueryHandler {
     private int rowCount = 0;
@@ -87,5 +90,10 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
         select.setPushDownName(select.getAlias());
         Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());
         itemSubQuery.setValue(tmpItem);
+    }
+
+    @Override
+    public void setForExplain() {
+        itemSubQuery.setValue(new ItemString(NEED_REPLACE));
     }
 }

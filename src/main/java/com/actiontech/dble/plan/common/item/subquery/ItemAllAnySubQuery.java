@@ -10,12 +10,16 @@ package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.plan.common.field.Field;
+import com.actiontech.dble.plan.common.item.Item;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+
+import java.util.List;
 
 public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     private boolean isAll;
@@ -44,6 +48,11 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
         } else {
             return new SQLAnyExpr(sqlSelect);
         }
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        return new ItemAllAnySubQuery(this.currentDb, this.operator, this.query, this.isAll);
     }
 
     public boolean isAll() {

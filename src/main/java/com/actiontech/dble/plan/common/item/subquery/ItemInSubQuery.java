@@ -3,24 +3,25 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-/**
- *
- */
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import java.util.List;
+
 public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
+
     public ItemInSubQuery(String currentDb, Item leftOperand, SQLSelectQuery query, boolean isNeg) {
         super(currentDb, query);
         this.leftOperand = leftOperand;
@@ -60,6 +61,11 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
         inSub.setExpr(expr);
         inSub.setNot(isNeg);
         return inSub;
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        return new ItemInSubQuery(this.currentDb, this.leftOperand.cloneItem(), this.query, this.isNeg);
     }
 
     public Item getLeftOperand() {

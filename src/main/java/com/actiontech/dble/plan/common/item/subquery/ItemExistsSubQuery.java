@@ -76,7 +76,7 @@ public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
+        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot);
     }
     @Override
     public SubSelectType subType() {

@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.server.NonBlockingSession;
 
@@ -129,5 +130,42 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
     }
 
 
-
+    @Override
+    public void setForExplain() {
+        switch (itemSubQuery.getOperator()) {
+            case Equality:
+                if (itemSubQuery.isAll()) {
+                    itemSubQuery.getValue().add(new ItemString("{ALL_SUB_QUERY_RESULTS}"));
+                }
+                break;
+            case NotEqual:
+            case LessThanOrGreater:
+                if (!itemSubQuery.isAll()) {
+                    itemSubQuery.getValue().add(new ItemString("{ALL_SUB_QUERY_RESULTS}"));
+                }
+                break;
+            case LessThan:
+            case LessThanOrEqual:
+                if (itemSubQuery.isAll()) {
+                    //row < tmpRow
+                    itemSubQuery.getValue().add(new ItemString("{MIN_SUB_QUERY_RESULTS}"));
+                } else if (!itemSubQuery.isAll()) {
+                    //row > tmpRow
+                    itemSubQuery.getValue().add(new ItemString("{MAX_SUB_QUERY_RESULTS}"));
+                }
+                break;
+            case GreaterThan:
+            case GreaterThanOrEqual:
+                if (itemSubQuery.isAll()) {
+                    //row > tmpRow
+                    itemSubQuery.getValue().add(new ItemString("{MAX_SUB_QUERY_RESULTS}"));
+                } else if (!itemSubQuery.isAll()) {
+                    //row < tmpRow
+                    itemSubQuery.getValue().add(new ItemString("{MIN_SUB_QUERY_RESULTS}"));
+                }
+                break;
+            default:
+                break;
+        }
+    }
 }

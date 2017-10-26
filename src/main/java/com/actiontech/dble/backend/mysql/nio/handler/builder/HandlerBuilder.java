@@ -15,7 +15,6 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class HandlerBuilder {
@@ -55,22 +54,20 @@ public class HandlerBuilder {
      * @param planNode
      * @return
      */
-    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode) {
-        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, false);
-        builder.build();
+    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
+        BaseHandlerBuilder builder = getBuilder(nonBlockingSession, planNode, isExplain);
         return builder.getEndHandler();
     }
 
-    public List<DMLResponseHandler> buildNodes(NonBlockingSession nonBlockingSession, PlanNode planNode) {
-        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, true);
+    public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
+        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
         builder.build();
-        builder.getEndHandlerList().add(builder.getEndHandler());
-        return builder.getEndHandlerList();
+        return builder;
     }
 
     public void build(boolean hasNext) throws Exception {
         final long startTime = System.nanoTime();
-        DMLResponseHandler endHandler = buildNode(session, node);
+        DMLResponseHandler endHandler = buildNode(session, node, false);
         OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);

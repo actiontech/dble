@@ -13,11 +13,14 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 public class InSubQueryHandler extends SubQueryHandler {
     private int maxPartSize = 2000;
@@ -95,4 +98,8 @@ public class InSubQueryHandler extends SubQueryHandler {
         return HandlerType.IN_SUB_QUERY;
     }
 
+    @Override
+    public void setForExplain() {
+        itemSubQuery.getValue().add(new ItemString(NEED_REPLACE));
+    }
 }

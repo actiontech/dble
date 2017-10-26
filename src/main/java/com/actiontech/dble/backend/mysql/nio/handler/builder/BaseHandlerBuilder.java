@@ -43,7 +43,6 @@ import org.apache.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -53,7 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-abstract class BaseHandlerBuilder {
+public abstract class BaseHandlerBuilder {
     private static final Logger LOGGER = Logger.getLogger(BaseHandlerBuilder.class);
     private static AtomicLong sequenceId = new AtomicLong(0);
     protected NonBlockingSession session;
@@ -73,7 +72,7 @@ abstract class BaseHandlerBuilder {
     protected boolean needSendMaker = true;
 
     protected boolean isExplain = false;
-    protected List<DMLResponseHandler> endHandlerList = new ArrayList<>(1);
+    protected List<BaseHandlerBuilder> subQueryBuilderList = new ArrayList<>(1);
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -89,8 +88,8 @@ abstract class BaseHandlerBuilder {
         return currentLast;
     }
 
-    public List<DMLResponseHandler> getEndHandlerList() {
-        return endHandlerList;
+    public List<BaseHandlerBuilder> getSubQueryBuilderList() {
+        return subQueryBuilderList;
     }
 
     /**
@@ -438,13 +437,25 @@ abstract class BaseHandlerBuilder {
         for (ItemSubQuery itemSubQuery : node.getSubQueries()) {
             if (itemSubQuery instanceof ItemSingleRowSubQuery) {
                 final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery);
-                handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
             } else if (itemSubQuery instanceof ItemInSubQuery) {
                 final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery);
-                handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
             } else if (itemSubQuery instanceof ItemAllAnySubQuery) {
                 final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery);
-                handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
             }
         }
         lock.lock();
@@ -467,33 +478,35 @@ abstract class BaseHandlerBuilder {
         }
     }
 
+    private void handleSubQueryForExplain(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
+                                final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
+        tempHandler.setForExplain();
+        BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, true);
+        DMLResponseHandler endHandler = builder.getEndHandler();
+        endHandler.setNextHandler(tempHandler);
+        this.getSubQueryBuilderList().add(builder);
+        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+        return;
+    }
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    DMLResponseHandler endHandler = hBuilder.buildNode(session, planNode);
+                    DMLResponseHandler endHandler = hBuilder.buildNode(session, planNode, false);
                     endHandler.setNextHandler(tempHandler);
-                    HandlerBuilder.startHandler(endHandler);
                     CallBackHandler tempDone = new CallBackHandler() {
                         @Override
                         public void call() throws Exception {
                             if (tempHandler.getErrorPacket() != null) {
                                 errorPackets.add(tempHandler.getErrorPacket());
                             }
-                            if (subNodes.decrementAndGet() == 0) {
-                                lock.lock();
-                                try {
-                                    finished.set(true);
-                                    finishSubQuery.signal();
-                                } finally {
-                                    lock.unlock();
-                                }
-                            }
+                            subQueryFinished(subNodes, lock, finished, finishSubQuery);
                         }
                     };
                     tempHandler.setTempDoneCallBack(tempDone);
+                    HandlerBuilder.startHandler(endHandler);
                 } catch (Exception e) {
                     LOGGER.warn("execute ItemScalarSubQuery error", e);
                     ErrorPacket errorPackage = new ErrorPacket();
@@ -504,6 +517,18 @@ abstract class BaseHandlerBuilder {
                 }
             }
         });
+    }
+
+    private void subQueryFinished(AtomicInteger subNodes, ReentrantLock lock, AtomicBoolean finished, Condition finishSubQuery) {
+        if (subNodes.decrementAndGet() == 0) {
+            lock.lock();
+            try {
+                finished.set(true);
+                finishSubQuery.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
 }

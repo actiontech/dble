@@ -10,7 +10,6 @@ package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
-import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -66,10 +65,6 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support yet!");
     }
 
-    @Override
-    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
-    }
 
 
     public Item getSelect() {

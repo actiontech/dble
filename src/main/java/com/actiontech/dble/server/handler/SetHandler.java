@@ -581,7 +581,7 @@ public final class SetHandler {
 
     private static boolean checkValue(SQLExpr valueExpr) {
         return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
-                (valueExpr instanceof SQLIntegerExpr);
+                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) || (valueExpr instanceof SQLBooleanExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -629,6 +629,9 @@ public final class SetHandler {
                 return null;
             }
             return (iValue == 1);
+        } else if (valueExpr instanceof SQLBooleanExpr) {
+            SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
+            return value.getValue();
         }
         String strValue = parseStringValue(valueExpr);
         switch (strValue) {
@@ -652,6 +655,12 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLNumberExpr) {
+            SQLNumberExpr value = (SQLNumberExpr) valueExpr;
+            strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLBooleanExpr) {
+            SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
+            strValue = String.valueOf(value.getValue());
         }
         return strValue;
     }

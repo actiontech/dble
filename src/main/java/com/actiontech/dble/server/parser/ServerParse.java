@@ -261,21 +261,23 @@ public final class ServerParse {
      * @return
      */
     private static int createOrReplaceViewCheck(String stmt, int offset, boolean isReplace) {
-
-        while (true) {
-            if (!(stmt.charAt(++offset) == ' ' ||
-                    stmt.charAt(offset) == '\t' ||
-                    stmt.charAt(offset) == '\r' ||
-                    stmt.charAt(offset) == '\n')) {
-                if ((stmt.charAt(offset) == 'o' || stmt.charAt(offset) == 'O') &&
-                        (stmt.charAt(++offset) == 'r' || stmt.charAt(offset) == 'R') &&
-                        (stmt.charAt(++offset) == ' ' || stmt.charAt(offset) == '\t' ||
-                                stmt.charAt(offset) == '\r' || stmt.charAt(offset) == '\n')) {
-                    return replaceViewCheck(stmt, offset);
+        try {
+            while (true) {
+                if (!(stmt.charAt(++offset) == ' ' ||
+                       stmt.charAt(offset) == '\t' ||
+                       stmt.charAt(offset) == '\r' ||
+                       stmt.charAt(offset) == '\n')) {
+                    if ((stmt.charAt(offset) == 'o' || stmt.charAt(offset) == 'O') &&
+                           (stmt.charAt(++offset) == 'r' || stmt.charAt(offset) == 'R') &&
+                           (stmt.charAt(++offset) == ' ' || stmt.charAt(offset) == '\t' ||
+                                   stmt.charAt(offset) == '\r' || stmt.charAt(offset) == '\n')) {
+                        return replaceViewCheck(stmt, offset);
+                    } else if (stmt.charAt(offset) == 'v' || stmt.charAt(offset) == 'V') {
+                        return createViewCheck(stmt, offset, isReplace);
+                    }
                 }
-            } else if (stmt.charAt(offset) == 'v' || stmt.charAt(offset) == 'V') {
-                return createViewCheck(stmt, offset, isReplace);
             }
+        } catch (Exception e) {
             return DDL;
         }
     }

@@ -229,14 +229,14 @@ public class Testparser {
                 + " from char_columns where id =1  and name = 'x';";
 
         //		obj.test(selectSQl);
-        selectSQl = "select * from constant_one where id > SOME(select name from constant_two);";
-        obj.test(selectSQl);
-        selectSQl = "select * from constant_one where id > ANY(select name from constant_two);";
-        obj.test(selectSQl);
-        selectSQl = "select * from constant_one where id > ALL(select name from constant_two);";
-        obj.test(selectSQl);
-        selectSQl = "select * from constant_one where id <> ALL(select name from constant_two);";
-        obj.test(selectSQl);
+//        selectSQl = "select * from constant_one where id > SOME(select name from constant_two);";
+//        obj.test(selectSQl);
+//        selectSQl = "select * from constant_one where id > ANY(select name from constant_two);";
+//        obj.test(selectSQl);
+//        selectSQl = "select * from constant_one where id > ALL(select name from constant_two);";
+//        obj.test(selectSQl);
+//        selectSQl = "select * from constant_one where id <> ALL(select name from constant_two);";
+//        obj.test(selectSQl);
         //		selectSQl = "SELECT BINARY 'a' = 'A';";
         //		obj.test(selectSQl);
 //        selectSQl = "SELECT b'1000001';";
@@ -362,6 +362,8 @@ public class Testparser {
         //		//not support
         //		selectSQl = "select sql_big_result distinct pad from sbtest1;";
         //		obj.test(selectSQl);
+        String insertSQl = "insert into test_shard values(1,1,'a\\%string','test001');";
+        obj.test(insertSQl);
 
     }
 

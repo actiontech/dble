@@ -31,7 +31,11 @@ class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
     protected List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         for (PlanNode child : node.getChildren()) {
-            DMLResponseHandler ch = hBuilder.buildNode(session, child, isExplain);
+            BaseHandlerBuilder builder = hBuilder.getBuilder(session, child, isExplain);
+            if (builder.getSubQueryBuilderList().size() > 0) {
+                this.getSubQueryBuilderList().addAll(builder.getSubQueryBuilderList());
+            }
+            DMLResponseHandler ch = builder.getEndHandler();
             pres.add(ch);
         }
         return pres;

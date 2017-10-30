@@ -245,7 +245,18 @@ public class NonBlockingSession implements Session {
         node.setUpFields();
         checkTablesPrivilege(node, ast);
         node = MyOptimizer.optimize(node);
-        execute(node);
+        if (node.isSubQuery()) {
+            final PlanNode finalNode = node;
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                //sub Query build will be blocked, so use ComplexQueryExecutor
+                @Override
+                public void run() {
+                    execute(finalNode);
+                }
+            });
+        } else {
+            execute(node);
+        }
     }
 
     private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt) {

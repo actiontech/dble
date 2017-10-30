@@ -347,7 +347,9 @@ public class ServerConnection extends FrontendConnection {
             SQLException sqlException = (SQLException) e;
             String msg = sqlException.getMessage();
             StringBuilder s = new StringBuilder();
-            LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
+            }
             int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
             String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
             String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;

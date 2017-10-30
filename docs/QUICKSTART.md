@@ -4,7 +4,8 @@ Get package from https://github.com/actiontech/dble/releases
 
 ## 2.Prepare
 ### 2.1 MySQL 
-Make sure there is at least one MySQL Instance with url $url(e.g., localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.  
+Make sure there is at least one MySQL Instance with url $url(e.g., localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.   
+You also need to make sure that the url(localhost/127.0.0.1/other IP) can connect to MySQL, otherwise,you will get an error "NO ROUTE TO HOST" later. So Check your configurations of “/etc/hosts” ,“/etc/hosts.allow” ,“/etc/hosts.deny”  
 Add 4 database ,the SQL as below: 
  
 ```

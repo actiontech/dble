@@ -134,8 +134,8 @@ public final class SystemConfig {
     private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
     private String transactionLogBaseName;
-    private String viewRecoveryConfBaseDir;
-    private String viewRecoveryConfBaseName;
+    private String viewPersistenceConfBaseDir;
+    private String viewPersistenceConfBaseName;
     private int transactionRatateSize;
 
     private int mergeQueueSize;
@@ -179,8 +179,8 @@ public final class SystemConfig {
         this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
         this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
         this.xaRecoveryLogBaseName = "tmlog";
-        this.viewRecoveryConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
-        this.viewRecoveryConfBaseName = "viewJson";
+        this.viewPersistenceConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
+        this.viewPersistenceConfBaseName = "viewJson";
         this.transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + DEFAULT_TRANSACTION_BASE_DIR;
         this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
         this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
@@ -784,20 +784,22 @@ public final class SystemConfig {
     }
 
 
-    public String getViewRecoveryConfBaseDir() {
-        return viewRecoveryConfBaseDir;
+    public String getViewPersistenceConfBaseDir() {
+        return viewPersistenceConfBaseDir;
     }
 
-    public void setViewRecoveryConfBaseDir(String viewRecoveryConfBaseDir) {
-        this.viewRecoveryConfBaseDir = viewRecoveryConfBaseDir;
+    @SuppressWarnings("unused")
+    public void setViewPersistenceConfBaseDir(String viewPersistenceConfBaseDir) {
+        this.viewPersistenceConfBaseDir = viewPersistenceConfBaseDir;
     }
 
-    public String getViewRecoveryConfBaseName() {
-        return viewRecoveryConfBaseName;
+    public String getViewPersistenceConfBaseName() {
+        return viewPersistenceConfBaseName;
     }
 
-    public void setViewRecoveryConfBaseName(String viewRecoveryConfBaseName) {
-        this.viewRecoveryConfBaseName = viewRecoveryConfBaseName;
+    @SuppressWarnings("unused")
+    public void setViewPersistenceConfBaseName(String viewPersistenceConfBaseName) {
+        this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
     }
 
     @Override

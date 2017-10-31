@@ -22,7 +22,7 @@ public class FileSystemRepository implements Reposoitory {
     private FileChannel rwChannel = null;
     private String baseDir;
     private String baseName;
-    private Map<String, Map<String, String>> viewCreateSqlMap = null;
+    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
 
 
     public FileSystemRepository() {
@@ -38,8 +38,8 @@ public class FileSystemRepository implements Reposoitory {
             ServerConfig config = DbleServer.getInstance().getConfig();
             SystemConfig systemConfig = config.getSystem();
 
-            baseDir = systemConfig.getViewRecoveryConfBaseDir();
-            baseName = systemConfig.getViewRecoveryConfBaseName();
+            baseDir = systemConfig.getViewPersistenceConfBaseDir();
+            baseName = systemConfig.getViewPersistenceConfBaseName();
 
             //Judge whether exist the basedir
             createBaseDir();

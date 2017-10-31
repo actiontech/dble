@@ -18,16 +18,24 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
     private QueryNode node;
 
     protected QueryNodeHandlerBuilder(NonBlockingSession session,
-                                      QueryNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+                                      QueryNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
+    }
+
+    @Override
+    protected void handleSubQueries() {
     }
 
     @Override
     public List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode subNode = node.getChild();
-        DMLResponseHandler subHandler = hBuilder.buildNode(session, subNode);
+        BaseHandlerBuilder builder = hBuilder.getBuilder(session, subNode, isExplain);
+        if (builder.getSubQueryBuilderList().size() > 0) {
+            this.getSubQueryBuilderList().addAll(builder.getSubQueryBuilderList());
+        }
+        DMLResponseHandler subHandler = builder.getEndHandler();
         pres.add(subHandler);
         return pres;
     }

@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -69,7 +70,7 @@ public final class SchemaUtil {
             String msg = "No database selected";
             throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
         }
-        if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
             schemaInfo.table = schemaInfo.table.toLowerCase();
             schemaInfo.schema = schemaInfo.schema.toLowerCase();
         }

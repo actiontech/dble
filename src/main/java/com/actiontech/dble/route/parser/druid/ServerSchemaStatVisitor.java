@@ -81,28 +81,28 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLExistsExpr x) {
         super.visit(x);
-        notSupportMsg = "Subqueries with EXISTS or NOT EXISTS is not supported";
+        hasSubQuery = true;
         return true;
     }
 
     @Override
     public boolean visit(SQLAllExpr x) {
         super.visit(x);
-        notSupportMsg = "Subqueries with All is not supported";
+        hasSubQuery = true;
         return true;
     }
 
     @Override
     public boolean visit(SQLSomeExpr x) {
         super.visit(x);
-        notSupportMsg = "Subqueries with Some is not supported";
+        hasSubQuery = true;
         return true;
     }
 
     @Override
     public boolean visit(SQLAnyExpr x) {
         super.visit(x);
-        notSupportMsg = "Subqueries with Any is not supported";
+        hasSubQuery = true;
         return true;
     }
 

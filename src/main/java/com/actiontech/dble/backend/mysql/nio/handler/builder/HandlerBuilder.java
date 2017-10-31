@@ -54,15 +54,20 @@ public class HandlerBuilder {
      * @param planNode
      * @return
      */
-    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode) {
-        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode);
-        builder.build();
+    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
+        BaseHandlerBuilder builder = getBuilder(nonBlockingSession, planNode, isExplain);
         return builder.getEndHandler();
+    }
+
+    public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
+        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
+        builder.build();
+        return builder;
     }
 
     public void build(boolean hasNext) throws Exception {
         final long startTime = System.nanoTime();
-        DMLResponseHandler endHandler = buildNode(session, node);
+        DMLResponseHandler endHandler = buildNode(session, node, false);
         OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);
@@ -70,18 +75,18 @@ public class HandlerBuilder {
         logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
     }
 
-    private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode) {
+    private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         PlanNode.PlanNodeType i = planNode.type();
         if (i == PlanNode.PlanNodeType.TABLE) {
-            return new TableNodeHandlerBuilder(nonBlockingSession, (TableNode) planNode, this);
+            return new TableNodeHandlerBuilder(nonBlockingSession, (TableNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.JOIN) {
-            return new JoinNodeHandlerBuilder(nonBlockingSession, (JoinNode) planNode, this);
+            return new JoinNodeHandlerBuilder(nonBlockingSession, (JoinNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.MERGE) {
-            return new MergeNodeHandlerBuilder(nonBlockingSession, (MergeNode) planNode, this);
+            return new MergeNodeHandlerBuilder(nonBlockingSession, (MergeNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.QUERY) {
-            return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this);
+            return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
-            return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this);
+            return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this, isExplain);
         }
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }

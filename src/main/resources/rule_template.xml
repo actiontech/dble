@@ -37,6 +37,13 @@
         </rule>
     </tableRule>
 
+    <tableRule name="sharding-by-hash3">
+        <rule>
+            <columns>id</columns>
+            <algorithm>hashLong3</algorithm>
+        </rule>
+    </tableRule>
+
     <tableRule name="sharding-by-mod">
         <rule>
             <columns>id</columns>
@@ -82,7 +89,7 @@
     </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 1024-->
+    <!--MAX(sum(count*length[i]) must not more then 2880-->
     <function name="hashLong" class="Hash">
         <property name="partitionCount">8</property>
         <property name="partitionLength">128</property>
@@ -91,10 +98,19 @@
     </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 1024-->
+    <!--MAX(sum(count*length[i]) must not more then 2880-->
     <function name="hashLong2" class="Hash">
         <property name="partitionCount">2</property>
         <property name="partitionLength">512</property>
+        <!-- <property name="partitionCount">2,3</property>
+        <property name="partitionLength">4,5</property>-->
+    </function>
+
+    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
+    <!--MAX(sum(count*length[i]) must not more then 2880-->
+    <function name="hashLong3" class="Hash">
+        <property name="partitionCount">2,1</property>
+        <property name="partitionLength">256,512</property>
         <!-- <property name="partitionCount">2,3</property>
         <property name="partitionLength">4,5</property>-->
     </function>
@@ -117,8 +133,8 @@
     <!-- 4 case:
     1.set sEndDate and defaultNode: input <sBeginDate ,router to defaultNode; input>sEndDate ,mod the period
     2.set sEndDate, but no defaultNode:input <sBeginDate report error; input>sEndDate ,mod the period
-    3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sEndDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
-    4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sEndDate + (node size)*sPartionDay-1 will report error
+    3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sBeginDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
+    4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sBeginDate + (node size)*sPartionDay-1 will report error
      -->
     <function name="partbydate"
               class="Date">

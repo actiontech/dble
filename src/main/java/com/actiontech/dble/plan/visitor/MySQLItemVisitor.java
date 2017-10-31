@@ -36,13 +36,12 @@ import com.actiontech.dble.plan.common.item.function.timefunc.ItemDateAddInterva
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemExtract;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
 import com.actiontech.dble.plan.common.item.function.unknown.ItemFuncUnknown;
-import com.actiontech.dble.plan.common.item.subquery.ItemInSubselect;
-import com.actiontech.dble.plan.common.item.subquery.ItemSinglerowSubselect;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.SQLDataType;
-import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLOrderBy;
+import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
@@ -92,7 +91,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemSinglerowSubselect(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+        initName(x);
+        item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
 
     @Override
@@ -105,7 +106,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubselect(currentDb, left, x.getSubQuery().getQuery(), isNeg);
+        item = new ItemInSubQuery(currentDb, left, x.getSubQuery().getQuery(), isNeg);
         initName(x);
     }
 
@@ -123,6 +124,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLBinaryOpExpr x) {
         Item itemLeft = getItem(x.getLeft());
         Item itemRight = getItem(x.getRight());
+        if (itemRight instanceof ItemInSubQuery) {
+            item = itemRight;
+            return;
+        }
         switch (x.getOperator()) {
             case Is:
                 // is null, or is unknown
@@ -258,6 +263,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported kind expression:" + x.getOperator());
         }
+        item.setWithSubQuery(itemLeft.isWithSubQuery() || itemRight.isWithSubQuery());
+        item.setCorrelatedSubQuery(itemLeft.isCorrelatedSubQuery() || itemRight.isCorrelatedSubQuery());
         initName(x);
     }
 
@@ -285,6 +292,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "not supported kind expression:" + x.getOperator());
         }
+        item.setWithSubQuery(a.isWithSubQuery());
+        item.setCorrelatedSubQuery(a.isCorrelatedSubQuery());
         initName(x);
     }
 
@@ -616,25 +625,42 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLAllExpr x) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with All is not supported");
+        SQLObject parent = x.getParent();
+        if (parent instanceof SQLBinaryOpExpr) {
+            handleAnySubQuery((SQLBinaryOpExpr) parent, x.getSubQuery().getQuery(), true);
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
+        }
     }
 
     @Override
     public void endVisit(SQLSomeExpr x) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with Some is not supported");
+        SQLObject parent = x.getParent();
+        if (parent instanceof SQLBinaryOpExpr) {
+            handleAnySubQuery((SQLBinaryOpExpr) parent, x.getSubQuery().getQuery(), false);
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
+        }
     }
 
 
     @Override
     public void endVisit(SQLAnyExpr x) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Subqueries with Any is not supported");
+        SQLObject parent = x.getParent();
+        if (parent instanceof SQLBinaryOpExpr) {
+            handleAnySubQuery((SQLBinaryOpExpr) parent, x.getSubQuery().getQuery(), false);
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
+        }
     }
-
 
     @Override
     public void endVisit(SQLExistsExpr x) {
-        // TODO
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported exists!");
+        SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot());
     }
 
     @Override
@@ -669,7 +695,43 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemSinglerowSubselect(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+    }
+
+
+
+    private void handleAnySubQuery(SQLBinaryOpExpr parent, SQLSelectQuery sqlSelect, boolean isAll) {
+        SQLBinaryOperator operator = parent.getOperator();
+        switch (operator) {
+            case Equality:
+                if (isAll) {
+                    item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, true);
+                } else {
+                    Item left = getItem(parent.getLeft());
+                    item = new ItemInSubQuery(currentDb, left, sqlSelect, false);
+                }
+                break;
+            case NotEqual:
+            case LessThanOrGreater:
+                if (isAll) {
+                    Item left = getItem(parent.getLeft());
+                    item = new ItemInSubQuery(currentDb, left, sqlSelect, true);
+                } else {
+                    item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, false);
+                }
+                break;
+            case LessThan:
+            case LessThanOrEqual:
+            case GreaterThan:
+            case GreaterThanOrEqual:
+                item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, isAll);
+                break;
+            default:
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
+
+        }
+
     }
 
     private CastType getCastType(SQLDataTypeImpl dataTypeImpl) {

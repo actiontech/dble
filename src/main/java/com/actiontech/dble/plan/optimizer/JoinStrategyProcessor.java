@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 
 public final class JoinStrategyProcessor {
+    public static final String NEED_REPLACE = "{NEED_TO_REPLACE}";
     private JoinStrategyProcessor() {
     }
 

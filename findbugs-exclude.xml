@@ -47,16 +47,16 @@
 
     <!-- subquery need to refactor  -->
     <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemSinglerowSubselect"/>
+        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemAllanySubselect"/>
+        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemExistsSubselect"/>
+        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemMaxminSubselect"/>
+        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemMaxminSubQuery"/>
     </Match>
     <!-- subquery need to refactor  end -->
 

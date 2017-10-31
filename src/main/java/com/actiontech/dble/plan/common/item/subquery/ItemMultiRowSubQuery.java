@@ -9,54 +9,30 @@
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.common.context.NameResolutionContext;
-import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
-import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
-import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
-public class ItemInSubselect extends ItemSubselect {
-    private boolean isNeg;
-    private Item leftOprand;
-
+public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
+    protected List<Item> value = new ArrayList<>();
+    protected Item filed;
+    protected Item select;
     /**
      * @param currentDb
      * @param query
      */
-    public ItemInSubselect(String currentDb, Item leftOprand, SQLSelectQuery query, boolean isNeg) {
+    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query) {
         super(currentDb, query);
-        this.leftOprand = leftOprand;
-        this.isNeg = isNeg;
     }
 
     @Override
     public void fixLengthAndDec() {
-
-    }
-
-    public Item fixFields(NameResolutionContext context) {
-        super.fixFields(context);
-        leftOprand = leftOprand.fixFields(context);
-        return this;
-    }
-
-    /**
-     * added to construct all refers in an item
-     *
-     * @param context
-     */
-    public void fixRefer(ReferContext context) {
-        super.fixRefer(context);
-        leftOprand.fixRefer(context);
     }
 
     @Override
@@ -89,27 +65,25 @@ public class ItemInSubselect extends ItemSubselect {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support yet!");
     }
 
-    public Item getLeftOprand() {
-        return leftOprand;
+
+
+    public Item getSelect() {
+        return select;
     }
 
-    public boolean isNeg() {
-        return isNeg;
+    public void setSelect(Item select) {
+        this.select = select;
     }
 
-    @Override
-    public SQLExpr toExpression() {
-        SQLExpr expr = leftOprand.toExpression();
-        SQLSelect select = new SQLSelect(query);
-        SQLInSubQueryExpr insub = new SQLInSubQueryExpr(select);
-        insub.setExpr(expr);
-        insub.setNot(isNeg);
-        return insub;
+    public Item getFiled() {
+        return filed;
     }
 
-    @Override
-    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected!");
+    public void setFiled(Item filed) {
+        this.filed = filed;
     }
 
+    public List<Item> getValue() {
+        return value;
+    }
 }

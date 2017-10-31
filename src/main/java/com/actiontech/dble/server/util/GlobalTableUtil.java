@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -88,7 +89,7 @@ public final class GlobalTableUtil {
             for (TableConfig table : entry.getValue().getTables().values()) {
                 if (table.isGlobalTable()) {
                     String tableName = table.getName();
-                    if (config.getSystem().isLowerCaseTableNames()) {
+                    if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                         tableName = tableName.toLowerCase();
                     }
                     globalTableMap.put(entry.getKey() + "." + tableName, table);

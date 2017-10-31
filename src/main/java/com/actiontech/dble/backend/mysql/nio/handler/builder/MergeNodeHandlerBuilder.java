@@ -18,16 +18,24 @@ import java.util.List;
 class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
     private MergeNode node;
 
-    protected MergeNodeHandlerBuilder(NonBlockingSession session, MergeNode node, HandlerBuilder hBuilder) {
-        super(session, node, hBuilder);
+    protected MergeNodeHandlerBuilder(NonBlockingSession session, MergeNode node, HandlerBuilder hBuilder, boolean isExplain) {
+        super(session, node, hBuilder, isExplain);
         this.node = node;
+    }
+
+    @Override
+    protected void handleSubQueries() {
     }
 
     @Override
     protected List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         for (PlanNode child : node.getChildren()) {
-            DMLResponseHandler ch = hBuilder.buildNode(session, child);
+            BaseHandlerBuilder builder = hBuilder.getBuilder(session, child, isExplain);
+            if (builder.getSubQueryBuilderList().size() > 0) {
+                this.getSubQueryBuilderList().addAll(builder.getSubQueryBuilderList());
+            }
+            DMLResponseHandler ch = builder.getEndHandler();
             pres.add(ch);
         }
         return pres;

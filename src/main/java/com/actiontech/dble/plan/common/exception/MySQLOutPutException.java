@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.plan.common.exception;
 
+import com.actiontech.dble.util.StringUtil;
+
 /**
  * MySQLOutPutException
  *
@@ -23,7 +25,11 @@ public class MySQLOutPutException extends RuntimeException {
     public MySQLOutPutException(int errorCode, String sqlState, String msg) {
         super(msg);
         this.errorCode = errorCode;
-        this.sqlState = sqlState;
+        if (StringUtil.isEmpty(sqlState)) {
+            this.sqlState = "HY000";
+        } else {
+            this.sqlState = sqlState;
+        }
     }
 
     public MySQLOutPutException(int errorCode, String sqlState, String msg, Throwable cause) {

@@ -84,7 +84,6 @@ public class FileSystemRepository implements Repository {
     private synchronized void writeToFile(ByteBuffer buff, boolean force)
             throws IOException {
         rwChannel.write(buff);
-        rwChannel.force(force);
     }
 
     @Override
@@ -100,7 +99,7 @@ public class FileSystemRepository implements Repository {
         } catch (FileNotFoundException firstStart) {
             // the file could not be opened for reading;
             // merely return the default empty vector
-            LOGGER.warn("FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            LOGGER.debug("Only For debug FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
         }
         if (fis != null) {
             return readFromInputStream(fis);

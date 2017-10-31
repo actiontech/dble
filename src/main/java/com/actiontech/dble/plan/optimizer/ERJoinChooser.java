@@ -524,10 +524,10 @@ public class ERJoinChooser {
     //TODO:performance
 
     private boolean isGlobalTree(PlanNode tn) {
-        if (tn instanceof TableNode) {
+        if (tn instanceof TableNode && tn.getSubQueries().size() == 0) {
             return tn.getUnGlobalTableCount() == 0;
         } else if (tn.type() == PlanNode.PlanNodeType.NONAME) {
-            return true;
+            return tn.getSubQueries().size() == 0;
         } else {
             for (TableNode leaf : tn.getReferedTableNodes()) {
                 if (leaf.getUnGlobalTableCount() != 0)

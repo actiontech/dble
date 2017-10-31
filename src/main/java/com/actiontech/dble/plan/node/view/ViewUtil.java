@@ -31,6 +31,6 @@ public final class ViewUtil {
         boolean selectsAllowMerge = viewSelNode.type() != PlanNode.PlanNodeType.MERGE;
         // TODO as the same as LEX::can_be_merged();
         boolean existAggr = PlanUtil.existAggr(viewSelNode);
-        return selectsAllowMerge && viewSelNode.getReferedTableNodes().size() >= 1 && !existAggr;
+        return selectsAllowMerge && viewSelNode.getReferedTableNodes().size() == 1 && !existAggr;
     }
 }

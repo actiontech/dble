@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.plan.node.TableNode;
 import org.apache.commons.lang.StringUtils;
 
@@ -44,6 +45,9 @@ public class PushDownVisitor extends MysqlVisitor {
             } else if (i == PlanNode.PlanNodeType.JOIN) {
                 visit((JoinNode) query);
 
+            } else if (i == PlanNode.PlanNodeType.NONAME) {
+                visit((NoNameNode) query);
+
             } else {
                 throw new RuntimeException("not implement yet!");
             }
@@ -54,6 +58,9 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
+    protected void visit(NoNameNode query) {
+        buildSelect(query);
+    }
 
     protected void visit(TableNode query) {
         if (query.isSubQuery() && !isTopQuery) {
@@ -112,29 +119,10 @@ public class PushDownVisitor extends MysqlVisitor {
         rightVisitor.visit();
         replaceableSqlBuilder.append(rightVisitor.getSql());
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
-        StringBuilder joinOnFilterStr = new StringBuilder();
-        boolean first = true;
-        for (int i = 0; i < join.getJoinFilter().size(); i++) {
-            Item filter = join.getJoinFilter().get(i);
-            if (first) {
-                sqlBuilder.append(" on ");
-                first = false;
-            } else
-                joinOnFilterStr.append(" and ");
-            joinOnFilterStr.append(filter);
-        }
-
-        if (join.getOtherJoinOnFilter() != null) {
-            if (first) {
-                first = false;
-            } else {
-                joinOnFilterStr.append(" and ");
-            }
-            joinOnFilterStr.append(join.getOtherJoinOnFilter());
-        }
+        StringBuilder joinOnFilterStr = getJoinOn(join, leftVisitor, rightVisitor);
         sqlBuilder.append(joinOnFilterStr.toString());
         if (join.isSubQuery() || isTopQuery) {
-            buildWhere(join);
+            buildWhere(join, leftVisitor.getWhereFilter(), rightVisitor.getWhereFilter());
             buildGroupBy(join);
             // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(join);
@@ -149,11 +137,84 @@ public class PushDownVisitor extends MysqlVisitor {
 
     }
 
+    private StringBuilder getJoinOn(JoinNode join, MysqlVisitor leftVisitor, MysqlVisitor rightVisitor) {
+        StringBuilder joinOnFilterStr = new StringBuilder();
+        boolean first = true;
+        for (int i = 0; i < join.getJoinFilter().size(); i++) {
+            Item filter = join.getJoinFilter().get(i);
+            if (first) {
+                sqlBuilder.append(" on ");
+                first = false;
+            } else
+                joinOnFilterStr.append(" and ");
+            joinOnFilterStr.append(filter);
+        }
+
+        if (join.getOtherJoinOnFilter() != null) {
+            if (!first) {
+                joinOnFilterStr.append(" and ");
+            }
+            joinOnFilterStr.append(join.getOtherJoinOnFilter());
+        }
+        // is not left join
+        if (leftVisitor.getWhereFilter() != null && !join.getLeftOuter()) {
+            if (!first) {
+                joinOnFilterStr.append(" and ");
+            }
+            joinOnFilterStr.append("(");
+            joinOnFilterStr.append(leftVisitor.getWhereFilter());
+            joinOnFilterStr.append(")");
+        }
+        // is not right join
+        if (rightVisitor.getWhereFilter() != null && !join.getRightOuter()) {
+            if (!first) {
+                joinOnFilterStr.append(" and ");
+            }
+            joinOnFilterStr.append("(");
+            joinOnFilterStr.append(rightVisitor.getWhereFilter());
+            joinOnFilterStr.append(")");
+        }
+        return joinOnFilterStr;
+    }
+
+    protected void buildWhere(JoinNode planNode, Item leftFilter, Item rightFilter) {
+        if (!visited)
+            replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
+        StringBuilder whereBuilder = new StringBuilder();
+        Item filter = planNode.getWhereFilter();
+        if (filter != null) {
+            String pdName = visitUnSelPushDownName(filter, false);
+            whereBuilder.append(" where ").append(pdName);
+        } else {
+            whereBuilder.append(" where 1=1 ");
+        }
+        // left join
+        if (leftFilter != null && !planNode.getRightOuter() && planNode.getLeftOuter()) {
+            String pdName = visitUnSelPushDownName(leftFilter, false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        //right join
+        if (rightFilter != null && !planNode.getLeftOuter() && planNode.getRightOuter()) {
+            String pdName = visitUnSelPushDownName(rightFilter, false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        replaceableWhere.set(whereBuilder.toString());
+        // refresh sqlbuilder
+        sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
+    }
     protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
-        List<Item> columns = query.getColumnsRefered();
         if (query.isDistinct()) {
             sqlBuilder.append("DISTINCT ");
+        }
+        List<Item> columns = query.getColumnsRefered();
+        if (columns.size() == 0) {
+            sqlBuilder.append("1");
+            return;
         }
         for (Item col : columns) {
             if (existUnPushDownGroup && col.type().equals(Item.ItemType.SUM_FUNC_ITEM))

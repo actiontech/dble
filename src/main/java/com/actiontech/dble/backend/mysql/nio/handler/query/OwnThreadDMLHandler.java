@@ -42,6 +42,10 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
         }
     }
 
+    protected final void startEasyMerge() {
+        ownJobFlag.compareAndSet(false, true);
+    }
+
     /**
      * @param objects
      */

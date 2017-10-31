@@ -14,7 +14,7 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.SystemVariables;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
 import com.actiontech.dble.util.StringUtil;
@@ -231,7 +231,10 @@ public final class SetHandler {
                 if (!handleTxIsolationInMultiStmt(c, contextTask, valueExpr)) return false;
                 break;
             case SYSTEM_VARIABLES:
-                if (SystemVariables.getDefaultValue(key) == null) {
+                if (key.startsWith("@@")) {
+                    key = key.substring(2);
+                }
+                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
@@ -361,7 +364,10 @@ public final class SetHandler {
             case TX_ISOLATION:
                 return handleTxIsolation(c, valueExpr);
             case SYSTEM_VARIABLES:
-                if (SystemVariables.getDefaultValue(key) == null) {
+                if (key.startsWith("@@")) {
+                    key = key.substring(2);
+                }
+                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                     return false;
                 }
@@ -575,7 +581,7 @@ public final class SetHandler {
 
     private static boolean checkValue(SQLExpr valueExpr) {
         return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
-                (valueExpr instanceof SQLIntegerExpr);
+                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) || (valueExpr instanceof SQLBooleanExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -623,6 +629,9 @@ public final class SetHandler {
                 return null;
             }
             return (iValue == 1);
+        } else if (valueExpr instanceof SQLBooleanExpr) {
+            SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
+            return value.getValue();
         }
         String strValue = parseStringValue(valueExpr);
         switch (strValue) {
@@ -646,6 +655,12 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLNumberExpr) {
+            SQLNumberExpr value = (SQLNumberExpr) valueExpr;
+            strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLBooleanExpr) {
+            SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
+            strValue = String.valueOf(value.getValue());
         }
         return strValue;
     }

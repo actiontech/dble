@@ -11,16 +11,26 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
@@ -29,13 +39,21 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import org.apache.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
-abstract class BaseHandlerBuilder {
+public abstract class BaseHandlerBuilder {
+    private static final Logger LOGGER = Logger.getLogger(BaseHandlerBuilder.class);
     private static AtomicLong sequenceId = new AtomicLong(0);
     protected NonBlockingSession session;
     protected HandlerBuilder hBuilder;
@@ -53,17 +71,25 @@ abstract class BaseHandlerBuilder {
     /* it's no need to send maker if sql is just the same as the client origin query  */
     protected boolean needSendMaker = true;
 
-    protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder) {
+    protected boolean isExplain = false;
+    protected List<BaseHandlerBuilder> subQueryBuilderList = new ArrayList<>(1);
+
+    protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
         this.node = node;
         this.hBuilder = hBuilder;
         this.config = DbleServer.getInstance().getConfig();
+        this.isExplain = isExplain;
         if (config.getSchemas().isEmpty())
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "current router config is empty!");
     }
 
     public DMLResponseHandler getEndHandler() {
         return currentLast;
+    }
+
+    public List<BaseHandlerBuilder> getSubQueryBuilderList() {
+        return subQueryBuilderList;
     }
 
     /**
@@ -82,6 +108,7 @@ abstract class BaseHandlerBuilder {
             // the query can be send to some certain nodes .eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
             mergeBuild();
         } else {
+            handleSubQueries();
             //need to split to simple query
             preHandlers = buildPre();
             buildOwn();
@@ -89,7 +116,7 @@ abstract class BaseHandlerBuilder {
         if (needCommon)
             buildCommon();
         if (needSendMaker) {
-            // view subalias
+            // view sub alias
             String tbAlias = node.getAlias();
             if (node.getParent() != null && node.getParent().getSubAlias() != null)
                 tbAlias = node.getParent().getSubAlias();
@@ -115,6 +142,8 @@ abstract class BaseHandlerBuilder {
     protected void mergeBuild() {
         //
     }
+
+    protected abstract void handleSubQueries();
 
     protected abstract List<DMLResponseHandler> buildPre();
 
@@ -394,6 +423,112 @@ abstract class BaseHandlerBuilder {
         if (schemaConfig == null)
             return null;
         return schemaConfig.getTables().get(table);
+    }
+
+    protected void handleBlockingSubQuery() {
+        if (node.getSubQueries().size() == 0) {
+            return;
+        }
+        final ReentrantLock lock = new ReentrantLock();
+        final Condition finishSubQuery = lock.newCondition();
+        final AtomicBoolean finished = new AtomicBoolean(false);
+        final AtomicInteger subNodes = new AtomicInteger(node.getSubQueries().size());
+        final CopyOnWriteArrayList<ErrorPacket> errorPackets = new CopyOnWriteArrayList<>();
+        for (ItemSubQuery itemSubQuery : node.getSubQueries()) {
+            if (itemSubQuery instanceof ItemSingleRowSubQuery) {
+                final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
+            } else if (itemSubQuery instanceof ItemInSubQuery) {
+                final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
+            } else if (itemSubQuery instanceof ItemAllAnySubQuery) {
+                final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery);
+                if (isExplain) {
+                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+                } else {
+                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+                }
+            }
+        }
+        lock.lock();
+        try {
+            while (!finished.get()) {
+                finishSubQuery.await();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.warn("execute ScalarSubQuery " + e);
+            ErrorPacket errorPackage = new ErrorPacket();
+            errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+            String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+            errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
+            errorPackets.add(errorPackage);
+        } finally {
+            lock.unlock();
+        }
+        if (errorPackets.size() > 0) {
+            throw new MySQLOutPutException(errorPackets.get(0).getErrNo(), "", new String(errorPackets.get(0).getMessage(), StandardCharsets.UTF_8));
+        }
+    }
+
+    private void handleSubQueryForExplain(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
+                                final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
+        tempHandler.setForExplain();
+        BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, true);
+        DMLResponseHandler endHandler = builder.getEndHandler();
+        endHandler.setNextHandler(tempHandler);
+        this.getSubQueryBuilderList().add(builder);
+        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+        return;
+    }
+    private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
+                                final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    DMLResponseHandler endHandler = hBuilder.buildNode(session, planNode, false);
+                    endHandler.setNextHandler(tempHandler);
+                    CallBackHandler tempDone = new CallBackHandler() {
+                        @Override
+                        public void call() throws Exception {
+                            if (tempHandler.getErrorPacket() != null) {
+                                errorPackets.add(tempHandler.getErrorPacket());
+                            }
+                            subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                        }
+                    };
+                    tempHandler.setTempDoneCallBack(tempDone);
+                    HandlerBuilder.startHandler(endHandler);
+                } catch (Exception e) {
+                    LOGGER.warn("execute ItemScalarSubQuery error", e);
+                    ErrorPacket errorPackage = new ErrorPacket();
+                    errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+                    String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+                    errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
+                    errorPackets.add(errorPackage);
+                }
+            }
+        });
+    }
+
+    private void subQueryFinished(AtomicInteger subNodes, ReentrantLock lock, AtomicBoolean finished, Condition finishSubQuery) {
+        if (subNodes.decrementAndGet() == 0) {
+            lock.lock();
+            try {
+                finished.set(true);
+                finishSubQuery.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
 }

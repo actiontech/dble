@@ -109,7 +109,9 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 rowComparator = makeRowDataSorter((MySQLConnection) conn);
                 nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
             }
-            if (!isEasyMerge) {
+            if (isEasyMerge) {
+                startEasyMerge();
+            } else {
                 if (++reachedConCount == route.length) {
                     startOwnThread();
                 }

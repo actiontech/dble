@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.util.StringUtil;
@@ -21,7 +22,6 @@ import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
@@ -139,7 +139,7 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLExprTableSource tableSource) {
-        PlanNode table = null;
+        PlanNode table;
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
@@ -248,19 +248,13 @@ public class MySQLPlanNodeVisitor {
         this.tableNode.setSubQuery(true);
         if (subQueryTables.getAlias() != null) {
             tableNode.alias(subQueryTables.getAlias());
-            if (tableNode.getSubAlias() == null) {
+            if (tableNode.getSubAlias() == null && tableNode.type() == PlanNode.PlanNodeType.TABLE && !tableNode.isSubQuery()) {
                 tableNode.setSubAlias(tableNode.getAlias());
             }
         }
         return true;
     }
 
-    public boolean visit(SQLSelect node) {
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
-        mtv.visit(node);
-        this.tableNode = mtv.getTableNode();
-        return true;
-    }
 
     public void visit(SQLTableSource tables) {
         if (tables instanceof SQLExprTableSource) {
@@ -290,12 +284,14 @@ public class MySQLPlanNodeVisitor {
         List<Item> selectItems = new ArrayList<>();
         for (SQLSelectItem item : items) {
             SQLExpr expr = item.getExpr();
-            if (expr instanceof SQLQueryExpr)
-                throw new RuntimeException("query statement as column is not supported!");
             MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex);
             expr.accept(ev);
             Item selItem = ev.getItem();
-
+            if (selItem instanceof ItemScalarSubQuery) {
+                ((ItemScalarSubQuery) selItem).setField(true);
+                tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
+                tableNode.setSubQuery(true);
+            }
             selItem.setAlias(item.getAlias());
             selectItems.add(selItem);
         }
@@ -306,9 +302,12 @@ public class MySQLPlanNodeVisitor {
         MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
         whereExpr.accept(mev);
         if (this.tableNode != null) {
-            Item whereFiler = mev.getItem();
-            tableNode.query(whereFiler);
-            // this.tableNode.setWhereFilter(tableNode.getWhereFilter());
+            Item whereFilter = mev.getItem();
+            tableNode.query(whereFilter);
+            if (whereFilter.isWithSubQuery()) {
+                tableNode.setSubQuery(true);
+                tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
+            }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "from expression is null,check the sql!");
         }
@@ -359,9 +358,9 @@ public class MySQLPlanNodeVisitor {
 
     private void handleLimit(SQLLimit limit) {
         long from = 0;
-        SQLExpr offest = limit.getOffset();
-        if (offest != null) {
-            SQLIntegerExpr offsetExpr = (SQLIntegerExpr) offest;
+        SQLExpr offset = limit.getOffset();
+        if (offset != null) {
+            SQLIntegerExpr offsetExpr = (SQLIntegerExpr) offset;
             from = offsetExpr.getNumber().longValue();
         }
         SQLExpr rowCount = limit.getRowCount();

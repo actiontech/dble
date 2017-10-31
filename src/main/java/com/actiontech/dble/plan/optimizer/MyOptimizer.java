@@ -9,12 +9,15 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public final class MyOptimizer {
@@ -26,7 +29,8 @@ public final class MyOptimizer {
         try {
             // PreProcessor SubQuery
             node = SubQueryPreProcessor.optimize(node);
-            int existGlobal = checkGlobalTable(node);
+            updateReferedTableNodes(node);
+            int existGlobal = checkGlobalTable(node, new HashSet<String>());
             if (node.isExsitView() || existGlobal != 1) {
                 // optimizer subquery
                 node = SubQueryProcessor.optimize(node);
@@ -64,6 +68,20 @@ public final class MyOptimizer {
         }
     }
 
+    private static List<TableNode> updateReferedTableNodes(PlanNode node) {
+        List<TableNode> subTables = new ArrayList<>();
+        for (PlanNode childNode : node.getChildren()) {
+            List<TableNode> childSubTables = updateReferedTableNodes(childNode);
+            node.getReferedTableNodes().addAll(childSubTables);
+            subTables.addAll(childSubTables);
+        }
+        for (ItemSubQuery subQuery : node.getSubQueries()) {
+            List<TableNode> childSubTables = subQuery.getPlanNode().getReferedTableNodes();
+            node.getReferedTableNodes().addAll(childSubTables);
+            subTables.addAll(childSubTables);
+        }
+        return subTables;
+    }
     /**
      * existShardTable
      *
@@ -72,7 +90,10 @@ public final class MyOptimizer {
      * return -1 if all the table is not global table,need not global optimizer;
      * return 0 for other ,may need to global optimizer ;
      */
-    public static int checkGlobalTable(PlanNode node) {
+    public static int checkGlobalTable(PlanNode node, Set<String> resultDataNodes) {
+        if (node.isSubQuery()) {
+            return 0;
+        }
         Set<String> dataNodes = null;
         boolean isAllGlobal = true;
         boolean isContainGlobal = false;
@@ -102,9 +123,11 @@ public final class MyOptimizer {
                 String db = SchemaUtil.getRandomDb();
                 SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(db);
                 node.setNoshardNode(schemaConfig.getAllDataNodes());
+                resultDataNodes.addAll(schemaConfig.getAllDataNodes());
                 return 1;
             } else if (dataNodes.size() > 0) { //all global table
                 node.setNoshardNode(dataNodes);
+                resultDataNodes.addAll(dataNodes);
                 String sql = node.getSql();
                 for (TableNode tn : node.getReferedTableNodes()) {
                     sql = RouterUtil.removeSchema(sql, tn.getSchema());
@@ -115,10 +138,7 @@ public final class MyOptimizer {
                 return 0;
             }
         }
-        if (!isContainGlobal) {
-            return -1;
-        }
-        return 0;
+        return -1;
     }
 
 

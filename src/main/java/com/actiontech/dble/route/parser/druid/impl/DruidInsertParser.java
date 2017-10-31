@@ -152,7 +152,7 @@ public class DruidInsertParser extends DefaultDruidParser {
         // try to route by ER parent partion key
         RouteResultset theRrs = ReplaceInsertUtil.routeByERParentKey(rrs, tc, realVal);
         if (theRrs != null) {
-            rrs.setFinishedRoute(true);
+            theRrs.setFinishedRoute(true);
             return theRrs;
         }
         // route by sql query root parent's datanode

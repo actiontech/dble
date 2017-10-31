@@ -22,6 +22,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.StringUtil;
@@ -36,6 +37,8 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
+
 /**
  * ServerRouterUtil
  *
@@ -48,7 +51,7 @@ public final class RouterUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
 
     public static String removeSchema(String stmt, String schema) {
-        return removeSchema(stmt, schema, DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames());
+        return removeSchema(stmt, schema, SystemVariables.getSysVars().isLowerCaseTableNames());
     }
 
     /**
@@ -143,10 +146,14 @@ public final class RouterUtil {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool);
-            if (rrsTmp != null) {
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
+                if (rrsTmp.isGlobalTable()) {
+                    break;
+                }
             }
         }
+
 
         RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
         int i = 0;
@@ -289,7 +296,7 @@ public final class RouterUtil {
 
 
     public static String lowerCaseTable(String tableName) {
-        if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
             return tableName.toLowerCase();
         }
         return tableName;
@@ -575,7 +582,7 @@ public final class RouterUtil {
         //router for shard-ing tables
         for (Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
             String tableName = entry.getKey();
-            if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+            if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
                 tableName = tableName.toLowerCase();
             }
             if (tableName.startsWith(schema.getName() + ".")) {
@@ -634,9 +641,12 @@ public final class RouterUtil {
         for (ColumnRoutePair pair : partitionValue) {
             AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
             if (pair.colValue != null) {
+                if (NEED_REPLACE.equals(pair.colValue)) {
+                    return;
+                }
                 Integer nodeIndex = algorithm.calculate(pair.colValue);
                 if (nodeIndex == null) {
-                    String msg = "can't find any valid datanode :" + tableConfig.getName() +
+                    String msg = "can't find any valid data node :" + tableConfig.getName() +
                             " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
                     LOGGER.warn(msg);
                     throw new SQLNonTransientException(msg);

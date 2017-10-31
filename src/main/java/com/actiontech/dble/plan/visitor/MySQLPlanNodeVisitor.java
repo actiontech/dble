@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan.visitor;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -143,13 +144,23 @@ public class MySQLPlanNodeVisitor {
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
             table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
+
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {
                 this.tableNode = new NoNameNode(currentDb, null);
                 return true;
             }
-            table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
+            //here to check if the table name is a view in metaManager
+            QueryNode viewNode = DbleServer.getInstance().getTmManager().getCatalogs().get(currentDb).getView(identifierExpr.getName());
+            if (viewNode != null) {
+                //consider if the table with other name
+                viewNode.setSubAlias(tableSource.getAlias());
+                this.tableNode = viewNode;
+                return true;
+            } else {
+                table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
+            }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
         }

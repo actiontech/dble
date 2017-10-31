@@ -6,6 +6,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.plan.node.QueryNode;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,8 +19,11 @@ public class SchemaMeta {
      */
     private final ConcurrentMap<String, StructureMeta.TableMeta> tableMetas;
 
+    private final ConcurrentMap<String, ViewMeta> viewMetas;
+
     public SchemaMeta() {
         this.tableMetas = new ConcurrentHashMap<>();
+        this.viewMetas = new ConcurrentHashMap<>();
     }
 
     public Map<String, StructureMeta.TableMeta> getTableMetas() {
@@ -37,6 +41,29 @@ public class SchemaMeta {
 
     public StructureMeta.TableMeta getTableMeta(String tbName) {
         return this.tableMetas.get(tbName);
+    }
+
+    /**
+     * try to get a view meta of querynode
+     *
+     * @param name
+     * @return
+     */
+    public QueryNode getView(String name) {
+        ViewMeta view = viewMetas.get(name);
+        QueryNode queryNode = null;
+        if (view != null) {
+            queryNode = view.getViewQuery().copy();
+        }
+        return queryNode;
+    }
+
+    public ConcurrentMap<String, ViewMeta> getViewMetas() {
+        return viewMetas;
+    }
+
+    public String getViewMetaJson() {
+        return null;
     }
 
 }

@@ -133,6 +133,8 @@ public final class SystemConfig {
     private String xaRecoveryLogBaseName;
     private String transactionLogBaseDir;
     private String transactionLogBaseName;
+    private String viewPersistenceConfBaseDir;
+    private String viewPersistenceConfBaseName;
     private int transactionRatateSize;
 
     private int mergeQueueSize;
@@ -174,6 +176,8 @@ public final class SystemConfig {
         this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
         this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
         this.xaRecoveryLogBaseName = "tmlog";
+        this.viewPersistenceConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
+        this.viewPersistenceConfBaseName = "viewJson";
         this.transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + DEFAULT_TRANSACTION_BASE_DIR;
         this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
         this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
@@ -765,6 +769,24 @@ public final class SystemConfig {
         this.orderByQueueSize = orderByQueueSize;
     }
 
+
+    public String getViewPersistenceConfBaseDir() {
+        return viewPersistenceConfBaseDir;
+    }
+
+    @SuppressWarnings("unused")
+    public void setViewPersistenceConfBaseDir(String viewPersistenceConfBaseDir) {
+        this.viewPersistenceConfBaseDir = viewPersistenceConfBaseDir;
+    }
+
+    public String getViewPersistenceConfBaseName() {
+        return viewPersistenceConfBaseName;
+    }
+
+    @SuppressWarnings("unused")
+    public void setViewPersistenceConfBaseName(String viewPersistenceConfBaseName) {
+        this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
+    }
 
     @Override
     public String toString() {

@@ -536,5 +536,6 @@ public final class ErrorCode {
     public static final int ER_DROP_PARTITION_WHEN_FK_DEFINED = 1493;
     public static final int ER_PLUGIN_IS_NOT_LOADED = 1494;
     public static final int ER_USER_READ_ONLY = 1495;
+    public static final int CREATE_VIEW_ERROR = 1999;
 
 }

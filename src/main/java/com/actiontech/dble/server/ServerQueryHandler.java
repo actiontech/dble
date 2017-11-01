@@ -20,10 +20,16 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
 
     private final ServerConnection source;
-    protected Boolean readOnly = true;
-
+    private Boolean readOnly = true;
+    private boolean sessionReadOnly = true;
+    @Override
     public void setReadOnly(Boolean readOnly) {
         this.readOnly = readOnly;
+    }
+
+    @Override
+    public void setSessionReadOnly(boolean sessionReadOnly) {
+        this.sessionReadOnly = sessionReadOnly;
     }
 
     public ServerQueryHandler(ServerConnection source) {
@@ -107,8 +113,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 break;
             default:
                 if (readOnly) {
-                    LOGGER.warn("User readonly:" + sql);
-                    c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User readonly");
+                    c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
+                    break;
+                } else if (sessionReadOnly) {
+                    c.writeErrMessage(ErrorCode.ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION, "Cannot execute statement in a READ ONLY transaction.");
                     break;
                 }
                 c.execute(sql, rs & 0xff);

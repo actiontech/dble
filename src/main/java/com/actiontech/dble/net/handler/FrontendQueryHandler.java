@@ -15,4 +15,6 @@ public interface FrontendQueryHandler {
     void query(String sql);
 
     void setReadOnly(Boolean readOnly);
+
+    void setSessionReadOnly(boolean sessionReadOnly);
 }

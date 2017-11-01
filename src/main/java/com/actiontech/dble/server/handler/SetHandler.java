@@ -88,6 +88,7 @@ public final class SetHandler {
             }
         }
     }
+
     private static boolean handleSetStatement(String stmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) throws SQLSyntaxErrorException {
         SQLStatement statement = parseSQL(stmt);
         if (statement instanceof SQLSetStatement) {
@@ -360,8 +361,16 @@ public final class SetHandler {
             case COLLATION_CONNECTION:
                 return handleCollationConnection(c, valueExpr);
             case TX_READ_ONLY:
+                if (!stmt.toLowerCase().contains("session")) {
+                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    return false;
+                }
                 return handleTxReadOnly(c, valueExpr);
             case TX_ISOLATION:
+                if (!stmt.toLowerCase().contains("session")) {
+                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    return false;
+                }
                 return handleTxIsolation(c, valueExpr);
             case SYSTEM_VARIABLES:
                 if (key.startsWith("@@")) {

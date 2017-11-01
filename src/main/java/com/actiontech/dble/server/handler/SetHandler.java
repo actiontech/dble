@@ -101,7 +101,7 @@ public final class SetHandler {
         } else if (statement instanceof MySqlSetNamesStatement) {
             MySqlSetNamesStatement setNamesStatement = (MySqlSetNamesStatement) statement;
             if (contextTask.size() > 0 || stmt.contains(",")) {
-                if (handleSetNamesInMultiStmt(c, setNamesStatement.getCharSet(), setNamesStatement.getCollate(), contextTask)) {
+                if (handleSetNamesInMultiStmt(c, setNamesStatement.isDefault(), setNamesStatement.getCharSet(), setNamesStatement.getCollate(), contextTask)) {
                     int index = stmt.indexOf(",");
                     String newStmt = "set " + stmt.substring(index + 1);
                     return handleSetStatement(newStmt, c, contextTask);
@@ -114,7 +114,7 @@ public final class SetHandler {
         } else if (statement instanceof MySqlSetCharSetStatement) {
             MySqlSetCharSetStatement setCharSetStatement = (MySqlSetCharSetStatement) statement;
             if (contextTask.size() > 0 || stmt.contains(",")) {
-                if (handleCharsetInMultiStmt(c, setCharSetStatement.getCharSet(), contextTask)) {
+                if (handleCharsetInMultiStmt(c, setCharSetStatement.isDefault(), setCharSetStatement.getCharSet(), contextTask)) {
                     int index = stmt.indexOf(",");
                     String newStmt = "set " + stmt.substring(index + 1);
                     return handleSetStatement(newStmt, c, contextTask);
@@ -132,8 +132,8 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String[] charsetInfo = checkSetNames(charset, collate);
+    private static boolean handleSetNamesInMultiStmt(ServerConnection c, boolean isDefault, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String[] charsetInfo = checkSetNames(isDefault, charset, collate);
         if (charsetInfo != null) {
             if (charsetInfo[1] != null) {
                 contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
@@ -149,7 +149,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleSetNames(String stmt, ServerConnection c, MySqlSetNamesStatement statement) {
-        String[] charsetInfo = checkSetNames(statement.getCharSet(), statement.getCollate());
+        String[] charsetInfo = checkSetNames(statement.isDefault(), statement.getCharSet(), statement.getCollate());
         if (charsetInfo != null) {
             if (charsetInfo[1] != null) {
                 c.setNames(charsetInfo[0], charsetInfo[1]);
@@ -166,7 +166,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleSetCharset(String stmt, ServerConnection c, MySqlSetCharSetStatement statement) {
-        String charset = getCharset(statement.getCharSet());
+        String charset = getCharset(statement.isDefault(), statement.getCharSet());
         if (charset != null) {
             c.setCharacterSet(charset);
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
@@ -215,12 +215,12 @@ public final class SetHandler {
             case NAMES: {
                 String charset = parseStringValue(valueExpr);
                 //TODO:druid lost collation info
-                if (!handleSetNamesInMultiStmt(c, charset, null, contextTask)) return false;
+                if (!handleSetNamesInMultiStmt(c, false, charset, null, contextTask)) return false;
                 break;
             }
             case CHARSET: {
                 String charset = parseStringValue(valueExpr);
-                if (!handleCharsetInMultiStmt(c, charset, contextTask)) return false;
+                if (!handleCharsetInMultiStmt(c, false, charset, contextTask)) return false;
                 break;
             }
             case CHARACTER_SET_CLIENT:
@@ -260,8 +260,8 @@ public final class SetHandler {
         return true;
     }
 
-    private static boolean handleCharsetInMultiStmt(ServerConnection c, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String charsetInfo = getCharset(charset);
+    private static boolean handleCharsetInMultiStmt(ServerConnection c, boolean isDefault, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String charsetInfo = getCharset(isDefault, charset);
         if (charsetInfo != null) {
             contextTask.add(new Pair<>(KeyType.CHARSET, new Pair<String, String>(charsetInfo, null)));
             return true;
@@ -600,7 +600,8 @@ public final class SetHandler {
 
     private static boolean checkValue(SQLExpr valueExpr) {
         return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
-                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) || (valueExpr instanceof SQLBooleanExpr);
+                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) ||
+                (valueExpr instanceof SQLBooleanExpr) || (valueExpr instanceof SQLDefaultExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -680,6 +681,9 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLBooleanExpr) {
             SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
             strValue = String.valueOf(value.getValue());
+        } else if (valueExpr instanceof SQLDefaultExpr) {
+            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
+            strValue = value.toString();
         }
         return strValue;
     }
@@ -695,6 +699,9 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLDefaultExpr) {
+            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
+            strValue = value.toString();
         }
         return strValue;
     }
@@ -751,24 +758,22 @@ public final class SetHandler {
         return ci > 0;
     }
 
-    private static String getCharset(String charset) {
-        charset = charset.toLowerCase();
-        if (charset.equals("default")) {
+    private static String getCharset(boolean isDefault, String charset) {
+        if (isDefault || charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         }
-        charset = StringUtil.removeApostropheOrBackQuote(charset);
+        charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
         if (checkCharset(charset)) {
             return charset;
         }
         return null;
     }
 
-    private static String[] checkSetNames(String charset, String collate) {
-        charset = charset.toLowerCase();
-        if (charset.equals("default")) {
+    private static String[] checkSetNames(boolean isDefault, String charset, String collate) {
+        if (isDefault || charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         } else {
-            charset = StringUtil.removeApostropheOrBackQuote(charset);
+            charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
             if (!checkCharset(charset)) {
                 return null;
             }

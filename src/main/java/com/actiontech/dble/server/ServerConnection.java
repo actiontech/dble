@@ -54,6 +54,7 @@ public class ServerConnection extends FrontendConnection {
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
+    private ServerSptPrepare sptprepare;
     private long lastInsertId;
     private NonBlockingSession session;
     private volatile boolean isLocked = false;
@@ -74,12 +75,21 @@ public class ServerConnection extends FrontendConnection {
         this.txInterrupted = false;
         this.autocommit = true;
         this.txID = new AtomicLong(1);
+        this.sptprepare = new ServerSptPrepare(this);
         this.usrVariables = new LinkedHashMap<>();
         this.sysVariables = new LinkedHashMap<>();
     }
 
     public ServerConnection() {
         /* just for unit test */
+    }
+
+    public ServerSptPrepare getSptPrepare() {
+        return sptprepare;
+    }
+
+    public void setSptprepare(ServerSptPrepare sptprepare) {
+        this.sptprepare = sptprepare;
     }
 
     @Override

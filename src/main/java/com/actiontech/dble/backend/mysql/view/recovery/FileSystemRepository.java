@@ -43,12 +43,11 @@ public class FileSystemRepository implements Reposoitory {
 
             //Judge whether exist the basedir
             createBaseDir();
-
-            viewCreateSqlMap = this.getObject();
-
             //open a channel of the view config file
             RandomAccessFile randomAccessFile = new RandomAccessFile(baseDir + baseName, "rw");
             rwChannel = randomAccessFile.getChannel();
+
+            viewCreateSqlMap = this.getObject();
         } catch (Exception e) {
             LOGGER.warn("init view from file error make sure the file is correct :" + e.getMessage());
         }

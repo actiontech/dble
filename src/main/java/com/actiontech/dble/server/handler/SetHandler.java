@@ -135,8 +135,13 @@ public final class SetHandler {
     private static boolean handleSetNamesInMultiStmt(ServerConnection c, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
         String[] charsetInfo = checkSetNames(charset, collate);
         if (charsetInfo != null) {
-            contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
-            return true;
+            if (charsetInfo[1] != null) {
+                contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
+                return true;
+            } else {
+                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + collate + "' is not valid for CHARACTER SET '" + charset + "'");
+                return false;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
             return false;
@@ -146,9 +151,14 @@ public final class SetHandler {
     private static boolean handleSingleSetNames(String stmt, ServerConnection c, MySqlSetNamesStatement statement) {
         String[] charsetInfo = checkSetNames(statement.getCharSet(), statement.getCollate());
         if (charsetInfo != null) {
-            c.setNames(charsetInfo[0], charsetInfo[1]);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-            return true;
+            if (charsetInfo[1] != null) {
+                c.setNames(charsetInfo[0], charsetInfo[1]);
+                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                return true;
+            } else {
+                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + statement.getCollate() + "' is not valid for CHARACTER SET '" + statement.getCharSet() + "'");
+                return false;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
             return false;
@@ -769,8 +779,13 @@ public final class SetHandler {
             collate = collate.toLowerCase();
             if (collate.equals("default")) {
                 collate = CharsetUtil.getDefaultCollation(charset);
-            } else if (CharsetUtil.getCollationIndex(collate) <= 0) {
-                return null;
+            } else {
+                int collateIndex = CharsetUtil.getCollationIndexByCharset(charset, collate);
+                if (collateIndex == 0) {
+                    return null;
+                } else if (collateIndex < 0) {
+                    return new String[]{charset, null};
+                }
             }
         }
         return new String[]{charset, collate};

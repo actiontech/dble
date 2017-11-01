@@ -15,7 +15,7 @@ public final class SptDrop {
 
     public static void response(ServerConnection c) {
         String name = c.getSptPrepare().getName();
-        if(c.getSptPrepare().delPrepare(name)) {
+        if (c.getSptPrepare().delPrepare(name)) {
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_STMT_HANDLER, "Unknown prepared statement handler" + name + " given to DEALLOCATE PREPARE");

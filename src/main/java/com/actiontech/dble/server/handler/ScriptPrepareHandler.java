@@ -19,22 +19,22 @@ public final class ScriptPrepareHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptPrepareHandler.class);
     private ScriptPrepareHandler() {
     }
-    
+
     public static void handle(String stmt, ServerConnection c) {
         switch (ScriptPrepareParse.parse(stmt, 0, c)) {
-        case ScriptPrepareParse.PREPARE:
-            SptPrepare.response(c);
-            break;
-        case ScriptPrepareParse.EXECUTE:
-            SptExecute.response(c);
-            break;
-        case ScriptPrepareParse.DROP:
-            SptDrop.response(c);
-            break;
-        default:
-            LOGGER.warn("Unsupported command:" + stmt);
-            c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
-            break;
+            case ScriptPrepareParse.PREPARE:
+                SptPrepare.response(c);
+                break;
+            case ScriptPrepareParse.EXECUTE:
+                SptExecute.response(c);
+                break;
+            case ScriptPrepareParse.DROP:
+                SptDrop.response(c);
+                break;
+            default:
+                LOGGER.warn("Unsupported command:" + stmt);
+                c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
+                break;
         }
     }
 }

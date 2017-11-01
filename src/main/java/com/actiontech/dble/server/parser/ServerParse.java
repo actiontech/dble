@@ -105,8 +105,8 @@ public final class ServerParse {
                 case 'm':
                     rt = migrateCheck(stmt, i);
                     break;
-            	case 'P':
-            	case 'p':
+                case 'P':
+                case 'p':
                     rt = prepareCheck(stmt, i);
                     break;
                 case 'R':
@@ -155,20 +155,20 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             if (c1 == 'X' || c1 == 'x') {
                 switch (c2) {
-                case 'E':
-                case 'e':
-                    sqlType = executeCheck(stmt, offset);
-                    break;
-                case 'P':
-                case 'p':
-                    sqlType = explainCheck(stmt, offset);
-                    break;
-                default:
-                    break;
+                    case 'E':
+                    case 'e':
+                        sqlType = executeCheck(stmt, offset);
+                        break;
+                    case 'P':
+                    case 'p':
+                        sqlType = explainCheck(stmt, offset);
+                        break;
+                    default:
+                        break;
                 }
             }
         }
-        return sqlType;  
+        return sqlType;
     }
 
     static int lCheck(String stmt, int offset) {
@@ -366,8 +366,8 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'C' || c1 == 'c') && (c2 == 'U' || c2 == 'u') && (c3 == 'T' || c3 == 't') && (c4 == 'E' || c4 == 'e')
-                && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+            if ((c1 == 'C' || c1 == 'c') && (c2 == 'U' || c2 == 'u') && (c3 == 'T' || c3 == 't') && (c4 == 'E' || c4 == 'e') &&
+                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return SCRIPT_PREPARE;
             }
         }
@@ -375,7 +375,7 @@ public final class ServerParse {
     }
 
     // EXPLAIN' '
-        static int explainCheck(String stmt, int offset) {
+    static int explainCheck(String stmt, int offset) {
         if (stmt.length() > offset + "LAIN ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -536,20 +536,20 @@ public final class ServerParse {
             char c2 = stmt.charAt(++offset);
             if ((c1 == 'E' || c1 == 'e')) {
                 switch (c2) {
-                case 'A':
-                case 'a':
-                    sqlType = dealCheck(stmt, offset);
-                    break;
-                case 'S':
-                case 's':
-                    sqlType = descCheck(stmt, offset);
-                    break;
-                case 'L':
-                case 'l':
-                    sqlType = deleCheck(stmt, offset);
-                    break;
-                default:
-                    break;
+                    case 'A':
+                    case 'a':
+                        sqlType = dealCheck(stmt, offset);
+                        break;
+                    case 'S':
+                    case 's':
+                        sqlType = descCheck(stmt, offset);
+                        break;
+                    case 'L':
+                    case 'l':
+                        sqlType = deleCheck(stmt, offset);
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -566,8 +566,8 @@ public final class ServerParse {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 ==  'l') && (c2 == 'L' || c2 ==  'l') && (c3 == 'O' || c3 ==  'o') && (c4 == 'C' || c4 ==  'c') &&
-                (c5 == 'A' || c5 ==  'a') && (c6 == 'T' || c6 ==  't') && (c7 == 'E' || c7 ==  'e') &&
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'L' || c2 == 'l') && (c3 == 'O' || c3 == 'o') && (c4 == 'C' || c4 == 'c') &&
+                (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'E' || c7 == 'e') &&
                 (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                 return SCRIPT_PREPARE;
             }
@@ -590,10 +590,10 @@ public final class ServerParse {
                         char c6 = stmt.charAt(++offset);
                         if ((c3 == 'I' || c3 == 'i') && (c4 == 'B' || c4 == 'b') && (c5 == 'E' || c5 == 'e') &&
                             (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
-                                return DESCRIBE;
+                            return DESCRIBE;
                         }
                     }
-                }  
+                }
             }
         }
         return OTHER;

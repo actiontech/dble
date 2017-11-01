@@ -6,14 +6,13 @@
 package com.actiontech.dble.server;
 
 import java.util.List;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
 
 public final class ServerSptPrepare {
     private ServerConnection source;
-    private Map<String, List<String>>sptPrepares;
-    private List<String>sptArguments;
+    private Map<String, List<String>> sptPrepares;
+    private List<String> sptArguments;
     private String sptStmt;
     private boolean isUserVar;
     private String name;
@@ -27,25 +26,25 @@ public final class ServerSptPrepare {
         this.name = null;
     }
 
-    public void setPrepare(String name, List<String>parts) {
-        if (sptPrepares.containsKey(name)) {
-            sptPrepares.replace(name, parts);
+    public void setPrepare(String name0, List<String> parts) {
+        if (sptPrepares.containsKey(name0)) {
+            sptPrepares.replace(name0, parts);
         } else {
-            sptPrepares.put(name, parts);
+            sptPrepares.put(name0, parts);
         }
     }
 
-    public List<String> getPrepare(String name) {
-        if (sptPrepares.containsKey(name)) {
-            return sptPrepares.get(name);
+    public List<String> getPrepare(String name0) {
+        if (sptPrepares.containsKey(name0)) {
+            return sptPrepares.get(name0);
         } else {
             return null;
         }
     }
 
-    public boolean delPrepare(String name) {
-        if (sptPrepares.containsKey(name)) {
-            sptPrepares.remove(name);
+    public boolean delPrepare(String name0) {
+        if (sptPrepares.containsKey(name0)) {
+            sptPrepares.remove(name0);
             return true;
         } else {
             return false;
@@ -74,7 +73,7 @@ public final class ServerSptPrepare {
         sptArguments = args;
     }
 
-    public List<String>getArguments() {
+    public List<String> getArguments() {
         return sptArguments;
     }
 

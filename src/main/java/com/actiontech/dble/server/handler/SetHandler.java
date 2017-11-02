@@ -18,6 +18,7 @@ import com.actiontech.dble.server.SystemVariables;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -209,11 +210,11 @@ public final class SetHandler {
             return false;
         }
         SQLExpr valueExpr = assignItem.getValue();
-        if (!checkValue(valueExpr)) {
+        KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
+        if (!checkValue(valueExpr, keyType)) {
             c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getValue() + "'");
             return false;
         }
-        KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
         switch (keyType) {
             case XA:
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd can't used in multi-set statement");
@@ -318,7 +319,7 @@ public final class SetHandler {
 
     private static boolean handleCharsetResultsInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String charsetResult = parseStringValue(valueExpr);
-        if (charsetResult.equals("null") || checkCharset(charsetResult)) {
+        if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             contextTask.add(new Pair<>(KeyType.CHARACTER_SET_RESULTS, new Pair<String, String>(charsetResult, null)));
             return true;
         } else {
@@ -362,11 +363,11 @@ public final class SetHandler {
         String key = handleSetKey(assignItem, c);
         if (key == null) return false;
         SQLExpr valueExpr = assignItem.getValue();
-        if (!checkValue(valueExpr)) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getValue() + "'");
+        KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
+        if (!checkValue(valueExpr, keyType)) {
+            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + SQLUtils.toMySqlString(assignItem.getValue()) + "'");
             return false;
         }
-        KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
         switch (keyType) {
             case XA:
                 return handleSingleXA(c, valueExpr);
@@ -467,7 +468,7 @@ public final class SetHandler {
 
     private static boolean handleSingleCharsetResults(ServerConnection c, SQLExpr valueExpr) {
         String charsetResult = parseStringValue(valueExpr);
-        if (charsetResult.equals("null") || checkCharset(charsetResult)) {
+        if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             c.setCharacterResults(charsetResult);
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             return true;
@@ -608,10 +609,14 @@ public final class SetHandler {
         }
     }
 
-    private static boolean checkValue(SQLExpr valueExpr) {
+    private static boolean checkValue(SQLExpr valueExpr, KeyType keyType) {
+        if (keyType == KeyType.USER_VARIABLES) {
+            return !(valueExpr instanceof SQLQueryExpr);
+        }
         return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
                 (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) ||
-                (valueExpr instanceof SQLBooleanExpr) || (valueExpr instanceof SQLDefaultExpr);
+                (valueExpr instanceof SQLBooleanExpr) || (valueExpr instanceof SQLDefaultExpr) ||
+                (valueExpr instanceof SQLNullExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -691,9 +696,10 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLBooleanExpr) {
             SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
             strValue = String.valueOf(value.getValue());
-        } else if (valueExpr instanceof SQLDefaultExpr) {
-            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
-            strValue = value.toString();
+        } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr) {
+            strValue = valueExpr.toString();
+        } else {
+            strValue = SQLUtils.toMySqlString(valueExpr);
         }
         return strValue;
     }
@@ -709,9 +715,8 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
-        } else if (valueExpr instanceof SQLDefaultExpr) {
-            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
-            strValue = value.toString();
+        } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr) {
+            strValue = valueExpr.toString();
         }
         return strValue;
     }

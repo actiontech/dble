@@ -260,7 +260,7 @@ public final class SetHandler {
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
                 break;
             case USER_VARIABLES:
-                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
+                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, key + " is not supported");
@@ -402,7 +402,7 @@ public final class SetHandler {
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
                 return true;
             case USER_VARIABLES:
-                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
+                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 return true;
             default:
                 c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not supported");

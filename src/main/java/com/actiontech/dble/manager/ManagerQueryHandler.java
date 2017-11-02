@@ -28,7 +28,12 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
         this.source = source;
     }
 
+    @Override
     public void setReadOnly(Boolean readOnly) {
+    }
+
+    @Override
+    public void setSessionReadOnly(boolean sessionReadOnly) {
     }
 
     @Override

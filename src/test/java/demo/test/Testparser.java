@@ -150,6 +150,8 @@ public class Testparser {
         //		obj.test("create index idx_test on char_columns_test(id) ;");
         //		obj.test("drop index  idx_test on char_columns_test;");
         String strAlterSql = "";
+        		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x ALGORITHM = default LOCK =default;";
+        		obj.test(strAlterSql);
         //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x;";
         //		obj.test(strAlterSql);
         //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL,id3 int(11) NOT NULL;";

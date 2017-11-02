@@ -22,12 +22,6 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
     public static IncrSequenceTimeHandler getInstance() {
         return IncrSequenceTimeHandler.INSTANCE;
     }
-
-    private IncrSequenceTimeHandler() {
-        load();
-    }
-
-
     public void load() {
         // load sequnce properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_TIME_PROPS);

@@ -6,7 +6,6 @@
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
@@ -63,7 +62,7 @@ public class ShowTablesHandler {
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);
-                if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     table = table.toLowerCase();
                 }
                 if (!config.getTables().containsKey(table)) {

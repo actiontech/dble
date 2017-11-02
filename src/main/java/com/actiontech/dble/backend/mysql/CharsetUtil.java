@@ -320,6 +320,21 @@ public final class CharsetUtil {
         }
     }
 
+    public static int getCollationIndexByCharset(String charset, String collation) {
+        if (collation == null || collation.length() == 0) {
+            return 0;
+        } else {
+            CollationInfo info = COLLATION_TO_INDEX.get(collation.toLowerCase());
+            if (info == null) {
+                return 0;
+            } else if (!info.charset.equals(charset)) {
+                return -1;
+            } else {
+                return info.id;
+            }
+        }
+    }
+
     public static int getCharsetDefaultIndex(String charset) {
         if (charset == null || charset.length() == 0) {
             return 0;

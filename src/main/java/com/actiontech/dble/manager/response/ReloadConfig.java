@@ -26,6 +26,8 @@ import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -64,7 +66,7 @@ public final class ReloadConfig {
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/roll backing, please try again later.");
                 } else {
                     try {
                         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -92,7 +94,7 @@ public final class ReloadConfig {
                                 String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
                                 byte[] errorInfo = zkConn.getData().forPath(childPath);
                                 if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
-                                    sbErrorInfo.append(child + ":");
+                                    sbErrorInfo.append(child).append(":");
                                     sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
                                     sbErrorInfo.append(";");
                                 }
@@ -129,6 +131,7 @@ public final class ReloadConfig {
                     }
                     writeOKResult(c);
                 } catch (Exception e) {
+                    LOGGER.warn("reload error", e);
                     writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
                 }
             } finally {
@@ -138,7 +141,9 @@ public final class ReloadConfig {
     }
 
     private static void writeOKResult(ManagerConnection c) {
-        LOGGER.info("send ok package to client " + String.valueOf(c));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("send ok package to client " + String.valueOf(c));
+        }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(1);
@@ -161,7 +166,7 @@ public final class ReloadConfig {
          */
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(true);
+            loader = new ConfigInitializer(true, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         } catch (Exception e) {
             throw new Exception(e);
         }
@@ -171,7 +176,18 @@ public final class ReloadConfig {
         Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
-
+        SystemVariables newSystemVariables = DbleServer.getInstance().getSystemVariables();
+        if (!loader.isDataHostWithoutWH()) {
+            VarsExtractorHandler handler = new VarsExtractorHandler(newDataNodes);
+            newSystemVariables = handler.execute();
+            ConfigInitializer confInit = new ConfigInitializer(newSystemVariables.isLowerCaseTableNames());
+            newUsers = confInit.getUsers();
+            newSchemas = confInit.getSchemas();
+            newDataNodes = confInit.getDataNodes();
+            newErRelations = confInit.getErRelations();
+            newFirewall = confInit.getFirewall();
+            newDataHosts = confInit.getDataHosts();
+        }
         try {
             loader.testConnection();
         } catch (Exception e) {
@@ -205,7 +221,7 @@ public final class ReloadConfig {
             // get data host
             String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
             if (!"0".equals(dnIndex)) {
-                LOGGER.info("init datahost: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
+                LOGGER.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
             }
 
             dbPool.init(Integer.parseInt(dnIndex));
@@ -217,34 +233,13 @@ public final class ReloadConfig {
 
         if (isReloadStatusOK) {
             /* 2.3 apply new conf */
-            config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, loader.isDataHostWithoutWH(), true);
-
-            /* 2.4 put the old connection into a queue */
-            Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
-            for (PhysicalDBPool dbPool : oldDataHosts.values()) {
-                dbPool.stopHeartbeat();
-                for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
-                    for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
-                        for (BackendConnection con : processor.getBackends().values()) {
-                            if (con instanceof MySQLConnection) {
-                                MySQLConnection mysqlCon = (MySQLConnection) con;
-                                if (mysqlCon.getPool() == ds) {
-                                    if (con.isBorrowed()) {
-                                        NIOProcessor.BACKENDS_OLD.add(con);
-                                    } else {
-                                        con.close("old idle conn for reload");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            LOGGER.info("the size of old backend connection to be recycled is: " + NIOProcessor.BACKENDS_OLD.size());
+            config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+                    newSystemVariables, loader.isDataHostWithoutWH(), true);
+            recycleOldBackendConnections(config);
 
         } else {
             // INIT FAILED
-            LOGGER.info("reload failed, clear previously created datasources ");
+            LOGGER.info("reload failed, clear previously created data sources ");
             for (PhysicalDBPool dbPool : newDataHosts.values()) {
                 dbPool.clearDataSources("reload config");
                 dbPool.stopHeartbeat();
@@ -253,11 +248,36 @@ public final class ReloadConfig {
         }
     }
 
+    private static void recycleOldBackendConnections(ServerConfig config) {
+        /* 2.4 put the old connection into a queue */
+        Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
+        for (PhysicalDBPool dbPool : oldDataHosts.values()) {
+            dbPool.stopHeartbeat();
+            for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
+                for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+                    for (BackendConnection con : processor.getBackends().values()) {
+                        if (con instanceof MySQLConnection) {
+                            MySQLConnection mysqlCon = (MySQLConnection) con;
+                            if (mysqlCon.getPool() == ds) {
+                                if (con.isBorrowed()) {
+                                    NIOProcessor.BACKENDS_OLD.add(con);
+                                } else {
+                                    con.close("old idle conn for reload");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        LOGGER.info("the size of old backend connection to be recycled is: " + NIOProcessor.BACKENDS_OLD.size());
+    }
+
     public static void reload() throws Exception {
         /* 1 load new conf, ConfigInitializer will check itself */
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(false);
+            loader = new ConfigInitializer(false, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         } catch (Exception e) {
             throw new Exception(e);
         }
@@ -269,7 +289,8 @@ public final class ReloadConfig {
         FirewallConfig firewall = loader.getFirewall();
 
         /* 2 apply the new conf */
-        DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall, loader.isDataHostWithoutWH(), false);
+        DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
+                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
     }
 
 }

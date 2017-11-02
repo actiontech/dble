@@ -7,13 +7,13 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ShowVariablesHandler;
-import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.util.SchemaUtil;
 
 public final class ShowVariables {
     private ShowVariables() {

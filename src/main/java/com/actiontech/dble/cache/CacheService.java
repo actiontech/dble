@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * cache service for other component default using memory cache encache
@@ -27,7 +29,7 @@ public class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
 
     private final Map<String, CachePoolFactory> poolFactories = new HashMap<>();
-    private final Map<String, CachePool> allPools = new HashMap<>();
+    private final ConcurrentMap<String, CachePool> allPools = new ConcurrentHashMap<>();
 
     public CacheService(boolean isLowerCaseTableNames) {
         // load cache pool defined
@@ -207,7 +209,7 @@ public class CacheService {
     /**
      * get cache pool by name, caller should cache result
      *
-     * @param poolName
+     * @param poolName poolName
      * @return CachePool
      */
     public CachePool getCachePool(String poolName) {
@@ -218,6 +220,23 @@ public class CacheService {
         LOGGER.info("clear all cache pool ");
         for (CachePool pool : allPools.values()) {
             pool.clearCache();
+        }
+    }
+
+    public void reloadCache(boolean isLowerCaseTableNames) {
+        LOGGER.info("reloadCache cache pool ");
+        for (CachePool pool : allPools.values()) {
+            pool.clearCache();
+        }
+        allPools.clear();
+        try {
+            init(isLowerCaseTableNames);
+        } catch (Exception e) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

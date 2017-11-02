@@ -15,12 +15,14 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
@@ -31,9 +33,9 @@ import com.actiontech.dble.net.*;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
-import com.actiontech.dble.server.variables.SysVarsExtractor;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.util.GlobalTableUtil;
+import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
@@ -74,11 +76,12 @@ public final class DbleServer {
     private AtomicBoolean backupLocked;
 
     //global sequence
-    private final SequenceHandler sequenceHandler;
-    private final RouteService routerService;
-    private final CacheService cacheService;
+    private SequenceHandler sequenceHandler;
+    private RouteService routerService;
+    private CacheService cacheService;
     private Properties dnIndexProperties;
     private ProxyMetaManager tmManager;
+    private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
 
     private AsynchronousChannelGroup[] asyncChannelGroups;
@@ -122,17 +125,12 @@ public final class DbleServer {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
 
-        /**
+        /*
          * | offline | Change Server status to OFF |
          * | online | Change Server status to ON |
          */
         this.isOnline = new AtomicBoolean(true);
 
-        //initialized the cache service
-        cacheService = new CacheService(SystemVariables.getSysVars().isLowerCaseTableNames());
-
-        //initialized the router cache and primary cache
-        routerService = new RouteService(cacheService);
 
         // load data node active index from properties
         dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
@@ -142,7 +140,6 @@ public final class DbleServer {
             dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
         }
         xaSessionCheck = new XASessionCheck();
-        sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
     }
 
     public SequenceHandler getSequenceHandler() {
@@ -232,7 +229,7 @@ public final class DbleServer {
      * get next AsynchronousChannel ,first is exclude if multi
      * AsynchronousChannelGroups
      *
-     * @return
+     * @return AsynchronousChannelGroup
      */
     public AsynchronousChannelGroup getNextAsyncChannelGroup() {
         if (asyncChannelGroups.length == 1) {
@@ -270,18 +267,19 @@ public final class DbleServer {
         SystemConfig.getHomePath();
     }
 
-    /* the function is only for Cyclomatic complexity of startup() */
+    private void reviseSchemas() {
+        ConfigInitializer confInit = new ConfigInitializer(systemVariables.isLowerCaseTableNames());
+        ConfigUtil.setSchemasForPool(confInit.getDataHosts(), confInit.getDataNodes());
+        this.config.simplyApply(confInit.getUsers(), confInit.getSchemas(), confInit.getDataNodes(),
+                confInit.getDataHosts(), confInit.getErRelations(), confInit.getFirewall());
+    }
     private void pullVarAndMeta() throws IOException {
-        SysVarsExtractor extractor = new SysVarsExtractor(config);
-        try {
-            extractor.extract();
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-        this.config.reviseSchemas();
-
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
+            //init for sys VAR
+            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataNodes());
+            systemVariables = handler.execute();
+            reviseSchemas();
             //init tmManager
             try {
                 tmManager.init(this.getConfig());
@@ -314,8 +312,8 @@ public final class DbleServer {
         // startup manager
         ManagerConnectionFactory mf = new ManagerConnectionFactory();
         ServerConnectionFactory sf = new ServerConnectionFactory();
-        SocketAcceptor manager = null;
-        SocketAcceptor server = null;
+        SocketAcceptor manager;
+        SocketAcceptor server;
         aio = (system.getUsingAIO() == 1);
 
         // startup processors
@@ -335,9 +333,7 @@ public final class DbleServer {
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
 
 
-        /**
-         * Off Heap For Merge/Order/Group/Limit
-         */
+        // Off Heap For Merge/Order/Group/Limit
         if (system.getUseOffHeapForMerge() == 1) {
             try {
                 serverMemory = new SeverMemory(system, totalNetWorkBufferSize);
@@ -409,7 +405,13 @@ public final class DbleServer {
         }
 
         pullVarAndMeta();
+        //initialized the cache service
+        cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());
 
+        //initialized the router cache and primary cache
+        routerService = new RouteService(cacheService);
+
+        sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
         //XA Init recovery Log
         LOGGER.info("===============================================");
         LOGGER.info("Perform XA recovery log ...");
@@ -485,6 +487,10 @@ public final class DbleServer {
         }
     }
 
+    public void reloadSystemVariables(SystemVariables sys) {
+        systemVariables = sys;
+    }
+
     public void reloadMetaData(ServerConfig conf) {
         for (; ; ) {
             if (tmManager.getDdlCount() > 0) {
@@ -526,7 +532,6 @@ public final class DbleServer {
     /**
      * after reload @@config_all ,clean old connection
      *
-     * @return
      */
     private Runnable dataSourceOldConsClear() {
         return new Runnable() {
@@ -588,10 +593,9 @@ public final class DbleServer {
     }
 
     /**
-     * save cur datanode index to properties file
-     *
-     * @param
-     * @param curIndex
+     * save cur data node index to properties file
+     * @param dataHost dataHost
+     * @param curIndex curIndex
      */
     public synchronized void saveDataHostIndex(String dataHost, int curIndex) {
         File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
@@ -707,6 +711,10 @@ public final class DbleServer {
 
     public void online() {
         isOnline.set(true);
+    }
+
+    public SystemVariables getSystemVariables() {
+        return systemVariables;
     }
 
     public ProxyMetaManager getTmManager() {

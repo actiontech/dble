@@ -6,22 +6,22 @@
 package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.SplitUtil;
-import com.actiontech.dble.server.variables.SystemVariables;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import java.util.*;
+
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
 
 public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
-        SystemConfig system = xsl.getSystem();
+    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("user");
 
@@ -58,14 +58,14 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
                     if (schemas != null) {
-                        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+                        if (isLowerCaseTableNames) {
                             schemas = schemas.toLowerCase();
                         }
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
                     }
                     // load DML
-                    loadPrivileges(user, system, e);
+                    loadPrivileges(user, isLowerCaseTableNames, e);
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");
@@ -75,7 +75,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
         }
     }
 
-    private void loadPrivileges(UserConfig userConfig, SystemConfig system, Element node) {
+    private void loadPrivileges(UserConfig userConfig, boolean isLowerCaseTableNames, Element node) {
         UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
 
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
@@ -92,7 +92,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
             for (int j = 0; j < schemaNodeLength; j++) {
                 Element schemaNode = (Element) schemaNodes.item(j);
                 String name1 = schemaNode.getAttribute("name");
-                if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+                if (isLowerCaseTableNames) {
                     name1 = name1.toLowerCase();
                 }
 
@@ -111,7 +111,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
                     Element tableNode = (Element) tableNodes.item(z);
                     String name2 = tableNode.getAttribute("name");
-                    if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+                    if (isLowerCaseTableNames) {
                         name2 = name2.toLowerCase();
                     }
 

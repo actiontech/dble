@@ -112,6 +112,7 @@ hs_err_pid*
 /target/
 /tmlogs/
 /txlogs/
+/viewConf/
 src/main/resources/server.xml
 src/main/resources/schema.xml 
 src/main/resources/rule.xml

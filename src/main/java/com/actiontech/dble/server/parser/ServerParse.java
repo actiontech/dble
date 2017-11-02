@@ -45,6 +45,7 @@ public final class ServerParse {
     public static final int UNLOCK = 23;
     public static final int CREATE_VIEW = 24;
     public static final int REPLACE_VIEW = 25;
+    public static final int ALTER_VIEW = 27;
     public static final int DROP_VIEW = 26;
     public static final int LOAD_DATA_INFILE_SQL = 99;
     public static final int DDL = 100;
@@ -226,11 +227,36 @@ public final class ServerParse {
                     (c3 == 'E' || c3 == 'e') &&
                     (c4 == 'R' || c4 == 'r') &&
                     (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
-                return DDL;
+                return alterViewCheck(stmt, offset);
             }
         }
         return OTHER;
     }
+
+    private static int alterViewCheck(String stmt, int offset) {
+        while (true) {
+            if (!(stmt.charAt(++offset) == ' ' ||
+                    stmt.charAt(offset) == '\t' ||
+                    stmt.charAt(offset) == '\r' ||
+                    stmt.charAt(offset) == '\n')) {
+                char c1 = stmt.charAt(offset);
+                char c2 = stmt.charAt(++offset);
+                char c3 = stmt.charAt(++offset);
+                char c4 = stmt.charAt(++offset);
+                char c5 = stmt.charAt(++offset);
+                if ((c1 == 'v' || c1 == 'V') &&
+                        (c2 == 'i' || c2 == 'I') &&
+                        (c3 == 'e' || c3 == 'E') &&
+                        (c4 == 'w' || c4 == 'W') &&
+                        (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                    return ALTER_VIEW;
+                } else {
+                    return DDL;
+                }
+            }
+        }
+    }
+
 
     //create table/view/...
     private static int createCheck(String stmt, int offset) {
@@ -264,13 +290,13 @@ public final class ServerParse {
         try {
             while (true) {
                 if (!(stmt.charAt(++offset) == ' ' ||
-                       stmt.charAt(offset) == '\t' ||
-                       stmt.charAt(offset) == '\r' ||
-                       stmt.charAt(offset) == '\n')) {
+                        stmt.charAt(offset) == '\t' ||
+                        stmt.charAt(offset) == '\r' ||
+                        stmt.charAt(offset) == '\n')) {
                     if ((stmt.charAt(offset) == 'o' || stmt.charAt(offset) == 'O') &&
-                           (stmt.charAt(++offset) == 'r' || stmt.charAt(offset) == 'R') &&
-                           (stmt.charAt(++offset) == ' ' || stmt.charAt(offset) == '\t' ||
-                                   stmt.charAt(offset) == '\r' || stmt.charAt(offset) == '\n')) {
+                            (stmt.charAt(++offset) == 'r' || stmt.charAt(offset) == 'R') &&
+                            (stmt.charAt(++offset) == ' ' || stmt.charAt(offset) == '\t' ||
+                                    stmt.charAt(offset) == '\r' || stmt.charAt(offset) == '\n')) {
                         return replaceViewCheck(stmt, offset);
                     } else if (stmt.charAt(offset) == 'v' || stmt.charAt(offset) == 'V') {
                         return createViewCheck(stmt, offset, isReplace);

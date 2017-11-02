@@ -36,12 +36,19 @@ public class ViewMeta {
         try {
             SchemaMeta schemaMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema);
 
+            //if the alter table
+            if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
+                if (schemaMeta.getView(viewName) == null) {
+                    throw new Exception("Table '" + viewName + "' doesn't exist");
+                }
+            }
+
             // if the table with same name exists
             if (schemaMeta.getTableMeta(viewName) != null) {
                 throw new Exception("Table '" + viewName + "' already exists");
             }
 
-            if (!isReplace) {
+            if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW) {
                 // if the sql without replace & the view exists
                 if (schemaMeta.getView(viewName) != null) {
                     // return error because the view is exists

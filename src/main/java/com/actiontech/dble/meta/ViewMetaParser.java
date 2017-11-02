@@ -7,8 +7,13 @@ import java.util.*;
  */
 public class ViewMetaParser {
 
+    public static final int TYPE_CREATE_VIEW = 1;
+    public static final int TYPE_REPLACE_VIEW = 2;
+    public static final int TYPE_ALTER_VIEW = 3;
+
     private int offset = -1;
     private String originalSql;
+    private int type = TYPE_CREATE_VIEW;
 
     public ViewMetaParser(String originalSql) {
         this.originalSql = originalSql;
@@ -33,6 +38,10 @@ public class ViewMetaParser {
                 case '\r':
                 case '\n':
                     continue;
+                case 'a':
+                    offset = offset + 5;
+                    type = TYPE_ALTER_VIEW;
+                    return parseCreateOrReplace();
                 default:
                     //skip the create because in ServerParse is already know
                     offset = offset + 6;
@@ -52,6 +61,7 @@ public class ViewMetaParser {
                         next = originalSql.charAt(++offset);
                         if (next == 'r' || next == 'R') {
                             offset += 7;
+                            this.type = TYPE_REPLACE_VIEW;
                             return parseCreateOrReplace();
                         }
                     }
@@ -111,5 +121,10 @@ public class ViewMetaParser {
             }
         }
         return new ArrayList<String>(Arrays.asList(columnList.split(",")));
+    }
+
+
+    public int getType() {
+        return type;
     }
 }

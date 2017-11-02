@@ -357,6 +357,7 @@ public class ServerParserTest {
     @Test
     public void testCreateView(){
         Assert.assertEquals(ServerParse.CREATE_VIEW, ServerParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.ALTER_VIEW, ServerParse.parse("ALTER view x_xx_xx as select * from suntest"));
         Assert.assertEquals(ServerParse.REPLACE_VIEW, ServerParse.parse("create or replace  view x_xx_xx as select * from suntest"));
         Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create or replace viasdfasdfew asdfasdf as asdfasdfasdfsdf"));
         Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create   "));

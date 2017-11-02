@@ -6,14 +6,13 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
-import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
+import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
@@ -43,14 +42,14 @@ public class ConfigInitializer {
 
     private volatile boolean dataHostWithoutWH = false;
 
-    public ConfigInitializer(boolean loadDataHost) {
+    public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
-        XMLServerLoader serverloader = new XMLServerLoader();
+        XMLServerLoader serverLoader = new XMLServerLoader(lowerCaseNames);
 
         //load rule.xml and schema.xml
-        SchemaLoader schemaLoader = new XMLSchemaLoader(SystemVariables.getSysVars().isLowerCaseTableNames());
-        this.system = serverloader.getSystem();
-        this.users = serverloader.getUsers();
+        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);
+        this.system = serverLoader.getSystem();
+        this.users = serverLoader.getUsers();
         this.schemas = schemaLoader.getSchemas();
         this.erRelations = schemaLoader.getErRelations();
         // need reload DataHost and DataNode?
@@ -64,34 +63,30 @@ public class ConfigInitializer {
             this.dataHostWithoutWH = DbleServer.getInstance().getConfig().isDataHostWithoutWR();
         }
 
-        this.firewall = serverloader.getFirewall();
-
-        loadSequence();
-        /**
-         * check config
-         */
-        this.selfChecking0();
+        this.firewall = serverLoader.getFirewall();
+        checkWriteHost();
     }
 
-    public ConfigInitializer() {
-        XMLServerLoader serverloader = new XMLServerLoader();
-        this.system = serverloader.getSystem();
-        this.users = serverloader.getUsers();
-        this.firewall = serverloader.getFirewall();
+    public ConfigInitializer(boolean lowerCaseNames) {
+        XMLServerLoader serverLoader = new XMLServerLoader(lowerCaseNames);
+        this.system = serverLoader.getSystem();
+        this.users = serverLoader.getUsers();
+        this.firewall = serverLoader.getFirewall();
 
-        SchemaLoader schemaLoader = new XMLSchemaLoader(SystemVariables.getSysVars().isLowerCaseTableNames());
+        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);
         this.schemas = schemaLoader.getSchemas();
         this.erRelations = schemaLoader.getErRelations();
-        this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
+        this.dataHosts = initDataHosts(schemaLoader);
         this.dataNodes = initDataNodes(schemaLoader);
-
         loadSequence();
+        /* check config */
+        this.selfChecking0();
     }
 
     private void loadSequence() {
         //load global sequence
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            IncrSequenceMySQLHandler.getInstance().load(SystemVariables.getSysVars().isLowerCaseTableNames());
+            IncrSequenceMySQLHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
 
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME) {
@@ -103,7 +98,7 @@ public class ConfigInitializer {
         }
 
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            IncrSequenceZKHandler.getInstance().load(SystemVariables.getSysVars().isLowerCaseTableNames());
+            IncrSequenceZKHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
     }
 
@@ -120,11 +115,11 @@ public class ConfigInitializer {
                 if (!uc.isManager()) {
                     Set<String> authSchemas = uc.getSchemas();
                     if (authSchemas == null) {
-                        throw new ConfigException("SelfCheck### user " + uc.getName() + "refered schemas is empty!");
+                        throw new ConfigException("SelfCheck### user " + uc.getName() + "referred schemas is empty!");
                     }
                     for (String schema : authSchemas) {
                         if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck###  schema " + schema + " refered by user " + uc.getName() + " is not exist!";
+                            String errMsg = "SelfCheck###  schema " + schema + " referred by user " + uc.getName() + " is not exist!";
                             throw new ConfigException(errMsg);
                         }
                     }
@@ -143,7 +138,7 @@ public class ConfigInitializer {
                     for (String dataNodeName : dataNodeNames) {
                         PhysicalDBNode node = this.dataNodes.get(dataNodeName);
                         if (node == null) {
-                            throw new ConfigException("SelfCheck### schema dbnode is empty!");
+                            throw new ConfigException("SelfCheck### schema dataNode is empty!");
                         }
                     }
                     allUseDataNode.addAll(dataNodeNames);
@@ -261,10 +256,10 @@ public class ConfigInitializer {
     }
 
     private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
-        Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
+        Map<String, DataHostConfig> nodeConf = schemaLoader.getDataHosts();
         //create PhysicalDBPool according to DataHost
-        Map<String, PhysicalDBPool> nodes = new HashMap<>(nodeConfs.size());
-        for (DataHostConfig conf : nodeConfs.values()) {
+        Map<String, PhysicalDBPool> nodes = new HashMap<>(nodeConf.size());
+        for (DataHostConfig conf : nodeConf.values()) {
             //create PhysicalDBPool
             PhysicalDBPool pool = getPhysicalDBPool(conf);
             nodes.put(pool.getHostName(), pool);
@@ -294,14 +289,13 @@ public class ConfigInitializer {
             readSourcesMap.put(entry.getKey(), readSources);
         }
 
-        PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance());
-        return pool;
+        return new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance());
     }
 
     private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {
-        Map<String, DataNodeConfig> nodeConfs = schemaLoader.getDataNodes();
-        Map<String, PhysicalDBNode> nodes = new HashMap<>(nodeConfs.size());
-        for (DataNodeConfig conf : nodeConfs.values()) {
+        Map<String, DataNodeConfig> nodeConf = schemaLoader.getDataNodes();
+        Map<String, PhysicalDBNode> nodes = new HashMap<>(nodeConf.size());
+        for (DataNodeConfig conf : nodeConf.values()) {
             PhysicalDBPool pool = this.dataHosts.get(conf.getDataHost());
             if (pool == null) {
                 throw new ConfigException("dataHost not exists " + conf.getDataHost());

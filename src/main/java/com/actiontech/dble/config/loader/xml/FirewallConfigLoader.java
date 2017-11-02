@@ -7,18 +7,22 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.config.util.ParameterMapping;
 import com.alibaba.druid.wall.WallConfig;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import java.util.*;
+
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
         FirewallConfig firewall = xsl.getFirewall();
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("host");

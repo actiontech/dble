@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.util.StringUtil;
 import org.w3c.dom.*;
 import org.xml.sax.*;
@@ -14,6 +16,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -164,4 +167,19 @@ public final class ConfigUtil {
         return bean;
     }
 
+    public static void setSchemasForPool(Map<String, PhysicalDBPool> dataHostMap, Map<String, PhysicalDBNode> dataNodeMap) {
+        for (PhysicalDBPool dbPool : dataHostMap.values()) {
+            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName(), dataNodeMap));
+        }
+    }
+
+    private static String[] getDataNodeSchemasOfDataHost(String dataHost, Map<String, PhysicalDBNode> dataNodeMap) {
+        ArrayList<String> schemaList = new ArrayList<>(30);
+        for (PhysicalDBNode dn : dataNodeMap.values()) {
+            if (dn.getDbPool().getHostName().equals(dataHost)) {
+                schemaList.add(dn.getDatabase());
+            }
+        }
+        return schemaList.toArray(new String[schemaList.size()]);
+    }
 }

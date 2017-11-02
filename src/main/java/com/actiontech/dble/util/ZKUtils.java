@@ -77,6 +77,18 @@ public final class ZKUtils {
         }
     }
 
+
+    public static void addViewPathCache(String path, PathChildrenCacheListener listener) {
+        try {
+            //watch the child status
+            final PathChildrenCache childrenCache = new PathChildrenCache(getConnection(), path, true);
+            childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+            childrenCache.getListenable().addListener(listener);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void createTempNode(String parent, String node) throws Exception {
         String path = ZKPaths.makePath(parent, node);
         createTempNode(path);

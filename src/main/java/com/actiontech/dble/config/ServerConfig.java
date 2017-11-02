@@ -10,7 +10,9 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +64,7 @@ public class ServerConfig {
     public ServerConfig() {
 
         //read schema.xml,rule.xml andserver.xml
-        ConfigInitializer confInit = new ConfigInitializer(true);
+        ConfigInitializer confInit = new ConfigInitializer(true, false);
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
@@ -70,7 +72,7 @@ public class ServerConfig {
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();
         this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
-        setSchemasForPool();
+        ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
 
         this.firewall = confInit.getFirewall();
 
@@ -81,44 +83,28 @@ public class ServerConfig {
         this.lock = new ReentrantLock();
     }
 
-    private void setSchemasForPool() {
-        for (PhysicalDBPool dbPool : dataHosts.values()) {
-            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName()));
-        }
-    }
-
-    public void reviseSchemas() {
-        ConfigInitializer confInit = new ConfigInitializer();
-        this.system = confInit.getSystem();
-        this.users = confInit.getUsers();
-        this.firewall = confInit.getFirewall();
-        this.schemas = confInit.getSchemas();
-        this.dataNodes = confInit.getDataNodes();
-        this.erRelations = confInit.getErRelations();
-        setSchemasForPool();
-    }
 
     public SystemConfig getSystem() {
         return system;
     }
 
     public void setSocketParams(AbstractConnection con, boolean isFrontChannel) throws IOException {
-        int sorcvbuf = 0;
-        int sosndbuf = 0;
-        int soNoDelay = 0;
+        int soRcvBuf;
+        int soSndBuf;
+        int soNoDelay;
         if (isFrontChannel) {
-            sorcvbuf = system.getFrontSocketSoRcvbuf();
-            sosndbuf = system.getFrontSocketSoSndbuf();
+            soRcvBuf = system.getFrontSocketSoRcvbuf();
+            soSndBuf = system.getFrontSocketSoSndbuf();
             soNoDelay = system.getFrontSocketNoDelay();
         } else {
-            sorcvbuf = system.getBackSocketSoRcvbuf();
-            sosndbuf = system.getBackSocketSoSndbuf();
+            soRcvBuf = system.getBackSocketSoRcvbuf();
+            soSndBuf = system.getBackSocketSoSndbuf();
             soNoDelay = system.getBackSocketNoDelay();
         }
 
         NetworkChannel channel = con.getChannel();
-        channel.setOption(StandardSocketOptions.SO_RCVBUF, sorcvbuf);
-        channel.setOption(StandardSocketOptions.SO_SNDBUF, sosndbuf);
+        channel.setOption(StandardSocketOptions.SO_RCVBUF, soRcvBuf);
+        channel.setOption(StandardSocketOptions.SO_SNDBUF, soSndBuf);
         channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
@@ -126,7 +112,7 @@ public class ServerConfig {
         con.setMaxPacketSize(system.getMaxPacketSize());
         con.setIdleTimeout(system.getIdleTimeout());
         con.setCharacterSet(system.getCharset());
-        con.setReadBufferChunk(sorcvbuf);
+        con.setReadBufferChunk(soRcvBuf);
     }
 
     public Map<String, UserConfig> getUsers() {
@@ -149,15 +135,6 @@ public class ServerConfig {
         return dataNodes;
     }
 
-    public String[] getDataNodeSchemasOfDataHost(String dataHost) {
-        ArrayList<String> schemaList = new ArrayList<>(30);
-        for (PhysicalDBNode dn : dataNodes.values()) {
-            if (dn.getDbPool().getHostName().equals(dataHost)) {
-                schemaList.add(dn.getDatabase());
-            }
-        }
-        return schemaList.toArray(new String[schemaList.size()]);
-    }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
         return dataNodes2;
@@ -202,9 +179,10 @@ public class ServerConfig {
     public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                        Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                       boolean newDataHostWithoutWR, boolean reloadAll) {
+                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll) {
 
-        apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall, newDataHostWithoutWR, reloadAll);
+        apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+                newSystemVariables, newDataHostWithoutWR, reloadAll);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = reloadAll ? RELOAD_ALL : RELOAD;
     }
@@ -221,7 +199,8 @@ public class ServerConfig {
                          Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
                          Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) {
 
-        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall, backDataHostWithoutWR, status == RELOAD_ALL);
+        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
+                DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, status == RELOAD_ALL);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
     }
@@ -323,14 +302,27 @@ public class ServerConfig {
         return false;
     }
 
+    public void simplyApply(Map<String, UserConfig> newUsers,
+                            Map<String, SchemaConfig> newSchemas,
+                            Map<String, PhysicalDBNode> newDataNodes,
+                            Map<String, PhysicalDBPool> newDataHosts,
+                            Map<ERTable, Set<ERTable>> newErRelations,
+                            FirewallConfig newFirewall) {
+        this.users = newUsers;
+        this.schemas = newSchemas;
+        this.dataNodes = newDataNodes;
+        this.dataHosts = newDataHosts;
+        this.firewall = newFirewall;
+        this.erRelations = newErRelations;
+    }
+
     private void apply(Map<String, UserConfig> newUsers,
                        Map<String, SchemaConfig> newSchemas,
                        Map<String, PhysicalDBNode> newDataNodes,
                        Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations,
-                       FirewallConfig newFirewall,
+                       FirewallConfig newFirewall, SystemVariables newSystemVariables,
                        boolean newDataHostWithoutWR, boolean isLoadAll) {
-        boolean metaLocked = false;
         final ReentrantReadWriteLock metaLock = DbleServer.getInstance().getMetaLock();
         final ReentrantReadWriteLock confLock = DbleServer.getInstance().getConfLock();
         confLock.writeLock().lock();
@@ -379,6 +371,9 @@ public class ServerConfig {
                 this.dataNodes = newDataNodes;
                 this.dataHosts = newDataHosts;
                 this.dataHostWithoutWR = newDataHostWithoutWR;
+                DbleServer.getInstance().reloadSystemVariables(newSystemVariables);
+                DbleServer.getInstance().getCacheService().reloadCache(newSystemVariables.isLowerCaseTableNames());
+                DbleServer.getInstance().getRouterService().loadTableId2DataNodeCache(DbleServer.getInstance().getCacheService());
             }
             this.users = newUsers;
             this.schemas = newSchemas;
@@ -387,12 +382,11 @@ public class ServerConfig {
             DbleServer.getInstance().getCacheService().clearCache();
             if (!newDataHostWithoutWR) {
                 metaLock.writeLock().lock();
-                metaLocked = true;
             }
         } finally {
             confLock.writeLock().unlock();
         }
-        if (!newDataHostWithoutWR && metaLocked) {
+        if (!newDataHostWithoutWR) {
             try {
                 DbleServer.getInstance().reloadMetaData(this);
             } finally {

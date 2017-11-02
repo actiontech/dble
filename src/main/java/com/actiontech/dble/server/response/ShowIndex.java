@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.response;
 
-import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
@@ -83,7 +83,7 @@ public final class ShowIndex {
                 sql.append(" ");
                 sql.append(strWhere);
             }
-            if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 schema = StringUtil.removeBackQuote(schema).toLowerCase();
                 table = table.toLowerCase();
             }

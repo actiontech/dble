@@ -26,13 +26,16 @@ import java.util.Map;
 
 public class RouteService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteService.class);
-    public static final String HINT_TYPE = "_serverHintType";
+    private static final String HINT_TYPE = "_serverHintType";
     private final CachePool sqlRouteCache;
-    private final LayerCachePool tableId2DataNodeCache;
-
+    private LayerCachePool tableId2DataNodeCache;
 
     public RouteService(CacheService cacheService) {
         sqlRouteCache = cacheService.getCachePool("SQLRouteCache");
+        loadTableId2DataNodeCache(cacheService);
+    }
+
+    public void loadTableId2DataNodeCache(CacheService cacheService) {
         tableId2DataNodeCache = (LayerCachePool) cacheService.getCachePool("TableID2DataNodeCache");
     }
 
@@ -46,7 +49,7 @@ public class RouteService {
         RouteResultset rrs = null;
         String cacheKey = null;
 
-        /**
+        /*
          *  SELECT  SQL,  not cached in debug mode
          */
         if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
@@ -112,7 +115,7 @@ public class RouteService {
         return rrs;
     }
 
-    public static int isHintSql(String sql) {
+    private static int isHintSql(String sql) {
         char[] annotation = Versions.ANNOTATION_NAME.toCharArray();
         int j = 0;
         int len = sql.length();
@@ -142,7 +145,7 @@ public class RouteService {
     }
 
     private Map parseHint(String sql) {
-        Map map = new HashMap();
+        Map<String, String> map = new HashMap<>();
         int y = 0;
         int begin = 0;
         for (int i = 0; i < sql.length(); i++) {
@@ -165,7 +168,7 @@ public class RouteService {
         return map;
     }
 
-    private void parseKeyValue(Map map, String substring) {
+    private void parseKeyValue(Map<String, String> map, String substring) {
         int indexOf = substring.indexOf('=');
         if (indexOf != -1) {
 

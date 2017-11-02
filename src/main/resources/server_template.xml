@@ -14,8 +14,6 @@
         <!--<property name="bindIp">0.0.0.0</property>-->
         <!-- property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
-        <!-- true is not case sensitive ,false is case sensitive -->
-        <property name="lowerCaseTableNames">true</property>
         <!-- <property name="processors">1</property>-->
         <!--<property name="processorExecutor">32</property> -->
         <!--<property name="fakeMySQLVersion">5.6.20</property>-->

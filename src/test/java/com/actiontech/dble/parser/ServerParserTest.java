@@ -353,4 +353,19 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse(" unlock	 tables"));
     }
 
+
+    @Test
+    public void testCreateView(){
+        Assert.assertEquals(ServerParse.CREATE_VIEW, ServerParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.ALTER_VIEW, ServerParse.parse("ALTER view x_xx_xx as select * from suntest"));
+        Assert.assertEquals(ServerParse.REPLACE_VIEW, ServerParse.parse("create or replace  view x_xx_xx as select * from suntest"));
+        Assert.assertEquals(ServerParse.DROP_VIEW, ServerParse.parse("DROP  view x_xx_xx"));
+        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create or replace viasdfasdfew asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create   "));
+    }
+
+    @Test
+    public void testDropPrepare(){
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, ServerParse.parse("DROP PREPARE stmt_name"));
+    }
 }

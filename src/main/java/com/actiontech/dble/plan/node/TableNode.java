@@ -6,7 +6,6 @@
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -41,7 +40,7 @@ public class TableNode extends PlanNode {
         this.schema = catalog;
         this.tableName = tableName;
         ServerConfig config = DbleServer.getInstance().getConfig();
-        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             this.schema = this.schema.toLowerCase();
             this.tableName = this.tableName.toLowerCase();
         }

@@ -165,6 +165,9 @@ public class FrontendAuthenticator implements NIOHandler {
         if (schema == null) {
             return 0;
         }
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            schema = schema.toLowerCase();
+        }
         FrontendPrivileges privileges = source.getPrivileges();
         if (!privileges.schemaExists(schema)) {
             return ErrorCode.ER_BAD_DB_ERROR;

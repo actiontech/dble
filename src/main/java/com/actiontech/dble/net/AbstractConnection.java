@@ -5,9 +5,9 @@
 */
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -109,7 +109,7 @@ public abstract class AbstractConnection implements NIOConnection {
     public void setCharacterSet(String name) {
         charsetName.setClient(name);
         charsetName.setResults(name);
-        charsetName.setCollation(SystemVariables.getSysVars().getDefaultValue("collation_database"));
+        charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
     }
 
     public boolean setNames(String name, String collationName) {

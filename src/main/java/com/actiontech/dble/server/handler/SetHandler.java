@@ -14,7 +14,6 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
 import com.actiontech.dble.util.StringUtil;
@@ -32,6 +31,8 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * SetHandler
@@ -88,6 +89,7 @@ public final class SetHandler {
             }
         }
     }
+
     private static boolean handleSetStatement(String stmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) throws SQLSyntaxErrorException {
         SQLStatement statement = parseSQL(stmt);
         if (statement instanceof SQLSetStatement) {
@@ -100,8 +102,8 @@ public final class SetHandler {
         } else if (statement instanceof MySqlSetNamesStatement) {
             MySqlSetNamesStatement setNamesStatement = (MySqlSetNamesStatement) statement;
             if (contextTask.size() > 0 || stmt.contains(",")) {
-                if (handleSetNamesInMultiStmt(c, setNamesStatement.getCharSet(), setNamesStatement.getCollate(), contextTask)) {
-                    int index = stmt.indexOf(",");
+                int index = stmt.indexOf(",");
+                if (handleSetNamesInMultiStmt(c, stmt.substring(0, index), setNamesStatement.isDefault(), setNamesStatement.getCharSet(), setNamesStatement.getCollate(), contextTask)) {
                     String newStmt = "set " + stmt.substring(index + 1);
                     return handleSetStatement(newStmt, c, contextTask);
                 } else {
@@ -113,7 +115,7 @@ public final class SetHandler {
         } else if (statement instanceof MySqlSetCharSetStatement) {
             MySqlSetCharSetStatement setCharSetStatement = (MySqlSetCharSetStatement) statement;
             if (contextTask.size() > 0 || stmt.contains(",")) {
-                if (handleCharsetInMultiStmt(c, setCharSetStatement.getCharSet(), contextTask)) {
+                if (handleCharsetInMultiStmt(c, setCharSetStatement.isDefault(), setCharSetStatement.getCharSet(), contextTask)) {
                     int index = stmt.indexOf(",");
                     String newStmt = "set " + stmt.substring(index + 1);
                     return handleSetStatement(newStmt, c, contextTask);
@@ -131,31 +133,48 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String[] charsetInfo = checkSetNames(charset, collate);
+    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String stmt, boolean isDefault, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String[] charsetInfo = checkSetNames(stmt, isDefault, charset, collate);
         if (charsetInfo != null) {
-            contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
-            return true;
+            if (charsetInfo[0] == null) {
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
+                return false;
+            }
+            if (charsetInfo[1] == null) {
+                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + collate + "' is not valid for CHARACTER SET '" + charset + "'");
+                return false;
+            } else {
+                contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
+                return true;
+            }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
             return false;
         }
     }
 
     private static boolean handleSingleSetNames(String stmt, ServerConnection c, MySqlSetNamesStatement statement) {
-        String[] charsetInfo = checkSetNames(statement.getCharSet(), statement.getCollate());
+        String[] charsetInfo = checkSetNames(stmt, statement.isDefault(), statement.getCharSet(), statement.getCollate());
         if (charsetInfo != null) {
-            c.setNames(charsetInfo[0], charsetInfo[1]);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-            return true;
+            if (charsetInfo[0] == null) {
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
+                return false;
+            } else if (charsetInfo[1] == null) {
+                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + statement.getCollate() + "' is not valid for CHARACTER SET '" + statement.getCharSet() + "'");
+                return false;
+            } else {
+                c.setNames(charsetInfo[0], charsetInfo[1]);
+                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                return true;
+            }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
             return false;
         }
     }
 
     private static boolean handleSingleSetCharset(String stmt, ServerConnection c, MySqlSetCharSetStatement statement) {
-        String charset = getCharset(statement.getCharSet());
+        String charset = getCharset(statement.isDefault(), statement.getCharSet());
         if (charset != null) {
             c.setCharacterSet(charset);
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
@@ -204,12 +223,13 @@ public final class SetHandler {
             case NAMES: {
                 String charset = parseStringValue(valueExpr);
                 //TODO:druid lost collation info
-                if (!handleSetNamesInMultiStmt(c, charset, null, contextTask)) return false;
+                if (!handleSetNamesInMultiStmt(c, "SET NAMES " + charset, false, charset, null, contextTask))
+                    return false;
                 break;
             }
             case CHARSET: {
                 String charset = parseStringValue(valueExpr);
-                if (!handleCharsetInMultiStmt(c, charset, contextTask)) return false;
+                if (!handleCharsetInMultiStmt(c, false, charset, contextTask)) return false;
                 break;
             }
             case CHARACTER_SET_CLIENT:
@@ -234,13 +254,13 @@ public final class SetHandler {
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
-                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
+                if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
                 break;
             case USER_VARIABLES:
-                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
+                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, key + " is not supported");
@@ -249,8 +269,8 @@ public final class SetHandler {
         return true;
     }
 
-    private static boolean handleCharsetInMultiStmt(ServerConnection c, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String charsetInfo = getCharset(charset);
+    private static boolean handleCharsetInMultiStmt(ServerConnection c, boolean isDefault, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String charsetInfo = getCharset(isDefault, charset);
         if (charsetInfo != null) {
             contextTask.add(new Pair<>(KeyType.CHARSET, new Pair<String, String>(charsetInfo, null)));
             return true;
@@ -360,21 +380,29 @@ public final class SetHandler {
             case COLLATION_CONNECTION:
                 return handleCollationConnection(c, valueExpr);
             case TX_READ_ONLY:
+                if (!stmt.toLowerCase().contains("session")) {
+                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    return false;
+                }
                 return handleTxReadOnly(c, valueExpr);
             case TX_ISOLATION:
+                if (!stmt.toLowerCase().contains("session")) {
+                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    return false;
+                }
                 return handleTxIsolation(c, valueExpr);
             case SYSTEM_VARIABLES:
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
-                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
+                if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                     return false;
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
                 return true;
             case USER_VARIABLES:
-                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
+                contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 return true;
             default:
                 c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not supported");
@@ -581,7 +609,8 @@ public final class SetHandler {
 
     private static boolean checkValue(SQLExpr valueExpr) {
         return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
-                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) || (valueExpr instanceof SQLBooleanExpr);
+                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) ||
+                (valueExpr instanceof SQLBooleanExpr) || (valueExpr instanceof SQLDefaultExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -661,6 +690,9 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLBooleanExpr) {
             SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
             strValue = String.valueOf(value.getValue());
+        } else if (valueExpr instanceof SQLDefaultExpr) {
+            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
+            strValue = value.toString();
         }
         return strValue;
     }
@@ -676,6 +708,9 @@ public final class SetHandler {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
+        } else if (valueExpr instanceof SQLDefaultExpr) {
+            SQLDefaultExpr value = (SQLDefaultExpr) valueExpr;
+            strValue = value.toString();
         }
         return strValue;
     }
@@ -732,26 +767,36 @@ public final class SetHandler {
         return ci > 0;
     }
 
-    private static String getCharset(String charset) {
-        charset = charset.toLowerCase();
-        if (charset.equals("default")) {
+    private static String getCharset(boolean isDefault, String charset) {
+        if (isDefault || charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         }
-        charset = StringUtil.removeApostropheOrBackQuote(charset);
+        charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
         if (checkCharset(charset)) {
             return charset;
         }
         return null;
     }
 
-    private static String[] checkSetNames(String charset, String collate) {
-        charset = charset.toLowerCase();
-        if (charset.equals("default")) {
+
+    private static boolean checkSetNamesSyntax(String stmt) {
+        //druid parser can't find syntax error,use regex to check again, but it is not strict
+        String regex = "^\\s*set\\s+names\\s+[`\\']?[a-zA-Z_0-9]+[`\\']?(\\s+collate\\s+[`\\']?[a-zA-Z_0-9]+[`\\']?)?;?\\s*$";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher ma = pattern.matcher(stmt);
+        return ma.matches();
+    }
+
+    private static String[] checkSetNames(String stmt, boolean isDefault, String charset, String collate) {
+        if (collate == null && !(checkSetNamesSyntax(stmt))) {
+            return null;
+        }
+        if (isDefault || charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         } else {
-            charset = StringUtil.removeApostropheOrBackQuote(charset);
+            charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
             if (!checkCharset(charset)) {
-                return null;
+                return new String[]{null, null};
             }
         }
         if (collate == null) {
@@ -760,8 +805,13 @@ public final class SetHandler {
             collate = collate.toLowerCase();
             if (collate.equals("default")) {
                 collate = CharsetUtil.getDefaultCollation(charset);
-            } else if (CharsetUtil.getCollationIndex(collate) <= 0) {
-                return null;
+            } else {
+                int collateIndex = CharsetUtil.getCollationIndexByCharset(charset, collate);
+                if (collateIndex == 0) {
+                    return new String[]{null, null};
+                } else if (collateIndex < 0) {
+                    return new String[]{charset, null};
+                }
             }
         }
         return new String[]{charset, collate};

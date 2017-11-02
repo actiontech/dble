@@ -25,23 +25,23 @@ public class PhysicalDBPool {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBPool.class);
 
     public static final int BALANCE_NONE = 0;
-    public static final int BALANCE_ALL_BACK = 1;
-    public static final int BALANCE_ALL = 2;
-    public static final int BALANCE_ALL_READ = 3;
+    private static final int BALANCE_ALL_BACK = 1;
+    private static final int BALANCE_ALL = 2;
+    private static final int BALANCE_ALL_READ = 3;
 
     public static final int WEIGHT = 0;
 
     private final String hostName;
 
-    protected final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
-    protected PhysicalDatasource[] writeSources;
-    protected Map<Integer, PhysicalDatasource[]> readSources;
+    private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
+    private PhysicalDatasource[] writeSources;
+    private Map<Integer, PhysicalDatasource[]> readSources;
     private Collection<PhysicalDatasource> allDs;
 
-    protected volatile int activeIndex;
-    protected volatile boolean initSuccess;
+    volatile int activeIndex;
+    private volatile boolean initSuccess;
 
-    protected final ReentrantLock switchLock = new ReentrantLock();
+    private final ReentrantLock switchLock = new ReentrantLock();
 
     private final int balance;
     private final Random random = new Random();
@@ -66,7 +66,7 @@ public class PhysicalDBPool {
         this.readSources = readSources;
         this.allDs = this.genAllDataSources();
 
-        LOGGER.info("total resouces of dataHost " + this.hostName + " is :" + allDs.size());
+        LOGGER.info("total resources of dataHost " + this.hostName + " is :" + allDs.size());
 
         setDataSourceProps();
     }
@@ -95,7 +95,7 @@ public class PhysicalDBPool {
         return allSources;
     }
 
-    public PhysicalDatasource findDatasource(BackendConnection exitsCon) {
+    PhysicalDatasource findDatasource(BackendConnection exitsCon) {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
@@ -104,7 +104,7 @@ public class PhysicalDBPool {
             adjustLock.readLock().unlock();
         }
 
-        // mgj: why not only isMyConnection??? fromslavdb is from readnode.
+        // mgj: why not only isMyConnection??? from slave db is from read node.
         // switch change the read node???
         for (PhysicalDatasource ds : all) {
             if ((ds.isReadNode() == exitsCon.isFromSlaveDB()) && ds.isMyConnection(exitsCon)) {
@@ -117,9 +117,8 @@ public class PhysicalDBPool {
     }
 
     // ensure never be invocated concurrently
-    public void delRDs(PhysicalDatasource source) {
+    void delRDs(PhysicalDatasource source) {
         int index = -1;
-        PhysicalDatasource[] rDs = null;
         PhysicalDatasource[] nrDs = null;
         boolean del = false;
 
@@ -132,7 +131,7 @@ public class PhysicalDBPool {
             }
         }
 
-        rDs = this.readSources.get(index);
+        PhysicalDatasource[] rDs = this.readSources.get(index);
         if (rDs.length == 1) {
             del = true;
         } else {
@@ -160,10 +159,9 @@ public class PhysicalDBPool {
 
     // ensure never be invocated concurrently
     public void addRDs(int index, PhysicalDatasource source) {
-        PhysicalDatasource[] rDs = null;
-        PhysicalDatasource[] nrDs = null;
+        PhysicalDatasource[] nrDs;
 
-        rDs = this.readSources.get(index);
+        PhysicalDatasource[] rDs = this.readSources.get(index);
         if (rDs == null) {
             nrDs = new PhysicalDatasource[1];
             nrDs[0] = source;
@@ -190,7 +188,7 @@ public class PhysicalDBPool {
         return hostName;
     }
 
-    /* all write datanodes */
+    /* all write data nodes */
     public PhysicalDatasource[] getSources() {
         return writeSources;
     }
@@ -203,9 +201,8 @@ public class PhysicalDBPool {
         return writeSources[activeIndex];
     }
 
-    public boolean isSlave(PhysicalDatasource ds) {
+    boolean isSlave(PhysicalDatasource ds) {
         int currentIndex = 0;
-        boolean isSlave = false;
         // mgj: immediately get the active ds and compare is good???
         for (int i = 0; i < getSources().length; i++) {
             PhysicalDatasource writeHostDatasource = getSources()[i];
@@ -214,9 +211,7 @@ public class PhysicalDBPool {
                 break;
             }
         }
-        isSlave = (currentIndex != activeIndex);
-
-        return isSlave;
+        return (currentIndex != activeIndex);
     }
 
     public boolean isInitSuccess() {
@@ -242,7 +237,7 @@ public class PhysicalDBPool {
         if (!ds.isReadNode() &&
                 curDsHbStatus != DBHeartbeat.OK_STATUS && getSources().length > 1) {
             // try to see if need switch datasource
-            if (curDsHbStatus != DBHeartbeat.INIT_STATUS && curDsHbStatus != DBHeartbeat.OK_STATUS) {
+            if (curDsHbStatus != DBHeartbeat.INIT_STATUS) {
                 int curIndex = getActiveIndex();
                 int nextId = next(curIndex);
                 PhysicalDatasource[] allWriteNodes = getSources();
@@ -358,7 +353,7 @@ public class PhysicalDBPool {
     private boolean initSource(int index, PhysicalDatasource ds) {
         int initSize = ds.getConfig().getMinCon();
 
-        LOGGER.info("init backend myqsl source ,create connections total " + initSize + " for " + ds.getName() +
+        LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName() +
                 " index :" + index);
 
         CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<>();
@@ -422,7 +417,7 @@ public class PhysicalDBPool {
         }
 
         for (PhysicalDatasource ds : all) {
-            // only readnode or all write node or writetype=WRITE_ONLYONE_NODE
+            // only read node or all write node
             // and current write node will check
             if (ds != null && (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) &&
                     (ds.isReadNode() || ds == this.getSource())) {
@@ -461,10 +456,10 @@ public class PhysicalDBPool {
     /**
      * clearDataSources
      *
-     * @param reason
+     * @param reason reason
      */
     public void clearDataSources(String reason) {
-        LOGGER.info("clear datasours of pool " + this.hostName);
+        LOGGER.info("clear data sources of pool " + this.hostName);
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
@@ -474,7 +469,7 @@ public class PhysicalDBPool {
         }
 
         for (PhysicalDatasource source : all) {
-            LOGGER.info("clear datasoure of pool  " + this.hostName + " ds:" + source.getConfig());
+            LOGGER.info("clear datasource of pool  " + this.hostName + " ds:" + source.getConfig());
             source.clearCons(reason);
             source.stopHeartbeat();
         }
@@ -495,15 +490,16 @@ public class PhysicalDBPool {
 
     /**
      * return connection for read balance
-     *
-     * @param handler
-     * @param attachment
-     * @throws Exception
+     * @param schema schema
+     * @param autocommit autocommit
+     * @param handler handler
+     * @param attachment attachment
+     * @throws Exception Exception
      */
-    public void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+    void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 
-        PhysicalDatasource theNode = null;
-        ArrayList<PhysicalDatasource> okSources = null;
+        PhysicalDatasource theNode;
+        ArrayList<PhysicalDatasource> okSources;
         switch (balance) {
             case BALANCE_ALL_BACK: {
                 // all read nodes and the stand by masters
@@ -542,17 +538,15 @@ public class PhysicalDBPool {
     /**
      * slave balance for read, balance in read sources
      *
-     * @param schema
-     * @param autocommit
-     * @param handler
-     * @param attachment
-     * @throws Exception
+     * @param schema schema
+     * @param autocommit autocommit
+     * @param handler handler
+     * @param attachment attachment
+     * @throws Exception Exception
      */
-    public void getReadBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
-        PhysicalDatasource theNode = null;
-        ArrayList<PhysicalDatasource> okSources = null;
-        okSources = getAllActiveRWSources(false, false, checkSlaveSynStatus());
-        theNode = randomSelect(okSources);
+    void getReadBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+        ArrayList<PhysicalDatasource> okSources = getAllActiveRWSources(false, false, checkSlaveSynStatus());
+        PhysicalDatasource theNode = randomSelect(okSources);
         theNode.setReadCount();
         theNode.getConnection(schema, autocommit, handler, attachment);
     }
@@ -560,14 +554,13 @@ public class PhysicalDBPool {
     /**
      * get a random readHost connection from writeHost, used by slave hint
      *
-     * @param schema
-     * @param autocommit
-     * @param handler
-     * @param attachment
-     * @return
-     * @throws Exception
+     * @param schema schema
+     * @param autocommit autocommit
+     * @param handler handler
+     * @param attachment attachment
+     * @throws Exception Exception
      */
-    public boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+    boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
 
         PhysicalDatasource theNode = null;
         Map<Integer, PhysicalDatasource[]> rs;
@@ -609,11 +602,11 @@ public class PhysicalDBPool {
                 theNode.getConnection(schema, autocommit, handler, attachment);
                 return true;
             } else {
-                LOGGER.warn("readhost is notavailable.");
+                LOGGER.warn("read host is not available.");
                 return false;
             }
         } else {
-            LOGGER.warn("readhost is empty, readSources is empty.");
+            LOGGER.warn("read host is empty, readSources is empty.");
             return false;
         }
     }
@@ -628,8 +621,8 @@ public class PhysicalDBPool {
      * <p>
      * randomSelect by weight
      *
-     * @param okSources
-     * @return
+     * @param okSources okSources
+     * @return PhysicalDatasource
      */
     public PhysicalDatasource randomSelect(ArrayList<PhysicalDatasource> okSources) {
 
@@ -688,8 +681,8 @@ public class PhysicalDBPool {
      *
      * @param includeWriteNode         if include write nodes
      * @param includeCurWriteNode      if include current active write node. invalid when <code>includeWriteNode<code> is false
-     * @param filterWithSlaveThreshold
-     * @return
+     * @param filterWithSlaveThreshold filterWithSlaveThreshold
+     * @return PhysicalDatasource list
      */
     private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean includeCurWriteNode,
                                                                 boolean filterWithSlaveThreshold) {

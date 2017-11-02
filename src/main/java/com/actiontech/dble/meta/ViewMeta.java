@@ -61,20 +61,22 @@ public class ViewMeta {
             MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
             MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock) selectStatement.getSelect().getQuery();
 
+            msv.visit(selectStatement.getSelect().getQuery());
+            PlanNode selNode = msv.getTableNode();
+            selNode.setUpFields();
+
             //set the view column name into
             if (viewColumnMeta != null) {
                 //check if the column number of view is same as the selectList in selectStatement
-                if (viewColumnMeta.size() != selectQueryBlock.getSelectList().size()) {
+                if (viewColumnMeta.size() != selNode.getColumnsSelected().size()) {
                     //return error
                     throw new Exception("The Column_list Size and Select_statement Size Not Match");
                 }
                 for (int i = 0; i < viewColumnMeta.size(); i++) {
-                    selectQueryBlock.getSelectList().get(i).setAlias(viewColumnMeta.get(i).trim());
+                    selNode.getColumnsSelected().get(i).setAlias(viewColumnMeta.get(i).trim());
                 }
             }
-            msv.visit(selectStatement.getSelect().getQuery());
-            PlanNode selNode = msv.getTableNode();
-            //进行一次优化
+
             viewQuery = new QueryNode(selNode);
         } catch (Exception e) {
             //the select part sql is wrong & report the error

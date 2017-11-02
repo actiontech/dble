@@ -111,6 +111,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             case ServerParse.REPLACE_VIEW:
                 CreateViewHandler.handle(sql, c, true);
                 break;
+            case ServerParse.ALTER_VIEW:
+                CreateViewHandler.handle(sql, c, false);
+                break;
             case ServerParse.DROP_VIEW:
                 DropViewHandler.handle(sql, c);
                 break;

@@ -4,6 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 
+import static com.actiontech.dble.config.ErrorCode.ER_BAD_TABLE_ERROR;
 import static com.actiontech.dble.config.ErrorCode.ER_PARSE_ERROR;
 
 /**
@@ -19,6 +20,12 @@ public final class DropViewHandler {
         try {
             String[] viewName = parseViewName(stmt);
             //check if all the view is exists
+            for (String singleName : viewName) {
+                if (!(DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().containsKey(singleName))) {
+                    c.writeErrMessage(ER_BAD_TABLE_ERROR, " Unknown table '" + singleName + "'");
+                    return;
+                }
+            }
             for (String singleName : viewName) {
                 DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().remove(singleName.trim());
             }

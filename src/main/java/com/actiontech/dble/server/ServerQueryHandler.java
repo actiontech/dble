@@ -92,6 +92,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             case ServerParse.ROLLBACK:
                 RollBackHandler.handle(sql, c);
                 break;
+            case ServerParse.SCRIPT_PREPARE:
+                ScriptPrepareHandler.handle(sql, c);
+                break;
             case ServerParse.HELP:
                 LOGGER.warn("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");

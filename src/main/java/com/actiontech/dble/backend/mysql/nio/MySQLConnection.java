@@ -19,7 +19,6 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
@@ -148,7 +147,7 @@ public class MySQLConnection extends BackendAIOConnection {
         this.txIsolation = -1;
         this.autocommit = true;
         //TODO:CHECK
-        this.setCharacterSet(SystemVariables.getSysVars().getDefaultValue("character_set_server"));
+        this.setCharacterSet(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
         this.usrVariables.clear();
         this.sysVariables.clear();
     }
@@ -238,7 +237,7 @@ public class MySQLConnection extends BackendAIOConnection {
         packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
         //TODO:CHECK
-        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getSysVars().getDefaultValue("character_set_server"));
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
         packet.setCharsetIndex(charsetIndex);
 
         packet.setUser(user);
@@ -428,7 +427,7 @@ public class MySQLConnection extends BackendAIOConnection {
         }
         //tmp now = backend -(backend &&frontend)
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
-            String value = SystemVariables.getSysVars().getDefaultValue(entry.getKey());
+            String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
                 Long.parseLong(value);
             } catch (NumberFormatException e) {

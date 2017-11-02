@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -40,7 +40,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
         this.info = info;
         ServerConnection source = session.getSource();
         String showSchema = info.getSchema();
-        if (showSchema != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (showSchema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             showSchema = showSchema.toLowerCase();
         }
         showTableSchema = showSchema == null ? source.getSchema() : showSchema;

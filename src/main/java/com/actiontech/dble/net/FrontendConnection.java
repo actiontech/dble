@@ -6,7 +6,6 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
@@ -162,7 +161,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public void setSchema(String schema) {
-        if (schema != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (schema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schema = schema.toLowerCase();
         }
         this.schema = schema;
@@ -184,7 +183,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         String name = CharsetUtil.getCharset(ci);
         charsetName.setClient(name);
         charsetName.setResults(name);
-        charsetName.setCollation(SystemVariables.getSysVars().getDefaultValue("collation_database"));
+        charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
         return true;
     }
 
@@ -220,7 +219,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        if (db != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (db != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             db = db.toLowerCase();
         }
         // check schema
@@ -425,7 +424,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
             //TODO:CHECK
-            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemVariables.getSysVars().getDefaultValue("character_set_server"));
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);

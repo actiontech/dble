@@ -15,7 +15,8 @@ import org.w3c.dom.Element;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author mycat
@@ -26,14 +27,14 @@ public class XMLServerLoader {
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 
-    public XMLServerLoader() {
+    public XMLServerLoader(boolean isLowerCaseTableNames) {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
 
-        this.load(new SystemConfigLoader());
-        this.load(new UserConfigLoader());
-        this.load(new FirewallConfigLoader());
+        this.load(new SystemConfigLoader(), isLowerCaseTableNames);
+        this.load(new UserConfigLoader(), isLowerCaseTableNames);
+        this.load(new FirewallConfigLoader(), isLowerCaseTableNames);
     }
 
     public SystemConfig getSystem() {
@@ -50,7 +51,7 @@ public class XMLServerLoader {
         return firewall;
     }
 
-    public void load(Loader loader) {
+    public void load(Loader loader, boolean isLowerCaseTableNames) {
         //read server.xml
         InputStream dtd = null;
         InputStream xml = null;
@@ -58,7 +59,7 @@ public class XMLServerLoader {
             dtd = ResourceUtil.getResourceAsStream("/server.dtd");
             xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            loader.load(root, this);
+            loader.load(root, this, isLowerCaseTableNames);
         } catch (ConfigException e) {
             throw e;
         } catch (Exception e) {

@@ -14,7 +14,6 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
 import com.actiontech.dble.util.StringUtil;
@@ -234,7 +233,7 @@ public final class SetHandler {
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
-                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
+                if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
@@ -367,7 +366,7 @@ public final class SetHandler {
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
-                if (SystemVariables.getSysVars().getDefaultValue(key) == null) {
+                if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
                     c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                     return false;
                 }

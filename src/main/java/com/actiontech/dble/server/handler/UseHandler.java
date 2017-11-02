@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendPrivileges;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -34,7 +34,7 @@ public final class UseHandler {
             if (schema.charAt(0) == '\'' && schema.charAt(length - 1) == '\'') {
                 schema = schema.substring(1, length - 1);
             }
-            if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 schema = schema.toLowerCase();
             }
         }

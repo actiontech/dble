@@ -14,6 +14,6 @@ import org.junit.Test;
 public class ConfigInitializerTest {
     @Test
     public void testConfigLoader() {
-        new ConfigInitializer(true);
+        new ConfigInitializer(true, false);
     }
 }

@@ -10,6 +10,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
+
 import java.util.Map;
 
 public class ShowVariablesHandler extends SingleNodeHandler {

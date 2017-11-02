@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.net.mysql;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.server.variables.SystemVariables;
 import org.apache.commons.lang.StringUtils;
 
 public class CharsetNames {
@@ -15,9 +15,9 @@ public class CharsetNames {
     private volatile String collation;
 
     public CharsetNames() {
-        this.client = SystemVariables.getSysVars().getDefaultValue("character_set_client");
-        this.results = SystemVariables.getSysVars().getDefaultValue("character_set_results");
-        this.collation = SystemVariables.getSysVars().getDefaultValue("collation_connection");
+        this.client = DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_client");
+        this.results = DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_results");
+        this.collation = DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_connection");
     }
 
     public void setNames(String name, String collationName) {

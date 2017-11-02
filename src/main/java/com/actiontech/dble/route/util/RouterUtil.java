@@ -22,7 +22,6 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.StringUtil;
@@ -51,7 +50,7 @@ public final class RouterUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
 
     public static String removeSchema(String stmt, String schema) {
-        return removeSchema(stmt, schema, SystemVariables.getSysVars().isLowerCaseTableNames());
+        return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 
     /**
@@ -296,7 +295,7 @@ public final class RouterUtil {
 
 
     public static String lowerCaseTable(String tableName) {
-        if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             return tableName.toLowerCase();
         }
         return tableName;
@@ -582,7 +581,7 @@ public final class RouterUtil {
         //router for shard-ing tables
         for (Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
             String tableName = entry.getKey();
-            if (SystemVariables.getSysVars().isLowerCaseTableNames()) {
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 tableName = tableName.toLowerCase();
             }
             if (tableName.startsWith(schema.getName() + ".")) {

@@ -1,6 +1,8 @@
 package com.actiontech.dble.meta;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by szf on 2017/10/9.

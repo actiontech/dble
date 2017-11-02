@@ -6,7 +6,6 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ShowTablesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
@@ -55,7 +54,7 @@ public final class ShowTables {
             return;
         }
         String showSchema = info.getSchema();
-        if (showSchema != null && SystemVariables.getSysVars().isLowerCaseTableNames()) {
+        if (showSchema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             showSchema = showSchema.toLowerCase();
         }
         String cSchema = showSchema == null ? c.getSchema() : showSchema;

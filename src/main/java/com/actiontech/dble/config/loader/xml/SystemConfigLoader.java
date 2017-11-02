@@ -13,11 +13,12 @@ import com.actiontech.dble.config.util.ParameterMapping;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import java.util.*;
+
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 
 public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
         SystemConfig system = xsl.getSystem();
         NodeList list = root.getElementsByTagName("system");
 

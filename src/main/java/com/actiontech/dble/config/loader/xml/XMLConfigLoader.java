@@ -23,8 +23,8 @@ public class XMLConfigLoader {
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 
-    public XMLConfigLoader() {
-        XMLServerLoader serverLoader = new XMLServerLoader();
+    public XMLConfigLoader(boolean isLowerCaseTableNames) {
+        XMLServerLoader serverLoader = new XMLServerLoader(isLowerCaseTableNames);
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
         this.firewall = serverLoader.getFirewall();

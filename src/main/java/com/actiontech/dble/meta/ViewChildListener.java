@@ -13,9 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.actiontech.dble.backend.mysql.view.recovery.Reposoitory.CREATE_SQL;
-import static com.actiontech.dble.backend.mysql.view.recovery.Reposoitory.SCHEMA_VIEW_SPLIT;
-import static com.actiontech.dble.backend.mysql.view.recovery.Reposoitory.SERVER_ID;
+import static com.actiontech.dble.backend.mysql.view.recovery.Reposoitory.*;
 
 
 public class ViewChildListener implements PathChildrenCacheListener {

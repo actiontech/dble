@@ -46,8 +46,7 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
     @Override
     public SQLExpr toExpression() {
         SQLSelect sqlSelect = new SQLSelect(query);
-        SQLQueryExpr expr = new SQLQueryExpr(sqlSelect);
-        return expr;
+        return new SQLQueryExpr(sqlSelect);
     }
 
     @Override

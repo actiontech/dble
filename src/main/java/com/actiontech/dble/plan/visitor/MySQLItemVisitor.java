@@ -106,7 +106,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, left, x.getSubQuery().getQuery(), isNeg);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg);
         initName(x);
     }
 
@@ -705,32 +705,31 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
 
-
     private void handleAnySubQuery(SQLBinaryOpExpr parent, SQLSelectQuery sqlSelect, boolean isAll) {
         SQLBinaryOperator operator = parent.getOperator();
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, true);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, left, sqlSelect, false);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, left, sqlSelect, true);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, false);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, operator, sqlSelect, isAll);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",

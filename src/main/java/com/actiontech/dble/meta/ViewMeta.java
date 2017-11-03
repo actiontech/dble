@@ -7,7 +7,6 @@ import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 
 import java.util.List;
 
@@ -59,7 +58,6 @@ public class ViewMeta {
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
             MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
-            MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock) selectStatement.getSelect().getQuery();
 
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();

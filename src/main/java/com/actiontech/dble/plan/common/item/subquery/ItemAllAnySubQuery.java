@@ -24,7 +24,7 @@ import java.util.List;
 public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     private boolean isAll;
     private SQLBinaryOperator operator;
-    public ItemAllAnySubQuery(String currentDb, SQLBinaryOperator operator, SQLSelectQuery query, boolean isAll) {
+    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll) {
         super(currentDb, query);
         this.isAll = isAll;
         this.operator = operator;
@@ -52,7 +52,7 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemAllAnySubQuery(this.currentDb, this.operator, this.query, this.isAll);
+        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll);
     }
 
     public boolean isAll() {

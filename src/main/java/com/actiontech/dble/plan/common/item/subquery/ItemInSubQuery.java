@@ -22,7 +22,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
 
-    public ItemInSubQuery(String currentDb, Item leftOperand, SQLSelectQuery query, boolean isNeg) {
+    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg) {
         super(currentDb, query);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
@@ -65,7 +65,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemInSubQuery(this.currentDb, this.leftOperand.cloneItem(), this.query, this.isNeg);
+        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg);
     }
 
     public Item getLeftOperand() {

@@ -61,7 +61,7 @@ import java.util.Map;
 
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private String currentDb;
-    private int charsetIndex;
+    private final int charsetIndex;
 
     public MySQLItemVisitor(String currentDb) {
         this(currentDb, CharsetUtil.getCharsetDefaultIndex("utf8"));
@@ -145,7 +145,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 break;
             case IsNot:
-                // is not null, or is notunknown
+                // is not null, or is not unknown
                 if (itemRight instanceof ItemNull || itemRight instanceof ItemString) {
                     item = new ItemFuncIsnotnull(itemLeft);
                 } else if (itemRight instanceof ItemInt) {
@@ -335,19 +335,19 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLCaseExpr x) {
-        List<SQLCaseExpr.Item> whenlists = x.getItems();
+        List<SQLCaseExpr.Item> whenList = x.getItems();
         ArrayList<Item> args = new ArrayList<>();
-        int ncases, firstExprNum = -1, elseExprNum = -1;
-        for (SQLCaseExpr.Item when : whenlists) {
+        int nCases, firstExprNum = -1, elseExprNum = -1;
+        for (SQLCaseExpr.Item when : whenList) {
             args.add(getItem(when.getConditionExpr()));
             args.add(getItem(when.getValueExpr()));
         }
-        ncases = args.size();
-        // add comparee
-        SQLExpr comparee = x.getValueExpr();
-        if (comparee != null) {
+        nCases = args.size();
+        // add compared
+        SQLExpr compared = x.getValueExpr();
+        if (compared != null) {
             firstExprNum = args.size();
-            args.add(getItem(comparee));
+            args.add(getItem(compared));
         }
 
         // add else exp
@@ -356,16 +356,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             elseExprNum = args.size();
             args.add(getItem(elseExpr));
         }
-        item = new ItemFuncCase(args, ncases, firstExprNum, elseExprNum);
+        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum);
     }
 
     @Override
     public void endVisit(SQLCastExpr x) {
         Item a = getItem(x.getExpr());
-        SQLDataType datetype = x.getDataType();
+        SQLDataType dataType = x.getDataType();
 
-        if (datetype instanceof SQLCharacterDataType) {
-            SQLCharacterDataType charType = (SQLCharacterDataType) datetype;
+        if (dataType instanceof SQLCharacterDataType) {
+            SQLCharacterDataType charType = (SQLCharacterDataType) dataType;
             String upType = charType.getName().toUpperCase();
             List<Integer> args = changeExprListToInt(charType.getArguments());
             String charSetName = charType.getCharSetName();
@@ -386,7 +386,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                         "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'character set " + charSetName + ")'");
             }
         } else {
-            CastType castType = getCastType((SQLDataTypeImpl) datetype);
+            CastType castType = getCastType((SQLDataTypeImpl) dataType);
             item = ItemCreate.getInstance().createFuncCast(a, castType);
         }
         initName(x);
@@ -432,6 +432,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         } else {
             item = new ItemInt(number.longValue());
         }
+        initName(x);
+    }
+
+    @Override
+    public void endVisit(SQLVariantRefExpr x) {
+        item = new ItemVariables(x.getName(), new ItemField(null, null, x.getName()));
         initName(x);
     }
 
@@ -549,7 +555,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 // fallthrough
             case "DATE_ADD":
                 MySqlIntervalExpr intervalExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUint(x.getParameters().get(1)), false);
+                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), false);
                 break;
             case "SUBDATE":
                 if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
@@ -559,7 +565,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 // fallthrough
             case "DATE_SUB":
                 MySqlIntervalExpr valueExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUint(x.getParameters().get(1)), true);
+                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), true);
                 break;
             case "TIMESTAMPADD":
                 SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
@@ -620,7 +626,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLListExpr x) {
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Row Subqueries is not supported");
+        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Row Sub Queries is not supported");
     }
 
     @Override
@@ -805,7 +811,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         return args;
     }
 
-    private MySqlIntervalUnit getIntervalUint(SQLExpr expr) {
+    private MySqlIntervalUnit getIntervalUnit(SQLExpr expr) {
         return ((MySqlIntervalExpr) expr).getUnit();
     }
 

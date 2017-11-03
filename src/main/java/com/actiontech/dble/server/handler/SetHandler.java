@@ -679,7 +679,7 @@ public final class SetHandler {
     }
 
     private static String parseVariablesValue(SQLExpr valueExpr) {
-        String strValue = "";
+        String strValue;
         if (valueExpr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr value = (SQLIdentifierExpr) valueExpr;
             strValue = "'" + StringUtil.removeBackQuote(value.getSimpleName().toLowerCase()) + "'";
@@ -786,7 +786,7 @@ public final class SetHandler {
 
     private static boolean checkSetNamesSyntax(String stmt) {
         //druid parser can't find syntax error,use regex to check again, but it is not strict
-        String regex = "^\\s*set\\s+names\\s+[`\\']?[a-zA-Z_0-9]+[`\\']?(\\s+collate\\s+[`\\']?[a-zA-Z_0-9]+[`\\']?)?;?\\s*$";
+        String regex = "^\\s*set\\s+names\\s+[`']?[a-zA-Z_0-9]+[`']?(\\s+collate\\s+[`']?[a-zA-Z_0-9]+[`']?)?;?\\s*$";
         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
         Matcher ma = pattern.matcher(stmt);
         return ma.matches();

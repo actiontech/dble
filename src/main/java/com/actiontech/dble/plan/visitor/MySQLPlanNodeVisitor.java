@@ -31,8 +31,8 @@ import java.util.List;
 
 public class MySQLPlanNodeVisitor {
     private PlanNode tableNode;
-    private String currentDb;
-    private int charsetIndex;
+    private final String currentDb;
+    private final int charsetIndex;
 
     public MySQLPlanNodeVisitor(String currentDb, int charsetIndex) {
         this.currentDb = currentDb;

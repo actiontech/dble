@@ -56,10 +56,34 @@ public final class ServerSptPrepare {
         sptStmt = stmt;
     }
 
+    /* In user variable, the string is primordial, so we have to truncate the quotes */
+    private String getStmtFromUserVar() {
+        String key = "@" + sptStmt;
+        String stmt = source.getUsrVariables().get(key);
+        String rstmt = null;
+
+        if (stmt != null) {
+            for (int i = 0; i < stmt.length(); i++) {
+                char c1 = stmt.charAt(i);
+                switch (c1) {
+                    case '\'':
+                    case '"':
+                        int j = stmt.lastIndexOf(c1, stmt.length() - 1);
+                        if (j != -1) {
+                            rstmt = stmt.substring(++i, j);
+                        }
+                        return rstmt;
+                    default:
+                        break;
+                }
+            }
+        }
+        return rstmt;
+    }
+
     public String getExePrepare() {
         if (isUserVar) {
-            String key = "@" + sptStmt;
-            return source.getUsrVariables().get(key);
+            return getStmtFromUserVar();
         } else {
             return sptStmt;
         }

@@ -33,6 +33,8 @@ public class ServerParseTest {
      * public static final int MYSQL_COMMENT = 19;
      * public static final int CALL = 20;
      * public static final int DESCRIBE = 21;
+     *
+     * public static final int SCRIPT_PREPARE = 101;
      */
 
     @Test
@@ -60,6 +62,22 @@ public class ServerParseTest {
     }
 
     @Test
+    public void testDroprepare() {
+        String sql = "drop prepare stmt";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
+    }
+
+    @Test
+    public void testDeallocate() {
+        String sql = "Deallocate prepare stmt";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
+    }
+
+    @Test
     public void testInsert() {
         String sql = "insert into a(name) values ('zhangsan')";
         int result = ServerParse.parse(sql);
@@ -73,6 +91,14 @@ public class ServerParseTest {
         int result = ServerParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.REPLACE, sqlType);
+    }
+
+    @Test
+    public void testPrepare() {
+        String sql = "prepare stmt from 'select * from aa where id=?'";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
 
     @Test
@@ -137,6 +163,14 @@ public class ServerParseTest {
         int result = ServerParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.EXPLAIN, sqlType);
+    }
+
+    @Test
+    public void testExecute() {
+        String sql = "execute stmt using @f1, f2";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
 
     @Test

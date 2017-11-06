@@ -13,12 +13,10 @@ public final class ManagerParseSelect {
 
     public static final int OTHER = -1;
     public static final int VERSION_COMMENT = 1;
-    public static final int SESSION_AUTO_INCREMENT = 2;
-    public static final int SESSION_TX_READ_ONLY = 3;
-    public static final int MAX_ALLOWED_PACKET = 4;
+    public static final int SESSION_TX_READ_ONLY = 2;
+    public static final int MAX_ALLOWED_PACKET = 3;
 
     private static final char[] STRING_VERSION_COMMENT = "VERSION_COMMENT".toCharArray();
-    private static final char[] STRING_SESSION_AUTO_INCREMENT = "SESSION.AUTO_INCREMENT_INCREMENT".toCharArray();
     private static final char[] STRING_SESSION_TX_READ_ONLY = "SESSION.TX_READ_ONLY".toCharArray();
     private static final char[] STRING_MAX_ALLOWED_PACKET = "MAX_ALLOWED_PACKET".toCharArray();
 
@@ -83,16 +81,11 @@ public final class ManagerParseSelect {
         return OTHER;
     }
 
-    // SESSION.AUTO_INCREMENT_INCREMENT or SESSION.TX_READ_ONLY
+    // SESSION.TX_READ_ONLY
     private static int select2SCheck(String stmt, int offset) {
-        int length = offset + STRING_SESSION_AUTO_INCREMENT.length;
-        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, STRING_SESSION_AUTO_INCREMENT)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
-                return OTHER;
-            }
-            return SESSION_AUTO_INCREMENT;
-        } else if (stmt.length() >= (offset + STRING_SESSION_TX_READ_ONLY.length) && ParseUtil.compare(stmt, offset, STRING_SESSION_TX_READ_ONLY)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
+        int length = offset + STRING_SESSION_TX_READ_ONLY.length;
+        if (stmt.length() >= (offset + STRING_SESSION_TX_READ_ONLY.length) && ParseUtil.compare(stmt, offset, STRING_SESSION_TX_READ_ONLY)) {
+            if (!ParseUtil.isEOF(stmt, length)) {
                 return OTHER;
             }
             return SESSION_TX_READ_ONLY;

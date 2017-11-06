@@ -24,7 +24,28 @@ public class Testparser {
         //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("drop table char_columns_test;");
         //		obj.test("truncate table char_columns_test;");
-        String strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
+        String strSetSql = "SELECT\n" +
+                "\t@@SESSION .auto_increment_increment AS auto_increment_increment,\n" +
+                "\t@@character_set_client AS character_set_client,\n" +
+                "\t@@character_set_connection AS character_set_connection,\n" +
+                "\t@@character_set_results AS character_set_results,\n" +
+                "\t@@character_set_server AS character_set_server,\n" +
+                "\t@@init_connect AS init_connect,\n" +
+                "\t@@interactive_timeout AS interactive_timeout,\n" +
+                "\t@@license AS license,\n" +
+                "\t@@lower_case_table_names AS lower_case_table_names,\n" +
+                "\t@@max_allowed_packet AS max_allowed_packet,\n" +
+                "\t@@net_buffer_length AS net_buffer_length,\n" +
+                "\t@@net_write_timeout AS net_write_timeout,\n" +
+                "\t@@query_cache_size AS query_cache_size,\n" +
+                "\t@@query_cache_type AS query_cache_type,\n" +
+                "\t@@sql_mode AS sql_mode,\n" +
+                "\t@@system_time_zone AS system_time_zone,\n" +
+                "\t@@time_zone AS time_zone,\n" +
+                "\t@@tx_isolation AS tx_isolation,\n" +
+                "\t@@wait_timeout AS wait_timeout;";
+        obj.test(strSetSql);
+        strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
         obj.test(strSetSql);
         strSetSql = "SET SESSION sql_mode = `TRADITIONAL`;";
         obj.test(strSetSql);

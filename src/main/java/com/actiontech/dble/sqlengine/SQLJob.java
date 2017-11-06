@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * asyn execute in EngineCtx or standalone (EngineCtx=null)
+ * async execute in EngineCtx or standalone (EngineCtx=null)
  *
  * @author wuzhih
  */

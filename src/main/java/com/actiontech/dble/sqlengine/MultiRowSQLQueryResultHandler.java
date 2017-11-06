@@ -14,10 +14,10 @@ import java.util.Map;
 
 public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiRowSQLQueryResultHandler.class);
-    // 获得结果之后，利用该对象进行回调进行通知和处理结果
+    // callback  after get ResultSet
     private final SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> callback;
 
-    private List<Map<String, String>> resultRows = new LinkedList<>();    // 保存结果行
+    private List<Map<String, String>> resultRows = new LinkedList<>();
 
     public MultiRowSQLQueryResultHandler(String[] fetchCols,
                                          SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> callback) {

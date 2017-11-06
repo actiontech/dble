@@ -239,7 +239,7 @@ public class NonBlockingSession implements Session {
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {
-            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Subqueries is not supported ");
+            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Sub Queries is not supported ");
         }
         node.setSql(rrs.getStatement());
         node.setUpFields();

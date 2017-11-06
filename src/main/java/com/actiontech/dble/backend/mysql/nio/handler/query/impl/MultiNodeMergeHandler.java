@@ -72,10 +72,6 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         return exeHandlers;
     }
 
-    public RouteResultsetNode[] getRouteSources() {
-        return this.route;
-    }
-
     public void execute() throws Exception {
         synchronized (exeHandlers) {
             if (terminate.get())
@@ -106,7 +102,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         try {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
-                rowComparator = makeRowDataSorter((MySQLConnection) conn);
+                rowComparator = makeRowDataSorter();
                 nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
             }
             if (isEasyMerge) {
@@ -260,9 +256,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     }
 
     /**
-     * s
-     *
-     * @param handler
+     * terminatePreHandler
+     * @param handler handler
      */
     private void terminatePreHandler(DMLResponseHandler handler) {
         DMLResponseHandler current = handler;
@@ -274,7 +269,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
-    private RowDataComparator makeRowDataSorter(MySQLConnection conn) {
+    private RowDataComparator makeRowDataSorter() {
         if (!isEasyMerge)
             return new RowDataComparator(this.fieldPackets, orderBys, this.isAllPushDown(), this.type());
         return null;

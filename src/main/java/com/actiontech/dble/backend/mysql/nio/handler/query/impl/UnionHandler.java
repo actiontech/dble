@@ -42,7 +42,7 @@ public class UnionHandler extends BaseDMLHandler {
      */
     private List<Item> selects;
     private AtomicInteger nodeCount;
-    /* used for fieldeof */
+    /* used for field eof */
     private AtomicInteger nodeCountField;
     private ReentrantLock lock = new ReentrantLock();
     private Condition conFieldSend = lock.newCondition();
@@ -64,7 +64,7 @@ public class UnionHandler extends BaseDMLHandler {
                 this.fieldPackets = unionFieldPackets(this.fieldPackets, fieldPackets);
             }
             if (nodeCountField.decrementAndGet() == 0) {
-                // set correct name to fieldpackets
+                // set correct name to field packets
                 checkFieldPackets();
                 nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
                 conFieldSend.signalAll();
@@ -93,11 +93,11 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     /**
-     * merge fieldpakcets with fieldpackets2
+     * merge field packets with field packets2
      * eg: int field union double field ->double field
      *
-     * @param fieldPackets
-     * @param fieldPackets2
+     * @param fieldPackets fieldPackets
+     * @param fieldPackets2 fieldPackets2
      */
     private List<FieldPacket> unionFieldPackets(List<FieldPacket> fieldPackets, List<FieldPacket> fieldPackets2) {
         List<FieldPacket> newFps = new ArrayList<>();

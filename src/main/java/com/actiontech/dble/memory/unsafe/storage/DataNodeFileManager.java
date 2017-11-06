@@ -162,7 +162,9 @@ public class DataNodeFileManager {
         if (deleteFilesOnStop) {
             File localDir;
             int i = 0;
-            System.out.println(localDirs.size());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("local dirs size:" + localDirs.size());
+            }
             while (i < localDirs.size() && localDirs.size() > 0) {
                 localDir = localDirs.get(i);
                 //System.out.println(localDir);

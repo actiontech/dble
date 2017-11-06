@@ -7,6 +7,8 @@ package com.actiontech.dble.route.function;
 
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 import com.actiontech.dble.util.ResourceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -20,11 +22,10 @@ import java.util.LinkedList;
  * @author wuzhi
  */
 public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements RuleAlgorithm {
-
     private static final long serialVersionUID = 5752372920655270639L;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AutoPartitionByLong.class);
     private String mapFile;
     private LongRange[] longRanges;
-
     private int defaultNode = -1;
 
     @Override
@@ -42,17 +43,16 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         //columnValue = NumberParseUtil.eliminateQuote(columnValue);
         try {
             long value = Long.parseLong(columnValue);
-            Integer rst = null;
             for (LongRange longRang : this.longRanges) {
                 if (value <= longRang.valueEnd && value >= longRang.valueStart) {
                     return longRang.nodeIndex;
                 }
             }
             // use default node for other value
-            if (rst == null && defaultNode >= 0) {
+            if (defaultNode >= 0) {
                 return defaultNode;
             }
-            return rst;
+            return null;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("columnValue:" + columnValue + " Please eliminate any quote and non number within it.", e);
         }
@@ -65,13 +65,12 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     public boolean isUseDefaultNode(String columnValue) {
         try {
             long value = Long.parseLong(columnValue);
-            Integer rst = null;
             for (LongRange longRang : this.longRanges) {
                 if (value <= longRang.valueEnd && value >= longRang.valueStart) {
                     return false;
                 }
             }
-            if (rst == null && defaultNode >= 0) {
+            if (defaultNode >= 0) {
                 return true;
             }
         } catch (NumberFormatException e) {
@@ -111,8 +110,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     @Override
     public int getPartitionNum() {
-        int nPartition = longRanges.length;
-        return nPartition;
+        return longRanges.length;
     }
 
     private void initialize() {
@@ -128,12 +126,12 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();
-                if (line.startsWith("#") || line.startsWith("//")) {
+                if ((line.length() == 0) || line.startsWith("#") || line.startsWith("//")) {
                     continue;
                 }
                 int ind = line.indexOf('=');
                 if (ind < 0) {
-                    System.out.println(" warn: bad line int " + mapFile + " :" + line);
+                    LOGGER.warn(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
                 String[] pairs = line.substring(0, ind).trim().split("-");

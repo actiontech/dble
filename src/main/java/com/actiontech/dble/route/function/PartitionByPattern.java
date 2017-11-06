@@ -7,6 +7,8 @@ package com.actiontech.dble.route.function;
 
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 import com.actiontech.dble.util.ResourceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -22,6 +24,7 @@ import java.util.regex.Pattern;
  * @author hexiaobin
  */
 public class PartitionByPattern extends AbstractPartitionAlgorithm implements RuleAlgorithm {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByPattern.class);
     private static final int PARTITION_LENGTH = 1024;
     private int patternValue = PARTITION_LENGTH; // mod value
     private String mapFile;
@@ -140,8 +143,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     @Override
     public int getPartitionNum() {
-        int nPartition = this.longRanges.length;
-        return nPartition;
+        return this.longRanges.length;
     }
 
     public static boolean isNumeric(String str) {
@@ -183,7 +185,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
                 int ind = line.indexOf('=');
                 if (ind < 0) {
-                    System.out.println(" warn: bad line int " + mapFile + " :" + line);
+                    LOGGER.warn(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
 

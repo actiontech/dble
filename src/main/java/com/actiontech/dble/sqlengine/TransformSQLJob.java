@@ -123,16 +123,6 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-        //do nothing
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-        //do nothing
-    }
-
-    @Override
     public void writeQueueAvailable() {
         //do nothing
     }

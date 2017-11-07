@@ -152,16 +152,6 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-        // not called
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-        // not called
-    }
-
-    @Override
     public void connectionAcquired(BackendConnection conn) {
         // not called
     }

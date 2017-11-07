@@ -223,12 +223,4 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
     }
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
 }

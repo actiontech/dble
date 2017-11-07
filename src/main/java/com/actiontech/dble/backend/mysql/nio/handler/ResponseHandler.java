@@ -57,15 +57,6 @@ public interface ResponseHandler {
      */
     void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
 
-    /**
-     * execute after get an relayPacket response
-     */
-    void relayPacketResponse(byte[] relayPacket, BackendConnection conn);
-
-    /**
-     * execute after get an endPacket response
-     */
-    void endPacketResponse(byte[] endPacket, BackendConnection conn);
 
     void writeQueueAvailable();
 

@@ -175,12 +175,4 @@ public class SQLJob implements ResponseHandler, Runnable {
                 jobHandler + "]";
     }
 
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
-
 }

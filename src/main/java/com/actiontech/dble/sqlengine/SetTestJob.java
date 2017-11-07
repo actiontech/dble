@@ -130,12 +130,4 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
 }

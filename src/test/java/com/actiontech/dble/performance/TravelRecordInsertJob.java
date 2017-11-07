@@ -64,7 +64,7 @@ public class TravelRecordInsertJob implements Runnable {
             end = this.endId;
         }
         List<Map<String, String>> list = new ArrayList<Map<String, String>>(
-                Integer.valueOf((end - finsihed) + ""));
+                Integer.parseInt((end - finsihed) + ""));
         for (long i = finsihed; i <= end; i++) {
             Map<String, String> m = new HashMap<String, String>();
             m.put("id", i + "");

@@ -222,7 +222,6 @@ public class JoinNode extends PlanNode {
      * @param clearName if true:clear filter's itemname,else keep
      */
     private void buildJoinKeys(boolean clearName) {
-        List<Item> otherJoinOnFilters = new ArrayList<>(getJoinFilter().size());
         Iterator<ItemFuncEqual> iterator = joinFilter.iterator();
         while (iterator.hasNext()) {
             ItemFuncEqual bf = iterator.next();
@@ -230,7 +229,6 @@ public class JoinNode extends PlanNode {
                 bf.setItemName(null);
             boolean isJoinKey = PlanUtil.isJoinKey(bf, this);
             if (!isJoinKey) {
-                otherJoinOnFilters.add(bf);
                 otherJoinOnFilter = FilterUtils.and(otherJoinOnFilter, bf);
                 iterator.remove();
             }

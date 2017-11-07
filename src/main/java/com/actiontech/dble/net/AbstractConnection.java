@@ -99,7 +99,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 
     public void setCharsetName(CharsetNames charsetName) {
-        this.charsetName = charsetName.clone();
+        this.charsetName = charsetName.copyObj();
     }
 
     public void setCharacterClient(String name) {

@@ -79,8 +79,8 @@ public class CharsetNames {
         return "character_set_client=" + client +
                 ",character_set_results=" + results + ",collation_connection=" + collation;
     }
-    @Override
-    public CharsetNames clone() {
+
+    public CharsetNames copyObj() {
         CharsetNames obj = new CharsetNames();
         obj.client = this.client;
         obj.results = this.results;

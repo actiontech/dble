@@ -17,8 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TravelRecordMergeJob implements Runnable {
     private final Connection con;
     private final int executeTimes;
-    Calendar date = Calendar.getInstance();
-    DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
     Random random = new Random();
     private final AtomicInteger finshiedCount;
     private final AtomicInteger failedCount;

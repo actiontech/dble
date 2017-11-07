@@ -33,7 +33,7 @@ public final class DropViewHandler {
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             return;
         } catch (Exception e) {
-            c.writeErrMessage(ER_PARSE_ERROR, new String("You have an error in your SQL syntax"));
+            c.writeErrMessage(ER_PARSE_ERROR, "You have an error in your SQL syntax");
         }
     }
 

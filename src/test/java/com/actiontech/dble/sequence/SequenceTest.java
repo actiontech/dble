@@ -50,7 +50,7 @@ public class SequenceTest {
     @Test
     public void testRandom() {
         TreeSet<String> treeSet = new TreeSet<>();
-        System.out.println(Long.toBinaryString(Long.valueOf(System.currentTimeMillis() + "")).length());
+        System.out.println(Long.toBinaryString(Long.parseLong(System.currentTimeMillis() + "")).length());
     }
 
     @Test

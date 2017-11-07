@@ -277,19 +277,19 @@ public class ProxyMetaManager {
     /**
      * recovery all the view info from KV system
      */
-    public void recoveryViewFromKV() {
+    public void loadViewFromKV() {
         reposoitory = new KVStoreRepository();
         Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
-        recoveryViewMeta(viewCreateSqlMap);
+        loadViewMeta(viewCreateSqlMap);
     }
 
     /**
      * recovery all the view info for file system
      */
-    public void recoveryViewFromFile() {
+    public void loadViewFromFile() {
         reposoitory = new FileSystemRepository();
         Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
-        recoveryViewMeta(viewCreateSqlMap);
+        loadViewMeta(viewCreateSqlMap);
     }
 
     /**
@@ -297,10 +297,10 @@ public class ProxyMetaManager {
      *
      * @param viewCreateSqlMap
      */
-    public void recoveryViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
+    public void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
 
-        for (Map.Entry<String,Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
-            for (Map.Entry<String,String> view : schemaName.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
+            for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
                 ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey());
                 vm.init(true);
                 DbleServer.getInstance().getTmManager().getCatalogs().get(schemaName.getKey()).getViewMetas().put(vm.getViewName(), vm);
@@ -314,9 +314,9 @@ public class ProxyMetaManager {
         SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
         handler.execute();
         if (DbleServer.getInstance().isUseZK()) {
-            recoveryViewFromKV();
+            loadViewFromKV();
         } else {
-            recoveryViewFromFile();
+            loadViewFromFile();
         }
         SystemConfig system = config.getSystem();
         if (system.getCheckTableConsistency() == 1) {

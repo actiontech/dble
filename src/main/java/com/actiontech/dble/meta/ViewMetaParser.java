@@ -25,13 +25,13 @@ public class ViewMetaParser {
 
     public void parseCreateView(ViewMeta viewMeta) {
         String viewName = getViewName();
-        if(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()){
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             viewName = viewName.toLowerCase();
         }
         //get the name of view
         viewMeta.setViewName(viewName);
         //get the list of column name
-        viewMeta.setViewColumnMeta(getViewColumn(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()));
+        viewMeta.setViewColumnMeta(getViewColumn());
         //get select sql
         viewMeta.setSelectSql(parseSelectSQL());
 
@@ -113,7 +113,7 @@ public class ViewMetaParser {
     }
 
 
-    public List<String> getViewColumn(boolean isLowerCaseTableNames) {
+    public List<String> getViewColumn() {
         int start = 0;
         String columnList = "";
         while (true) {
@@ -127,9 +127,6 @@ public class ViewMetaParser {
                 columnList = originalSql.substring(start, offset - 1);
                 break;
             }
-        }
-        if(isLowerCaseTableNames){
-            columnList = columnList.toLowerCase();
         }
         return new ArrayList<String>(Arrays.asList(columnList.split(",")));
     }

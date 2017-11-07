@@ -28,7 +28,7 @@ public class KVStoreRepository implements Reposoitory {
     }
 
     public void init() {
-        ConcurrentHashMap<String, Map<String, String>> map = new ConcurrentHashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> map = new ConcurrentHashMap<String, Map<String, String>>();
         try {
             List<String> viewList = zkConn.getChildren().forPath(KVPathUtil.getViewPath());
             for (String singlePath : viewList) {

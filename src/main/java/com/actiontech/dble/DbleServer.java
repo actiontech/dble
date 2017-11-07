@@ -273,6 +273,7 @@ public final class DbleServer {
         this.config.simplyApply(confInit.getUsers(), confInit.getSchemas(), confInit.getDataNodes(),
                 confInit.getDataHosts(), confInit.getErRelations(), confInit.getFirewall());
     }
+
     private void pullVarAndMeta() throws IOException {
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
@@ -531,7 +532,6 @@ public final class DbleServer {
 
     /**
      * after reload @@config_all ,clean old connection
-     *
      */
     private Runnable dataSourceOldConsClear() {
         return new Runnable() {
@@ -594,6 +594,7 @@ public final class DbleServer {
 
     /**
      * save cur data node index to properties file
+     *
      * @param dataHost dataHost
      * @param curIndex curIndex
      */

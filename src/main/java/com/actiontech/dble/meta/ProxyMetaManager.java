@@ -3,9 +3,9 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
-import com.actiontech.dble.backend.mysql.view.recovery.FileSystemRepository;
-import com.actiontech.dble.backend.mysql.view.recovery.KVStoreRepository;
-import com.actiontech.dble.backend.mysql.view.recovery.Reposoitory;
+import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
+import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.Reposoitory;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
@@ -298,12 +298,12 @@ public class ProxyMetaManager {
      * @param viewCreateSqlMap
      */
     public void recoveryViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
-        for (String schemaName : viewCreateSqlMap.keySet()) {
-            Map<String, String> schemaViewMap = viewCreateSqlMap.get(schemaName);
-            for (String viewName : schemaViewMap.keySet()) {
-                ViewMeta vm = new ViewMeta(schemaViewMap.get(viewName), schemaName);
+
+        for (Map.Entry<String,Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
+            for (Map.Entry<String,String> view : schemaName.getValue().entrySet()) {
+                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey());
                 vm.init(true);
-                DbleServer.getInstance().getTmManager().getCatalogs().get(schemaName).getViewMetas().put(vm.getViewName(), vm);
+                DbleServer.getInstance().getTmManager().getCatalogs().get(schemaName.getKey()).getViewMetas().put(vm.getViewName(), vm);
             }
         }
     }

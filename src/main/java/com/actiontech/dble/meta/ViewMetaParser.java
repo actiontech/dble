@@ -1,5 +1,7 @@
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.DbleServer;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,10 +24,14 @@ public class ViewMetaParser {
     }
 
     public void parseCreateView(ViewMeta viewMeta) {
+        String viewName = getViewName();
+        if(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()){
+            viewName = viewName.toLowerCase();
+        }
         //get the name of view
-        viewMeta.setViewName(getViewName());
+        viewMeta.setViewName(viewName);
         //get the list of column name
-        viewMeta.setViewColumnMeta(getViewColumn());
+        viewMeta.setViewColumnMeta(getViewColumn(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()));
         //get select sql
         viewMeta.setSelectSql(parseSelectSQL());
 
@@ -107,7 +113,7 @@ public class ViewMetaParser {
     }
 
 
-    public List<String> getViewColumn() {
+    public List<String> getViewColumn(boolean isLowerCaseTableNames) {
         int start = 0;
         String columnList = "";
         while (true) {
@@ -121,6 +127,9 @@ public class ViewMetaParser {
                 columnList = originalSql.substring(start, offset - 1);
                 break;
             }
+        }
+        if(isLowerCaseTableNames){
+            columnList = columnList.toLowerCase();
         }
         return new ArrayList<String>(Arrays.asList(columnList.split(",")));
     }

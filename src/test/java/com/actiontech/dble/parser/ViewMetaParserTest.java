@@ -32,7 +32,7 @@ public class ViewMetaParserTest {
     public void getViewColumnTest(){
         ViewMetaParser x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
         x.getViewName();
-        List<String> testlist = x.getViewColumn();
+        List<String> testlist = x.getViewColumn(false);
         Assert.assertEquals("id",testlist.get(0));
         Assert.assertEquals("name",testlist.get(1));
     }
@@ -43,7 +43,7 @@ public class ViewMetaParserTest {
     public void parseTotalTest(){
         ViewMetaParser x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
         x.getViewName();
-        List<String> testlist = x.getViewColumn();
+        List<String> testlist = x.getViewColumn(false);
         Assert.assertEquals("id",testlist.get(0));
         Assert.assertEquals("name",testlist.get(1));
         Assert.assertEquals(" select * from suntest",x.parseSelectSQL());

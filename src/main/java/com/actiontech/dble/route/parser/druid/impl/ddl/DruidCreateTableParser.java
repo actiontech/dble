@@ -53,7 +53,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
 
-        if (DbleServer.getInstance().getTmManager().getCatalogs().get(schemaInfo.getSchema()).getView(createStmt.getTableSource().getExpr().toString()) != null) {
+        if (DbleServer.getInstance().getTmManager().getCatalogs().get(schemaInfo.getSchema()).getView(schemaInfo.getTable()) != null) {
             String msg = "Table '" + createStmt.getName().toString() + "' already exists";
             LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);

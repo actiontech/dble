@@ -16,7 +16,6 @@ public class UserTableSelectJob implements Runnable, SelectJob {
     private final Connection con;
 
     private final int executeTimes;
-    Random random = new Random();
     private final AtomicInteger finshiedCount;
     private final AtomicInteger failedCount;
     private volatile long usedTime;

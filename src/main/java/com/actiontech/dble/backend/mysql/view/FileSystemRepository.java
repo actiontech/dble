@@ -152,6 +152,7 @@ public class FileSystemRepository implements Reposoitory {
         while ((line = br.readLine()) != null) {
             sb.append(line);
         }
+        br.close();
         return sb.toString();
     }
 

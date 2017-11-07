@@ -142,15 +142,4 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     }
 
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-
-    }
-
 }

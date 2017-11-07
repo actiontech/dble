@@ -94,12 +94,4 @@ public class GetConnectionHandler implements ResponseHandler {
     public void connectionClose(BackendConnection conn, String reason) {
 
     }
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
 }

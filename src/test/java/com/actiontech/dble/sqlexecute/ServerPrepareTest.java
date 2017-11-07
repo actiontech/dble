@@ -234,18 +234,18 @@ public class ServerPrepareTest {
             throws SQLException {
         System.out.println(name);
         ResultSetMetaData meta = res.getMetaData();
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 1; i <= meta.getColumnCount(); i++) {
-            str += meta.getColumnName(i) + "   ";
+            str.append(meta.getColumnName(i)).append("   ");
         }
         System.out.println("\t" + str);
-        str = "";
+        str = new StringBuilder();
         while (res.next()) {
             for (int i = 1; i <= meta.getColumnCount(); i++) {
-                str += res.getString(i) + "   ";
+                str.append(res.getString(i)).append("   ");
             }
             System.out.println("\t" + str);
-            str = "";
+            str = new StringBuilder();
         }
     }
 }

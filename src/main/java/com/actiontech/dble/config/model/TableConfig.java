@@ -164,7 +164,6 @@ public class TableConfig {
                 tableSb.substring(0, tableSb.length() - 1) +
                 " WHERE " +
                 ((level < 2) ? latestCond : condition.toString() + latestCond);
-        // System.out.println(this.name+" sql " + sql);
         return sql;
 
     }

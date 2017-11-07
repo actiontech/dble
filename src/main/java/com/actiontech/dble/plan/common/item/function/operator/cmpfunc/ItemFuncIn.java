@@ -8,6 +8,7 @@ package com.actiontech.dble.plan.common.item.function.operator.cmpfunc;
 import com.actiontech.dble.plan.common.MySQLcom;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.util.ArgComparator;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
@@ -18,7 +19,6 @@ import java.util.List;
 
 
 public class ItemFuncIn extends ItemFuncOptNeg {
-    //TODO :DELETE
     private ItemResult leftResultType;
 
     /**
@@ -28,6 +28,10 @@ public class ItemFuncIn extends ItemFuncOptNeg {
      */
     public ItemFuncIn(List<Item> args, boolean isNegation) {
         super(args, isNegation);
+        Item arg0 = args.get(0);
+        if (arg0 instanceof ItemBasicConstant) {
+            leftResultType = arg0.resultType();
+        }
     }
 
     @Override

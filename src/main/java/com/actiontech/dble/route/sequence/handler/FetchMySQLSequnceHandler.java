@@ -113,16 +113,6 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         conn.release();
     }
 
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-
-    }
-
     private void executeException(BackendConnection c, Throwable e) {
         SequenceVal seqVal = ((SequenceVal) c.getAttachment());
         seqVal.dbfinished = true;

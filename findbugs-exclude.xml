@@ -19,7 +19,9 @@
     <Match>
         <Class name="com.actiontech.dble.meta.protocol.StructureMeta$IndexMeta$Builder"/>
     </Match>
-
+	<Match>
+        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
+    </Match>
     <!-- protocol:ignore -->
 
     <!-- need refactor -->
@@ -45,20 +47,6 @@
         <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
-    <!-- subquery need to refactor  -->
-    <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.plan.common.item.subquery.ItemMaxminSubQuery"/>
-    </Match>
-    <!-- subquery need to refactor  end -->
 
     <!-- need remove??? -->
     <Match>
@@ -178,10 +166,9 @@
         <Method name="setRightNode"/>
         <Bug pattern="NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS"/>
     </Match>
-
     <!-- CORRECTNESS end -->
 
-    <!-- MT_CORRECTNESS start num:7 -->
+    <!-- MT_CORRECTNESS -->
     <Match>
         <Bug category="MT_CORRECTNESS"/>
         <Class name="com.actiontech.dble.DbleServer"/>
@@ -203,12 +190,30 @@
         <Class name="com.actiontech.dble.memory.unsafe.map.BytesToBytesMap$MapIterator"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
+	<Match>
+        <Bug category="MT_CORRECTNESS"/>
+        <Class name="com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler"/>
+		<Method name="getBackConn"/>
+        <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
+    </Match>
+	<Match>
+        <Bug category="MT_CORRECTNESS"/>
+        <Class name="com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler"/>
+		<Method name="waitUntilSendFinish"/>
+        <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
+    </Match>
     <!-- MT_CORRECTNESS end -->
 
     <!-- BAD_PRACTICE start ,num:9-->
     <Match>
         <Bug category="BAD_PRACTICE"/>
         <Bug pattern="RR_NOT_CHECKED,RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
+    </Match>
+	<Match>
+        <Bug category="BAD_PRACTICE"/>
+        <Class name="com.actiontech.dble.server.handler.SetHandler"/>
+        <Method name="isSwitchOn"/>
+        <Bug pattern="NP_BOOLEAN_RETURN_NULL"/>
     </Match>
     <!-- BAD_PRACTICE end-->
 

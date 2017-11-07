@@ -239,13 +239,24 @@ public class NonBlockingSession implements Session {
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {
-            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Subqueries is not supported ");
+            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Sub Queries is not supported ");
         }
         node.setSql(rrs.getStatement());
         node.setUpFields();
         checkTablesPrivilege(node, ast);
         node = MyOptimizer.optimize(node);
-        execute(node);
+        if (node.isSubQuery()) {
+            final PlanNode finalNode = node;
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                //sub Query build will be blocked, so use ComplexQueryExecutor
+                @Override
+                public void run() {
+                    execute(finalNode);
+                }
+            });
+        } else {
+            execute(node);
+        }
     }
 
     private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt) {

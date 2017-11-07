@@ -165,8 +165,8 @@ class PhoneVarItem extends StringItem {
         int end = content.indexOf(')');
         String range = content.substring(start + 1, end);
         String[] items = range.split("-");
-        rang[0] = Long.valueOf(patchLenth(items[0], 11 - items[0].length()));
-        rang[1] = Long.valueOf(patchLenth(items[1], 11 - items[1].length()));
+        rang[0] = Long.parseLong(patchLenth(items[0], 11 - items[0].length()));
+        rang[1] = Long.parseLong(patchLenth(items[1], 11 - items[1].length()));
     }
 
     public static String patchLenth(String origin, int patchlen) {
@@ -241,8 +241,8 @@ class CharVarItem extends StringItem {
             int splitEnd = content.indexOf(')');
             String[] pair = content.substring(splitStart + 1, splitEnd).split(
                     ":");
-            minLen = Integer.valueOf(pair[0]);
-            maxLen = Integer.valueOf(pair[1]);
+            minLen = Integer.parseInt(pair[0]);
+            maxLen = Integer.parseInt(pair[1]);
         }
 
     }
@@ -303,15 +303,15 @@ class IntVarItem extends StringItem {
         if (content.indexOf('-') > 0) {
             String range = content.substring(start + 1, end);
             String[] items = range.split("-");
-            rang[0] = Integer.valueOf(items[0]);
-            rang[1] = Integer.valueOf(items[1]);
+            rang[0] = Integer.parseInt(items[0]);
+            rang[1] = Integer.parseInt(items[1]);
         } else {
             isEnumInt = true;
             String range = content.substring(start + 1, end);
             String[] items = range.split(",");
             enums = new long[items.length];
             for (int i = 0; i < enums.length; i++) {
-                enums[i] = Long.valueOf(items[i]);
+                enums[i] = Long.parseLong(items[i]);
             }
         }
 
@@ -391,8 +391,8 @@ class DateVarItem extends StringItem {
         String range = subString.substring(start + 1, endPos);
         String[] items = range.split("-");
         int[] values = new int[2];
-        values[0] = Integer.valueOf(items[0]);
-        values[1] = Integer.valueOf(items[1]);
+        values[0] = Integer.parseInt(items[0]);
+        values[1] = Integer.parseInt(items[1]);
         return values;
     }
 

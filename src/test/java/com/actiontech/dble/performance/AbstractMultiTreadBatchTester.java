@@ -98,7 +98,7 @@ public abstract class AbstractMultiTreadBatchTester {
         if (sqlFile != null) {// from sql template file
             java.util.Properties pros = RandomDataValueUtil
                     .loadFromPropertyFile(sqlFile);
-            long total = Long.valueOf(pros.getProperty("total"));
+            long total = Long.parseLong(pros.getProperty("total"));
             String sqlTemplate = pros.getProperty("sql");
             String batchSizeStr = pros.getProperty("batch");
             String autocommitStr = pros.getProperty("autocommit");

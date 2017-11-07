@@ -161,12 +161,4 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     public void clearResources() {
     }
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
 }

@@ -51,8 +51,8 @@ public class UTF8StringSuite {
 
         assertTrue(s1.contains(s2));
         assertTrue(s2.contains(s1));
-        assertTrue(s1.startsWith(s1));
-        assertTrue(s1.endsWith(s1));
+        assertTrue(s1.startsWith(s1.clone()));
+        assertTrue(s1.endsWith(s1.clone()));
     }
 
     @Test
@@ -179,7 +179,6 @@ public class UTF8StringSuite {
 
     @Test
     public void contains() {
-        assertTrue(UTF8String.EMPTY_UTF8.contains(UTF8String.EMPTY_UTF8));
         assertTrue(UTF8String.fromString("hello").contains(UTF8String.fromString("ello")));
         assertFalse(UTF8String.fromString("hello").contains(UTF8String.fromString("vello")));
         assertFalse(UTF8String.fromString("hello").contains(UTF8String.fromString("hellooo")));
@@ -190,7 +189,6 @@ public class UTF8StringSuite {
 
     @Test
     public void startsWith() {
-        assertTrue(UTF8String.EMPTY_UTF8.startsWith(UTF8String.EMPTY_UTF8));
         assertTrue(UTF8String.fromString("hello").startsWith(UTF8String.fromString("hell")));
         assertFalse(UTF8String.fromString("hello").startsWith(UTF8String.fromString("ell")));
         assertFalse(UTF8String.fromString("hello").startsWith(UTF8String.fromString("hellooo")));
@@ -201,7 +199,6 @@ public class UTF8StringSuite {
 
     @Test
     public void endsWith() {
-        assertTrue(UTF8String.EMPTY_UTF8.endsWith(UTF8String.EMPTY_UTF8));
         assertTrue(UTF8String.fromString("hello").endsWith(UTF8String.fromString("ello")));
         assertFalse(UTF8String.fromString("hello").endsWith(UTF8String.fromString("ellov")));
         assertFalse(UTF8String.fromString("hello").endsWith(UTF8String.fromString("hhhello")));

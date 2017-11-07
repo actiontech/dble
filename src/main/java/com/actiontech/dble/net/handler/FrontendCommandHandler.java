@@ -10,14 +10,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.statistic.CommandCount;
-import com.actiontech.dble.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * FrontendCommandHandler
@@ -25,16 +18,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author mycat
  */
 public class FrontendCommandHandler implements NIOHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
-    protected final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<>();
-    protected final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
     protected final CommandCount commands;
 
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
-        this.handleStatus = new AtomicBoolean(false);
     }
 
     @Override
@@ -48,11 +37,7 @@ public class FrontendCommandHandler implements NIOHandler {
             return;
         }
 
-        if (dataQueue.offer(data)) {
-            handleQueue();
-        } else {
-            throw new RuntimeException("add data to queue error.");
-        }
+        handleData(data);
     }
 
     protected void handleData(byte[] data) {
@@ -104,37 +89,6 @@ public class FrontendCommandHandler implements NIOHandler {
             default:
                 commands.doOther();
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-        }
-    }
-
-    private void handleQueue() {
-        if (this.handleStatus.compareAndSet(false, true)) {
-            this.source.getProcessor().getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        byte[] data = null;
-                        while ((data = dataQueue.poll()) != null) {
-                            handleData(data);
-                        }
-                    } catch (Exception e) {
-                        String msg = e.getMessage();
-                        if (StringUtil.isEmpty(msg)) {
-                            LOGGER.warn("Maybe occur a bug, please check it.", e);
-                            msg = e.toString();
-                        } else {
-                            LOGGER.info("There is an error you may need know.", e);
-                        }
-                        source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
-                        dataQueue.clear();
-                    } finally {
-                        handleStatus.set(false);
-                        if (dataQueue.size() > 0) {
-                            handleQueue();
-                        }
-                    }
-                }
-            });
         }
     }
 }

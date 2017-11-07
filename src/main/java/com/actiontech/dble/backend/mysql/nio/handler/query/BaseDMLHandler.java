@@ -104,18 +104,6 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public void writeQueueAvailable() {
         // TODO Auto-generated method stub
 

@@ -41,7 +41,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     // only one thread access at one time no need lock
     protected volatile byte packetId;
-    protected volatile ByteBuffer buffer;
     private long startTime;
     private long netInBytes;
     protected long netOutBytes;
@@ -115,7 +114,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         session.handleSpecial(rrs, session.getSource().getSchema(), true);
-        recycleResources();
         session.getSource().close(e.getMessage());
     }
 
@@ -161,7 +159,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             errPkg.write(source);
             waitingResponse = false;
         }
-        recycleResources();
     }
 
 
@@ -217,7 +214,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
 
         eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, allocBuffer());
+        ByteBuffer buffer = session.getSource().allocate();
+        buffer = source.writeToBuffer(eof, buffer);
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();
         source.write(buffer);
@@ -231,27 +229,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
             QueryResultDispatcher.dispatchQuery(queryResult);
         }
-    }
-
-    private void recycleResources() {
-
-        ByteBuffer buf = buffer;
-        if (buf != null) {
-            session.getSource().recycle(buffer);
-            buffer = null;
-        }
-    }
-
-    /**
-     * lazy create ByteBuffer only when needed
-     *
-     * @return
-     */
-    protected ByteBuffer allocBuffer() {
-        if (buffer == null) {
-            buffer = session.getSource().allocate();
-        }
-        return buffer;
     }
 
     @Override
@@ -272,7 +249,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         header[3] = ++packetId;
 
         ServerConnection source = session.getSource();
-        buffer = source.writeToBuffer(header, allocBuffer());
+        ByteBuffer buffer = session.getSource().allocate();
+        buffer = source.writeToBuffer(header, buffer);
         for (int i = 0, len = fields.size(); i < len; ++i) {
             byte[] field = fields.get(i);
             field[3] = ++packetId;
@@ -297,6 +275,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         eof[3] = ++packetId;
         buffer = source.writeToBuffer(eof, buffer);
+        source.write(buffer);
     }
 
     @Override
@@ -318,7 +297,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 pool.putIfAbsent(primaryKeyTable, primaryKey, rNode.getName());
             }
         }
-
+        ByteBuffer buffer = session.getSource().allocate();
         if (prepared) {
             if (rowDataPk == null) {
                 rowDataPk = new RowDataPacket(fieldCount);
@@ -329,9 +308,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             binRowDataPk.setPacketId(rowDataPk.getPacketId());
             buffer = binRowDataPk.write(buffer, session.getSource(), true);
         } else {
-            buffer = session.getSource().writeToBuffer(row, allocBuffer());
+            buffer = session.getSource().writeToBuffer(row, buffer);
             //session.getSource().write(row);
         }
+        session.getSource().write(buffer);
         return false;
     }
 
@@ -366,18 +346,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public String toString() {
         return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
-    }
-
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-
-    }
-
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-
     }
 
 }

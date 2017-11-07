@@ -66,7 +66,7 @@ public class ByteBufferPage {
                 markChunksUsed(startChunk, theChunkCount);
                 return newBuf;
             } else {
-                //System.out.println("contiueCount " + contiueCount + " theChunkCount " + theChunkCount);
+                //System.out.println("contiue Count " + contiueCount + " theChunkCount " + theChunkCount);
                 return null;
             }
         } finally {

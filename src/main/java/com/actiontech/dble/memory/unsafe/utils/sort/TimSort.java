@@ -228,7 +228,8 @@ class TimSort<K, B> {
             switch (n) {
                 case 2:
                     s.copyElement(a, left + 1, a, left + 2);
-                    // fallthrough
+                    s.copyElement(a, left, a, left + 1);
+                    break;
                 case 1:
                     s.copyElement(a, left, a, left + 1);
                     break;

@@ -21,6 +21,7 @@ import com.actiontech.dble.server.response.ShowCreateStmtInfo;
 import com.actiontech.dble.server.response.ShowTables;
 import com.actiontech.dble.util.StringUtil;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,6 @@ public class ShowTablesHandler extends SingleNodeHandler {
     private Item whereItem;
     private List<Field> sourceFields;
     private ShowCreateStmtInfo info;
-
     public ShowTablesHandler(RouteResultset rrs, NonBlockingSession session, ShowCreateStmtInfo info) {
         super(rrs, session);
         this.info = info;
@@ -51,7 +51,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         ServerConnection source = session.getSource();
-        buffer = allocBuffer();
+        ByteBuffer buffer = session.getSource().allocate();
         if (info.isFull()) {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             packetId = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
@@ -67,6 +67,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
         } else {
             packetId = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
         }
+        source.write(buffer);
     }
 
     @Override

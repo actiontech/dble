@@ -71,11 +71,4 @@ public class DelegateResponseHandler implements ResponseHandler {
         target.connectionClose(conn, reason);
     }
 
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-    }
 }

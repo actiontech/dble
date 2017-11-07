@@ -26,7 +26,6 @@ public class SqlResultSizeRecorder {
             sqlResultSet = this.sqlResultSetMap.get(sql);
             sqlResultSet.count();
             sqlResultSet.setSql(sql);
-            System.out.println(sql);
             sqlResultSet.setResultSetSize(resultSetSize);
         } else {
             sqlResultSet = new SqlResultSet();

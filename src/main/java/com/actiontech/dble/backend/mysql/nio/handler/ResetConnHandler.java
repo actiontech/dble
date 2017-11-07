@@ -63,16 +63,6 @@ public class ResetConnHandler implements ResponseHandler {
     }
 
     @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-        //not happen
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-        //not happen
-    }
-
-    @Override
     public void writeQueueAvailable() {
         //not happen
     }

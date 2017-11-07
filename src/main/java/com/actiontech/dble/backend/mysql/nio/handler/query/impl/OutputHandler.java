@@ -65,9 +65,9 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = source.writeToBuffer(ok, buffer);
                 if (hasNext) {
                     source.write(buffer);
-                    //source.excuteNext(packetId, false);
+                    //source.executeNext(packetId, false);
                 } else {
-                    //source.excuteNext(packetId, false);
+                    //source.executeNext(packetId, false);
                     source.write(buffer);
                 }
             }
@@ -84,7 +84,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
-            //session.getSource().excuteNext(packetId, true);
+            //session.getSource().executeNext(packetId, true);
             session.getSource().write(buffer);
         } finally {
             lock.unlock();
@@ -170,32 +170,11 @@ public class OutputHandler extends BaseDMLHandler {
             buffer = source.writeToBuffer(eof, buffer);
             if (hasNext) {
                 source.write(buffer);
-                //source.excuteNext(packetId, false);
+                //source.executeNext(packetId, false);
             } else {
-                //source.excuteNext(packetId, false);
+                //source.executeNext(packetId, false);
                 source.write(buffer);
             }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void relayPacketResponse(byte[] relayPacket, BackendConnection conn) {
-        lock.lock();
-        try {
-            buffer = session.getSource().writeToBuffer(relayPacket, buffer);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void endPacketResponse(byte[] endPacket, BackendConnection conn) {
-        lock.lock();
-        try {
-            buffer = session.getSource().writeToBuffer(endPacket, buffer);
-            session.getSource().write(buffer);
         } finally {
             lock.unlock();
         }
@@ -211,7 +190,7 @@ public class OutputHandler extends BaseDMLHandler {
         }
     }
 
-    protected void backendConnError(ErrorPacket error) {
+    private void backendConnError(ErrorPacket error) {
         lock.lock();
         try {
             recycleResources();
@@ -221,7 +200,7 @@ public class OutputHandler extends BaseDMLHandler {
                 error.setMessage("unknown error".getBytes());
             }
             error.setPacketId(++packetId);
-            //session.getSource().excuteNext(packetId, true);
+            //session.getSource().executeNext(packetId, true);
             session.getSource().write(error.toBytes());
         } finally {
             lock.unlock();

@@ -175,10 +175,10 @@ public class FileSystemRepository implements Reposoitory {
      */
     public String mapToJsonString() {
         StringBuffer sb = new StringBuffer("[");
-        for (Map.Entry<String,Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
             Map<String, String> schemaSet = schema.getValue();
             sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");
-            for (Map.Entry<String,String> view : schemaSet.entrySet()) {
+            for (Map.Entry<String, String> view : schemaSet.entrySet()) {
                 sb.append("{\"name\":\"").append(view.getKey()).append("\",\"sql\":\"").append(view.getValue()).append("\"},");
             }
             if (',' == sb.charAt(sb.length() - 1)) {

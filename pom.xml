@@ -629,21 +629,24 @@
                     <configLocation>dble_checkstyle.xml</configLocation>
                 </configuration>
             </plugin>
-        </plugins>
-    </build>
-    <reporting>
-        <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
                 <version>3.0.5</version>
-                <configuration>
-                    <excludeFilterFile>findbugs-exclude.xml</excludeFilterFile>
-                    <findbugsXmlOutput>true</findbugsXmlOutput>
-                    <xmlOutput>true</xmlOutput>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>findbugs</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludeFilterFile>findbugs-exclude.xml</excludeFilterFile>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
-    </reporting>
+    </build>
 
 </project>

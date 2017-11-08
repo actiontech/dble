@@ -1,4 +1,4 @@
-package com.actiontech.dble.backend.mysql.view.recovery;
+package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
@@ -28,7 +28,7 @@ public class KVStoreRepository implements Reposoitory {
     }
 
     public void init() {
-        ConcurrentHashMap<String, Map<String, String>> map = new ConcurrentHashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> map = new ConcurrentHashMap<String, Map<String, String>>();
         try {
             List<String> viewList = zkConn.getChildren().forPath(KVPathUtil.getViewPath());
             for (String singlePath : viewList) {

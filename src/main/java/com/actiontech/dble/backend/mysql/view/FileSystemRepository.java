@@ -1,4 +1,4 @@
-package com.actiontech.dble.backend.mysql.view.recovery;
+package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
@@ -175,11 +175,11 @@ public class FileSystemRepository implements Reposoitory {
      */
     public String mapToJsonString() {
         StringBuffer sb = new StringBuffer("[");
-        for (String schema : viewCreateSqlMap.keySet()) {
-            Map<String, String> schemaSet = viewCreateSqlMap.get(schema);
-            sb.append("{\"schema\":\"").append(schema).append("\",\"list\":[");
-            for (String view : schemaSet.keySet()) {
-                sb.append("{\"name\":\"").append(view).append("\",\"sql\":\"").append(schemaSet.get(view)).append("\"},");
+        for (Map.Entry<String, Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
+            Map<String, String> schemaSet = schema.getValue();
+            sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");
+            for (Map.Entry<String, String> view : schemaSet.entrySet()) {
+                sb.append("{\"name\":\"").append(view.getKey()).append("\",\"sql\":\"").append(view.getValue()).append("\"},");
             }
             if (',' == sb.charAt(sb.length() - 1)) {
                 sb.setCharAt(sb.length() - 1, ']');

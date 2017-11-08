@@ -1,5 +1,7 @@
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.DbleServer;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,8 +24,12 @@ public class ViewMetaParser {
     }
 
     public void parseCreateView(ViewMeta viewMeta) {
+        String viewName = getViewName();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            viewName = viewName.toLowerCase();
+        }
         //get the name of view
-        viewMeta.setViewName(getViewName());
+        viewMeta.setViewName(viewName);
         //get the list of column name
         viewMeta.setViewColumnMeta(getViewColumn());
         //get select sql

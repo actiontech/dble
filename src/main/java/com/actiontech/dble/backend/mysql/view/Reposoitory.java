@@ -1,4 +1,4 @@
-package com.actiontech.dble.backend.mysql.view.recovery;
+package com.actiontech.dble.backend.mysql.view;
 
 import java.util.Map;
 

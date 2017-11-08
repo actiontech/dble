@@ -16,7 +16,6 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.util.SchemaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,18 +26,14 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
 
     private final String sql;
-    private final String dataNodeOrDatabase;
+    private final String databaseName;
     private final SQLJobHandler jobHandler;
     private final ServerConnection sc;
 
-    public SetTestJob(String sql, SQLJobHandler jobHandler, ServerConnection sc) {
+    public SetTestJob(String sql, String databaseName, SQLJobHandler jobHandler, ServerConnection sc) {
         super();
         this.sql = sql;
-        String schema = sc.getSchema();
-        if (schema == null) {
-            schema = SchemaUtil.getRandomDb();
-        }
-        this.dataNodeOrDatabase = schema;
+        this.databaseName = databaseName;
         this.jobHandler = jobHandler;
         this.sc = sc;
     }
@@ -47,7 +42,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
         try {
             Map<String, PhysicalDBPool> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
             for (PhysicalDBPool dn : dataHosts.values()) {
-                dn.getSource().getConnection(dataNodeOrDatabase, true, this, null);
+                dn.getSource().getConnection(databaseName, true, this, null);
                 break;
             }
         } catch (Exception e) {
@@ -67,7 +62,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     private void doFinished(boolean failed) {
-        jobHandler.finished(dataNodeOrDatabase, failed);
+        jobHandler.finished(databaseName, failed);
     }
 
     @Override
@@ -127,7 +122,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     @Override
     public String toString() {
         return "SQLJob [dataNodeOrDatabase=" +
-                dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler=" +
+                databaseName + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }
 

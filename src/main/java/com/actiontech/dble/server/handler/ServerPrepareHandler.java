@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -59,8 +60,10 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void prepare(String sql) {
-        LOGGER.debug("use server prepare, sql: " + sql);
-        PreparedStatement pStmt = null;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("use server prepare, sql: " + sql);
+        }
+        PreparedStatement pStmt;
         if ((pStmt = pStmtForSql.get(sql)) == null) {
             int columnCount = getColumnCount(sql);
             int paramCount = getParamCount(sql);
@@ -116,9 +119,9 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
-                packet.read(data, source.getCharset().getClient());
+                packet.read(data, CharsetUtil.getJavaCharset(source.getCharset().getClient()));
             } catch (UnsupportedEncodingException e) {
-                source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, e.getMessage());
+                source.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
                 return;
             }
             BindValue[] bindValues = packet.getValues();

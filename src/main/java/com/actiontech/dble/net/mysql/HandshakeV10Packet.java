@@ -105,8 +105,7 @@ public class HandshakeV10Packet extends MySQLPacket {
 
 
     /**
-     * 这里假设两个方法读取的都是同一个中协议的结果
-     * @param bin
+     * @param bin bin
      */
     public void read(BinaryPacket bin) {
         packetLength = bin.packetLength;
@@ -154,31 +153,13 @@ public class HandshakeV10Packet extends MySQLPacket {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
     @Override
     protected String getPacketInfo() {
         return "MySQL HandshakeV10 Packet";
     }
 
-    public byte getProtocolVersion() {
-        return protocolVersion;
-    }
-
     public void setProtocolVersion(byte protocolVersion) {
         this.protocolVersion = protocolVersion;
-    }
-
-    public byte[] getServerVersion() {
-        return serverVersion;
     }
 
     public void setServerVersion(byte[] serverVersion) {
@@ -217,10 +198,6 @@ public class HandshakeV10Packet extends MySQLPacket {
         this.serverCharsetIndex = serverCharsetIndex;
     }
 
-    public int getServerStatus() {
-        return serverStatus;
-    }
-
     public void setServerStatus(int serverStatus) {
         this.serverStatus = serverStatus;
     }
@@ -231,13 +208,5 @@ public class HandshakeV10Packet extends MySQLPacket {
 
     public void setRestOfScrambleBuff(byte[] restOfScrambleBuff) {
         this.restOfScrambleBuff = restOfScrambleBuff;
-    }
-
-    public byte[] getAuthPluginName() {
-        return authPluginName;
-    }
-
-    public void setAuthPluginName(byte[] authPluginName) {
-        this.authPluginName = authPluginName;
     }
 }

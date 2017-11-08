@@ -12,41 +12,40 @@ import java.util.List;
 public class ViewMetaParserTest {
 
     @Test
-    public void testGetViewName(){
+    public void testGetViewName() {
         ViewMetaParser x = new ViewMetaParser("create view dddddd as select * from suntest");
-        Assert.assertEquals("dddddd",x.getViewName());
+        Assert.assertEquals("dddddd", x.getViewName());
         x = new ViewMetaParser("create or replace  view xxxxx as select * from suntest");
-        Assert.assertEquals("xxxxx",x.getViewName());
+        Assert.assertEquals("xxxxx", x.getViewName());
         x = new ViewMetaParser("create or replace  view x_xx__xx as select * from suntest");
-        Assert.assertEquals("x_xx__xx",x.getViewName());
-         x = new ViewMetaParser("create      or        replace         view       x_xx__xx      as select * from suntest");
-        Assert.assertEquals("x_xx__xx",x.getViewName());
+        Assert.assertEquals("x_xx__xx", x.getViewName());
+        x = new ViewMetaParser("create      or        replace         view       x_xx__xx      as select * from suntest");
+        Assert.assertEquals("x_xx__xx", x.getViewName());
         x = new ViewMetaParser("       create      or        replace         view        x_xx__xx      as select * from suntest");
-        Assert.assertEquals("x_xx__xx",x.getViewName());
+        Assert.assertEquals("x_xx__xx", x.getViewName());
         x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
-        Assert.assertEquals("x_xx__xx",x.getViewName());
+        Assert.assertEquals("x_xx__xx", x.getViewName());
     }
 
 
     @Test
-    public void getViewColumnTest(){
+    public void getViewColumnTest() {
         ViewMetaParser x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
         x.getViewName();
         List<String> testlist = x.getViewColumn();
-        Assert.assertEquals("id",testlist.get(0));
-        Assert.assertEquals("name",testlist.get(1));
+        Assert.assertEquals("id", testlist.get(0));
+        Assert.assertEquals("name", testlist.get(1));
     }
 
 
-
     @Test
-    public void parseTotalTest(){
+    public void parseTotalTest() {
         ViewMetaParser x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
         x.getViewName();
         List<String> testlist = x.getViewColumn();
-        Assert.assertEquals("id",testlist.get(0));
-        Assert.assertEquals("name",testlist.get(1));
-        Assert.assertEquals(" select * from suntest",x.parseSelectSQL());
+        Assert.assertEquals("id", testlist.get(0));
+        Assert.assertEquals("name", testlist.get(1));
+        Assert.assertEquals(" select * from suntest", x.parseSelectSQL());
 
     }
 

@@ -49,9 +49,9 @@ public final class SelectHandler {
                 break;
             default:
                 if (isSupportSelect(stmt)) {
-                    Iterator<PhysicalDBPool> iter = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
-                    if (iter.hasNext()) {
-                        PhysicalDBPool pool = iter.next();
+                    Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    if (iterator.hasNext()) {
+                        PhysicalDBPool pool = iterator.next();
                         final PhysicalDatasource source = pool.getSource();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, pool.getSchemas()[0], source, c);
                         sqlJob.run();

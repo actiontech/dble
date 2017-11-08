@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
@@ -31,6 +32,7 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -199,8 +201,14 @@ public final class SetHandler {
     private static void setStmtCallback(String multiStmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {
         c.setContextTask(contextTask);
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(c));
-        SetTestJob sqlJob = new SetTestJob(multiStmt, resultHandler, c);
-        sqlJob.run();
+        Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+        if (iterator.hasNext()) {
+            PhysicalDBPool pool = iterator.next();
+            SetTestJob sqlJob = new SetTestJob(multiStmt, pool.getSchemas()[0], resultHandler, c);
+            sqlJob.run();
+        } else {
+            c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");
+        }
     }
 
     private static boolean handleVariableInMultiStmt(SQLAssignItem assignItem, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {

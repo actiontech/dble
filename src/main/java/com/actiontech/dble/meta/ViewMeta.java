@@ -3,12 +3,14 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 import static com.actiontech.dble.config.ErrorCode.CREATE_VIEW_ERROR;
 
@@ -42,6 +44,16 @@ public class ViewMeta {
                 }
             }
 
+            if (viewColumnMeta != null) {
+                Set<String> tempMap = new HashSet<String>();
+                for (String t : viewColumnMeta) {
+                    if (tempMap.contains(t.trim())) {
+                        throw new Exception("Duplicate column name '" + t + "'");
+                    }
+                    tempMap.add(t.trim());
+                }
+            }
+
             // if the table with same name exists
             if (schemaMeta.getTableMeta(viewName) != null) {
                 throw new Exception("Table '" + viewName + "' already exists");
@@ -63,6 +75,8 @@ public class ViewMeta {
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();
 
+            //check if the select part has
+
             //set the view column name into
             if (viewColumnMeta != null) {
                 //check if the column number of view is same as the selectList in selectStatement
@@ -73,13 +87,22 @@ public class ViewMeta {
                 for (int i = 0; i < viewColumnMeta.size(); i++) {
                     selNode.getColumnsSelected().get(i).setAlias(viewColumnMeta.get(i).trim());
                 }
+            } else {
+                List<Item> selectList = selNode.getColumnsSelected();
+                Set<String> tempMap = new HashSet<String>();
+                for (Item t : selectList) {
+                    if (tempMap.contains(t.getItemName())) {
+                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                    }
+                    tempMap.add(t.getItemName());
+                }
             }
 
             viewQuery = new QueryNode(selNode);
         } catch (Exception e) {
             //the select part sql is wrong & report the error
             ErrorPacket error = new ErrorPacket();
-            error.setMessage(e.getMessage().getBytes());
+            error.setMessage(e.getMessage().getBytes(StandardCharsets.UTF_8));
             error.setErrNo(CREATE_VIEW_ERROR);
             return error;
         }

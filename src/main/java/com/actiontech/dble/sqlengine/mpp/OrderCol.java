@@ -12,6 +12,9 @@ public class OrderCol {
     public static final int COL_ORDER_TYPE_ASC = 0; // ASC
     public static final int COL_ORDER_TYPE_DESC = 1; // DESC
 
+    public OrderCol(ColMeta colMeta) {
+        this(colMeta, COL_ORDER_TYPE_ASC);
+    }
     public OrderCol(ColMeta colMeta, int orderType) {
         super();
         this.colMeta = colMeta;

@@ -46,19 +46,6 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     protected int nodeCount;
 
-
-    protected boolean canClose(BackendConnection conn, boolean tryErrorFinish) {
-        // release this connection if safe
-        session.releaseConnectionIfSafe(conn, false);
-        boolean allFinished = false;
-        if (tryErrorFinish) {
-            allFinished = this.decrementCountBy(1);
-            this.tryErrorFinished(allFinished);
-        }
-
-        return allFinished;
-    }
-
     public void connectionError(Throwable e, BackendConnection conn) {
         this.setFail("backend connect: " + e);
         LOGGER.warn("backend connect", e);
@@ -90,7 +77,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     }
 
     protected boolean decrementCountBy(int finished) {
-        boolean zeroReached = false;
+        boolean zeroReached;
         lock.lock();
         try {
             nodeCount -= finished;
@@ -142,7 +129,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     public void connectionClose(BackendConnection conn, String reason) {
         this.setFail("closed connection:" + reason + " con:" + conn);
-        boolean finished = false;
+        boolean finished;
         lock.lock();
         try {
             finished = (this.nodeCount == 0);

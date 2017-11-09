@@ -112,9 +112,8 @@ public abstract class AbstractConnection implements NIOConnection {
         charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
     }
 
-    public boolean setNames(String name, String collationName) {
+    public void setNames(String name, String collationName) {
         charsetName.setNames(name, collationName);
-        return true;
     }
 
     public CharsetNames getCharset() {
@@ -223,8 +222,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
     public ByteBuffer allocate() {
         int size = this.processor.getBufferPool().getChunkSize();
-        ByteBuffer buffer = this.processor.getBufferPool().allocate(size);
-        return buffer;
+        return this.processor.getBufferPool().allocate(size);
     }
 
     public final void recycle(ByteBuffer buffer) {
@@ -402,7 +400,7 @@ public abstract class AbstractConnection implements NIOConnection {
             writeQueue.offer(buffer);
         }
 
-        // if ansyn write finishe event got lock before me ,then writing
+        // if ansyn write finished event got lock before me ,then writing
         // flag is set false but not start a write request
         // so we check again
         try {
@@ -456,7 +454,6 @@ public abstract class AbstractConnection implements NIOConnection {
                 offset += remaining;
                 length -= remaining;
                 remaining = buffer.remaining();
-                continue;
             }
         }
         return buffer;
@@ -518,13 +515,13 @@ public abstract class AbstractConnection implements NIOConnection {
             compressUnfinishedDataQueue.clear();
         }
 
-        ByteBuffer buffer = null;
+        ByteBuffer buffer;
         while ((buffer = writeQueue.poll()) != null) {
             recycle(buffer);
         }
     }
 
-    protected int getPacketLength(ByteBuffer buffer, int offset) {
+    private int getPacketLength(ByteBuffer buffer, int offset) {
         int headerSize = MySQLPacket.PACKET_HEADER_SIZE;
         if (isSupportCompress()) {
             headerSize = 7;

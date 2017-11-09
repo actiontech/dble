@@ -937,26 +937,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
     }
 
-    /**
-     * test Aggregate COUNT
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testAggregateExpr() throws Exception {
-        SchemaConfig schema = schemaMap.get("TESTDB");
-        String sql = "select id, name, count(name) from employee group by name;";
-        RouteResultset rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertTrue(rrs.getMergeCols().containsKey("COUNT2"));
-
-        sql = "select id, name, count(name) as c from employee group by name;";
-        rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertTrue(rrs.getMergeCols().containsKey("c"));
-
-        sql = "select id, name, count(name) c from employee group by name;";
-        rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertTrue(rrs.getMergeCols().containsKey("c"));
-    }
 
     /**
      * testBetweenExpr

@@ -52,6 +52,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 String manager = (String) props.get("manager");
                 if (null != manager) {
                     user.setManager(Boolean.parseBoolean(manager));
+                    user.setSchemas(new HashSet<String>(0));
                 }
                 String schemas = (String) props.get("schemas");
                 if (user.isManager() && schemas != null) {

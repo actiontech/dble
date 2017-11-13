@@ -66,9 +66,8 @@ public class HintSQLHandler implements HintHandler {
             Procedure procedure = parseProcedure(realSQL, hintMap);
             rrs.setProcedure(procedure);
             //    String sql=procedure.toChangeCallSql(null);
-            String sql = realSQL;
             for (RouteResultsetNode node : rrs.getNodes()) {
-                node.setStatement(sql);
+                node.setStatement(realSQL);
             }
 
         }
@@ -121,8 +120,7 @@ public class HintSQLHandler implements HintHandler {
 
     private void parseProcedureForSet(Procedure procedure, String query, SQLSetStatement statement) {
         procedure.setSetSql(query);
-        SQLSetStatement setStatement = statement;
-        List<SQLAssignItem> sets = setStatement.getItems();
+        List<SQLAssignItem> sets = statement.getItems();
         for (SQLAssignItem set : sets) {
             String name = set.getTarget().toString();
             SQLExpr value = set.getValue();
@@ -146,9 +144,8 @@ public class HintSQLHandler implements HintHandler {
     }
 
     private void parseProcedureForCall(Procedure procedure, Set<String> outSet, String query, SQLCallStatement statement) {
-        SQLCallStatement sqlCallStatement = statement;
-        procedure.setName(sqlCallStatement.getProcedureName().getSimpleName());
-        List<SQLExpr> parameterList = sqlCallStatement.getParameters();
+        procedure.setName(statement.getProcedureName().getSimpleName());
+        List<SQLExpr> parameterList = statement.getParameters();
         for (int i1 = 0; i1 < parameterList.size(); i1++) {
             SQLExpr sqlExpr = parameterList.get(i1);
             String pName = sqlExpr.toString();

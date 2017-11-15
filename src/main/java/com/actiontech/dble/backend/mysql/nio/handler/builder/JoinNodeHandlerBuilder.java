@@ -55,11 +55,10 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needWhereHandler = false;
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             //TODO:
             RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
             this.needCommon = mergeBuilder.getNeedCommonFlag();
-            this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception!", e);

@@ -22,71 +22,73 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public abstract class Field {
-    public static Field getFieldItem(byte[] name, byte[] table, int type, int charsetIndex, int fieldLength,
+    public static Field getFieldItem(byte[] name, byte[] db, byte[] table, byte[] orgTable, int type, int charsetIndex, int fieldLength,
                                      int decimals, long flags) {
         String charset = CharsetUtil.getJavaCharset(charsetIndex);
         try {
             return getFieldItem(new String(name, charset),
-                    (table == null || table.length == 0) ? null : new String(table, charset), type, charsetIndex,
-                    fieldLength, decimals, flags);
+                    (db == null || db.length == 0) ? null : new String(db, charset),
+                    (table == null || table.length == 0) ? null : new String(table, charset),
+                    (orgTable == null || orgTable.length == 0) ? null : new String(orgTable, charset),
+                    type, charsetIndex, fieldLength, decimals, flags);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("parser error ,charset :" + charset);
         }
     }
 
-    public static Field getFieldItem(String name, String table, int type, int charsetIndex, int fieldLength,
+    public static Field getFieldItem(String name, String dbName, String table, String orgTable, int type, int charsetIndex, int fieldLength,
                                      int decimals, long flags) {
         FieldTypes fieldType = FieldTypes.valueOf(type);
         switch (fieldType) {
             case MYSQL_TYPE_NEWDECIMAL:  // mysql use newdecimal after some version
-                return new FieldNewdecimal(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldNewdecimal(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DECIMAL:
-                return new FieldDecimal(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldDecimal(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_TINY:
-                return new FieldTiny(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldTiny(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_SHORT:
-                return new FieldShort(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldShort(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_LONG:
-                return new FieldLong(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldLong(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_FLOAT:
-                return new FieldFloat(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldFloat(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DOUBLE:
-                return new FieldDouble(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldDouble(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_NULL:
                 return FieldNull.getInstance();
             case MYSQL_TYPE_TIMESTAMP:
-                return new FieldTimestamp(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldTimestamp(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_LONGLONG:
-                return new FieldLonglong(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldLonglong(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_INT24:
-                return new FieldMedium(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldMedium(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DATE:
             case MYSQL_TYPE_NEWDATE:
-                return new FieldDate(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldDate(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_TIME:
-                return new FieldTime(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldTime(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DATETIME:
-                return new FieldDatetime(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldDatetime(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_YEAR:
-                return new FieldYear(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldYear(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_VARCHAR:
-                return new FieldVarchar(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldVarchar(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_BIT:
-                return new FieldBit(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldBit(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_VAR_STRING:
-                return new FieldVarstring(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldVarstring(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_STRING:
-                return new FieldString(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldString(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             /** --not support below, because select * change to string, can't get the origin type-- **/
             case MYSQL_TYPE_ENUM:
-                return new FieldEnum(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldEnum(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_SET:
-                return new FieldSet(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldSet(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_TINY_BLOB:
             case MYSQL_TYPE_MEDIUM_BLOB:
             case MYSQL_TYPE_LONG_BLOB:
             case MYSQL_TYPE_BLOB:
-                return new FieldBlob(name, table, charsetIndex, fieldLength, decimals, flags);
+                return new FieldBlob(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             default:
                 throw new RuntimeException("unsupported field type :" + fieldType.toString() + "!");
         }
@@ -96,22 +98,25 @@ public abstract class Field {
 
     protected String name;
     protected String table;
-    protected String dbname; // TODO
+    protected String orgTable;
+    protected String dbName;
     protected int charsetIndex;
-    protected String charsetName;
+    protected String javaCharsetName;
     protected long flags;
     protected byte[] ptr;
     protected int fieldLength;
     protected int decimals;
 
-    public Field(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
+    public Field(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
         this.name = name;
+        this.dbName = dbName;
         this.table = table;
+        this.orgTable = orgTable;
         this.charsetIndex = charsetIndex;
         this.fieldLength = fieldLength;
         this.flags = flags;
         this.decimals = decimals;
-        this.charsetName = CharsetUtil.getJavaCharset(charsetIndex);
+        this.javaCharsetName = CharsetUtil.getJavaCharset(charsetIndex);
     }
 
     public abstract Item.ItemResult resultType();
@@ -137,7 +142,7 @@ public abstract class Field {
     public String valStr() {
         String val = null;
         try {
-            val = MySQLcom.getFullString(charsetName, ptr);
+            val = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
@@ -155,8 +160,10 @@ public abstract class Field {
 
     public void makeField(FieldPacket fp) {
         try {
-            fp.setName(this.name.getBytes(charsetName));
-            fp.setDb(this.dbname != null ? this.dbname.getBytes(charsetName) : null);
+            fp.setName(this.name.getBytes(javaCharsetName));
+            fp.setDb(this.dbName != null ? this.dbName.getBytes(javaCharsetName) : null);
+            fp.setTable(this.table != null ? this.table.getBytes(javaCharsetName) : null);
+            fp.setOrgTable(this.orgTable != null ? this.orgTable.getBytes(javaCharsetName) : null);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
@@ -254,12 +261,12 @@ public abstract class Field {
         this.table = table;
     }
 
-    public String getDbname() {
-        return dbname;
+    public String getDbName() {
+        return dbName;
     }
 
-    public void setDbname(String dbname) {
-        this.dbname = dbname;
+    public void setDbName(String dbName) {
+        this.dbName = dbName;
     }
 
     public int getCharsetIndex() {
@@ -270,12 +277,12 @@ public abstract class Field {
         this.charsetIndex = charsetIndex;
     }
 
-    public String getCharsetName() {
-        return charsetName;
+    public String getJavaCharsetName() {
+        return javaCharsetName;
     }
 
-    public void setCharsetName(String charsetName) {
-        this.charsetName = charsetName;
+    public void setJavaCharsetName(String javaCharsetName) {
+        this.javaCharsetName = javaCharsetName;
     }
 
     public long getFlags() {

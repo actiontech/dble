@@ -15,8 +15,8 @@ import java.math.BigInteger;
 
 public class FieldDate extends FieldTemporaWithDate {
 
-    public FieldDate(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldDate(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -28,7 +28,7 @@ public class FieldDate extends FieldTemporaWithDate {
     protected void internalJob() {
         String ptrStr = null;
         try {
-            ptrStr = MySQLcom.getFullString(charsetName, ptr);
+            ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             Field.LOGGER.warn("parse string exception!", ue);
         }

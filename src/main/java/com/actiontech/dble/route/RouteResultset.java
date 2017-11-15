@@ -23,6 +23,7 @@ public final class RouteResultset implements Serializable {
     private String statement;
     private String schema;
     private String table;
+    private String tableAlias;
     private final int sqlType;
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
@@ -284,6 +285,14 @@ public final class RouteResultset implements Serializable {
 
     public void setTable(String table) {
         this.table = table;
+    }
+
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    public void setTableAlias(String tableAlias) {
+        this.tableAlias = tableAlias;
     }
 
     public boolean isCallStatement() {

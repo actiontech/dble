@@ -9,15 +9,18 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.List;
 
 public class RenameFieldHandler extends BaseDMLHandler {
     private String alias;
-    public RenameFieldHandler(long id, NonBlockingSession session, String alias) {
+    private PlanNode.PlanNodeType childType;
+    public RenameFieldHandler(long id, NonBlockingSession session, String alias, PlanNode.PlanNodeType childType) {
         super(id, session);
         this.alias = alias;
+        this.childType = childType;
     }
 
     @Override
@@ -29,7 +32,10 @@ public class RenameFieldHandler extends BaseDMLHandler {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
         for (FieldPacket fp : fieldPackets) {
             fp.setTable(alias.getBytes());
-            //TODO:ORGTABLENAME
+            if (childType.equals(PlanNode.PlanNodeType.TABLE)) {
+                //mysql 5.6 Org Table is child's name, 5.7 is *
+                fp.setOrgTable("*".getBytes());
+            }
         }
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
     }

@@ -42,8 +42,8 @@ public abstract class ItemSumHybrid extends ItemSum {
             return true;
         item = args.get(0);
         decimals = item.getDecimals();
-        value = Field.getFieldItem(funcName(), null, item.fieldType().numberValue(), item.getCharsetIndex(),
-                item.getMaxLength(), item.getDecimals(), (item.isMaybeNull() ? 0 : FieldUtil.NOT_NULL_FLAG));
+        value = Field.getFieldItem(funcName(), null, null, null, item.fieldType().numberValue(),
+                item.getCharsetIndex(), item.getMaxLength(), item.getDecimals(), (item.isMaybeNull() ? 0 : FieldUtil.NOT_NULL_FLAG));
 
         ItemResult i = hybridType = item.resultType();
         if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT || i == ItemResult.STRING_RESULT) {

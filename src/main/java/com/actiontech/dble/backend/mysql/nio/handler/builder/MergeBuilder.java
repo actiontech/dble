@@ -26,17 +26,14 @@ import java.sql.SQLException;
 
 public class MergeBuilder {
     private boolean needCommonFlag;
-    private boolean needSendMakerFlag;
     private PlanNode node;
     private NonBlockingSession session;
     private ServerConfig config;
     private PushDownVisitor pdVisitor;
 
-    public MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, boolean needSendMaker,
-                        PushDownVisitor pdVisitor) {
+    MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, PushDownVisitor pdVisitor) {
         this.node = node;
         this.needCommonFlag = needCommon;
-        this.needSendMakerFlag = needSendMaker;
         this.session = session;
         this.config = DbleServer.getInstance().getConfig();
         this.pdVisitor = pdVisitor;
@@ -45,8 +42,8 @@ public class MergeBuilder {
     /**
      * calculate the RouteResultset by Parser
      *
-     * @return
-     * @throws SQLException
+     * @return RouteResultset
+     * @throws SQLException SQLException
      */
     public RouteResultset construct() throws SQLException {
         pdVisitor.visit();
@@ -64,12 +61,8 @@ public class MergeBuilder {
     }
 
     /* -------------------- getter/setter -------------------- */
-    public boolean getNeedCommonFlag() {
+    boolean getNeedCommonFlag() {
         return needCommonFlag;
-    }
-
-    public boolean getNeedSendMakerFlag() {
-        return needSendMakerFlag;
     }
 
 }

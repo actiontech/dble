@@ -26,11 +26,15 @@ public class ItemRef extends Item {
     }
 
     private Item ref;
+    private String schema = null;
+    private String table = null;
     private String tableAlias = null;
     private String fieldAlias = null;
 
-    public ItemRef(Item ref, String tableAlias, String fieldAlias) {
+    public ItemRef(Item ref, String schema, String table, String tableAlias, String fieldAlias) {
         this.ref = ref;
+        this.schema = schema;
+        this.table = table;
         this.tableAlias = tableAlias;
         this.fieldAlias = fieldAlias;
     }
@@ -130,8 +134,23 @@ public class ItemRef extends Item {
                 LOGGER.warn("parse string exception!", e);
             }
         }
+
+        if ((schema != null)) {
+            try {
+                tmpFp.setDb(schema.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.warn("parse string exception!", e);
+            }
+        }
+        if (table != null) {
+            try {
+                tmpFp.setOrgTable(table.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
+                tmpFp.setTable(table.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.warn("parse string exception!", e);
+            }
+        }
         if (tableAlias != null) {
-            tmpFp.setOrgTable(tmpFp.getTable());
             try {
                 tmpFp.setTable(tableAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {

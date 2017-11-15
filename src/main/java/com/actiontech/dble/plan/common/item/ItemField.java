@@ -65,7 +65,7 @@ public class ItemField extends ItemIdent {
         decimals = field.getDecimals();
         tableName = field.getTable();
         itemName = field.getName();
-        dbName = field.getDbname();
+        dbName = field.getDbName();
         maxLength = field.getFieldLength();
         charsetIndex = field.getCharsetIndex();
         fixed = true;

@@ -15,8 +15,8 @@ import java.math.BigInteger;
 
 public abstract class FieldStr extends Field {
 
-    public FieldStr(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldStr(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -36,7 +36,7 @@ public abstract class FieldStr extends Field {
         else {
             String ptrStr = null;
             try {
-                ptrStr = MySQLcom.getFullString(charsetName, ptr);
+                ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
                 LOGGER.warn("parse string exception!", ue);
                 return BigDecimal.ZERO;
@@ -57,7 +57,7 @@ public abstract class FieldStr extends Field {
         else {
             String ptrStr = null;
             try {
-                ptrStr = MySQLcom.getFullString(charsetName, ptr);
+                ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
             } catch (UnsupportedEncodingException ue) {
                 LOGGER.warn("parse string exception!", ue);
                 return null;
@@ -112,8 +112,8 @@ public abstract class FieldStr extends Field {
         }
         try {
             // mysql order by,>,< use UpperCase to compare
-            String sval1 = MySQLcom.getFullString(charsetName, v1).toUpperCase();
-            String sval2 = MySQLcom.getFullString(charsetName, v2).toUpperCase();
+            String sval1 = MySQLcom.getFullString(javaCharsetName, v1).toUpperCase();
+            String sval2 = MySQLcom.getFullString(javaCharsetName, v2).toUpperCase();
             return sval1.compareTo(sval2);
         } catch (Exception e) {
             LOGGER.info("String to biginteger exception!", e);

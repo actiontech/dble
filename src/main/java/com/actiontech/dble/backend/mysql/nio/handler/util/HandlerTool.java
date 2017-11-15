@@ -57,8 +57,8 @@ public final class HandlerTool {
     }
 
     public static Field createField(FieldPacket fp) {
-        Field field = Field.getFieldItem(fp.getName(), fp.getTable(), fp.getType(), fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(),
-                fp.getFlags());
+        Field field = Field.getFieldItem(fp.getName(), fp.getDb(), fp.getTable(), fp.getOrgTable(), fp.getType(),
+                fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(), fp.getFlags());
         return field;
     }
 
@@ -112,8 +112,8 @@ public final class HandlerTool {
         return ret;
     }
 
-    public static Item createRefItem(Item ref, String tbAlias, String fieldAlias) {
-        return new ItemRef(ref, tbAlias, fieldAlias);
+    public static Item createRefItem(Item ref, String schema, String table, String tbAlias, String fieldAlias) {
+        return new ItemRef(ref, schema, table, tbAlias, fieldAlias);
     }
 
     /**

@@ -68,8 +68,6 @@ public abstract class BaseHandlerBuilder {
     protected boolean needCommon = true;
     /* has where handler */
     protected boolean needWhereHandler = true;
-    /* it's no need to send maker if sql is just the same as the client origin query  */
-    protected boolean needSendMaker = true;
 
     protected boolean isExplain = false;
     protected List<BaseHandlerBuilder> subQueryBuilderList = new ArrayList<>(1);
@@ -113,14 +111,25 @@ public abstract class BaseHandlerBuilder {
             preHandlers = buildPre();
             buildOwn();
         }
-        if (needCommon)
+        if (needCommon) {
             buildCommon();
-        if (needSendMaker) {
-            // view sub alias
-            String tbAlias = node.getAlias();
-            SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), tbAlias);
-            addHandler(sh);
         }
+
+        // view sub alias
+        String tbAlias = node.getAlias();
+        String schema = null;
+        String table = null;
+        if (node.type() == PlanNodeType.TABLE) {
+            TableNode tbNode = (TableNode) node;
+            schema = tbNode.getSchema();
+            table = tbNode.getTableName();
+        } else if (node.type() == PlanNodeType.MERGE) {
+            schema = "";
+            table = "";
+        }
+        SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
+        addHandler(sh);
+
         if (preHandlers != null) {
             for (DMLResponseHandler preHandler : preHandlers) {
                 preHandler.setNextHandler(start);
@@ -166,8 +175,6 @@ public abstract class BaseHandlerBuilder {
             GlobalVisitor visitor = new GlobalVisitor(node, true);
             visitor.visit();
             sql = visitor.getSql().toString();
-        } else {
-            needSendMaker = false;
         }
         RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
         hBuilder.checkRRSs(rrss);

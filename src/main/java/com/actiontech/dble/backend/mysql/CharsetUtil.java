@@ -346,10 +346,10 @@ public final class CharsetUtil {
 
     public static String getJavaCharset(String charset) {
         if (charset == null || charset.length() == 0)
-            return charset;
+            return "UTF-8";
         String javaCharset = CHARSET_TO_JAVA.get(charset);
         if (javaCharset == null)
-            return charset;
+            return "UTF-8";
         return javaCharset;
     }
 

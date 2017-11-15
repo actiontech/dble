@@ -562,6 +562,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             byte[] field = fields.get(i);
             FieldPacket fieldPkg = new FieldPacket();
             fieldPkg.read(field);
+            if (rrs.getSchema() != null) {
+                fieldPkg.setDb(rrs.getSchema().getBytes());
+            }
+            if (rrs.getTableAlias() != null) {
+                fieldPkg.setTable(rrs.getTableAlias().getBytes());
+            }
+            if (rrs.getTable() != null) {
+                fieldPkg.setOrgTable(rrs.getTable().getBytes());
+            }
             fieldPackets.add(fieldPkg);
             fieldCount = fields.size();
             if (primaryKey != null && primaryKeyIndex == -1) {
@@ -571,8 +580,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     primaryKeyIndex = i;
                 }
             }
-            field[3] = ++packetId;
-            buffer = source.writeToBuffer(field, buffer);
+            fieldPkg.setPacketId(++packetId);
+            buffer = fieldPkg.write(buffer, source, false);
         }
         eof[3] = ++packetId;
         buffer = source.writeToBuffer(eof, buffer);
@@ -607,9 +616,18 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             byte[] field = fields.get(i);
             FieldPacket fieldPkg = new FieldPacket();
             fieldPkg.read(field);
+            if (rrs.getSchema() != null) {
+                fieldPkg.setDb(rrs.getSchema().getBytes());
+            }
+            if (rrs.getTableAlias() != null) {
+                fieldPkg.setTable(rrs.getTableAlias().getBytes());
+            }
+            if (rrs.getTable() != null) {
+                fieldPkg.setOrgTable(rrs.getTable().getBytes());
+            }
             fieldPackets.add(fieldPkg);
             String fieldName = new String(fieldPkg.getName()).toUpperCase();
-            if (columnToIndex != null && !columnToIndex.containsKey(fieldName)) {
+            if (!columnToIndex.containsKey(fieldName)) {
                 if (shouldRemoveAvgField.contains(fieldName)) {
                     shouldSkip = true;
                     fieldPackets.remove(fieldPackets.size() - 1);
@@ -635,8 +653,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 columnToIndex.put(fieldName, colMeta);
             }
             if (!shouldSkip) {
-                field[3] = ++packetId;
-                buffer = source.writeToBuffer(field, buffer);
+                fieldPkg.setPacketId(++packetId);
+                buffer = fieldPkg.write(buffer, source, false);
             }
         }
         eof[3] = ++packetId;

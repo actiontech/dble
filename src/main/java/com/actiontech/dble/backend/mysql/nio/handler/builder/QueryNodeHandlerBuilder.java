@@ -44,7 +44,7 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
-        RenameFieldHandler rn = new RenameFieldHandler(getSequenceId(), session, node.getAlias());
+        RenameFieldHandler rn = new RenameFieldHandler(getSequenceId(), session, node.getAlias(), node.getChild().type());
         addHandler(rn);
     }
 }

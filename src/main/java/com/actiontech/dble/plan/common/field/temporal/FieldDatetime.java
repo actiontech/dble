@@ -14,8 +14,8 @@ import java.math.BigInteger;
 
 public class FieldDatetime extends FieldTemporalWithDateAndTime {
 
-    public FieldDatetime(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldDatetime(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -27,7 +27,7 @@ public class FieldDatetime extends FieldTemporalWithDateAndTime {
     protected void internalJob() {
         String ptrStr = null;
         try {
-            ptrStr = MySQLcom.getFullString(charsetName, ptr);
+            ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }

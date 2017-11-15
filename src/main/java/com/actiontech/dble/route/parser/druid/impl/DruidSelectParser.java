@@ -99,6 +99,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
+                rrs.setSchema(schemaInfo.getSchema());
+                rrs.setTable(schemaInfo.getTable());
+                rrs.setTableAlias(schemaInfo.getTableAlias());
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
 

@@ -100,6 +100,9 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (mysqlCon.isClosed()) {
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
             }
+            if (position == 0) {
+                this.debugRollbackDelay();
+            }
             rollbackPhase(mysqlCon);
         }
         return true;

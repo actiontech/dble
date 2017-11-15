@@ -947,6 +947,13 @@ public final class DbleServer {
                             SQLJob sqlJob = new SQLJob(xaCmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
                             sqlJob.run();
                             LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
+
+                            //reset xaCmd
+                            if (needCommit) {
+                                xaCmd = new StringBuilder("XA COMMIT ");
+                            } else {
+                                xaCmd = new StringBuilder("XA ROLLBACK ");
+                            }
                             break outLoop;
                         }
                     }

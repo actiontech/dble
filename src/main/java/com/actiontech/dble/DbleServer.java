@@ -949,10 +949,11 @@ public final class DbleServer {
                             LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
 
                             //reset xaCmd
+                            xaCmd.setLength(0);
                             if (needCommit) {
-                                xaCmd = new StringBuilder("XA COMMIT ");
+                                xaCmd.append("XA COMMIT ");
                             } else {
-                                xaCmd = new StringBuilder("XA ROLLBACK ");
+                                xaCmd.append("XA ROLLBACK ");
                             }
                             break outLoop;
                         }

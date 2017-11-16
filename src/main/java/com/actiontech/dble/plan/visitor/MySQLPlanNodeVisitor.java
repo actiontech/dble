@@ -152,7 +152,7 @@ public class MySQLPlanNodeVisitor {
                 return true;
             }
             //here to check if the table name is a view in metaManager
-            QueryNode viewNode = DbleServer.getInstance().getTmManager().getCatalogs().get(currentDb).getView(identifierExpr.getName());
+            QueryNode viewNode = DbleServer.getInstance().getTmManager().getSyncView(currentDb, identifierExpr.getName());
             if (viewNode != null) {
                 //consider if the table with other name
                 viewNode.setSubAlias(tableSource.getAlias());

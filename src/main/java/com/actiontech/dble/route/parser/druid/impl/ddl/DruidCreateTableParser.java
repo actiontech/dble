@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -52,12 +51,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
-
-        if (DbleServer.getInstance().getTmManager().getCatalogs().get(schemaInfo.getSchema()).getView(schemaInfo.getTable()) != null) {
-            String msg = "Table '" + createStmt.getName().toString() + "' already exists";
-            LOGGER.warn(msg);
-            throw new SQLNonTransientException(msg);
-        }
 
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);

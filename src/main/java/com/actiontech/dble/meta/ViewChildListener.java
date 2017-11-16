@@ -75,8 +75,6 @@ public class ViewChildListener implements PathChildrenCacheListener {
         }
         String createSql = obj.getString(CREATE_SQL);
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
-        String viewName = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[1];
-
 
         ViewMeta vm = new ViewMeta(createSql, schema);
         vm.initAndSet(isReplace);

@@ -7,7 +7,6 @@ package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
@@ -20,6 +19,8 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.subquery.*;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
@@ -89,14 +90,14 @@ public final class SubQueryPreProcessor {
         if (filter instanceof ItemInSubQuery && !isOrChild) {
             return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
         } else if (filter instanceof ItemInSubQuery) {
-            addSubQuey(node, (ItemInSubQuery) filter, childTransform);
+            addSubQuery(node, (ItemInSubQuery) filter, childTransform);
             return qtn;
         } else if (PlanUtil.isCmpFunc(filter)) {
             ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
             Item arg0 = eqFilter.arguments().get(0);
             if (arg0.type().equals(ItemType.SUBSELECT_ITEM)) {
                 if (arg0 instanceof ItemScalarSubQuery) {
-                    addSubQuey(node, (ItemScalarSubQuery) arg0, childTransform);
+                    addSubQuery(node, (ItemScalarSubQuery) arg0, childTransform);
                 } else {
                     //todo: when happened?
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -106,9 +107,9 @@ public final class SubQueryPreProcessor {
             Item arg1 = eqFilter.arguments().get(1);
             if (arg1.type().equals(ItemType.SUBSELECT_ITEM)) {
                 if (arg1 instanceof ItemScalarSubQuery) {
-                    addSubQuey(node, (ItemScalarSubQuery) arg1, childTransform);
+                    addSubQuery(node, (ItemScalarSubQuery) arg1, childTransform);
                 } else if (arg1 instanceof ItemAllAnySubQuery) {
-                    addSubQuey(node, (ItemAllAnySubQuery) arg1, childTransform);
+                    addSubQuery(node, (ItemAllAnySubQuery) arg1, childTransform);
                 } else {
                     //todo: when happened?
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -117,7 +118,7 @@ public final class SubQueryPreProcessor {
             return qtn;
         } else if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
             if (filter instanceof ItemExistsSubQuery) {
-                addSubQuey(node, (ItemExistsSubQuery) filter, childTransform);
+                addSubQuery(node, (ItemExistsSubQuery) filter, childTransform);
             } else {
                 //todo: when happened?
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -129,7 +130,7 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static void addSubQuey(PlanNode node, ItemSubQuery subQuery, BoolPtr childTransform) {
+    private static void addSubQuery(PlanNode node, ItemSubQuery subQuery, BoolPtr childTransform) {
         node.getSubQueries().add(subQuery);
         PlanNode subNode = findComparisonsSubQueryToJoinNode(subQuery.getPlanNode(), childTransform);
         subQuery.setPlanNode(subNode);
@@ -139,8 +140,9 @@ public final class SubQueryPreProcessor {
         Item leftColumn = filter.getLeftOperand();
         PlanNode query = filter.getPlanNode();
         query = findComparisonsSubQueryToJoinNode(query, childTransform);
-        if (StringUtils.isEmpty(query.getAlias()))
-            query.alias(AUTOALIAS + query.getPureName());
+        QueryNode changeQuery = new QueryNode(query);
+        String alias = AUTOALIAS + query.getPureName();
+        changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
         query.setSubQuery(true).setDistinct(true);
@@ -159,9 +161,9 @@ public final class SubQueryPreProcessor {
             }
         }
 
-        ItemField rightJoinColumn = new ItemField(null, query.getAlias(), rightJoinName);
+        ItemField rightJoinColumn = new ItemField(null, alias, rightJoinName);
         // rename the left column's table name
-        result.query = new JoinNode(qtn.query, query);
+        result.query = new JoinNode(qtn.query, changeQuery);
         // leave origin sql to new join node
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
@@ -177,6 +179,8 @@ public final class SubQueryPreProcessor {
             groupBys.addAll(qtn.query.getGroupBys());
             result.query.setGroupBys(groupBys);
             qtn.query.getGroupBys().clear();
+            result.query.having(qtn.query.getHavingFilter());
+            qtn.query.having(null);
         }
         if (qtn.query.getLimitFrom() != -1) {
             result.query.setLimitFrom(qtn.query.getLimitFrom());
@@ -195,16 +199,6 @@ public final class SubQueryPreProcessor {
             Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
             result.query.query(joinFilter);
             result.filter = joinFilter;
-        }
-        if (qtn.query.getAlias() == null && qtn.query.getSubAlias() == null) {
-            result.query.setAlias(qtn.query.getPureName());
-        } else {
-            String queryAlias = qtn.query.getAlias();
-            qtn.query.alias(null);
-            if (queryAlias == null) {
-                queryAlias = qtn.query.getSubAlias();
-            }
-            result.query.setAlias(queryAlias);
         }
         result.query.setUpFields();
         return result;

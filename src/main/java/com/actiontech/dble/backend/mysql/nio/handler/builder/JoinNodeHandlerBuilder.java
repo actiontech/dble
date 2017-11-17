@@ -13,7 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;

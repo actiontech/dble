@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.plan.common.context;
 
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 
 
 public class NameResolutionContext {

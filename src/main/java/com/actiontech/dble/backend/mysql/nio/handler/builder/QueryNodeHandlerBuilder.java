@@ -6,7 +6,8 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.RenameFieldHandler;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
@@ -25,6 +26,7 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     protected void handleSubQueries() {
+        handleBlockingSubQuery();
     }
 
     @Override
@@ -42,5 +44,7 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
+        RenameFieldHandler rn = new RenameFieldHandler(getSequenceId(), session, node.getAlias());
+        addHandler(rn);
     }
 }

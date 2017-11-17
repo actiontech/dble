@@ -22,8 +22,8 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
-import com.actiontech.dble.plan.PlanNode.PlanNodeType;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
@@ -101,7 +101,7 @@ public abstract class BaseHandlerBuilder {
         boolean isNestLoopJoin = isNestLoopStrategy(node);
         if (isNestLoopJoin) {
             nestLoopBuild();
-        } else if (!node.isExsitView() && PlanUtil.isGlobal(node)) {
+        } else if (!node.isExistView() && PlanUtil.isGlobal(node)) {
             // the query can be send to a certain node
             noShardBuild();
         } else if (canDoAsMerge()) {
@@ -118,8 +118,6 @@ public abstract class BaseHandlerBuilder {
         if (needSendMaker) {
             // view sub alias
             String tbAlias = node.getAlias();
-            if (node.getParent() != null && node.getParent().getSubAlias() != null)
-                tbAlias = node.getParent().getSubAlias();
             SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), tbAlias);
             addHandler(sh);
         }

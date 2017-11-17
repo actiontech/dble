@@ -8,20 +8,27 @@ package com.actiontech.dble.plan.util;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
-import com.actiontech.dble.plan.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.parser.util.Pair;
 
@@ -31,7 +38,7 @@ public final class PlanUtil {
     private PlanUtil() {
     }
 
-    public static boolean existAggr(PlanNode node) {
+    public static boolean existAggregate(PlanNode node) {
         if (node.getReferedTableNodes().size() == 0)
             return false;
         else {
@@ -46,8 +53,8 @@ public final class PlanUtil {
      * check obj is the column of an real tablenode ,if obj is not Column Type return null
      * <the column to be found must be  table's parent's column>
      *
-     * @param column
-     * @param node
+     * @param column column
+     * @param node node
      * @return the target table node and the column
      */
     public static Pair<TableNode, ItemField> findColumnInTableLeaf(ItemField column, PlanNode node) {
@@ -74,7 +81,7 @@ public final class PlanUtil {
     /**
      * refertable of refreshed function
      *
-     * @param f
+     * @param f is item
      */
     public static void refreshReferTables(Item f) {
         if (!(f instanceof ItemFunc || f instanceof ItemSum))
@@ -91,15 +98,15 @@ public final class PlanUtil {
             f.setWithSubQuery(f.isWithSubQuery() || arg.isWithSubQuery());
             f.setWithUnValAble(f.isWithUnValAble() || arg.isWithUnValAble());
         }
-        return;
     }
 
     /**
      * the sel can be pushed down to child?
      *
-     * @param sel
-     * @param child
-     * @return
+     * @param sel item
+     * @param child child
+     * @param parent parent
+     * @return can push down
      */
     public static boolean canPush(Item sel, PlanNode child, PlanNode parent) {
         if (sel == null)
@@ -150,6 +157,9 @@ public final class PlanUtil {
             return null;
         if (sel.basicConstItem())
             return sel;
+        if (sel.isWithSubQuery()) {
+            sel = rebuildSubQueryItem(sel);
+        }
         if (sel.getReferTables().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not pushdown sel when refer table's > 1!");
         }
@@ -182,9 +192,9 @@ public final class PlanUtil {
     /**
      * is bf can be the joinkey for node?make bf's left related to left to node
      *
-     * @param bf
-     * @param node
-     * @return
+     * @param bf ItemFuncEqual
+     * @param node node
+     * @return is Join Key
      */
     public static boolean isJoinKey(ItemFuncEqual bf, JoinNode node) {
         // only funEqula may become joinkey
@@ -242,11 +252,7 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        if (node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE) {
-            return true;
-        } else {
-            return isERNode(node);
-        }
+        return (node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE) || isERNode(node);
     }
 
     public static boolean isGlobal(PlanNode node) {
@@ -256,8 +262,9 @@ public final class PlanUtil {
     /**
      * push function in merge node to child node
      *
-     * @param mn
-     * @param toPush
+     * @param mn MergeNode
+     * @param toPush Item toPush
+     * @param colIndexs colIndex
      * @return all child's pushdown sel
      */
     public static List<Item> getPushItemsToUnionChild(MergeNode mn, Item toPush, Map<String, Integer> colIndexs) {
@@ -292,13 +299,12 @@ public final class PlanUtil {
     /**
      * arg of merge node's function belong to child
      *
-     * @param toPush
-     * @param colIndexs
-     * @param childSelects
-     * @return
+     * @param toPush toPush
+     * @param colIndexs colIndexs
+     * @param childSelects childSelects
+     * @return ItemFunc
      */
-    private static ItemFunc pushFunctionToUnionChild(ItemFunc toPush, Map<String, Integer> colIndexs,
-                                                     List<Item> childSelects) {
+    private static ItemFunc pushFunctionToUnionChild(ItemFunc toPush, Map<String, Integer> colIndexs, List<Item> childSelects) {
         ItemFunc func = (ItemFunc) toPush.cloneStruct();
         for (int index = 0; index < toPush.getArgCount(); index++) {
             Item arg = toPush.arguments().get(index);
@@ -321,9 +327,9 @@ public final class PlanUtil {
     /**
      * generate push orders from orders node
      *
-     * @param node
-     * @param orders
-     * @return
+     * @param node node
+     * @param orders orders
+     * @return List<Order>
      */
     public static List<Order> getPushDownOrders(PlanNode node, List<Order> orders) {
         List<Order> pushOrders = new ArrayList<>();
@@ -338,9 +344,9 @@ public final class PlanUtil {
     /**
      * when order1contains order2,return true, order2's column start from order1's first column
      *
-     * @param orders1
-     * @param orders2
-     * @return
+     * @param orders1 orders1
+     * @param orders2 orders2
+     * @return orderContains
      */
     public static boolean orderContains(List<Order> orders1, List<Order> orders2) {
         if (orders1.size() < orders2.size())
@@ -356,10 +362,101 @@ public final class PlanUtil {
             return true;
         }
     }
+
     public static boolean isCmpFunc(Item filter) {
         return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
                 filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
                 filter instanceof ItemFuncStrictEqual;
+    }
+
+    public static boolean containsSubQuery(PlanNode node) {
+        if (node.isSubQuery()) {
+            return true;
+        }
+        for (PlanNode child : node.getChildren()) {
+            if (containsSubQuery(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    public static Item rebuildSubQueryItem(Item item) {
+        if (PlanUtil.isCmpFunc(item)) {
+            Item res1 = rebuildBoolSubQuery(item, 0);
+            if (res1 != null) {
+                return res1;
+            }
+            Item res2 = rebuildBoolSubQuery(item, 1);
+            if (res2 != null) {
+                return res2;
+            }
+        } else if (item instanceof ItemInSubQuery) {
+            ItemInSubQuery inSubItem = (ItemInSubQuery) item;
+            if (inSubItem.getValue().size() == 0) {
+                return genBoolItem(inSubItem.isNeg());
+            } else {
+                List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
+                args.add(inSubItem.getLeftOperand());
+                args.addAll(inSubItem.getValue());
+                return new ItemFuncIn(args, inSubItem.isNeg());
+            }
+        } else if (item instanceof ItemExistsSubQuery) {
+            ItemExistsSubQuery existsSubQuery = (ItemExistsSubQuery) item;
+            Item result = existsSubQuery.getValue();
+            if (result == null) {
+                return genBoolItem(existsSubQuery.isNot());
+            } else {
+                return genBoolItem(!existsSubQuery.isNot());
+            }
+        } else if (item instanceof ItemCondAnd || item instanceof ItemCondOr) {
+            for (int index = 0; index < item.getArgCount(); index++) {
+                Item rebuildItem = rebuildSubQueryItem(item.arguments().get(index));
+                item.arguments().set(index, rebuildItem);
+                item.setItemName(null);
+            }
+        }
+        return item;
+    }
+
+
+    private static Item genBoolItem(boolean isTrue) {
+        if (isTrue) {
+            return new ItemFuncEqual(new ItemInt(1), new ItemInt(1));
+        } else {
+            return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+        }
+    }
+
+
+    private static Item rebuildBoolSubQuery(Item item, int index) {
+        Item arg = item.arguments().get(index);
+        if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
+            if (arg instanceof ItemScalarSubQuery) {
+                Item result = ((ItemScalarSubQuery) arg).getValue();
+                if (result == null || result.getResultItem() == null) {
+                    return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                }
+                item.arguments().set(index, result.getResultItem());
+                item.setItemName(null);
+            } else if (arg instanceof ItemAllAnySubQuery) {
+                ItemAllAnySubQuery allAnySubItem = (ItemAllAnySubQuery) arg;
+                if (allAnySubItem.getValue().size() == 0) {
+                    return genBoolItem(allAnySubItem.isAll());
+                } else if (allAnySubItem.getValue().size() == 1) {
+                    Item value = allAnySubItem.getValue().get(0);
+                    if (value == null) {
+                        return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                    }
+                    item.arguments().set(index, value.getResultItem());
+                    item.setItemName(null);
+                } else {
+                    return genBoolItem(!allAnySubItem.isAll());
+                }
+            }
+        }
+        return null;
     }
 
 }

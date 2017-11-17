@@ -5,14 +5,12 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
-import com.actiontech.dble.plan.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
-import com.actiontech.dble.plan.node.view.ViewUtil;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
@@ -64,7 +62,7 @@ public final class SubQueryProcessor {
      *
      */
     private static PlanNode transformerQuery(QueryNode query, BoolPtr boolptr) {
-        boolean canBeMerged = ViewUtil.canBeMerged(query.getChild());
+        boolean canBeMerged = canBeMerged(query.getChild());
         if (canBeMerged) {
             // merge view node's property to view's child
             PlanNode newNode = mergeNode(query, query.getChild());
@@ -75,25 +73,24 @@ public final class SubQueryProcessor {
         }
     }
 
+    private static boolean canBeMerged(PlanNode viewSelNode) {
+        if (viewSelNode.type() == PlanNode.PlanNodeType.NONAME)
+            return true;
+        boolean selectsAllowMerge = viewSelNode.type() != PlanNode.PlanNodeType.MERGE;
+        // TODO as the same as LEX::can_be_merged();
+        boolean existAggregate = PlanUtil.existAggregate(viewSelNode);
+        return selectsAllowMerge && viewSelNode.getReferedTableNodes().size() == 1 && !existAggregate && viewSelNode.getOrderBys().size() == 0;
+    }
+
     /**
      * merge parent's property to child,and return new child,
      * of course ,the child is  canBeMerged
      *
      */
-    private static PlanNode mergeNode(PlanNode parent, PlanNode child) {
-        final List<Item> newSelects = mergeSelect(parent);
+    private static PlanNode mergeNode(QueryNode parent, PlanNode child) {
+        mergeSelect(parent, child);
         mergeWhere(parent, child);
-        mergeGroupBy(parent, child);
-        mergeHaving(parent, child);
-        mergeOrderBy(parent, child);
-        mergeLimit(parent, child);
-        child.setColumnsSelected(newSelects);
-        if (!StringUtils.isEmpty(parent.getAlias())) {
-            child.setAlias(parent.getAlias());
-        } else if (!StringUtils.isEmpty(parent.getSubAlias())) {
-            child.setAlias(parent.getSubAlias());
-        }
-        child.setSubQuery(parent.isSubQuery());
+        child.setAlias(parent.getAlias());
         child.setParent(parent.getParent());
         return child;
     }
@@ -105,7 +102,8 @@ public final class SubQueryProcessor {
      *
      */
 
-    private static List<Item> mergeSelect(PlanNode parent) {
+    //fixme: parent's alias set to select item's table
+    private static void mergeSelect(PlanNode parent, PlanNode child) {
         List<Item> pSelects = parent.getColumnsSelected();
         List<Item> cNewSelects = new ArrayList<>();
         for (Item pSel : pSelects) {
@@ -121,9 +119,9 @@ public final class SubQueryProcessor {
             pSel0.setAlias(selName);
             cNewSelects.add(pSel0);
         }
-        return cNewSelects;
+        child.setColumnsSelected(cNewSelects);
     }
-
+    //fixme: parent's alias set to where item's table
     private static void mergeWhere(PlanNode parent, PlanNode child) {
         Item pWhere = parent.getWhereFilter();
         Item pWhere0 = PlanUtil.pushDownItem(parent, pWhere, true);
@@ -131,42 +129,4 @@ public final class SubQueryProcessor {
         Item mWhere = FilterUtils.and(pWhere0, childWhere);
         child.setWhereFilter(mWhere);
     }
-
-    private static void mergeGroupBy(PlanNode parent, PlanNode child) {
-        List<Order> pGroups = parent.getGroupBys();
-        List<Order> cGroups = new ArrayList<>();
-        for (Order pGroup : pGroups) {
-            Item col = pGroup.getItem();
-            Item col0 = PlanUtil.pushDownItem(parent, col);
-            Order pGroup0 = new Order(col0, pGroup.getSortOrder());
-            cGroups.add(pGroup0);
-        }
-        child.setGroupBys(cGroups);
-    }
-
-    private static void mergeHaving(PlanNode parent, PlanNode child) {
-        Item pHaving = parent.getHavingFilter();
-        Item pHaving0 = PlanUtil.pushDownItem(parent, pHaving, true);
-        Item mHaving = FilterUtils.and(pHaving0, child.getHavingFilter());
-        child.having(mHaving);
-    }
-
-    private static void mergeOrderBy(PlanNode parent, PlanNode child) {
-        List<Order> pOrders = parent.getOrderBys();
-        List<Order> cOrders = new ArrayList<>();
-        for (Order pOrder : pOrders) {
-            Item col = pOrder.getItem();
-            Item col0 = PlanUtil.pushDownItem(parent, col, true);
-            Order pOrder0 = new Order(col0, pOrder.getSortOrder());
-            cOrders.add(pOrder0);
-        }
-        if (cOrders.size() > 0)
-            child.setOrderBys(cOrders);
-    }
-
-    private static void mergeLimit(PlanNode parent, PlanNode child) {
-        child.setLimitFrom(parent.getLimitFrom());
-        child.setLimitTo(parent.getLimitTo());
-    }
-
 }

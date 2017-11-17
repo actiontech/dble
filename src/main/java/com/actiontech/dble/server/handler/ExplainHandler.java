@@ -26,7 +26,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
@@ -294,6 +294,8 @@ public final class ExplainHandler {
             return "ALL_ANY_SUB_QUERY";
         } else if (handler instanceof SingleRowSubQueryHandler) {
             return "SCALAR_SUB_QUERY";
+        } else if (handler instanceof RenameFieldHandler) {
+            return "RENAME_DERIVED_SUB_QUERY";
         }
         return "OTHER";
     }

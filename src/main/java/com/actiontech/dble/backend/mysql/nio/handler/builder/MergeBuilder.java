@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDown
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;

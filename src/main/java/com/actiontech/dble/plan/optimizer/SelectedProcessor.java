@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;

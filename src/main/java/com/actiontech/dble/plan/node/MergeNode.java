@@ -7,7 +7,6 @@ package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
@@ -17,7 +16,6 @@ import java.util.*;
 
 /**
  * @author ActionTech
- * @createTime 2014-1-21
  */
 public class MergeNode extends PlanNode {
 

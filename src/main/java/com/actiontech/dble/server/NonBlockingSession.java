@@ -25,10 +25,11 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -150,7 +151,11 @@ public class NonBlockingSession implements Session {
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
-                executeMultiSelect(rrs);
+                try {
+                    executeMultiSelect(rrs);
+                } catch (MySQLOutPutException e) {
+                    source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
+                }
             } else {
                 source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
                         "No dataNode found ,please check tables defined in schema:" + source.getSchema());
@@ -245,7 +250,7 @@ public class NonBlockingSession implements Session {
         node.setUpFields();
         checkTablesPrivilege(node, ast);
         node = MyOptimizer.optimize(node);
-        if (node.isSubQuery()) {
+        if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
             DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                 //sub Query build will be blocked, so use ComplexQueryExecutor
@@ -258,6 +263,7 @@ public class NonBlockingSession implements Session {
             execute(node);
         }
     }
+
 
     private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {

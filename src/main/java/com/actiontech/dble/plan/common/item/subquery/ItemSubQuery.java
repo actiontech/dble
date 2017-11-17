@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.plan.common.item.subquery;
 
-import com.actiontech.dble.plan.PlanNode;
-import com.actiontech.dble.plan.PlanNode.PlanNodeType;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.item.Item;

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan;
 
+import com.actiontech.dble.plan.node.PlanNode;
 import org.apache.commons.lang.StringUtils;
 
 public class NamedField {

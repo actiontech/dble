@@ -157,6 +157,8 @@ public class MySQLPlanNodeVisitor {
                 //consider if the table with other name
                 viewNode.setSubAlias(tableSource.getAlias());
                 this.tableNode = viewNode;
+                this.tableNode.setSubQuery(true);
+                this.tableNode.setExsitView(true);
                 return true;
             } else {
                 table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));

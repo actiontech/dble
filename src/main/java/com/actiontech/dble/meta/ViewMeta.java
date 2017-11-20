@@ -1,6 +1,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
@@ -34,38 +35,10 @@ public class ViewMeta {
         //parse sql into three parts
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
+
         try {
-            SchemaMeta schemaMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema);
-
-            //if the alter table
-            if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
-                if (schemaMeta.getView(viewName) == null) {
-                    throw new Exception("Table '" + viewName + "' doesn't exist");
-                }
-            }
-
-            if (viewColumnMeta != null) {
-                Set<String> tempMap = new HashSet<String>();
-                for (String t : viewColumnMeta) {
-                    if (tempMap.contains(t.trim())) {
-                        throw new Exception("Duplicate column name '" + t + "'");
-                    }
-                    tempMap.add(t.trim());
-                }
-            }
-
-            // if the table with same name exists
-            if (schemaMeta.getTableMeta(viewName) != null) {
-                throw new Exception("Table '" + viewName + "' already exists");
-            }
-
-            if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW) {
-                // if the sql without replace & the view exists
-                if (schemaMeta.getView(viewName) != null) {
-                    // return error because the view is exists
-                    throw new Exception("Table '" + viewName + "' already exists");
-                }
-            }
+            //check if the select part has
+            this.checkDuplicate(viewParser, isReplace);
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
@@ -75,38 +48,119 @@ public class ViewMeta {
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();
 
-            //check if the select part has
-
             //set the view column name into
-            if (viewColumnMeta != null) {
-                //check if the column number of view is same as the selectList in selectStatement
-                if (viewColumnMeta.size() != selNode.getColumnsSelected().size()) {
-                    //return error
-                    throw new Exception("The Column_list Size and Select_statement Size Not Match");
-                }
-                for (int i = 0; i < viewColumnMeta.size(); i++) {
-                    selNode.getColumnsSelected().get(i).setAlias(viewColumnMeta.get(i).trim());
-                }
-            } else {
-                List<Item> selectList = selNode.getColumnsSelected();
-                Set<String> tempMap = new HashSet<String>();
-                for (Item t : selectList) {
-                    if (tempMap.contains(t.getItemName())) {
-                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
-                    }
-                    tempMap.add(t.getItemName());
-                }
-            }
+            this.setFieldsAlias(selNode);
 
             viewQuery = new QueryNode(selNode);
         } catch (Exception e) {
             //the select part sql is wrong & report the error
             ErrorPacket error = new ErrorPacket();
-            error.setMessage(e.getMessage().getBytes(StandardCharsets.UTF_8));
+            error.setMessage(e.getMessage() == null ? "unknow error".getBytes(StandardCharsets.UTF_8) :
+                    e.getMessage().getBytes(StandardCharsets.UTF_8));
             error.setErrNo(CREATE_VIEW_ERROR);
             return error;
         }
         return null;
+    }
+
+    public ErrorPacket initAndSet(boolean isReplace) {
+
+        //check the create sql is legal
+        //parse sql into three parts
+        ViewMetaParser viewParser = new ViewMetaParser(createSql);
+        viewParser.parseCreateView(this);
+
+        try {
+            DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
+
+            //check if the select part has
+            this.checkDuplicate(viewParser, isReplace);
+
+            SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
+
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
+
+            msv.visit(selectStatement.getSelect().getQuery());
+            PlanNode selNode = msv.getTableNode();
+            selNode.setUpFields();
+
+            //set the view column name into
+            this.setFieldsAlias(selNode);
+
+            viewQuery = new QueryNode(selNode);
+
+            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().put(viewName, this);
+        } catch (Exception e) {
+            //the select part sql is wrong & report the error
+            ErrorPacket error = new ErrorPacket();
+            error.setMessage(e.getMessage() == null ? "unknow error".getBytes(StandardCharsets.UTF_8) :
+                    e.getMessage().getBytes(StandardCharsets.UTF_8));
+            error.setErrNo(CREATE_VIEW_ERROR);
+            return error;
+        } finally {
+            DbleServer.getInstance().getTmManager().removeMetaLock(schema, viewName);
+        }
+        return null;
+    }
+
+
+    private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
+
+        QueryNode viewNode = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getView(viewName);
+        //.getSyncView(schema,viewName);
+        StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(viewName);
+        //if the alter table
+        if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
+            if (viewNode == null) {
+                throw new Exception("Table '" + viewName + "' doesn't exist");
+            }
+        }
+
+        if (viewColumnMeta != null) {
+            Set<String> tempMap = new HashSet<String>();
+            for (String t : viewColumnMeta) {
+                if (tempMap.contains(t.trim())) {
+                    throw new Exception("Duplicate column name '" + t + "'");
+                }
+                tempMap.add(t.trim());
+            }
+        }
+
+        // if the table with same name exists
+        if (tableMeta != null) {
+            throw new Exception("Table '" + viewName + "' already exists");
+        }
+
+        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW) {
+            // if the sql without replace & the view exists
+            if (viewNode != null) {
+                // return error because the view is exists
+                throw new Exception("Table '" + viewName + "' already exists");
+            }
+        }
+    }
+
+
+    private void setFieldsAlias(PlanNode selNode) throws Exception {
+        if (viewColumnMeta != null) {
+            //check if the column number of view is same as the selectList in selectStatement
+            if (viewColumnMeta.size() != selNode.getColumnsSelected().size()) {
+                //return error
+                throw new Exception("The Column_list Size and Select_statement Size Not Match");
+            }
+            for (int i = 0; i < viewColumnMeta.size(); i++) {
+                selNode.getColumnsSelected().get(i).setAlias(viewColumnMeta.get(i).trim());
+            }
+        } else {
+            List<Item> selectList = selNode.getColumnsSelected();
+            Set<String> tempMap = new HashSet<String>();
+            for (Item t : selectList) {
+                if (tempMap.contains(t.getItemName())) {
+                    throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                }
+                tempMap.add(t.getItemName());
+            }
+        }
     }
 
 

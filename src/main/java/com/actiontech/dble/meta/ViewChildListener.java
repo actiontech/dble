@@ -43,12 +43,19 @@ public class ViewChildListener implements PathChildrenCacheListener {
      *
      * @param childData
      */
-    private void deleteNode(ChildData childData) {
+    private void deleteNode(ChildData childData) throws Exception {
         String path = childData.getPath();
         String[] paths = path.split("/");
         String schema = paths[paths.length - 1].split(":")[0];
         String viewName = paths[paths.length - 1].split(":")[1];
-        DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
+
+        DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
+        try {
+            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
+        } finally {
+            DbleServer.getInstance().getTmManager().removeMetaLock(schema, viewName);
+        }
+
     }
 
 
@@ -68,12 +75,10 @@ public class ViewChildListener implements PathChildrenCacheListener {
         }
         String createSql = obj.getString(CREATE_SQL);
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
-        String viewName = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[1];
 
         ViewMeta vm = new ViewMeta(createSql, schema);
-        vm.init(isReplace);
-        //put the view object into viewMeta
-        DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().put(viewName, vm);
+        vm.initAndSet(isReplace);
+
     }
 
 

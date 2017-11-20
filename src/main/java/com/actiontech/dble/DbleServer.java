@@ -494,12 +494,12 @@ public final class DbleServer {
 
     public void reloadMetaData(ServerConfig conf) {
         for (; ; ) {
-            if (tmManager.getDdlCount() > 0) {
+            if (tmManager.getMetaCount() > 0) {
                 continue;
             }
             metaLock.writeLock().lock();
             try {
-                if (tmManager.getDdlCount() > 0) {
+                if (tmManager.getMetaCount() > 0) {
                     continue;
                 }
                 tmManager.terminate();

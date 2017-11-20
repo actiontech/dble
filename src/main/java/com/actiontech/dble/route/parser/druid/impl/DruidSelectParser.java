@@ -102,8 +102,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
 
-                if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema.getName()).
-                        getView(schemaInfo.getTable()) != null) {
+                if (DbleServer.getInstance().getTmManager().getSyncView(schema.getName(), schemaInfo.getTable()) != null) {
                     rrs.setNeedOptimizer(true);
                     rrs.setSqlStatement(selectStmt);
                     return schema;

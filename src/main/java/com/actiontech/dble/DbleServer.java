@@ -494,12 +494,12 @@ public final class DbleServer {
 
     public void reloadMetaData(ServerConfig conf) {
         for (; ; ) {
-            if (tmManager.getDdlCount() > 0) {
+            if (tmManager.getMetaCount() > 0) {
                 continue;
             }
             metaLock.writeLock().lock();
             try {
-                if (tmManager.getDdlCount() > 0) {
+                if (tmManager.getMetaCount() > 0) {
                     continue;
                 }
                 tmManager.terminate();
@@ -947,6 +947,14 @@ public final class DbleServer {
                             SQLJob sqlJob = new SQLJob(xaCmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
                             sqlJob.run();
                             LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
+
+                            //reset xaCmd
+                            xaCmd.setLength(0);
+                            if (needCommit) {
+                                xaCmd.append("XA COMMIT ");
+                            } else {
+                                xaCmd.append("XA ROLLBACK ");
+                            }
                             break outLoop;
                         }
                     }

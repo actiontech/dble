@@ -20,6 +20,7 @@ import com.actiontech.dble.meta.table.MetaHelper;
 import com.actiontech.dble.meta.table.MetaHelper.IndexType;
 import com.actiontech.dble.meta.table.SchemaMetaHandler;
 import com.actiontech.dble.meta.table.TableMetaCheckHandler;
+import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.util.KVPathUtil;
@@ -61,28 +62,28 @@ public class ProxyMetaManager {
     private Condition condRelease = metaLock.newCondition();
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
-    private AtomicInteger ddlCount = new AtomicInteger(0);
+    private AtomicInteger metaCount = new AtomicInteger(0);
 
 
     private Reposoitory reposoitory = null;
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
-        this.lockTables = new HashSet<>();
+        this.lockTables = new HashSet<String>();
     }
 
     private String genLockKey(String schema, String tbName) {
         return schema + "." + tbName;
     }
 
-    public int getDdlCount() {
-        return ddlCount.get();
+    public int getMetaCount() {
+        return metaCount.get();
     }
 
     public void addMetaLock(String schema, String tbName) throws InterruptedException {
         metaLock.lock();
         try {
-            ddlCount.incrementAndGet();
+            metaCount.incrementAndGet();
             String lockKey = genLockKey(schema, tbName);
             while (lockTables.contains(lockKey)) {
                 condRelease.await();
@@ -107,7 +108,7 @@ public class ProxyMetaManager {
         metaLock.lock();
         try {
             lockTables.remove(genLockKey(schema, tbName));
-            ddlCount.decrementAndGet();
+            metaCount.decrementAndGet();
             condRelease.signalAll();
         } finally {
             metaLock.unlock();
@@ -191,6 +192,25 @@ public class ProxyMetaManager {
                     condRelease.await();
                 } else {
                     return getTableMeta(schema, tbName);
+                }
+            } catch (InterruptedException e) {
+                return null;
+            } finally {
+                metaLock.unlock();
+            }
+        }
+    }
+
+
+    public QueryNode getSyncView(String schema, String vName) {
+        while (true) {
+            metaLock.lock();
+            try {
+                if (lockTables.contains(genLockKey(schema, vName))) {
+                    LOGGER.warn("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
+                    condRelease.await();
+                } else {
+                    return catalogs.get(schema).getView(vName);
                 }
             } catch (InterruptedException e) {
                 return null;

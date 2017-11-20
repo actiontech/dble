@@ -60,6 +60,7 @@ public class ServerConnection extends FrontendConnection {
     private volatile boolean isLocked = false;
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
+
     public long getAndIncrementXid() {
         return txID.getAndIncrement();
     }
@@ -215,6 +216,7 @@ public class ServerConnection extends FrontendConnection {
             }
         }
     }
+
     @Override
     public void ping() {
         Ping.response(this);
@@ -307,6 +309,12 @@ public class ServerConnection extends FrontendConnection {
             }
             if (rrs.getSqlType() == ServerParse.DDL) {
                 addTableMetaLock(rrs);
+                if (DbleServer.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
+                    DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+                    String msg = "Table '" + rrs.getTable() + "' already exists as a view";
+                    LOGGER.warn(msg);
+                    throw new SQLNonTransientException(msg);
+                }
             }
         } catch (Exception e) {
             executeException(e, sql);
@@ -446,12 +454,10 @@ public class ServerConnection extends FrontendConnection {
     }
 
 
-
-
     @Override
     public void killAndClose(String reason) {
         if (session.getSource().isTxStart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
-                  session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
             //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);
         } else {

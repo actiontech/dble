@@ -17,14 +17,12 @@ public final class CreateViewHandler {
     public static void handle(String stmt, ServerConnection c, boolean isReplace) {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(stmt, c.getSchema());
-        ErrorPacket error = vm.init(isReplace);
+        ErrorPacket error = vm.initAndSet(isReplace);
         if (error != null) {
             //if any error occurs when parse sql into view object
             c.writeErrMessage(error.getErrNo(), new String(error.getMessage()));
             return;
         }
-        //put the view object into viewMeta
-        DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().put(vm.getViewName(), vm);
 
         //or just save the create sql into file
         saveCreateSqlToReposoitory(stmt, vm.getViewName(), c.getSchema());

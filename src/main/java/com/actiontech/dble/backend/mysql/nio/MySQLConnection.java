@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -151,6 +152,7 @@ public class MySQLConnection extends BackendAIOConnection {
         this.usrVariables.clear();
         this.sysVariables.clear();
     }
+
     public void setRunning(boolean running) {
         isRunning = running;
     }
@@ -429,7 +431,7 @@ public class MySQLConnection extends BackendAIOConnection {
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
-                Long.parseLong(value);
+                BigDecimal vl = new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";
             }
@@ -463,6 +465,7 @@ public class MySQLConnection extends BackendAIOConnection {
         sb.append(";");
         return sb.toString();
     }
+
     private static CommandPacket getChangeSchemaCommand(String schema) {
         CommandPacket cmd = new CommandPacket();
         cmd.setPacketId(0);
@@ -473,7 +476,6 @@ public class MySQLConnection extends BackendAIOConnection {
 
     /**
      * by wuzh ,execute a query and ignore transaction settings for performance
-     *
      */
     public void query(String query) {
         RouteResultsetNode rrn = new RouteResultsetNode("default",

@@ -21,7 +21,6 @@ import com.actiontech.dble.server.response.ShowCreateStmtInfo;
 import com.actiontech.dble.server.response.ShowTables;
 import com.actiontech.dble.util.StringUtil;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

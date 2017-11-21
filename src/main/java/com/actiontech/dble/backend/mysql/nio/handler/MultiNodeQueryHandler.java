@@ -63,19 +63,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private long startTime;
     private long netInBytes;
     private long netOutBytes;
-    protected volatile boolean terminated;
     private boolean prepared;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private ErrorPacket err;
     private List<BackendConnection> errConnection;
     private volatile ByteBuffer byteBuffer;
+
     public MultiNodeQueryHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("execute mutinode query " + rrs.getStatement());
+            LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
         int isOffHeapUseOffHeapForMerge = DbleServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
@@ -94,9 +94,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
         this.lock = new ReentrantLock();
-        if ((dataMergeSvr != null) && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("has data merge logic ");
-        }
     }
 
     private void recycleResources() {
@@ -106,11 +103,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             byteBuffer = null;
         }
     }
+
     protected void reset(int initCount) {
         super.reset(initCount);
         this.netInBytes = 0;
         this.netOutBytes = 0;
-        this.terminated = false;
     }
 
     public NonBlockingSession getSession() {
@@ -161,25 +158,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
-    private void handleDdl() {
-        if (rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
-            return;
-        }
-
-        StringBuilder s = new StringBuilder();
-        s.append(rrs.toString());
-
-        s.append(", failed={");
-        for (int i = 0; i < errConnection.size(); i++) {
-            BackendConnection conn = errConnection.get(i);
-            s.append("\n ").append(FormatUtil.format(i + 1, 3));
-            s.append(" -> ").append(conn.compactInfo());
-        }
-        s.append("\n}");
-
-        LOGGER.warn(s.toString());
-    }
-
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("backend connect" + reason);
@@ -188,24 +166,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
-        lock.lock();
-        try {
-            if (!terminated) {
-                terminated = true;
-            }
-            if (errConnection == null) {
-                errConnection = new ArrayList<>();
-            }
-            errConnection.add(conn);
-            if (--nodeCount <= 0) {
-                handleDdl();
-                session.handleSpecial(rrs, session.getSource().getSchema(), false);
-                recycleResources();
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-            }
-        } finally {
-            lock.unlock();
-        }
+        executeError(conn);
     }
 
     @Override
@@ -216,24 +177,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
-        lock.lock();
-        try {
-            if (!terminated) {
-                terminated = true;
-            }
-            if (errConnection == null) {
-                errConnection = new ArrayList<>();
-            }
-            errConnection.add(conn);
-            if (--nodeCount <= 0) {
-                handleDdl();
-                session.handleSpecial(rrs, session.getSource().getSchema(), false);
-                recycleResources();
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-            }
-        } finally {
-            lock.unlock();
-        }
+        executeError(conn);
     }
 
     @Override
@@ -242,7 +186,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         session.bindConnection(node, conn);
         innerExecute(conn, node);
     }
-
 
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
@@ -255,12 +198,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (!isFail()) {
                 setFail(new String(err.getMessage()));
             }
-            if (--nodeCount > 0)
+            if (!conn.syncAndExecute()) {
                 return;
-            handleDdl();
-            session.handleSpecial(rrs, session.getSource().getSchema(), false);
-            recycleResources();
-            handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
+            if (--nodeCount <= 0) {
+                handleDdl();
+                session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                recycleResources();
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
         } finally {
             lock.unlock();
         }
@@ -291,7 +237,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 if (--nodeCount > 0)
                     return;
-                if (isFail() || terminated) {
+                if (isFail()) {
                     session.handleSpecial(rrs, source.getSchema(), false);
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
                     return;
@@ -320,9 +266,38 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
+                                 boolean isLeft, BackendConnection conn) {
+        this.netOutBytes += header.length;
+        this.netOutBytes += eof.length;
+        for (byte[] field : fields) {
+            this.netOutBytes += field.length;
+        }
+        if (fieldsReturned) {
+            return;
+        }
+        lock.lock();
+        try {
+            if (fieldsReturned) {
+                return;
+            }
+            fieldsReturned = true;
+            if (dataMergeSvr != null) {
+                mergeFieldEof(fields, eof);
+            } else {
+                executeFieldEof(header, fields, eof);
+            }
+        } catch (Exception e) {
+            handleDataProcessException(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("on row end reseponse " + conn);
+            LOGGER.debug("on row end response " + conn);
         }
 
         this.netOutBytes += eof.length;
@@ -355,6 +330,130 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             doSqlStat(source);
         }
 
+    }
+
+    @Override
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
+        if (errorResponse.get()) {
+            // the connection has been closed or set to "txInterrupt" properly
+            //in tryErrorFinished() method! If we close it here, it can
+            // lead to tx error such as blocking rollback tx for ever.
+            // @author Uncle-pan
+            // @since 2016-03-25
+            //conn.close(error);
+            return true;
+        }
+        lock.lock();
+        try {
+            this.selectRows++;
+            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            String dataNode = rNode.getName();
+            if (dataMergeSvr != null) {
+                // even through discarding the all rest data, we can't
+                //close the connection for tx control such as rollback or commit.
+                // So the "isClosedByDiscard" variable is unnecessary.
+                // @author Uncle-pan
+                // @since 2016-03-25
+                dataMergeSvr.onNewRecord(dataNode, row);
+            } else {
+                if (rrs.getLimitSize() >= 0) {
+                    if (selectRows <= rrs.getLimitStart()) {
+                        return false;
+                    } else if (selectRows > (rrs.getLimitStart() < 0 ? 0 : rrs.getLimitStart()) + rrs.getLimitSize()) {
+                        return false;
+                    }
+                }
+                RowDataPacket rowDataPkg = null;
+                // cache primaryKey-> dataNode
+                if (primaryKeyIndex != -1) {
+                    rowDataPkg = new RowDataPacket(fieldCount);
+                    rowDataPkg.read(row);
+                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
+                    LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
+                    if (pool != null) {
+                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                    }
+                }
+                row[3] = ++packetId;
+                if (prepared) {
+                    if (rowDataPkg == null) {
+                        rowDataPkg = new RowDataPacket(fieldCount);
+                        rowDataPkg.read(row);
+                    }
+                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                    binRowDataPk.read(fieldPackets, rowDataPkg);
+                    binRowDataPk.write(byteBuffer, session.getSource(), true);
+                } else {
+                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                }
+            }
+        } catch (Exception e) {
+            handleDataProcessException(e);
+        } finally {
+            lock.unlock();
+        }
+        return false;
+    }
+
+    @Override
+    public void clearResources() {
+        lock.lock();
+        try {
+            if (dataMergeSvr != null) {
+                dataMergeSvr.clear();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void writeQueueAvailable() {
+    }
+
+    @Override
+    public void requestDataResponse(byte[] data, BackendConnection conn) {
+        LoadDataUtil.requestFileDataResponse(data, conn);
+    }
+
+    private void handleDdl() {
+        if (rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
+            return;
+        }
+
+        StringBuilder s = new StringBuilder();
+        s.append(rrs.toString());
+
+        s.append(", failed={");
+        for (int i = 0; i < errConnection.size(); i++) {
+            BackendConnection conn = errConnection.get(i);
+            s.append("\n ").append(FormatUtil.format(i + 1, 3));
+            s.append(" -> ").append(conn.compactInfo());
+        }
+        s.append("\n}");
+
+        LOGGER.warn(s.toString());
+    }
+
+    private void executeError(BackendConnection conn) {
+        lock.lock();
+        try {
+            if (!isFail()) {
+                setFail(new String(err.getMessage()));
+            }
+            if (errConnection == null) {
+                errConnection = new ArrayList<>();
+            }
+            errConnection.add(conn);
+            if (--nodeCount <= 0) {
+                handleDdl();
+                session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                recycleResources();
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
@@ -396,8 +495,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     /**
      * send the final result to the client
      *
-     * @param source ServerConnection
-     * @param eof eof bytes
+     * @param source   ServerConnection
+     * @param eof      eof bytes
      * @param iterator Iterator
      */
     public void outputMergeResult(final ServerConnection source, final byte[] eof, Iterator<UnsafeRow> iterator) {
@@ -518,34 +617,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
-    @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
-        this.netOutBytes += header.length;
-        this.netOutBytes += eof.length;
-        for (byte[] field : fields) {
-            this.netOutBytes += field.length;
-        }
-        if (fieldsReturned) {
-            return;
-        }
-        lock.lock();
-        try {
-            if (fieldsReturned) {
-                return;
-            }
-            fieldsReturned = true;
-            if (dataMergeSvr != null) {
-                mergeFieldEof(fields, eof);
-            } else {
-                executeFieldEof(header, fields, eof);
-            }
-        } catch (Exception e) {
-            handleDataProcessException(e);
-        } finally {
-            lock.unlock();
-        }
-    }
 
     private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
         ServerConnection source = session.getSource();
@@ -635,90 +706,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             setFail(e.toString());
             this.tryErrorFinished(true);
         }
-    }
-
-    @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
-        if (errorResponse.get()) {
-            // the connection has been closed or set to "txInterrupt" properly
-            //in tryErrorFinished() method! If we close it here, it can
-            // lead to tx error such as blocking rollback tx for ever.
-            // @author Uncle-pan
-            // @since 2016-03-25
-            //conn.close(error);
-            return true;
-        }
-        lock.lock();
-        try {
-            this.selectRows++;
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-            String dataNode = rNode.getName();
-            if (dataMergeSvr != null) {
-                // even through discarding the all rest data, we can't
-                //close the connection for tx control such as rollback or commit.
-                // So the "isClosedByDiscard" variable is unnecessary.
-                // @author Uncle-pan
-                // @since 2016-03-25
-                dataMergeSvr.onNewRecord(dataNode, row);
-            } else {
-                if (rrs.getLimitSize() >= 0) {
-                    if (selectRows <= rrs.getLimitStart()) {
-                        return false;
-                    } else if (selectRows > (rrs.getLimitStart() < 0 ? 0 : rrs.getLimitStart()) + rrs.getLimitSize()) {
-                        return false;
-                    }
-                }
-                RowDataPacket rowDataPkg = null;
-                // cache primaryKey-> dataNode
-                if (primaryKeyIndex != -1) {
-                    rowDataPkg = new RowDataPacket(fieldCount);
-                    rowDataPkg.read(row);
-                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
-                    LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-                    if (pool != null) {
-                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
-                    }
-                }
-                row[3] = ++packetId;
-                if (prepared) {
-                    if (rowDataPkg == null) {
-                        rowDataPkg = new RowDataPacket(fieldCount);
-                        rowDataPkg.read(row);
-                    }
-                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                    binRowDataPk.read(fieldPackets, rowDataPkg);
-                    binRowDataPk.write(byteBuffer, session.getSource(), true);
-                } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
-                }
-            }
-        } catch (Exception e) {
-            handleDataProcessException(e);
-        } finally {
-            lock.unlock();
-        }
-        return false;
-    }
-
-    @Override
-    public void clearResources() {
-        lock.lock();
-        try {
-            if (dataMergeSvr != null) {
-                dataMergeSvr.clear();
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
-    public void requestDataResponse(byte[] data, BackendConnection conn) {
-        LoadDataUtil.requestFileDataResponse(data, conn);
     }
 
     public void setPrepared(boolean prepared) {

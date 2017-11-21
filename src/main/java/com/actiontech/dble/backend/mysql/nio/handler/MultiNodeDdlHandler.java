@@ -25,7 +25,6 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,10 +43,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     private final ReentrantLock lock;
 
-    protected volatile boolean terminated;
-
     private ErrorPacket err;
-    private List<BackendConnection> errConnection;
+    private volatile boolean errConn = false;
 
     public MultiNodeDdlHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -67,11 +64,12 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.handler = new MultiNodeQueryHandler(sqlType, rrs, session);
 
         this.lock = new ReentrantLock();
+        this.errConn = false;
     }
 
     protected void reset(int initCount) {
         super.reset(initCount);
-        this.terminated = false;
+        this.errConn = false;
     }
 
     public NonBlockingSession getSession() {
@@ -91,7 +89,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         StringBuilder sb = new StringBuilder();
         for (final RouteResultsetNode node : rrs.getNodes()) {
             if (node.isModifySQL()) {
-                sb.append("[" + node.getName() + "]" + node.getStatement()).append(";\n");
+                sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
             }
         }
         if (sb.length() > 0) {
@@ -129,15 +127,16 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
 
+        executeConnError(conn);
+    }
+
+    private void executeConnError(BackendConnection conn) {
         lock.lock();
         try {
-            if (!terminated) {
-                terminated = true;
+            if (!isFail()) {
+                setFail(new String(err.getMessage()));
             }
-            if (errConnection == null) {
-                errConnection = new ArrayList<>();
-            }
-            errConnection.add(conn);
+            errConn = true;
             if (!conn.syncAndExecute()) {
                 return;
             }
@@ -158,24 +157,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
 
-        lock.lock();
-        try {
-            if (!terminated) {
-                terminated = true;
-            }
-            if (errConnection == null) {
-                errConnection = new ArrayList<>();
-            }
-            errConnection.add(conn);
-            if (!conn.syncAndExecute()) {
-                return;
-            }
-            if (--nodeCount <= 0) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
-            }
-        } finally {
-            lock.unlock();
-        }
+        executeConnError(conn);
     }
 
     @Override
@@ -241,7 +223,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             if (--nodeCount > 0)
                 return;
 
-            if (errConnection == null) {
+            if (errConn) {
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            } else {
                 try {
                     if (session.isPrepared()) {
                         handler.setPrepared(true);
@@ -254,8 +238,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 if (session.isPrepared()) {
                     session.setPrepared(false);
                 }
-            } else {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             }
         } finally {
             lock.unlock();
@@ -282,7 +264,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
 
-    protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
+    private void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
         ServerConnection source = session.getSource();
         boolean inTransaction = !source.isAutocommit() || source.isTxStart();
         if (!inTransaction) {

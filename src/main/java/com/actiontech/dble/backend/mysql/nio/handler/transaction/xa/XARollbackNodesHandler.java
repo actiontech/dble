@@ -146,7 +146,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             String xaTxId = mysqlCon.getConnXID(session);
             mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
 
-        } else if (mysqlCon.getXaStatus() == TxState.TX_ROLLBACKED_STATE) {
+        } else if (mysqlCon.getXaStatus() == TxState.TX_CONN_QUIT || mysqlCon.getXaStatus() == TxState.TX_ROLLBACKED_STATE) {
             if (decrementCountBy(1)) {
                 cleanAndFeedback();
             }
@@ -312,7 +312,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.quit();
-                mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
+                mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     session.setXaState(TxState.TX_ENDED_STATE);
@@ -322,7 +322,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 // 'xa rollback' ok without prepared
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.quit();
-                mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
+                mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
                     session.setXaState(TxState.TX_INITIALIZE_STATE);

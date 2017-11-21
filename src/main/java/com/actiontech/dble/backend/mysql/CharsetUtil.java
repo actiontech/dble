@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -346,10 +347,10 @@ public final class CharsetUtil {
 
     public static String getJavaCharset(String charset) {
         if (charset == null || charset.length() == 0)
-            return "UTF-8";
+            return StandardCharsets.UTF_8.toString();
         String javaCharset = CHARSET_TO_JAVA.get(charset);
         if (javaCharset == null)
-            return "UTF-8";
+            return StandardCharsets.UTF_8.toString();
         return javaCharset;
     }
 

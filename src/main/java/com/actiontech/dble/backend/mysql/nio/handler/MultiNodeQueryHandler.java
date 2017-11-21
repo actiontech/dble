@@ -180,7 +180,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         err = errPacket;
         executeError(conn);
     }
-
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();

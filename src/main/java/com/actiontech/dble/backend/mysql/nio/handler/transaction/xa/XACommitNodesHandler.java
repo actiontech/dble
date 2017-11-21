@@ -382,8 +382,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     public void waitUntilSendFinish() {
+        this.lockForErrorHandle.lock();
         try {
-            this.lockForErrorHandle.lock();
             if (!this.sendFinishedFlag) {
                 this.sendFinished.await();
             }

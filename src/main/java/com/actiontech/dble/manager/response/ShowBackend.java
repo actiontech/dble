@@ -32,7 +32,7 @@ public final class ShowBackend {
     private ShowBackend() {
     }
 
-    private static final int FIELD_COUNT = 20;
+    private static final int FIELD_COUNT = 21;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -82,6 +82,8 @@ public final class ShowBackend {
         FIELDS[i] = PacketUtil.getField("SYS_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("USER_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("XA_STATUS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -138,6 +140,7 @@ public final class ShowBackend {
         row.add((conn.isAutocommit() + "").getBytes());
         row.add(StringUtil.encode(conn.getStringOfSysVariables(), charset));
         row.add(StringUtil.encode(conn.getStringOfUsrVariables(), charset));
+        row.add(StringUtil.encode(conn.getXaStatus().toString(), charset));
         return row;
     }
 }

@@ -68,7 +68,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private ErrorPacket err;
     private List<BackendConnection> errConnection;
-
+    private volatile ByteBuffer byteBuffer;
     public MultiNodeQueryHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
@@ -87,6 +87,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
         } else {
             dataMergeSvr = null;
+            if (ServerParse.SELECT == sqlType) {
+                byteBuffer = session.getSource().allocate();
+            }
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
@@ -96,6 +99,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
+    private void recycleResources() {
+        ByteBuffer buf = byteBuffer;
+        if (buf != null) {
+            session.getSource().recycle(byteBuffer);
+            byteBuffer = null;
+        }
+    }
     protected void reset(int initCount) {
         super.reset(initCount);
         this.netInBytes = 0;
@@ -190,6 +200,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (--nodeCount <= 0) {
                 handleDdl();
                 session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                recycleResources();
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             }
         } finally {
@@ -217,6 +228,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (--nodeCount <= 0) {
                 handleDdl();
                 session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                recycleResources();
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             }
         } finally {
@@ -247,6 +259,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 return;
             handleDdl();
             session.handleSpecial(rrs, session.getSource().getSchema(), false);
+            recycleResources();
             handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
         } finally {
             lock.unlock();
@@ -359,7 +372,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("last packet id:" + packetId);
                 }
-                source.write(eof);
+                byteBuffer = source.writeToBuffer(eof, byteBuffer);
+                source.write(byteBuffer);
             } finally {
                 lock.unlock();
             }
@@ -535,10 +549,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
         ServerConnection source = session.getSource();
-        ByteBuffer buffer = source.allocate();
         fieldCount = fields.size();
         header[3] = ++packetId;
-        buffer = source.writeToBuffer(header, buffer);
+        byteBuffer = source.writeToBuffer(header, byteBuffer);
         String primaryKey = null;
         if (rrs.hasPrimaryKeyToCache()) {
             String[] items = rrs.getPrimaryKeyItems();
@@ -569,11 +582,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             fieldPkg.setPacketId(++packetId);
-            buffer = fieldPkg.write(buffer, source, false);
+            byteBuffer = fieldPkg.write(byteBuffer, source, false);
         }
         eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, buffer);
-        source.write(buffer);
+        byteBuffer = source.writeToBuffer(eof, byteBuffer);
     }
 
     private void mergeFieldEof(List<byte[]> fields, byte[] eof) throws IOException {
@@ -675,9 +687,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
-                    binRowDataPk.write(session.getSource());
+                    binRowDataPk.write(byteBuffer, session.getSource(), true);
                 } else {
-                    session.getSource().write(row);
+                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
                 }
             }
         } catch (Exception e) {

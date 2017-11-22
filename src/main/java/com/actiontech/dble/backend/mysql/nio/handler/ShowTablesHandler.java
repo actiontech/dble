@@ -51,7 +51,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         ServerConnection source = session.getSource();
-        ByteBuffer buffer = session.getSource().allocate();
+        buffer = allocBuffer();
         if (info.isFull()) {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             packetId = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
@@ -67,7 +67,6 @@ public class ShowTablesHandler extends SingleNodeHandler {
         } else {
             packetId = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
         }
-        source.write(buffer);
     }
 
     @Override

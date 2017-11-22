@@ -7,7 +7,6 @@ package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.util.ToStringUtil;
 
 import java.util.Collections;

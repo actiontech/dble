@@ -53,8 +53,8 @@ public class AggregatorDistinct extends Aggregator {
         // TODO see item_sum.cc for more
         FieldPacket tmp = new FieldPacket();
         itemSum.getArg(0).makeField(tmp);
-        field = Field.getFieldItem(tmp.getName(), tmp.getTable(), tmp.getType(), tmp.getCharsetIndex(), (int) tmp.getLength(), tmp.getDecimals(),
-                tmp.getFlags());
+        field = Field.getFieldItem(tmp.getName(), tmp.getDb(), tmp.getTable(), tmp.getOrgTable(), tmp.getType(),
+                tmp.getCharsetIndex(), (int) tmp.getLength(), tmp.getDecimals(), tmp.getFlags());
         return false;
     }
 

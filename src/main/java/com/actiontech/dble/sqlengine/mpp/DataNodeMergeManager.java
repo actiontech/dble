@@ -25,12 +25,13 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.util.StringUtil;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -40,11 +41,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
     private static final Logger LOGGER = Logger.getLogger(DataNodeMergeManager.class);
 
-
-    /**
-     * global sorter
-     */
-    private UnsafeExternalRowSorter globalSorter = null;
     /**
      * UnsafeRowGrouper
      */
@@ -77,131 +73,27 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
             LOGGER.debug("field metadata keys:" + columnToIndex.keySet());
             LOGGER.debug("field metadata values:" + columnToIndex.values());
         }
-
-        OrderCol[] orderCols = null;
-        StructType schema = null;
-        UnsafeExternalRowSorter.PrefixComputer prefixComputer = null;
-        PrefixComparator prefixComparator = null;
-
-
-        DataNodeMemoryManager dataNodeMemoryManager = null;
-
         this.fieldCount = fieldSize;
-
-        if (rrs.getHavingCols() != null) {
-            ColMeta colMeta = columnToIndex.get(rrs.getHavingCols().getLeft().toUpperCase());
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("getHavingCols:" + rrs.getHavingCols().toString());
+        String[] groupByCols = rrs.getGroupByCols();
+        unsafeRowGrouper = new UnsafeRowGrouper(columnToIndex, groupByCols);
+        // 1.schema
+        StructType schema = new StructType(columnToIndex, fieldSize);
+        if (groupByCols != null) {
+            OrderCol[] orderCols = new OrderCol[groupByCols.length];
+            for (int i = 0; i < groupByCols.length; i++) {
+                orderCols[i] = new OrderCol(columnToIndex.get(groupByCols[i].toUpperCase()));
             }
-            if (colMeta != null) {
-                rrs.getHavingCols().setColMeta(colMeta);
-            }
-        }
-
-        if (rrs.isHasAggrColumn()) {
-            List<MergeCol> mergeCols = new LinkedList<>();
-            Map<String, Integer> mergeColsMap = rrs.getMergeCols();
-
-            if (mergeColsMap != null) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("isHasAggrColumn:" + mergeColsMap.toString());
-                }
-                for (Map.Entry<String, Integer> mergeEntry : mergeColsMap.entrySet()) {
-                    String colName = mergeEntry.getKey().toUpperCase();
-                    int type = mergeEntry.getValue();
-                    if (MergeCol.MERGE_AVG == type) {
-                        ColMeta sumColMeta = columnToIndex.get(colName + "SUM");
-                        ColMeta countColMeta = columnToIndex.get(colName + "COUNT");
-                        if (sumColMeta != null && countColMeta != null) {
-                            ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
-                                    countColMeta.getColIndex(),
-                                    sumColMeta.getColType());
-                            mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
-                        }
-                    } else {
-                        ColMeta colMeta = columnToIndex.get(colName);
-                        mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
-                    }
-                }
-            }
-
-            // add no alias merg column
-            for (Map.Entry<String, ColMeta> fieldEntry : columnToIndex.entrySet()) {
-                String colName = fieldEntry.getKey();
-                int result = MergeCol.tryParseAggCol(colName);
-                if (result != MergeCol.MERGE_UNSUPPORT && result != MergeCol.MERGE_NOMERGE) {
-                    mergeCols.add(new MergeCol(fieldEntry.getValue(), result));
-                }
-            }
-
-            /**
-             * Group
-             */
-            unsafeRowGrouper = new UnsafeRowGrouper(columnToIndex, rrs.getGroupByCols(),
-                    mergeCols.toArray(new MergeCol[mergeCols.size()]),
-                    rrs.getHavingCols());
-        }
-
-
-        if (rrs.getOrderByCols() != null) {
-            LinkedHashMap<String, Integer> orders = rrs.getOrderByCols();
-            orderCols = new OrderCol[orders.size()];
-            int i = 0;
-            for (Map.Entry<String, Integer> entry : orders.entrySet()) {
-                String key = StringUtil.removeBackQuote(entry.getKey().toUpperCase());
-                ColMeta colMeta = columnToIndex.get(key);
-                if (colMeta == null) {
-                    throw new IllegalArgumentException(
-                            "all columns in order by clause should be in the selected column list!" + entry.getKey());
-                }
-                orderCols[i++] = new OrderCol(colMeta, entry.getValue());
-            }
-
-            schema = new StructType(columnToIndex, fieldSize);
             schema.setOrderCols(orderCols);
-
-            prefixComputer = new RowPrefixComputer(schema);
-
-            prefixComparator = getPrefixComparator(orderCols);
-
-            dataNodeMemoryManager =
-                    new DataNodeMemoryManager(memoryManager, Thread.currentThread().getId());
-
-            /**
-             * default sorter, just store the data in fact
-             */
-            globalSorter = new UnsafeExternalRowSorter(
-                    dataNodeMemoryManager,
-                    serverMemory,
-                    schema,
-                    prefixComparator, prefixComputer,
-                    conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
-                    false,
-                    true);
         }
+        //2 .PrefixComputer
+        UnsafeExternalRowSorter.PrefixComputer prefixComputer = new RowPrefixComputer(schema);
+
+        //3 .PrefixComparator ,ASC/DESC and the default is ASC
+
+        PrefixComparator prefixComparator = PrefixComparators.LONG;
 
 
-        /**
-         * 1.schema
-         */
-
-        schema = new StructType(columnToIndex, fieldSize);
-        schema.setOrderCols(orderCols);
-
-        /**
-         * 2 .PrefixComputer
-         */
-        prefixComputer = new RowPrefixComputer(schema);
-
-        /**
-         * 3 .PrefixComparator ,ASC/DESC and the default is ASC
-         */
-
-        prefixComparator = PrefixComparators.LONG;
-
-
-        dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
+        DataNodeMemoryManager dataNodeMemoryManager = new DataNodeMemoryManager(memoryManager,
                 Thread.currentThread().getId());
 
         globalMergeResult = new UnsafeExternalRowSorter(
@@ -212,52 +104,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 prefixComputer,
                 conf.getSizeAsBytes("server.buffer.pageSize", "1m"),
                 false,
-                false);
-    }
-
-    private PrefixComparator getPrefixComparator(OrderCol[] orderCols) {
-        PrefixComparator prefixComparator = null;
-        OrderCol firstOrderCol = orderCols[0];
-        int orderType = firstOrderCol.getOrderType();
-        int colType = firstOrderCol.colMeta.getColType();
-
-        switch (colType) {
-            case ColMeta.COL_TYPE_INT:
-            case ColMeta.COL_TYPE_LONG:
-            case ColMeta.COL_TYPE_INT24:
-            case ColMeta.COL_TYPE_SHORT:
-            case ColMeta.COL_TYPE_LONGLONG:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
-                        PrefixComparators.LONG : PrefixComparators.LONG_DESC);
-                break;
-            case ColMeta.COL_TYPE_FLOAT:
-            case ColMeta.COL_TYPE_DOUBLE:
-            case ColMeta.COL_TYPE_DECIMAL:
-            case ColMeta.COL_TYPE_NEWDECIMAL:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
-                        PrefixComparators.DOUBLE : PrefixComparators.DOUBLE_DESC);
-                break;
-            case ColMeta.COL_TYPE_DATE:
-            case ColMeta.COL_TYPE_TIMSTAMP:
-            case ColMeta.COL_TYPE_TIME:
-            case ColMeta.COL_TYPE_YEAR:
-            case ColMeta.COL_TYPE_DATETIME:
-            case ColMeta.COL_TYPE_NEWDATE:
-            case ColMeta.COL_TYPE_BIT:
-            case ColMeta.COL_TYPE_VAR_STRING:
-            case ColMeta.COL_TYPE_STRING:
-            case ColMeta.COL_TYPE_ENUM:
-            case ColMeta.COL_TYPE_SET:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
-                        PrefixComparators.BINARY : PrefixComparators.BINARY_DESC);
-                break;
-            default:
-                prefixComparator = (orderType == OrderCol.COL_ORDER_TYPE_ASC ?
-                        PrefixComparators.LONG : PrefixComparators.LONG_DESC);
-                break;
-        }
-
-        return prefixComparator;
+                true);
     }
 
     @Override
@@ -283,7 +130,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     break;
                 }
                 if (pack == endFlagPack) {
-                    /**
+                    /*
                      * if last date node send row eof packet
                      * means all the data have received
                      */
@@ -299,41 +146,20 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                     final byte[] array = eof.array();
 
 
-                    Iterator<UnsafeRow> iterator = null;
-
-
+                    Iterator<UnsafeRow> iterator;
                     if (unsafeRowGrouper != null) {
-                        /**
-                         * group by need order
-                         */
-                        if (globalSorter != null) {
-                            iterator = unsafeRowGrouper.getResult(globalSorter);
-                        } else {
-                            iterator = unsafeRowGrouper.getResult(globalMergeResult);
-                        }
-
-                    } else if (globalSorter != null) {
-
-                        iterator = globalSorter.sort();
-
+                        iterator = unsafeRowGrouper.getResult(globalMergeResult);
                     } else {
-
                         iterator = globalMergeResult.sort();
-
                     }
 
-                    if (iterator != null)
+                    if (iterator != null) {
                         multiQueryHandler.outputMergeResult(source, array, iterator);
-
+                    }
 
                     if (unsafeRowGrouper != null) {
                         unsafeRowGrouper.free();
                         unsafeRowGrouper = null;
-                    }
-
-                    if (globalSorter != null) {
-                        globalSorter.cleanupResources();
-                        globalSorter = null;
                     }
 
                     if (globalMergeResult != null) {
@@ -349,9 +175,7 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
                 UnsafeRowWriter unsafeRowWriter = new UnsafeRowWriter(bufferHolder, fieldCount);
                 bufferHolder.reset();
 
-                /**
-                 * make a row to filled col
-                 */
+                // make a row to filled col
                 MySQLMessage mm = new MySQLMessage(pack.getRowData());
                 mm.readUB3();
                 mm.read();
@@ -368,15 +192,9 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
 
                 if (unsafeRowGrouper != null) {
                     unsafeRowGrouper.addRow(unsafeRow);
-                } else if (globalSorter != null) {
-                    globalSorter.insertRow(unsafeRow);
                 } else {
                     globalMergeResult.insertRow(unsafeRow);
                 }
-
-                unsafeRow = null;
-                bufferHolder = null;
-                unsafeRowWriter = null;
             }
 
         } catch (final Exception e) {
@@ -397,11 +215,6 @@ public class DataNodeMergeManager extends AbstractDataNodeMerge {
         if (unsafeRowGrouper != null) {
             unsafeRowGrouper.free();
             unsafeRowGrouper = null;
-        }
-
-        if (globalSorter != null) {
-            globalSorter.cleanupResources();
-            globalSorter = null;
         }
 
         if (globalMergeResult != null) {

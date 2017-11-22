@@ -13,8 +13,8 @@ import com.actiontech.dble.plan.common.item.FieldTypes;
  */
 public class FieldYear extends FieldTiny {
 
-    public FieldYear(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldYear(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

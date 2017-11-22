@@ -13,7 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
@@ -55,11 +55,10 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needWhereHandler = false;
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             //TODO:
             RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
             this.needCommon = mergeBuilder.getNeedCommonFlag();
-            this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception!", e);

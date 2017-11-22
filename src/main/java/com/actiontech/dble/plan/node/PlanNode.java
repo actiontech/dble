@@ -3,9 +3,11 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.plan;
+package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.plan.NamedField;
+import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -13,8 +15,6 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.TableNode;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -27,16 +27,6 @@ import java.util.concurrent.ExecutionException;
 public abstract class PlanNode {
     private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
 
-    /**
-     * aggregate function list
-     */
-    public HashSet<ItemSum> getSumFuncs() {
-        return sumFuncs;
-    }
-
-    public void setSumFuncs(HashSet<ItemSum> sumFuncs) {
-        this.sumFuncs = sumFuncs;
-    }
 
     /**
      * select subQuery list
@@ -58,12 +48,12 @@ public abstract class PlanNode {
     /**
      * select columns
      */
-    protected List<Item> columnsSelected = new ArrayList<>();
+    List<Item> columnsSelected = new ArrayList<>();
 
     /**
      * orderBy,Notice:field order
      */
-    protected List<Order> orderBys = new LinkedList<>();
+    List<Order> orderBys = new LinkedList<>();
 
     /**
      * group By,Notice:field order
@@ -73,7 +63,7 @@ public abstract class PlanNode {
     /**
      * having condition
      */
-    protected Item havingFilter;
+    Item havingFilter;
     /**
      * parent node ,eg:subquery may use parent's info
      * TODO:NEED?
@@ -89,17 +79,17 @@ public abstract class PlanNode {
     /**
      * LIMIT FROM
      */
-    protected long limitFrom = -1;
+    private long limitFrom = -1;
 
     /**
      * LIMIT TO
      */
-    protected long limitTo = -1;
+    private long limitTo = -1;
 
     /**
      * filter in where
      */
-    protected Item whereFilter = null;
+    Item whereFilter = null;
 
     /**
      * alias for table node ,used for named subNode when join.
@@ -107,33 +97,27 @@ public abstract class PlanNode {
     protected String alias;
 
     /**
-     * subQuery's inside and outside all have alias,subAlias for inside,alias for outside
-     * eg: select * from (select* from test1 t1) t
-     */
-    protected String subAlias;
-
-    /**
      * is this node is subQuery
      */
-    protected boolean subQuery;
-    protected boolean correlatedSubQuery;
+    private boolean subQuery;
+    private boolean correlatedSubQuery;
 
-    protected boolean exsitView = false;
+    private boolean existView = false;
 
     private HashSet<ItemSum> sumFuncs = new HashSet<>();
 
     private List<ItemSubQuery> subQueries = new ArrayList<>();
 
-    protected List<TableNode> referedTableNodes = new ArrayList<>();
+    List<TableNode> referedTableNodes = new ArrayList<>();
 
     // inner field -> child field
-    protected Map<NamedField, NamedField> innerFields = new LinkedHashMap<>();
+    Map<NamedField, NamedField> innerFields = new LinkedHashMap<>();
 
-    protected Map<NamedField, Item> outerFields = new LinkedHashMap<>();
+    Map<NamedField, Item> outerFields = new LinkedHashMap<>();
 
-    protected NameResolutionContext nameContext;
+    NameResolutionContext nameContext;
 
-    protected ReferContext referContext;
+    private ReferContext referContext;
 
     protected PlanNode() {
         nameContext = new NameResolutionContext();
@@ -145,7 +129,7 @@ public abstract class PlanNode {
     /**
      * map :childnode->iselectable
      */
-    protected LoadingCache<PlanNode, List<Item>> columnsReferedCache = CacheBuilder.newBuilder().build(
+    private LoadingCache<PlanNode, List<Item>> columnsReferredCache = CacheBuilder.newBuilder().build(
             new CacheLoader<PlanNode, List<Item>>() {
                 @Override
                 public List<Item> load(PlanNode tn) {
@@ -165,24 +149,21 @@ public abstract class PlanNode {
      * QueryNode: true <-->subchild is true
      * JoinNode: all children has only one unglobal table at most
      */
-    protected Set<String> noshardNode = null;
+    private Set<String> noshardNode = null;
 
     // unGlobalTableCount for this node(contains children)
-    protected int unGlobalTableCount = 0;
+    int unGlobalTableCount = 0;
 
-    protected List<Item> nestLoopFilters = null;
+    private List<Item> nestLoopFilters = null;
 
     public abstract String getPureName();
 
     /* height of node */
     public abstract int getHeight();
 
-    public final String getCombinedName() {
+    final String getCombinedName() {
         if (this.getAlias() != null) {
             return this.getAlias();
-        }
-        if (this.getSubAlias() != null) {
-            return this.getSubAlias();
         }
         return this.getPureName();
     }
@@ -195,7 +176,9 @@ public abstract class PlanNode {
     }
 
     public void addChild(PlanNode childNode) {
-        childNode.setParent(this);
+        if (childNode != null) {
+            childNode.setParent(this);
+        }
         this.children.add(childNode);
     }
 
@@ -262,7 +245,7 @@ public abstract class PlanNode {
             setUpItemRefer(orderBy.getItem());
         }
         // make list
-        for (List<Item> selSet : columnsReferedCache.asMap().values()) {
+        for (List<Item> selSet : columnsReferredCache.asMap().values()) {
             columnsReferList.addAll(selSet);
         }
     }
@@ -273,7 +256,6 @@ public abstract class PlanNode {
 
     protected final void copySelfTo(PlanNode to) {
         to.setAlias(this.alias);
-        to.setSubAlias(this.subAlias);
         to.setDistinct(this.isDistinct);
         for (Item selected : this.getColumnsSelected()) {
             Item copySel = selected.cloneItem();
@@ -305,9 +287,6 @@ public abstract class PlanNode {
             child.setUpFields();
             for (NamedField coutField : child.outerFields.keySet()) {
                 tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
-                // view may has subAlias
-                if (subAlias != null && subAlias.length() != 0)
-                    tmpFieldTable = subAlias;
                 tmpFieldName = coutField.getName();
                 NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, coutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
@@ -315,13 +294,6 @@ public abstract class PlanNode {
                 innerFields.put(tmpField, coutField);
             }
         }
-        if (type() == PlanNodeType.JOIN) {
-            JoinNode jn = (JoinNode) this;
-            if (jn.isNatural()) {
-                jn.genUsingByNatural();
-            }
-        }
-
     }
 
     protected void setUpSelects() {
@@ -437,17 +409,16 @@ public abstract class PlanNode {
     private NamedField makeOutNamedField(Item sel) {
         String tmpFieldTable = sel.getTableName();
         String tmpFieldName = sel.getItemName();
-        if (subAlias != null)
-            tmpFieldTable = subAlias;
+        if (alias != null)
+            tmpFieldTable = alias;
         if (tmpFieldTable == null)// maybe function
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, this);
-        return tmpField;
+        return new NamedField(tmpFieldTable, tmpFieldName, this);
     }
 
-    protected Item setUpItem(Item sel) {
+    Item setUpItem(Item sel) {
         if (sel == null)
             return null;
         return sel.fixFields(nameContext);
@@ -464,18 +435,46 @@ public abstract class PlanNode {
         return limitFrom;
     }
 
+    /**
+     * aggregate function list
+     */
+    public HashSet<ItemSum> getSumFuncs() {
+        return sumFuncs;
+    }
+
+    public void setSumFuncs(HashSet<ItemSum> sumFuncs) {
+        this.sumFuncs = sumFuncs;
+    }
+
     public PlanNode setLimitFrom(long from) {
         this.limitFrom = from;
         return this;
     }
 
-    public long getLimitTo() {
-        return limitTo;
-    }
-
     public PlanNode setLimitTo(long to) {
         this.limitTo = to;
         return this;
+    }
+
+    public PlanNode setGroupBys(List<Order> groupBys) {
+        this.groups = groupBys;
+        return this;
+    }
+
+    public PlanNode setColumnsSelected(List<Item> columns) {
+        this.columnsSelected = columns;
+        return this;
+    }
+
+    /**
+     * @param existView the exsitView to set
+     */
+    public void setExistView(boolean existView) {
+        this.existView = existView;
+    }
+
+    public long getLimitTo() {
+        return limitTo;
     }
 
     public PlanNode limit(long i, long j) {
@@ -497,23 +496,8 @@ public abstract class PlanNode {
         return alias;
     }
 
-    public PlanNode alias(String aliasName) {
-        this.alias = aliasName;
-        return this;
-    }
-
-    public PlanNode subAlias(String subAliasName) {
-        this.subAlias = subAliasName;
-        return this;
-    }
-
     public List<Order> getGroupBys() {
         return this.groups;
-    }
-
-    public PlanNode setGroupBys(List<Order> groupBys) {
-        this.groups = groupBys;
-        return this;
     }
 
     public List<Order> getOrderBys() {
@@ -532,14 +516,9 @@ public abstract class PlanNode {
         return columnsSelected;
     }
 
-    public PlanNode setColumnsSelected(List<Item> columns) {
-        this.columnsSelected = columns;
-        return this;
-    }
-
     public List<Item> getColumnsReferedByChild(PlanNode tn) {
         try {
-            return this.columnsReferedCache.get(tn);
+            return this.columnsReferredCache.get(tn);
         } catch (ExecutionException e) {
             LOGGER.warn("columnsReferedCache error", e);
         }
@@ -549,7 +528,7 @@ public abstract class PlanNode {
     public void addSelToReferedMap(PlanNode tn, Item sel) {
         // the same ReferedMap's selects have the same columnname
         try {
-            this.columnsReferedCache.get(tn).add(sel);
+            this.columnsReferredCache.get(tn).add(sel);
         } catch (ExecutionException e) {
             LOGGER.warn("columnsReferedCache error", e);
         }
@@ -562,21 +541,9 @@ public abstract class PlanNode {
     /**
      * setAlias for table
      */
-    public PlanNode setAlias(String string) {
-        this.alias(string);
+    public PlanNode setAlias(String aliasName) {
+        this.alias = aliasName;
         return this;
-    }
-
-    /**
-     * setSubAlias for table
-     */
-    public PlanNode setSubAlias(String string) {
-        this.subAlias(string);
-        return this;
-    }
-
-    public String getSubAlias() {
-        return subAlias;
     }
 
     public boolean isSubQuery() {
@@ -640,7 +607,7 @@ public abstract class PlanNode {
         this.parent = parent;
         if (parent != null) {
             parent.referedTableNodes.addAll(referedTableNodes);
-            parent.exsitView |= this.exsitView;
+            parent.existView |= this.existView;
         }
     }
 
@@ -661,15 +628,8 @@ public abstract class PlanNode {
     /**
      * @return the exsitView
      */
-    public boolean isExsitView() {
-        return exsitView;
-    }
-
-    /**
-     * @param exsitView the exsitView to set
-     */
-    public void setExsitView(boolean exsitView) {
-        this.exsitView = exsitView;
+    public boolean isExistView() {
+        return existView;
     }
 
     public boolean existUnPushDownGroup() {
@@ -722,10 +682,10 @@ public abstract class PlanNode {
     }
 
     /**
-     * show visualable plan in tree
+     * show plan in tree
      *
-     * @param level
-     * @return
+     * @param level level
+     * @return String
      */
     public abstract String toString(int level);
 }

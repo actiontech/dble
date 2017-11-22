@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;

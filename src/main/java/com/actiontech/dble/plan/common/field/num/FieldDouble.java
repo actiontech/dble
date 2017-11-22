@@ -14,8 +14,8 @@ import com.actiontech.dble.plan.common.item.FieldTypes;
  */
 public class FieldDouble extends FieldReal {
 
-    public FieldDouble(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldDouble(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

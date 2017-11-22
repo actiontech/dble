@@ -12,14 +12,13 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.sqlengine.mpp.tmp.RowDataSorter;
-import com.actiontech.dble.util.StringUtil;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /*
 * Copyright (C) 2016-2017 ActionTech.
@@ -38,11 +37,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class DataMergeService extends AbstractDataNodeMerge {
 
-    private RowDataSorter sorter;
     private RowDataPacketGrouper grouper;
     private Map<String, LinkedList<RowDataPacket>> result = new HashMap<>();
     private static final Logger LOGGER = Logger.getLogger(DataMergeService.class);
-    private ConcurrentMap<String, Boolean> canDiscard = new ConcurrentHashMap<>();
 
     public DataMergeService(MultiNodeQueryHandler handler, RouteResultset rrs) {
         super(handler, rrs);
@@ -54,16 +51,14 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
 
     /**
-     * @param columnToIndex
-     * @param fieldSize
+     * @param columnToIndex columnToIndex
+     * @param fieldSize fieldSize
      */
     public void onRowMetaData(Map<String, ColMeta> columnToIndex, int fieldSize) {
-
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("field metadata keys:" + columnToIndex.keySet());
             LOGGER.debug("field metadata values:" + columnToIndex.values());
         }
-
 
         int[] groupColumnIndexes = null;
         this.fieldCount = fieldSize;
@@ -72,73 +67,7 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
             groupColumnIndexes = toColumnIndex(rrs.getGroupByCols(), columnToIndex);
         }
-
-        if (rrs.getHavingCols() != null) {
-            ColMeta colMeta = columnToIndex.get(rrs.getHavingCols().getLeft().toUpperCase());
-            if (colMeta != null) {
-                rrs.getHavingCols().setColMeta(colMeta);
-            }
-        }
-
-        if (rrs.isHasAggrColumn()) {
-            List<MergeCol> mergeCols = new LinkedList<>();
-            Map<String, Integer> mergeColsMap = rrs.getMergeCols();
-
-
-            if (mergeColsMap != null) {
-                for (Map.Entry<String, Integer> mergeEntry : mergeColsMap.entrySet()) {
-                    String colName = mergeEntry.getKey().toUpperCase();
-                    int type = mergeEntry.getValue();
-                    if (MergeCol.MERGE_AVG == type) {
-
-                        ColMeta sumColMeta = columnToIndex.get(colName + "SUM");
-                        ColMeta countColMeta = columnToIndex.get(colName + "COUNT");
-                        if (sumColMeta != null && countColMeta != null) {
-                            ColMeta colMeta = new ColMeta(sumColMeta.getColIndex(),
-                                    countColMeta.getColIndex(),
-                                    sumColMeta.getColType());
-                            colMeta.setDecimals(sumColMeta.getDecimals()); // Keep the Precision
-                            mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
-                        }
-                    } else {
-                        ColMeta colMeta = columnToIndex.get(colName);
-                        mergeCols.add(new MergeCol(colMeta, mergeEntry.getValue()));
-                    }
-                }
-            }
-            // add no alias merg column
-            for (Map.Entry<String, ColMeta> fieldEntry : columnToIndex.entrySet()) {
-                String colName = fieldEntry.getKey();
-                int mergeType = MergeCol.tryParseAggCol(colName);
-                if (mergeType != MergeCol.MERGE_UNSUPPORT && mergeType != MergeCol.MERGE_NOMERGE) {
-                    mergeCols.add(new MergeCol(fieldEntry.getValue(), mergeType));
-                }
-            }
-
-
-            grouper = new RowDataPacketGrouper(groupColumnIndexes,
-                    mergeCols.toArray(new MergeCol[mergeCols.size()]),
-                    rrs.getHavingCols());
-        }
-
-        if (rrs.getOrderByCols() != null) {
-            LinkedHashMap<String, Integer> orders = rrs.getOrderByCols();
-            OrderCol[] orderCols = new OrderCol[orders.size()];
-            int i = 0;
-            for (Map.Entry<String, Integer> entry : orders.entrySet()) {
-                String key = StringUtil.removeBackQuote(entry.getKey().toUpperCase());
-                ColMeta colMeta = columnToIndex.get(key);
-                if (colMeta == null) {
-                    throw new IllegalArgumentException(
-                            "all columns in order by clause should be in the selected column list!" + entry.getKey());
-                }
-                orderCols[i++] = new OrderCol(colMeta, entry.getValue());
-            }
-
-            RowDataSorter tmp = new RowDataSorter(orderCols);
-            tmp.setLimit(rrs.getLimitStart(), rrs.getLimitSize());
-            sorter = tmp;
-        }
+        grouper = new RowDataPacketGrouper(groupColumnIndexes);
     }
 
 
@@ -148,7 +77,6 @@ public class DataMergeService extends AbstractDataNodeMerge {
     public void clear() {
         result.clear();
         grouper = null;
-        sorter = null;
     }
 
     @Override
@@ -200,10 +128,6 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
                 if (grouper != null) {
                     grouper.addRow(row);
-                } else if (sorter != null) {
-                    if (!sorter.addRow(row)) {
-                        canDiscard.put(pack.getDataNode(), true);
-                    }
                 } else {
                     result.get(pack.getDataNode()).add(row);
                 }
@@ -224,9 +148,9 @@ public class DataMergeService extends AbstractDataNodeMerge {
 
 
     /**
-     * return merged data
+     * return merged data  (i * (offset + size) rows at most)
      *
-     * @return (i*(offset+size) rows at most)
+     * @return list
      */
     public List<RowDataPacket> getResults(byte[] eof) {
 
@@ -236,21 +160,6 @@ public class DataMergeService extends AbstractDataNodeMerge {
             tmpResult = grouper.getResult();
             grouper = null;
         }
-
-
-        if (sorter != null) {
-
-            if (tmpResult != null) {
-                Iterator<RowDataPacket> iterator = tmpResult.iterator();
-                while (iterator.hasNext()) {
-                    sorter.addRow(iterator.next());
-                    iterator.remove();
-                }
-            }
-            tmpResult = sorter.getSortedResult();
-            sorter = null;
-        }
-
 
         //no grouper and sorter
         if (tmpResult == null) {

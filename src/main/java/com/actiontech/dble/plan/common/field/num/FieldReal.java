@@ -17,8 +17,8 @@ import java.math.BigInteger;
 public abstract class FieldReal extends FieldNum {
     protected BigDecimal decValue = null;
 
-    public FieldReal(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldReal(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -62,7 +62,7 @@ public abstract class FieldReal extends FieldNum {
     protected void internalJob() {
         String res = null;
         try {
-            res = MySQLcom.getFullString(charsetName, ptr);
+            res = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }
@@ -105,8 +105,8 @@ public abstract class FieldReal extends FieldNum {
             return 1;
         } else
             try {
-                String sval1 = MySQLcom.getFullString(charsetName, v1);
-                String sval2 = MySQLcom.getFullString(charsetName, v2);
+                String sval1 = MySQLcom.getFullString(javaCharsetName, v1);
+                String sval2 = MySQLcom.getFullString(javaCharsetName, v2);
                 BigDecimal b1 = new BigDecimal(sval1);
                 BigDecimal b2 = new BigDecimal(sval2);
                 return b1.compareTo(b2);

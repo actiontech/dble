@@ -5,13 +5,10 @@
 */
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.sqlengine.mpp.HavingCols;
 import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * @author mycat
@@ -23,6 +20,7 @@ public final class RouteResultset implements Serializable {
     private String statement;
     private String schema;
     private String table;
+    private String tableAlias;
     private final int sqlType;
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
@@ -150,15 +148,11 @@ public final class RouteResultset implements Serializable {
     }
 
     public boolean needMerge() {
-        return limitSize > 0 || sqlMerge != null;
+        return sqlMerge != null;
     }
 
     public int getSqlType() {
         return sqlType;
-    }
-
-    public boolean isHasAggrColumn() {
-        return (sqlMerge != null) && sqlMerge.isHasAggrColumn();
     }
 
     public int getLimitStart() {
@@ -174,10 +168,6 @@ public final class RouteResultset implements Serializable {
             sqlMerge = new SQLMerge();
         }
         return sqlMerge;
-    }
-
-    public Map<String, Integer> getMergeCols() {
-        return (sqlMerge != null) ? sqlMerge.getMergeCols() : null;
     }
 
     public void setLimitStart(int limitStart) {
@@ -209,31 +199,11 @@ public final class RouteResultset implements Serializable {
         return primaryKey.split("\\.");
     }
 
-
-    public void setHasAggrColumn(boolean hasAggrColumn) {
-        if (hasAggrColumn) {
-            createSQLMergeIfNull().setHasAggrColumn(true);
-        }
-    }
-
     public void setGroupByCols(String[] groupByCols) {
         if (groupByCols != null && groupByCols.length > 0) {
             createSQLMergeIfNull().setGroupByCols(groupByCols);
         }
     }
-
-    public void setMergeCols(Map<String, Integer> mergeCols) {
-        if (mergeCols != null && !mergeCols.isEmpty()) {
-            createSQLMergeIfNull().setMergeCols(mergeCols);
-        }
-
-    }
-
-    public LinkedHashMap<String, Integer> getOrderByCols() {
-        return (sqlMerge != null) ? sqlMerge.getOrderByCols() : null;
-
-    }
-
 
     public void setSrcStatement(String srcStatement) {
         this.srcStatement = srcStatement;
@@ -286,6 +256,14 @@ public final class RouteResultset implements Serializable {
         this.table = table;
     }
 
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    public void setTableAlias(String tableAlias) {
+        this.tableAlias = tableAlias;
+    }
+
     public boolean isCallStatement() {
         return callStatement;
     }
@@ -311,17 +289,6 @@ public final class RouteResultset implements Serializable {
 
     public void setCanRunInReadDB(Boolean canRunInReadDB) {
         this.canRunInReadDB = canRunInReadDB;
-    }
-
-    public HavingCols getHavingCols() {
-        return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
-    }
-
-
-    public void setHavings(HavingCols havings) {
-        if (havings != null) {
-            createSQLMergeIfNull().setHavingCols(havings);
-        }
     }
 
     public SQLStatement getSqlStatement() {

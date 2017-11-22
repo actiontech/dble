@@ -258,6 +258,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             // save field
             FieldPacket fieldPk = new FieldPacket();
             fieldPk.read(field);
+            if (rrs.getSchema() != null) {
+                fieldPk.setDb(rrs.getSchema().getBytes());
+            }
+            if (rrs.getTableAlias() != null) {
+                fieldPk.setTable(rrs.getTableAlias().getBytes());
+            }
+            if (rrs.getTable() != null) {
+                fieldPk.setOrgTable(rrs.getTable().getBytes());
+            }
             fieldPackets.add(fieldPk);
 
             // find primary key index
@@ -268,7 +277,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
             }
 
-            buffer = source.writeToBuffer(field, buffer);
+            buffer = fieldPk.write(buffer, source, false);
         }
 
         fieldCount = fieldPackets.size();

@@ -12,7 +12,6 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
@@ -86,7 +85,7 @@ public class TableNode extends PlanNode {
     @Override
     protected void setUpInnerFields() {
         innerFields.clear();
-        String tmpTable = subAlias == null ? tableName : subAlias;
+        String tmpTable = alias == null ? tableName : alias;
         for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
             NamedField tmpField = new NamedField(tmpTable, cm.getName(), this);
             innerFields.put(tmpField, tmpField);
@@ -137,10 +136,9 @@ public class TableNode extends PlanNode {
         String tabTittle = ToStringUtil.getTab(level);
         String tabContent = ToStringUtil.getTab(level + 1);
         if (this.getAlias() != null) {
-            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + "<" + this.getSubAlias() +
-                    ">" + " as " + this.getAlias());
+            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + " as " + this.getAlias());
         } else {
-            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName() + "<" + this.getSubAlias() + ">");
+            ToStringUtil.appendln(sb, tabTittle + "Query from " + this.getTableName());
         }
         ToStringUtil.appendln(sb, tabContent + "isDistinct: " + isDistinct());
         ToStringUtil.appendln(sb, tabContent + "columns: " + ToStringUtil.itemListString(columnsSelected));

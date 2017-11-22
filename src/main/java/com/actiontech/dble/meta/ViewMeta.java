@@ -3,7 +3,7 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;

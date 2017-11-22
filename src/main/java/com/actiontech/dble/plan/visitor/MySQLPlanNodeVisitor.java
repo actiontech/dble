@@ -7,7 +7,6 @@ package com.actiontech.dble.plan.visitor;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
@@ -155,19 +154,16 @@ public class MySQLPlanNodeVisitor {
             QueryNode viewNode = DbleServer.getInstance().getTmManager().getSyncView(currentDb, identifierExpr.getName());
             if (viewNode != null) {
                 //consider if the table with other name
-                viewNode.setSubAlias(tableSource.getAlias());
+                viewNode.setAlias(tableSource.getAlias());
                 this.tableNode = viewNode;
                 this.tableNode.setSubQuery(true);
-                this.tableNode.setExsitView(true);
+                this.tableNode.setExistView(true);
                 return true;
             } else {
                 table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
-        }
-        if (tableSource.getAlias() != null) {
-            table.setSubAlias(tableSource.getAlias());
         }
         ((TableNode) table).setHintList(tableSource.getHints());
         this.tableNode = table;
@@ -178,7 +174,7 @@ public class MySQLPlanNodeVisitor {
         visit(unionTables.getUnion());
         this.tableNode.setSubQuery(true);
         if (unionTables.getAlias() != null) {
-            tableNode.alias(unionTables.getAlias());
+            tableNode.setAlias(unionTables.getAlias());
         }
         return true;
     }
@@ -248,12 +244,6 @@ public class MySQLPlanNodeVisitor {
         SQLSelect sqlSelect = subQueryTables.getSelect();
         visit(sqlSelect.getQuery());
         this.tableNode.setSubQuery(true);
-        if (subQueryTables.getAlias() != null) {
-            tableNode.alias(subQueryTables.getAlias());
-            if (tableNode.getSubAlias() == null && tableNode.type() == PlanNode.PlanNodeType.TABLE && !tableNode.isSubQuery()) {
-                tableNode.setSubAlias(tableNode.getAlias());
-            }
-        }
         return true;
     }
 
@@ -275,11 +265,15 @@ public class MySQLPlanNodeVisitor {
             mtv.visit(unionTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
         } else if (tables instanceof SQLSubqueryTableSource) {
+            if (tables.getAlias() == null) {
+                throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
+            }
             SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
         }
+        this.tableNode.setAlias(tables.getAlias());
     }
 
     private List<Item> handleSelectItems(List<SQLSelectItem> items) {

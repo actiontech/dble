@@ -17,9 +17,9 @@ import com.actiontech.dble.plan.common.time.MyTime;
  */
 public abstract class FieldTemporaWithDate extends FieldTemporal {
 
-    public FieldTemporaWithDate(String name, String table, int charsetIndex, int fieldLength, int decimals,
+    public FieldTemporaWithDate(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals,
                                 long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -50,8 +50,8 @@ public abstract class FieldTemporaWithDate extends FieldTemporal {
             return 1;
         } else
             try {
-                String sval1 = MySQLcom.getFullString(charsetName, v1);
-                String sval2 = MySQLcom.getFullString(charsetName, v2);
+                String sval1 = MySQLcom.getFullString(javaCharsetName, v1);
+                String sval2 = MySQLcom.getFullString(javaCharsetName, v2);
                 MySQLTime ltime1 = new MySQLTime();
                 MySQLTime ltime2 = new MySQLTime();
                 MyTime.strToDatetimeWithWarn(sval1, ltime1, MyTime.TIME_FUZZY_DATE);

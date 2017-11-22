@@ -15,8 +15,8 @@ import com.actiontech.dble.plan.common.item.Item.ItemResult;
  */
 public class FieldShort extends FieldNum {
 
-    public FieldShort(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldShort(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

@@ -8,7 +8,7 @@ package com.actiontech.dble.plan.optimizer;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -103,7 +103,7 @@ public class ERJoinChooser {
     }
 
     private ERTable getLeftOutJoinChildER(JoinNode joinNode, PlanNode child, Item onItem) {
-        if (PlanUtil.existAggr(child))
+        if (PlanUtil.existAggregate(child))
             return null;
         else if (!PlanUtil.isERNode(child) && child.type() != PlanNode.PlanNodeType.TABLE)
             return null;

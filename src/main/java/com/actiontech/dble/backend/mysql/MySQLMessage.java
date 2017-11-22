@@ -197,13 +197,8 @@ public class MySQLMessage {
         if (position >= length) {
             return null;
         }
-        String s;
         String javaCharset = CharsetUtil.getJavaCharset(charset);
-        if (javaCharset != null) {
-            s = new String(data, position, length - position, javaCharset);
-        } else {
-            s = new String(data, position, length - position);
-        }
+        String s = new String(data, position, length - position, javaCharset);
         position = length;
         return s;
     }
@@ -235,7 +230,7 @@ public class MySQLMessage {
         }
     }
 
-    public String readStringWithLength() {
+    private String readStringWithLength() {
         int size = (int) readLength();
         if (size <= 0) {
             return null;

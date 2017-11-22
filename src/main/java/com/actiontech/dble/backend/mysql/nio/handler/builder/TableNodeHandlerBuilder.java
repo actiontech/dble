@@ -46,10 +46,9 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     public void buildOwn() {
         try {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
             this.needCommon = mergeBuilder.getNeedCommonFlag();
-            this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception!", e);
@@ -64,7 +63,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             if (filters == null || filters.isEmpty())
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "unexpected exception!");
             List<RouteResultsetNode> rrssList = new ArrayList<>();
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             if (tableConfig == null || tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE) {
                 for (Item filter : filters) {
                     node.setWhereFilter(filter);
@@ -73,7 +72,6 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                 }
                 if (filters.size() == 1) {
                     this.needCommon = false;
-                    this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
                 }
             } else {
                 boolean tryGlobal = filters.size() == 1;
@@ -85,7 +83,6 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                 }
                 if (tryGlobal) {
                     this.needCommon = mergeBuilder.getNeedCommonFlag();
-                    this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
                 }
             }
             RouteResultsetNode[] rrssArray = new RouteResultsetNode[rrssList.size()];

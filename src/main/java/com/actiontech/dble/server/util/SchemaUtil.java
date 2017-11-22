@@ -50,7 +50,7 @@ public final class SchemaUtil {
         return null;
     }
 
-    public static SchemaInfo getSchemaInfo(String user, String schema, SQLExpr expr) throws SQLException {
+    public static SchemaInfo getSchemaInfo(String user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
@@ -60,11 +60,12 @@ public final class SchemaUtil {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             schemaInfo.schema = schema;
             schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
-            if (identifierExpr.getName().equalsIgnoreCase("dual")) {
+            if (identifierExpr.getName().equalsIgnoreCase("dual") && tableAlias == null) {
                 schemaInfo.dual = true;
                 return schemaInfo;
             }
         }
+        schemaInfo.tableAlias = tableAlias == null ? schemaInfo.table : tableAlias;
         if (schemaInfo.schema == null) {
             String msg = "No database selected";
             throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
@@ -94,7 +95,7 @@ public final class SchemaUtil {
     }
 
     public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
-        return getSchemaInfo(user, schema, tableSource.getExpr());
+        return getSchemaInfo(user, schema, tableSource.getExpr(), tableSource.getAlias());
     }
 
     public static boolean isNoSharding(ServerConnection source, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt, String contextSchema, StringPtr sqlSchema)
@@ -199,7 +200,7 @@ public final class SchemaUtil {
         private String schema;
         private SchemaConfig schemaConfig;
         private boolean dual = false;
-
+        private String tableAlias;
         @Override
         public String toString() {
             return "SchemaInfo{" + "table='" + table + '\'' +
@@ -207,36 +208,24 @@ public final class SchemaUtil {
                     '}';
         }
 
-        public String getTable() {
-            return table;
+        public String getTableAlias() {
+            return tableAlias;
         }
 
-        public void setTable(String table) {
-            this.table = table;
+        public String getTable() {
+            return table;
         }
 
         public String getSchema() {
             return schema;
         }
 
-        public void setSchema(String schema) {
-            this.schema = schema;
-        }
-
         public SchemaConfig getSchemaConfig() {
             return schemaConfig;
         }
 
-        public void setSchemaConfig(SchemaConfig schemaConfig) {
-            this.schemaConfig = schemaConfig;
-        }
-
         public boolean isDual() {
             return dual;
-        }
-
-        public void setDual(boolean dual) {
-            this.dual = dual;
         }
     }
 }

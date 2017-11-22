@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.plan.node;
 
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.plan.NamedField;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.util.ToStringUtil;
 
@@ -37,7 +39,19 @@ public class QueryNode extends PlanNode {
         children.clear();
         addChild(child);
     }
-
+    @Override
+    protected void setUpInnerFields() {
+        innerFields.clear();
+        for (PlanNode child : children) {
+            child.setUpFields();
+            for (NamedField childOutField : child.outerFields.keySet()) {
+                NamedField tmpField = new NamedField(this.getAlias(), childOutField.getName(), childOutField.planNode);
+                if (innerFields.containsKey(tmpField) && getParent() != null)
+                    throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + childOutField.getName() + "'");
+                innerFields.put(tmpField, childOutField);
+            }
+        }
+    }
     @Override
     public String getPureName() {
         return this.getChild().getAlias();

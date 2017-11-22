@@ -16,8 +16,8 @@ import java.math.BigInteger;
 
 public class FieldTime extends FieldTemporal {
 
-    public FieldTime(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldTime(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class FieldTime extends FieldTemporal {
     protected void internalJob() {
         String ptrStr = null;
         try {
-            ptrStr = MySQLcom.getFullString(charsetName, ptr);
+            ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             Field.LOGGER.warn("parse string exception!", ue);
         }
@@ -61,8 +61,8 @@ public class FieldTime extends FieldTemporal {
         if (v1 == null && v2 == null)
             return 0;
         try {
-            String sval1 = MySQLcom.getFullString(charsetName, v1);
-            String sval2 = MySQLcom.getFullString(charsetName, v2);
+            String sval1 = MySQLcom.getFullString(javaCharsetName, v1);
+            String sval2 = MySQLcom.getFullString(javaCharsetName, v2);
             MySQLTime ltime1 = new MySQLTime();
             MySQLTime ltime2 = new MySQLTime();
             MyTime.strToTimeWithWarn(sval1, ltime1);

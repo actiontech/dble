@@ -26,8 +26,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,10 +40,7 @@ public class UnsafeRowGrouper {
 
     private UnsafeFixedWidthAggregationMap aggregationMap = null;
     private final Map<String, ColMeta> columnToIndexes;
-    private final MergeCol[] mergeCols;
     private String[] sortColumnsByIndex = null;
-    private boolean isMergeAvg = false;
-    private HavingCols havingCols;
     private UnsafeRow valueKey = null;
     private BufferHolder bufferHolder = null;
     private UnsafeRowWriter unsafeRowWriter = null;
@@ -55,15 +50,11 @@ public class UnsafeRowGrouper {
     private StructType aggBufferSchema;
     private UnsafeRow emptyAggregationBuffer;
 
-    public UnsafeRowGrouper(Map<String, ColMeta> columnToIndexes, String[] columns, MergeCol[] mergeCols, HavingCols havingCols) {
+    public UnsafeRowGrouper(Map<String, ColMeta> columnToIndexes, String[] columns) {
         super();
         assert columns != null;
         assert columnToIndexes != null;
-        assert mergeCols != null;
         this.columnToIndexes = columnToIndexes;
-        String[] columns1 = columns;
-        this.mergeCols = mergeCols;
-        this.havingCols = havingCols;
         this.sortColumnsByIndex = columns != null ? toSortColumnsByIndex(columns, columnToIndexes) : null;
         this.groupKeyFieldCount = columns != null ? columns.length : 0;
         this.valueFieldCount = columnToIndexes != null ? columnToIndexes.size() : 0;
@@ -179,7 +170,6 @@ public class UnsafeRowGrouper {
         groupKey.setTotalSize(bufferHolder.totalSize());
 
         groupKeySchema = new StructType(groupColMetaMap, this.groupKeyFieldCount);
-        groupKeySchema.setOrderCols(null);
     }
 
     private void initEmptyValueKey() {
@@ -226,46 +216,18 @@ public class UnsafeRowGrouper {
 
         emptyAggregationBuffer.setTotalSize(bufferHolder.totalSize());
         aggBufferSchema = new StructType(columnToIndexes, this.valueFieldCount);
-        aggBufferSchema.setOrderCols(null);
     }
 
 
     public Iterator<UnsafeRow> getResult(@Nonnull UnsafeExternalRowSorter sorter) throws IOException {
         KVIterator<UnsafeRow, UnsafeRow> iterator = aggregationMap.iterator();
-
-        if (isMergeAvg() && !isMergeAvg) {
-            try {
-                while (iterator.next()) {
-                    mergeAvg(iterator.getValue());
-                }
-            } catch (IOException e) {
-                LOGGER.error(e.getMessage());
-            }
-            isMergeAvg = true;
-            processAvgFieldPrecision();
-        }
         /**
          * group having
          */
-        if (havingCols != null) {
-            filterHaving(sorter);
-        } else {
-
-            /**
-             * KVIterator<K,V> ==>Iterator<V>
-             */
-            insertValue(sorter);
-        }
+        insertValue(sorter);
         return sorter.sort();
     }
 
-    private void processAvgFieldPrecision() {
-        for (Map.Entry<String, ColMeta> entry : columnToIndexes.entrySet()) {
-            if (isAvgField(entry.getKey())) { // AVG's Precision is sum's +4 , HALF_UP
-                entry.getValue().setDecimals(entry.getValue().getDecimals() + 4);
-            }
-        }
-    }
 
     /**
      * is Avg Field
@@ -349,57 +311,6 @@ public class UnsafeRowGrouper {
         }
     }
 
-    private void filterHaving(@Nonnull UnsafeExternalRowSorter sorter) {
-
-        if (havingCols.getColMeta() == null || aggregationMap == null) {
-            return;
-        }
-        KVIterator<UnsafeRow, UnsafeRow> it = aggregationMap.iterator();
-        byte[] right = havingCols.getRight().getBytes(StandardCharsets.UTF_8);
-        int index = havingCols.getColMeta().getColIndex();
-        try {
-            while (it.next()) {
-                UnsafeRow row = getAllBinaryRow(it.getValue());
-                switch (havingCols.getOperator()) {
-                    case "=":
-                        if (!eq(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    case ">":
-                        if (!gt(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    case "<":
-                        if (!lt(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    case ">=":
-                        if (!gt(row.getBinary(index), right) && eq(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    case "<=":
-                        if (!lt(row.getBinary(index), right) && eq(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    case "!=":
-                        if (!neq(row.getBinary(index), right)) {
-                            sorter.insertRow(row);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-        }
-
-    }
 
     private boolean lt(byte[] l, byte[] r) {
         return -1 != ByteUtil.compareNumberByte(l, r);
@@ -563,274 +474,8 @@ public class UnsafeRowGrouper {
         UnsafeRow key = getGroupKey(rowDataPkg);
         UnsafeRow value = getValue(rowDataPkg);
 
-        if (aggregationMap.find(key)) {
-            UnsafeRow rs = aggregationMap.getAggregationBuffer(key);
-            aggregateRow(rs, value);
-        } else {
+        if (!aggregationMap.find(key)) {
             aggregationMap.put(key, value);
-        }
-
-        return;
-    }
-
-
-    private boolean isMergeAvg() {
-
-        if (mergeCols == null) {
-            return false;
-        }
-
-        for (MergeCol mergeCol : mergeCols) {
-            if (mergeCol.mergeType == MergeCol.MERGE_AVG) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void aggregateRow(UnsafeRow toRow, UnsafeRow newRow) throws UnsupportedEncodingException {
-        if (mergeCols == null) {
-            return;
-        }
-
-        for (MergeCol mergeCol : mergeCols) {
-            if (mergeCol.mergeType != MergeCol.MERGE_AVG) {
-                byte[] result = null;
-                byte[] left = null;
-                byte[] right = null;
-                int type = mergeCol.colMeta.getColType();
-                int index = mergeCol.colMeta.getColIndex();
-                left = unsafeRow2Bytes(toRow, mergeCol);
-                right = unsafeRow2Bytes(newRow, mergeCol);
-                result = mergeFields(left, right, type, mergeCol.mergeType);
-
-                if (result != null) {
-                    switch (type) {
-                        case ColMeta.COL_TYPE_BIT:
-                            toRow.setByte(index, result[0]);
-                            // fallthrough
-                        case ColMeta.COL_TYPE_INT:
-                        case ColMeta.COL_TYPE_LONG:
-                        case ColMeta.COL_TYPE_INT24:
-                            toRow.setInt(index, BytesTools.getInt(result));
-                            break;
-                        case ColMeta.COL_TYPE_SHORT:
-                            toRow.setShort(index, BytesTools.getShort(result));
-                            break;
-                        case ColMeta.COL_TYPE_LONGLONG:
-                            toRow.setLong(index, BytesTools.getLong(result));
-                            break;
-                        case ColMeta.COL_TYPE_FLOAT:
-                            toRow.setFloat(index, BytesTools.getFloat(result));
-                            break;
-                        case ColMeta.COL_TYPE_DOUBLE:
-                            toRow.setDouble(index, BytesTools.getDouble(result));
-                            break;
-                        case ColMeta.COL_TYPE_NEWDECIMAL:
-                            //toRow.setDouble(index,BytesTools.getDouble(result));
-                            toRow.updateDecimal(index, new BigDecimal(new String(result)));
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-    }
-
-    private byte[] unsafeRow2Bytes(UnsafeRow row, MergeCol mergeCol) throws UnsupportedEncodingException {
-        int index = mergeCol.colMeta.getColIndex();
-        byte[] result = null;
-        if (row.isNullAt(index)) {
-            return null;
-        }
-        int type = mergeCol.colMeta.getColType();
-        switch (type) {
-            case ColMeta.COL_TYPE_INT:
-            case ColMeta.COL_TYPE_LONG:
-            case ColMeta.COL_TYPE_INT24:
-                result = BytesTools.int2Bytes(row.getInt(index));
-                break;
-            case ColMeta.COL_TYPE_SHORT:
-                result = BytesTools.short2Bytes(row.getShort(index));
-                break;
-            case ColMeta.COL_TYPE_LONGLONG:
-                result = BytesTools.long2Bytes(row.getLong(index));
-                break;
-            case ColMeta.COL_TYPE_FLOAT:
-                result = BytesTools.float2Bytes(row.getFloat(index));
-                break;
-            case ColMeta.COL_TYPE_DOUBLE:
-                result = BytesTools.double2Bytes(row.getDouble(index));
-                break;
-            case ColMeta.COL_TYPE_NEWDECIMAL:
-                int scale = mergeCol.colMeta.getDecimals();
-                BigDecimal decimalLeft = row.getDecimal(index, scale);
-                result = decimalLeft == null ? null : decimalLeft.toString().getBytes();
-                break;
-            default:
-                break;
-        }
-        return result;
-    }
-
-    private void mergeAvg(UnsafeRow toRow) throws UnsupportedEncodingException {
-
-        if (mergeCols == null) {
-            return;
-        }
-
-        for (MergeCol mergeCol : mergeCols) {
-            if (mergeCol.mergeType == MergeCol.MERGE_AVG) {
-                byte[] result = null;
-                byte[] avgSum = null;
-                byte[] avgCount = null;
-
-                int type = mergeCol.colMeta.getColType();
-                int avgSumIndex = mergeCol.colMeta.getAvgSumIndex();
-                int avgCountIndex = mergeCol.colMeta.getAvgCountIndex();
-
-                switch (type) {
-                    case ColMeta.COL_TYPE_BIT:
-                        avgSum = BytesTools.toBytes(toRow.getByte(avgSumIndex));
-                        avgCount = BytesTools.toBytes(toRow.getLong(avgCountIndex));
-                        break;
-                    case ColMeta.COL_TYPE_INT:
-                    case ColMeta.COL_TYPE_LONG:
-                    case ColMeta.COL_TYPE_INT24:
-                        avgSum = BytesTools.int2Bytes(toRow.getInt(avgSumIndex));
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        break;
-                    case ColMeta.COL_TYPE_SHORT:
-                        avgSum = BytesTools.short2Bytes(toRow.getShort(avgSumIndex));
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        break;
-
-                    case ColMeta.COL_TYPE_LONGLONG:
-                        avgSum = BytesTools.long2Bytes(toRow.getLong(avgSumIndex));
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-
-                        break;
-                    case ColMeta.COL_TYPE_FLOAT:
-                        avgSum = BytesTools.float2Bytes(toRow.getFloat(avgSumIndex));
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-
-                        break;
-                    case ColMeta.COL_TYPE_DOUBLE:
-                        avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        break;
-                    case ColMeta.COL_TYPE_NEWDECIMAL:
-                        //avgSum = BytesTools.double2Bytes(toRow.getDouble(avgSumIndex));
-                        //avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        int scale = mergeCol.colMeta.getDecimals();
-                        BigDecimal sumDecimal = toRow.getDecimal(avgSumIndex, scale);
-                        avgSum = sumDecimal == null ? null : sumDecimal.toString().getBytes();
-                        avgCount = BytesTools.long2Bytes(toRow.getLong(avgCountIndex));
-                        break;
-                    default:
-                        break;
-                }
-
-                result = mergeFields(avgSum, avgCount, mergeCol.colMeta.getColType(), mergeCol.mergeType);
-
-                if (result != null) {
-                    switch (type) {
-                        case ColMeta.COL_TYPE_BIT:
-                            toRow.setByte(avgSumIndex, result[0]);
-                            break;
-                        case ColMeta.COL_TYPE_INT:
-                        case ColMeta.COL_TYPE_LONG:
-                        case ColMeta.COL_TYPE_INT24:
-                            toRow.setInt(avgSumIndex, BytesTools.getInt(result));
-                            break;
-                        case ColMeta.COL_TYPE_SHORT:
-                            toRow.setShort(avgSumIndex, BytesTools.getShort(result));
-                            break;
-                        case ColMeta.COL_TYPE_LONGLONG:
-                            toRow.setLong(avgSumIndex, BytesTools.getLong(result));
-                            break;
-                        case ColMeta.COL_TYPE_FLOAT:
-                            toRow.setFloat(avgSumIndex, BytesTools.getFloat(result));
-                            break;
-                        case ColMeta.COL_TYPE_DOUBLE:
-                            toRow.setDouble(avgSumIndex, ByteUtil.getDouble(result));
-                            break;
-                        case ColMeta.COL_TYPE_NEWDECIMAL:
-                            //toRow.setDouble(avgSumIndex,ByteUtil.getDouble(result));
-                            toRow.updateDecimal(avgSumIndex, new BigDecimal(new String(result)));
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-    }
-
-    private byte[] mergeFields(byte[] bs, byte[] bs2, int colType, int mergeType) throws UnsupportedEncodingException {
-
-        if (bs2 == null || bs2.length == 0) {
-            return bs;
-        } else if (bs == null || bs.length == 0) {
-            return bs2;
-        }
-
-        switch (mergeType) {
-            case MergeCol.MERGE_SUM:
-                if (colType == ColMeta.COL_TYPE_DOUBLE ||
-                        colType == ColMeta.COL_TYPE_FLOAT) {
-                    double value = BytesTools.getDouble(bs) +
-                            BytesTools.getDouble(bs2);
-
-                    return BytesTools.double2Bytes(value);
-                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL ||
-                        colType == ColMeta.COL_TYPE_DECIMAL) {
-                    BigDecimal decimal = new BigDecimal(new String(bs));
-                    decimal = decimal.add(new BigDecimal(new String(bs2)));
-                    return decimal.toString().getBytes();
-                }
-                return null;
-
-            case MergeCol.MERGE_COUNT: {
-                long s1 = BytesTools.getLong(bs);
-                long s2 = BytesTools.getLong(bs2);
-                long total = s1 + s2;
-                return BytesTools.long2Bytes(total);
-            }
-
-            case MergeCol.MERGE_MAX: {
-                int compare = ByteUtil.compareNumberByte(bs, bs2);
-                return (compare > 0) ? bs : bs2;
-            }
-
-            case MergeCol.MERGE_MIN: {
-                int compare = ByteUtil.compareNumberByte(bs, bs2);
-                return (compare > 0) ? bs2 : bs;
-
-            }
-            case MergeCol.MERGE_AVG: {
-                /**
-                 * count(*)
-                 */
-                long count = BytesTools.getLong(bs2);
-                if (colType == ColMeta.COL_TYPE_DOUBLE || colType == ColMeta.COL_TYPE_FLOAT) {
-                    /**
-                     * sum(*)
-                     */
-                    double sum = BytesTools.getDouble(bs);
-                    double value = sum / count;
-                    return BytesTools.double2Bytes(value);
-                } else if (colType == ColMeta.COL_TYPE_NEWDECIMAL || colType == ColMeta.COL_TYPE_DECIMAL) {
-                    BigDecimal sum = new BigDecimal(new String(bs));
-                    // AVG's Precision is sum's +4 , HALF_UP
-                    BigDecimal avg = sum.divide(new BigDecimal(count), sum.scale() + 4, RoundingMode.HALF_UP);
-                    return avg.toString().getBytes();
-                }
-                return null;
-            }
-            default:
-                return null;
         }
     }
 

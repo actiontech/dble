@@ -12,8 +12,8 @@ package com.actiontech.dble.plan.common.field.string;
  */
 public abstract class FieldLongstr extends FieldStr {
 
-    public FieldLongstr(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldLongstr(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
 }

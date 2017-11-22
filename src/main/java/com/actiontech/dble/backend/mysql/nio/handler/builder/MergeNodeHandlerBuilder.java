@@ -8,7 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.DistinctHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.UnionHandler;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.server.NonBlockingSession;
 

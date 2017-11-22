@@ -28,8 +28,8 @@ public abstract class FieldNum extends Field {
     private boolean zerofill = false;
     //public boolean unsigned_flag = false;
 
-    public FieldNum(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldNum(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
         zerofill = (FieldUtil.ZEROFILL_FLAG & flags) != 0;
         //unsigned_flag = (FieldUtil.UNSIGNED_FLAG & flags) != 0;
     }
@@ -80,7 +80,7 @@ public abstract class FieldNum extends Field {
         /** zero_ptrstr**/
         String res = null;
         try {
-            res = MySQLcom.getFullString(charsetName, ptr);
+            res = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
             LOGGER.warn("parse string exception!", ue);
         }

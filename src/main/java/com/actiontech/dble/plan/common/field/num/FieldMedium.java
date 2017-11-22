@@ -15,8 +15,8 @@ import com.actiontech.dble.plan.common.item.Item.ItemResult;
  */
 public class FieldMedium extends FieldNum {
 
-    public FieldMedium(String name, String table, int charsetIndex, int fieldLength, int decimals, long flags) {
-        super(name, table, charsetIndex, fieldLength, decimals, flags);
+    public FieldMedium(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
     }
 
     @Override

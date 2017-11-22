@@ -7,7 +7,7 @@ package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.TableNode;
@@ -27,13 +27,13 @@ public final class MyOptimizer {
     public static PlanNode optimize(PlanNode node) {
 
         try {
-            // PreProcessor SubQuery
+            // PreProcessor SubQuery ,transform in sub query to join
             node = SubQueryPreProcessor.optimize(node);
             updateReferedTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<String>());
-            if (node.isExsitView() || existGlobal != 1) {
-                // optimizer subquery
-                node = SubQueryProcessor.optimize(node);
+            if (node.isExistView() || existGlobal != 1) {
+                // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
+                //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join
                 node = JoinPreProcessor.optimize(node);
 

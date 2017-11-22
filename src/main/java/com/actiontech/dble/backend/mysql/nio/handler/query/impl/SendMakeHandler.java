@@ -30,18 +30,18 @@ public class SendMakeHandler extends BaseDMLHandler {
     private List<Item> selects;
     private List<Field> sourceFields;
     private List<Item> selItems;
-    private String tbAlias;
+    private String tableAlias;
+    private String table;
+    private String schema;
 
-    /**
-     * @param session
-     * @param selects
-     */
-    public SendMakeHandler(long id, NonBlockingSession session, List<Item> selects, String tableAlias) {
+    public SendMakeHandler(long id, NonBlockingSession session, List<Item> selects, String schema, String table, String tableAlias) {
         super(id, session);
         lock = new ReentrantLock();
         this.selects = selects;
         this.selItems = new ArrayList<>();
-        this.tbAlias = tableAlias;
+        this.schema = schema;
+        this.table = table;
+        this.tableAlias = tableAlias;
     }
 
     @Override
@@ -61,13 +61,13 @@ public class SendMakeHandler extends BaseDMLHandler {
             for (Item sel : selects) {
                 Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type());
                 tmpItem.setItemName(sel.getItemName());
-                if (sel.getAlias() != null || tbAlias != null) {
-                    String selAlias = sel.getAlias();
+                String selAlias = sel.getAlias();
+                if (selAlias != null || tableAlias != null) {
                     // remove the added tmp FNAF
                     if (StringUtils.indexOf(selAlias, Item.FNAF) == 0)
                         selAlias = StringUtils.substring(selAlias, Item.FNAF.length());
-                    tmpItem = HandlerTool.createRefItem(tmpItem, tbAlias, selAlias);
                 }
+                tmpItem = HandlerTool.createRefItem(tmpItem, schema, table, tableAlias, selAlias);
                 this.selItems.add(tmpItem);
             }
             List<FieldPacket> newFieldPackets = new ArrayList<>();

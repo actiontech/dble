@@ -9,7 +9,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
@@ -71,9 +70,9 @@ public class JoinNode extends PlanNode {
     private List<ItemFuncEqual> joinFilter;
     private Item otherJoinOnFilter;
 
-    protected List<ERTable> erKeys = new ArrayList<>();
+    private List<ERTable> erKeys = new ArrayList<>();
 
-    protected Strategy strategy = Strategy.SORTMERGE;
+    private Strategy strategy = Strategy.SORTMERGE;
 
     public JoinNode() {
         this.leftOuter = false;
@@ -95,7 +94,14 @@ public class JoinNode extends PlanNode {
         buildOtherJoinOn();
         buildJoinKeys(false);
     }
+    @Override
+    protected void setUpInnerFields() {
+        super.setUpInnerFields();
+        if (this.isNatural) {
+            this.genUsingByNatural();
+        }
 
+    }
     private void buildJoinFilters() {
         nameContext.setFindInSelect(false);
         nameContext.setSelectFirst(false);
@@ -123,7 +129,7 @@ public class JoinNode extends PlanNode {
         }
     }
 
-    public void genUsingByNatural() {
+    private void genUsingByNatural() {
         List<String> using = getFieldList(this.getLeftNode());
         List<String> rightFiled = getFieldList(this.getRightNode());
         using.retainAll(rightFiled);
@@ -185,10 +191,6 @@ public class JoinNode extends PlanNode {
 
     public void setUsingFields(List<String> usingFields) {
         this.usingFields = usingFields;
-    }
-
-    public boolean isNatural() {
-        return isNatural;
     }
 
     public void setNatural(boolean natural) {
@@ -284,6 +286,7 @@ public class JoinNode extends PlanNode {
 
     public void setRightNode(PlanNode right) {
         if (this.getChildren().isEmpty()) {
+            //todo: needed?
             addChild(null);
         }
         if (this.getChildren().size() == 1) {
@@ -308,9 +311,9 @@ public class JoinNode extends PlanNode {
         this.setLeftNode(this.getRightNode());
         this.setRightNode(tmp);
 
-        boolean tmpouter = this.leftOuter;
+        boolean tmpOuter = this.leftOuter;
         this.leftOuter = this.rightOuter;
-        this.rightOuter = tmpouter;
+        this.rightOuter = tmpOuter;
 
         this.buildJoinKeys(true);
 
@@ -363,11 +366,11 @@ public class JoinNode extends PlanNode {
     }
 
 
-    public boolean isNeedOptimizeJoinOrder() {
+    private boolean isNeedOptimizeJoinOrder() {
         return this.needOptimizeJoinOrder;
     }
 
-    public void setNeedOptimizeJoinOrder(boolean needOptimizeJoinOrder) {
+    private void setNeedOptimizeJoinOrder(boolean needOptimizeJoinOrder) {
         this.needOptimizeJoinOrder = needOptimizeJoinOrder;
     }
 

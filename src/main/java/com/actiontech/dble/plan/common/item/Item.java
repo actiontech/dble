@@ -7,7 +7,7 @@ package com.actiontech.dble.plan.common.item;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.plan.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.MySQLcom;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;

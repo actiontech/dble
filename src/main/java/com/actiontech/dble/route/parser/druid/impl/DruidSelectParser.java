@@ -28,7 +28,6 @@ import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
-import com.actiontech.dble.sqlengine.mpp.HavingCols;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -99,6 +98,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "The statement DML privilege check is not passed, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 }
+                rrs.setSchema(schemaInfo.getSchema());
+                rrs.setTable(schemaInfo.getTable());
+                rrs.setTableAlias(schemaInfo.getTableAlias());
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
 
@@ -233,16 +235,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
             }
         }
+        parseGroupCommon(rrs, mysqlSelectQuery, tc);
+    }
+
+    private void parseGroupCommon(RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) {
         if (mysqlSelectQuery.getGroupBy() != null) {
             SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
             boolean hasPartitionColumn = false;
 
-            if (groupBy.getHaving() != null) {
-                //TODO:DEFAULT HAVING HAS BUG,So NeedOptimizer
-                //SEE DataNodeMergeManager.java function onRowMetaData
-                rrs.setNeedOptimizer(true);
-                return;
-            }
             for (SQLExpr groupByItem : groupBy.getItems()) {
                 if (isNeedOptimizer(groupByItem)) {
                     rrs.setNeedOptimizer(true);
@@ -259,7 +259,12 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
             }
-            if (!hasPartitionColumn) {
+            if (groupBy.getItems().size() > 0 && !hasPartitionColumn) {
+                rrs.setNeedOptimizer(true);
+                return;
+            }
+            if (groupBy.getItems().size() == 0 && groupBy.getHaving() != null) {
+                // only having filter need optimizer
                 rrs.setNeedOptimizer(true);
             }
         }
@@ -338,42 +343,12 @@ public class DruidSelectParser extends DefaultDruidParser {
             List<SQLExpr> groupByItems = mysqlSelectQuery.getGroupBy().getItems();
             String[] groupByCols = buildGroupByCols(groupByItems, aliaColumns);
             rrs.setGroupByCols(groupByCols);
-            rrs.setHavings(buildGroupByHaving(mysqlSelectQuery.getGroupBy().getHaving()));
-            rrs.setHasAggrColumn(true);
         }
 
         if (isNeedChangeSql) {
             rrs.changeNodeSqlAfterAddLimit(stmt.toString(), 0, -1);
         }
         return aliaColumns;
-    }
-
-    private HavingCols buildGroupByHaving(SQLExpr having) {
-        if (having == null) {
-            return null;
-        }
-
-        SQLBinaryOpExpr expr = ((SQLBinaryOpExpr) having);
-        SQLExpr left = expr.getLeft();
-        SQLBinaryOperator operator = expr.getOperator();
-        SQLExpr right = expr.getRight();
-
-        String leftValue = null;
-        if (left instanceof SQLAggregateExpr) {
-            leftValue = ((SQLAggregateExpr) left).getMethodName() + "(" +
-                    ((SQLAggregateExpr) left).getArguments().get(0) + ")";
-        } else if (left instanceof SQLIdentifierExpr) {
-            leftValue = ((SQLIdentifierExpr) left).getName();
-        }
-
-        String rightValue = null;
-        if (right instanceof SQLNumericLiteralExpr) {
-            rightValue = right.toString();
-        } else if (right instanceof SQLTextLiteralExpr) {
-            rightValue = StringUtil.removeApostrophe(right.toString());
-        }
-
-        return new HavingCols(leftValue, rightValue, operator.getName());
     }
 
     private String getAliaColumn(Map<String, String> aliaColumns, String column) {

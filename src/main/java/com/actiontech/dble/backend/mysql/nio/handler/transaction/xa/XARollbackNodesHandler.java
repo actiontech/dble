@@ -57,12 +57,24 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             }
         }
 
-        for (final RouteResultsetNode node : session.getTargetKeys()) {
-            final BackendConnection conn = session.getTarget(node);
-            conn.setResponseHandler(this);
-            if (!executeRollback((MySQLConnection) conn, position++)) {
-                break;
+        try {
+            sendFinishedFlag = false;
+            for (final RouteResultsetNode node : session.getTargetKeys()) {
+                final BackendConnection conn = session.getTarget(node);
+                conn.setResponseHandler(this);
+                if (!executeRollback((MySQLConnection) conn, position++)) {
+                    break;
+                }
             }
+        } finally {
+            lockForErrorHandle.lock();
+            try {
+                sendFinishedFlag = true;
+                sendFinished.signalAll();
+            } finally {
+                lockForErrorHandle.unlock();
+            }
+
         }
     }
 
@@ -97,9 +109,6 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             rollbackPhase(mysqlCon);
 
         } else if (session.getXaState() == TxState.TX_ENDED_STATE) {
-            if (mysqlCon.isClosed()) {
-                mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-            }
             if (position == 0) {
                 this.debugRollbackDelay();
             }
@@ -141,12 +150,12 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (decrementCountBy(1)) {
                 cleanAndFeedback();
             }
-
         }
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        this.waitUntilSendFinish();
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
@@ -188,6 +197,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
+        this.waitUntilSendFinish();
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
@@ -249,6 +259,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
+        this.waitUntilSendFinish();
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
@@ -295,6 +306,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        this.waitUntilSendFinish();
         this.setFail(reason);
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
@@ -407,6 +419,20 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         } catch (Exception e) {
             LOGGER.debug("before xa rollback  sleep error ");
         }
+    }
+
+    public void waitUntilSendFinish() {
+        this.lockForErrorHandle.lock();
+        try {
+            if (!this.sendFinishedFlag) {
+                this.sendFinished.await();
+            }
+        } catch (Exception e) {
+            LOGGER.info("back Response is closed by thread interrupted");
+        } finally {
+            lockForErrorHandle.unlock();
+        }
+        return;
     }
 
 }

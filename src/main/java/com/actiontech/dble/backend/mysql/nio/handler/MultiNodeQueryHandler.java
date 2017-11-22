@@ -18,17 +18,12 @@ import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.memory.unsafe.row.UnsafeRow;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.sqlengine.mpp.AbstractDataNodeMerge;
-import com.actiontech.dble.sqlengine.mpp.ColMeta;
-import com.actiontech.dble.sqlengine.mpp.DataMergeService;
-import com.actiontech.dble.sqlengine.mpp.DataNodeMergeManager;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.FormatUtil;
@@ -36,39 +31,38 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author mycat
  */
 public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataResponseHandler {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
-
-    private final RouteResultset rrs;
-    private final NonBlockingSession session;
-    private final AbstractDataNodeMerge dataMergeSvr;
+    protected final RouteResultset rrs;
+    protected final NonBlockingSession session;
     private final boolean sessionAutocommit;
+    protected long affectedRows;
+    protected long selectRows;
+    protected long startTime;
+    protected long netInBytes;
+    protected List<BackendConnection> errConnection;
+    protected long netOutBytes;
+    protected boolean prepared;
+    protected ErrorPacket err;
+    protected int fieldCount = 0;
+    protected volatile boolean fieldsReturned;
+    private long insertId;
     private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
-    private int fieldCount = 0;
-    private long affectedRows;
-    private long selectRows;
-    private long insertId;
-    private volatile boolean fieldsReturned;
-    private long startTime;
-    private long netInBytes;
-    private long netOutBytes;
-    private boolean prepared;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
-    private ErrorPacket err;
-    private List<BackendConnection> errConnection;
     private volatile ByteBuffer byteBuffer;
     private Set<BackendConnection> closedConnSet;
 
-    public MultiNodeQueryHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
+    public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -77,18 +71,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
-        int isOffHeapUseOffHeapForMerge = DbleServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
-        if (ServerParse.SELECT == sqlType && rrs.needMerge()) {
-            if (isOffHeapUseOffHeapForMerge == 1) {
-                dataMergeSvr = new DataNodeMergeManager(this, rrs);
-            } else {
-                dataMergeSvr = new DataMergeService(this, rrs);
-            }
-        } else {
-            dataMergeSvr = null;
-            if (ServerParse.SELECT == sqlType) {
-                byteBuffer = session.getSource().allocate();
-            }
+        if (ServerParse.SELECT == rrs.getSqlType()) {
+            byteBuffer = session.getSource().allocate();
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
@@ -282,11 +266,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 return;
             }
             fieldsReturned = true;
-            if (dataMergeSvr != null) {
-                mergeFieldEof(fields, eof);
-            } else {
-                executeFieldEof(header, fields, eof);
-            }
+            executeFieldEof(header, fields, eof);
         } catch (Exception e) {
             handleDataProcessException(e);
         } finally {
@@ -348,44 +328,35 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.selectRows++;
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             String dataNode = rNode.getName();
-            if (dataMergeSvr != null) {
-                // even through discarding the all rest data, we can't
-                //close the connection for tx control such as rollback or commit.
-                // So the "isClosedByDiscard" variable is unnecessary.
-                // @author Uncle-pan
-                // @since 2016-03-25
-                dataMergeSvr.onNewRecord(dataNode, row);
-            } else {
-                if (rrs.getLimitSize() >= 0) {
-                    if (selectRows <= rrs.getLimitStart()) {
-                        return false;
-                    } else if (selectRows > (rrs.getLimitStart() < 0 ? 0 : rrs.getLimitStart()) + rrs.getLimitSize()) {
-                        return false;
-                    }
+
+            if (rrs.getLimitSize() >= 0) {
+                if (selectRows <= rrs.getLimitStart() ||
+                        (selectRows > (rrs.getLimitStart() < 0 ? 0 : rrs.getLimitStart()) + rrs.getLimitSize())) {
+                    return false;
                 }
-                RowDataPacket rowDataPkg = null;
-                // cache primaryKey-> dataNode
-                if (primaryKeyIndex != -1) {
+            }
+            RowDataPacket rowDataPkg = null;
+            // cache primaryKey-> dataNode
+            if (primaryKeyIndex != -1) {
+                rowDataPkg = new RowDataPacket(fieldCount);
+                rowDataPkg.read(row);
+                String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
+                LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
+                if (pool != null) {
+                    pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                }
+            }
+            row[3] = ++packetId;
+            if (prepared) {
+                if (rowDataPkg == null) {
                     rowDataPkg = new RowDataPacket(fieldCount);
                     rowDataPkg.read(row);
-                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
-                    LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-                    if (pool != null) {
-                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
-                    }
                 }
-                row[3] = ++packetId;
-                if (prepared) {
-                    if (rowDataPkg == null) {
-                        rowDataPkg = new RowDataPacket(fieldCount);
-                        rowDataPkg.read(row);
-                    }
-                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                    binRowDataPk.read(fieldPackets, rowDataPkg);
-                    binRowDataPk.write(byteBuffer, session.getSource(), true);
-                } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
-                }
+                BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                binRowDataPk.read(fieldPackets, rowDataPkg);
+                binRowDataPk.write(byteBuffer, session.getSource(), true);
+            } else {
+                byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
             }
         } catch (Exception e) {
             handleDataProcessException(e);
@@ -399,14 +370,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void clearResources() {
         if (closedConnSet != null) {
             closedConnSet.clear();
-        }
-        lock.lock();
-        try {
-            if (dataMergeSvr != null) {
-                dataMergeSvr.clear();
-            }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -460,29 +423,20 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
-        if (dataMergeSvr != null) {
-            try {
-                dataMergeSvr.outputMergeResult(session, eof);
-            } catch (Exception e) {
-                handleDataProcessException(e);
+        lock.lock();
+        try {
+            eof[3] = ++packetId;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("last packet id:" + packetId);
             }
-
-        } else {
-            lock.lock();
-            try {
-                eof[3] = ++packetId;
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("last packet id:" + packetId);
-                }
-                byteBuffer = source.writeToBuffer(eof, byteBuffer);
-                source.write(byteBuffer);
-            } finally {
-                lock.unlock();
-            }
+            byteBuffer = source.writeToBuffer(eof, byteBuffer);
+            source.write(byteBuffer);
+        } finally {
+            lock.unlock();
         }
     }
 
-    private void doSqlStat(ServerConnection source) {
+    protected void doSqlStat(ServerConnection source) {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
             if (rrs != null && rrs.getStatement() != null) {
@@ -494,132 +448,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }
-
-    /**
-     * send the final result to the client
-     *
-     * @param source   ServerConnection
-     * @param eof      eof bytes
-     * @param iterator Iterator
-     */
-    public void outputMergeResult(final ServerConnection source, final byte[] eof, Iterator<UnsafeRow> iterator) {
-        lock.lock();
-        try {
-            ByteBuffer buffer = session.getSource().allocate();
-            final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
-
-            /* cut the result for the limit statement */
-            int start = routeResultset.getLimitStart();
-            int end = start + routeResultset.getLimitSize();
-            int index = 0;
-
-            if (start < 0)
-                start = 0;
-
-            if (routeResultset.getLimitSize() < 0)
-                end = Integer.MAX_VALUE;
-
-            if (prepared) {
-                while (iterator.hasNext()) {
-                    UnsafeRow row = iterator.next();
-                    if (index >= start) {
-                        row.setPacketId(++packetId);
-                        BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
-                        binRowPacket.read(fieldPackets, row);
-                        buffer = binRowPacket.write(buffer, source, true);
-                    }
-                    index++;
-                    if (index == end) {
-                        break;
-                    }
-                }
-            } else {
-                while (iterator.hasNext()) {
-                    UnsafeRow row = iterator.next();
-                    if (index >= start) {
-                        row.setPacketId(++packetId);
-                        buffer = row.write(buffer, source, true);
-                    }
-                    index++;
-                    if (index == end) {
-                        break;
-                    }
-                }
-            }
-
-            eof[3] = ++packetId;
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("last packet id:" + packetId);
-            }
-            source.write(source.writeToBuffer(eof, buffer));
-        } catch (Exception e) {
-            handleDataProcessException(e);
-        } finally {
-            try {
-                dataMergeSvr.clear();
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
-
-    public void outputMergeResult(final ServerConnection source,
-                                  final byte[] eof, List<RowDataPacket> results) {
-        lock.lock();
-        try {
-            ByteBuffer buffer = session.getSource().allocate();
-            final RouteResultset routeResultset = this.dataMergeSvr.getRrs();
-
-            int start = routeResultset.getLimitStart();
-            int end = start + routeResultset.getLimitSize();
-
-            if (start < 0) {
-                start = 0;
-            }
-
-            if (routeResultset.getLimitSize() < 0) {
-                end = results.size();
-            }
-
-            if (end > results.size()) {
-                end = results.size();
-            }
-
-            if (prepared) {
-                for (int i = start; i < end; i++) {
-                    RowDataPacket row = results.get(i);
-                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                    binRowDataPk.read(fieldPackets, row);
-                    binRowDataPk.setPacketId(++packetId);
-                    //binRowDataPk.write(source);
-                    buffer = binRowDataPk.write(buffer, session.getSource(), true);
-                }
-            } else {
-                for (int i = start; i < end; i++) {
-                    RowDataPacket row = results.get(i);
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, source, true);
-                }
-            }
-
-            eof[3] = ++packetId;
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("last packet id:" + packetId);
-            }
-            source.write(source.writeToBuffer(eof, buffer));
-
-        } catch (Exception e) {
-            handleDataProcessException(e);
-        } finally {
-            try {
-                dataMergeSvr.clear();
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
-
 
     private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
         ServerConnection source = session.getSource();
@@ -662,45 +490,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         byteBuffer = source.writeToBuffer(eof, byteBuffer);
     }
 
-    private void mergeFieldEof(List<byte[]> fields, byte[] eof) throws IOException {
-        fieldCount = fields.size();
-        ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
-        packet.setPacketId(++packetId);
-        packet.setFieldCount(fieldCount);
-        ServerConnection source = session.getSource();
-        ByteBuffer buffer = source.allocate();
-        buffer = packet.write(buffer, source, true);
-
-        Map<String, ColMeta> columnToIndex = new HashMap<>(fieldCount);
-        for (int i = 0, len = fieldCount; i < len; ++i) {
-            byte[] field = fields.get(i);
-            FieldPacket fieldPkg = new FieldPacket();
-            fieldPkg.read(field);
-            if (rrs.getSchema() != null) {
-                fieldPkg.setDb(rrs.getSchema().getBytes());
-            }
-            if (rrs.getTableAlias() != null) {
-                fieldPkg.setTable(rrs.getTableAlias().getBytes());
-            }
-            if (rrs.getTable() != null) {
-                fieldPkg.setOrgTable(rrs.getTable().getBytes());
-            }
-            fieldPackets.add(fieldPkg);
-            String fieldName = new String(fieldPkg.getName()).toUpperCase();
-            if (!columnToIndex.containsKey(fieldName)) {
-                ColMeta colMeta = new ColMeta(i, fieldPkg.getType());
-                colMeta.setDecimals(fieldPkg.getDecimals());
-                columnToIndex.put(fieldName, colMeta);
-            }
-            fieldPkg.setPacketId(++packetId);
-            buffer = fieldPkg.write(buffer, source, false);
-
-        }
-        eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, buffer);
-        source.write(buffer);
-        dataMergeSvr.onRowMetaData(columnToIndex, fieldCount);
-    }
 
     public void handleDataProcessException(Exception e) {
         if (!errorResponse.get()) {
@@ -733,7 +522,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.prepared = prepared;
     }
 
-    private void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
+    protected void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
         ServerConnection source = session.getSource();
         if (source.isAutocommit() && !source.isTxStart() && conn.isModifiedSQLExecuted()) {
             if (nodeCount < 0) {

@@ -44,7 +44,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private volatile boolean errConn = false;
     private Set<BackendConnection> closedConnSet;
-    public MultiNodeDdlHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
+    public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -59,7 +59,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.session = session;
 
         this.oriRrs = rrs;
-        this.handler = new MultiNodeQueryHandler(sqlType, rrs, session);
+        this.handler = new MultiNodeQueryHandler(rrs, session);
+
         this.errConn = false;
     }
 
@@ -250,6 +251,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     handler.execute();
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
+                    session.handleSpecial(oriRrs, source.getSchema(), false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {

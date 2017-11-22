@@ -328,7 +328,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                         LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
                     }
                     RouterUtil.routeToSingleNode(rrs, dn);
-                    sc.getSession2().execute(rrs, ServerParse.REPLACE);
+                    sc.getSession2().execute(rrs);
                 }
             });
         }

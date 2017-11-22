@@ -24,14 +24,6 @@
     </Match>
     <!-- protocol:ignore -->
 
-    <!-- need refactor -->
-    <Match>
-        <Class name="com.actiontech.dble.sqlengine.mpp.UnsafeRowGrouper"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.sqlengine.mpp.RowDataPacketGrouper"/>
-    </Match>
-
     <Match>
         <Package name="com.actiontech.dble.util.dataMigrator.dataIOImpl"/>
     </Match>

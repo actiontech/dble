@@ -177,11 +177,6 @@
         <Class name="com.actiontech.dble.server.handler.ServerLoadDataInfileHandler"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
-    <Match>
-        <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.memory.unsafe.map.BytesToBytesMap$MapIterator"/>
-        <Bug pattern="IS2_INCONSISTENT_SYNC"/>
-    </Match>
 	<Match>
         <Bug category="MT_CORRECTNESS"/>
         <Class name="com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler"/>

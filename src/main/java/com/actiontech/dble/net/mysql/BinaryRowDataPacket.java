@@ -8,7 +8,6 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.memory.unsafe.row.UnsafeRow;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
@@ -48,34 +47,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
     private List<FieldPacket> fieldPackets;
 
     public BinaryRowDataPacket() {
-    }
-
-    /**
-     * transform from UnsafeRow to BinaryRowDataPacket
-     * <p>
-     * Notice: when <b>isOffHeapuseOffHeapForMerge</b>is enable,
-     * UnsafeRow package the data,
-     * so now need to unpackage to BinaryRowDataPacket
-     *
-     * @param fields
-     * @param unsafeRow
-     */
-    public void read(List<FieldPacket> fields, UnsafeRow unsafeRow) {
-        this.fieldPackets = fields;
-        this.fieldCount = unsafeRow.numFields();
-        this.fieldValues = new ArrayList<>(fieldCount);
-        this.nullBitMap = new byte[(fieldCount + 7 + 2) / 8];
-
-        for (int i = 0; i < this.fieldCount; i++) {
-            byte[] fv = unsafeRow.getBinary(i);
-            FieldPacket fieldPk = fields.get(i);
-            if (fv == null) {
-                storeNullBitMap(i);
-                this.fieldValues.add(fv);
-            } else {
-                convert(fv, fieldPk);
-            }
-        }
     }
 
     /**

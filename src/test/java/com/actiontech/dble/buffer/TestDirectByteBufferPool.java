@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.buffer;
 
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import junit.framework.Assert;
 import org.junit.Test;
 import sun.nio.ch.DirectBuffer;
@@ -35,6 +36,21 @@ public class TestDirectByteBufferPool {
             pool.recycle(byteBufer);
             pool.recycle(byteBufer3);
             //System.out.println("recycle usage "+(System.nanoTime()-start));
+        }
+        long used = (System.currentTimeMillis() - start);
+        System.out.println("total used time  " + used + " avg speed " + allocTimes / used);
+    }
+
+    @Test @Ignore
+    public void testAllocateTime() {
+        int pageSize = 1024 * 1024 * 10;
+        int allocTimes = 20480;
+        int size = 4096;
+        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8);
+        ByteBuffer[] byteBuffer = new ByteBuffer[allocTimes];
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < allocTimes; i++) {
+            byteBuffer[i] = pool.allocate(size);
         }
         long used = (System.currentTimeMillis() - start);
         System.out.println("total used time  " + used + " avg speed " + allocTimes / used);

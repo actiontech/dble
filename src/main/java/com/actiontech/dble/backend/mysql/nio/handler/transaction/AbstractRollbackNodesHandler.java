@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler implements RollbackNodesHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractRollbackNodesHandler.class);
-    protected volatile boolean sendFinishedFlag = true;
+    protected volatile boolean sendFinishedFlag = false;
     protected Lock lockForErrorHandle = new ReentrantLock();
     protected Condition sendFinished = lockForErrorHandle.newCondition();
 

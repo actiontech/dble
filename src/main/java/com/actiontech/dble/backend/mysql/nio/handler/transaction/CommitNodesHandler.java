@@ -7,6 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
 public interface CommitNodesHandler {
     void commit();
-
+    boolean init();
     void clearResources();
 }

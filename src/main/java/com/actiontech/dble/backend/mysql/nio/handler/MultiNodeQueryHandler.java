@@ -725,10 +725,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 if (session.getXaState() == null) {
                     NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-                    autoHandler.commit();
+                    if (autoHandler.init()) {
+                        autoHandler.commit();
+                    }
                 } else {
                     XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-                    autoHandler.commit();
+                    if (autoHandler.init()) {
+                        autoHandler.commit();
+                    }
                 }
             } else {
                 if (session.getXaState() == null) {

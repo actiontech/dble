@@ -15,6 +15,18 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
 
     @Override
+    public boolean init() {
+        if (initResponse()) {
+            return true;
+        } else {
+            String reason = "backend conn closed";
+            session.clearResources(true);
+            createErrPkg(reason).write(session.getSource());
+            return false;
+        }
+    }
+
+    @Override
     public void clearResources() {
         sendData = null;
     }
@@ -31,6 +43,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        this.waitUntilSendFinish();
         if (decrementCountBy(1)) {
             if (sendData == null) {
                 sendData = ok;
@@ -41,6 +54,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
+        this.waitUntilSendFinish();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
@@ -53,6 +67,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
+        this.waitUntilSendFinish();
         LOGGER.warn("backend connect", e);
         this.setFail(e.getMessage());
         conn.quit();
@@ -63,6 +78,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        this.waitUntilSendFinish();
         this.setFail(reason);
         conn.quit();
         if (decrementCountBy(1)) {

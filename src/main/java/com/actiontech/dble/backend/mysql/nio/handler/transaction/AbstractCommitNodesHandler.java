@@ -23,15 +23,27 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implements CommitNodesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
-    protected Lock lockForErrorHandle = new ReentrantLock();
-    protected Condition sendFinished = lockForErrorHandle.newCondition();
-    protected volatile boolean sendFinishedFlag = true;
+    private Lock lockForErrorHandle = new ReentrantLock();
+    private Condition sendFinished = lockForErrorHandle.newCondition();
+    private volatile boolean sendFinishedFlag = false;
 
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
 
     protected abstract boolean executeCommit(MySQLConnection mysqlCon, int position);
+
+    protected boolean initResponse() {
+        boolean isNormal = true;
+        for (RouteResultsetNode rrn : session.getTargetKeys()) {
+            BackendConnection conn = session.getTarget(rrn);
+            conn.setResponseHandler(this);
+            if (conn.isClosedOrQuit()) {
+                isNormal = false;
+            }
+        }
+        return isNormal;
+    }
 
     @Override
     public void commit() {
@@ -55,7 +67,6 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
             sendFinishedFlag = false;
             for (RouteResultsetNode rrn : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(rrn);
-                conn.setResponseHandler(this);
                 if (!executeCommit((MySQLConnection) conn, position++)) {
                     break;
                 }
@@ -113,5 +124,17 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 
     public void debugCommitDelay() {
 
+    }
+    protected void waitUntilSendFinish() {
+        this.lockForErrorHandle.lock();
+        try {
+            if (!this.sendFinishedFlag) {
+                this.sendFinished.await();
+            }
+        } catch (Exception e) {
+            LOGGER.info("back Response is closed by thread interrupted");
+        } finally {
+            lockForErrorHandle.unlock();
+        }
     }
 }

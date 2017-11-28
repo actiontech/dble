@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -55,7 +54,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
     private int fieldCount = 0;
-    private final ReentrantLock lock;
     private long affectedRows;
     private long selectRows;
     private long insertId;
@@ -68,6 +66,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private ErrorPacket err;
     private List<BackendConnection> errConnection;
     private volatile ByteBuffer byteBuffer;
+    private Set<BackendConnection> closedConnSet;
 
     public MultiNodeQueryHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -93,7 +92,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.session = session;
-        this.lock = new ReentrantLock();
     }
 
     private void recycleResources() {
@@ -160,6 +158,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        if (checkClosedConn(conn)) {
+            return;
+        }
         LOGGER.warn("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
@@ -397,6 +398,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void clearResources() {
+        if (closedConnSet != null) {
+            closedConnSet.clear();
+        }
         lock.lock();
         try {
             if (dataMergeSvr != null) {
@@ -708,6 +712,24 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
+    private boolean checkClosedConn(BackendConnection conn) {
+        lock.lock();
+        try {
+            if (closedConnSet == null) {
+                closedConnSet = new HashSet<>(1);
+                closedConnSet.add(conn);
+            } else {
+                if (closedConnSet.contains(conn)) {
+                    return true;
+                }
+                closedConnSet.add(conn);
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void setPrepared(boolean prepared) {
         this.prepared = prepared;
     }
@@ -725,14 +747,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 if (session.getXaState() == null) {
                     NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-                    if (autoHandler.init()) {
-                        autoHandler.commit();
-                    }
+                    autoHandler.commit();
                 } else {
                     XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-                    if (autoHandler.init()) {
-                        autoHandler.commit();
-                    }
+                    autoHandler.commit();
                 }
             } else {
                 if (session.getXaState() == null) {

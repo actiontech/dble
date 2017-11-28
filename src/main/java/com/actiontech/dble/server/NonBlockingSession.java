@@ -317,9 +317,7 @@ public class NonBlockingSession implements Session {
         }
         checkBackupStatus();
         createCommitNodesHandler();
-        if (commitHandler.init()) {
-            commitHandler.commit();
-        }
+        commitHandler.commit();
     }
 
     public void checkBackupStatus() {

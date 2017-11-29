@@ -154,7 +154,7 @@ public class MySQLPlanNodeVisitor {
             QueryNode viewNode = DbleServer.getInstance().getTmManager().getSyncView(currentDb, identifierExpr.getName());
             if (viewNode != null) {
                 //consider if the table with other name
-                viewNode.setAlias(tableSource.getAlias());
+                viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
                 this.tableNode = viewNode;
                 this.tableNode.setSubQuery(true);
                 this.tableNode.setExistView(true);
@@ -273,7 +273,9 @@ public class MySQLPlanNodeVisitor {
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
         }
-        this.tableNode.setAlias(tables.getAlias());
+        if (tables.getAlias() != null) {
+            this.tableNode.setAlias(tables.getAlias());
+        }
     }
 
     private List<Item> handleSelectItems(List<SQLSelectItem> items) {

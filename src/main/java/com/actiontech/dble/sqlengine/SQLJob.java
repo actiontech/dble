@@ -52,8 +52,7 @@ public class SQLJob implements ResponseHandler, Runnable {
     public void run() {
         try {
             if (ds == null) {
-                RouteResultsetNode node = new RouteResultsetNode(
-                        dataNodeOrDatabase, ServerParse.SELECT, sql);
+                RouteResultsetNode node = new RouteResultsetNode(dataNodeOrDatabase, ServerParse.SELECT, sql);
                 // create new connection
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
@@ -79,6 +78,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
+        LOGGER.warn("con query sql:" + sql + " to con:" + conn);
         conn.setResponseHandler(this);
         try {
             conn.query(sql);

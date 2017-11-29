@@ -59,7 +59,7 @@ public final class ServerParse {
     public static int parse(String stmt) {
         int length = stmt.length();
         //FIX BUG FOR SQL SUCH AS /XXXX/SQL
-        int rt = -1;
+        int rt = OTHER;
         for (int i = 0; i < length; ++i) {
             switch (stmt.charAt(i)) {
                 case ' ':
@@ -144,12 +144,9 @@ public final class ServerParse {
                 default:
                     break;
             }
-            if (rt != OTHER) {
-                return rt;
-            }
-            continue;
+            break;
         }
-        return OTHER;
+        return rt;
     }
 
     private static int eCheck(String stmt, int offset) {

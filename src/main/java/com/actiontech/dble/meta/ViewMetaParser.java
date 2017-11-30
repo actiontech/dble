@@ -91,6 +91,8 @@ public class ViewMetaParser {
                             return originalSql.substring(viewNameStat, offset);
                         }
                     }
+                } else {
+                    return "";
                 }
             }
         }

@@ -71,6 +71,10 @@ public class ViewMeta {
         viewParser.parseCreateView(this);
 
         try {
+            if ("".equals(viewName)) {
+                throw new Exception("sql not supported ");
+            }
+
             DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
 
             //check if the select part has

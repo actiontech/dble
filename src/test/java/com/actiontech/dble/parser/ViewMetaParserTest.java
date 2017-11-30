@@ -39,6 +39,17 @@ public class ViewMetaParserTest {
 
 
     @Test
+    public void getViewNodeSupportTest() {
+        ViewMetaParser x = new ViewMetaParser("create      or replace  ALGORITHM = MERGE        view        x_xx__xx(id,name)as select * from suntest");
+        Assert.assertEquals("", x.getViewName());
+        x = new ViewMetaParser("create      or replace  DEFINER  = CURRENT_USER         view        x_xx__xx(id,name)as select * from suntest");
+        Assert.assertEquals("", x.getViewName());
+        x = new ViewMetaParser("create      or replace  SQL SECURITY DEFINER       view        x_xx__xx(id,name)as select * from suntest");
+        Assert.assertEquals("", x.getViewName());
+
+    }
+
+    @Test
     public void parseTotalTest() {
         ViewMetaParser x = new ViewMetaParser("       create      or        replace         view        x_xx__xx(id,name)as select * from suntest");
         x.getViewName();

@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLNonTransientException;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
 
@@ -64,7 +65,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<>();
 
     @Override
-    public long nextId(String seqName) {
+    public long nextId(String seqName) throws SQLNonTransientException {
         SequenceVal seqVal = seqValueMap.get(seqName);
         if (seqVal == null) {
             throw new ConfigException("can't find definition for sequence :" + seqName);
@@ -77,7 +78,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     }
 
-    private Long getNextValidSeqVal(SequenceVal seqVal) {
+    private Long getNextValidSeqVal(SequenceVal seqVal) throws SQLNonTransientException {
         Long nexVal = seqVal.nextValue();
         if (seqVal.isNexValValid(nexVal)) {
             return nexVal;
@@ -87,10 +88,9 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         }
     }
 
-    private long getSeqValueFromDB(SequenceVal seqVal) {
+    private long getSeqValueFromDB(SequenceVal seqVal) throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("get next segement of sequence from db for sequence:" +
-                    seqVal.seqName + " curVal " + seqVal.curVal);
+            LOGGER.debug("get next segement of sequence from db for sequence:" + seqVal.seqName + " curVal " + seqVal.curVal);
         }
         if (seqVal.fetching.compareAndSet(false, true)) {
             seqVal.dbretVal = null;
@@ -100,9 +100,12 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         }
         Long[] values = seqVal.waitFinish();
         if (values == null) {
-
-            throw new RuntimeException("can't fetch sequence in db,sequence :" +
-                    seqVal.seqName + " detail:" + mysqlSeqFetcher.getLastestError(seqVal.seqName));
+            throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
+                                       mysqlSeqFetcher.getLastestError(seqVal.seqName));
+        } else if (values[0] == 0) {
+            String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
+            LOGGER.warn(msg);
+            throw new SQLNonTransientException(msg);
         } else {
             if (seqVal.newValueSetted.compareAndSet(false, true)) {
                 seqVal.setCurValue(values[0]);

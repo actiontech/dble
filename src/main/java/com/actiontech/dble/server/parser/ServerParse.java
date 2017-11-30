@@ -53,6 +53,7 @@ public final class ServerParse {
 
 
     public static final int MIGRATE = 203;
+    public static final int UNSUPPORT = 255;
     private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
 
@@ -91,7 +92,7 @@ public final class ServerParse {
                     break;
                 case 'C':
                 case 'c':
-                    rt = commitOrCallCheckOrCreate(stmt, i);
+                    rt = cCheck(stmt, i);
                     break;
                 case 'D':
                 case 'd':
@@ -101,6 +102,10 @@ public final class ServerParse {
                 case 'e':
                     rt = eCheck(stmt, i);
                     break;
+                case 'F':
+                case 'f':
+                    rt = flushCheck(stmt, i);
+                    break;
                 case 'I':
                 case 'i':
                     rt = insertCheck(stmt, i);
@@ -108,6 +113,10 @@ public final class ServerParse {
                 case 'M':
                 case 'm':
                     rt = migrateCheck(stmt, i);
+                    break;
+                case 'O':
+                case 'o':
+                    rt = optimizeCheck(stmt, i);
                     break;
                 case 'P':
                 case 'p':
@@ -172,6 +181,21 @@ public final class ServerParse {
         return sqlType;
     }
 
+    private static int flushCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u') && (c3 == 'S' || c3 == 's') && (c4 == 'H' || c4 == 'h') &&
+                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                return UNSUPPORT;
+            }
+        }
+        return OTHER;
+    }
+
     static int lCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
@@ -199,7 +223,6 @@ public final class ServerParse {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
 
-
             if ((c1 == 'i' || c1 == 'I') &&
                     (c2 == 'g' || c2 == 'G') &&
                     (c3 == 'r' || c3 == 'R') &&
@@ -207,6 +230,24 @@ public final class ServerParse {
                     (c5 == 't' || c5 == 'T') &&
                     (c6 == 'e' || c6 == 'E')) {
                 return MIGRATE;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int optimizeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 7) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'P' || c1 == 'p') && (c2 == 'T' || c2 == 't') && (c3 == 'I' || c3 == 'i') && (c4 == 'M' || c4 == 'm') && (c5 == 'I' || c5 == 'i') &&
+                (c6 == 'Z' || c6 == 'z') && (c7 == 'E' || c7 == 'E') && (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+                return UNSUPPORT;
             }
         }
         return OTHER;
@@ -261,19 +302,28 @@ public final class ServerParse {
         return OTHER;
     }
 
-    //alter table/view/...
+    //alter table/view/... and analyze
     private static int aCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'l':
+                    return alterCheck(stmt, offset);
+                case 'n':
+                    return analyzeCheck(stmt, offset);
+            	default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int alterCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') &&
-                    (c2 == 'T' || c2 == 't') &&
-                    (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'R' || c4 == 'r') &&
-                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+            if ((c1 == 'T' || c1 == 't') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
                 return alterViewCheck(stmt, offset);
             }
         }
@@ -304,6 +354,21 @@ public final class ServerParse {
         }
     }
 
+    private static int analyzeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'L' || c2 == 'l') && (c3 == 'Y' || c3 == 'y') && (c4 == 'Z' || c4 == 'z') && (c5 == 'E' || c5 == 'e') &&
+                (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+                return UNSUPPORT;
+            }
+        }
+        return OTHER;
+    }
 
     //create table/view/...
     private static int createCheck(String stmt, int offset) {
@@ -639,16 +704,38 @@ public final class ServerParse {
         return OTHER;
     }
 
-    static int commitOrCallCheckOrCreate(String stmt, int offset) {
+    static int checksumCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "HECKSUM ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'E') && (c3 == 'C' || c3 == 'c') && (c4 == 'K' || c4 == 'k') &&
+                (c5 == 'S' || c5 == 's') && (c6 == 'U' || c6 == 'u') && (c7 == 'M' || c7 == 'm') &&
+                (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+                return UNSUPPORT;
+            }
+        }
+        return OTHER;
+    }
+    static int cCheck(String stmt, int offset) {
         int sqlType = OTHER;
         switch (stmt.charAt((offset + 1))) {
-            case 'O':
-            case 'o':
-                sqlType = commitCheck(stmt, offset);
-                break;
             case 'A':
             case 'a':
                 sqlType = callCheck(stmt, offset);
+                break;
+            case 'H':
+            case 'h':
+                sqlType = checksumCheck(stmt, offset);
+                break;
+            case 'O':
+            case 'o':
+                sqlType = commitCheck(stmt, offset);
                 break;
             case 'R':
             case 'r':
@@ -769,7 +856,7 @@ public final class ServerParse {
             switch (stmt.charAt(offset)) {
                 case 'E':
                 case 'e':
-                    return replaceCheck(stmt, offset);
+                    return reCheck(stmt, offset);
                 case 'O':
                 case 'o':
                     return rollbackCheck(stmt, offset);
@@ -780,19 +867,74 @@ public final class ServerParse {
         return OTHER;
     }
 
+    static int reCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'N':
+                case 'n':
+                    return rename(stmt, offset);
+                case 'P':
+                case 'p':
+                    return repCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    static int repCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return repair(stmt, offset);
+                case 'L':
+                case 'l':
+                    return replace(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    static int rename(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'M' || c2 == 'm') && (c3 == 'E' || c3 == 'e') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                return UNSUPPORT;
+            }
+        }
+        return OTHER;
+    }
+
+    static int repair(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'R' || c2 == 'r') && (c3 == ' ' || c3 == '\t' || c3 == '\r' || c3 == '\n')) {
+                return UNSUPPORT;
+            }
+        }
+        return OTHER;
+    }
+
+
     // REPLACE' '
-    static int replaceCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 6) {
+    static int replace(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'P' || c1 == 'p') && (c2 == 'L' || c2 == 'l') &&
-                    (c3 == 'A' || c3 == 'a') && (c4 == 'C' || c4 == 'c') &&
-                    (c5 == 'E' || c5 == 'e') &&
-                    (c6 == ' ' || c6 == '\t' || c6 == '\r' || c6 == '\n')) {
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'A' || c2 == 'a') && (c3 == 'C' || c3 == 'c') && (c4 == 'E' || c4 == 'e') &&
+                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return REPLACE;
             }
         }

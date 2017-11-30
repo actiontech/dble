@@ -126,6 +126,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             case ServerParse.DROP_VIEW:
                 DropViewHandler.handle(sql, c);
                 break;
+            case ServerParse.UNSUPPORT:
+                LOGGER.warn("Unsupported statement:" + sql);
+                c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported statement");
+                break;
             default:
                 if (readOnly) {
                     c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");

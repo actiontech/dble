@@ -43,9 +43,9 @@ public class SequenceVal {
         long start = System.currentTimeMillis();
         long end = start + 10 * 1000;
         while (System.currentTimeMillis() < end) {
-            if (dbretVal == IncrSequenceMySQLHandler.ERR_SEQ_RESULT) {
+            if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(dbretVal)) {
                 throw new java.lang.RuntimeException(
-                        "sequnce not found in db table ");
+                        "sequence not found in db table ");
             } else if (dbretVal != null) {
                 String[] items = dbretVal.split(",");
                 Long curValue = Long.parseLong(items[0]);

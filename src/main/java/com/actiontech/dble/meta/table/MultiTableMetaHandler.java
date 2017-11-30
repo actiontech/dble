@@ -43,10 +43,6 @@ public class MultiTableMetaHandler {
 
     public void execute() {
         this.schemaMetaHandler.getTmManager().createDatabase(schema);
-        if (config.getTables().size() == 0) {
-            schemaMetaHandler.countDown();
-            return;
-        }
         if (config.getDataNode() != null) {
             List<String> tables = getSingleTables();
             singleTableCnt.set(tables.size());

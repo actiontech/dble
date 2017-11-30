@@ -449,7 +449,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setProcessorExecutor(int processorExecutor) {
-        this.processorExecutor = processorExecutor;
+        this.processorExecutor = processorExecutor < 4 ? 4 : processorExecutor;
     }
 
     public long getIdleTimeout() {

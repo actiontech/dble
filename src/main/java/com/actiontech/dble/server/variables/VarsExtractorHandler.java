@@ -53,7 +53,6 @@ public class VarsExtractorHandler {
             systemVariables.setDefaultValue(key, value);
         }
         signalDone();
-        return;
     }
 
 

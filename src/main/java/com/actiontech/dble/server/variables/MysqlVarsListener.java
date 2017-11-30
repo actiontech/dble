@@ -30,6 +30,5 @@ public class MysqlVarsListener implements SQLQueryResultListener<SQLQueryResult<
 
         Map<String, String> kvs = result.getResult();
         handler.handleVars(kvs);
-        return;
     }
 }

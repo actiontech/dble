@@ -24,14 +24,6 @@
     </Match>
     <!-- protocol:ignore -->
 
-    <!-- need refactor -->
-    <Match>
-        <Class name="com.actiontech.dble.sqlengine.mpp.UnsafeRowGrouper"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.sqlengine.mpp.RowDataPacketGrouper"/>
-    </Match>
-
     <Match>
         <Package name="com.actiontech.dble.util.dataMigrator.dataIOImpl"/>
     </Match>
@@ -183,11 +175,6 @@
     <Match>
         <Bug category="MT_CORRECTNESS"/>
         <Class name="com.actiontech.dble.server.handler.ServerLoadDataInfileHandler"/>
-        <Bug pattern="IS2_INCONSISTENT_SYNC"/>
-    </Match>
-    <Match>
-        <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.memory.unsafe.map.BytesToBytesMap$MapIterator"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
 	<Match>

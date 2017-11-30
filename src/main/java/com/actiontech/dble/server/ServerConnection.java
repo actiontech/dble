@@ -294,7 +294,7 @@ public class ServerConnection extends FrontendConnection {
                 }
                 RouterUtil.routeToRandomNode(rrs, schemaInfo.getSchemaConfig(), schemaInfo.getTable());
             }
-            session.execute(rrs, sqlType);
+            session.execute(rrs);
         } catch (Exception e) {
             executeException(e, stmt);
         }
@@ -320,7 +320,7 @@ public class ServerConnection extends FrontendConnection {
             executeException(e, sql);
             return;
         }
-        session.execute(rrs, type);
+        session.execute(rrs);
     }
 
     private void addTableMetaLock(RouteResultset rrs) throws SQLNonTransientException {

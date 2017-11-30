@@ -394,7 +394,7 @@ public abstract class BaseHandlerBuilder {
         return (arg.getSumFuncs().size() > 0 || arg.getGroupBys().size() > 0);
     }
 
-    protected static long getSequenceId() {
+    public static long getSequenceId() {
         return sequenceId.incrementAndGet();
     }
 

@@ -103,9 +103,9 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
             throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
                                        mysqlSeqFetcher.getLastestError(seqVal.seqName));
         } else if (values[0] == 0) {
-            	String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
-                LOGGER.error(msg);
-                throw new SQLNonTransientException(msg);
+            String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
+            LOGGER.error(msg);
+            throw new SQLNonTransientException(msg);
         } else {
             if (seqVal.newValueSetted.compareAndSet(false, true)) {
                 seqVal.setCurValue(values[0]);

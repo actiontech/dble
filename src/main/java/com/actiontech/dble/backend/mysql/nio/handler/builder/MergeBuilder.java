@@ -48,6 +48,10 @@ public class MergeBuilder {
     public RouteResultset construct() throws SQLException {
         pdVisitor.visit();
         String sql = pdVisitor.getSql().toString();
+        return constructByQuery(sql);
+    }
+
+    public RouteResultset constructByQuery(String sql) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
         ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();

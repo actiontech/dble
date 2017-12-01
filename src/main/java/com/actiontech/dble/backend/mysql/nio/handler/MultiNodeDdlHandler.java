@@ -25,8 +25,9 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Set;
 
 /**
  * @author guoji.ma@gmail.com
@@ -40,13 +41,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private final NonBlockingSession session;
     private final boolean sessionAutocommit;
     private final MultiNodeQueryHandler handler;
-
-    private final ReentrantLock lock;
-
     private ErrorPacket err;
     private volatile boolean errConn = false;
-
-    public MultiNodeDdlHandler(int sqlType, RouteResultset rrs, NonBlockingSession session) {
+    private Set<BackendConnection> closedConnSet;
+    public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -61,9 +59,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.session = session;
 
         this.oriRrs = rrs;
-        this.handler = new MultiNodeQueryHandler(sqlType, rrs, session);
+        this.handler = new MultiNodeQueryHandler(rrs, session);
 
-        this.lock = new ReentrantLock();
         this.errConn = false;
     }
 
@@ -120,6 +117,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        if (checkClosedConn(conn)) {
+            return;
+        }
         LOGGER.warn("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
@@ -128,6 +128,24 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         err = errPacket;
 
         executeConnError(conn);
+    }
+
+    private boolean checkClosedConn(BackendConnection conn) {
+        lock.lock();
+        try {
+            if (closedConnSet == null) {
+                closedConnSet = new HashSet<>(1);
+                closedConnSet.add(conn);
+            } else {
+                if (closedConnSet.contains(conn)) {
+                    return true;
+                }
+                closedConnSet.add(conn);
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
     }
 
     private void executeConnError(BackendConnection conn) {
@@ -233,6 +251,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     handler.execute();
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
+                    session.handleSpecial(oriRrs, source.getSchema(), false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {
@@ -257,6 +276,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     @Override
     public void clearResources() {
+        if (closedConnSet != null) {
+            closedConnSet.clear();
+        }
     }
 
     @Override

@@ -32,24 +32,13 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     @Override
-    public boolean init() {
-        if (initResponse()) {
-            return true;
-        } else {
-            String reason = "backend conn closed";
-            session.getSource().setTxInterrupt(reason);
-            sendData = makeErrorPacket(reason);
-            session.getSource().write(sendData);
-            LOGGER.warn("init failed:" + reason);
-            return false;
-        }
-    }
-
-    @Override
     public void clearResources() {
         tryCommitTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
+        if (closedConnSet != null) {
+            closedConnSet.clear();
+        }
     }
 
     @Override
@@ -111,7 +100,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         return true;
     }
 
-    byte[] makeErrorPacket(String errMsg) {
+    private byte[] makeErrorPacket(String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
@@ -211,12 +200,32 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     nextParse();
                 }
                 // 'xa commit' err
-            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) { //TODO:service degradation?
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
                     cleanAndFeedback();
+                }
+            } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE) {
+                if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
+                    //Unknown XID ,if xa transaction only contains select statement, xid will lost after restart server although prepared
+                    mysqlCon.setXaStatus(TxState.TX_COMMITTED_STATE);
+                    XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+                    mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
+                    if (decrementCountBy(1)) {
+                        if (session.getXaState() == TxState.TX_PREPARED_STATE) {
+                            session.setXaState(TxState.TX_INITIALIZE_STATE);
+                        }
+                        cleanAndFeedback();
+                    }
+                } else {
+                    mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
+                    XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+                    session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
+                    if (decrementCountBy(1)) {
+                        cleanAndFeedback();
+                    }
                 }
             }
         }
@@ -235,7 +244,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
         final XACommitNodesHandler thisHandler = this;
-        DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 thisHandler.connectionCloseLocal(conn, reason);
@@ -246,6 +255,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void connectionCloseLocal(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
+        if (checkClosedConn(conn)) {
+            return;
+        }
         this.setFail(reason);
         sendData = makeErrorPacket(reason);
         innerConnectError(conn);

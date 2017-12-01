@@ -47,6 +47,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     private RouteResultsetNode[] route;
     private int reachedConCount;
     private boolean isEasyMerge;
+    private volatile boolean noNeedRows = false;
 
     public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
                                  List<Order> orderBys) {
@@ -119,7 +120,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        if (terminate.get())
+        if (terminate.get() || noNeedRows)
             return true;
 
         if (isEasyMerge) {
@@ -190,7 +191,6 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 HeapItem firstItem = entry.getValue().take();
                 heap.add(firstItem);
             }
-            boolean filterFinished = false;
             while (!heap.isEmpty()) {
                 if (terminate.get())
                     return;
@@ -201,11 +201,20 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                     BlockingQueue<HeapItem> topItemQueue = queues.get(top.getIndex());
                     HeapItem item = topItemQueue.take();
                     heap.replaceTop(item);
-                    if (filterFinished) {
-                        continue;
-                    }
                     if (nextHandler.rowResponse(top.getRowData(), top.getRowPacket(), this.isLeft, top.getIndex())) {
-                        filterFinished = true;
+                        noNeedRows = true;
+                        while (!heap.isEmpty()) {
+                            HeapItem itemToDiscard = heap.poll();
+                            if (!itemToDiscard.isNullItem()) {
+                                BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
+                                boolean isClear = false;
+                                while (!isClear) {
+                                    if (discardQueue.take().isNullItem() || terminate.get()) {
+                                        isClear = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

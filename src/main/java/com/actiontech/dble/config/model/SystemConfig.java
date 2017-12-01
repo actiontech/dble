@@ -114,10 +114,6 @@ public final class SystemConfig {
     private int useGlobleTableCheck = 1;
     private long glableTableCheckPeriod;
 
-    /**
-     * Off Heap for Merge  1-enable,0-disable
-     */
-    private int useOffHeapForMerge;
     /*
      * memoryPageSize the unit is M
      */
@@ -171,7 +167,6 @@ public final class SystemConfig {
         this.txIsolation = Isolations.REPEATED_READ;
         this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
         this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
-        this.useOffHeapForMerge = 1;
         this.memoryPageSize = MEMORY_PAGE_SIZE;
         this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
         this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
@@ -227,15 +222,6 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setTransactionLogBaseName(String transactionLogBaseName) {
         this.transactionLogBaseName = transactionLogBaseName;
-    }
-
-    public int getUseOffHeapForMerge() {
-        return useOffHeapForMerge;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseOffHeapForMerge(int useOffHeapForMerge) {
-        this.useOffHeapForMerge = useOffHeapForMerge;
     }
 
     public String getMemoryPageSize() {

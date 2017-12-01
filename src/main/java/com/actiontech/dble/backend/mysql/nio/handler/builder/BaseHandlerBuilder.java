@@ -123,9 +123,6 @@ public abstract class BaseHandlerBuilder {
             TableNode tbNode = (TableNode) node;
             schema = tbNode.getSchema();
             table = tbNode.getTableName();
-        } else if (node.type() == PlanNodeType.MERGE) {
-            schema = "";
-            table = "";
         }
         SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
         addHandler(sh);

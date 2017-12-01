@@ -260,6 +260,9 @@ public class MySQLPlanNodeVisitor {
             mtv.visit(joinTables);
             this.tableNode = mtv.getTableNode();
         } else if (tables instanceof SQLUnionQueryTableSource) {
+            if (tables.getAlias() == null) {
+                throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
+            }
             SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(unionTables);

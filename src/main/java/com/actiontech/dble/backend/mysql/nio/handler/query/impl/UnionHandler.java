@@ -88,7 +88,9 @@ public class UnionHandler extends BaseDMLHandler {
             FieldPacket fp = this.fieldPackets.get(i);
             Item sel = selects.get(i);
             fp.setName(sel.getItemName().getBytes());
-            fp.setTable(sel.getTableName().getBytes());
+            fp.setDb(null);
+            fp.setTable(null);
+            fp.setOrgTable(null);
         }
     }
 

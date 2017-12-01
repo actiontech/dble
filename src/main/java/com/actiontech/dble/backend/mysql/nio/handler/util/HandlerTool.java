@@ -276,7 +276,7 @@ public final class HandlerTool {
             // field.name==null if '' push down
             String colName2 = field.getName() == null ? null : field.getName().trim();
             String tableName2 = field.getTable();
-            if (sel instanceof ItemField && !StringUtil.equals(tableName, tableName2)) {
+            if (sel instanceof ItemField && !StringUtil.equalsWithEmpty(tableName, tableName2)) {
                 continue;
             }
             if (selName.equalsIgnoreCase(colName2)) {

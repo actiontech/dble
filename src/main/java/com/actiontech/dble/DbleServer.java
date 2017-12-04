@@ -26,7 +26,6 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
-import com.actiontech.dble.memory.SeverMemory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
@@ -94,12 +93,6 @@ public final class DbleServer {
     private boolean aio = false;
 
     private final AtomicLong xaIDInc = new AtomicLong();
-
-
-    /**
-     * Memory Manager
-     */
-    private SeverMemory serverMemory = null;
 
     private final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
@@ -217,10 +210,6 @@ public final class DbleServer {
         }
     }
 
-    public SeverMemory getServerMemory() {
-        return serverMemory;
-    }
-
     public XASessionCheck getXaSessionCheck() {
         return xaSessionCheck;
     }
@@ -333,17 +322,6 @@ public final class DbleServer {
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
 
-
-        // Off Heap For Merge/Order/Group/Limit
-        if (system.getUseOffHeapForMerge() == 1) {
-            try {
-                serverMemory = new SeverMemory(system, totalNetWorkBufferSize);
-            } catch (NoSuchFieldException e) {
-                LOGGER.error("NoSuchFieldException", e);
-            } catch (IllegalAccessException e) {
-                LOGGER.error("Error", e);
-            }
-        }
         int threadPoolSize = system.getProcessorExecutor();
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);

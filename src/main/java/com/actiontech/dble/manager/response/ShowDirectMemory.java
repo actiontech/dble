@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.memory.SeverMemory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.memory.unsafe.utils.JavaUtils;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -23,11 +22,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * show@@directmemory
+ * show @@directmemory
  *
- * @author zagnix
- * @version 1.0
- * @create 2016-09-21 17:35
  */
 
 public final class ShowDirectMemory {
@@ -40,7 +36,7 @@ public final class ShowDirectMemory {
     private static final EOFPacket DETAIL_EOF = new EOFPacket();
 
 
-    private static final int TOTAL_FIELD_COUNT = 5;
+    private static final int TOTAL_FIELD_COUNT = 3;
     private static final ResultSetHeaderPacket TOTAL_HEADER = PacketUtil.getHeader(TOTAL_FIELD_COUNT);
     private static final FieldPacket[] TOTAL_FIELDS = new FieldPacket[TOTAL_FIELD_COUNT];
     private static final EOFPacket TOTAL_EOF = new EOFPacket();
@@ -57,7 +53,7 @@ public final class ShowDirectMemory {
         DETAIL_FIELDS[i++].setPacketId(++packetId);
 
         DETAIL_FIELDS[i] = PacketUtil.getField("  SIZE  ", Fields.FIELD_TYPE_VAR_STRING);
-        DETAIL_FIELDS[i++].setPacketId(++packetId);
+        DETAIL_FIELDS[i].setPacketId(++packetId);
         DETAIL_EOF.setPacketId(++packetId);
 
 
@@ -66,20 +62,14 @@ public final class ShowDirectMemory {
 
         TOTAL_HEADER.setPacketId(++packetId);
 
-        TOTAL_FIELDS[i] = PacketUtil.getField("MDIRECT_MEMORY_MAXED", Fields.FIELD_TYPE_VAR_STRING);
+        TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_MAXED", Fields.FIELD_TYPE_VAR_STRING);
         TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_USED", Fields.FIELD_TYPE_VAR_STRING);
         TOTAL_FIELDS[i++].setPacketId(++packetId);
 
         TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_AVAILABLE", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].setPacketId(++packetId);
-
-        TOTAL_FIELDS[i] = PacketUtil.getField("SAFETY_FRACTION", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].setPacketId(++packetId);
-
-        TOTAL_FIELDS[i] = PacketUtil.getField("DIRECT_MEMORY_RESERVED", Fields.FIELD_TYPE_VAR_STRING);
-        TOTAL_FIELDS[i++].setPacketId(++packetId);
+        TOTAL_FIELDS[i].setPacketId(++packetId);
         TOTAL_EOF.setPacketId(++packetId);
 
 
@@ -96,7 +86,7 @@ public final class ShowDirectMemory {
     }
 
 
-    public static void showDirectMemoryDetail(ManagerConnection c) {
+    private static void showDirectMemoryDetail(ManagerConnection c) {
 
         ByteBuffer buffer = c.allocate();
 
@@ -114,36 +104,14 @@ public final class ShowDirectMemory {
         // write rows
         byte packetId = DETAIL_EOF.getPacketId();
 
-        int useOffHeapForMerge = DbleServer.getInstance().getConfig().getSystem().getUseOffHeapForMerge();
-
         ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
-
-        if (useOffHeapForMerge == 1) {
-            ConcurrentMap<Long, Long> map = DbleServer.getInstance().
-                    getServerMemory().
-                    getResultMergeMemoryManager().getDirectMemoryUsage();
-            for (Map.Entry<Long, Long> entry : map.entrySet()) {
-                RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
-                long value = entry.getValue();
-                row.add(StringUtil.encode(String.valueOf(entry.getKey()), c.getCharset().getResults()));
-                /**
-                 * DIRECTMEMORY used by result
-                 */
-                row.add(StringUtil.encode("MergeMemoryPool", c.getCharset().getResults()));
-                row.add(StringUtil.encode(value > 0 ? JavaUtils.bytesToString2(value) : "0", c.getCharset().getResults()));
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
-            }
-        }
 
         for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
             RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
             long value = entry.getValue();
             row.add(StringUtil.encode(String.valueOf(entry.getKey()), c.getCharset().getResults()));
-            /**
-             * DIRECTMEMORY belong to Buffer Pool
-             */
+            /* DIRECT_MEMORY belong to Buffer Pool */
             row.add(StringUtil.encode("NetWorkBufferPool", c.getCharset().getResults()));
             row.add(StringUtil.encode(value > 0 ? JavaUtils.bytesToString2(value) : "0", c.getCharset().getResults()));
 
@@ -155,14 +123,13 @@ public final class ShowDirectMemory {
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
-
         // write buffer
         c.write(buffer);
 
     }
 
 
-    public static void showDirectMemoryTotal(ManagerConnection c) {
+    private static void showDirectMemoryTotal(ManagerConnection c) {
 
         ByteBuffer buffer = c.allocate();
 
@@ -176,77 +143,22 @@ public final class ShowDirectMemory {
         // write eof
         buffer = TOTAL_EOF.write(buffer, c, true);
 
-        int useOffHeapForMerge = DbleServer.getInstance().getConfig().
-                getSystem().getUseOffHeapForMerge();
-
         ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
                 getBufferPool().getNetDirectMemoryUsage();
 
         RowDataPacket row = new RowDataPacket(TOTAL_FIELD_COUNT);
-        long usedForMerge = 0;
         long usedForNetwork = 0;
 
-        /**
-         * the value of -XX:MaxDirectMemorySize
-         */
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(Platform.getMaxDirectMemory()), c.getCharset().getResults()));
-
-        if (useOffHeapForMerge == 1) {
-
-            /**
-             * used DirectMemory for merge
-             */
-            ConcurrentMap<Long, Long> concurrentHashMap = DbleServer.getInstance().
-                    getServerMemory().
-                    getResultMergeMemoryManager().getDirectMemoryUsage();
-            for (Map.Entry<Long, Long> entry : concurrentHashMap.entrySet()) {
-                usedForMerge += entry.getValue();
-            }
-        }
-
-        /**
-         * IO packet used in DirectMemory in buffer pool
-         */
+        /* the value of -XX:MaxDirectMemorySize */
+        long totalAvailable = Platform.getMaxDirectMemory();
+        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable), c.getCharset().getResults()));
+        /* IO packet used in DirectMemory in buffer pool */
         for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
             usedForNetwork += entry.getValue();
         }
+        row.add(StringUtil.encode(JavaUtils.bytesToString2(usedForNetwork), c.getCharset().getResults()));
+        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable - usedForNetwork), c.getCharset().getResults()));
 
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(usedForMerge + usedForNetwork), c.getCharset().getResults()));
-
-
-        long totalAvailable = 0;
-
-        if (useOffHeapForMerge == 1) {
-            /**
-             * when use off-heap , avoid that MaxDirectMemorySize reached the limit of Physical memory.
-             * so the valid DirectMemory is MaxDirectMemorySize*DIRECT_SAFETY_FRACTION
-             */
-            totalAvailable = (long) (Platform.getMaxDirectMemory() * SeverMemory.DIRECT_SAFETY_FRACTION);
-        } else {
-            totalAvailable = Platform.getMaxDirectMemory();
-        }
-
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable - usedForMerge - usedForNetwork), c.getCharset().getResults()));
-
-        if (useOffHeapForMerge == 1) {
-            row.add(StringUtil.encode(("" + SeverMemory.DIRECT_SAFETY_FRACTION), c.getCharset().getResults()));
-        } else {
-            row.add(StringUtil.encode("1.0", c.getCharset().getResults()));
-        }
-
-
-        long reservedForOs = 0;
-
-        if (useOffHeapForMerge == 1) {
-            /**
-             * saved for OS
-             */
-            reservedForOs = (long) ((1 - SeverMemory.DIRECT_SAFETY_FRACTION) *
-                    (Platform.getMaxDirectMemory() -
-                            2 * DbleServer.getInstance().getTotalNetWorkBufferSize()));
-        }
-
-        row.add(StringUtil.encode(reservedForOs > 0 ? JavaUtils.bytesToString2(reservedForOs) : "0", c.getCharset().getResults()));
         // write rows
         byte packetId = TOTAL_EOF.getPacketId();
         row.setPacketId(++packetId);

@@ -13,22 +13,12 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
-
-    @Override
-    public boolean init() {
-        if (initResponse()) {
-            return true;
-        } else {
-            String reason = "backend conn closed";
-            session.clearResources(true);
-            createErrPkg(reason).write(session.getSource());
-            return false;
-        }
-    }
-
     @Override
     public void clearResources() {
         sendData = null;
+        if (closedConnSet != null) {
+            closedConnSet.clear();
+        }
     }
 
     public NormalCommitNodesHandler(NonBlockingSession session) {
@@ -79,6 +69,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
+        if (checkClosedConn(conn)) {
+            return;
+        }
         this.setFail(reason);
         conn.quit();
         if (decrementCountBy(1)) {

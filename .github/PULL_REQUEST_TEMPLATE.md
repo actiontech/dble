@@ -1,3 +1,3 @@
-Reason:(Fixes #. or Improve #.)   
+Reason:(Bug #. or Improve #.)   
 Type:  
 Influences：  

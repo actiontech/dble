@@ -513,9 +513,6 @@ public class MySQLConnection extends BackendAIOConnection {
 
     @Override
     public void close(String reason) {
-        if (this.isClosedOrQuit()) {
-            return;
-        }
         this.terminate(reason);
         if (this.respHandler != null) {
             this.respHandler.connectionClose(this, reason);

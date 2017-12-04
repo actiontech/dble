@@ -121,8 +121,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
                 session.closeAndClearResources(error);
             } else {
                 session.getSource().setTxInterrupt(this.error);
-                // clear resources
-                clearResources();
+                this.clearResources();
             }
         }
     }

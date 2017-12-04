@@ -16,7 +16,9 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,24 +28,12 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     private Lock lockForErrorHandle = new ReentrantLock();
     private Condition sendFinished = lockForErrorHandle.newCondition();
     private volatile boolean sendFinishedFlag = false;
-
+    protected Set<BackendConnection> closedConnSet;
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
 
     protected abstract boolean executeCommit(MySQLConnection mysqlCon, int position);
-
-    protected boolean initResponse() {
-        boolean isNormal = true;
-        for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            BackendConnection conn = session.getTarget(rrn);
-            conn.setResponseHandler(this);
-            if (conn.isClosedOrQuit()) {
-                isNormal = false;
-            }
-        }
-        return isNormal;
-    }
 
     @Override
     public void commit() {
@@ -67,6 +57,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
             sendFinishedFlag = false;
             for (RouteResultsetNode rrn : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(rrn);
+                conn.setResponseHandler(this);
                 if (!executeCommit((MySQLConnection) conn, position++)) {
                     break;
                 }
@@ -125,6 +116,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     public void debugCommitDelay() {
 
     }
+
     protected void waitUntilSendFinish() {
         this.lockForErrorHandle.lock();
         try {
@@ -135,6 +127,24 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
             LOGGER.info("back Response is closed by thread interrupted");
         } finally {
             lockForErrorHandle.unlock();
+        }
+    }
+
+    protected boolean checkClosedConn(BackendConnection conn) {
+        lock.lock();
+        try {
+            if (closedConnSet == null) {
+                closedConnSet = new HashSet<>(1);
+                closedConnSet.add(conn);
+            } else {
+                if (closedConnSet.contains(conn)) {
+                    return true;
+                }
+                closedConnSet.add(conn);
+            }
+            return false;
+        } finally {
+            lock.unlock();
         }
     }
 }

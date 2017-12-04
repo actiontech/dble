@@ -26,7 +26,7 @@ public interface Session {
     /**
      * execute session
      */
-    void execute(RouteResultset rrs, int type);
+    void execute(RouteResultset rrs);
 
     /**
      * commit session

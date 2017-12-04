@@ -372,6 +372,13 @@ public final class StringUtil {
         return str1.equals(str2);
     }
 
+    public static boolean equalsWithEmpty(String str1, String str2) {
+        if (isEmpty(str1)) {
+            return isEmpty(str2);
+        }
+        return str1.equals(str2);
+    }
+
     public static int countChar(String str, char c) {
         if (str == null || str.isEmpty()) {
             return 0;

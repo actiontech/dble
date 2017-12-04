@@ -335,14 +335,9 @@ public final class ServerParse {
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
 
-            if ((c1 == 'R' || c1 == 'r') &&
-                    (c2 == 'U' || c2 == 'u') &&
-                    (c3 == 'N' || c3 == 'n') &&
-                    (c4 == 'C' || c4 == 'c') &&
-                    (c5 == 'A' || c5 == 'a') &&
-                    (c6 == 'T' || c6 == 't') &&
-                    (c7 == 'E' || c7 == 'e') &&
-                    (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'U' || c2 == 'u') && (c3 == 'N' || c3 == 'n') && (c4 == 'C' || c4 == 'c') &&
+                (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'E' || c7 == 'e') &&
+                (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                 return DDL;
             }
         }
@@ -354,8 +349,10 @@ public final class ServerParse {
         if (stmt.length() > offset + 1) {
             switch (stmt.charAt(++offset)) {
                 case 'l':
+                case 'L':
                     return alterCheck(stmt, offset);
                 case 'n':
+                case 'N':
                     return analyzeCheck(stmt, offset);
                 default:
                     return OTHER;

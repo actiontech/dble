@@ -46,6 +46,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, alterTable.getTableSource());
         boolean support = false;
+        String msg = "The DDL is not supported, sql:";
         for (SQLAlterTableItem alterItem : alterTable.getItems()) {
             if (alterItem instanceof SQLAlterTableAddColumn ||
                     alterItem instanceof SQLAlterTableAddIndex ||
@@ -69,12 +70,14 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 } else if (alterItem instanceof SQLAlterTableDropColumnItem) {
                     columnList = ((SQLAlterTableDropColumnItem) alterItem).getColumns();
                 }
-
                 support = !this.columnInfluenceCheck(columnList, schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+                if (!support) {
+                    msg = "The columns may be sharding keys or ER keys, are not allowed to alter sql:";
+                }
             }
         }
         if (!support) {
-            String msg = "The columns may be sharding keys or ER keys, are not allowed to alter sql:" + stmt;
+            msg = msg + stmt;
             throw new SQLNonTransientException(msg);
         }
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());

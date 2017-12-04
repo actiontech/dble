@@ -74,7 +74,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
             }
         }
         if (!support) {
-            String msg = "THE DDL is not supported, sql:" + stmt;
+            String msg = "The columns may be sharding keys or ER keys, are not allowed to alter sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());

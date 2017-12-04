@@ -200,7 +200,7 @@ public final class ServerParse {
     private static int lCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
-            if (c1== 'o' || c1 == 'O') {
+            if (c1 == 'o' || c1 == 'O') {
                 switch (stmt.charAt(++offset)) {
                     case 'A':
                     case 'a':

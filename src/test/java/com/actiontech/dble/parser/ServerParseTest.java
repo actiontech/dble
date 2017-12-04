@@ -70,6 +70,62 @@ public class ServerParseTest {
     }
 
     @Test
+    public void testAnalyze() {
+        String sql = "analyze table t1;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testChecksum() {
+        String sql = "checksum table table_name;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testFlush() {
+        String sql = "flush table table_name;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testLoadindex() {
+        String sql = "LOAD INDEX INTO CACHE t1;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testOptimize() {
+        String sql = "optimize table table_name;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testRename() {
+        String sql = "rename table table_name1 to table_name2;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
+    public void testRepair() {
+        String sql = "repair table table_name;";
+        int result = ServerParse.parse(sql);
+        int sqlType = result & 0xff;
+        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+    }
+
+    @Test
     public void testDeallocate() {
         String sql = "Deallocate prepare stmt";
         int result = ServerParse.parse(sql);

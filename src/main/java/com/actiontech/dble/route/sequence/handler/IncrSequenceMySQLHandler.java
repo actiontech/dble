@@ -100,6 +100,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         }
         Long[] values = seqVal.waitFinish();
         if (values == null) {
+            seqVal.fetching.compareAndSet(true, false);
             throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
                                        mysqlSeqFetcher.getLastestError(seqVal.seqName));
         } else if (values[0] == 0) {

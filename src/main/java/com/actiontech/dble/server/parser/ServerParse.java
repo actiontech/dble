@@ -199,7 +199,7 @@ public final class ServerParse {
 
     private static int lCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
-            char c1 = stmt.charAt(++offset);
+            ++offset;
             switch (stmt.charAt(++offset)) {
                 case 'A':
                 case 'a':
@@ -366,7 +366,6 @@ public final class ServerParse {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
             if ((c1 == 'T' || c1 == 't') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')) {
                 return alterViewCheck(stmt, offset);
             }
@@ -416,7 +415,6 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
             if ((c1 == 'R' || c1 == 'r') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a') && (c4 == 'T' || c4 == 't') &&
                 (c5 == 'E' || c5 == 'e')) {
                 return createOrReplaceViewCheck(stmt, offset, false);

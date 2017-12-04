@@ -45,6 +45,23 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
         }
     }
 
+    public RowDataComparator(List<FieldPacket> fps, List<Order> orders) {
+        sourceFields = HandlerTool.createFields(fps);
+        if (orders != null && orders.size() > 0) {
+            ascList = new ArrayList<>();
+            cmpFields = new ArrayList<>();
+            cmpItems = new ArrayList<>();
+            for (Order order : orders) {
+                Item cmpItem = HandlerTool.createFieldItem(order.getItem(), sourceFields, 0);
+                cmpItems.add(cmpItem);
+                FieldPacket tmpFp = new FieldPacket();
+                cmpItem.makeField(tmpFp);
+                Field cmpField = HandlerTool.createField(tmpFp);
+                cmpFields.add(cmpField);
+                ascList.add(order.getSortOrder() == SQLOrderingSpecification.ASC);
+            }
+        }
+    }
 
     public void sort(List<RowDataPacket> rows) {
         Comparator<RowDataPacket> c = new Comparator<RowDataPacket>() {

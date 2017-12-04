@@ -20,7 +20,6 @@ import com.actiontech.dble.route.parser.druid.ReplaceTemp;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -328,7 +327,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                         LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
                     }
                     RouterUtil.routeToSingleNode(rrs, dn);
-                    sc.getSession2().execute(rrs, ServerParse.REPLACE);
+                    sc.getSession2().execute(rrs);
                 }
             });
         }

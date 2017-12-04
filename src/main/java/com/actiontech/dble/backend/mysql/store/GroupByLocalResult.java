@@ -102,7 +102,7 @@ public class GroupByLocalResult extends LocalResult {
                 if (!bufferMC.addSize(incrementSize)) {
                     needFlush = true;
                 }
-            } else if (!needFlush && currentMemory > maxMemory) {
+            } else if (currentMemory > maxMemory) {
                 needFlush = true;
             }
             if (needFlush) {

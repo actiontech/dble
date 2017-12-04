@@ -56,15 +56,11 @@ public class NonBlockingSession implements Session {
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
     public static final int CANCEL_STATUS_INIT = 0;
     public static final int CANCEL_STATUS_COMMITTING = 1;
-    public static final int CANCEL_STATUS_CANCELING = 2;
+    static final int CANCEL_STATUS_CANCELING = 2;
 
 
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
-    // life-cycle: each sql execution
-    private volatile SingleNodeHandler singleNodeHandler;
-    private volatile MultiNodeQueryHandler multiNodeHandler;
-    private volatile MultiNodeDdlHandler multiNodeDdlHandler;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
     private volatile String xaTxId;
@@ -141,7 +137,7 @@ public class NonBlockingSession implements Session {
     }
 
     @Override
-    public void execute(RouteResultset rrs, int type) {
+    public void execute(RouteResultset rrs) {
         // clear prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
@@ -166,7 +162,7 @@ public class NonBlockingSession implements Session {
             this.xaState = TxState.TX_STARTED_STATE;
         }
         if (nodes.length == 1) {
-            singleNodeHandler = new SingleNodeHandler(rrs, this);
+            SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, this);
             if (this.isPrepared()) {
                 singleNodeHandler.setPrepared(true);
             }
@@ -181,39 +177,56 @@ public class NonBlockingSession implements Session {
                 this.setPrepared(false);
             }
         } else {
-            if (rrs.getSqlType() != ServerParse.DDL) {
-                /**
-                 * here, just a try! The sync is the superfluous, because there are hearbeats at every backend node.
-                 * We don't do 2pc or 3pc. Beause mysql(that is, resource manager) don't support that for ddl statements.
-                 */
-                multiNodeHandler = new MultiNodeQueryHandler(type, rrs, this);
-                if (this.isPrepared()) {
-                    multiNodeHandler.setPrepared(true);
-                }
-                try {
-                    multiNodeHandler.execute();
-                } catch (Exception e) {
-                    handleSpecial(rrs, source.getSchema(), false);
-                    LOGGER.warn(String.valueOf(source) + rrs, e);
-                    source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-                }
-                if (this.isPrepared()) {
-                    this.setPrepared(false);
-                }
-            } else {
-                checkBackupStatus();
-                multiNodeDdlHandler = new MultiNodeDdlHandler(type, rrs, this);
-                try {
-                    multiNodeDdlHandler.execute();
-                } catch (Exception e) {
-                    LOGGER.warn(String.valueOf(source) + rrs, e);
-                    source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-                }
+            executeMultiResultSet(rrs);
+        }
+    }
+
+    private void executeMultiResultSet(RouteResultset rrs) {
+        if (rrs.getSqlType() == ServerParse.DDL) {
+            /*
+             * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
+             * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
+             */
+            checkBackupStatus();
+            MultiNodeDdlHandler multiNodeDdlHandler = new MultiNodeDdlHandler(rrs, this);
+            try {
+                multiNodeDdlHandler.execute();
+            } catch (Exception e) {
+                LOGGER.warn(String.valueOf(source) + rrs, e);
+                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+            }
+        } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
+            MultiNodeSelectHandler multiNodeSelectHandler = new MultiNodeSelectHandler(rrs, this);
+            if (this.isPrepared()) {
+                multiNodeSelectHandler.setPrepared(true);
+            }
+            try {
+                multiNodeSelectHandler.execute();
+            } catch (Exception e) {
+                LOGGER.warn(String.valueOf(source) + rrs, e);
+                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+            }
+            if (this.isPrepared()) {
+                this.setPrepared(false);
+            }
+        } else {
+            MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
+            if (this.isPrepared()) {
+                multiNodeHandler.setPrepared(true);
+            }
+            try {
+                multiNodeHandler.execute();
+            } catch (Exception e) {
+                LOGGER.warn(String.valueOf(source) + rrs, e);
+                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+            }
+            if (this.isPrepared()) {
+                this.setPrepared(false);
             }
         }
     }
 
-    public void execute(PlanNode node) {
+    private void executeMultiResultSet(PlanNode node) {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
@@ -256,11 +269,11 @@ public class NonBlockingSession implements Session {
                 //sub Query build will be blocked, so use ComplexQueryExecutor
                 @Override
                 public void run() {
-                    execute(finalNode);
+                    executeMultiResultSet(finalNode);
                 }
             });
         } else {
-            execute(node);
+            executeMultiResultSet(node);
         }
     }
 
@@ -288,7 +301,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    private CommitNodesHandler createCommitNodesHandler() {
+    private void resetCommitNodesHandler() {
         if (commitHandler == null) {
             if (this.getSessionXaID() == null) {
                 commitHandler = new NormalCommitNodesHandler(this);
@@ -303,7 +316,6 @@ public class NonBlockingSession implements Session {
                 commitHandler = new XACommitNodesHandler(this);
             }
         }
-        return commitHandler;
     }
 
     public void commit() {
@@ -316,10 +328,8 @@ public class NonBlockingSession implements Session {
             return;
         }
         checkBackupStatus();
-        createCommitNodesHandler();
-        if (commitHandler.init()) {
-            commitHandler.commit();
-        }
+        resetCommitNodesHandler();
+        commitHandler.commit();
     }
 
     public void checkBackupStatus() {
@@ -329,7 +339,7 @@ public class NonBlockingSession implements Session {
         needWaitFinished = true;
     }
 
-    private RollbackNodesHandler createRollbackNodesHandler() {
+    private void resetRollbackNodesHandler() {
         if (rollbackHandler == null) {
             if (this.getSessionXaID() == null) {
                 rollbackHandler = new NormalRollbackNodesHandler(this);
@@ -344,7 +354,6 @@ public class NonBlockingSession implements Session {
                 rollbackHandler = new XARollbackNodesHandler(this);
             }
         }
-        return rollbackHandler;
     }
 
     public void rollback() {
@@ -359,7 +368,7 @@ public class NonBlockingSession implements Session {
             source.write(buffer);
             return;
         }
-        createRollbackNodesHandler();
+        resetRollbackNodesHandler();
         rollbackHandler.rollback();
     }
 
@@ -411,7 +420,7 @@ public class NonBlockingSession implements Session {
     /**
      * Only used when kill @@connection is Issued
      */
-    public void initiativeTerminate() {
+    void initiativeTerminate() {
 
         for (BackendConnection node : target.values()) {
             node.terminate("client closed ");
@@ -491,10 +500,7 @@ public class NonBlockingSession implements Session {
     /**
      * @return previous bound connection
      */
-    public BackendConnection bindConnection(RouteResultsetNode key,
-                                            BackendConnection conn) {
-        // System.out.println("bind connection "+conn+
-        // " to key "+key.getName()+" on sesion "+this);
+    public BackendConnection bindConnection(RouteResultsetNode key, BackendConnection conn) {
         return target.put(key, conn);
     }
 
@@ -564,23 +570,6 @@ public class NonBlockingSession implements Session {
     }
 
     private void clearHandlesResources() {
-        SingleNodeHandler singleHandler = singleNodeHandler;
-        if (singleHandler != null) {
-            singleHandler.clearResources();
-            singleNodeHandler = null;
-        }
-
-        MultiNodeDdlHandler multiDdlHandler = multiNodeDdlHandler;
-        if (multiDdlHandler != null) {
-            multiDdlHandler.clearResources();
-            multiNodeDdlHandler = null;
-        }
-
-        MultiNodeQueryHandler multiHandler = multiNodeHandler;
-        if (multiHandler != null) {
-            multiHandler.clearResources();
-            multiNodeHandler = null;
-        }
         if (rollbackHandler != null) {
             rollbackHandler.clearResources();
         }

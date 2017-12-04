@@ -13,7 +13,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
@@ -21,6 +20,7 @@ import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncIn;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -56,8 +56,17 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
-            //TODO:
-            RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
+            String sql = null;
+            if (node.getParent() == null) { // it's root
+                sql = node.getSql();
+            }
+            RouteResultsetNode[] rrssArray;
+            // maybe some node is view
+            if (sql == null) {
+                rrssArray = mergeBuilder.construct().getNodes();
+            } else {
+                rrssArray = mergeBuilder.constructByQuery(sql).getNodes();
+            }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {

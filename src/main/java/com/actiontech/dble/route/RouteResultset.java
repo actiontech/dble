@@ -28,12 +28,11 @@ public final class RouteResultset implements Serializable {
     private boolean needOptimizer;
     private int limitStart;
     private boolean cacheAble;
-    // used to store table's ID->datanodes cache
+    // used to store table's ID->data nodes cache
     // format is table.primaryKey
     private String primaryKey;
     // limit output total
     private int limitSize;
-    private SQLMerge sqlMerge;
 
     private boolean callStatement = false; // is Call Statement
 
@@ -55,7 +54,15 @@ public final class RouteResultset implements Serializable {
     // if force master,set canRunInReadDB=false
     // if force slave set runOnSlave,default null means not effect
     private Boolean runOnSlave = null;
+    private String[] groupByCols;
 
+    public String[] getGroupByCols() {
+        return groupByCols;
+    }
+
+    public void setGroupByCols(String[] groupByCols) {
+        this.groupByCols = groupByCols;
+    }
     public boolean isNeedOptimizer() {
         return needOptimizer;
     }
@@ -135,10 +142,6 @@ public final class RouteResultset implements Serializable {
     }
 
 
-    public SQLMerge getSqlMerge() {
-        return sqlMerge;
-    }
-
     public boolean isCacheAble() {
         return cacheAble;
     }
@@ -147,27 +150,12 @@ public final class RouteResultset implements Serializable {
         this.cacheAble = cacheAble;
     }
 
-    public boolean needMerge() {
-        return sqlMerge != null;
-    }
-
     public int getSqlType() {
         return sqlType;
     }
 
     public int getLimitStart() {
         return limitStart;
-    }
-
-    public String[] getGroupByCols() {
-        return (sqlMerge != null) ? sqlMerge.getGroupByCols() : null;
-    }
-
-    private SQLMerge createSQLMergeIfNull() {
-        if (sqlMerge == null) {
-            sqlMerge = new SQLMerge();
-        }
-        return sqlMerge;
     }
 
     public void setLimitStart(int limitStart) {
@@ -185,7 +173,7 @@ public final class RouteResultset implements Serializable {
     public void setPrimaryKey(String primaryKey) {
         if (!primaryKey.contains(".")) {
             throw new java.lang.IllegalArgumentException(
-                    "must be table.primarykey fomat :" + primaryKey);
+                    "must be table.primaryKey format :" + primaryKey);
         }
         this.primaryKey = primaryKey;
     }
@@ -193,16 +181,9 @@ public final class RouteResultset implements Serializable {
     /**
      * return primary key items ,first is table name ,seconds is primary key
      *
-     * @return
      */
     public String[] getPrimaryKeyItems() {
         return primaryKey.split("\\.");
-    }
-
-    public void setGroupByCols(String[] groupByCols) {
-        if (groupByCols != null && groupByCols.length > 0) {
-            createSQLMergeIfNull().setGroupByCols(groupByCols);
-        }
     }
 
     public void setSrcStatement(String srcStatement) {

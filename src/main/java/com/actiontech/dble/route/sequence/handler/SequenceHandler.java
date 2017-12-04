@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.route.sequence.handler;
 
+import java.sql.SQLNonTransientException;
+
 /**
  * @author <a href="http://www.micmiu.com">Michael</a>
  * @version 1.0
@@ -12,6 +14,6 @@ package com.actiontech.dble.route.sequence.handler;
  */
 public interface SequenceHandler {
 
-    long nextId(String prefixName);
+    long nextId(String prefixName) throws SQLNonTransientException;
 
 }

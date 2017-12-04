@@ -188,10 +188,11 @@ public class DruidSelectParser extends DefaultDruidParser {
         parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
     }
 
-    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc) throws SQLException {
+    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc, boolean isDistinct) throws SQLException {
         List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
-        for (SQLSelectItem item : selectList) {
-            SQLExpr itemExpr = item.getExpr();
+        boolean hasPartitionColumn = false;
+        for (SQLSelectItem selectItem : selectList) {
+            SQLExpr itemExpr = selectItem.getExpr();
             if (itemExpr instanceof SQLQueryExpr) {
                 rrs.setNeedOptimizer(true);
                 return;
@@ -213,7 +214,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         rrs.setNeedOptimizer(true);
                         return;
                     } else {
-                        addToAliaColumn(aliaColumns, item);
+                        addToAliaColumn(aliaColumns, selectItem);
                     }
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
@@ -227,13 +228,31 @@ public class DruidSelectParser extends DefaultDruidParser {
                     aliaColumns.put(column.getName(), column.getName());
                 }
             } else {
-                if (isSumFunc(schema.getName(), itemExpr)) {
+                if (isDistinct && !isNeedOptimizer(itemExpr)) {
+                    if (itemExpr instanceof SQLIdentifierExpr) {
+                        SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
+                        if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
+                            hasPartitionColumn = true;
+                        }
+                        addToAliaColumn(aliaColumns, selectItem);
+                    } else if (itemExpr instanceof SQLPropertyExpr) {
+                        SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
+                        if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
+                            hasPartitionColumn = true;
+                        }
+                        addToAliaColumn(aliaColumns, selectItem);
+                    }
+                } else if (isSumFunc(schema.getName(), itemExpr)) {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else {
-                    addToAliaColumn(aliaColumns, item);
+                    addToAliaColumn(aliaColumns, selectItem);
                 }
             }
+        }
+        if (isDistinct && !hasPartitionColumn) {
+            rrs.setNeedOptimizer(true);
+            return;
         }
         parseGroupCommon(rrs, mysqlSelectQuery, tc);
     }
@@ -242,7 +261,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (mysqlSelectQuery.getGroupBy() != null) {
             SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
             boolean hasPartitionColumn = false;
-
             for (SQLExpr groupByItem : groupBy.getItems()) {
                 if (isNeedOptimizer(groupByItem)) {
                     rrs.setNeedOptimizer(true);
@@ -269,7 +287,6 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
         }
     }
-
     private boolean isSumFunc(String schema, SQLExpr itemExpr) {
         MySQLItemVisitor ev = new MySQLItemVisitor(schema);
         itemExpr.accept(ev);
@@ -320,7 +337,8 @@ public class DruidSelectParser extends DefaultDruidParser {
                                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
 
-        parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc);
+        boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
+        parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
             tryAddLimit(schema, tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
@@ -328,8 +346,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         // distinct change to group by
-        boolean isNeedChangeSql = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
-        if (isNeedChangeSql) {
+        if (isDistinct) {
             mysqlSelectQuery.setDistionOption(0);
             SQLSelectGroupByClause groupBy = new SQLSelectGroupByClause();
             for (String fieldName : aliaColumns.keySet()) {
@@ -345,7 +362,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setGroupByCols(groupByCols);
         }
 
-        if (isNeedChangeSql) {
+        if (isDistinct) {
             rrs.changeNodeSqlAfterAddLimit(stmt.toString(), 0, -1);
         }
         return aliaColumns;

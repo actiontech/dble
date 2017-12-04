@@ -185,7 +185,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 if (rrs != null) {
                     flushDataToFile();
                     isStartLoadData = false;
-                    serverConnection.getSession2().execute(rrs, ServerParse.LOAD_DATA_INFILE_SQL);
+                    serverConnection.getSession2().execute(rrs);
                 }
             }
         }
@@ -581,7 +581,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = buildResultSet(routeResultMap);
         if (rrs != null) {
             flushDataToFile();
-            serverConnection.getSession2().execute(rrs, ServerParse.LOAD_DATA_INFILE_SQL);
+            serverConnection.getSession2().execute(rrs);
         }
 
         // sendOk(++packID);

@@ -32,12 +32,24 @@ public class ManagerParserTest {
     }
 
     @Test
+    public void testShowCommandCount() {
+        Assert.assertEquals(ManagerParseShow.COMMAND_COUNT, ManagerParseShow.parse("show @@command.count", 5));
+        Assert.assertEquals(ManagerParseShow.COMMAND_COUNT, ManagerParseShow.parse("show @@comMand.coUnt", 5));
+    }
+
+    @Test
     public void testShowConnection() {
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@connection", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("SHOW @@CONNECTION", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@CONNECTION", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTIONADFASDF", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
+    }
+
+    @Test
+    public void testShowConnectionCount() {
+        Assert.assertEquals(ManagerParseShow.CONNECTION_COUNT, ManagerParseShow.parse("show @@connection.count", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION_COUNT, ManagerParseShow.parse("show @@conNection.counT ", 5));
     }
 
     @Test
@@ -139,6 +151,13 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("show @@BACKEND ", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backendASDFASDF", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backend ASDFASDF", 5));
+    }
+
+    @Test
+    public void testShowBackendStat() {
+        Assert.assertEquals(ManagerParseShow.BACKEND_STAT, ManagerParseShow.parse("show @@backend.statistics", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND_STAT, ManagerParseShow.parse("SHOW @@BACkend.statisTics", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND_STAT, ManagerParseShow.parse("show @@BACKEND.statIstics ", 5));
     }
 
     @Test

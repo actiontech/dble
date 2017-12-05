@@ -58,6 +58,10 @@ public final class ManagerParseShow {
     public static final int DIRECTMEMORY_DETAIL = 46;
     public static final int BINLOG_STATUS = 47;
 
+    public static final int CONNECTION_COUNT = 48;
+    public static final int COMMAND_COUNT = 49;
+    public static final int BACKEND_STAT = 50;
+
     public static int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
@@ -82,8 +86,7 @@ public final class ManagerParseShow {
 
     // SHOW @
     private static int show2Check(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' &&
-                stmt.length() > ++offset) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'B':
                 case 'b':
@@ -173,8 +176,8 @@ public final class ManagerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k') &&
-                    (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') && (c6 == 'D' || c6 == 'd')) {
+            if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k') && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') &&
+                (c6 == 'D' || c6 == 'd')) {
 
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
@@ -185,7 +188,7 @@ public final class ManagerParseShow {
                             }
                             return BACKEND;
                         case '.':
-                            return show2BackendOld(stmt, offset);
+                            return show2BackendDot(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -197,16 +200,54 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2BackendDot(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'o':
+                case 'O':
+                    return show2BackendOld(stmt, offset);
+                case 's':
+                case 'S':
+                    return show2BackendStat(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     private static int show2BackendOld(String stmt, int offset) {
-        if (stmt.length() > offset + "OLD".length()) {
+        if (stmt.length() > offset + "LD".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'L' || c2 == 'l') && (c3 == 'D' || c3 == 'd')) {
+            if ((c1 == 'l' || c1 == 'L') && (c2 == 'd' || c2 == 'D')) {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
                 return BACKEND_OLD;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2BackendStat(String stmt, int offset) {
+        if (stmt.length() > offset + "TATISTICS".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if ((c1 == 't' || c1 == 'T') && (c2 == 'a' || c2 == 'A') && (c3 == 't' || c3 == 'T') && (c4 == 'i' || c4 == 'I') &&
+                (c5 == 's' || c5 == 'S') && (c6 == 't' || c6 == 'T') && (c7 == 'i' || c7 == 'I') && (c8 == 'c' || c8 == 'C') &&
+                (c9 == 's' || c9 == 'S')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return BACKEND_STAT;
             }
         }
         return OTHER;
@@ -1002,6 +1043,22 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2XCount(String stmt, int offset, int tag) {
+        if (stmt.length() > offset + "OUNT".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'o' || c1 == 'O') && (c2 == 'u' || c2 == 'U') && (c3 == 'n' || c3 == 'N') && (c4 == 't' || c4 == 'T')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return tag;
+            }
+        }
+        return OTHER;
+    }
+
     // SHOW @@COMMAND
     private static int show2ComCheck(String stmt, int offset) {
         if (stmt.length() > offset + "MAND".length()) {
@@ -1009,12 +1066,34 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'M' || c1 == 'm') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n') &&
-                    (c4 == 'D' || c4 == 'd')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
-                    return OTHER;
+            if ((c1 == 'M' || c1 == 'm') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n') && (c4 == 'D' || c4 == 'd')) {
+                if (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            if (ParseUtil.isErrorTail(offset, stmt)) {
+                                return OTHER;
+                            }
+                            return COMMAND;
+                        case '.':
+                            return show2CommandDot(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
                 }
                 return COMMAND;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2CommandDot(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'c':
+                case 'C':
+                    return show2XCount(stmt, offset, COMMAND_COUNT);
+                default:
+                    return OTHER;
             }
         }
         return OTHER;
@@ -1030,9 +1109,8 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c') &&
-                    (c4 == 'T' || c4 == 't') && (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o') &&
-                    (c7 == 'N' || c7 == 'n')) {
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c') && (c4 == 'T' || c4 == 't') &&
+                (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o') && (c7 == 'N' || c7 == 'n')) {
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -1041,7 +1119,7 @@ public final class ManagerParseShow {
                             }
                             return CONNECTION;
                         case '.':
-                            return show2ConnectonSQL(stmt, offset);
+                            return show2ConnectonDot(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -1052,13 +1130,28 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2ConnectonDot(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'c':
+                case 'C':
+                    return show2XCount(stmt, offset, CONNECTION_COUNT);
+                case 's':
+                case 'S':
+                    return show2ConnectonSQL(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     // SHOW @@CONNECTION.SQL
     private static int show2ConnectonSQL(String stmt, int offset) {
-        if (stmt.length() > offset + "SQL".length()) {
+        if (stmt.length() > offset + "QL".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'S' || c1 == 's') && (c2 == 'Q' || c2 == 'q') && (c3 == 'L' || c3 == 'l')) {
+            if ((c1 == 'q' || c1 == 'Q') && (c2 == 'l' || c2 == 'L')) {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }

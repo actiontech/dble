@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -38,15 +39,12 @@ public class SQLJob implements ResponseHandler, Runnable {
     private final PhysicalDatasource ds;
     private volatile boolean finished;
 
-
-    public SQLJob(String sql, String databaseName, SQLJobHandler jobHandler,
-                  PhysicalDatasource ds) {
+    public SQLJob(String sql, String databaseName, SQLJobHandler jobHandler, PhysicalDatasource ds) {
         super();
         this.sql = sql;
         this.dataNodeOrDatabase = databaseName;
         this.jobHandler = jobHandler;
         this.ds = ds;
-
     }
 
     public void run() {
@@ -80,6 +78,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         }
         LOGGER.warn("con query sql:" + sql + " to con:" + conn);
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         try {
             conn.query(sql);
             connection = conn;

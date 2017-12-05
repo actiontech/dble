@@ -335,7 +335,7 @@ public abstract class PhysicalDatasource {
     private void createNewConnection(final ResponseHandler handler, final Object attachment,
                                      final String schema) throws IOException {
         // aysn create connection
-        DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             public void run() {
                 try {
                     createNewConnection(new DelegateResponseHandler(handler) {

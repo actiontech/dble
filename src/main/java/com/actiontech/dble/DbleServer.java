@@ -436,33 +436,34 @@ public final class DbleServer {
                 if (!"0".equals(index)) {
                     LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
                 }
-                int activeIndex = node.init(Integer.parseInt(index));
-                saveDataHostIndex(node.getHostName(), activeIndex);
+                node.init(Integer.parseInt(index));
                 node.startHeartbeat();
             }
         }
 
 
         if (isUseZkSwitch()) {
-            //upload the dnindex data to zk
-            try {
-                File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
-                dnIndexLock.acquire(30, TimeUnit.SECONDS);
-                String path = KVPathUtil.getDnIndexNode();
-                CuratorFramework zk = ZKUtils.getConnection();
-                if (zk.checkExists().forPath(path) == null) {
-                    zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
-                }
+            initZkDnindex();
+        }
+    }
 
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            } finally {
+    private void initZkDnindex() {
+        //upload the dnindex data to zk
+        try {
+            if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
                 try {
+                    File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
+                    String path = KVPathUtil.getDnIndexNode();
+                    CuratorFramework zk = ZKUtils.getConnection();
+                    if (zk.checkExists().forPath(path) == null) {
+                        zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
+                    }
+                } finally {
                     dnIndexLock.release();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
                 }
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -601,25 +602,26 @@ public final class DbleServer {
 
             if (isUseZkSwitch()) {
                 // save to  zk
-                try {
-                    dnIndexLock.acquire(30, TimeUnit.SECONDS);
-                    String path = KVPathUtil.getDnIndexNode();
-                    CuratorFramework zk = ZKUtils.getConnection();
-                    if (zk.checkExists().forPath(path) == null) {
-                        zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
-                    } else {
-                        byte[] data = zk.getData().forPath(path);
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        Properties properties = new Properties();
-                        properties.load(new ByteArrayInputStream(data));
-                        if (!String.valueOf(curIndex).equals(properties.getProperty(dataHost))) {
-                            properties.setProperty(dataHost, String.valueOf(curIndex));
-                            properties.store(out, "update");
-                            zk.setData().forPath(path, out.toByteArray());
+                if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
+                    try {
+                        String path = KVPathUtil.getDnIndexNode();
+                        CuratorFramework zk = ZKUtils.getConnection();
+                        if (zk.checkExists().forPath(path) == null) {
+                            zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
+                        } else {
+                            byte[] data = zk.getData().forPath(path);
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            Properties properties = new Properties();
+                            properties.load(new ByteArrayInputStream(data));
+                            if (!String.valueOf(curIndex).equals(properties.getProperty(dataHost))) {
+                                properties.setProperty(dataHost, String.valueOf(curIndex));
+                                properties.store(out, "update");
+                                zk.setData().forPath(path, out.toByteArray());
+                            }
                         }
+                    } finally {
+                        dnIndexLock.release();
                     }
-                } finally {
-                    dnIndexLock.release();
                 }
             }
         } catch (Exception e) {

@@ -97,7 +97,7 @@ public class ViewMeta {
         } catch (Exception e) {
             //the select part sql is wrong & report the error
             ErrorPacket error = new ErrorPacket();
-            error.setMessage(e.getMessage() == null ? "unknow error".getBytes(StandardCharsets.UTF_8) :
+            error.setMessage(e.getMessage() == null ? "unknown error".getBytes(StandardCharsets.UTF_8) :
                     e.getMessage().getBytes(StandardCharsets.UTF_8));
             error.setErrNo(CREATE_VIEW_ERROR);
             return error;

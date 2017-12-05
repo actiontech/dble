@@ -5,7 +5,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
-import com.actiontech.dble.backend.mysql.view.Reposoitory;
+import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
@@ -40,7 +40,6 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,11 +65,11 @@ public class ProxyMetaManager {
     private AtomicInteger metaCount = new AtomicInteger(0);
 
 
-    private Reposoitory reposoitory = null;
+    private Repository repository = null;
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
-        this.lockTables = new HashSet<String>();
+        this.lockTables = new HashSet<>();
     }
 
     private String genLockKey(String schema, String tbName) {
@@ -298,18 +297,18 @@ public class ProxyMetaManager {
     /**
      * recovery all the view info from KV system
      */
-    public void loadViewFromKV() {
-        reposoitory = new KVStoreRepository();
-        Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
+    private void loadViewFromKV() {
+        repository = new KVStoreRepository();
+        Map<String, Map<String, String>> viewCreateSqlMap = repository.getViewCreateSqlMap();
         loadViewMeta(viewCreateSqlMap);
     }
 
     /**
      * recovery all the view info for file system
      */
-    public void loadViewFromFile() {
-        reposoitory = new FileSystemRepository();
-        Map<String, Map<String, String>> viewCreateSqlMap = reposoitory.getViewCreateSqlMap();
+    private void loadViewFromFile() {
+        repository = new FileSystemRepository();
+        Map<String, Map<String, String>> viewCreateSqlMap = repository.getViewCreateSqlMap();
         loadViewMeta(viewCreateSqlMap);
     }
 
@@ -318,7 +317,7 @@ public class ProxyMetaManager {
      *
      * @param viewCreateSqlMap
      */
-    public void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
+    private void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
 
         for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
@@ -407,32 +406,26 @@ public class ProxyMetaManager {
         if (zkConn.checkExists().forPath(nodePath) == null) {
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
         } else {
+            String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
+            String thisNode = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+            ZKUtils.createTempNode(instancePath, thisNode);
             if (needNotifyOther) {
+                //this node is ddl sender
                 zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            //TODO: IF SERVER OF DDL INSTANCE CRASH, MAY NEED REMOVE LOCK AND FRESH META MANUALLY
-            boolean finished = false;
-            //zkLock, if the other instance get the lock,this instance will wait
-            InterProcessMutex distributeLock = new InterProcessMutex(zkConn, nodePath);
-            distributeLock.acquire();
-            try {
-                String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
-                ZKUtils.createTempNode(instancePath, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-                List<String> preparedList = zkConn.getChildren().forPath(instancePath);
-                List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                if (preparedList.size() >= onlineList.size()) {
-                    finished = true;
+                while (true) {
+                    List<String> preparedList = zkConn.getChildren().forPath(instancePath);
+                    List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                    if (preparedList.size() >= onlineList.size()) {
+                        zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
+                        break;
+                    }
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
-            } finally {
-                distributeLock.release();
-            }
-            if (finished) {
-                zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
             }
         }
     }
-    //no need to check user
 
+    //no need to check user
     private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
         try {
             return SchemaUtil.getSchemaInfo(null, schema, tableSource);
@@ -776,12 +769,12 @@ public class ProxyMetaManager {
     }
 
 
-    public Reposoitory getReposoitory() {
-        return reposoitory;
+    public Repository getRepository() {
+        return repository;
     }
 
-    public void setReposoitory(Reposoitory reposoitory) {
-        this.reposoitory = reposoitory;
+    public void setRepository(Repository repository) {
+        this.repository = repository;
     }
 
 }

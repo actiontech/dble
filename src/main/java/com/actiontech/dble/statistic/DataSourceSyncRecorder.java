@@ -63,8 +63,6 @@ public class DataSourceSyncRecorder {
                     double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
                     this.asyncRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecQueueAvg));
                 }
-
-                return;
             }
         } catch (Exception e) {
             LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());

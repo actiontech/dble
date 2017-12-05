@@ -24,8 +24,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Created by huqing.yan on 2017/5/25.
@@ -49,39 +48,31 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
         BinlogPause pauseInfo = new BinlogPause(strPauseInfo);
-        if (pauseInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        String myID = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+        if (pauseInfo.getFrom().equals(myID)) {
             return true; //self node
         }
-        String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), myID);
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
-            if (ShowBinlogStatus.waitAllSession(pauseInfo.getFrom())) {
-                try {
-                    ZKUtils.createTempNode(instancePath);
-                } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
-                }
-            } else {
+            boolean isPaused = ShowBinlogStatus.waitAllSession();
+            if (!isPaused) {
                 cleanResource(instancePath);
             }
-        } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.TIMEOUT) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "BinlogPauseStatusListener received timeout");
-            ShowBinlogStatus.setWaiting(false);
-
+            try {
+                ZKUtils.createTempNode(KVPathUtil.getBinlogPauseInstance(), myID, String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                cleanResource(instancePath);
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
+            }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
             cleanResource(instancePath);
-
         }
-
-
         return true;
     }
 
     private synchronized void cleanResource(String instancePath) {
         LOGGER.info("BinlogPauseStatusListener cleanResource");
-        while (ShowBinlogStatus.isWaiting()) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-        }
         try {
             if (this.getCurator().checkExists().forPath(instancePath) != null) {
                 this.getCurator().delete().forPath(instancePath);

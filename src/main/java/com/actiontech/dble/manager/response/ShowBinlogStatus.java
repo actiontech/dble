@@ -55,7 +55,6 @@ public final class ShowBinlogStatus {
     private static final FieldPacket[] FIELDS_PACKET = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
     private static final String[] FIELDS = new String[]{"File", "Position", "Binlog_Do_DB", "Binlog_Ignore_DB", "Executed_Gtid_Set"};
-    private static volatile boolean waiting = false;
 
     static {
         int i = 0;
@@ -100,44 +99,48 @@ public final class ShowBinlogStatus {
                         BinlogPause pauseOnInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.ON);
                         zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
                         long beginTime = TimeUtil.currentTimeMillis();
-                        boolean isAllPaused = waitAllSession(c, timeout, beginTime);
-                        if (isAllPaused) {
-                            //tell zk this instance has prepared
-                            ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-                            //check all session waiting status
-                            List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
-                            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                            // TODO: While waiting, a new instance of MyCat is upping and working.
-                            while (preparedList.size() < onlineList.size()) {
-                                //TIMEOUT
-                                if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
-                                    isAllPaused = false;
-                                    errMsg = "timeout while waiting for unfinished distributed transactions.";
-                                    logger.info(errMsg);
-                                    BinlogPause pauseTimeoutInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.TIMEOUT);
-                                    zkConn.setData().forPath(binlogStatusPath, pauseTimeoutInfo.toString().getBytes(StandardCharsets.UTF_8));
-                                    break;
+                        boolean isPaused = waitAllSession(c, timeout, beginTime);
+
+                        //tell zk this instance has prepared
+                        ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+                        //check all session waiting status
+                        List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
+                        List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                        // TODO: While waiting, a new instance of dble is upping and working.
+
+                        boolean isAllSuccess = true;
+                        while (preparedList.size() < onlineList.size()) {
+                            if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
+                                isAllSuccess = false;
+                                errMsg = "timeout while waiting for unfinished distributed transactions.";
+                                logger.info(errMsg);
+                                break;
+                            }
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                            onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                            preparedList = zkConn.getChildren().forPath(binlogPause);
+                        }
+                        if (isAllSuccess) {
+                            for (String preparedNode : preparedList) {
+                                String preparePath = ZKPaths.makePath(binlogPause, preparedNode);
+                                byte[] resultStatus = zkConn.getData().forPath(preparePath);
+                                String data = new String(resultStatus, StandardCharsets.UTF_8);
+                                if (!Boolean.parseBoolean(data)) {
+                                    isAllSuccess = false;
                                 }
-                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                                preparedList = zkConn.getChildren().forPath(binlogPause);
                             }
-                            if (isAllPaused) {
-                                getQueryResult(c.getCharset().getResults());
-                            }
-                            writeResponse(c);
-                            BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
-                            zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                            zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
-                            List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
-                            while (releaseList.size() != 0) {
-                                releaseList = zkConn.getChildren().forPath(binlogPause);
-                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                            }
-                        } else {
-                            writeResponse(c);
-                            BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
-                            zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
+                        }
+                        if (isAllSuccess) {
+                            getQueryResult(c.getCharset().getResults());
+                        }
+                        writeResponse(c);
+                        BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.OFF);
+                        zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
+                        zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID)));
+                        List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
+                        while (releaseList.size() != 0) {
+                            releaseList = zkConn.getChildren().forPath(binlogPause);
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                         }
                     }
                 } catch (Exception e) {
@@ -190,19 +193,10 @@ public final class ShowBinlogStatus {
         }
     }
 
-    public static boolean isWaiting() {
-        return waiting;
-    }
-
-    public static void setWaiting(boolean waiting) {
-        ShowBinlogStatus.waiting = waiting;
-    }
-
-    public static boolean waitAllSession(String from) {
+    public static boolean waitAllSession() {
         logger.info("waiting all sessions of distributed transaction which are not finished.");
         long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
         long beginTime = TimeUtil.currentTimeMillis();
-        waiting = true;
         List<NonBlockingSession> fcList = getNeedWaitSession();
         while (!fcList.isEmpty()) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
@@ -213,30 +207,11 @@ public final class ShowBinlogStatus {
                     sListIterator.remove();
                 }
             }
-            if (!waiting) {
-                waiting = false;
-                logger.info("stop waiting all sessions of distributed transaction");
+            if ((TimeUtil.currentTimeMillis() > beginTime + timeout)) {
+                logger.info("wait session finished timeout");
                 return false;
             }
-            if ((TimeUtil.currentTimeMillis() > beginTime + timeout)) {
-                try {
-                    if (ZKUtils.getConnection().getChildren().forPath(KVPathUtil.getOnlinePath()).contains(from)) {
-                        logger.info("timeout and the from server node " + from + " is offline");
-                        waiting = false;
-                        DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-                        logger.info("stop waiting all sessions of distributed transaction");
-                        return false;
-                    }
-                } catch (Exception e) {
-                    logger.info("timeout and try to check server node " + from + " failed", e);
-                    waiting = false;
-                    DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-                    logger.info("stop waiting all sessions of distributed transaction");
-                    return false;
-                }
-            }
         }
-        waiting = false;
         logger.info("all sessions of distributed transaction  are paused.");
         return true;
     }

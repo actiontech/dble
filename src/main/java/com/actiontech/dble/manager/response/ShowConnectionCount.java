@@ -35,12 +35,11 @@ public final class ShowConnectionCount {
     private static final EOFPacket EOF = new EOFPacket();
 
     static {
-        int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("CONN_COUNT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("CONN_COUNT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }

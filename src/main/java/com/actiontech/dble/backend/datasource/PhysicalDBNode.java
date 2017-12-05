@@ -119,12 +119,17 @@ public class PhysicalDBNode {
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autoCommit) throws Exception {
+    public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB) throws Exception {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
-            PhysicalDatasource writeSource = dbPool.getSource();
-            writeSource.setWriteCount();
-            return writeSource.getConnection(schema, autoCommit);
+            if (canRunINReadDB) {
+                PhysicalDatasource readSource = dbPool.getRWBalanceNode();
+                return readSource.getConnection(schema, autoCommit);
+            } else {
+                PhysicalDatasource writeSource = dbPool.getSource();
+                writeSource.setWriteCount();
+                return writeSource.getConnection(schema, autoCommit);
+            }
         } else {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }

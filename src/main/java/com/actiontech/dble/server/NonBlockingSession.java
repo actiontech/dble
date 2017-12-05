@@ -625,7 +625,7 @@ public class NonBlockingSession implements Session {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
                 try {
-                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit());
+                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false);
                     newConn.setXaStatus(errConn.getXaStatus());
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;

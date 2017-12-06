@@ -200,10 +200,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                                 HeapItem itemToDiscard = heap.poll();
                                 if (!itemToDiscard.isNullItem()) {
                                     BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
-                                    boolean isClear = false;
-                                    while (!isClear) {
+                                    while (true) {
                                         if (discardQueue.take().isNullItem() || isFail()) {
-                                            isClear = true;
+                                            break;
                                         }
                                     }
                                 }

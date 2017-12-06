@@ -8,6 +8,7 @@ package com.actiontech.dble.route.sequence.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -23,16 +24,16 @@ import java.util.List;
 /**
  * Created by huqing.yan on 2017/7/3.
  */
-public class FetchMySQLSequnceHandler implements ResponseHandler {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(FetchMySQLSequnceHandler.class);
+public class FetchMySQLSequenceHandler implements ResponseHandler {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(FetchMySQLSequenceHandler.class);
 
     public void execute(SequenceVal seqVal) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         PhysicalDBNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("execute in datanode " + seqVal.dataNode +
-                        " for fetch sequnce sql " + seqVal.sql);
+                LOGGER.debug("execute in data node " + seqVal.dataNode +
+                        " for fetch sequence sql " + seqVal.sql);
             }
             // change Select mode to Update mode. Make sure the query send to the write host
             mysqlDN.getConnection(mysqlDN.getDatabase(), true,
@@ -44,14 +45,14 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
 
     }
 
-    public String getLastestError(String seqName) {
+    String getLastError(String seqName) {
         return IncrSequenceMySQLHandler.LATEST_ERRORS.get(seqName);
     }
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         try {
             conn.query(((SequenceVal) conn.getAttachment()).sql);
         } catch (Exception e) {
@@ -99,7 +100,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
-            LOGGER.warn(" sequnce sql returned err value ,sequence:" +
+            LOGGER.warn(" sequence sql returned err value ,sequence:" +
                     seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
             seqVal.dbretVal = columnVal;

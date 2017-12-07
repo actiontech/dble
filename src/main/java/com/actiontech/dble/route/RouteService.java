@@ -46,7 +46,7 @@ public class RouteService {
     public RouteResultset route(SchemaConfig schema,
                                 int sqlType, String stmt, ServerConnection sc)
             throws SQLException {
-        RouteResultset rrs = null;
+        RouteResultset rrs;
         String cacheKey = null;
 
         /*
@@ -68,7 +68,6 @@ public class RouteService {
             if (endPos > 0) {
                 // router by hint of !dble:
                 String hint = stmt.substring(hintLength, endPos).trim();
-
                 String hintSplit = "=";
                 int firstSplitPos = hint.indexOf(hintSplit);
                 if (firstSplitPos > 0) {
@@ -84,24 +83,25 @@ public class RouteService {
 
                     HintHandler hintHandler = HintHandlerFactory.getHintHandler(hintType);
                     if (hintHandler != null) {
-
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
-
                         } else {
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
                         }
-
                     } else {
-                        LOGGER.warn("TODO , support hint sql type : " + hintType);
+                        String msg = "Not supported hint sql type : " + hintType;
+                        LOGGER.warn(msg);
+                        throw new SQLSyntaxErrorException(msg);
                     }
-
                 } else { //fixed by runfriends@126.com
                     String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
                     LOGGER.warn(msg);
                     throw new SQLSyntaxErrorException(msg);
                 }
+            } else {
+                stmt = stmt.trim();
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
             }
         } else {
             stmt = stmt.trim();

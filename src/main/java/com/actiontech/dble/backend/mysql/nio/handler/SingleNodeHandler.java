@@ -86,7 +86,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
             ServerConfig conf = DbleServer.getInstance().getConfig();
             PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-            dn.getConnection(dn.getDatabase(), sc.isAutocommit(), node, this, node);
+            dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sc.isAutocommit(), node, this, node);
         }
 
     }

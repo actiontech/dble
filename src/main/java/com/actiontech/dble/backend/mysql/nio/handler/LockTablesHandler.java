@@ -51,7 +51,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             } else {
                 // create new connection
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), autocommit, node, this, node);
+                dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), autocommit, node, this, node);
             }
         }
     }

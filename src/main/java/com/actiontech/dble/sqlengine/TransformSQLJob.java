@@ -48,7 +48,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
                 // create new connection
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), true, node, this, node);
+                dn.getConnection(dn.getDatabase(), false, true, node, this, node);
             } else {
                 ds.getConnection(databaseName, true, this, null);
             }

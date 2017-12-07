@@ -515,7 +515,7 @@ public class NonBlockingSession implements Session {
             canReUse = true;
         }
 
-        if (!conn.isFromSlaveDB() && (node.getRunOnSlave() == null || !node.getRunOnSlave())) {
+        if (!conn.isFromSlaveDB()) {
             canReUse = true;
         }
 

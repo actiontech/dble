@@ -36,7 +36,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
                         " for fetch sequence sql " + seqVal.sql);
             }
             // change Select mode to Update mode. Make sure the query send to the write host
-            mysqlDN.getConnection(mysqlDN.getDatabase(), true,
+            mysqlDN.getConnection(mysqlDN.getDatabase(), true, true,
                     new RouteResultsetNode(seqVal.dataNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);
         } catch (Exception e) {

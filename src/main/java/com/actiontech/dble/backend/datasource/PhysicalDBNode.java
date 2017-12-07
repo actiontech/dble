@@ -70,10 +70,16 @@ public class PhysicalDBNode {
         }
     }
 
-    public void getConnection(String schema, boolean autoCommit, RouteResultsetNode rrs,
+    public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
+            if (isMustWrite) {
+                PhysicalDatasource writeSource = dbPool.getSource();
+                writeSource.setWriteCount();
+                writeSource.getConnection(schema, autoCommit, handler, attachment);
+                return;
+            }
             LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
             if (rrs.getRunOnSlave() != null) {  // hint like /*db_type=master/slave*/
                 // the hint is slave
@@ -86,12 +92,10 @@ public class PhysicalDBNode {
                         LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBalanceFlag());
                         if (!dbPool.getReadCon(schema, autoCommit, handler,
                                 attachment)) {
-                            LOGGER.warn("Do not have slave connection to use, " +
-                                    "use master connection instead.");
+                            LOGGER.warn("Do not have slave connection to use, use master connection instead.");
                             PhysicalDatasource writeSource = dbPool.getSource();
                             writeSource.setWriteCount();
-                            writeSource.getConnection(schema, autoCommit,
-                                    handler, attachment);
+                            writeSource.getConnection(schema, autoCommit, handler, attachment);
                             rrs.setRunOnSlave(false);
                             rrs.setCanRunInReadDB(false);
                         }

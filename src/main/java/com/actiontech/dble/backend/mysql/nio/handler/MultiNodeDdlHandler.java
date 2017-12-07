@@ -102,7 +102,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
+                dn.getConnection(dn.getDatabase(), true, sessionAutocommit, node, this, node);
             }
         }
     }

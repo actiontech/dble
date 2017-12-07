@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Hash Zhang
  * @version 1.0
- * @time 23:35 2016/5/6
+ * 23:35 2016/5/6
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceZKHandler.class);
@@ -57,7 +57,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ZkConfig.getInstance().getZkURL();
         if (zkAddress == null) {
-            throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
+            throw new RuntimeException("please check zkURL is correct in config file \"myid.properties\" .");
         }
         try {
             initializeZK(props, zkAddress);
@@ -125,12 +125,11 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             try {
                 threadLocalLoad();
             } catch (Exception e) {
-                LOGGER.error("Error caught while loding configuration within current thread:" + e.getCause());
+                LOGGER.error("Error caught while loading configuration within current thread:" + e.getCause());
             }
             tableParaValMap = tableParaValMapThreadLocal.get();
         }
-        Map<String, String> paraValMap = tableParaValMap.get(prefixName);
-        return paraValMap;
+        return tableParaValMap.get(prefixName);
     }
 
     @Override
@@ -141,41 +140,40 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
             }
             interProcessSemaphoreMutex.acquire();
-            Map<String, Map<String, String>> tableParaValMap = tableParaValMapThreadLocal.get();
-            if (tableParaValMap == null) {
-                throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
-            }
-            Map<String, String> paraValMap = tableParaValMap.get(prefixName);
-            if (paraValMap == null) {
-                throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
-            }
-
-            if (paraValMap.get(prefixName + KEY_MAX_NAME) == null) {
-                paraValMap.put(prefixName + KEY_MAX_NAME, props.getProperty(prefixName + KEY_MAX_NAME));
-            }
-            if (paraValMap.get(prefixName + KEY_MIN_NAME) == null) {
-                paraValMap.put(prefixName + KEY_MIN_NAME, props.getProperty(prefixName + KEY_MIN_NAME));
-            }
-            if (paraValMap.get(prefixName + KEY_CUR_NAME) == null) {
-                paraValMap.put(prefixName + KEY_CUR_NAME, props.getProperty(prefixName + KEY_CUR_NAME));
-            }
-
-            long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME)) - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
-            long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
-            client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
-
-            paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
-            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
-            paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
-
-        } catch (Exception e) {
-            LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
-        } finally {
             try {
-                interProcessSemaphoreMutex.release();
+                Map<String, Map<String, String>> tableParaValMap = tableParaValMapThreadLocal.get();
+                if (tableParaValMap == null) {
+                    throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
+                }
+                Map<String, String> paraValMap = tableParaValMap.get(prefixName);
+                if (paraValMap == null) {
+                    throw new IllegalStateException("IncrSequenceZKHandler should be loaded first!");
+                }
+
+                if (paraValMap.get(prefixName + KEY_MAX_NAME) == null) {
+                    paraValMap.put(prefixName + KEY_MAX_NAME, props.getProperty(prefixName + KEY_MAX_NAME));
+                }
+                if (paraValMap.get(prefixName + KEY_MIN_NAME) == null) {
+                    paraValMap.put(prefixName + KEY_MIN_NAME, props.getProperty(prefixName + KEY_MIN_NAME));
+                }
+                if (paraValMap.get(prefixName + KEY_CUR_NAME) == null) {
+                    paraValMap.put(prefixName + KEY_CUR_NAME, props.getProperty(prefixName + KEY_CUR_NAME));
+                }
+
+                long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME)) - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));
+                long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
+                client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
+
+                paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
+                paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
+                paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
             } catch (Exception e) {
-                LOGGER.error("Error caught while realeasing distributed lock" + e.getCause());
+                LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
+            } finally {
+                interProcessSemaphoreMutex.release();
             }
+        } catch (Exception e) {
+            LOGGER.error("Error caught while use distributed lock:" + e.getCause());
         }
         return true;
     }

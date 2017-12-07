@@ -66,7 +66,7 @@ public final class ReloadConfig {
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/roll backing, please try again later.");
+                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                 } else {
                     try {
                         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();

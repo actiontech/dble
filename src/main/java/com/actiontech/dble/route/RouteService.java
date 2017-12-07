@@ -86,6 +86,8 @@ public class RouteService {
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
+                            // HintSQLHandler will always send to master
+                            rrs.setRunOnSlave(false);
                         } else {
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
                         }

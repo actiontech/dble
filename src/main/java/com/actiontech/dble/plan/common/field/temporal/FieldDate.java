@@ -30,7 +30,7 @@ public class FieldDate extends FieldTemporaWithDate {
         try {
             ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            Field.LOGGER.warn("parse string exception!", ue);
+            Field.LOGGER.info("parse string exception!", ue);
         }
         if (ptrStr != null) {
             MyTime.strToDatetimeWithWarn(ptrStr, ltime, MyTime.TIME_FUZZY_DATE);

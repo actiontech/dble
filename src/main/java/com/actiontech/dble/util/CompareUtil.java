@@ -71,18 +71,6 @@ public final class CompareUtil {
     }
 
 
-    private static int compareStringForChinese(String s1, String s2) {
-        String mS1 = null, mS2 = null;
-        try {
-            //use GBK
-            mS1 = new String(s1.getBytes("GB2312"), "GBK");
-            mS2 = new String(s2.getBytes("GB2312"), "GBK");
-        } catch (Exception ex) {
-            LOGGER.error("compareStringForChineseError", ex);
-            return s1.compareTo(s2);
-        }
-        return chineseCompareTo(mS1, mS2);
-    }
 
     private static int getCharCode(String s) {
         if (s == null || s.length() == 0) {

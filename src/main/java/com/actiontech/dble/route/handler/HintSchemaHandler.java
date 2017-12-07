@@ -51,7 +51,7 @@ public class HintSchemaHandler implements HintHandler {
             return routeStrategy.route(tempSchema, sqlType, realSQL, sc, cachePool);
         } else {
             String msg = "can't find hint schema:" + hintSQLValue;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
     }

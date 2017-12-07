@@ -72,7 +72,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
                     keys.clear();
                 }
             } catch (Exception e) {
-                LOGGER.warn(getName(), e);
+                LOGGER.info(getName(), e);
             }
         }
     }
@@ -92,7 +92,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             reactor.postRegister(c);
 
         } catch (Exception e) {
-            LOGGER.warn(getName(), e);
+            LOGGER.info(getName(), e);
             closeChannel(channel);
         }
     }
@@ -106,13 +106,13 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             try {
                 socket.close();
             } catch (IOException e) {
-                LOGGER.error("closeChannelError", e);
+                LOGGER.info("closeChannelError", e);
             }
         }
         try {
             channel.close();
         } catch (IOException e) {
-            LOGGER.error("closeChannelError", e);
+            LOGGER.info("closeChannelError", e);
         }
     }
 

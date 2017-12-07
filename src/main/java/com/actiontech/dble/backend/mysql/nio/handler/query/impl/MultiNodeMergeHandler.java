@@ -225,7 +225,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             nextHandler.rowEofResponse(null, this.isLeft, queues.keySet().iterator().next());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
-            LOGGER.warn(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }

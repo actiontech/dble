@@ -17,6 +17,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollba
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -145,7 +146,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (checkClosedConn(conn)) {
             return;
         }
-        LOGGER.warn("backend connect" + reason);
+        LOGGER.info("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
@@ -156,7 +157,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
@@ -164,6 +165,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         err = errPacket;
         executeError(conn);
     }
+
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
@@ -398,7 +400,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         s.append("\n}");
 
-        LOGGER.warn(s.toString());
+        LOGGER.warn(AlarmCode.USHARD_CORE_DDL_WARN + s.toString());
     }
 
     private void executeError(BackendConnection conn) {
@@ -494,7 +496,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void handleDataProcessException(Exception e) {
         if (!errorResponse.get()) {
             this.error = e.toString();
-            LOGGER.warn("caught exception ", e);
+            LOGGER.info("caught exception ", e);
             setFail(e.toString());
             this.tryErrorFinished(true);
         }

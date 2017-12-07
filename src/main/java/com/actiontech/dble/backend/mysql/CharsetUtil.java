@@ -297,7 +297,7 @@ public final class CharsetUtil {
     }
     public static String getCharset(int index) {
         if (INDEX_TO_COLLATION[index] == null) {
-            LOGGER.warn("can't find collation index " + index);
+            LOGGER.info("can't find collation index " + index);
             return null;
         }
         return INDEX_TO_COLLATION[index].charset;

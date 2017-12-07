@@ -231,7 +231,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                         byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
                         sb.append("X'" + HexFormatUtil.bytesToHexString(bytes) + "'");
                     } else {
-                        LOGGER.warn("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
+                        LOGGER.info("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
                         sb.append("'" + bindValue.getValue() + "'");
                     }
                     break;

@@ -201,7 +201,7 @@ public class ItemField extends ItemIdent {
                 fp.setDb(dbName.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             }
         } catch (UnsupportedEncodingException e) {
-            LOGGER.warn("parse string exception!", e);
+            LOGGER.info("parse string exception!", e);
         }
     }
 

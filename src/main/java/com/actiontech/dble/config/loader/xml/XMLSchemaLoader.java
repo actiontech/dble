@@ -399,7 +399,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                     tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : " +
                     tableConf.getDataNodes().size() + ", please make sure table datanode size = function partition size");
         } else if (suitValue > 0) {
-            LOGGER.warn("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant",
+            LOGGER.info("table conf : table [ {} ] rule function [ {} ] partition size : {} < table datanode size : {} , this cause some datanode to be redundant",
                     new String[]{
                             tableConf.getName(),
                             tableConf.getRule().getFunctionName(),

@@ -82,7 +82,7 @@ public abstract class FieldNum extends Field {
         try {
             res = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            LOGGER.warn("parse string exception!", ue);
+            LOGGER.info("parse string exception!", ue);
         }
         if (res != null)
             if (zerofill && res.length() < fieldLength) {

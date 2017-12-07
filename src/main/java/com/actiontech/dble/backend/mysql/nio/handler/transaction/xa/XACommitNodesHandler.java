@@ -14,6 +14,7 @@ import com.actiontech.dble.backend.mysql.xa.ParticipantLogEntry;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -84,6 +85,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
             final String errorMsg = this.error;
+            LOGGER.warn(AlarmCode.USHARD_CORE_XA_WARN + "commit error and rollback the xa");
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
                     @Override
@@ -165,7 +167,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
                 cleanAndFeedback();
             }
-            // LOGGER.error("Wrong XA status flag!");
         }
     }
 
@@ -234,7 +235,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         this.waitUntilSendFinish();
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
         sendData = makeErrorPacket(errMsg);
@@ -299,7 +300,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail() && session.getXaState() != TxState.TX_PREPARE_UNCONNECT_STATE) {
             session.getSource().setTxInterrupt(error);
             session.getSource().write(sendData);
-            LOGGER.warn("nextParse failed:" + error);
+            LOGGER.info("nextParse failed:" + error);
         } else {
             commit();
         }
@@ -344,7 +345,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
             session.getSource().write(sendData);
-            LOGGER.warn("cleanAndFeedback:" + error);
+            LOGGER.info("cleanAndFeedback:" + error);
 
         }
     }

@@ -53,7 +53,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
                 ds.getConnection(databaseName, true, this, null);
             }
         } catch (Exception e) {
-            LOGGER.warn("can't get connection for sql ,error:" + e);
+            LOGGER.info("can't get connection for sql ,error:" + e);
             ErrorPacket errPacket = new ErrorPacket();
             errPacket.setPacketId(0);
             errPacket.setErrNo(ErrorCode.ER_YES);
@@ -64,7 +64,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("can't get connection for sql :" + sql);
+        LOGGER.info("can't get connection for sql :" + sql);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(0);
         errPacket.setErrNo(ErrorCode.ER_YES);

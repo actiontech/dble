@@ -144,7 +144,7 @@ public class FrontendAuthenticator implements NIOHandler {
         try {
             encryptPass = SecurityUtil.scramble411(pass.getBytes(), source.getSeed());
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.warn(source.toString(), e);
+            LOGGER.info(source.toString(), e);
             return false;
         }
         if (encryptPass != null && (encryptPass.length == password.length)) {
@@ -211,7 +211,7 @@ public class FrontendAuthenticator implements NIOHandler {
     }
 
     protected void failure(int errNo, String info) {
-        LOGGER.error(source.toString() + info);
+        LOGGER.info(source.toString() + info);
         source.writeErrMessage((byte) 2, errNo, info);
     }
 

@@ -43,7 +43,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         this.reset(lockedCons.size());
         // if client just send an unlock tables, theres is no lock tables statement, just send back OK
         if (lockedCons.size() == 0) {
-            LOGGER.warn("find no locked backend connection!" + session.getSource());
+            LOGGER.info("find no locked backend connection!" + session.getSource());
             OkPacket ok = new OkPacket();
             ok.setPacketId(++packetId);
             ok.setPacketLength(7); // the size of unlock table's response OK packet is 7
@@ -74,7 +74,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        LOGGER.error("unexpected invocation: connectionAcquired from unlock tables");
+        LOGGER.info("unexpected invocation: connectionAcquired from unlock tables");
     }
 
     @Override
@@ -110,14 +110,14 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
     public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        LOGGER.warn("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": row data packet");
         return false;
@@ -125,7 +125,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": row's eof");
     }

@@ -185,7 +185,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
                 int ind = line.indexOf('=');
                 if (ind < 0) {
-                    LOGGER.warn(" warn: bad line int " + mapFile + " :" + line);
+                    LOGGER.info(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
 

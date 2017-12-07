@@ -133,7 +133,7 @@ public class MySQLConsistencyChecker {
                         sql = this.getMaxSQL();
                     if (result.getResult().containsKey(GlobalTableUtil.INNER_COLUMN))
                         sql = this.getColumnExistSQL();
-                    LOGGER.warn(sql + " execute failed in db: " + result.getDataNode() +
+                    LOGGER.info(sql + " execute failed in db: " + result.getDataNode() +
                             " during global table consistency check task.");
                 }
             }

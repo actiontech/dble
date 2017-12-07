@@ -133,7 +133,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
         seconds.setQuot(diff / 1000000);
         seconds.setRem(diff % 1000000 * 1000); /* time.second_part= lldiv.rem / 1000 */
         if ((nullValue = (interval.getYear() != 0 || interval.getMonth() != 0 || MyTime.secToTime(seconds, ltime)))) {
-            LOGGER.warn("datetime function overflow!");
+            LOGGER.info("datetime function overflow!");
             return true;
         }
         return false;

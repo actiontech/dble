@@ -67,7 +67,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
                 try {
                     return new BigDecimal(res);
                 } catch (Exception e) {
-                    LOGGER.error(res + " to BigDecimal error!", e);
+                    LOGGER.info(res + " to BigDecimal error!", e);
                 }
             }
         }
@@ -100,7 +100,7 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
             try {
                 return new BigInteger(res);
             } catch (Exception e) {
-                LOGGER.error(res + " to BigInteger error!", e);
+                LOGGER.info(res + " to BigInteger error!", e);
             }
         }
         return BigInteger.ZERO;

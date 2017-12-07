@@ -53,13 +53,13 @@ public class GetConnectionHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         finishedCount.addAndGet(1);
-        LOGGER.warn("connect error " + conn + e);
+        LOGGER.info("connect error " + conn + e);
         conn.release();
     }
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
-        LOGGER.warn("caught error resp: " + conn + " " + new String(err));
+        LOGGER.info("caught error resp: " + conn + " " + new String(err));
         conn.release();
     }
 

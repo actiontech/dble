@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -39,7 +40,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
                     new RouteResultsetNode(seqVal.dataNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);
         } catch (Exception e) {
-            LOGGER.warn("get connection err " + e);
+            LOGGER.info("get connection err " + e);
         }
 
     }
@@ -62,7 +63,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         ((SequenceVal) conn.getAttachment()).dbfinished = true;
-        LOGGER.warn("connectionError " + e);
+        LOGGER.info("connectionError " + e);
 
     }
 
@@ -74,7 +75,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         String errMsg = new String(err.getMessage());
-        LOGGER.warn("errorResponse " + err.getErrNo() + " " + errMsg);
+        LOGGER.info("errorResponse " + err.getErrNo() + " " + errMsg);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
         conn.release();
 
@@ -99,7 +100,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
-            LOGGER.warn(" sequnce sql returned err value ,sequence:" +
+            LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + " sequnce sql returned err value ,sequence:" +
                     seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
             seqVal.dbretVal = columnVal;
@@ -118,7 +119,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
         seqVal.dbfinished = true;
         String errMgs = e.toString();
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMgs);
-        LOGGER.warn("executeException   " + errMgs);
+        LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "executeException   " + errMgs);
         c.close("exception:" + errMgs);
 
     }
@@ -131,7 +132,7 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
 
-        LOGGER.warn("connection closed " + conn + " reason:" + reason);
+        LOGGER.info("connection closed " + conn + " reason:" + reason);
     }
 
     @Override

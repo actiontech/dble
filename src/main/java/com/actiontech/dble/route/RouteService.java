@@ -77,7 +77,7 @@ public class RouteService {
                     String hintSql = (String) hintMap.get(hintType);
                     if (hintSql.length() == 0) {
                         String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
-                        LOGGER.warn(msg);
+                        LOGGER.info(msg);
                         throw new SQLSyntaxErrorException(msg);
                     }
                     String realSQL = stmt.substring(endPos + "*/".length()).trim();
@@ -94,12 +94,12 @@ public class RouteService {
                         }
 
                     } else {
-                        LOGGER.warn("TODO , support hint sql type : " + hintType);
+                        LOGGER.info("TODO , support hint sql type : " + hintType);
                     }
 
                 } else { //fixed by runfriends@126.com
                     String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLSyntaxErrorException(msg);
                 }
             }

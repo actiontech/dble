@@ -24,6 +24,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.DnPropertyUtil;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
@@ -317,7 +318,6 @@ public final class DbleServer {
         short bufferPoolChunkSize = system.getBufferPoolChunkSize();
         totalNetWorkBufferSize = bufferPoolPageSize * bufferPoolPageNumber;
         if (totalNetWorkBufferSize > Platform.getMaxDirectMemory()) {
-            LOGGER.error("Direct BufferPool size lager than MaxDirectMemory");
             throw new IOException("Direct BufferPool size lager than MaxDirectMemory");
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
@@ -563,7 +563,7 @@ public final class DbleServer {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("resultSetMapClear err " + e);
+                    LOGGER.info("resultSetMapClear err " + e);
                 }
             }
 
@@ -623,7 +623,7 @@ public final class DbleServer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("saveDataNodeIndex err:", e);
+            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "saveDataNodeIndex err:", e);
         } finally {
             if (fileOut != null) {
                 try {
@@ -756,7 +756,7 @@ public final class DbleServer {
                                 p.checkBackendCons();
                             }
                         } catch (Exception e) {
-                            LOGGER.warn("checkBackendCons caught err:" + e);
+                            LOGGER.info("checkBackendCons caught err:" + e);
                         }
                     }
                 });
@@ -768,7 +768,7 @@ public final class DbleServer {
                                 p.checkFrontCons();
                             }
                         } catch (Exception e) {
-                            LOGGER.warn("checkFrontCons caught err:" + e);
+                            LOGGER.info("checkFrontCons caught err:" + e);
                         }
                     }
                 });

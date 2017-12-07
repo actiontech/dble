@@ -469,7 +469,7 @@ public final class RouterUtil {
                     if (retNodesSet.size() == 0) { //two tables has no no intersection
                         String errMsg = "invalid route in sql, multi tables found but datanode has no intersection " +
                                 " sql:" + rrs.getStatement();
-                        LOGGER.warn(errMsg);
+                        LOGGER.info(errMsg);
                         throw new SQLNonTransientException(errMsg);
                     }
                 }
@@ -591,7 +591,7 @@ public final class RouterUtil {
             if (tableConfig == null) {
                 if (isSingleTable) {
                     String msg = "can't find table [" + tableName + "[ define in schema " + ":" + schema.getName();
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 } else {
                     //cross to other schema
@@ -647,7 +647,7 @@ public final class RouterUtil {
                 if (nodeIndex == null) {
                     String msg = "can't find any valid data node :" + tableConfig.getName() +
                             " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
 
@@ -661,7 +661,7 @@ public final class RouterUtil {
                     String msg = "Can't find a valid data node for specified node index :" +
                             tableConfig.getName() + " -> " + tableConfig.getPartitionColumn() +
                             " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
                 if (node != null) {
@@ -682,7 +682,7 @@ public final class RouterUtil {
                     } else {
                         String msg = "Can't find valid data node(s) for some of specified node indexes :" +
                                 tableConfig.getName() + " -> " + tableConfig.getPartitionColumn();
-                        LOGGER.warn(msg);
+                        LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
                     if (node != null) {

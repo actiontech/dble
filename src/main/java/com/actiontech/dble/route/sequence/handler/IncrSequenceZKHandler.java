@@ -7,6 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -62,7 +63,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         try {
             initializeZK(props, zkAddress);
         } catch (Exception e) {
-            LOGGER.error("Error caught while initializing ZK:" + e.getCause());
+            LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "Error caught while initializing ZK:" + e.getCause());
         }
     }
 
@@ -125,7 +126,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             try {
                 threadLocalLoad();
             } catch (Exception e) {
-                LOGGER.error("Error caught while loding configuration within current thread:" + e.getCause());
+                LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "Error caught while loding configuration within current thread:" + e.getCause());
             }
             tableParaValMap = tableParaValMapThreadLocal.get();
         }
@@ -169,12 +170,12 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
 
         } catch (Exception e) {
-            LOGGER.error("Error caught while updating period from ZK:" + e.getCause());
+            LOGGER.info("Error caught while updating period from ZK:" + e.getCause());
         } finally {
             try {
                 interProcessSemaphoreMutex.release();
             } catch (Exception e) {
-                LOGGER.error("Error caught while realeasing distributed lock" + e.getCause());
+                LOGGER.info("Error caught while realeasing distributed lock" + e.getCause());
             }
         }
         return true;

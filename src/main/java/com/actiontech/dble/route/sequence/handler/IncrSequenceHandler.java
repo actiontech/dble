@@ -39,7 +39,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
         Map<String, String> paraMap = this.getParaValMap(prefixName);
         if (null == paraMap) {
             String msg = "can't find definition for sequence :" + prefixName;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new ConfigException(msg);
         }
         Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;

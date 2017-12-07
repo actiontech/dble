@@ -60,7 +60,7 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.warn("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
         conn.quit();
@@ -77,7 +77,7 @@ public class KillConnectionHandler implements ResponseHandler {
         } catch (UnsupportedEncodingException e) {
             msg = new String(err.getMessage());
         }
-        LOGGER.warn("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
+        LOGGER.info("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
         conn.release();
         toKilled.close("exception:" + msg);
     }

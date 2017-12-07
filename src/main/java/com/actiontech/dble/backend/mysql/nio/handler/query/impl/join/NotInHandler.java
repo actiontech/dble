@@ -95,7 +95,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightComparator);
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("not in row exception", e);
+            LOGGER.info("not in row exception", e);
             return true;
         }
         return false;
@@ -117,7 +117,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 addRowToDeque(eofRow, rightFieldPackets.size(), rightQueue, rightComparator);
             }
         } catch (Exception e) {
-            LOGGER.warn("not in rowEof exception", e);
+            LOGGER.info("not in rowEof exception", e);
         }
     }
 
@@ -164,7 +164,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {
             String msg = "notIn thread error, " + e.getLocalizedMessage();
-            LOGGER.warn(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         } finally {
             if (leftLocal != null)

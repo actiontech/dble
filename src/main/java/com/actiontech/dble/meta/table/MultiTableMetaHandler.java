@@ -66,7 +66,7 @@ public class MultiTableMetaHandler {
                 collectTables.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("getSingleTables " + e);
+            LOGGER.info("getSingleTables " + e);
             return new ArrayList<>();
         } finally {
             singleTableLock.unlock();

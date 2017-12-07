@@ -47,7 +47,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             }
         } catch (Exception e) {
             String reason = "can't get backend connection for sql :" + sql;
-            LOGGER.warn(reason, e);
+            LOGGER.info(reason, e);
             sc.close(reason);
         }
     }
@@ -68,13 +68,13 @@ public class SetTestJob implements ResponseHandler, Runnable {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         String reason = "can't get backend connection for sql :" + sql;
-        LOGGER.warn(reason);
+        LOGGER.info(reason);
         sc.close(reason);
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("connectionClose sql :" + sql);
+        LOGGER.info("connectionClose sql :" + sql);
         sc.close(reason);
     }
 

@@ -17,6 +17,7 @@
 
 package com.actiontech.dble.memory.unsafe;
 
+import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Cleaner;
@@ -136,7 +137,7 @@ public final class Platform {
                     }
                 }
             } catch (Throwable var9) {
-                LOGGER.error(var9.getMessage());
+                LOGGER.warn(AlarmCode.USHARD_CORE_PERFORMANCE_WARN + var9.getMessage());
             }
 
             if (maxDirectMemory <= 0L) {

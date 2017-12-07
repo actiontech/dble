@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.model.AlarmConfig;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -26,12 +27,15 @@ public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
+    private final AlarmConfig alarm;
 
     public XMLServerLoader(boolean isLowerCaseTableNames) {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
+        this.alarm = new AlarmConfig();
 
+        this.load(new AlarmConfigLoader(), isLowerCaseTableNames);
         this.load(new SystemConfigLoader(), isLowerCaseTableNames);
         this.load(new UserConfigLoader(), isLowerCaseTableNames);
         this.load(new FirewallConfigLoader(), isLowerCaseTableNames);
@@ -45,6 +49,10 @@ public class XMLServerLoader {
     public Map<String, UserConfig> getUsers() {
         //return (Map<String, UserConfig>) (users.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(users));
         return users;
+    }
+
+    public AlarmConfig getAlarm() {
+        return alarm;
     }
 
     public FirewallConfig getFirewall() {

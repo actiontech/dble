@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.server.variables;
 
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ public class MysqlVarsListener implements SQLQueryResultListener<SQLQueryResult<
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (!result.isSuccess()) {
             //not thread safe
-            LOGGER.warn("Can't get variables from DataNode: " + result.getDataNode() + "!");
+            LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "Can't get variables from DataNode: " + result.getDataNode() + "!");
             return;
         }
 

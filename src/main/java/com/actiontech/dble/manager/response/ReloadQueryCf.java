@@ -26,7 +26,7 @@ public final class ReloadQueryCf {
 
         QueryConditionAnalyzer.getInstance().setCf(cf);
 
-        LOGGER.warn(String.valueOf(c) + "Reset show  @@sql.condition=" + cf + " success by manager");
+        LOGGER.info(String.valueOf(c) + "Reset show  @@sql.condition=" + cf + " success by manager");
 
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);

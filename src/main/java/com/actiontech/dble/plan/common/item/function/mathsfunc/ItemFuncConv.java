@@ -57,7 +57,7 @@ public class ItemFuncConv extends ItemStrFunc {
         try {
             str = Long.toString(dec, toBase);
         } catch (Exception e) {
-            LOGGER.warn("long to string failed ,value:" + dec + ", to_base:" + toBase);
+            LOGGER.info("long to string failed ,value:" + dec + ", to_base:" + toBase);
             nullValue = true;
         }
         return str;

@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,19 +45,6 @@ public final class JavaUtils {
     public static final long DEFAULT_DRIVER_MEM_MB = 1024;
 
     private static final int MAX_DIR_CREATION_ATTEMPTS = 10;
-
-    /**
-     * Closes the given object, ignoring IOExceptions.
-     */
-    public static void closeQuietly(Closeable closeable) {
-        try {
-            if (closeable != null) {
-                closeable.close();
-            }
-        } catch (IOException e) {
-            LOGGER.error("IOException should not have been thrown.", e);
-        }
-    }
 
 
     /*
@@ -327,30 +312,6 @@ public final class JavaUtils {
         return value + unit;
     }
 
-
-    public static File createDirectory(String rootDir, String blockMgr) throws IOException {
-
-        int attempts = 0;
-        int maxAttempts = MAX_DIR_CREATION_ATTEMPTS;
-        File dir = null;
-        while (dir == null) {
-            attempts += 1;
-            if (attempts > maxAttempts) {
-                throw new IOException("Failed to create a temp directory (under " + rootDir + ") after " +
-                        maxAttempts + " attempts!");
-            }
-            try {
-                dir = new File(rootDir, blockMgr + "-" + UUID.randomUUID().toString());
-                if (dir.exists() || !dir.mkdirs()) {
-                    dir = null;
-                }
-            } catch (Exception e) {
-                LOGGER.error(e.getMessage());
-            }
-        }
-
-        return dir.getCanonicalFile();
-    }
 
     /* Calculates 'x' modulo 'mod', takes to consideration sign of x,
   * i.e. if 'x' is negative, than 'x' % 'mod' is negative too

@@ -113,7 +113,7 @@ public final class ShowBinlogStatus {
                                 if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
                                     isAllPaused = false;
                                     errMsg = "timeout while waiting for unfinished distributed transactions.";
-                                    logger.warn(errMsg);
+                                    logger.info(errMsg);
                                     BinlogPause pauseTimeoutInfo = new BinlogPause(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), BinlogPauseStatus.TIMEOUT);
                                     zkConn.setData().forPath(binlogStatusPath, pauseTimeoutInfo.toString().getBytes(StandardCharsets.UTF_8));
                                     break;
@@ -141,7 +141,7 @@ public final class ShowBinlogStatus {
                         }
                     }
                 } catch (Exception e) {
-                    logger.warn("catch Exception", e);
+                    logger.info("catch Exception", e);
                 } finally {
                     DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
                     distributeLock.release();
@@ -215,23 +215,23 @@ public final class ShowBinlogStatus {
             }
             if (!waiting) {
                 waiting = false;
-                logger.warn("stop waiting all sessions of distributed transaction");
+                logger.info("stop waiting all sessions of distributed transaction");
                 return false;
             }
             if ((TimeUtil.currentTimeMillis() > beginTime + timeout)) {
                 try {
                     if (ZKUtils.getConnection().getChildren().forPath(KVPathUtil.getOnlinePath()).contains(from)) {
-                        logger.warn("timeout and the from server node " + from + " is offline");
+                        logger.info("timeout and the from server node " + from + " is offline");
                         waiting = false;
                         DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-                        logger.warn("stop waiting all sessions of distributed transaction");
+                        logger.info("stop waiting all sessions of distributed transaction");
                         return false;
                     }
                 } catch (Exception e) {
-                    logger.warn("timeout and try to check server node " + from + " failed", e);
+                    logger.info("timeout and try to check server node " + from + " failed", e);
                     waiting = false;
                     DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-                    logger.warn("stop waiting all sessions of distributed transaction");
+                    logger.info("stop waiting all sessions of distributed transaction");
                     return false;
                 }
             }
@@ -255,12 +255,12 @@ public final class ShowBinlogStatus {
             }
             if (c.isClosed()) {
                 errMsg = "client closed while waiting for unfinished distributed transactions.";
-                logger.warn(errMsg);
+                logger.info(errMsg);
                 return false;
             }
             if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
                 errMsg = "timeout while waiting for unfinished distributed transactions.";
-                logger.warn(errMsg);
+                logger.info(errMsg);
                 return false;
             }
         }

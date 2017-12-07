@@ -81,7 +81,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
             try {
                 onTerminate();
             } catch (Exception e) {
-                logger.warn("handler terminate exception:", e);
+                logger.info("handler terminate exception:", e);
             }
         }
     }

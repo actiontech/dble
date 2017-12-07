@@ -520,7 +520,7 @@ public abstract class PlanNode {
         try {
             return this.columnsReferredCache.get(tn);
         } catch (ExecutionException e) {
-            LOGGER.warn("columnsReferedCache error", e);
+            LOGGER.info("columnsReferedCache error", e);
         }
         return null;
     }
@@ -530,7 +530,7 @@ public abstract class PlanNode {
         try {
             this.columnsReferredCache.get(tn).add(sel);
         } catch (ExecutionException e) {
-            LOGGER.warn("columnsReferedCache error", e);
+            LOGGER.info("columnsReferedCache error", e);
         }
     }
 

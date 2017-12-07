@@ -38,13 +38,13 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         //disable create table select from
         if (createStmt.getSelect() != null) {
             String msg = "create table from other table not supported :" + stmt;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         //disable create table select from
         if (createStmt.getLike() != null) {
             String msg = "create table like other table not supported :" + stmt;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 
@@ -114,7 +114,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             }
             if (!"InnoDB".equalsIgnoreCase(strEngine)) {
                 String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
         }
@@ -122,7 +122,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         //DISABLE DATA DIRECTORY
         if (createStmt.getTableOptions().get("DATA DIRECTORY") != null) {
             String msg = "create table with DATA DIRECTORY  not supported:" + createStmt;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
     }

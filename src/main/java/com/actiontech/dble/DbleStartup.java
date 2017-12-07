@@ -8,6 +8,7 @@ package com.actiontech.dble;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.handler.ShowServerLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ public final class DbleStartup {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final Logger LOGGER = LoggerFactory.getLogger(DbleStartup.class);
+    private static boolean initZKend = false;
 
     public static void main(String[] args) {
         //use zk ?
@@ -35,17 +37,29 @@ public final class DbleStartup {
                 System.exit(-1);
             }
             // init
-            DbleServer server = DbleServer.getInstance();
-            server.beforeStart();
 
+            DbleServer server = DbleServer.getInstance();
+            initZKend = true;
+            server.beforeStart();
+            LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + AlarmCode.USHARD_ALARM_SPLITE + "test error ");
             // startup
             server.startup();
             System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
 
         } catch (Exception e) {
             SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
-            LOGGER.error(sdf.format(new Date()) + " startup error", e);
+            LOGGER.error(AlarmCode.USHARD_CORE_ERROR +
+                    sdf.format(new Date()) + " startup error", e);
             System.exit(-1);
         }
+    }
+
+
+    public static boolean isInitZKend() {
+        return initZKend;
+    }
+
+    public static void setInitZKend(boolean initZKend) {
+        DbleStartup.initZKend = initZKend;
     }
 }

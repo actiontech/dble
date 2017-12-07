@@ -98,7 +98,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             }
             if (!hasPrimaryKey) {
                 String msg = "please make sure your table structure has primaryKey";
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
 
@@ -117,7 +117,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta == null) {
                 String msg = "Meta data of table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             return tbMeta.getColumnsCount();

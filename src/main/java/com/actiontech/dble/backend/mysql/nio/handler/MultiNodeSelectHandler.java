@@ -55,7 +55,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         }
         if (executeResponse) {
             String reason = "unexpected okResponse";
-            LOGGER.warn(reason);
+            LOGGER.info(reason);
         }
     }
 
@@ -94,7 +94,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         try {
             queue.put(HeapItem.nullItem());
         } catch (InterruptedException e) {
-            LOGGER.warn("rowEofResponse error", e);
+            LOGGER.info("rowEofResponse error", e);
         }
     }
 
@@ -112,7 +112,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         try {
             queue.put(item);
         } catch (InterruptedException e) {
-            LOGGER.warn("rowResponse error", e);
+            LOGGER.info("rowResponse error", e);
         }
         return false;
     }
@@ -218,7 +218,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             doSqlStat(session.getSource());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
-            LOGGER.warn(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }

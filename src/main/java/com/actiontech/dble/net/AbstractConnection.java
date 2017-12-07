@@ -406,7 +406,7 @@ public abstract class AbstractConnection implements NIOConnection {
         try {
             this.socketWR.doNextWriteCheck();
         } catch (Exception e) {
-            LOGGER.warn("write err:", e);
+            LOGGER.info("write err:", e);
             this.close("write err:" + e);
         }
     }
@@ -538,12 +538,12 @@ public abstract class AbstractConnection implements NIOConnection {
             try {
                 channel.close();
             } catch (Exception e) {
-                LOGGER.error("AbstractConnectionCloseError", e);
+                LOGGER.info("AbstractConnectionCloseError", e);
             }
 
             boolean closed = !channel.isOpen();
             if (!closed) {
-                LOGGER.warn("close socket of connnection failed " + this);
+                LOGGER.info("close socket of connnection failed " + this);
             }
         }
     }

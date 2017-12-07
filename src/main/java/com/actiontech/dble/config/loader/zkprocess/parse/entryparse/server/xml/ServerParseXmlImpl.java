@@ -8,6 +8,7 @@ package com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.xml;
 import com.actiontech.dble.config.loader.zkprocess.entity.Server;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +44,9 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
         try {
             server = (Server) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            e.printStackTrace();
-            LOGGER.error("ServerParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            e.printStackTrace();
-            LOGGER.error("ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return server;
@@ -58,8 +57,8 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("ServerParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+                    "ServerParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

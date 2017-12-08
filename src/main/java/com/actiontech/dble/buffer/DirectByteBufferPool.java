@@ -72,9 +72,9 @@ public class DirectByteBufferPool implements BufferPool {
     public ByteBuffer allocate(int size) {
         final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
         int selectedPage = prevAllocatedPage.incrementAndGet() % allPages.length;
-        ByteBuffer byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
+        ByteBuffer byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
         if (byteBuf == null) {
-            byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
+            byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         }
         final long threadId = Thread.currentThread().getId();
 

@@ -75,7 +75,7 @@ public final class ShowCommandCount {
     private static RowDataPacket getRow() {
         long querys = 0;
         for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
-            querys = p.getCommands().queryCount();
+            querys += p.getCommands().queryCount();
         }
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);

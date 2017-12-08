@@ -189,7 +189,7 @@ public final class ReloadConfig {
             newDataHosts = confInit.getDataHosts();
         }
         try {
-            loader.testConnection();
+            loader.testConnection(false);
         } catch (Exception e) {
             throw new Exception(e);
         }

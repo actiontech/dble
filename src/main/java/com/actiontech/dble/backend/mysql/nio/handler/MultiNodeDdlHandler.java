@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -112,6 +113,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             return;
         }
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
     }
 

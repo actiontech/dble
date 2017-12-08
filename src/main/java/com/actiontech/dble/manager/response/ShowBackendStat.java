@@ -148,7 +148,7 @@ public final class ShowBackendStat {
             return this.active;
         }
         public long getTotal() {
-            return this.active;
+            return this.total;
         }
     }
 }

@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -80,6 +81,7 @@ public class SQLJob implements ResponseHandler, Runnable {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         try {
             conn.query(sql);
             connection = conn;

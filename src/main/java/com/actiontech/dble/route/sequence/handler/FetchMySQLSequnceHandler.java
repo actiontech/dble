@@ -8,6 +8,7 @@ package com.actiontech.dble.route.sequence.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -50,8 +51,8 @@ public class FetchMySQLSequnceHandler implements ResponseHandler {
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         try {
             conn.query(((SequenceVal) conn.getAttachment()).sql);
         } catch (Exception e) {

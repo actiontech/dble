@@ -58,6 +58,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
         conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
         ((MySQLConnection) conn).sendQueryCmd(sql, sc.getCharset());
     }
 
@@ -94,6 +95,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
         ResetConnHandler handler = new ResetConnHandler();
         conn.setResponseHandler(handler);
         MySQLConnection connection = (MySQLConnection) conn;
+        connection.setComplexQuery(true);
         connection.write(connection.writeToBuffer(ResetConnectionPacket.RESET, connection.allocate()));
     }
 

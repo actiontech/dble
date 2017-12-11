@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.sequence;
 
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import junit.framework.Assert;
 import org.apache.curator.test.TestingServer;
@@ -29,7 +28,6 @@ public class DistributedSequenceHandlerTest {
     @Before
     public void initialize() throws Exception {
         distributedSequenceHandler = new DistributedSequenceHandler[16];
-        ServerConfig serverConfig = new ServerConfig();
         testingServer = new TestingServer();
         testingServer.start();
         for (int i = 0; i < 16; i++) {
@@ -120,7 +118,6 @@ public class DistributedSequenceHandlerTest {
             Assert.assertEquals(idSet.size(), 14);
 
             idSet = new HashSet<>();
-            ServerConfig serverConfig = new ServerConfig();
             distributedSequenceHandler[leader] = new DistributedSequenceHandler();
             distributedSequenceHandler[leader].initializeZK(testingServer.getConnectString());
             distributedSequenceHandler[leader].nextId("");

@@ -27,11 +27,7 @@ public final class ServerSptPrepare {
     }
 
     public void setPrepare(String name0, List<String> parts) {
-        if (sptPrepares.containsKey(name0)) {
-            sptPrepares.replace(name0, parts);
-        } else {
-            sptPrepares.put(name0, parts);
-        }
+        sptPrepares.put(name0, parts);
     }
 
     public List<String> getPrepare(String name0) {

@@ -171,13 +171,6 @@ public final class ReloadConfig {
         Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
-
-        try {
-            loader.testConnection();
-        } catch (Exception e) {
-            throw new Exception(e);
-        }
-
         /*
          *  2 transform
          *  2.1 old dataSource continue to work

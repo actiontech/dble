@@ -60,7 +60,7 @@ public class SchemaConfig {
         for (TableConfig tc : tables.values()) {
             TableConfig parent = tc.getParentTC();
             if (parent == null) {
-                // noraml table may has the same funaction add date node with other tables
+                // noraml table may has the same function add date node with other tables
                 TableConfig root = tc.getDirectRouteTC();
                 if (tc.isGlobalTable() || tc.getRule() == null) {
                     continue;
@@ -100,7 +100,7 @@ public class SchemaConfig {
             } else {
                 if (tc.getDirectRouteTC() != null) {
                     TableConfig root = tc.getDirectRouteTC();
-                    String key = root.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
+                    String key = root.getRule().getRuleAlgorithm().getAlias() + "_" + root.getDataNodes().toString();
                     if (funcNodeERMap == null) {
                         funcNodeERMap = new HashMap<>();
                     }

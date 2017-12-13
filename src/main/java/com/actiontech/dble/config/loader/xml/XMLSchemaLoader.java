@@ -210,7 +210,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 setFuncNode.addAll(entry.getValue());
             }
         }
-        schemaFuncNodeER = null;
     }
 
     private void mergeFkERMap(SchemaConfig schemaConfig) {

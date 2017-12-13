@@ -173,6 +173,23 @@ public class XMLRuleLoader {
                 functions.put(name, function);
             }
         }
+        setFunctionAlias();
+    }
+
+    private void setFunctionAlias() {
+        Map<AbstractPartitionAlgorithm, String> funcAlias = new HashMap<>();
+        int i = 0;
+        for (AbstractPartitionAlgorithm function : functions.values()) {
+            String alias = funcAlias.get(function);
+            if (alias != null) {
+                function.setAlias(alias);
+            } else {
+                alias = "function" + i;
+                i++;
+                function.setAlias(alias);
+                funcAlias.put(function, alias);
+            }
+        }
     }
 
     private AbstractPartitionAlgorithm createFunction(String name, String clazz)

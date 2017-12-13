@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.util.LinkedList;
 
 /**
@@ -27,11 +26,11 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     private String mapFile;
     private LongRange[] longRanges;
     private int defaultNode = -1;
-
+    private int hashCode = 1;
     @Override
     public void init() {
-
         initialize();
+        initHashCode();
     }
 
     public void setMapFile(String mapFile) {
@@ -44,8 +43,8 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         try {
             long value = Long.parseLong(columnValue);
             for (LongRange longRang : this.longRanges) {
-                if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-                    return longRang.nodeIndex;
+                if (value <= longRang.getValueEnd() && value >= longRang.getValueStart()) {
+                    return longRang.getNodeIndex();
                 }
             }
             // use default node for other value
@@ -66,7 +65,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         try {
             long value = Long.parseLong(columnValue);
             for (LongRange longRang : this.longRanges) {
-                if (value <= longRang.valueEnd && value >= longRang.valueStart) {
+                if (value <= longRang.getValueEnd() && value >= longRang.getValueStart()) {
                     return false;
                 }
             }
@@ -161,18 +160,40 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
     }
-
-    static class LongRange implements Serializable {
-        public final int nodeIndex;
-        public final long valueStart;
-        public final long valueEnd;
-
-        LongRange(int nodeIndex, long valueStart, long valueEnd) {
-            super();
-            this.nodeIndex = nodeIndex;
-            this.valueStart = valueStart;
-            this.valueEnd = valueEnd;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
         }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AutoPartitionByLong other = (AutoPartitionByLong) o;
+        if (other.defaultNode != defaultNode) {
+            return false;
+        }
+        if (other.longRanges.length != longRanges.length) {
+            return false;
+        }
+        for (int i = 0; i < longRanges.length; i++) {
+            if (!other.longRanges[i].equals(longRanges[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        if (defaultNode != 0) {
+            hashCode *= defaultNode;
+        }
+        for (LongRange longRange : longRanges) {
+            hashCode *= longRange.hashCode();
+        }
     }
 }

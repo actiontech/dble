@@ -39,7 +39,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     private final int queueSize;
     private final ReentrantLock lock;
-    private List<BaseSelectHandler> exeHandlers;
+    private final List<BaseSelectHandler> exeHandlers;
     // map;conn->blocking queue.if receive row packet, add to the queue,if receive rowEof packet, add NullHeapItem into queue;
     private Map<MySQLConnection, BlockingQueue<HeapItem>> queues;
     private List<Order> orderBys;
@@ -81,8 +81,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 MySQLConnection exeConn = exeHandler.initConnection();
                 if (exeConn != null) {
                     exeConn.setComplexQuery(true);
-                    BlockingQueue<HeapItem> queue = new LinkedBlockingQueue<>(queueSize);
-                    queues.put(exeConn, queue);
+                    queues.put(exeConn, new LinkedBlockingQueue<HeapItem>(queueSize));
                     exeHandler.execute(exeConn);
                 }
             }
@@ -126,10 +125,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (isEasyMerge) {
             nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
         } else {
-            BlockingQueue<HeapItem> queue = queues.get(conn);
+            MySQLConnection mySQLConn = (MySQLConnection) conn;
+            BlockingQueue<HeapItem> queue = queues.get(mySQLConn);
             if (queue == null)
                 return true;
-            HeapItem item = new HeapItem(row, rowPacket, (MySQLConnection) conn);
+            HeapItem item = new HeapItem(row, rowPacket, mySQLConn);
             try {
                 queue.put(item);
             } catch (InterruptedException e) {
@@ -207,10 +207,9 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                             HeapItem itemToDiscard = heap.poll();
                             if (!itemToDiscard.isNullItem()) {
                                 BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
-                                boolean isClear = false;
-                                while (!isClear) {
+                                while (true) {
                                     if (discardQueue.take().isNullItem() || terminate.get()) {
-                                        isClear = true;
+                                        break;
                                     }
                                 }
                             }
@@ -257,8 +256,10 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         while (iterator.hasNext()) {
             Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iterator.next();
             // fair lock queue,poll for clear
-            while (entry.getValue().poll() != null) {
-                //do nothing
+            while (true) {
+                if (entry.getValue().poll() == null) {
+                    break;
+                }
             }
             iterator.remove();
         }

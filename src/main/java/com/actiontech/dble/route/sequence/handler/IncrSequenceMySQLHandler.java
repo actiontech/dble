@@ -23,7 +23,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
-    private final FetchMySQLSequnceHandler mysqlSeqFetcher = new FetchMySQLSequnceHandler();
+    private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
     private static final IncrSequenceMySQLHandler INSTANCE = new IncrSequenceMySQLHandler();
 
     public static IncrSequenceMySQLHandler getInstance() {
@@ -102,7 +102,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         if (values == null) {
             seqVal.fetching.compareAndSet(true, false);
             throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
-                                       mysqlSeqFetcher.getLastestError(seqVal.seqName));
+                                       mysqlSeqFetcher.getLastError(seqVal.seqName));
         } else if (values[0] == 0) {
             seqVal.fetching.compareAndSet(true, false);
             String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";

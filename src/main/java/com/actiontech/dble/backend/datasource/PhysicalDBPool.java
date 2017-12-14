@@ -502,7 +502,11 @@ public class PhysicalDBPool {
      * @throws Exception Exception
      */
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+        PhysicalDatasource theNode = getRWBalanceNode();
+        theNode.getConnection(schema, autocommit, handler, attachment);
+    }
 
+    PhysicalDatasource getRWBalanceNode() {
         PhysicalDatasource theNode;
         ArrayList<PhysicalDatasource> okSources;
         switch (balance) {
@@ -537,7 +541,7 @@ public class PhysicalDBPool {
             LOGGER.debug("select read source " + theNode.getName() + " for dataHost:" + this.getHostName());
         }
         theNode.setReadCount();
-        theNode.getConnection(schema, autocommit, handler, attachment);
+        return theNode;
     }
 
     /**

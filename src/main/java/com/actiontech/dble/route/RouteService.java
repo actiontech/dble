@@ -46,7 +46,7 @@ public class RouteService {
     public RouteResultset route(SchemaConfig schema,
                                 int sqlType, String stmt, ServerConnection sc)
             throws SQLException {
-        RouteResultset rrs = null;
+        RouteResultset rrs;
         String cacheKey = null;
 
         /*
@@ -84,24 +84,27 @@ public class RouteService {
 
                     HintHandler hintHandler = HintHandlerFactory.getHintHandler(hintType);
                     if (hintHandler != null) {
-
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
-
+                            // HintSQLHandler will always send to master
+                            rrs.setRunOnSlave(false);
                         } else {
                             rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
                         }
-
                     } else {
-                        LOGGER.info("TODO , support hint sql type : " + hintType);
+                        String msg = "Not supported hint sql type : " + hintType;
+                        LOGGER.info(msg);
+                        throw new SQLSyntaxErrorException(msg);
                     }
-
                 } else { //fixed by runfriends@126.com
                     String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
                     LOGGER.info(msg);
                     throw new SQLSyntaxErrorException(msg);
                 }
+            } else {
+                stmt = stmt.trim();
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
             }
         } else {
             stmt = stmt.trim();
@@ -120,7 +123,7 @@ public class RouteService {
         int len = sql.length();
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             char c = sql.charAt(j);
-            // support: "/** !dble: */" for mybatis and "/** #dble: */"  for mysql
+            // support: "/*#dble: */" for mybatis and "/*!dble: */"  for mysql
             while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
                 c = sql.charAt(++j);
             }

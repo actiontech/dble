@@ -546,7 +546,7 @@ public final class SetHandler {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'XA'");
             return false;
         } else if (switchStatus) {
-            if (c.isTxStart() && c.getSession2().getSessionXaID() == null) {
+            if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() == null) {
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before ending a transaction");
                 return false;
             }
@@ -554,7 +554,7 @@ public final class SetHandler {
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             return true;
         } else {
-            if (c.isTxStart() && c.getSession2().getSessionXaID() != null) {
+            if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() != null) {
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before ending a transaction");
                 return false;
             }

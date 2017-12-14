@@ -155,6 +155,15 @@ public final class ShowHandler {
             case ManagerParseShow.DIRECTMEMORY_TOTAL:
                 ShowDirectMemory.execute(c, 1);
                 break;
+            case ManagerParseShow.CONNECTION_COUNT:
+                ShowConnectionCount.execute(c);
+                break;
+            case ManagerParseShow.COMMAND_COUNT:
+                ShowCommandCount.execute(c);
+                break;
+            case ManagerParseShow.BACKEND_STAT:
+                ShowBackendStat.execute(c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

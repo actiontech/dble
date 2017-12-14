@@ -191,13 +191,23 @@ public class ConfigInitializer {
         allUseHost.clear();
     }
 
-    public void testConnection() {
+    public void testConnection(boolean isStart) {
         if (this.dataNodes != null && this.dataHosts != null) {
             Map<String, Boolean> map = new HashMap<>();
             for (PhysicalDBNode dataNode : dataNodes.values()) {
                 String database = dataNode.getDatabase();
                 PhysicalDBPool pool = dataNode.getDbPool();
-
+                if (isStart) {
+                    // start for first time, 1.you can set write host as empty
+                    if (pool.getSources() == null || pool.getSources().length == 0) {
+                        continue;
+                    }
+                    DBHostConfig wHost = pool.getSource().getConfig();
+                    // start for first time, 2.you can set write host as yourself
+                    if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == this.system.getServerPort()) {
+                        continue;
+                    }
+                }
                 for (PhysicalDatasource ds : pool.getAllDataSources()) {
                     String key = ds.getName() + "_" + database;
                     if (map.get(key) == null) {

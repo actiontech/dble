@@ -128,7 +128,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
+                dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }
     }

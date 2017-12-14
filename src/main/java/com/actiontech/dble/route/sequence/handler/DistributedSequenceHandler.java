@@ -64,7 +64,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long clusterIdShift = incrementShift + incrementBits;
     private final long instanceIdShift = clusterIdShift + clusterIdBits;
 
-    private final long maxinstanceId = 1L << instanceIdBits;
+    private final long maxInstanceId = 1L << instanceIdBits;
 
     private volatile long instanceId;
     private long clusterId;
@@ -114,7 +114,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         if (clusterId > maxclusterId || clusterId < 0) {
             throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", clusterId));
         }
-        if (instanceId > maxinstanceId || instanceId < 0) {
+        if (instanceId > maxInstanceId || instanceId < 0) {
             throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", instanceId));
         }
     }
@@ -210,8 +210,10 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     }
 
     private long blockUntilNextMillis(long time) {
-        while (System.currentTimeMillis() == time) {
-            //block
+        while (true) {
+            if (System.currentTimeMillis() != time) {
+                break;
+            }
         }
         return System.currentTimeMillis();
     }
@@ -230,7 +232,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         this.isLeader = true;
         this.instanceId = 1;
         this.ready = true;
-        this.mark = new int[(int) maxinstanceId];
+        this.mark = new int[(int) maxInstanceId];
         List<String> children = null;
         try {
             if (this.slavePath != null) {
@@ -260,7 +262,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                         Thread.currentThread().yield();
                     }
                     List<String> children = client.getChildren().forPath(INSTANCE_PATH);
-                    int[] mark2 = new int[(int) maxinstanceId];
+                    int[] mark2 = new int[(int) maxInstanceId];
                     for (String child : children) {
                         String data = new String(client.getData().forPath(PATH.concat("/instance/" + child)));
                         if ("ready".equals(data)) {

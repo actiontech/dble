@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -84,10 +85,10 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                         return null;
                     }
                     conn.setResponseHandler(this);
+                    ((MySQLConnection) conn).setComplexQuery(true);
                     conn.execute(node, session.getSource(), isAutoCommit());
-
                 } else {
-                    mysqlDN.getConnection(mysqlDN.getDatabase(), true, node, this, node);
+                    mysqlDN.getConnection(mysqlDN.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
                 }
             } catch (Exception e) {
                 LOGGER.info("get connection err " + e);

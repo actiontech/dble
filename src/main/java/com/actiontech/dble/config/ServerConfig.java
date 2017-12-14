@@ -85,6 +85,7 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
+        confInit.testConnection(true);
     }
 
 

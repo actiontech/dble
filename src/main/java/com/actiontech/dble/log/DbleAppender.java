@@ -72,7 +72,7 @@ public class DbleAppender extends AbstractAppender {
             }
         }
         if (stub != null) {
-            if (grpcLevel > event.getLevel().intLevel()) {
+            if (grpcLevel >= event.getLevel().intLevel()) {
                 String data = new String(getLayout().toByteArray(event));
                 String[] d = data.split("::");
                 if (d.length >= 2) {

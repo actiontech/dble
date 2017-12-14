@@ -41,7 +41,6 @@ public final class DbleStartup {
             DbleServer server = DbleServer.getInstance();
             initZKend = true;
             server.beforeStart();
-            LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + AlarmCode.USHARD_ALARM_SPLITE + "test error ");
             // startup
             server.startup();
             System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);

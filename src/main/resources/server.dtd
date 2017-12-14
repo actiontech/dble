@@ -52,12 +52,13 @@
         <!ATTLIST sqllist sql CDATA #REQUIRED>
 
 
-        <!ELEMENT alarm (url,port,level,serverId,componentId) >
+        <!ELEMENT alarm (url,port,level,serverId,componentId,componentType) >
         <!ELEMENT url (#PCDATA) >
         <!ELEMENT port (#PCDATA) >
         <!ELEMENT level (#PCDATA)>
         <!ELEMENT serverId (#PCDATA)>
         <!ELEMENT componentId (#PCDATA)>
+        <!ELEMENT componentType (#PCDATA)>
 
         <!ELEMENT property (#PCDATA | bean)*>
         <!ATTLIST property name NMTOKEN #REQUIRED>

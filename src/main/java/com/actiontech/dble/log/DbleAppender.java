@@ -36,7 +36,7 @@ public class DbleAppender extends AbstractAppender {
     private static String alertComponentIdOld = "";
 
 
-    private static final String USHARD_CORE = "dble";
+    private static String ushardCode = "";
     private static UcoreGrpc.UcoreBlockingStub stub = null;
 
     /**
@@ -57,11 +57,12 @@ public class DbleAppender extends AbstractAppender {
             try {
                 AlarmConfig config = DbleServer.getInstance().getConfig().getAlarm();
                 if (config != null) {
-                    grpcLevel = Integer.parseInt(config.getLevel());
+                    grpcLevel = "error".equalsIgnoreCase(config.getLevel()) ? 200 : 300;
                     serverId = config.getServerId();
                     port = Integer.parseInt(config.getPort());
                     grpcUrl = config.getUrl();
                     alertComponentId = config.getComponentId();
+                    ushardCode = config.getComponentType();
                     Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                 }
@@ -80,10 +81,10 @@ public class DbleAppender extends AbstractAppender {
                             setCode(d[0]).
                             setDesc(d[1]).
                             setLevel(level).
-                            setSourceComponentType(USHARD_CORE).
+                            setSourceComponentType(ushardCode).
                             setSourceComponentId(alertComponentId).
                             setAlertComponentId(alertComponentId).
-                            setAlertComponentType(USHARD_CORE).
+                            setAlertComponentType(ushardCode).
                             setServerId(serverId).
                             setTimestampUnix(System.currentTimeMillis()).
                             setResolveTimestampUnix(System.currentTimeMillis()).
@@ -121,6 +122,7 @@ public class DbleAppender extends AbstractAppender {
                 alertComponentIdOld = alertComponentId;
                 portOld = port;
                 grpcUrlOld = grpcUrl;
+                grpcLevelOld = grpcLevel;
 
                 grpcLevel = Integer.parseInt(config.getLevel());
                 serverId = config.getServerId();
@@ -151,6 +153,7 @@ public class DbleAppender extends AbstractAppender {
             alertComponentId = alertComponentIdOld;
             port = portOld;
             grpcUrl = grpcUrlOld;
+            grpcLevel = grpcLevelOld;
             return;
         } else {
             grpcUrl = grpcUrlOld;

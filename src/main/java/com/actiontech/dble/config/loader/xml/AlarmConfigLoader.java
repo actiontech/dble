@@ -27,6 +27,7 @@ public class AlarmConfigLoader implements Loader<AlarmConfig, XMLServerLoader> {
                 alarmConfig.setLevel(ConfigUtil.loadElement(e, "level").getTextContent());
                 alarmConfig.setServerId(ConfigUtil.loadElement(e, "serverId").getTextContent());
                 alarmConfig.setComponentId(ConfigUtil.loadElement(e, "componentId").getTextContent());
+                alarmConfig.setComponentType(ConfigUtil.loadElement(e, "componentType").getTextContent());
             }
         }
     }

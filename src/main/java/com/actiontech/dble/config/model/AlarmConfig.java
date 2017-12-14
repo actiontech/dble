@@ -15,6 +15,16 @@ public class AlarmConfig {
 
     private String componentId;
 
+    public String getComponentType() {
+        return componentType;
+    }
+
+    public void setComponentType(String componentType) {
+        this.componentType = componentType;
+    }
+
+    private String componentType;
+
     public String getUrl() {
         return url;
     }

@@ -32,7 +32,7 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
-        <DbleAppender name="grpcAppender"  port="5701" level="350"  url="10.186.22.103" />
+        <DbleAppender name="grpcAppender" />
 
     </Appenders>
     <Loggers>

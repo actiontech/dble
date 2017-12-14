@@ -165,18 +165,16 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 long now = Long.parseLong(new String(client.getData().forPath(PATH + prefixName + SEQ)));
                 client.setData().forPath(PATH + prefixName + SEQ, ((now + period + 1) + "").getBytes());
 
-            paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
-            paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
-            paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
-
-        } catch (Exception e) {
-            LOGGER.info("Error caught while updating period from ZK:" + e.getCause());
-        } finally {
-            try {
-                interProcessSemaphoreMutex.release();
+                paraValMap.put(prefixName + KEY_MIN_NAME, (now) + "");
+                paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
+                paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
             } catch (Exception e) {
-                LOGGER.info("Error caught while realeasing distributed lock" + e.getCause());
+                LOGGER.info("Error caught while updating period from ZK:" + e.getCause());
+            } finally {
+                interProcessSemaphoreMutex.release();
             }
+        } catch (Exception e) {
+            LOGGER.error("Error caught while use distributed lock:" + e.getCause());
         }
         return true;
     }

@@ -49,7 +49,7 @@ public class ZookeeperProcessListen {
                 try {
                     result = cacheService.notifyProcess();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
+                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
                 }
             }
         }
@@ -64,7 +64,7 @@ public class ZookeeperProcessListen {
             try {
                 item.notifyProcess();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ZookeeperProcessListen initAllNode :" + item + ";error:Exception info:", e);
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ZookeeperProcessListen initAllNode :" + item + ";error:Exception info:", e);
             }
         }
     }

@@ -623,7 +623,7 @@ public final class DbleServer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "saveDataNodeIndex err:", e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "saveDataNodeIndex err:", e);
         } finally {
             if (fileOut != null) {
                 try {

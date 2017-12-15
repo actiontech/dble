@@ -121,7 +121,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private void consistentWarning() {
-            LOGGER.warn(AlarmCode.USHARD_CORE_TABLE_CHECK_WARN + "Table [" + tableName + "] structure are not consistent!");
+            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableName + "] structure are not consistent!");
             LOGGER.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();

@@ -153,7 +153,7 @@ public class RuleszkToxmlLoader extends ZkMultiLoader implements NotifyService {
                         try {
                             ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "RuleszkToxmlLoader write File IOException", e);
+                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RuleszkToxmlLoader write File IOException", e);
                         }
                     }
                 }

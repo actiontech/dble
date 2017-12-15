@@ -113,7 +113,7 @@ public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
                             mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
                             tempData.add(mapFilePro);
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "RulesxmlTozkLoader readMapFile IOException", e);
+                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesxmlTozkLoader readMapFile IOException", e);
                         }
                     }
                 }

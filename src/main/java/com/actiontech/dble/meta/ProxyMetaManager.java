@@ -177,7 +177,7 @@ public class ProxyMetaManager {
                     try {
                         notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
-                        LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                     }
                 }
             }
@@ -459,7 +459,7 @@ public class ProxyMetaManager {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }
@@ -531,7 +531,7 @@ public class ProxyMetaManager {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }
@@ -546,7 +546,7 @@ public class ProxyMetaManager {
             try {
                 notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
             }
         }
     }
@@ -578,7 +578,7 @@ public class ProxyMetaManager {
                     try {
                         notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
-                        LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                     }
                 }
             }
@@ -629,7 +629,7 @@ public class ProxyMetaManager {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }

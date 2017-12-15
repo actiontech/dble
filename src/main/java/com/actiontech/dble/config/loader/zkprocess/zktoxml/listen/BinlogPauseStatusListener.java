@@ -59,13 +59,13 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
                 try {
                     ZKUtils.createTempNode(instancePath);
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "create binlogPause instance failed", e);
+                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
                 }
             } else {
                 cleanResource(instancePath);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.TIMEOUT) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "BinlogPauseStatusListener received timeout");
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "BinlogPauseStatusListener received timeout");
             ShowBinlogStatus.setWaiting(false);
 
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
@@ -87,7 +87,7 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
                 this.getCurator().delete().forPath(instancePath);
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "delete binlogPause instance failed", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete binlogPause instance failed", e);
         } finally {
             DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
         }

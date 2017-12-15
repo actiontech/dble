@@ -48,10 +48,10 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
         try {
             schema = (Ehcache) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "EhcacheParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "EhcacheParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
@@ -66,7 +66,7 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
 
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName, paramMap);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "EhcacheParseXmlImpl parseToXmlWrite IOException", e);
         }
     }

@@ -72,7 +72,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 try {
                     service.notifyProcess();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
+                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
                 }
             }
             try {

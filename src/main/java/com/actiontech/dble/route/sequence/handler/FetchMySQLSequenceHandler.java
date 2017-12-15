@@ -101,7 +101,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
-            LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + " sequnce sql returned err value ,sequence:" +
+            LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + " sequnce sql returned err value ,sequence:" +
                     seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
             seqVal.dbretVal = columnVal;
@@ -120,7 +120,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         seqVal.dbfinished = true;
         String errMgs = e.toString();
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMgs);
-        LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "executeException   " + errMgs);
+        LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + "executeException   " + errMgs);
         c.close("exception:" + errMgs);
 
     }

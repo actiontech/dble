@@ -102,7 +102,7 @@ public class EcacheszkToxmlLoader extends ZkMultiLoader implements NotifyService
             try {
                 ConfFileRWUtils.writeFile(cacheData.getName(), cacheData.getValue());
             } catch (IOException e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "EcacheszkToxmlLoader wirteMapFile IOException", e);
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "EcacheszkToxmlLoader wirteMapFile IOException", e);
             }
             this.zookeeperListen.addWatch(KVPathUtil.getCacheServerNamePath(), this);
         }

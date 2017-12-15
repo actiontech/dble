@@ -51,7 +51,7 @@ public final class ZkConfig {
                 ZktoXmlMain.loadZktoFile();
             }
         } catch (Exception e) {
-            LOGGER.error(AlarmCode.USHARD_CORE_ZK_ERROR + "error:", e);
+            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
         }
     }
 
@@ -96,7 +96,7 @@ public final class ZkConfig {
             /**
              * KEEP init server error
              */
-            LOGGER.error(AlarmCode.USHARD_CORE_ERROR + "ZkConfig LoadMyidPropersites error:", e);
+            LOGGER.error(AlarmCode.CORE_ERROR + "ZkConfig LoadMyidPropersites error:", e);
             throw new RuntimeException("can't find myid properties file : " + ZK_CONFIG_FILE_NAME);
         }
 

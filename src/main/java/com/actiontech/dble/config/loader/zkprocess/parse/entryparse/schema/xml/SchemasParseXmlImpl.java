@@ -41,9 +41,9 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
         try {
             schema = (Schemas) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -54,7 +54,7 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "SchemasParseXmlImpl parseToXmlWrite IOException", e);
         }
     }

@@ -254,7 +254,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     handler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_DDL_WARN + String.valueOf(source) + oriRrs, e);
+                    LOGGER.warn(AlarmCode.CORE_DDL_WARN + String.valueOf(source) + oriRrs, e);
                     session.handleSpecial(oriRrs, source.getSchema(), false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }

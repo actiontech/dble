@@ -252,7 +252,7 @@ public class PhysicalDBPool {
                     if (theDsHb.getStatus() == DBHeartbeat.OK_STATUS) {
                         if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                             if (Integer.valueOf(0).equals(theDsHb.getSlaveBehindMaster())) {
-                                LOGGER.warn(AlarmCode.USHARD_CORE_BACKEND_SWITCH + "try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
+                                LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
                                 switchSource(nextId, true, reason);
                                 break;
                             } else {
@@ -261,7 +261,7 @@ public class PhysicalDBPool {
                             }
                         } else {
                             // normal switch
-                            LOGGER.warn(AlarmCode.USHARD_CORE_BACKEND_SWITCH + "try to switch datasource ,not checked slave" + "synchronize status " +
+                            LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource ,not checked slave" + "synchronize status " +
                                     theDs.getConfig());
                             switchSource(nextId, true, reason);
                             break;

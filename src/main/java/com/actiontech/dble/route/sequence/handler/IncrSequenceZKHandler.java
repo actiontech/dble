@@ -63,7 +63,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         try {
             initializeZK(props, zkAddress);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "Error caught while initializing ZK:" + e.getCause());
+            LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + "Error caught while initializing ZK:" + e.getCause());
         }
     }
 
@@ -126,7 +126,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             try {
                 threadLocalLoad();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_SEQUENCE_WARN + "Error caught while loding configuration within current thread:" + e.getCause());
+                LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + "Error caught while loding configuration within current thread:" + e.getCause());
             }
             tableParaValMap = tableParaValMapThreadLocal.get();
         }

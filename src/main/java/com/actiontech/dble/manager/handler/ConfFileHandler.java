@@ -176,7 +176,7 @@ public final class ConfFileHandler {
             buff.flush();
 
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "write file err " + e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "write file err " + e);
             return showInfo(c, buffer, packetId, "write file err " + e);
 
         } finally {
@@ -185,7 +185,7 @@ public final class ConfFileHandler {
                     buff.close();
                     suc = true;
                 } catch (IOException e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "save config file err " + e);
+                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "save config file err " + e);
                 }
             }
         }
@@ -198,14 +198,14 @@ public final class ConfFileHandler {
                         System.currentTimeMillis() + "_auto");
                 if (!oldFile.renameTo(backUP)) {
                     String msg = "rename old file failed";
-                    LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + msg + " for upload file " + oldFile.getAbsolutePath());
+                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + oldFile.getAbsolutePath());
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
             File dst = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
             if (!tempFile.renameTo(dst)) {
                 String msg = "rename file failed";
-                LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + msg + " for upload file " + tempFile.getAbsolutePath());
+                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + tempFile.getAbsolutePath());
                 return showInfo(c, buffer, packetId, msg);
             }
             return showInfo(c, buffer, packetId, "SUCCESS SAVED FILE:" + fileName);

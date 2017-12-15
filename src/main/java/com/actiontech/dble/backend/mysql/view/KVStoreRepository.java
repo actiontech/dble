@@ -70,7 +70,7 @@ public class KVStoreRepository implements Reposoitory {
                 zkConn.setData().forPath(sb.toString(), m.toJSONString().getBytes());
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "create zk node error :　" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create zk node error :　" + e.getMessage());
         }
 
     }
@@ -86,7 +86,7 @@ public class KVStoreRepository implements Reposoitory {
             try {
                 zkConn.delete().forPath(sb.toString());
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "delete zk node error :　" + e.getMessage());
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete zk node error :　" + e.getMessage());
             }
         }
     }

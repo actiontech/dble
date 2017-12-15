@@ -79,7 +79,7 @@ class FileNioMapped extends FileBase {
             }
             useSystemGc = false;
         } catch (Throwable e) {
-            logger.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "unmap byteBuffer error", e);
+            logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "unmap byteBuffer error", e);
             // useSystemGc is already true
         } finally {
             mapped = null;

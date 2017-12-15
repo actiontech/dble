@@ -40,7 +40,7 @@ public final class DnPropertyUtil {
             filein = new FileInputStream(file);
             prop.load(filein);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "load DataNodeIndex err:" + e);
+            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "load DataNodeIndex err:" + e);
         } finally {
             if (filein != null) {
                 try {

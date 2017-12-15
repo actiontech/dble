@@ -137,7 +137,7 @@ public final class Platform {
                     }
                 }
             } catch (Throwable var9) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_PERFORMANCE_WARN + var9.getMessage());
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + var9.getMessage());
             }
 
             if (maxDirectMemory <= 0L) {

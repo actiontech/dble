@@ -80,7 +80,7 @@ public class EcachesxmlTozkLoader extends ZkMultiLoader implements NotifyService
             String serviceValue = ConfFileRWUtils.readFile(KVPathUtil.CACHESERVER_NAME);
             this.checkAndWriteString(basePath, KVPathUtil.CACHESERVER_NAME, serviceValue);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "EhcachexmlTozkLoader readMapFile IOException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "EhcachexmlTozkLoader readMapFile IOException", e);
         }
     }
 }

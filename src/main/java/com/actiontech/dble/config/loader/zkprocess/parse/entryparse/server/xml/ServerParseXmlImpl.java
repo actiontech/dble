@@ -44,9 +44,9 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
         try {
             server = (Server) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ServerParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return server;
@@ -57,7 +57,7 @@ public class ServerParseXmlImpl implements ParseXmlServiceInf<Server> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "ServerParseXmlImpl parseToXmlWrite IOException", e);
         }
     }

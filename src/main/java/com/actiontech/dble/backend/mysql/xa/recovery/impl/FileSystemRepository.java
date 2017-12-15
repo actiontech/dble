@@ -63,7 +63,7 @@ public class FileSystemRepository implements Repository {
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + e.getMessage(), e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + e.getMessage(), e);
         }
     }
 
@@ -118,7 +118,7 @@ public class FileSystemRepository implements Repository {
             br = new BufferedReader(isr);
             coordinatorLogEntries = readContent(br);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "Error in recover", e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "Error in recover", e);
         } finally {
             closeSilently(br);
         }
@@ -143,12 +143,12 @@ public class FileSystemRepository implements Repository {
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (ObjectStreamException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN +
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN +
                             "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (DeserializationException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
         }
         return coordinatorLogEntries;
     }
@@ -200,7 +200,7 @@ public class FileSystemRepository implements Repository {
             file.discardBackupVersion();
             return true;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "Failed to write checkpoint", e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "Failed to write checkpoint", e);
             return false;
         }
     }

@@ -370,7 +370,7 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
                 LOGGER.info("no ilde connection in pool,create new connection for " +
@@ -385,7 +385,7 @@ public abstract class PhysicalDatasource {
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
                 LOGGER.info(

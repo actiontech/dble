@@ -72,7 +72,7 @@ public class FileSystemRepository implements Reposoitory {
             }
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
         }
     }
 
@@ -94,7 +94,7 @@ public class FileSystemRepository implements Reposoitory {
 
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
         }
 
     }

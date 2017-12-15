@@ -238,7 +238,7 @@ public class FileStore {
                 this.files.add(path.open(mode));
                 this.fileNames.add(path.toString());
             } else {
-                logger.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "create file error :", e);
+                logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "create file error :", e);
                 throw e;
             }
         }

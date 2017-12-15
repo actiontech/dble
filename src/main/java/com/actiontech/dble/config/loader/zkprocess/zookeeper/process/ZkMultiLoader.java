@@ -132,7 +132,7 @@ public class ZkMultiLoader {
         try {
             ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), path);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + " createPath error", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + " createPath error", e);
             result = false;
         }
 

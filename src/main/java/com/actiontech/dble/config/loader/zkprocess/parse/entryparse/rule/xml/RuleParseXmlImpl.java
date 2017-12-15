@@ -44,10 +44,10 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
         try {
             schema = (Rules) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "RulesParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN +
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
                     "RulesParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
@@ -59,7 +59,7 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "RulesParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

@@ -96,7 +96,7 @@ public final class XAStateLog {
                 waitWriting.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "writeCheckpoint error, waiter XID is " + xaTxId, e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, waiter XID is " + xaTxId, e);
         } finally {
             lock.unlock();
         }
@@ -130,7 +130,7 @@ public final class XAStateLog {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "logCollection deep copy error, leader Xid is:" + xaTxId, e);
+                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {
                     lockMap.unlock();
@@ -172,7 +172,7 @@ public final class XAStateLog {
                 mapResult.remove(Thread.currentThread().getId());
                 return result;
             } catch (InterruptedException e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_FILE_WRITE_WARN + "writeCheckpoint error, follower Xid is:" + xaTxId, e);
+                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, follower Xid is:" + xaTxId, e);
                 return false;
             } finally {
                 lock.unlock();

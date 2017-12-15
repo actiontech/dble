@@ -400,7 +400,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         s.append("\n}");
 
-        LOGGER.warn(AlarmCode.USHARD_CORE_DDL_WARN + s.toString());
+        LOGGER.warn(AlarmCode.CORE_DDL_WARN + s.toString());
     }
 
     private void executeError(BackendConnection conn) {

@@ -268,7 +268,7 @@ public class ServerConfig {
         for (PhysicalDBPool npool : newDataHosts.values()) {
             PhysicalDBPool opool = dataHosts.get(npool.getHostName());
             if (opool == null) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "reload -add- failed, use old datasources ");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "reload -add- failed, use old datasources ");
                 return true;
             }
 

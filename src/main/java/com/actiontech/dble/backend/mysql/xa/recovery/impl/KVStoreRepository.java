@@ -68,11 +68,11 @@ public class KVStoreRepository implements Repository {
                         data = new String(raw, StandardCharsets.UTF_8);
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "KVStoreRepository.getAllCoordinatorLogEntries error", e);
+                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "KVStoreRepository.getAllCoordinatorLogEntries error", e);
                 }
             }
         } catch (Exception e2) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "KVStoreRepository error", e2);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "KVStoreRepository error", e2);
         }
         if (data == null) {
             return Collections.emptyList();
@@ -84,7 +84,7 @@ public class KVStoreRepository implements Repository {
                 CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJson(log);
                 coordinatorLogEntries.put(coordinatorLogEntry.getId(), coordinatorLogEntry);
             } catch (DeserializationException e) {
-                LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "Unexpected EOF - logfile not closed properly last time? ", e);
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "Unexpected EOF - logfile not closed properly last time? ", e);
             }
         }
         return coordinatorLogEntries.values();
@@ -104,7 +104,7 @@ public class KVStoreRepository implements Repository {
             zkConn.setData().forPath(logPath, data);
             return true;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.USHARD_CORE_ZK_WARN + "Failed to write checkpoint", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "Failed to write checkpoint", e);
             return false;
         }
     }

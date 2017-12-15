@@ -127,7 +127,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
             heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
         } else {
-            MySQLHeartbeat.LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "found MySQL  cluster status err !!! " +
+            MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL  cluster status err !!! " +
                     heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
                     " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
             );
@@ -146,7 +146,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
                 if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
-                    MySQLHeartbeat.LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "found MySQL master/slave Replication delay !!! " +
+                    MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL master/slave Replication delay !!! " +
                             heartbeat.getSource().getConfig() + ", binlog sync time delay: " +
                             behindMaster + "s");
                 }
@@ -154,7 +154,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             }
         } else if (source.isSalveOrRead()) {
             //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-            MySQLHeartbeat.LOGGER.warn(AlarmCode.USHARD_CORE_GENERAL_WARN + "found MySQL master/slave Replication err !!! " +
+            MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL master/slave Replication err !!! " +
                     heartbeat.getSource().getConfig() + ", " + resultResult);
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
         }

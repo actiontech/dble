@@ -86,7 +86,7 @@ public class DbleAppender extends AbstractAppender {
                             setAlertComponentId(alertComponentId).
                             setAlertComponentType(ushardCode).
                             setServerId(serverId).
-                            setTimestampUnix(System.currentTimeMillis()*1000000).
+                            setTimestampUnix(System.currentTimeMillis() * 1000000).
                             build();
                     stub.alert(inpurt);
                 }

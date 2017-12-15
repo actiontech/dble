@@ -58,7 +58,7 @@ public final class ZKUtils {
                 return framework;
             }
         } catch (InterruptedException ignored) {
-            LOGGER.warn("CuratorFramework createConnection error", ignored);
+            LOGGER.info("CuratorFramework createConnection error", ignored);
             Thread.currentThread().interrupt();
         }
         // fail situation

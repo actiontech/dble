@@ -18,6 +18,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,7 +189,7 @@ public abstract class PhysicalDatasource {
                 String s = Alarms.DEFAULT + "DATASOURCE EXCEED [name=" + name +
                         ",active=" + activeCount +
                         ",size=" + size + ']';
-                LOGGER.warn(s);
+                LOGGER.info(s);
             }
         }
     }
@@ -227,7 +228,7 @@ public abstract class PhysicalDatasource {
         for (BackendConnection idleCon : readyCloseCons) {
             if (idleCon != null) {
                 if (idleCon.isBorrowed()) {
-                    LOGGER.warn("find idle con is using " + idleCon);
+                    LOGGER.info("find idle con is using " + idleCon);
                 }
                 idleCon.close("dying");
             } else {
@@ -249,7 +250,7 @@ public abstract class PhysicalDatasource {
 
         for (BackendConnection idleCon : readyCloseCons) {
             if (idleCon.isBorrowed()) {
-                LOGGER.warn("find idle con is using " + idleCon);
+                LOGGER.info("find idle con is using " + idleCon);
             }
             idleCon.close("too many idle con");
         }
@@ -270,7 +271,7 @@ public abstract class PhysicalDatasource {
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
             } catch (IOException e) {
-                LOGGER.warn("create connection err " + e);
+                LOGGER.info("create connection err " + e);
             }
         }
     }
@@ -302,11 +303,7 @@ public abstract class PhysicalDatasource {
         }
 
         if (!heartbeat.isStop()) {
-            try {
-                heartbeat.heartbeat();
-            } catch (Exception e) {
-                LOGGER.error(name + " heartbeat error.", e);
-            }
+            heartbeat.heartbeat();
         }
     }
 
@@ -373,9 +370,8 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
-                String msg = "the max activeConnnections size can not be max than maxconnections";
-                LOGGER.error(msg);
-                throw new IOException(msg);
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
+                throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
                 LOGGER.info("no ilde connection in pool,create new connection for " +
                         this.name + " of schema " + schema);
@@ -389,7 +385,7 @@ public abstract class PhysicalDatasource {
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
-                LOGGER.error("the max activeConnnections size can not be max than maxconnections");
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
                 LOGGER.info(
@@ -423,7 +419,7 @@ public abstract class PhysicalDatasource {
 
         if (!ok) {
 
-            LOGGER.warn("can't return to pool ,so close con " + c);
+            LOGGER.info("can't return to pool ,so close con " + c);
             c.close("can't return to pool ");
         }
     }

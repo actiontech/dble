@@ -150,7 +150,7 @@ public final class ShowServerLog {
             return bufINf;
 
         } catch (Exception e) {
-            LOGGER.error("showLogRangeError", e);
+            LOGGER.info("showLogRangeError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
@@ -161,7 +161,7 @@ public final class ShowServerLog {
                 try {
                     br.close();
                 } catch (IOException e) {
-                    LOGGER.error("showLogRangeError", e);
+                    LOGGER.info("showLogRangeError", e);
                 }
             }
 
@@ -222,7 +222,7 @@ public final class ShowServerLog {
             return bufINf;
 
         } catch (Exception e) {
-            LOGGER.error("showLogSumError", e);
+            LOGGER.info("showLogSumError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
@@ -233,7 +233,7 @@ public final class ShowServerLog {
                 try {
                     br.close();
                 } catch (IOException e) {
-                    LOGGER.error("showLogSumError", e);
+                    LOGGER.info("showLogSumError", e);
                 }
             }
 

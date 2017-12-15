@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -126,7 +127,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
             heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
         } else {
-            MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
+            MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL  cluster status err !!! " +
                     heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
                     " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
             );
@@ -145,7 +146,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
                 if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " +
+                    MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL master/slave Replication delay !!! " +
                             heartbeat.getSource().getConfig() + ", binlog sync time delay: " +
                             behindMaster + "s");
                 }
@@ -153,7 +154,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             }
         } else if (source.isSalveOrRead()) {
             //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
+            MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL master/slave Replication err !!! " +
                     heartbeat.getSource().getConfig() + ", " + resultResult);
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
         }

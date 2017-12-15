@@ -131,7 +131,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                 }
                 int ind = line.indexOf('=');
                 if (ind < 0) {
-                    LOGGER.warn(" warn: bad line int " + mapFile + " :" + line);
+                    LOGGER.info(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
                 String[] pairs = line.substring(0, ind).trim().split("-");

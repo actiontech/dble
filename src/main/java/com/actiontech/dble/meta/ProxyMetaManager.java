@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.AbstractTableMetaHandler;
 import com.actiontech.dble.meta.table.MetaHelper;
@@ -169,14 +170,14 @@ public class ProxyMetaManager {
                 }
                 dropTable(schemaInfo.getSchema(), schemaInfo.getTable());
             } catch (Exception e) {
-                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
+                LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 if (DbleServer.getInstance().isUseZK()) {
                     try {
                         notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
-                        LOGGER.warn("notifyClusterDDL error", e);
+                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                     }
                 }
             }
@@ -188,7 +189,7 @@ public class ProxyMetaManager {
             metaLock.lock();
             try {
                 if (lockTables.contains(genLockKey(schema, tbName))) {
-                    LOGGER.warn("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
+                    LOGGER.info("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
                     condRelease.await();
                 } else {
                     return getTableMeta(schema, tbName);
@@ -207,7 +208,7 @@ public class ProxyMetaManager {
             metaLock.lock();
             try {
                 if (lockTables.contains(genLockKey(schema, vName))) {
-                    LOGGER.warn("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
+                    LOGGER.info("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
                     condRelease.await();
                 } else {
                     return catalogs.get(schema).getView(vName);
@@ -258,7 +259,7 @@ public class ProxyMetaManager {
                 } catch (Exception e) {
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                     if (times % 60 == 0) {
-                        LOGGER.warn("createTempNode syncMeta.lock failed", e);
+                        LOGGER.info("createTempNode syncMeta.lock failed", e);
                         times = 0;
                     }
                     times++;
@@ -271,7 +272,7 @@ public class ProxyMetaManager {
             while (zkConn.getChildren().forPath(ddlPath).size() > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
-                    LOGGER.warn("waiting for DDL in " + ddlPath);
+                    LOGGER.info("waiting for DDL in " + ddlPath);
                     times = 0;
                 }
                 times++;
@@ -436,7 +437,7 @@ public class ProxyMetaManager {
         try {
             return SchemaUtil.getSchemaInfo(null, schema, tableSource);
         } catch (SQLException e) { // is should not happen
-            LOGGER.warn("getSchemaInfo error", e);
+            LOGGER.info("getSchemaInfo error", e);
             return null;
         }
     }
@@ -451,14 +452,14 @@ public class ProxyMetaManager {
             StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.getTable(), statement, System.currentTimeMillis());
             addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
-            LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
+            LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (DbleServer.getInstance().isUseZK()) {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn("notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }
@@ -523,14 +524,14 @@ public class ProxyMetaManager {
             StructureMeta.TableMeta newTblMeta = tmBuilder.build();
             addTable(schemaInfo.getSchema(), newTblMeta);
         } catch (Exception e) {
-            LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
+            LOGGER.info("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (DbleServer.getInstance().isUseZK()) {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn("notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }
@@ -545,7 +546,7 @@ public class ProxyMetaManager {
             try {
                 notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
-                LOGGER.warn("notifyClusterDDL error", e);
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
             }
         }
     }
@@ -570,14 +571,14 @@ public class ProxyMetaManager {
                     addIndex(indexName, tmBuilder, IndexType.UNI, itemsToColumns(statement.getItems()));
                 }
             } catch (Exception e) {
-                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
+                LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 if (DbleServer.getInstance().isUseZK()) {
                     try {
                         notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                     } catch (Exception e) {
-                        LOGGER.warn("notifyClusterDDL error", e);
+                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                     }
                 }
             }
@@ -621,14 +622,14 @@ public class ProxyMetaManager {
                 dropIndex(tmBuilder, dropName);
             }
         } catch (Exception e) {
-            LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
+            LOGGER.info("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             if (DbleServer.getInstance().isUseZK()) {
                 try {
                     notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
-                    LOGGER.warn("notifyClusterDDL error", e);
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
                 }
             }
         }

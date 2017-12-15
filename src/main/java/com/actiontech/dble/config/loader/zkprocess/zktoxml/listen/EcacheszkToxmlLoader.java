@@ -20,6 +20,7 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -101,7 +102,7 @@ public class EcacheszkToxmlLoader extends ZkMultiLoader implements NotifyService
             try {
                 ConfFileRWUtils.writeFile(cacheData.getName(), cacheData.getValue());
             } catch (IOException e) {
-                LOGGER.error("EcacheszkToxmlLoader wirteMapFile IOException", e);
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "EcacheszkToxmlLoader wirteMapFile IOException", e);
             }
             this.zookeeperListen.addWatch(KVPathUtil.getCacheServerNamePath(), this);
         }

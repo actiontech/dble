@@ -49,7 +49,7 @@ public class HintMasterDBHandler implements HintHandler {
                 if (sqlType == ServerParse.DELETE || sqlType == ServerParse.INSERT ||
                         sqlType == ServerParse.REPLACE || sqlType == ServerParse.UPDATE ||
                         sqlType == ServerParse.DDL) {
-                    LOGGER.error("should not use hint 'db_type' to route 'delete', 'insert', 'replace', 'update', 'ddl' to a slave db.");
+                    LOGGER.info("should not use hint 'db_type' to route 'delete', 'insert', 'replace', 'update', 'ddl' to a slave db.");
                     isRouteToMaster = null;
                 } else {
                     isRouteToMaster = false;
@@ -58,7 +58,7 @@ public class HintMasterDBHandler implements HintHandler {
         }
 
         if (isRouteToMaster == null) {
-            LOGGER.warn(" sql hint 'db_type' error, ignore this hint.");
+            LOGGER.info(" sql hint 'db_type' error, ignore this hint.");
             return rrs;
         }
 

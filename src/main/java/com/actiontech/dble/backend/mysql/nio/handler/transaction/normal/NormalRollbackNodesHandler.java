@@ -85,7 +85,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
         conn.quit(); //quit if not rollback

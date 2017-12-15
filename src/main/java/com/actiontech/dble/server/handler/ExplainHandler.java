@@ -344,13 +344,13 @@ public final class ExplainHandler {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqlException = (SQLException) e;
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + sqlException);
+                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + sqlException);
                 String msg = sqlException.getMessage();
                 c.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append(stmt).toString() + " error:" + e);
+                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
                 String msg = e.getMessage();
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;

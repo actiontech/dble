@@ -8,6 +8,7 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -81,7 +82,7 @@ public abstract class AbstractTableMetaHandler {
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (!result.isSuccess()) {
                 //not thread safe
-                LOGGER.warn("Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
+                LOGGER.info("Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
                     countdown();
                 }
@@ -120,15 +121,15 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private void consistentWarning() {
-            LOGGER.warn("Table [" + tableName + "] structure are not consistent!");
-            LOGGER.warn("Currently detected: ");
+            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableName + "] structure are not consistent!");
+            LOGGER.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
                     stringBuilder.append("DataNode:[").append(dn).append("]");
                 }
                 stringBuilder.append(":").append(entry);
-                LOGGER.warn(stringBuilder.toString());
+                LOGGER.info(stringBuilder.toString());
             }
         }
 

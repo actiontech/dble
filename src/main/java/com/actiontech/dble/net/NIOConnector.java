@@ -66,7 +66,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                     keys.clear();
                 }
             } catch (Exception e) {
-                LOGGER.warn(name, e);
+                LOGGER.info(name, e);
             }
         }
     }
@@ -80,7 +80,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                 channel.connect(new InetSocketAddress(c.host, c.port));
 
             } catch (Exception e) {
-                LOGGER.error("error:", e);
+                LOGGER.info("error:", e);
                 c.close(e.toString());
             }
         }
@@ -100,7 +100,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
             }
         } catch (Exception e) {
             clearSelectionKey(key);
-            LOGGER.error("error:", e);
+            LOGGER.info("error:", e);
             c.close(e.toString());
             c.onConnectFailed(e);
 

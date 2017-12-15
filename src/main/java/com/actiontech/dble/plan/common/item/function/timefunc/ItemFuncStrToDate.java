@@ -137,7 +137,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
         }
 
         if (val != null && (fuzzyDate & MyTime.TIME_NO_ZERO_DATE) != 0 /* warnings */) {
-            LOGGER.warn("str_to_date value:" + val + " is wrong value for format:" + format);
+            LOGGER.info("str_to_date value:" + val + " is wrong value for format:" + format);
         }
         return (nullValue = true);
     }

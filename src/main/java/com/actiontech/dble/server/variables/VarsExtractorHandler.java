@@ -73,7 +73,7 @@ public class VarsExtractorHandler {
                 done.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("wait variables  grapping done " + e);
+            LOGGER.info("wait variables  grapping done " + e);
         } finally {
             lock.unlock();
         }

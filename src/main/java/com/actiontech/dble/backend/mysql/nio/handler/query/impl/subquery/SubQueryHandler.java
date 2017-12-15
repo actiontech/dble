@@ -40,7 +40,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             // locked onTerminate, because terminated may sync with start
             tempDoneCallBack.call();
         } catch (Exception callback) {
-            LOGGER.warn("callback exception!", callback);
+            LOGGER.info("callback exception!", callback);
         } finally {
             lock.unlock();
         }
@@ -50,12 +50,12 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
         lock.lock();
         try {
             String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
-            LOGGER.warn(errorMsg);
+            LOGGER.info(errorMsg);
             genErrorPackage(ErrorCode.ER_UNKNOWN_ERROR, errorMsg);
             HandlerTool.terminateHandlerTree(this);
             tempDoneCallBack.call();
         } catch (Exception callback) {
-            LOGGER.warn("callback exception!", callback);
+            LOGGER.info("callback exception!", callback);
         } finally {
             lock.unlock();
         }
@@ -73,12 +73,12 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             ErrorPacket errPacket = new ErrorPacket();
             errPacket.read(err);
             String errorMsg = new String(errPacket.getMessage(), StandardCharsets.UTF_8);
-            LOGGER.warn(errorMsg);
+            LOGGER.info(errorMsg);
             genErrorPackage(errPacket.getErrNo(), errorMsg);
             HandlerTool.terminateHandlerTree(this);
             tempDoneCallBack.call();
         } catch (Exception callback) {
-            LOGGER.warn("callback exception!", callback);
+            LOGGER.info("callback exception!", callback);
         } finally {
             lock.unlock();
         }

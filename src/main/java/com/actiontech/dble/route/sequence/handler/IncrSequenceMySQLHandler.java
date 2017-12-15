@@ -106,7 +106,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         } else if (values[0] == 0) {
             seqVal.fetching.compareAndSet(true, false);
             String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         } else {
             if (seqVal.newValueSetted.compareAndSet(false, true)) {

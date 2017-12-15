@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -145,13 +146,13 @@ public final class ConfFileHandler {
                 outStream.write(tempBytes, 0, byteRead);
             }
         } catch (Exception e1) {
-            LOGGER.error("readFileByBytesError", e1);
+            LOGGER.info("readFileByBytesError", e1);
         } finally {
             if (in != null) {
                 try {
                     in.close();
                 } catch (IOException e1) {
-                    LOGGER.error("readFileByBytesError", e1);
+                    LOGGER.info("readFileByBytesError", e1);
                 }
             }
         }
@@ -175,7 +176,7 @@ public final class ConfFileHandler {
             buff.flush();
 
         } catch (Exception e) {
-            LOGGER.warn("write file err " + e);
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "write file err " + e);
             return showInfo(c, buffer, packetId, "write file err " + e);
 
         } finally {
@@ -184,7 +185,7 @@ public final class ConfFileHandler {
                     buff.close();
                     suc = true;
                 } catch (IOException e) {
-                    LOGGER.warn("save config file err " + e);
+                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "save config file err " + e);
                 }
             }
         }
@@ -197,14 +198,14 @@ public final class ConfFileHandler {
                         System.currentTimeMillis() + "_auto");
                 if (!oldFile.renameTo(backUP)) {
                     String msg = "rename old file failed";
-                    LOGGER.warn(msg + " for upload file " + oldFile.getAbsolutePath());
+                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + oldFile.getAbsolutePath());
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
             File dst = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
             if (!tempFile.renameTo(dst)) {
                 String msg = "rename file failed";
-                LOGGER.warn(msg + " for upload file " + tempFile.getAbsolutePath());
+                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + tempFile.getAbsolutePath());
                 return showInfo(c, buffer, packetId, msg);
             }
             return showInfo(c, buffer, packetId, "SUCCESS SAVED FILE:" + fileName);
@@ -248,7 +249,7 @@ public final class ConfFileHandler {
             return bufINf;
 
         } catch (Exception e) {
-            LOGGER.error("showConfigFileError", e);
+            LOGGER.info("showConfigFileError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);
@@ -259,7 +260,7 @@ public final class ConfFileHandler {
                 try {
                     br.close();
                 } catch (IOException e) {
-                    LOGGER.error("showConfigFileError", e);
+                    LOGGER.info("showConfigFileError", e);
                 }
             }
 
@@ -293,7 +294,7 @@ public final class ConfFileHandler {
             return bufINf;
 
         } catch (Exception e) {
-            LOGGER.error("listConfigFilesError", e);
+            LOGGER.info("listConfigFilesError", e);
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(e.toString(), c.getCharset().getResults()));
             row.setPacketId(++packetId);

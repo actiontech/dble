@@ -32,7 +32,7 @@ public final class KillConnection {
         if (list != null) {
             for (FrontendConnection c : list) {
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append("killed by manager").toString());
+                LOGGER.info(s.append(c).append("killed by manager").toString());
                 c.killAndClose("kill by manager");
                 count++;
             }

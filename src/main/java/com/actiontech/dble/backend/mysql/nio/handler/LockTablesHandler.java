@@ -109,14 +109,14 @@ public class LockTablesHandler extends MultiNodeHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        LOGGER.warn("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": row data packet");
         return false;
@@ -124,7 +124,7 @@ public class LockTablesHandler extends MultiNodeHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": row's eof");
     }

@@ -131,7 +131,7 @@ public class ItemRef extends Item {
             try {
                 tmpFp.setName(fieldAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
-                LOGGER.warn("parse string exception!", e);
+                LOGGER.info("parse string exception!", e);
             }
         }
 
@@ -139,7 +139,7 @@ public class ItemRef extends Item {
             try {
                 tmpFp.setDb(schema.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
-                LOGGER.warn("parse string exception!", e);
+                LOGGER.info("parse string exception!", e);
             }
         }
         if (table != null) {
@@ -147,14 +147,14 @@ public class ItemRef extends Item {
                 tmpFp.setOrgTable(table.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
                 tmpFp.setTable(table.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
-                LOGGER.warn("parse string exception!", e);
+                LOGGER.info("parse string exception!", e);
             }
         }
         if (tableAlias != null) {
             try {
                 tmpFp.setTable(tableAlias.getBytes(CharsetUtil.getJavaCharset(charsetIndex)));
             } catch (UnsupportedEncodingException e) {
-                LOGGER.warn("parse string exception!", e);
+                LOGGER.info("parse string exception!", e);
             }
         }
     }

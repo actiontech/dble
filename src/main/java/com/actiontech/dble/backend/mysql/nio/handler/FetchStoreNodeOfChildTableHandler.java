@@ -91,7 +91,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                     mysqlDN.getConnection(mysqlDN.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
                 }
             } catch (Exception e) {
-                LOGGER.warn("get connection err " + e);
+                LOGGER.info("get connection err " + e);
             }
         }
         lock.lock();
@@ -143,7 +143,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         finished.incrementAndGet();
-        LOGGER.warn("connectionError " + e);
+        LOGGER.info("connectionError " + e);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         finished.incrementAndGet();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        LOGGER.warn("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
+        LOGGER.info("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
         if (canReleaseConn()) {
             conn.release();
         }
@@ -185,7 +185,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                 lock.unlock();
             }
         } else {
-            LOGGER.warn("find multi data nodes for child table store, sql is:  " + sql);
+            LOGGER.info("find multi data nodes for child table store, sql is:  " + sql);
         }
         return false;
     }
@@ -204,7 +204,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     private void executeException(BackendConnection c, Throwable e) {
         finished.incrementAndGet();
-        LOGGER.warn("executeException   " + e);
+        LOGGER.info("executeException   " + e);
         if (canReleaseConn()) {
             c.release();
         }
@@ -217,7 +217,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("connection closed " + conn + " reason:" + reason);
+        LOGGER.info("connection closed " + conn + " reason:" + reason);
     }
 
     @Override

@@ -99,7 +99,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         try {
             condition.signal();
             c.close("heatbeat exception:" + e);
-            LOGGER.warn("executeException   ", e);
+            LOGGER.info("executeException   ", e);
         } finally {
             lock.unlock();
         }
@@ -117,7 +117,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         lock.lock();
         try {
             condition.signal();
-            LOGGER.warn("connection closed " + conn + " reason:" + reason);
+            LOGGER.info("connection closed " + conn + " reason:" + reason);
         } finally {
             lock.unlock();
         }

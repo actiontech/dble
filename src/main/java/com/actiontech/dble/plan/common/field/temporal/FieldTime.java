@@ -31,7 +31,7 @@ public class FieldTime extends FieldTemporal {
         try {
             ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            Field.LOGGER.warn("parse string exception!", ue);
+            Field.LOGGER.info("parse string exception!", ue);
         }
         if (ptrStr != null) {
             MyTime.strToTimeWithWarn(ptrStr, ltime);

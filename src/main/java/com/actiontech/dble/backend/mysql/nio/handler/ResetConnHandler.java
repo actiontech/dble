@@ -20,7 +20,7 @@ public class ResetConnHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        LOGGER.warn(msg);
+        LOGGER.info(msg);
     }
 
 
@@ -44,7 +44,7 @@ public class ResetConnHandler implements ResponseHandler {
     }
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn(reason);
+        LOGGER.info(reason);
     }
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {

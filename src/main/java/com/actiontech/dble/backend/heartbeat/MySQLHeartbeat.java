@@ -105,7 +105,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                         detector = new MySQLDetector(this);
                         detector.heartbeat();
                     } catch (Exception e) {
-                        LOGGER.warn(source.getConfig().toString(), e);
+                        LOGGER.info(source.getConfig().toString(), e);
                         setResult(ERROR_STATUS, null);
                         return;
                     }

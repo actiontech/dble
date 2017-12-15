@@ -2,6 +2,7 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import com.alibaba.fastjson.JSONObject;
@@ -45,7 +46,7 @@ public class KVStoreRepository implements Reposoitory {
                 map.get(schema).put(viewName, createSql);
             }
         } catch (Exception e) {
-            LOGGER.warn("init viewData from zk error :　" + e.getMessage());
+            LOGGER.info("init viewData from zk error :　" + e.getMessage());
         } finally {
             viewCreateSqlMap = map;
         }
@@ -69,7 +70,7 @@ public class KVStoreRepository implements Reposoitory {
                 zkConn.setData().forPath(sb.toString(), m.toJSONString().getBytes());
             }
         } catch (Exception e) {
-            LOGGER.warn("create zk node error :　" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create zk node error :　" + e.getMessage());
         }
 
     }
@@ -85,7 +86,7 @@ public class KVStoreRepository implements Reposoitory {
             try {
                 zkConn.delete().forPath(sb.toString());
             } catch (Exception e) {
-                LOGGER.warn("delete zk node error :　" + e.getMessage());
+                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete zk node error :　" + e.getMessage());
             }
         }
     }

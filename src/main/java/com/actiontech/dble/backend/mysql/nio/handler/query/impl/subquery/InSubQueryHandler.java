@@ -66,13 +66,13 @@ public class InSubQueryHandler extends SubQueryHandler {
             }
             if (++rowCount > maxPartSize * maxConnSize) {
                 String errMessage = "sub query too much rows!";
-                LOGGER.warn(errMessage);
+                LOGGER.info(errMessage);
                 genErrorPackage(ErrorCode.ER_UNKNOWN_ERROR, errMessage);
                 conn.close(errMessage);
                 try {
                     tempDoneCallBack.call();
                 } catch (Exception callback) {
-                    LOGGER.warn("callback exception!", callback);
+                    LOGGER.info("callback exception!", callback);
                 }
                 return true;
             }

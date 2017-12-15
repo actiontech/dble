@@ -466,7 +466,7 @@ public abstract class BaseHandlerBuilder {
                 finishSubQuery.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("execute ScalarSubQuery " + e);
+            LOGGER.info("execute ScalarSubQuery " + e);
             ErrorPacket errorPackage = new ErrorPacket();
             errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
             String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
@@ -510,7 +510,7 @@ public abstract class BaseHandlerBuilder {
                     tempHandler.setTempDoneCallBack(tempDone);
                     HandlerBuilder.startHandler(endHandler);
                 } catch (Exception e) {
-                    LOGGER.warn("execute ItemScalarSubQuery error", e);
+                    LOGGER.info("execute ItemScalarSubQuery error", e);
                     ErrorPacket errorPackage = new ErrorPacket();
                     errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
                     String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();

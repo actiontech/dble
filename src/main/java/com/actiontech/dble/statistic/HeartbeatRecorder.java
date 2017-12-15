@@ -63,7 +63,7 @@ public class HeartbeatRecorder {
             recordsAll.offer(new Record(value, time));
             calculate(time);
         } catch (Exception e) {
-            LOGGER.error("record HeartbeatRecorder error ", e);
+            LOGGER.info("record HeartbeatRecorder error ", e);
         }
     }
 

@@ -92,7 +92,8 @@ public class PhysicalDBNode {
                         LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBalanceFlag());
                         if (!dbPool.getReadCon(schema, autoCommit, handler,
                                 attachment)) {
-                            LOGGER.warn("Do not have slave connection to use, use master connection instead.");
+                            LOGGER.info("Do not have slave connection to use, " +
+                                    "use master connection instead.");
                             PhysicalDatasource writeSource = dbPool.getSource();
                             writeSource.setWriteCount();
                             writeSource.getConnection(schema, autoCommit, handler, attachment);

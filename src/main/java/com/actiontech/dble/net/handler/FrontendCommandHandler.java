@@ -118,7 +118,7 @@ public class FrontendCommandHandler implements NIOHandler {
                     } catch (Exception e) {
                         String msg = e.getMessage();
                         if (StringUtil.isEmpty(msg)) {
-                            LOGGER.warn("Maybe occur a bug, please check it.", e);
+                            LOGGER.info("Maybe occur a bug, please check it.", e);
                             msg = e.toString();
                         } else {
                             LOGGER.info("There is an error you may need know.", e);

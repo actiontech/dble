@@ -60,7 +60,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
             }
             if (++rowCount > 1) {
                 String errMessage = "Subquery returns more than 1 row";
-                LOGGER.warn(errMessage);
+                LOGGER.info(errMessage);
                 genErrorPackage(ErrorCode.ER_SUBQUERY_NO_1_ROW, errMessage);
                 return true;
             }

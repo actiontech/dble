@@ -128,7 +128,7 @@ public class NIOSocketWR extends SocketWR {
             SelectionKey key = this.processKey;
             key.interestOps(key.interestOps() & OP_NOT_WRITE);
         } catch (Exception e) {
-            AbstractConnection.LOGGER.warn("can't disable write " + e + " con " + con);
+            AbstractConnection.LOGGER.info("can't disable write " + e + " con " + con);
         }
 
     }
@@ -140,7 +140,7 @@ public class NIOSocketWR extends SocketWR {
             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
             needWakeup = true;
         } catch (Exception e) {
-            AbstractConnection.LOGGER.warn("can't enable write " + e);
+            AbstractConnection.LOGGER.info("can't enable write " + e);
 
         }
         if (needWakeup && wakeup) {
@@ -156,7 +156,7 @@ public class NIOSocketWR extends SocketWR {
                 key.cancel();
             }
         } catch (Exception e) {
-            AbstractConnection.LOGGER.warn("clear selector keys err:" + e);
+            AbstractConnection.LOGGER.info("clear selector keys err:" + e);
         }
     }
 

@@ -67,7 +67,7 @@ public class DataSourceSyncRecorder {
                 return;
             }
         } catch (Exception e) {
-            LOGGER.error("record DataSourceSyncRecorder error " + e.getMessage());
+            LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
         }
 
     }

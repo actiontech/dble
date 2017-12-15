@@ -156,7 +156,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                         ready = true;
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Caught exception while handling zk!", e);
+                    LOGGER.info("Caught exception while handling zk!", e);
                 }
             }
         };
@@ -171,7 +171,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
-                LOGGER.warn("Unexpected thread interruption!");
+                LOGGER.info("Unexpected thread interruption!");
                 Thread.currentThread().interrupt();
             }
         }
@@ -250,7 +250,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Caught exception while handling zk!", e);
+            LOGGER.info("Caught exception while handling zk!", e);
         }
 
         leaderExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -275,7 +275,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
                     }
                     mark = mark2;
                 } catch (Exception e) {
-                    LOGGER.warn("Caught exception while handling zk!", e);
+                    LOGGER.info("Caught exception while handling zk!", e);
                 }
             }
         }, 0L, 3L, TimeUnit.SECONDS);

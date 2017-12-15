@@ -3,6 +3,7 @@ package com.actiontech.dble.backend.mysql.view;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class FileSystemRepository implements Reposoitory {
 
             viewCreateSqlMap = this.getObject();
         } catch (Exception e) {
-            LOGGER.warn("init view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.info("init view from file error make sure the file is correct :" + e.getMessage());
         }
     }
 
@@ -71,7 +72,7 @@ public class FileSystemRepository implements Reposoitory {
             }
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
-            LOGGER.warn("delete view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
         }
     }
 
@@ -93,7 +94,7 @@ public class FileSystemRepository implements Reposoitory {
 
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
-            LOGGER.warn("add view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
         }
 
     }

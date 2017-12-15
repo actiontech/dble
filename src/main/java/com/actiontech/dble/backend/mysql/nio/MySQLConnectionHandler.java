@@ -192,7 +192,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private void closeNoHandler() {
         if (!source.isClosedOrQuit()) {
             source.close("no handler");
-            LOGGER.warn("no handler bind in this con " + this + " client:" + source);
+            LOGGER.info("no handler bind in this con " + this + " client:" + source);
         }
     }
 
@@ -209,7 +209,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     protected void handleDataError(Exception e) {
-        LOGGER.warn(this.source.toString() + " handle data error:", e);
+        LOGGER.info(this.source.toString() + " handle data error:", e);
         dataQueue.clear();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)

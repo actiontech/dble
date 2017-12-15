@@ -91,7 +91,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
                     throw new Exception("Clock moved backwards.  Refusing to generate id for " +
                             (lastTimestamp - timestamp) + " milliseconds");
                 } catch (Exception e) {
-                    LOGGER.error("error", e);
+                    LOGGER.info("error", e);
                 }
             }
 

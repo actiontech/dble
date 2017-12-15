@@ -56,7 +56,7 @@ public final class QueryResultDispatcher {
                     try {
                         listener.onQueryResult(queryResult);
                     } catch (Exception e) {
-                        LOGGER.error("error:", e);
+                        LOGGER.info("error:", e);
                     }
                 }
             }

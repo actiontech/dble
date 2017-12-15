@@ -8,6 +8,7 @@ package com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml;
 import com.actiontech.dble.config.loader.zkprocess.entity.Rules;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +44,11 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
         try {
             schema = (Rules) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
+                    "RulesParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
+                    "RulesParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -58,8 +59,7 @@ public class RuleParseXmlImpl implements ParseXmlServiceInf<Rules> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("RulesParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.ZktoXmlMain;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public final class ZkConfig {
                 ZktoXmlMain.loadZktoFile();
             }
         } catch (Exception e) {
-            LOGGER.error("error:", e);
+            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
         }
     }
 
@@ -92,7 +93,10 @@ public final class ZkConfig {
 
             pros.load(configIS);
         } catch (IOException e) {
-            LOGGER.error("ZkConfig LoadMyidPropersites error:", e);
+            /**
+             * KEEP init server error
+             */
+            LOGGER.error(AlarmCode.CORE_ERROR + "ZkConfig LoadMyidPropersites error:", e);
             throw new RuntimeException("can't find myid properties file : " + ZK_CONFIG_FILE_NAME);
         }
 

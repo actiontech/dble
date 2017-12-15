@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.store.fs;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import org.apache.log4j.Logger;
 import sun.nio.ch.DirectBuffer;
 
@@ -78,7 +79,7 @@ class FileNioMapped extends FileBase {
             }
             useSystemGc = false;
         } catch (Throwable e) {
-            logger.warn("unmap byteBuffer error", e);
+            logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "unmap byteBuffer error", e);
             // useSystemGc is already true
         } finally {
             mapped = null;

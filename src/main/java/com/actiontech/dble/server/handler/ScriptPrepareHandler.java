@@ -32,7 +32,7 @@ public final class ScriptPrepareHandler {
                 SptDrop.response(c);
                 break;
             default:
-                LOGGER.warn("Unsupported command:" + stmt);
+                LOGGER.info("Unsupported command:" + stmt);
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                 break;
         }

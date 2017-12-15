@@ -42,7 +42,7 @@ public final class StopHeartbeat {
                     ++count;
                     StringBuilder s = new StringBuilder();
                     s.append(dn.getHostName()).append(" stop heartbeat '");
-                    LOGGER.warn(s.append(FormatUtil.formatTime(time, 3)).append("' by manager.").toString());
+                    LOGGER.info(s.append(FormatUtil.formatTime(time, 3)).append("' by manager.").toString());
                 }
             }
         }

@@ -15,6 +15,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.util.StringUtil;
@@ -34,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author digdeep@126.com
- * check GlobalTable consistency
+ *         check GlobalTable consistency
  */
 public final class GlobalTableUtil {
     private GlobalTableUtil() {
@@ -76,7 +77,7 @@ public final class GlobalTableUtil {
             if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN))
                 return true;
         }
-        String warnStr = schemaInfo.getSchema() + "." + schemaInfo.getTable() +
+        String warnStr = AlarmCode.CORE_TABLE_CHECK_WARN + schemaInfo.getSchema() + "." + schemaInfo.getTable() +
                 " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
         LOGGER.warn(warnStr);
         return false; // tableName witout inner column
@@ -140,7 +141,7 @@ public final class GlobalTableUtil {
                             try {
                                 TimeUnit.SECONDS.sleep(1);
                             } catch (InterruptedException e) {
-                                LOGGER.warn(e.getMessage());
+                                LOGGER.info(e.getMessage());
                             }
                         }
                         LOGGER.debug("isInnerColumnCheckFinished:" + isInnerColumnCheckFinished);
@@ -153,7 +154,7 @@ public final class GlobalTableUtil {
                             try {
                                 TimeUnit.SECONDS.sleep(1);
                             } catch (InterruptedException e) {
-                                LOGGER.warn(e.getMessage());
+                                LOGGER.info(e.getMessage());
                             }
                         }
                         LOGGER.debug("isColumnCountCheckFinished:" + isColumnCountCheckFinished);
@@ -198,11 +199,11 @@ public final class GlobalTableUtil {
                                 columnsList = row.get(GlobalTableUtil.INNER_COLUMN); // id,name,_dble_op_time
                             LOGGER.debug("columnsList: " + columnsList);
                         } catch (Exception e) {
-                            LOGGER.warn(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
+                            LOGGER.info(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
                         } finally {
                             if (columnsList == null ||
                                     !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                                LOGGER.warn(map.getDataNode() + "." + map.getTableName() +
+                                LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + map.getDataNode() + "." + map.getTableName() +
                                         " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.");
                             } else {
                                 LOGGER.debug("columnsList: " + columnsList);

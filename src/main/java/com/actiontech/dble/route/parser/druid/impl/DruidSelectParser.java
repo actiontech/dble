@@ -221,7 +221,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
                 if (tbMeta == null) {
                     String msg = "Meta data of table '" + schema.getName() + "." + tc.getName() + "' doesn't exist";
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
                 for (StructureMeta.ColumnMeta column : tbMeta.getColumnsList()) {
@@ -539,7 +539,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         if (nodeSet.size() == 0) {
             String msg = " find no Route:" + rrs.getStatement();
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 

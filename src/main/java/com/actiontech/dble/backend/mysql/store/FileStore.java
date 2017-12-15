@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FilePath;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.exception.TmpFileException;
 import org.apache.log4j.Logger;
 
@@ -39,9 +40,8 @@ public class FileStore {
     /**
      * Create a new file using the given settings.
      *
-     * @param handler the callback object
-     * @param name    the file name
-     * @param mode    the access mode ("r", "rw", "rws", "rwd")
+     * @param name the file name
+     * @param mode the access mode ("r", "rw", "rws", "rwd")
      */
     public FileStore(String name, String mode) {
         this.name = name;
@@ -66,7 +66,7 @@ public class FileStore {
                 try {
                     file.close();
                 } catch (IOException e) {
-                    logger.warn("close file error :", e);
+                    logger.info("close file error :", e);
                 } finally {
                     // QUESTION_TODO if IOException,memory is release or not
                     FileCounter.getInstance().decrement();
@@ -238,7 +238,7 @@ public class FileStore {
                 this.files.add(path.open(mode));
                 this.fileNames.add(path.toString());
             } else {
-                logger.warn("create file error :", e);
+                logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "create file error :", e);
                 throw e;
             }
         }

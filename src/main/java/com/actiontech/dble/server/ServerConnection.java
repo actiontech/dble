@@ -229,7 +229,7 @@ public class ServerConnection extends FrontendConnection {
 
     public void execute(String sql, int type) {
         if (this.isClosed()) {
-            LOGGER.warn("ignore execute ,server connection is closed " + this);
+            LOGGER.info("ignore execute ,server connection is closed " + this);
             return;
         }
         if (txInterrupted) {
@@ -312,7 +312,7 @@ public class ServerConnection extends FrontendConnection {
                 if (DbleServer.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                     String msg = "Table '" + rrs.getTable() + "' already exists as a view";
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
             }
@@ -337,7 +337,7 @@ public class ServerConnection extends FrontendConnection {
                 while (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                     if (times % 60 == 0) {
-                        LOGGER.warn("waiting for syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath);
+                        LOGGER.info("waiting for syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath);
                         times = 0;
                     }
                     times++;
@@ -364,7 +364,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(sqlState, errorMsg, vendorCode);
         } else {
             StringBuilder s = new StringBuilder();
-            LOGGER.warn(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
+            LOGGER.info(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
             String msg = e.getMessage();
             writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
         }

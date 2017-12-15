@@ -34,6 +34,7 @@ public class ConfigInitializer {
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile Map<String, UserConfig> users;
+    private volatile AlarmConfig alarm;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBPool> dataHosts;
@@ -48,9 +49,10 @@ public class ConfigInitializer {
 
         //load rule.xml and schema.xml
         SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);
+        this.schemas = schemaLoader.getSchemas();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
-        this.schemas = schemaLoader.getSchemas();
+        this.alarm = serverLoader.getAlarm();
         this.erRelations = schemaLoader.getErRelations();
         // need reload DataHost and DataNode?
         if (loadDataHost) {
@@ -154,7 +156,7 @@ public class ConfigInitializer {
     private void checkWriteHost() {
         for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
             if (pool.getValue().getSources() == null || pool.getValue().getSources().length == 0) {
-                LOGGER.warn("dataHost " + pool.getKey() + " has no writeHost ,server will ignore it");
+                LOGGER.info("dataHost " + pool.getKey() + " has no writeHost ,server will ignore it");
                 this.dataHostWithoutWH = true;
             }
         }
@@ -170,7 +172,7 @@ public class ConfigInitializer {
             if (allUseDataNode.contains(dataNodeName)) {
                 allUseHost.add(entry.getValue().getDbPool().getHostName());
             } else {
-                LOGGER.warn("dataNode " + dataNodeName + " is useless,server will ignore it");
+                LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
                 iterator.remove();
             }
         }
@@ -181,7 +183,7 @@ public class ConfigInitializer {
             while (dataHost.hasNext()) {
                 String dataHostName = dataHost.next();
                 if (!allUseHost.contains(dataHostName)) {
-                    LOGGER.warn("dataHost " + dataHostName + " is useless,server will ignore it");
+                    LOGGER.info("dataHost " + dataHostName + " is useless,server will ignore it");
                     dataHost.remove();
                 }
             }
@@ -214,7 +216,7 @@ public class ConfigInitializer {
                             boolean isConnected = ds.testConnection(database);
                             map.put(key, isConnected);
                         } catch (IOException e) {
-                            LOGGER.warn("test conn " + key + " error:", e);
+                            LOGGER.info("test conn " + key + " error:", e);
                         }
                     }
                 }
@@ -224,7 +226,7 @@ public class ConfigInitializer {
                 String key = entry.getKey();
                 Boolean value = entry.getValue();
                 if (!value && isConnectivity) {
-                    LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
+                    LOGGER.info("SelfCheck### test " + key + " database connection failed ");
                     isConnectivity = false;
                 } else {
                     LOGGER.info("SelfCheck### test " + key + " database connection success ");
@@ -321,4 +323,7 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
+    public AlarmConfig getAlarm() {
+        return alarm;
+    }
 }

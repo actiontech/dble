@@ -64,7 +64,7 @@ public class ItemFuncUnsigned extends ItemIntFunc {
             value = valIntFromStr();
         } catch (Exception e) {
             value = new BigInteger("-1");
-            LOGGER.error("Cast to unsigned converted negative integer to it's " + "positive complement", e);
+            LOGGER.info("Cast to unsigned converted negative integer to it's " + "positive complement", e);
         }
         return value;
     }

@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -45,6 +46,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private volatile boolean errConn = false;
     private Set<BackendConnection> closedConnSet;
+
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
@@ -122,7 +124,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         if (checkClosedConn(conn)) {
             return;
         }
-        LOGGER.warn("backend connect" + reason);
+        LOGGER.info("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
@@ -170,7 +172,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
@@ -252,7 +254,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     handler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(String.valueOf(source) + oriRrs, e);
+                    LOGGER.warn(AlarmCode.CORE_DDL_WARN + String.valueOf(source) + oriRrs, e);
                     session.handleSpecial(oriRrs, source.getSchema(), false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }

@@ -144,7 +144,7 @@ public abstract class Field {
         try {
             val = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            LOGGER.warn("parse string exception!", ue);
+            LOGGER.info("parse string exception!", ue);
         }
         return val;
     }
@@ -165,7 +165,7 @@ public abstract class Field {
             fp.setTable(this.table != null ? this.table.getBytes(javaCharsetName) : null);
             fp.setOrgTable(this.orgTable != null ? this.orgTable.getBytes(javaCharsetName) : null);
         } catch (UnsupportedEncodingException ue) {
-            LOGGER.warn("parse string exception!", ue);
+            LOGGER.info("parse string exception!", ue);
         }
         fp.setCharsetIndex(this.charsetIndex);
         fp.setLength(this.fieldLength);

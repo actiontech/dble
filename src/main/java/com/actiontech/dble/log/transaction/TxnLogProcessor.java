@@ -60,7 +60,7 @@ public class TxnLogProcessor extends Thread {
                 writeLog(log);
             }
         } catch (IOException e) {
-            LOGGER.warn("transaction log error:", e);
+            LOGGER.info("transaction log error:", e);
             store.close();
         }
     }

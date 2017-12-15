@@ -56,7 +56,7 @@ public class DbleAppender extends AbstractAppender {
             //only if the dbleserver init config file finished than the config can be use for alert
             try {
                 AlarmConfig config = DbleServer.getInstance().getConfig().getAlarm();
-                if (config != null) {
+                if (config != null && config.getUrl() != null) {
                     grpcLevel = "error".equalsIgnoreCase(config.getLevel()) ? 200 : 300;
                     serverId = config.getServerId();
                     port = Integer.parseInt(config.getPort());
@@ -86,8 +86,7 @@ public class DbleAppender extends AbstractAppender {
                             setAlertComponentId(alertComponentId).
                             setAlertComponentType(ushardCode).
                             setServerId(serverId).
-                            setTimestampUnix(System.currentTimeMillis()).
-                            setResolveTimestampUnix(System.currentTimeMillis()).
+                            setTimestampUnix(System.currentTimeMillis()*1000000).
                             build();
                     stub.alert(inpurt);
                 }

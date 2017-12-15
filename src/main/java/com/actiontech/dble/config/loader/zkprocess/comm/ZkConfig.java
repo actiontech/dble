@@ -51,7 +51,7 @@ public final class ZkConfig {
                 ZktoXmlMain.loadZktoFile();
             }
         } catch (Exception e) {
-            LOGGER.error(AlarmCode.USHARD_CORE_ZK_ERROR + AlarmCode.USHARD_ALARM_SPLITE + "error:", e);
+            LOGGER.error(AlarmCode.USHARD_CORE_ZK_ERROR + "error:", e);
         }
     }
 

@@ -162,11 +162,11 @@
             <version>${grpc.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--<dependency>  protobuf-java is useless after the code is created from .proto
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>3.5.0</version>
-        </dependency>
+        </dependency>-->
         <!--DOM4J FOR XML -->
         <dependency>
             <groupId>dom4j</groupId>

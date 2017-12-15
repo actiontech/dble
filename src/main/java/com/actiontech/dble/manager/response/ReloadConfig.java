@@ -23,7 +23,7 @@ import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.DnPropertyUtil;
-import com.actiontech.dble.log.DbleAppender;
+import com.actiontech.dble.log.AlarmAppender;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -237,7 +237,7 @@ public final class ReloadConfig {
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
             recycleOldBackendConnections(config);
-            DbleAppender.refreshConfig();
+            AlarmAppender.refreshConfig();
 
         } else {
             // INIT FAILED

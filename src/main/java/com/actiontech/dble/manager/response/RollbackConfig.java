@@ -17,7 +17,7 @@ import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.log.DbleAppender;
+import com.actiontech.dble.log.AlarmAppender;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.KVPathUtil;
@@ -156,7 +156,7 @@ public final class RollbackConfig {
                 dn.stopHeartbeat();
             }
 
-            DbleAppender.rollbackConfig();
+            AlarmAppender.rollbackConfig();
         } else {
             throw new Exception("there is no old version");
         }

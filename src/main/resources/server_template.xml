@@ -147,7 +147,7 @@
     <!--<alarm>
         <url>10.186.22.103</url>
         <port>5700</port>
-        <level>1000</level>
+        <level>warn</level>
         <serverId>dbleServer</serverId>
         <componentId>componentId</componentId>
         <componentType>componentType</componentType>

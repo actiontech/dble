@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.util;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.PlanNode;
@@ -24,6 +25,8 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.server.ServerConnection;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.util.*;
 
@@ -356,4 +359,14 @@ public final class PlanUtil {
             return true;
         }
     }
+
+    public static void checkTablesPrivilege(ServerConnection source, PlanNode node, SQLSelectStatement stmt) {
+        for (TableNode tn : node.getReferedTableNodes()) {
+            if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), ServerPrivileges.CheckType.SELECT)) {
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
+            }
+        }
+    }
+
 }

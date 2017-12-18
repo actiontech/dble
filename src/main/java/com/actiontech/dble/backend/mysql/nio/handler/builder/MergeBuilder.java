@@ -53,6 +53,10 @@ public class MergeBuilder {
         String sql = pdVisitor.getSql().toString();
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
+        return constructByStatement(sql, select);
+    }
+
+    public RouteResultset constructByStatement(String sql, SQLSelectStatement select) throws SQLException {
         ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
         DruidParser druidParser = new DruidSingleUnitSelectParser();
 

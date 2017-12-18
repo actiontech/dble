@@ -11,10 +11,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class BaseDMLHandler implements DMLResponseHandler {
@@ -34,12 +31,12 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     protected boolean isLeft = false;
     protected NonBlockingSession session;
     protected AtomicBoolean terminate = new AtomicBoolean(false);
-    protected Set<DMLResponseHandler> merges;
+    protected List<DMLResponseHandler> merges;
 
     public BaseDMLHandler(long id, NonBlockingSession session) {
         this.id = id;
         this.session = session;
-        this.merges = Collections.newSetFromMap(new ConcurrentHashMap<DMLResponseHandler, Boolean>());
+        this.merges = new ArrayList<>();
     }
 
     @Override
@@ -63,7 +60,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public final Set<DMLResponseHandler> getMerges() {
+    public final List<DMLResponseHandler> getMerges() {
         return this.merges;
     }
 

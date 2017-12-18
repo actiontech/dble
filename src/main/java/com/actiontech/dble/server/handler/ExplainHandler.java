@@ -24,6 +24,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -247,7 +248,12 @@ public final class ExplainHandler {
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
         node.setUpFields();
+        PlanUtil.checkTablesPrivilege(c, node, ast);
         node = MyOptimizer.optimize(node);
+
+        if (!visitor.isContainSchema()) {
+            node.setAst(ast);
+        }
         HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
         return builder.buildNode(c.getSession2(), node);
     }

@@ -91,11 +91,11 @@ public class DefaultDruidParser implements DruidParser {
                     value = value.toLowerCase();
                 }
             }
-            if (key != null && key.contains("`")) {
-                key = key.replaceAll("`", "");
+            if (key != null && key.charAt(0) == '`') {
+                key = key.substring(1, key.length() - 1);
             }
-            if (value != null && value.contains("`")) {
-                value = value.replaceAll("`", "");
+            if (value != null && value.charAt(0) == '`') {
+                value = value.substring(1, value.length() - 1);
             }
             // remove database in database.table
             if (key != null) {

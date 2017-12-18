@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 
-import java.util.Set;
+import java.util.List;
 
 public interface DMLResponseHandler extends ResponseHandler {
     enum HandlerType {
@@ -20,7 +20,7 @@ public interface DMLResponseHandler extends ResponseHandler {
 
     void setNextHandler(DMLResponseHandler next);
 
-    Set<DMLResponseHandler> getMerges();
+    List<DMLResponseHandler> getMerges();
 
     boolean isAllPushDown();
 

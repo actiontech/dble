@@ -16,6 +16,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemSubselect;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -56,6 +57,7 @@ public abstract class PlanNode {
     public abstract PlanNodeType type();
 
     protected String sql;
+    protected SQLSelectStatement ast;
 
     private boolean isDistinct = false;
 
@@ -693,6 +695,14 @@ public abstract class PlanNode {
 
     public void setSql(String sql) {
         this.sql = sql;
+    }
+
+    public SQLSelectStatement getAst() {
+        return ast;
+    }
+
+    public void setAst(SQLSelectStatement ast) {
+        this.ast = ast;
     }
 
     /**

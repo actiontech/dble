@@ -49,8 +49,17 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, needSendMaker, pdVisitor);
-            //TODO:
-            RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
+            String sql = null;
+            if (node.getAst() != null && node.getParent() == null) { // it's root
+                sql = node.getSql();
+            }
+            RouteResultsetNode[] rrssArray;
+            // maybe some node is view
+            if (sql == null) {
+                rrssArray = mergeBuilder.construct().getNodes();
+            } else {
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
+            }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             this.needSendMaker = mergeBuilder.getNeedSendMakerFlag();
             buildMergeHandler(node, rrssArray);
@@ -94,7 +103,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     Set<String> valueSet = tempHandler.getValueSet();
                     buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
                     DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
-                    bigLh.setNextHandler(tempHandler.getNextHandler());
+                    synchronized (tempHandler) {
+                        bigLh.setNextHandler(tempHandler.getNextHandler());
+                    }
                     tempHandler.setCreatedHandler(bigLh);
                     HandlerBuilder.startHandler(bigLh);
                 }

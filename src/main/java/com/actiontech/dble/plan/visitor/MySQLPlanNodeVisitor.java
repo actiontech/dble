@@ -34,6 +34,12 @@ public class MySQLPlanNodeVisitor {
     private final String currentDb;
     private final int charsetIndex;
 
+    public boolean isContainSchema() {
+        return containSchema;
+    }
+
+    private boolean containSchema = false;
+
     public MySQLPlanNodeVisitor(String currentDb, int charsetIndex) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
@@ -48,6 +54,7 @@ public class MySQLPlanNodeVisitor {
         MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
         mtv.visit(sqlSelect);
         this.tableNode = mtv.getTableNode();
+        this.containSchema = mtv.isContainSchema();
         return true;
     }
 
@@ -75,7 +82,7 @@ public class MySQLPlanNodeVisitor {
         mergeNode.addChild(mtvleft.getTableNode());
         mergeNode.addChild(mtvright.getTableNode());
         this.tableNode = mergeNode;
-
+        this.containSchema = mtvleft.isContainSchema() || mtvright.isContainSchema();
         SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
         if (orderBy != null) {
             handleOrderBy(orderBy);
@@ -143,7 +150,7 @@ public class MySQLPlanNodeVisitor {
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
             table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
-
+            containSchema = true;
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {
@@ -237,6 +244,7 @@ public class MySQLPlanNodeVisitor {
             joinNode.setUsingFields(this.getUsingFields(joinTables.getUsing()));
         }
         this.tableNode = joinNode;
+        this.containSchema = mtvLeft.isContainSchema() || mtvRight.isContainSchema();
         return true;
     }
 
@@ -247,6 +255,13 @@ public class MySQLPlanNodeVisitor {
         return true;
     }
 
+    public boolean visit(SQLSelect node) {
+        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+        mtv.visit(node.getQuery());
+        this.tableNode = mtv.getTableNode();
+        this.containSchema = mtv.isContainSchema();
+        return true;
+    }
 
     public void visit(SQLTableSource tables) {
         if (tables instanceof SQLExprTableSource) {
@@ -254,11 +269,13 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(table);
             this.tableNode = mtv.getTableNode();
+            this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLJoinTableSource) {
             SQLJoinTableSource joinTables = (SQLJoinTableSource) tables;
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(joinTables);
             this.tableNode = mtv.getTableNode();
+            this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLUnionQueryTableSource) {
             if (tables.getAlias() == null) {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
@@ -267,6 +284,7 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(unionTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
+            this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLSubqueryTableSource) {
             if (tables.getAlias() == null) {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
@@ -275,6 +293,7 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
+            this.containSchema = mtv.isContainSchema();
         }
         if (tables.getAlias() != null) {
             this.tableNode.setAlias(tables.getAlias());

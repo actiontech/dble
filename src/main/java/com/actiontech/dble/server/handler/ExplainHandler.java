@@ -28,6 +28,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -164,7 +165,9 @@ public final class ExplainHandler {
 
     private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies) {
         String rootName = null;
-        for (DMLResponseHandler startHandler : endHandler.getMerges()) {
+        int mergeNodeSize = endHandler.getMerges().size();
+        for (int i = 0; i < mergeNodeSize; i++) {
+            DMLResponseHandler startHandler = endHandler.getMerges().get(i);
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
             List<BaseSelectHandler> mergeList = new ArrayList<>();
             mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
@@ -307,7 +310,12 @@ public final class ExplainHandler {
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
         node.setUpFields();
+        PlanUtil.checkTablesPrivilege(c, node, ast);
         node = MyOptimizer.optimize(node);
+
+        if (!PlanUtil.containsSubQuery(node) && !visitor.isContainSchema()) {
+            node.setAst(ast);
+        }
         HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
         return builder.getBuilder(c.getSession2(), node, true);
     }

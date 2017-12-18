@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public final class HandlerTool {
     private HandlerTool() {
@@ -42,7 +41,7 @@ public final class HandlerTool {
         try {
             if (node == null)
                 return;
-            Set<DMLResponseHandler> merges = node.getMerges();
+            List<DMLResponseHandler> merges = node.getMerges();
             for (DMLResponseHandler merge : merges) {
                 DMLResponseHandler currentHandler = merge;
                 while (currentHandler != node) {

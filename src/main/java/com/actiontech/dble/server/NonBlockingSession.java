@@ -22,12 +22,9 @@ import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
@@ -261,7 +258,7 @@ public class NonBlockingSession implements Session {
         }
         node.setSql(rrs.getStatement());
         node.setUpFields();
-        checkTablesPrivilege(node, ast);
+        PlanUtil.checkTablesPrivilege(source, node, ast);
         node = MyOptimizer.optimize(node);
         if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
@@ -273,19 +270,13 @@ public class NonBlockingSession implements Session {
                 }
             });
         } else {
+            if (!visitor.isContainSchema()) {
+                node.setAst(ast);
+            }
             executeMultiResultSet(node);
         }
     }
 
-
-    private void checkTablesPrivilege(PlanNode node, SQLSelectStatement stmt) {
-        for (TableNode tn : node.getReferedTableNodes()) {
-            if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), CheckType.SELECT)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
-                throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
-            }
-        }
-    }
 
     private void init() {
         this.outputHandler = null;

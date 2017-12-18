@@ -18,10 +18,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.stat.TableStat.Column;
 import com.alibaba.druid.stat.TableStat.Condition;
-import com.alibaba.druid.stat.TableStat.Mode;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -232,7 +230,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
         return true;
     }
-
+    @Override
     public boolean visit(MySqlInsertStatement x) {
         SQLName sqlName = x.getTableName();
         if (sqlName != null) {
@@ -242,10 +240,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     // DUAL
+    @Override
     public boolean visit(MySqlDeleteStatement x) {
         setAliasMap();
-
-        setMode(x, Mode.Delete);
 
         accept(x.getFrom());
         accept(x.getUsing());
@@ -255,9 +252,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             SQLName tableName = (SQLName) ((SQLExprTableSource) x.getTableSource()).getExpr();
             String ident = tableName.toString();
             setCurrentTable(x, ident);
-
-            TableStat stat = this.getTableStat(ident, ident);
-            stat.incrementDeleteCount();
         }
 
         accept(x.getWhere());
@@ -268,18 +262,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return false;
     }
 
+    @Override
     public boolean visit(SQLUpdateStatement x) {
         setAliasMap();
-
-        setMode(x, Mode.Update);
 
         SQLName identName = x.getTableName();
         if (identName != null) {
             String ident = identName.toString();
             setCurrentTable(ident);
-
-            TableStat stat = getTableStat(ident);
-            stat.incrementUpdateCount();
 
             Map<String, String> aliasMap = getAliasMap();
             aliasMap.put(ident, ident);
@@ -297,7 +287,83 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         return false;
     }
+    @Override
+    public boolean visit(SQLExprTableSource x) {
+        if (this.isSimpleExprTableSource(x)) {
+            String ident = x.getExpr().toString();
+            if (this.variants.containsKey(ident)) {
+                return false;
+            }
 
+            if (this.containsSubQuery(ident)) {
+                return false;
+            }
+
+            Map<String, String> aliasMap = this.getAliasMap();
+            if (aliasMap != null) {
+                String alias = x.getAlias();
+                if (alias != null && !aliasMap.containsKey(alias)) {
+                    putAliasMap(aliasMap, alias, ident);
+                }
+
+                if (!aliasMap.containsKey(ident)) {
+                    putAliasMap(aliasMap, ident, ident);
+                }
+            }
+        } else {
+            this.accept(x.getExpr());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean visit(SQLSelect x) {
+        if (x.getOrderBy() != null) {
+            x.getOrderBy().setParent(x);
+        }
+
+        this.accept(x.getWithSubQuery());
+        this.accept(x.getQuery());
+        this.accept(x.getOrderBy());
+        return false;
+    }
+    @Override
+    public boolean visit(SQLSelectQueryBlock x) {
+        if (x.getFrom() == null) {
+            return false;
+        } else {
+            if (x.getFrom() instanceof SQLSubqueryTableSource) {
+                x.getFrom().accept(this);
+                return false;
+            } else {
+                if (x.getFrom() instanceof SQLExprTableSource) {
+                    SQLExprTableSource tableSource = (SQLExprTableSource) x.getFrom();
+                    if (tableSource.getExpr() instanceof SQLName) {
+                        String ident = tableSource.getExpr().toString();
+                        this.setCurrentTable(ident);
+                    }
+                }
+                if (x.getFrom() != null) {
+                    x.getFrom().accept(this);
+                }
+
+                if (x.getWhere() != null) {
+                    x.getWhere().setParent(x);
+                }
+
+                return true;
+            }
+        }
+    }
+
+    @Override
+    public void endVisit(SQLSelectQueryBlock x) {
+    }
+
+    @Override
+    public void endVisit(SQLSelect x) {
+    }
+    @Override
     public void endVisit(MySqlDeleteStatement x) {
     }
 
@@ -309,7 +375,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (expr instanceof SQLPropertyExpr) {
-            return getColumn((SQLPropertyExpr) expr, aliasMap);
+            return getColumns((SQLPropertyExpr) expr, aliasMap);
         }
 
         if (expr instanceof SQLIdentifierExpr) {
@@ -317,12 +383,53 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (expr instanceof SQLBetweenExpr) {
-            return getColumn((SQLBetweenExpr) expr, aliasMap);
+            return getColumns((SQLBetweenExpr) expr, aliasMap);
         }
         return null;
     }
 
-    private Column getColumn(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
+    @Override
+    protected void handleCondition(SQLExpr expr, String operator, SQLExpr... valueExprs) {
+        if (expr instanceof SQLCastExpr) {
+            expr = ((SQLCastExpr) expr).getExpr();
+        }
+
+        Column column = this.getColumn(expr);
+        if (column != null) {
+            Condition condition = null;
+            Iterator var6 = this.getConditions().iterator();
+
+            while (var6.hasNext()) {
+                Condition item = (Condition) var6.next();
+                if (item.getColumn().equals(column) && item.getOperator().equals(operator)) {
+                    condition = item;
+                    break;
+                }
+            }
+
+            if (condition == null) {
+                condition = new Condition();
+                condition.setColumn(column);
+                condition.setOperator(operator);
+                this.conditions.add(condition);
+            }
+
+            SQLExpr[] var12 = valueExprs;
+            int var13 = valueExprs.length;
+
+            for (int var8 = 0; var8 < var13; ++var8) {
+                SQLExpr item = var12[var8];
+                Column valueColumn = this.getColumn(item);
+                if (valueColumn == null) {
+                    Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
+                    condition.getValues().add(value);
+                }
+            }
+
+        }
+    }
+
+    private Column getColumns(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
         if (betweenExpr.getTestExpr() != null) {
             String tableName = null;
             String column = null;
@@ -383,7 +490,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return new Column("UNKNOWN", column);
     }
 
-    private Column getColumn(SQLPropertyExpr expr, Map<String, String> aliasMap) {
+    private Column getColumns(SQLPropertyExpr expr, Map<String, String> aliasMap) {
         SQLExpr owner = expr.getOwner();
         String column = expr.getName();
 
@@ -655,46 +762,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private void addExprIfNotFalse(WhereUnit whereUnit, SQLExpr expr) {
         if (!RouterUtil.isConditionAlwaysFalse(expr)) {
             whereUnit.addSplitedExpr(expr);
-        }
-    }
-    @Override
-    protected void handleCondition(SQLExpr expr, String operator, SQLExpr... valueExprs) {
-        if (expr instanceof SQLCastExpr) {
-            expr = ((SQLCastExpr) expr).getExpr();
-        }
-
-        Column column = this.getColumn(expr);
-        if (column != null) {
-            Condition condition = null;
-            Iterator var6 = this.getConditions().iterator();
-
-            while (var6.hasNext()) {
-                Condition item = (Condition) var6.next();
-                if (item.getColumn().equals(column) && item.getOperator().equals(operator)) {
-                    condition = item;
-                    break;
-                }
-            }
-
-            if (condition == null) {
-                condition = new Condition();
-                condition.setColumn(column);
-                condition.setOperator(operator);
-                this.conditions.add(condition);
-            }
-
-            SQLExpr[] var12 = valueExprs;
-            int var13 = valueExprs.length;
-
-            for (int var8 = 0; var8 < var13; ++var8) {
-                SQLExpr item = var12[var8];
-                Column valueColumn = this.getColumn(item);
-                if (valueColumn == null) {
-                    Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
-                    condition.getValues().add(value);
-                }
-            }
-
         }
     }
 

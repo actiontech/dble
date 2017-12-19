@@ -7,6 +7,10 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -30,6 +34,7 @@ import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
+import com.actiontech.dble.route.parser.ManagerParseConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
@@ -50,70 +55,99 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author zhuam
  */
 public final class ReloadConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
+
+    private static final int OTHER = -1;
+    private static final int CONFIG = 1;
+    private static final int CONFIG_ALL = 2;
+
     private ReloadConfig() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
+    public static void execute(ManagerConnection c, String stmt, int offset) {
+        ManagerParseConfig parser = new ManagerParseConfig();
+        int rs = parser.parse(stmt, offset);
+        switch (rs) {
+            case ManagerParseConfig.CONFIG:
+                ReloadConfig.execute(c, false, 0);
+                break;
+            case ManagerParseConfig.CONFIG_ALL:
+                ReloadConfig.execute(c, true, parser.getMode());
+                break;
+            default:
+                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+        }
+    }
 
-    public static void execute(ManagerConnection c, final boolean loadAll) {
+    private static void load(final boolean loadAll, final int loadAllMode) throws Exception {
+        if (loadAll) {
+            reloadAll(loadAllMode);
+        } else {
+            reload();
+        }
+    }
+
+    private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
         // reload @@config_all check the last old connections
-        if (loadAll && !NIOProcessor.BACKENDS_OLD.isEmpty()) {
+        if (loadAll && (!NIOProcessor.BACKENDS_OLD.isEmpty()) && ((loadAllMode | ManagerParseConfig.OPTT_MODE) == 0)) {
             c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
             return;
         }
+
         if (DbleServer.getInstance().isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
-                } else {
+                    return;
+                }
+                
+                try {
+                    final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
+                    lock.lock();
                     try {
-                        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                        lock.lock();
-                        try {
-                            if (loadAll) {
-                                reloadAll();
-                            } else {
-                                reload();
-                            }
-                            //tell zk this instance has prepared
-                            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-                            XmltoZkMain.writeConfFileToZK(loadAll);
-                            //check all session waiting status
-                            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                            // TODO: While waiting, a new instance of MyCat is upping and working.
-                            while (preparedList.size() < onlineList.size()) {
-                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                            }
-                            StringBuilder sbErrorInfo = new StringBuilder();
-                            for (String child : preparedList) {
-                                String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
-                                byte[] errorInfo = zkConn.getData().forPath(childPath);
-                                if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
-                                    sbErrorInfo.append(child).append(":");
-                                    sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
-                                    sbErrorInfo.append(";");
-                                }
-                                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
-                            }
-                            if (sbErrorInfo.length() == 0) {
-                                writeOKResult(c);
-                            } else {
-                                writeErrorResult(c, sbErrorInfo.toString());
-                            }
-                        } catch (Exception e) {
-                            LOGGER.warn("reload config failure", e);
-                            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-                        } finally {
-                            lock.unlock();
+                        load(loadAll, loadAllMode);
+                            
+                        //tell zk this instance has prepared
+                        ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+                                               ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
+                        XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
+
+                        //check all session waiting status
+                        List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+                        List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                        // TODO: While waiting, a new instance of MyCat is upping and working.
+                        while (preparedList.size() < onlineList.size()) {
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                            onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                            preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
                         }
+
+                        StringBuilder sbErrorInfo = new StringBuilder();
+                        for (String child : preparedList) {
+                            String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
+                            byte[] errorInfo = zkConn.getData().forPath(childPath);
+                            if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
+                                sbErrorInfo.append(child).append(":");
+                                sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
+                                sbErrorInfo.append(";");
+                            }
+                            zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
+                        }
+                        if (sbErrorInfo.length() == 0) {
+                            writeOKResult(c);
+                        } else {
+                            writeErrorResult(c, sbErrorInfo.toString());
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("reload config failure", e);
+                        writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
                     } finally {
-                        distributeLock.release();
+                        lock.unlock();
                     }
+                } finally {
+                    distributeLock.release();
                 }
             } catch (Exception e) {
                 LOGGER.warn("reload config failure", e);
@@ -124,11 +158,7 @@ public final class ReloadConfig {
             lock.lock();
             try {
                 try {
-                    if (loadAll) {
-                        reloadAll();
-                    } else {
-                        reload();
-                    }
+                    load(loadAll, loadAllMode);
                     writeOKResult(c);
                 } catch (Exception e) {
                     LOGGER.warn("reload error", e);
@@ -144,6 +174,7 @@ public final class ReloadConfig {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("send ok package to client " + String.valueOf(c));
         }
+
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(1);
@@ -158,7 +189,7 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static void reloadAll() throws Exception {
+    public static void reloadAll(final int loadAllMode) throws Exception {
         /*
          *  1 load new conf
          *  1.1 ConfigInitializer init adn check itself
@@ -176,6 +207,7 @@ public final class ReloadConfig {
         Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
+ 
         SystemVariables newSystemVariables = DbleServer.getInstance().getSystemVariables();
         if (!loader.isDataHostWithoutWH()) {
             VarsExtractorHandler handler = new VarsExtractorHandler(newDataNodes);
@@ -188,10 +220,13 @@ public final class ReloadConfig {
             newFirewall = confInit.getFirewall();
             newDataHosts = confInit.getDataHosts();
         }
-        try {
-            loader.testConnection(false);
-        } catch (Exception e) {
-            throw new Exception(e);
+
+        if ((loadAllMode | ManagerParseConfig.OPTT_MODE) != 0) {
+            try {
+                loader.testConnection(false);
+            } catch (Exception e) {
+                throw new Exception(e);
+            }
         }
 
         /*
@@ -199,7 +234,7 @@ public final class ReloadConfig {
          *  2.1 old dataSource continue to work
          *  2.2 init the new dataSource
          *  2.3 transform
-         *  2.4  put the old connection into a queue
+         *  2.4 put the old connection into a queue
          */
         ServerConfig config = DbleServer.getInstance().getConfig();
 
@@ -235,7 +270,7 @@ public final class ReloadConfig {
             /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
-            recycleOldBackendConnections(config);
+            recycleOldBackendConnections(config, ((loadAllMode | ManagerParseConfig.OPTT_MODE) != 0));
 
         } else {
             // INIT FAILED
@@ -248,7 +283,30 @@ public final class ReloadConfig {
         }
     }
 
-    private static void recycleOldBackendConnections(ServerConfig config) {
+    private static void findAndcloseFrontCon(BackendConnection con) {
+        if (con instanceof MySQLConnection) {
+            MySQLConnection mcon1 = (MySQLConnection) con;
+            for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+                for (FrontendConnection fcon : processor.getFrontends().values()) {
+                    if (fcon instanceof ServerConnection) {
+                        ServerConnection scon = (ServerConnection) fcon;
+                        Map<RouteResultsetNode, BackendConnection> bons = scon.getSession2().getTargetMap();
+                        for (BackendConnection bcon : bons.values()) {
+                            if (bcon instanceof MySQLConnection) {
+                                MySQLConnection mcon2 = (MySQLConnection) bcon;
+                                if (mcon1 == mcon2) {
+                                    scon.killAndClose("reload config");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void recycleOldBackendConnections(ServerConfig config, boolean closeFrontCon) {
         /* 2.4 put the old connection into a queue */
         Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
         for (PhysicalDBPool dbPool : oldDataHosts.values()) {
@@ -260,7 +318,11 @@ public final class ReloadConfig {
                             MySQLConnection mysqlCon = (MySQLConnection) con;
                             if (mysqlCon.getPool() == ds) {
                                 if (con.isBorrowed()) {
-                                    NIOProcessor.BACKENDS_OLD.add(con);
+                                    if (closeFrontCon) {
+                                        findAndcloseFrontCon(con);
+                                    } else {
+                                        NIOProcessor.BACKENDS_OLD.add(con);
+                                    }
                                 } else {
                                     con.close("old idle conn for reload");
                                 }
@@ -290,7 +352,7 @@ public final class ReloadConfig {
 
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
-                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
+                                                    DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
     }
 
 }

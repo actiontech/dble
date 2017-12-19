@@ -15,18 +15,23 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
  * @author mycat
  */
 public final class ReloadHandler {
+    private static final int SHIFT = 8;
+
     private ReloadHandler() {
     }
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
         int rs = ManagerParseReload.parse(stmt, offset);
-        switch (rs) {
+        switch (rs & 0xff) {
             case ManagerParseReload.CONFIG:
+                ReloadConfig.execute(c, stmt, rs >>> SHIFT);
+                /*
                 ReloadConfig.execute(c, false);
                 break;
             case ManagerParseReload.CONFIG_ALL:
                 ReloadConfig.execute(c, true);
                 break;
+                */
             case ManagerParseReload.USER_STAT:
                 ReloadUserStat.execute(c);
                 break;

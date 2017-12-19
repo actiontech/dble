@@ -17,22 +17,36 @@ public class ConfStatus {
 
     private String split = ";";
     private String from;
+    private String params;
     private Status status;
 
-    public ConfStatus(String from, Status statusFlag) {
+    public ConfStatus(String from, Status statusFlag, String params) {
         this.from = from;
         this.status = statusFlag;
+        this.params = params;
     }
 
     public ConfStatus(String info) {
         String[] infoDetail = info.split(split);
         this.from = infoDetail[0];
         this.status = Status.valueOf(infoDetail[1]);
+        if (infoDetail.length == 3)
+            this.params = infoDetail[2];
+        else
+            this.params = null;
     }
 
     @Override
     public String toString() {
-        return from + split + status.toString();
+        StringBuilder ss = new StringBuilder(from);
+        ss.append(split);
+        ss.append(status.toString());
+        if (params != null) {
+            ss.append(split);
+            ss.append(params);
+        }
+        
+        return ss.toString();
     }
 
 
@@ -42,5 +56,9 @@ public class ConfStatus {
 
     public Status getStatus() {
         return status;
+    }
+
+    public String getParams() {
+        return params;
     }
 }

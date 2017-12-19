@@ -242,10 +242,6 @@ public abstract class Field {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getTable() {
         return table;
     }

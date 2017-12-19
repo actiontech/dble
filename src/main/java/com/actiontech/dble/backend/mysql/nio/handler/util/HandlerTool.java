@@ -55,9 +55,8 @@ public final class HandlerTool {
     }
 
     public static Field createField(FieldPacket fp) {
-        Field field = Field.getFieldItem(fp.getName(), fp.getTable(), fp.getType(), fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(),
+        return Field.getFieldItem(fp.getName(), fp.getTable(), fp.getType(), fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(),
                 fp.getFlags());
-        return field;
     }
 
     public static List<Field> createFields(List<FieldPacket> fps) {

@@ -302,7 +302,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (expr instanceof SQLIdentifierExpr) {
-            return getColumn(expr, aliasMap);
+            return getColumn((SQLIdentifierExpr) expr, aliasMap);
         }
 
         if (expr instanceof SQLBetweenExpr) {
@@ -346,13 +346,13 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return null;
     }
 
-    private Column getColumn(SQLExpr expr, Map<String, String> aliasMap) {
+    private Column getColumn(SQLIdentifierExpr expr, Map<String, String> aliasMap) {
         Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
         if (attrColumn != null) {
             return attrColumn;
         }
 
-        String column = ((SQLIdentifierExpr) expr).getName();
+        String column = expr.getName();
         String table = getCurrentTable();
         if (table != null && aliasMap.containsKey(table)) {
             table = aliasMap.get(table);

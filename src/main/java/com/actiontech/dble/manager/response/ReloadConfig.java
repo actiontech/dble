@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
@@ -79,14 +78,6 @@ public final class ReloadConfig {
         }
     }
 
-    private static void load(final boolean loadAll, final int loadAllMode) throws Exception {
-        if (loadAll) {
-            reloadAll(loadAllMode);
-        } else {
-            reload();
-        }
-    }
-
     private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
         // reload @@config_all check the last old connections
         if (loadAll && (!NIOProcessor.BACKENDS_OLD.isEmpty()) && ((loadAllMode | ManagerParseConfig.OPTT_MODE) == 0)) {
@@ -102,13 +93,12 @@ public final class ReloadConfig {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                     return;
                 }
-                
+
                 try {
                     final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
                     lock.lock();
                     try {
                         load(loadAll, loadAllMode);
-                            
                         //tell zk this instance has prepared
                         ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
                                                ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
@@ -170,6 +160,14 @@ public final class ReloadConfig {
         }
     }
 
+    private static void load(final boolean loadAll, final int loadAllMode) throws Exception {
+        if (loadAll) {
+            reloadAll(loadAllMode);
+        } else {
+            reload();
+        }
+    }
+
     private static void writeOKResult(ManagerConnection c) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("send ok package to client " + String.valueOf(c));
@@ -207,7 +205,7 @@ public final class ReloadConfig {
         Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
- 
+
         SystemVariables newSystemVariables = DbleServer.getInstance().getSystemVariables();
         if (!loader.isDataHostWithoutWH()) {
             VarsExtractorHandler handler = new VarsExtractorHandler(newDataNodes);

@@ -25,13 +25,7 @@ public final class ReloadHandler {
         switch (rs & 0xff) {
             case ManagerParseReload.CONFIG:
                 ReloadConfig.execute(c, stmt, rs >>> SHIFT);
-                /*
-                ReloadConfig.execute(c, false);
                 break;
-            case ManagerParseReload.CONFIG_ALL:
-                ReloadConfig.execute(c, true);
-                break;
-                */
             case ManagerParseReload.USER_STAT:
                 ReloadUserStat.execute(c);
                 break;

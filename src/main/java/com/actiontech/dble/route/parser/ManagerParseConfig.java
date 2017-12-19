@@ -12,16 +12,16 @@ public final class ManagerParseConfig {
     public static final int CONFIG = 1;
     public static final int CONFIG_ALL = 2;
 
-    private int config_all_mode;
+    private int configAllMode;
     public static final int OPTT_MODE = 1;
     public static final int OPTF_MODE = 2;
 
     public ManagerParseConfig() {
-        config_all_mode = 0;
+        configAllMode = 0;
     }
 
     public int getMode() {
-        return config_all_mode;
+        return configAllMode;
     }
 
     public int parse(String stmt, int offset) {
@@ -80,7 +80,7 @@ public final class ManagerParseConfig {
                     } else {
                         /* -t/-f xxx */
                         return OTHER;
-                    }  
+                    }
                 }
                 return CONFIG_ALL;
             }
@@ -93,9 +93,9 @@ public final class ManagerParseConfig {
         for (++offset; offset < stmt.length(); ++offset) {
             char c1 = stmt.charAt(offset);
             if (c1 == 't' || c1 == 'T') {
-                config_all_mode = config_all_mode | OPTT_MODE;
+                configAllMode = configAllMode | OPTT_MODE;
             } else if (c1 == 'f' || c1 == 'F') {
-                config_all_mode = config_all_mode | OPTF_MODE;
+                configAllMode = configAllMode | OPTF_MODE;
             } else {
                 return offset - 1;
             }

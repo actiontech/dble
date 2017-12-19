@@ -47,7 +47,22 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
         try {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
-            RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
+            String sql = null;
+            if (node.getAst() != null && node.getParent() == null) { // it's root
+                if (node.getSumFuncs().size() == 0) {
+                    sql = node.getSql();
+                } else {
+                    pdVisitor.visit();
+                    sql = pdVisitor.getSql().toString();
+                }
+            }
+            RouteResultsetNode[] rrssArray;
+            // maybe some node is view
+            if (sql == null) {
+                rrssArray = mergeBuilder.construct().getNodes();
+            } else {
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
+            }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {

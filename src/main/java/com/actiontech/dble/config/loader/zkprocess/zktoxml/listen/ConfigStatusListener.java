@@ -78,7 +78,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             }
             try {
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                    ReloadConfig.reloadAll(Integer.valueOf(status.getParams()));
+                    ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
                     ReloadConfig.reload();
                 }

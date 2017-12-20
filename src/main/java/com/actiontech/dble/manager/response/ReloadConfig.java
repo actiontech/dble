@@ -80,7 +80,7 @@ public final class ReloadConfig {
 
     private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
         // reload @@config_all check the last old connections
-        if (loadAll && (!NIOProcessor.BACKENDS_OLD.isEmpty()) && ((loadAllMode | ManagerParseConfig.OPTT_MODE) == 0)) {
+        if (loadAll && (!NIOProcessor.BACKENDS_OLD.isEmpty()) && ((loadAllMode & ManagerParseConfig.OPTF_MODE) == 0)) {
             c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
             return;
         }
@@ -219,7 +219,7 @@ public final class ReloadConfig {
             newDataHosts = confInit.getDataHosts();
         }
 
-        if ((loadAllMode | ManagerParseConfig.OPTT_MODE) != 0) {
+        if ((loadAllMode & ManagerParseConfig.OPTT_MODE) != 0) {
             try {
                 loader.testConnection(false);
             } catch (Exception e) {
@@ -268,7 +268,7 @@ public final class ReloadConfig {
             /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
-            recycleOldBackendConnections(config, ((loadAllMode | ManagerParseConfig.OPTT_MODE) != 0));
+            recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
 
         } else {
             // INIT FAILED
@@ -293,7 +293,7 @@ public final class ReloadConfig {
                             if (bcon instanceof MySQLConnection) {
                                 MySQLConnection mcon2 = (MySQLConnection) bcon;
                                 if (mcon1 == mcon2) {
-                                    scon.killAndClose("reload config");
+                                    scon.killAndClose("reload config all");
                                     return;
                                 }
                             }

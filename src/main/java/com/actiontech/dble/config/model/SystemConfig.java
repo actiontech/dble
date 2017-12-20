@@ -76,6 +76,7 @@ public final class SystemConfig {
     private int backendProcessors;
     private int processorExecutor;
     private int backendProcessorExecutor;
+    private int complexExecutor;
     private long idleTimeout;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
@@ -152,7 +153,7 @@ public final class SystemConfig {
 
         this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
         this.backendProcessorExecutor = processorExecutor;
-
+        this.complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
         this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
         this.xaSessionCheckPeriod = DEFAULT_XA_SESSION_CHECK_PERIOD;
@@ -421,6 +422,14 @@ public final class SystemConfig {
         this.backendProcessorExecutor = backendProcessorExecutor;
     }
 
+    public int getComplexExecutor() {
+        return complexExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setComplexExecutor(int complexExecutor) {
+        this.complexExecutor = complexExecutor;
+    }
 
     public long getIdleTimeout() {
         return idleTimeout;
@@ -797,6 +806,7 @@ public final class SystemConfig {
                 ", charset=" + charset +
                 ", processors=" + processors +
                 ", processorExecutor=" + processorExecutor +
+                ", cachedExecutor=" + complexExecutor +
                 ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +

@@ -332,7 +332,7 @@ public final class DbleServer {
         int threadPoolSize = system.getProcessorExecutor();
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
-        complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
+        complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
         for (int i = 0; i < threadPoolSize; i++) {
             businessExecutor.execute(new FrondEndRunnable(frontHandlerQueue));

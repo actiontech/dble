@@ -16,6 +16,7 @@
         <!--<property name="managerPort">9066</property> -->
         <!-- <property name="processors">1</property>-->
         <!--<property name="processorExecutor">32</property> -->
+        <!--<property name="complexQueryExecutor">8</property> -->
         <!--<property name="fakeMySQLVersion">5.6.20</property>-->
         <property name="sequnceHandlerType">2</property>
         <!-- serverBacklog size,default 2048-->

@@ -255,14 +255,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
 
                     if (!canUpdate) {
                         String msg = "Sharding column can't be updated " + tableName + "->" + partitionColumn;
-                        LOGGER.warn(msg);
+                        LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
                 }
                 if (hasParent) {
                     if (column.equals(joinKey)) {
                         String msg = "Parent relevant column can't be updated " + tableName + "->" + joinKey;
-                        LOGGER.warn(msg);
+                        LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
                     rrs.setCacheAble(true);
@@ -287,7 +287,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 String column = StringUtil.removeBackQuote(item.getColumn().toString().toUpperCase());
                 if (isJoinColumn(column, schema, tableName)) {
                     String msg = "child relevant column can't be updated " + tableName + "->" + column;
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
             }

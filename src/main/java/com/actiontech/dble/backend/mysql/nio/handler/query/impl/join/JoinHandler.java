@@ -138,7 +138,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 }
             }
         } catch (InterruptedException e) {
-            logger.error("join row response exception", e);
+            logger.info("join row response exception", e);
             return true;
         }
         return false;
@@ -218,7 +218,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();
-            logger.error(msg, e);
+            logger.info(msg, e);
             session.onQueryError(msg.getBytes());
         } finally {
             if (leftLocal != null)

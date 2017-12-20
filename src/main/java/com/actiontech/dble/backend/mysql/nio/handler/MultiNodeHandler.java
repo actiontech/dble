@@ -48,7 +48,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     public void connectionError(Throwable e, BackendConnection conn) {
         this.setFail("backend connect: " + e);
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         this.tryErrorFinished(decrementCountBy(1));
     }
 
@@ -57,7 +57,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
         String errMsg = new String(errPacket.getMessage());
-        LOGGER.warn("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
+        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
         this.tryErrorFinished(this.decrementCountBy(1));
     }
 

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="WARN" packages="com.actiontech.dble.log">
+    <CustomLevels>
+        <CustomLevel name="GRPC" intLevel="350" />
+    </CustomLevels>
+
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d [%-5p][%t] %m %throwable{full} (%C:%F:%L) %n"/>
@@ -15,14 +19,27 @@
                 <SizeBasedTriggeringPolicy size="250 MB"/>
                 <TimeBasedTriggeringPolicy/>
             </Policies>
+            <DefaultRolloverStrategy max="100">
+                <Delete basePath="logs" maxDepth="2">
+                    <IfFileName glob="*/dble-*.log.gz">
+                        <IfLastModified age="2d">
+                            <IfAny>
+                                <IfAccumulatedFileSize exceeds="1 GB" />
+                                <IfAccumulatedFileCount exceeds="10" />
+                            </IfAny>
+                        </IfLastModified>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
+        <AlarmAppender name="grpcAppender" />
+
     </Appenders>
     <Loggers>
         <asyncRoot level="debug" includeLocation="true">
-
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
-
+            <AppenderRef ref="grpcAppender"/>
         </asyncRoot>
     </Loggers>
 </Configuration>

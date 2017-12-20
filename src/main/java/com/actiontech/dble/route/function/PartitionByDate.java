@@ -101,7 +101,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
             return nodeArray;
         } catch (ParseException e) {
-            LOGGER.error("error", e);
+            LOGGER.info("error", e);
             return new Integer[0];
         }
     }

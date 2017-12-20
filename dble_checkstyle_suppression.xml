@@ -6,6 +6,8 @@
 
 <suppressions>
     <suppress checks=".*" files="StructureMeta.java"/>
+    <suppress checks=".*" files="UcoreInterface.java"/>
+    <suppress checks=".*" files="UcoreGrpc.java"/>
     <suppress checks="Indentation" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="TimSort.java"/>

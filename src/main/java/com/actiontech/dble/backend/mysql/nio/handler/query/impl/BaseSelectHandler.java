@@ -136,7 +136,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        LOGGER.warn(conn.toString() + "|connectionError()|" + e.getMessage());
+        LOGGER.info(conn.toString() + "|connectionError()|" + e.getMessage());
         session.onQueryError(e.getMessage().getBytes());
     }
 
@@ -151,7 +151,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } catch (UnsupportedEncodingException e) {
             errMsg = "UnsupportedEncodingException:" + conn.getCharset();
         }
-        LOGGER.warn(conn.toString() + errMsg);
+        LOGGER.info(conn.toString() + errMsg);
         if (terminate.get())
             return;
         session.onQueryError(errMsg.getBytes());

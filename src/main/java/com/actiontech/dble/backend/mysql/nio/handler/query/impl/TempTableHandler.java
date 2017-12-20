@@ -97,7 +97,7 @@ public class TempTableHandler extends BaseDMLHandler {
             }
             if (++rowCount > maxPartSize * maxConnSize) {
                 String errMessage = "temptable of [" + conn.toString() + "] too much rows,[rows=" + rowCount + "]!";
-                LOGGER.warn(errMessage);
+                LOGGER.info(errMessage);
                 throw new TempTableException(errMessage);
             }
             RowDataPacket row = rowPacket;
@@ -131,7 +131,7 @@ public class TempTableHandler extends BaseDMLHandler {
             }
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } catch (Exception e) {
-            LOGGER.warn("rowEof exception!", e);
+            LOGGER.info("rowEof exception!", e);
             throw new TempTableException("rowEof exception!", e);
         } finally {
             lock.unlock();

@@ -7,6 +7,7 @@ package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -131,7 +132,7 @@ public class ZkMultiLoader {
         try {
             ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), path);
         } catch (Exception e) {
-            LOGGER.error(" createPath error", e);
+            LOGGER.warn(AlarmCode.CORE_ZK_WARN + " createPath error", e);
             result = false;
         }
 

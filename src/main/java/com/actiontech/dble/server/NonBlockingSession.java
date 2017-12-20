@@ -170,7 +170,7 @@ public class NonBlockingSession implements Session {
                 singleNodeHandler.execute();
             } catch (Exception e) {
                 handleSpecial(rrs, source.getSchema(), false);
-                LOGGER.warn(String.valueOf(source) + rrs, e);
+                LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -192,7 +192,7 @@ public class NonBlockingSession implements Session {
             try {
                 multiNodeDdlHandler.execute();
             } catch (Exception e) {
-                LOGGER.warn(String.valueOf(source) + rrs, e);
+                LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
@@ -203,7 +203,7 @@ public class NonBlockingSession implements Session {
             try {
                 multiNodeSelectHandler.execute();
             } catch (Exception e) {
-                LOGGER.warn(String.valueOf(source) + rrs, e);
+                LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -217,7 +217,7 @@ public class NonBlockingSession implements Session {
             try {
                 multiNodeHandler.execute();
             } catch (Exception e) {
-                LOGGER.warn(String.valueOf(source) + rrs, e);
+                LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -232,10 +232,10 @@ public class NonBlockingSession implements Session {
         try {
             builder.build(false); //no next
         } catch (SQLSyntaxErrorException e) {
-            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
-            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (MySQLOutPutException e) {
@@ -245,7 +245,7 @@ public class NonBlockingSession implements Session {
             this.terminate();
             source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
         } catch (Exception e) {
-            LOGGER.warn(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             this.terminate();
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
@@ -392,7 +392,7 @@ public class NonBlockingSession implements Session {
         try {
             handler.execute();
         } catch (Exception e) {
-            LOGGER.warn(String.valueOf(source) + rrs, e);
+            LOGGER.info(String.valueOf(source) + rrs, e);
             source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }
     }
@@ -561,7 +561,7 @@ public class NonBlockingSession implements Session {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
                         kill, en.getKey());
             } catch (Exception e) {
-                LOGGER.error(
+                LOGGER.info(
                         "get killer connection failed for " + en.getKey(),
                         e);
                 kill.connectionError(e, null);

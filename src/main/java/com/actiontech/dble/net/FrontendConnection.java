@@ -249,7 +249,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             try {
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
-                LOGGER.error("load data error", e);
+                LOGGER.info("load data error", e);
                 writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
             }
 
@@ -263,7 +263,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             try {
                 loadDataInfileHandler.handle(data);
             } catch (Exception e) {
-                LOGGER.error("load data error", e);
+                LOGGER.info("load data error", e);
                 writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
             }
         } else {
@@ -277,7 +277,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             try {
                 loadDataInfileHandler.end(packID);
             } catch (Exception e) {
-                LOGGER.error("load data error", e);
+                LOGGER.info("load data error", e);
                 writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
             }
         } else {

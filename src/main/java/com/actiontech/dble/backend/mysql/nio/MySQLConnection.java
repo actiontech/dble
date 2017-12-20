@@ -548,7 +548,7 @@ public class MySQLConnection extends BackendAIOConnection {
             // we can't know it's syn status ,so
             // close
             // it
-            LOGGER.warn("can't sure connection syn result,so close it " + this);
+            LOGGER.info("can't sure connection syn result,so close it " + this);
             this.respHandler = null;
             this.close("syn status unknown ");
             return;
@@ -574,7 +574,7 @@ public class MySQLConnection extends BackendAIOConnection {
             respHandler = queryHandler;
             return true;
         } else if (queryHandler != null) {
-            LOGGER.warn("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());
+            LOGGER.info("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());
         }
         return false;
     }

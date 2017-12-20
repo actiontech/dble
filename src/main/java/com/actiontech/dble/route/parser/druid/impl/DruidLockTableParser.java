@@ -53,7 +53,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
                             "You have an error in your SQL syntax, don't support lock multi tables!");
                 }
             }
-            LOGGER.error("can't lock multi-table");
+            LOGGER.info("can't lock multi-table");
             throw new SQLNonTransientException("can't lock multi-table");
         }
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
@@ -64,13 +64,13 @@ public class DruidLockTableParser extends DefaultDruidParser {
         TableConfig tableConfig = schema.getTables().get(table);
         if (tableConfig == null) {
             String msg = "can't find table define of " + table + " in schema:" + schema.getName();
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         LockType lockType = lockTableStat.getLockType();
         if (LockType.WRITE != lockType && LockType.READ != lockType) {
             String msg = "lock type must be write or read";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         List<String> dataNodes = tableConfig.getDataNodes();

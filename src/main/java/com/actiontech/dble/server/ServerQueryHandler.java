@@ -80,7 +80,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 KillHandler.handle(sql, rs >>> 8, c);
                 break;
             case ServerParse.KILL_QUERY:
-                LOGGER.warn("Unsupported command:" + sql);
+                LOGGER.info("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
                 break;
             case ServerParse.USE:
@@ -96,7 +96,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 ScriptPrepareHandler.handle(sql, c);
                 break;
             case ServerParse.HELP:
-                LOGGER.warn("Unsupported command:" + sql);
+                LOGGER.info("Unsupported command:" + sql);
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                 break;
             case ServerParse.MYSQL_CMD_COMMENT:
@@ -127,7 +127,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 DropViewHandler.handle(sql, c);
                 break;
             case ServerParse.UNSUPPORT:
-                LOGGER.warn("Unsupported statement:" + sql);
+                LOGGER.info("Unsupported statement:" + sql);
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported statement");
                 break;
             default:

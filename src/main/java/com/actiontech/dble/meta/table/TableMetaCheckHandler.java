@@ -6,6 +6,7 @@
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
@@ -26,7 +27,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (isTableModify(schema, tableMeta)) {
-            LOGGER.warn("Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
         }
         LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
     }

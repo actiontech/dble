@@ -65,7 +65,7 @@ public final class AIOAcceptor implements SocketAcceptor,
             c.setProcessor(processor);
             c.register();
         } catch (Exception e) {
-            LOGGER.error("AioAcceptorError", e);
+            LOGGER.info("AioAcceptorError", e);
             closeChannel(channel);
         }
     }
@@ -103,7 +103,7 @@ public final class AIOAcceptor implements SocketAcceptor,
         try {
             channel.close();
         } catch (IOException e) {
-            LOGGER.error("AioAcceptorError", e);
+            LOGGER.info("AioAcceptorError", e);
         }
     }
 

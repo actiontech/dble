@@ -33,7 +33,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
             }
             return backConn;
         } catch (InterruptedException e) {
-            LOGGER.warn("getBackConn " + e);
+            LOGGER.info("getBackConn " + e);
             throw new IOException(e.getMessage());
         } finally {
             lock.unlock();
@@ -42,7 +42,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn(conn + " connectionError " + e);
+        LOGGER.info(conn + " connectionError " + e);
         lock.lock();
         try {
             initiated.signal();
@@ -67,7 +67,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
-        LOGGER.warn("caught error resp: " + conn + " " + new String(err));
+        LOGGER.info("caught error resp: " + conn + " " + new String(err));
     }
 
     @Override

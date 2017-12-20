@@ -66,7 +66,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         if (replace.getQuery() != null) {
             //replace into ...select with sharding not supported
             String msg = "`INSERT ... SELECT Syntax` is not supported!";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 
@@ -228,7 +228,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             String column = StringUtil.removeBackQuote(replace.getColumns().get(i).toString());
             if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                 String msg = "In insert Syntax, you can't set value for Global check column!";
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
         }
@@ -255,7 +255,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         int checkSize = colSize - (idxGlobal < 0 ? 0 : 1);
         if (checkSize < size && idxGlobal >= 0) {
             String msg = "In insert Syntax, you can't set value for Global check column!";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 
@@ -292,7 +292,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //check if the childtable replace with the multi
         if (isMultiReplace(replace)) {
             String msg = "ChildTable multi insert not provided";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         //find the value of child table join key
@@ -389,7 +389,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         for (SQLInsertStatement.ValuesClause valueClause : valueClauseList) {
             if (valueClause.getValues().size() != columnNum) {
                 String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != " + valueClause.getValues().size() + "values:" + valueClause;
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
@@ -398,7 +398,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             // no part find for this record
             if (nodeIndex == null) {
                 String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             if (nodeValuesMap.get(nodeIndex) == null) {
@@ -442,7 +442,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         Integer nodeIndex = algorithm.calculate(shardingValue);
         if (nodeIndex == null) {
             String msg = "can't find any valid data node :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];

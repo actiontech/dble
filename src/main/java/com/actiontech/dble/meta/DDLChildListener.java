@@ -39,7 +39,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
                 try {
                     lockTableByNewNode(childData);
                 } catch (Exception e) {
-                    LOGGER.warn("CHILD_ADDED error", e);
+                    LOGGER.info("CHILD_ADDED error", e);
                 }
                 break;
             case CHILD_UPDATED:
@@ -81,7 +81,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
                         while (zkConn.checkExists().forPath(tablePath) != null) {
                             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                             if (!onlineList.contains(fromNode) && DbleServer.getInstance().getTmManager().isMetaLocked(schema, table)) {
-                                LOGGER.warn("mode [" + fromNode + "] is not online, but ddl [" + ddl + "] is not finished,so you may need to check table status and reload meta data");
+                                LOGGER.info("mode [" + fromNode + "] is not online, but ddl [" + ddl + "] is not finished,so you may need to check table status and reload meta data");
                                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
                                 break;
                             } else {
@@ -89,7 +89,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
                             }
                         }
                     } catch (Exception e) {
-                        LOGGER.warn("checkPath error", e);
+                        LOGGER.info("checkPath error", e);
                     }
                 }
             }).start();

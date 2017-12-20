@@ -29,7 +29,7 @@ public class FieldDatetime extends FieldTemporalWithDateAndTime {
         try {
             ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
         } catch (UnsupportedEncodingException ue) {
-            LOGGER.warn("parse string exception!", ue);
+            LOGGER.info("parse string exception!", ue);
         }
         if (ptrStr != null) {
             MyTime.strToDatetimeWithWarn(ptrStr, ltime, MyTime.TIME_FUZZY_DATE);

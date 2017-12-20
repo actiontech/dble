@@ -198,7 +198,7 @@ public final class NIOProcessor {
             }
             // close the conn which executeTimeOut
             if (!c.isDDL() && c.isBorrowed() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
-                LOGGER.warn("found backend connection SQL timeout ,close it " + c);
+                LOGGER.info("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
             }
 

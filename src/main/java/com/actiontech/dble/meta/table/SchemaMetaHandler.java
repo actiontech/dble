@@ -61,7 +61,7 @@ public class SchemaMetaHandler {
                 allSchemaDone.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("waitAllNodeDone " + e);
+            LOGGER.info("waitAllNodeDone " + e);
         } finally {
             lock.unlock();
         }

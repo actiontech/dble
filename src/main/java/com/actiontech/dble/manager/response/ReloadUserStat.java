@@ -27,7 +27,7 @@ public final class ReloadUserStat {
             userStat.reset();
         }
 
-        LOGGER.warn(String.valueOf(c) + "Reset show @@sql  @@sql.sum  @@sql.slow  @@sql.high  @@sql.large  @@sql.resultset success by manager");
+        LOGGER.info(String.valueOf(c) + "Reset show @@sql  @@sql.sum  @@sql.slow  @@sql.high  @@sql.large  @@sql.resultset success by manager");
 
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);

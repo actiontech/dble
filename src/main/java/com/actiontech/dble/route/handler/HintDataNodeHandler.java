@@ -41,7 +41,7 @@ public class HintDataNodeHandler implements HintHandler {
             rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());
         } else {
             String msg = "can't find hint datanode:" + hintSQLValue;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 

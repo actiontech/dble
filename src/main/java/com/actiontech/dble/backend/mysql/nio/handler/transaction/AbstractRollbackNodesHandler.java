@@ -31,27 +31,27 @@ public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler impl
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        LOGGER.error("unexpected invocation: connectionAcquired from rollback");
+        LOGGER.info("unexpected invocation: connectionAcquired from rollback");
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        LOGGER.error("unexpected packet for " +
+        LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
         return false;

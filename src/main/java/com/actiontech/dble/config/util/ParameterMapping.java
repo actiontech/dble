@@ -115,7 +115,7 @@ public final class ParameterMapping {
                 pds2 = new PropertyDescriptor[list.size()];
                 list.toArray(pds2);
             } catch (IntrospectionException ie) {
-                LOGGER.error("ParameterMappingError", ie);
+                LOGGER.info("ParameterMappingError", ie);
                 pds2 = new PropertyDescriptor[0];
             }
         }
@@ -149,7 +149,7 @@ public final class ParameterMapping {
                 method = cls.getMethod("valueOf", String.class);
                 value = method.invoke(null, string);
             } catch (Exception t) {
-                LOGGER.error("valueofError", t);
+                LOGGER.info("valueofError", t);
                 value = null;
             }
         } else if (cls.equals(Class.class)) {

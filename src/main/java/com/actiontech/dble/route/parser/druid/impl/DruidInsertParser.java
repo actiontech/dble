@@ -62,7 +62,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         if (insert.getQuery() != null) {
             // insert into .... select ....
             String msg = "`INSERT ... SELECT Syntax` is not supported!";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 
@@ -146,7 +146,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         final TableConfig tc = schema.getTables().get(tableName);
         if (isMultiInsert(insertStmt)) {
             String msg = "ChildTable multi insert not provided";
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         String joinKey = tc.getJoinKey();
@@ -205,7 +205,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         Integer nodeIndex = algorithm.calculate(shardingValue);
         if (nodeIndex == null || nodeIndex >= tableConfig.getDataNodes().size()) {
             String msg = "can't find any valid data node :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
 
@@ -223,7 +223,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 String column = StringUtil.removeBackQuote(opExpr.getLeft().toString().toUpperCase());
                 if (column.equals(partitionColumn)) {
                     String msg = "Sharding column can't be updated: " + schemaInfo.getTable() + " -> " + partitionColumn;
-                    LOGGER.warn(msg);
+                    LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
             }
@@ -256,7 +256,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         for (ValuesClause valueClause : valueClauseList) {
             if (valueClause.getValues().size() != columnNum) {
                 String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != " + valueClause.getValues().size() + "values:" + valueClause;
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
@@ -265,7 +265,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             // null means can't find any valid index
             if (nodeIndex == null) {
                 String msg = "can't find any valid datanode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             if (nodeValuesMap.get(nodeIndex) == null) {
@@ -408,12 +408,12 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             String simpleColumnName = StringUtil.removeBackQuote(columnName);
             if (isGlobalCheck && simpleColumnName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                 String msg = "In insert Syntax, you can't set value for Global check column!";
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             if (isAutoIncrement && simpleColumnName.equalsIgnoreCase(tc.getPrimaryKey())) {
                 String msg = "In insert Syntax, you can't set value for Autoincrement column!";
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
         }
@@ -426,7 +426,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             SQLExpr exp = dku.get(i);
             if (!(exp instanceof SQLBinaryOpExpr)) {
                 String msg = "not supported! on duplicate key update exp is " + exp.getClass();
-                LOGGER.warn(msg);
+                LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
             SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) exp;
@@ -463,7 +463,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             if (autoIncrement < 0) {
                 msg = "In insert Syntax, you can't set value for Global check column!";
             }
-            LOGGER.warn(msg);
+            LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         sb.append("(");

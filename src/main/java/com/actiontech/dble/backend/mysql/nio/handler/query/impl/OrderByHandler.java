@@ -124,7 +124,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
-            LOGGER.warn(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }

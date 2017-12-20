@@ -189,7 +189,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
             } else {
-                LOGGER.warn("Wrong XA status flag!");
+                LOGGER.info("Wrong XA status flag!");
             }
         }
     }
@@ -251,7 +251,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     }
                 }
             } else {
-                LOGGER.warn("Wrong XA status flag!");
+                LOGGER.info("Wrong XA status flag!");
             }
         }
     }
@@ -297,7 +297,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
             } else {
-                LOGGER.warn("Wrong XA status flag!");
+                LOGGER.info("Wrong XA status flag!");
             }
         }
     }
@@ -335,7 +335,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
             } else {
-                LOGGER.warn("Wrong XA status flag!");
+                LOGGER.info("Wrong XA status flag!");
             }
         }
     }

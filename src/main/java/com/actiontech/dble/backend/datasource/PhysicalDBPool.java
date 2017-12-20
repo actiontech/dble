@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,7 @@ public class PhysicalDBPool {
             }
         }
 
-        LOGGER.warn("can't find connection in pool " + this.hostName + " con:" + exitsCon);
+        LOGGER.info("can't find connection in pool " + this.hostName + " con:" + exitsCon);
         return null;
     }
 
@@ -251,16 +252,16 @@ public class PhysicalDBPool {
                     if (theDsHb.getStatus() == DBHeartbeat.OK_STATUS) {
                         if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                             if (Integer.valueOf(0).equals(theDsHb.getSlaveBehindMaster())) {
-                                LOGGER.info("try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
+                                LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
                                 switchSource(nextId, true, reason);
                                 break;
                             } else {
-                                LOGGER.warn("ignored  datasource ,slave is not " + "synchronized to master, slave " +
+                                LOGGER.info("ignored  datasource ,slave is not " + "synchronized to master, slave " +
                                         "behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
                             }
                         } else {
                             // normal switch
-                            LOGGER.info("try to switch datasource ,not checked slave" + "synchronize status " +
+                            LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource ,not checked slave" + "synchronize status " +
                                     theDs.getConfig());
                             switchSource(nextId, true, reason);
                             break;
@@ -290,10 +291,10 @@ public class PhysicalDBPool {
                     // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log
-                    LOGGER.warn(switchMessage(current, result, isAlarm, reason));
+                    LOGGER.info(switchMessage(current, result, isAlarm, reason));
                     return true;
                 } else {
-                    LOGGER.warn(switchMessage(current, newIndex, true, reason) + ", but failed");
+                    LOGGER.info(switchMessage(current, newIndex, true, reason) + ", but failed");
                     return false;
                 }
             }
@@ -365,7 +366,7 @@ public class PhysicalDBPool {
             try {
                 ds.getConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
-                LOGGER.warn(getMessage(index, " init connection error."), e);
+                LOGGER.info(getMessage(index, " init connection error."), e);
             }
         }
         long timeOut = System.currentTimeMillis() + 60 * 1000;
@@ -375,7 +376,10 @@ public class PhysicalDBPool {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                LOGGER.error("initError", e);
+                /**
+                 * hardly triggered no error is needed
+                 */
+                LOGGER.info("initError", e);
             }
         }
         LOGGER.info("init result :" + getConHandler.getStatusInfo());
@@ -399,7 +403,7 @@ public class PhysicalDBPool {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                LOGGER.error(Alarms.DEFAULT + hostName + " current dataSource is null!");
+                LOGGER.info(Alarms.DEFAULT + hostName + " current dataSource is null!");
             }
         }
     }
@@ -490,9 +494,10 @@ public class PhysicalDBPool {
 
     /**
      * return connection for read balance
-     * @param schema schema
+     *
+     * @param schema     schema
      * @param autocommit autocommit
-     * @param handler handler
+     * @param handler    handler
      * @param attachment attachment
      * @throws Exception Exception
      */
@@ -542,9 +547,9 @@ public class PhysicalDBPool {
     /**
      * slave balance for read, balance in read sources
      *
-     * @param schema schema
+     * @param schema     schema
      * @param autocommit autocommit
-     * @param handler handler
+     * @param handler    handler
      * @param attachment attachment
      * @throws Exception Exception
      */
@@ -558,9 +563,9 @@ public class PhysicalDBPool {
     /**
      * get a random readHost connection from writeHost, used by slave hint
      *
-     * @param schema schema
+     * @param schema     schema
      * @param autocommit autocommit
-     * @param handler handler
+     * @param handler    handler
      * @param attachment attachment
      * @throws Exception Exception
      */
@@ -606,11 +611,11 @@ public class PhysicalDBPool {
                 theNode.getConnection(schema, autocommit, handler, attachment);
                 return true;
             } else {
-                LOGGER.warn("read host is not available.");
+                LOGGER.info("read host is not available.");
                 return false;
             }
         } else {
-            LOGGER.warn("read host is empty, readSources is empty.");
+            LOGGER.info("read host is empty, readSources is empty.");
             return false;
         }
     }

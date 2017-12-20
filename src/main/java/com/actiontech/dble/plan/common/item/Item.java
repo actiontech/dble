@@ -320,7 +320,7 @@ public abstract class Item {
                 try {
                     result = res.getBytes(charset());
                 } catch (UnsupportedEncodingException e) {
-                    LOGGER.error(e);
+                    LOGGER.info(e);
                 }
             else {
                 assert (nullValue);
@@ -884,7 +884,7 @@ public abstract class Item {
         try {
             tmpField.setName((getAlias() == null ? getItemName() : getAlias()).getBytes(charset()));
         } catch (UnsupportedEncodingException e) {
-            LOGGER.warn("parse string exception!", e);
+            LOGGER.info("parse string exception!", e);
         }
         tmpField.setFlags((maybeNull ? 0 : FieldUtil.NOT_NULL_FLAG));
         tmpField.setType(fieldType.numberValue());

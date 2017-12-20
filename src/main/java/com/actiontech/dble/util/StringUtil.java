@@ -90,14 +90,6 @@ public final class StringUtil {
         return s.toString();
     }
 
-    public static String safeToString(Object object) {
-        try {
-            return object.toString();
-        } catch (Exception t) {
-            LOGGER.error("safeToStringError", t);
-            return "<toString() failure: " + t + ">";
-        }
-    }
 
     public static boolean isEmpty(String str) {
         return ((str == null) || (str.length() == 0));

@@ -75,7 +75,7 @@ public final class NIOReactor {
                                         con.close("program err:" + e.toString());
                                         continue;
                                     } catch (Exception e) {
-                                        LOGGER.warn("caught err:", e);
+                                        LOGGER.info("caught err:", e);
                                         con.close("program err:" + e.toString());
                                         continue;
                                     }
@@ -91,7 +91,7 @@ public final class NIOReactor {
                                 LOGGER.debug(con + " socket key canceled");
                             }
                         } catch (Exception e) {
-                            LOGGER.warn(con + " " + e);
+                            LOGGER.info(con + " " + e);
                         } catch (final Throwable e) {
                             // Catch exceptions such as OOM and close connection if exists
                             //so that the reactor can keep running!
@@ -100,16 +100,16 @@ public final class NIOReactor {
                             if (con != null) {
                                 con.close("Bad: " + e);
                             }
-                            LOGGER.error("caught err: ", e);
+                            LOGGER.info("caught err: ", e);
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(name, e);
+                    LOGGER.info(name, e);
                 } catch (final Throwable e) {
                     // Catch exceptions such as OOM so that the reactor can keep running!
                     // @author Uncle-pan
                     // @since 2016-03-30
-                    LOGGER.error("caught err: ", e);
+                    LOGGER.info("caught err: ", e);
                 } finally {
                     if (keys != null) {
                         keys.clear();
@@ -130,7 +130,7 @@ public final class NIOReactor {
                     c.register();
                 } catch (Exception e) {
                     c.close("register err" + e.toString());
-                    LOGGER.error("register err", e);
+                    LOGGER.info("register err", e);
                 }
             }
         }

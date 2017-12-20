@@ -64,7 +64,7 @@ public final class Explain2Handler {
             SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, c.getSession2());
             singleNodeHandler.execute();
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e.getCause());
+            LOGGER.info(e.getMessage(), e.getCause());
             showError(stmt, c, e.getMessage());
         }
     }

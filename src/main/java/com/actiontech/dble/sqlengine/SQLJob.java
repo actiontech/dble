@@ -76,7 +76,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        LOGGER.warn("con query sql:" + sql + " to con:" + conn);
+        LOGGER.info("con query sql:" + sql + " to con:" + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
@@ -114,7 +114,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 
         if (errPg.getErrNo() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
             // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-            LOGGER.warn(errMsg);
+            LOGGER.info(errMsg);
         } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
             conn.release();

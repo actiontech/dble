@@ -58,7 +58,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         this.waitUntilSendFinish();
-        LOGGER.warn("backend connect", e);
+        LOGGER.info("backend connect", e);
         this.setFail(e.getMessage());
         conn.quit();
         if (decrementCountBy(1)) {

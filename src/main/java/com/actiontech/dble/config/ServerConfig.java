@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.TimeUtil;
@@ -36,6 +37,7 @@ public class ServerConfig {
     private static final int ROLLBACK = 2;
     private static final int RELOAD_ALL = 3;
 
+    private volatile AlarmConfig alarm;
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile FirewallConfig firewall2;
@@ -65,9 +67,11 @@ public class ServerConfig {
 
         //read schema.xml,rule.xml andserver.xml
         ConfigInitializer confInit = new ConfigInitializer(true, false);
+        this.alarm = confInit.getAlarm();
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
+        this.alarm = confInit.getAlarm();
         this.dataHosts = confInit.getDataHosts();
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();
@@ -136,6 +140,9 @@ public class ServerConfig {
         return dataNodes;
     }
 
+    public AlarmConfig getAlarm() {
+        return alarm;
+    }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
         return dataNodes2;
@@ -212,7 +219,7 @@ public class ServerConfig {
         for (PhysicalDBPool opool : dataHosts.values()) {
             PhysicalDBPool npool = newDataHosts.get(opool.getHostName());
             if (npool == null) {
-                LOGGER.warn("reload -delete- failed, use old datasources ");
+                LOGGER.info("reload -delete- failed, use old datasources ");
                 return null;
             }
 
@@ -261,7 +268,7 @@ public class ServerConfig {
         for (PhysicalDBPool npool : newDataHosts.values()) {
             PhysicalDBPool opool = dataHosts.get(npool.getHostName());
             if (opool == null) {
-                LOGGER.warn("reload -add- failed, use old datasources ");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "reload -add- failed, use old datasources ");
                 return true;
             }
 

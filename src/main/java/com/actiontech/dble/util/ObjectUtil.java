@@ -38,7 +38,6 @@ public final class ObjectUtil {
             }
         } catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException e) {
             //ignore error
-            //LOGGER.error("getStaticFieldValue", e);
         }
         return null;
     }

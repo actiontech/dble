@@ -26,6 +26,7 @@ import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.DnPropertyUtil;
+import com.actiontech.dble.log.AlarmAppender;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -125,6 +126,7 @@ public final class ReloadConfig {
                             }
                             zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
                         }
+
                         if (sbErrorInfo.length() == 0) {
                             writeOKResult(c);
                         } else {
@@ -140,7 +142,7 @@ public final class ReloadConfig {
                     distributeLock.release();
                 }
             } catch (Exception e) {
-                LOGGER.warn("reload config failure", e);
+                LOGGER.info("reload config failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
         } else {
@@ -151,7 +153,7 @@ public final class ReloadConfig {
                     load(loadAll, loadAllMode);
                     writeOKResult(c);
                 } catch (Exception e) {
-                    LOGGER.warn("reload error", e);
+                    LOGGER.info("reload error", e);
                     writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
                 }
             } finally {
@@ -183,7 +185,7 @@ public final class ReloadConfig {
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failure.The reason is " + errorMsg;
-        LOGGER.warn(sb + "." + String.valueOf(c));
+        LOGGER.info(sb + "." + String.valueOf(c));
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
@@ -268,8 +270,9 @@ public final class ReloadConfig {
             /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
-            recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
 
+            recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            AlarmAppender.refreshConfig();
         } else {
             // INIT FAILED
             LOGGER.info("reload failed, clear previously created data sources ");

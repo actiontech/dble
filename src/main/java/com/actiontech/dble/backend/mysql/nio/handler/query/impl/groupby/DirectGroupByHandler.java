@@ -169,7 +169,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
-            LOGGER.warn(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         }
     }

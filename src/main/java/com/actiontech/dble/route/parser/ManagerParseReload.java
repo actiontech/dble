@@ -17,7 +17,7 @@ public final class ManagerParseReload {
     public static final int OTHER = -1;
     public static final int CONFIG = 1;
     public static final int USER_STAT = 4;
-    public static final int CONFIG_ALL = 5;
+    //public static final int CONFIG_ALL = 5;
     public static final int SQL_SLOW = 6;
     public static final int META_DATA = 7;
     public static final int QUERY_CF = 8;
@@ -66,7 +66,19 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
+    static boolean isConfig(String stmt, int offset) {
+        if (stmt.length() == ++offset)
+            return true;
+
+        char c1 = stmt.charAt(offset);
+        if ((c1 == ' ') || (c1 == '\t') || (c1 == '\r') || (c1 == '\n') || (c1 == '_') || (c1 == '-'))
+            return true;
+
+        return false;
+    }
+
     // RELOAD @@CONFIG
+    // Please comply with the specification: offset retain the last position that has been checked.
     static int reload2CCheck(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
@@ -76,21 +88,9 @@ public final class ManagerParseReload {
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'N' || c2 == 'n') && (c3 == 'F' || c3 == 'f') &&
                     (c4 == 'I' || c4 == 'i') && (c5 == 'G' || c5 == 'g')) {
-                if (stmt.length() > offset + 4) {
-                    char c6 = stmt.charAt(++offset);
-                    char c7 = stmt.charAt(++offset);
-                    char c8 = stmt.charAt(++offset);
-                    char c9 = stmt.charAt(++offset);
-                    if ((c6 == '_' || c6 == '-') && (c7 == 'A' || c7 == 'a') && (c8 == 'L' || c8 == 'l') &&
-                            (c9 == 'L' || c9 == 'l')) {
-                        return CONFIG_ALL;
-                    }
+                if (isConfig(stmt, offset)) {
+                    return (offset << 8) | CONFIG;
                 }
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return OTHER;
-                }
-
-                return CONFIG;
             }
         }
         return OTHER;

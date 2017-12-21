@@ -233,9 +233,35 @@ public class ManagerParserTest {
 
     @Test
     public void testReloadConfig() {
-        Assert.assertEquals(ManagerParseReload.CONFIG, ManagerParseReload.parse("reload @@config", 7));
-        Assert.assertEquals(ManagerParseReload.CONFIG, ManagerParseReload.parse(" RELOAD  @@CONFIG ", 7));
-        Assert.assertEquals(ManagerParseReload.CONFIG, ManagerParseReload.parse(" RELOAD  @@config ", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse("reload @@config", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse(" RELOAD  @@CONFIG ", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse(" RELOAD  @@config ", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse(" RELOAD  @@config_all ", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse(" RELOAD  @@config-all ", 7));
+        Assert.assertEquals(ManagerParseReload.CONFIG, 0xff & ManagerParseReload.parse(" RELOAD  @@config-All ", 7));
+    }
+
+    @Test
+    public void testReloadConfigAll() {
+        ManagerParseConfig parser = new ManagerParseConfig();
+        Assert.assertEquals(ManagerParseConfig.CONFIG, parser.parse("reload @@config", 14));
+        Assert.assertEquals(0, parser.getMode());
+
+        ManagerParseConfig parser1 = new ManagerParseConfig();
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser1.parse("reload @@config-all", 14));
+        Assert.assertEquals(0, parser1.getMode());
+
+        ManagerParseConfig parser2 = new ManagerParseConfig();
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser2.parse("reload @@config_all -t", 14));
+        Assert.assertEquals(1, parser2.getMode());
+
+        ManagerParseConfig parser3 = new ManagerParseConfig();
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser3.parse("reload @@config_all -f", 14));
+        Assert.assertEquals(2, parser3.getMode());
+
+        ManagerParseConfig parser4 = new ManagerParseConfig();
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser4.parse("reload @@config_all -t -f", 14));
+        Assert.assertEquals(3, parser4.getMode());
     }
 
 

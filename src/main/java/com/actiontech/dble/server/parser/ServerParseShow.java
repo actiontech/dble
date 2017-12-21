@@ -28,6 +28,7 @@ public final class ServerParseShow {
     public static final int INDEX = 9;
     public static final int CREATE_TABLE = 10;
     public static final int VARIABLES = 11;
+    public static final int CREATE_VIEW = 12;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -198,6 +199,18 @@ public final class ServerParseShow {
                                     (c8 == 'E' || c8 == 'e') &&
                                     (ParseUtil.isSpace(stmt.charAt(++offset)))) {
                                 return CREATE_TABLE;
+                            }
+                            return OTHER;
+                        case 'V':
+                        case 'v':
+                            char c9 = stmt.charAt(++offset);
+                            char c10 = stmt.charAt(++offset);
+                            char c11 = stmt.charAt(++offset);
+                            if((c9 == 'i' || c9 == 'I') &&
+                                    (c10 == 'e' || c10 == 'E') &&
+                                    (c11 == 'w' || c11 == 'W') &&
+                                    (ParseUtil.isSpace(stmt.charAt(++offset)))){
+                                return CREATE_VIEW;
                             }
                             return OTHER;
                         default:

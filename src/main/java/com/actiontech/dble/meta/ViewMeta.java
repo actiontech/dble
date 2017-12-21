@@ -31,12 +31,9 @@ public class ViewMeta {
 
     public ErrorPacket init(boolean isReplace) {
 
-        //check the create sql is legal
-        //parse sql into three parts
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
-        viewParser.parseCreateView(this);
-
         try {
+            viewParser.parseCreateView(this);
             //check if the select part has
             this.checkDuplicate(viewParser, isReplace);
 

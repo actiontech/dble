@@ -47,6 +47,9 @@ public final class ShowHandler {
             case ServerParseShow.CHARSET:
                 stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
                 // fallthrough
+            case ServerParseShow.CREATE_VIEW:
+                ShowCreateView.response(c, stmt);
+                break;
             default:
                 c.execute(stmt, ServerParse.SHOW);
         }

@@ -82,7 +82,7 @@ public final class ShowServerLog {
         // write rows
 
         byte packetId = EOF.getPacketId();
-        PackageBufINf bufInf = null;
+        PackageBufINf bufInf;
 
         if (condPairMap.isEmpty()) {
             bufInf = showLogSum(c, buffer, packetId);

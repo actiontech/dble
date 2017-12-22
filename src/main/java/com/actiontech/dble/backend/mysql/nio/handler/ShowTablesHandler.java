@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
+import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
@@ -52,20 +53,29 @@ public class ShowTablesHandler extends SingleNodeHandler {
                                  boolean isLeft, BackendConnection conn) {
         ServerConnection source = session.getSource();
         buffer = allocBuffer();
+        PackageBufINf bufInf;
         if (info.isFull()) {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
-            packetId = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
+            bufInf = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
+            packetId = bufInf.getPacketId();
+            buffer = bufInf.getBuffer();
             if (info.getWhere() != null) {
                 MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex());
                 info.getWhereExpr().accept(mev);
                 sourceFields = HandlerTool.createFields(fieldPackets);
                 whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
-                packetId = ShowTables.writeFullTablesRow(buffer, source, shardingTablesMap, packetId, whereItem, sourceFields);
+                bufInf = ShowTables.writeFullTablesRow(buffer, source, shardingTablesMap, packetId, whereItem, sourceFields);
+                packetId = bufInf.getPacketId();
+                buffer = bufInf.getBuffer();
             } else {
-                packetId = ShowTables.writeFullTablesRow(buffer, source, shardingTablesMap, packetId, null, null);
+                bufInf = ShowTables.writeFullTablesRow(buffer, source, shardingTablesMap, packetId, null, null);
+                packetId = bufInf.getPacketId();
+                buffer = bufInf.getBuffer();
             }
         } else {
-            packetId = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
+            bufInf = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
+            packetId = bufInf.getPacketId();
+            buffer = bufInf.getBuffer();
         }
     }
 

@@ -16,6 +16,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -109,26 +110,27 @@ public final class ShowTables {
     private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
         ByteBuffer buffer = c.allocate();
         Map<String, String> tableMap = getTableSet(cSchema, info);
+        PackageBufINf bufInf;
         if (info.isFull()) {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
-            byte packetId = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
+            bufInf = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
             if (info.getWhere() != null) {
                 MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
-                packetId = writeFullTablesRow(buffer, c, tableMap, packetId, whereItem, sourceFields);
+                bufInf = writeFullTablesRow(bufInf.getBuffer(), c, tableMap, bufInf.getPacketId(), whereItem, sourceFields);
             } else {
-                packetId = writeFullTablesRow(buffer, c, tableMap, packetId, null, null);
+                bufInf = writeFullTablesRow(bufInf.getBuffer(), c, tableMap, bufInf.getPacketId(), null, null);
             }
-            writeRowEof(buffer, c, packetId);
         } else {
-            byte packetId = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
-            writeRowEof(buffer, c, packetId);
+            bufInf = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
         }
+
+        writeRowEof(bufInf.getBuffer(), c, bufInf.getPacketId());
     }
 
-    public static byte writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
+    public static PackageBufINf writeFullTablesHeader(ByteBuffer buffer, ServerConnection c, String cSchema, List<FieldPacket> fieldPackets) {
         int fieldCount = 2;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
@@ -151,10 +153,13 @@ public final class ShowTables {
             buffer = field.write(buffer, c, true);
         }
         eof.write(buffer, c, true);
-        return packetId;
+        PackageBufINf packBuffInfo = new PackageBufINf();
+        packBuffInfo.setBuffer(buffer);
+        packBuffInfo.setPacketId(packetId);
+        return packBuffInfo;
     }
 
-    public static byte writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
+    public static PackageBufINf writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
         for (Map.Entry<String, String> entry : tableMap.entrySet()) {
             RowDataPacket row = new RowDataPacket(2);
             row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset().getResults()));
@@ -171,10 +176,13 @@ public final class ShowTables {
                 buffer = row.write(buffer, c, true);
             }
         }
-        return packetId;
+        PackageBufINf packBuffInfo = new PackageBufINf();
+        packBuffInfo.setBuffer(buffer);
+        packBuffInfo.setPacketId(packetId);
+        return packBuffInfo;
     }
 
-    public static byte writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
+    public static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, String cSchema) {
         int fieldCount = 1;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
@@ -200,11 +208,13 @@ public final class ShowTables {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
-        return packetId;
+        PackageBufINf packBuffInfo = new PackageBufINf();
+        packBuffInfo.setBuffer(buffer);
+        packBuffInfo.setPacketId(packetId);
+        return packBuffInfo;
     }
 
     private static void writeRowEof(ByteBuffer buffer, ServerConnection c, byte packetId) {
-
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);

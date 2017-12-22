@@ -148,6 +148,11 @@ public class ConfigInitializer {
             }
         }
 
+        // add global sequence node when it is some dedicated servers */
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+            allUseDataNode.addAll(IncrSequenceMySQLHandler.getInstance().getDataNodes());
+        }
+
         deleteRedundancyConf(allUseDataNode);
         checkWriteHost();
 

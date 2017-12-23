@@ -40,8 +40,8 @@ public class ItemSumSum extends ItemSumNum {
         } else if (i == ItemResult.INT_RESULT || i == ItemResult.DECIMAL_RESULT) {
             int precision = args.get(0).decimalPrecision() + MySQLcom.DECIMAL_LONGLONG_DIGITS;
             maxLength = precision + 2; // 2 means Decimal point and Minus .
-            //hybridType = ItemResult.DECIMAL_RESULT;
-            //sum = BigDecimal.ZERO;
+            hybridType = ItemResult.DECIMAL_RESULT;
+            sum = BigDecimal.ZERO;
         } else {
             assert (false);
         }

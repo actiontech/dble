@@ -118,7 +118,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (x.getExpr() instanceof SQLName) {
                 boolean isSelf = false;
                 String itemName = x.getExpr().toString();
-                if (DbleServer.getInstance().getConfig().getSystem().isLowerCaseTableNames()) {
+                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     isSelf = StringUtil.equalsIgnoreCase(alias, itemName);
                 } else {
                     isSelf = StringUtil.equals(alias, itemName);
@@ -375,15 +375,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (expr instanceof SQLPropertyExpr) {
-            return getColumns((SQLPropertyExpr) expr, aliasMap);
+            return getColumnByExpr((SQLPropertyExpr) expr, aliasMap);
         }
 
         if (expr instanceof SQLIdentifierExpr) {
-            return getColumn((SQLIdentifierExpr) expr, aliasMap);
+            return getColumnByExpr((SQLIdentifierExpr) expr, aliasMap);
         }
 
         if (expr instanceof SQLBetweenExpr) {
-            return getColumns((SQLBetweenExpr) expr, aliasMap);
+            return getColumnByExpr((SQLBetweenExpr) expr, aliasMap);
         }
         return null;
     }
@@ -429,7 +429,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
     }
 
-    private Column getColumns(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
+    private Column getColumnByExpr(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
         if (betweenExpr.getTestExpr() != null) {
             String tableName = null;
             String column = null;
@@ -464,7 +464,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return null;
     }
 
-    private Column getColumn(SQLIdentifierExpr expr, Map<String, String> aliasMap) {
+    private Column getColumnByExpr(SQLIdentifierExpr expr, Map<String, String> aliasMap) {
         Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
         if (attrColumn != null) {
             return attrColumn;
@@ -490,7 +490,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return new Column("UNKNOWN", column);
     }
 
-    private Column getColumns(SQLPropertyExpr expr, Map<String, String> aliasMap) {
+    private Column getColumnByExpr(SQLPropertyExpr expr, Map<String, String> aliasMap) {
         SQLExpr owner = expr.getOwner();
         String column = expr.getName();
 

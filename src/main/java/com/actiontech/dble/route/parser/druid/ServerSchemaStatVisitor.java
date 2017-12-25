@@ -5,10 +5,8 @@
 
 package com.actiontech.dble.route.parser.druid;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.route.parser.druid.sql.visitor.ActionSQLEvalVisitorUtils;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
@@ -108,28 +106,30 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSelectItem x) {
-        //no need to parser SQLSelectItem, or SQLBinaryOpExpr may add to
+        //no need to parser SQLSelectItem, or SQLBinaryOpExpr may add to whereUnit
         // eg:id =1 will add to whereUnit
         //x.getExpr().accept(this);
-        String alias = x.getAlias();
 
-        Map<String, String> aliasMap = this.getAliasMap();
-        if (alias != null && (!alias.isEmpty()) && aliasMap != null) {
-            if (x.getExpr() instanceof SQLName) {
-                boolean isSelf = false;
-                String itemName = x.getExpr().toString();
-                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                    isSelf = StringUtil.equalsIgnoreCase(alias, itemName);
-                } else {
-                    isSelf = StringUtil.equals(alias, itemName);
-                }
-                if (!isSelf) {
-                    putAliasMap(aliasMap, alias, x.getExpr().toString());
-                }
-            } else {
-                putAliasMap(aliasMap, alias, null);
-            }
-        }
+        //alias for select item is useless
+        //        String alias = x.getAlias();
+        //
+        //        Map<String, String> aliasMap = this.getAliasMap();
+        //        if (alias != null && (!alias.isEmpty()) && aliasMap != null) {
+        //            if (x.getExpr() instanceof SQLName) {
+        //                boolean isSelf = false;
+        //                String itemName = x.getExpr().toString();
+        //                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+        //                    isSelf = StringUtil.equalsIgnoreCase(alias, itemName);
+        //                } else {
+        //                    isSelf = StringUtil.equals(alias, itemName);
+        //                }
+        //                if (!isSelf) {
+        //                    putAliasMap(aliasMap, alias, x.getExpr().toString());
+        //                }
+        //            } else {
+        //                putAliasMap(aliasMap, alias, null);
+        //            }
+        //        }
         return false;
     }
 

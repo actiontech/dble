@@ -108,6 +108,8 @@ public class ViewMetaParser {
                             originalSql.charAt(offset) == 'S')) {
                 offset++;
                 break;
+            } else if (offset == originalSql.length() - 1) {
+                throw new RuntimeException("You have an error in your SQL syntax;");
             }
 
         }

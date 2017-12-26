@@ -31,12 +31,9 @@ public class ViewMeta {
 
     public ErrorPacket init(boolean isReplace) {
 
-        //check the create sql is legal
-        //parse sql into three parts
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
-        viewParser.parseCreateView(this);
-
         try {
+            viewParser.parseCreateView(this);
             //check if the select part has
             this.checkDuplicate(viewParser, isReplace);
 
@@ -224,6 +221,19 @@ public class ViewMeta {
 
     public List<String> getViewColumnMeta() {
         return viewColumnMeta;
+    }
+
+    public String getViewColumnMetaString() {
+        if (viewColumnMeta != null) {
+            StringBuffer sb = new StringBuffer("(");
+            for (String s : viewColumnMeta) {
+                sb.append(s);
+                sb.append(",");
+            }
+            sb.setCharAt(sb.length() - 1, ')');
+            return sb.toString();
+        }
+        return null;
     }
 
     public void setViewColumnMeta(List<String> viewColumnMeta) {

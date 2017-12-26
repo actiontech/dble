@@ -41,7 +41,7 @@ public final class DropViewHandler {
     }
 
     public static void deleteFromReposoitory(String schema, String[] name) {
-        DbleServer.getInstance().getTmManager().getReposoitory().delete(schema, name);
+        DbleServer.getInstance().getTmManager().getRepository().delete(schema, name);
     }
 
 

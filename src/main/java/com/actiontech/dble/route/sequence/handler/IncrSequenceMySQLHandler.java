@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.SQLNonTransientException;
@@ -25,6 +27,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
     private static final IncrSequenceMySQLHandler INSTANCE = new IncrSequenceMySQLHandler();
+    private static Set<String> dataNodes = new HashSet<>();
 
     public static IncrSequenceMySQLHandler getInstance() {
         return IncrSequenceMySQLHandler.INSTANCE;
@@ -37,6 +40,9 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         putNewSequenceVals(props);
     }
 
+    public Set<String> getDataNodes() {
+        return dataNodes;
+    }
 
     private void removeDesertedSequenceVals(Properties props) {
         Iterator<Map.Entry<String, SequenceVal>> i = seqValueMap.entrySet().iterator();
@@ -56,6 +62,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
             if (value != null) {
                 value.dataNode = dataNode;
             }
+            dataNodes.add(dataNode);
         }
     }
 

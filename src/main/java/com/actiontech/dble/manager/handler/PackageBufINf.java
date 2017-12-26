@@ -7,7 +7,7 @@ package com.actiontech.dble.manager.handler;
 
 import java.nio.ByteBuffer;
 
-class PackageBufINf {
+public class PackageBufINf {
     private byte packetId;
     private ByteBuffer buffer;
 

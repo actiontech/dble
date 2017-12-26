@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by szf on 2017/10/12.
  */
-public interface Reposoitory {
+public interface Repository {
     String SCHEMA_VIEW_SPLIT = ":";
     String SERVER_ID = "serverId";
     String CREATE_SQL = "createSql";

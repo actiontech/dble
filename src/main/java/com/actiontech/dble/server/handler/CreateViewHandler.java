@@ -39,7 +39,7 @@ public final class CreateViewHandler {
      * @param schema
      */
     public static void saveCreateSqlToReposoitory(String stmt, String name, String schema) {
-        DbleServer.getInstance().getTmManager().getReposoitory().put(schema, name, stmt);
+        DbleServer.getInstance().getTmManager().getRepository().put(schema, name, stmt);
     }
 
 

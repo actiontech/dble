@@ -19,7 +19,7 @@ import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 /**
  * Created by szf on 2017/10/12.
  */
-public class KVStoreRepository implements Reposoitory {
+public class KVStoreRepository implements Repository {
     private static final Logger LOGGER = LoggerFactory.getLogger(KVStoreRepository.class);
     private Map<String, Map<String, String>> viewCreateSqlMap = null;
     private CuratorFramework zkConn = ZKUtils.getConnection();

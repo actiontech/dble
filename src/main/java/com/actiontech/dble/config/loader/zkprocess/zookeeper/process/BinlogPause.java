@@ -10,7 +10,7 @@ package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
  */
 public class BinlogPause {
     public enum BinlogPauseStatus {
-        ON, OFF, TIMEOUT
+        ON, OFF
     }
 
     private String from;
@@ -23,9 +23,9 @@ public class BinlogPause {
     }
 
     public BinlogPause(String info) {
-        String[] infoDeatil = info.split(split);
-        this.from = infoDeatil[0];
-        this.status = BinlogPauseStatus.valueOf(infoDeatil[1]);
+        String[] infoDetail = info.split(split);
+        this.from = infoDetail[0];
+        this.status = BinlogPauseStatus.valueOf(infoDetail[1]);
     }
 
     @Override

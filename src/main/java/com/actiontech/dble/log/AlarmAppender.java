@@ -20,8 +20,8 @@ import java.io.Serializable;
 /**
  * Created by szf on 2017/12/4.
  */
-@Plugin(name = "DbleAppender", category = "Core", elementType = "appender", printObject = true)
-public class DbleAppender extends AbstractAppender {
+@Plugin(name = "AlarmAppender", category = "Core", elementType = "appender", printObject = true)
+public class AlarmAppender extends AbstractAppender {
 
     private static String grpcUrl = "";
     private static int port = 0;
@@ -45,8 +45,8 @@ public class DbleAppender extends AbstractAppender {
      * @param name
      * @param layout
      */
-    protected DbleAppender(String name,
-                           Layout<? extends Serializable> layout) {
+    protected AlarmAppender(String name,
+                            Layout<? extends Serializable> layout) {
         super(name, null, layout, true);
     }
 
@@ -97,14 +97,14 @@ public class DbleAppender extends AbstractAppender {
 
 
     @PluginFactory
-    public static DbleAppender createAppender(
+    public static AlarmAppender createAppender(
             @PluginAttribute("name") String name
     ) {
         if (name == null) {
             return null;
         }
         Layout<? extends Serializable> layout = PatternLayout.createDefaultLayout();
-        return new DbleAppender(name, layout);
+        return new AlarmAppender(name, layout);
     }
 
 

@@ -336,6 +336,10 @@ public final class CharsetUtil {
         }
     }
 
+    public static boolean checkCharsetClient(String charsetClient) {
+        return !charsetClient.equals("ucs2") && !charsetClient.equals("utf16") && !charsetClient.equals("utf32");
+    }
+
     public static int getCharsetDefaultIndex(String charset) {
         if (charset == null || charset.length() == 0) {
             return 0;

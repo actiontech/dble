@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by szf on 2017/10/12.
  */
-public class FileSystemRepository implements Reposoitory {
+public class FileSystemRepository implements Repository {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemRepository.class);
     private FileChannel rwChannel = null;
     private String baseDir;
@@ -148,7 +148,7 @@ public class FileSystemRepository implements Reposoitory {
         FileInputStream fis = new FileInputStream(baseDir + baseName);
         InputStreamReader isr = new InputStreamReader(fis);
         BufferedReader br = new BufferedReader(isr);
-        StringBuffer sb = new StringBuffer("");
+        StringBuilder sb = new StringBuilder("");
         String line;
         while ((line = br.readLine()) != null) {
             sb.append(line);
@@ -175,7 +175,7 @@ public class FileSystemRepository implements Reposoitory {
      * @return
      */
     public String mapToJsonString() {
-        StringBuffer sb = new StringBuffer("[");
+        StringBuilder sb = new StringBuilder("[");
         for (Map.Entry<String, Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
             Map<String, String> schemaSet = schema.getValue();
             sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");

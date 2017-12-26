@@ -9,6 +9,7 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.*;
+import com.actiontech.dble.server.OfflineStatusListener;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -71,6 +72,7 @@ public final class ZktoXmlMain {
         // load ehcache
         new EcacheszkToxmlLoader(zkListen, zkConn, xmlProcess);
 
+        ZKUtils.addChildPathCache(KVPathUtil.getOnlinePath(), new OfflineStatusListener());
         // transform bindata data to local file
         ZKUtils.addChildPathCache(KVPathUtil.getBinDataPath(), new BinDataPathChildrenCacheListener());
 

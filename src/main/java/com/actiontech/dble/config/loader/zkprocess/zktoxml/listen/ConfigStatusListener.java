@@ -60,10 +60,12 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 try {
                     RollbackConfig.rollback();
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
+                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+                                           SUCCESS.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
+                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+                                           errorinfo.getBytes(StandardCharsets.UTF_8));
                 }
 
                 return true;
@@ -77,7 +79,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             }
             try {
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                    ReloadConfig.reloadAll();
+                    ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
                     ReloadConfig.reload();
                 }

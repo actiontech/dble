@@ -137,17 +137,19 @@ public final class SetHandler {
     }
 
     private static boolean handleSetNamesInMultiStmt(ServerConnection c, String stmt, boolean isDefault, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String[] charsetInfo = checkSetNames(stmt, isDefault, charset, collate);
+        NamesInfo charsetInfo = checkSetNames(stmt, isDefault, charset, collate);
         if (charsetInfo != null) {
-            if (charsetInfo[0] == null) {
+            if (charsetInfo.charset == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
                 return false;
-            }
-            if (charsetInfo[1] == null) {
+            } else if (charsetInfo.collation == null) {
                 c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + collate + "' is not valid for CHARACTER SET '" + charset + "'");
                 return false;
+            } else if (!charsetInfo.isSupport) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
+                return false;
             } else {
-                contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo[0], charsetInfo[1])));
+                contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo.charset, charsetInfo.collation)));
                 return true;
             }
         } else {
@@ -157,16 +159,19 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleSetNames(String stmt, ServerConnection c, MySqlSetNamesStatement statement) {
-        String[] charsetInfo = checkSetNames(stmt, statement.isDefault(), statement.getCharSet(), statement.getCollate());
+        NamesInfo charsetInfo = checkSetNames(stmt, statement.isDefault(), statement.getCharSet(), statement.getCollate());
         if (charsetInfo != null) {
-            if (charsetInfo[0] == null) {
+            if (charsetInfo.charset == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
                 return false;
-            } else if (charsetInfo[1] == null) {
+            } else if (charsetInfo.collation == null) {
                 c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + statement.getCollate() + "' is not valid for CHARACTER SET '" + statement.getCharSet() + "'");
                 return false;
+            } else if (!charsetInfo.isSupport) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
+                return false;
             } else {
-                c.setNames(charsetInfo[0], charsetInfo[1]);
+                c.setNames(charsetInfo.charset, charsetInfo.collation);
                 c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
                 return true;
             }
@@ -179,9 +184,14 @@ public final class SetHandler {
     private static boolean handleSingleSetCharset(String stmt, ServerConnection c, MySqlSetCharSetStatement statement) {
         String charset = getCharset(statement.isDefault(), statement.getCharSet());
         if (charset != null) {
-            c.setCharacterSet(charset);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-            return true;
+            if (!CharsetUtil.checkCharsetClient(charset)) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charset + "'");
+                return false;
+            } else {
+                c.setCharacterSet(charset);
+                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                return true;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
             return false;
@@ -281,8 +291,13 @@ public final class SetHandler {
     private static boolean handleCharsetInMultiStmt(ServerConnection c, boolean isDefault, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
         String charsetInfo = getCharset(isDefault, charset);
         if (charsetInfo != null) {
-            contextTask.add(new Pair<>(KeyType.CHARSET, new Pair<String, String>(charsetInfo, null)));
-            return true;
+            if (!CharsetUtil.checkCharsetClient(charsetInfo)) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo + "'");
+                return false;
+            } else {
+                contextTask.add(new Pair<>(KeyType.CHARSET, new Pair<String, String>(charsetInfo, null)));
+                return true;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charset + "'");
             return false;
@@ -356,10 +371,14 @@ public final class SetHandler {
         if (charsetClient.equals("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
-        }
-        if (checkCharset(charsetClient)) {
-            contextTask.add(new Pair<>(KeyType.CHARACTER_SET_CLIENT, new Pair<String, String>(charsetClient, null)));
-            return true;
+        } else if (checkCharset(charsetClient)) {
+            if (!CharsetUtil.checkCharsetClient(charsetClient)) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
+                return false;
+            } else {
+                contextTask.add(new Pair<>(KeyType.CHARACTER_SET_CLIENT, new Pair<String, String>(charsetClient, null)));
+                return true;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
             return false;
@@ -509,9 +528,14 @@ public final class SetHandler {
             return false;
         }
         if (checkCharset(charsetClient)) {
-            c.setCharacterClient(charsetClient);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-            return true;
+            if (!CharsetUtil.checkCharsetClient(charsetClient)) {
+                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
+                return false;
+            } else {
+                c.setCharacterClient(charsetClient);
+                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                return true;
+            }
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
             return false;
@@ -800,7 +824,7 @@ public final class SetHandler {
         return ma.matches();
     }
 
-    private static String[] checkSetNames(String stmt, boolean isDefault, String charset, String collate) {
+    private static NamesInfo checkSetNames(String stmt, boolean isDefault, String charset, String collate) {
         if (collate == null && !(checkSetNamesSyntax(stmt))) {
             return null;
         }
@@ -809,7 +833,7 @@ public final class SetHandler {
         } else {
             charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
             if (!checkCharset(charset)) {
-                return new String[]{null, null};
+                return new NamesInfo(null, null);
             }
         }
         if (collate == null) {
@@ -821,12 +845,27 @@ public final class SetHandler {
             } else {
                 int collateIndex = CharsetUtil.getCollationIndexByCharset(charset, collate);
                 if (collateIndex == 0) {
-                    return new String[]{null, null};
+                    return new NamesInfo(null, null);
                 } else if (collateIndex < 0) {
-                    return new String[]{charset, null};
+                    return new NamesInfo(charset, null);
                 }
             }
         }
-        return new String[]{charset, collate};
+        NamesInfo namesInfo = new NamesInfo(charset, collate);
+        if (!CharsetUtil.checkCharsetClient(charset)) {
+            namesInfo.isSupport = false;
+        }
+        return namesInfo;
+    }
+
+    private static class NamesInfo {
+        private String charset;
+        private String collation;
+        private boolean isSupport = true;
+
+        NamesInfo(String charset, String collation) {
+            this.charset = charset;
+            this.collation = collation;
+        }
     }
 }

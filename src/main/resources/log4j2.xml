@@ -32,7 +32,7 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
-        <DbleAppender name="grpcAppender" />
+        <AlarmAppender name="grpcAppender" />
 
     </Appenders>
     <Loggers>

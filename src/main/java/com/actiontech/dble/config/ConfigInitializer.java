@@ -148,6 +148,11 @@ public class ConfigInitializer {
             }
         }
 
+        // add global sequence node when it is some dedicated servers */
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+            allUseDataNode.addAll(IncrSequenceMySQLHandler.getInstance().getDataNodes());
+        }
+
         deleteRedundancyConf(allUseDataNode);
         checkWriteHost();
 
@@ -204,7 +209,8 @@ public class ConfigInitializer {
                     }
                     DBHostConfig wHost = pool.getSource().getConfig();
                     // start for first time, 2.you can set write host as yourself
-                    if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == this.system.getServerPort()) {
+                    if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
+                        wHost.getPort() == this.system.getServerPort()) {
                         continue;
                     }
                 }

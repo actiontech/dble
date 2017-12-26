@@ -32,8 +32,8 @@ public final class ScriptPrepareHandler {
                 SptDrop.response(c);
                 break;
             default:
-                LOGGER.info("Unsupported command:" + stmt);
-                c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
+                LOGGER.info("You have an error in your SQL syntax:" + stmt);
+                c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "You have an error in your SQL syntax:" + stmt);
                 break;
         }
     }

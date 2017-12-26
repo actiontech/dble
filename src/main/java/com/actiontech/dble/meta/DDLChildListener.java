@@ -10,9 +10,7 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -21,9 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by huqing.yan on 2017/6/6.
@@ -68,31 +63,8 @@ public class DDLChildListener implements PathChildrenCacheListener {
         String[] tableInfo = nodeName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
-        final String ddl = ddlInfo.getSql();
-        final String tablePath = childData.getPath();
         try {
             DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
-            //monitor if the from node is crash
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    CuratorFramework zkConn = ZKUtils.getConnection();
-                    try {
-                        while (zkConn.checkExists().forPath(tablePath) != null) {
-                            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                            if (!onlineList.contains(fromNode) && DbleServer.getInstance().getTmManager().isMetaLocked(schema, table)) {
-                                LOGGER.info("mode [" + fromNode + "] is not online, but ddl [" + ddl + "] is not finished,so you may need to check table status and reload meta data");
-                                DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
-                                break;
-                            } else {
-                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOGGER.info("checkPath error", e);
-                    }
-                }
-            }).start();
         } catch (Exception t) {
             DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
             throw t;

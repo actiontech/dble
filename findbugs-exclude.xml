@@ -26,7 +26,7 @@
         <Package name="com.actiontech.dble.log.alarm"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.log.DbleAppender"/>
+        <Class name="com.actiontech.dble.log.AlarmAppender"/>
     </Match>
     <!-- protocol:ignore -->
 

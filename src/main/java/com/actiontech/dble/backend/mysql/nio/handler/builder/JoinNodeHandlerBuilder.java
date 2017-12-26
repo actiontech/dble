@@ -57,7 +57,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             String sql = null;
-            if (node.getParent() == null) { // it's root
+            if (node.getAst() != null && node.getParent() == null) { // it's root
                 sql = node.getSql();
             }
             RouteResultsetNode[] rrssArray;
@@ -65,7 +65,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             if (sql == null) {
                 rrssArray = mergeBuilder.construct().getNodes();
             } else {
-                rrssArray = mergeBuilder.constructByQuery(sql).getNodes();
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
             }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
@@ -109,7 +109,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     Set<String> valueSet = tempHandler.getValueSet();
                     buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
                     DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
-                    bigLh.setNextHandler(tempHandler.getNextHandler());
+                    synchronized (tempHandler) {
+                        bigLh.setNextHandler(tempHandler.getNextHandler());
+                    }
                     tempHandler.setCreatedHandler(bigLh);
                     HandlerBuilder.startHandler(bigLh);
                 }

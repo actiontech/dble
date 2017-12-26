@@ -158,7 +158,7 @@ public final class ServerParseShow {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') && (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
-                (c5 == 'L' || c5 == 'l')) {
+                    (c5 == 'L' || c5 == 'l')) {
                 while (stmt.length() > ++offset) {
                     if (ParseUtil.isSpace(stmt.charAt(offset))) {
                         continue;
@@ -206,10 +206,10 @@ public final class ServerParseShow {
                             char c9 = stmt.charAt(++offset);
                             char c10 = stmt.charAt(++offset);
                             char c11 = stmt.charAt(++offset);
-                            if((c9 == 'i' || c9 == 'I') &&
+                            if ((c9 == 'i' || c9 == 'I') &&
                                     (c10 == 'e' || c10 == 'E') &&
                                     (c11 == 'w' || c11 == 'W') &&
-                                    (ParseUtil.isSpace(stmt.charAt(++offset)))){
+                                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
                                 return CREATE_VIEW;
                             }
                             return OTHER;
@@ -265,7 +265,7 @@ public final class ServerParseShow {
         char c4 = stmt.charAt(++offset);
         char c5 = stmt.charAt(++offset);
         if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'M' || c3 == 'm') && (c4 == 'A' || c4 == 'a') && (c5 == 'S' || c5 == 's') &&
-            (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
             return DATABASES;
         }
         return OTHER;
@@ -351,8 +351,8 @@ public final class ServerParseShow {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
-                (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'e') &&
-                (c9 == 'S' || c9 == 's')) {
+                    (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'e') &&
+                    (c9 == 'S' || c9 == 's')) {
                 return VARIABLES;
             }
         }

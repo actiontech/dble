@@ -223,6 +223,19 @@ public class ViewMeta {
         return viewColumnMeta;
     }
 
+    public String getViewColumnMetaString() {
+        if (viewColumnMeta != null) {
+            StringBuffer sb = new StringBuffer("(");
+            for (String s : viewColumnMeta) {
+                sb.append(s);
+                sb.append(",");
+            }
+            sb.setCharAt(sb.length() - 1, ')');
+            return sb.toString();
+        }
+        return null;
+    }
+
     public void setViewColumnMeta(List<String> viewColumnMeta) {
         this.viewColumnMeta = viewColumnMeta;
     }

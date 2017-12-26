@@ -44,12 +44,12 @@ public final class ShowHandler {
             case ServerParseShow.VARIABLES:
                 ShowVariables.response(c, stmt);
                 break;
-            case ServerParseShow.CHARSET:
-                stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
-                // fallthrough
             case ServerParseShow.CREATE_VIEW:
                 ShowCreateView.response(c, stmt);
                 break;
+            case ServerParseShow.CHARSET:
+                stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
+                // fallthrough
             default:
                 c.execute(stmt, ServerParse.SHOW);
         }

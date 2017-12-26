@@ -48,7 +48,6 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
     }
 
     private void deleteNode(ChildData childData) {
-        childData.getPath();
         String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
         releaseForDDL(nodeName);
         releaseForBinlog(nodeName);

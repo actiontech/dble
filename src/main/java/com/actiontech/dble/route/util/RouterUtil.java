@@ -762,7 +762,8 @@ public final class RouterUtil {
         if (schemaConfig.isNoSharding()) {
             return true;
         }
-        return schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName);
+        return schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName) &&
+                !DbleServer.getInstance().getTmManager().getCatalogs().get(schemaConfig.getName()).getViewMetas().containsKey(tableName);
     }
 
     /**

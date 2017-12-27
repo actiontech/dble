@@ -12,6 +12,7 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.manager.response.ReloadConfig;
@@ -50,8 +51,8 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
         if (DbleServer.getInstance().getProcessors() != null) {
             DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
             this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
-            ZkDirectoryImpl zkDdata = (ZkDirectoryImpl) statusDirectory.getSubordinateInfo().get(0);
-            ConfStatus status = new ConfStatus(zkDdata.getValue());
+            ZkDataImpl zkData = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
+            ConfStatus status = new ConfStatus(zkData.getValue());
             if (status.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
                 return true; //self node
             }

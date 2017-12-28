@@ -265,7 +265,7 @@ public final class ServerParseShow {
         char c3 = stmt.charAt(++offset);
         char c4 = stmt.charAt(++offset);
         char c5 = stmt.charAt(++offset);
-        if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 'S') && (c3 == 'I' || c3 == 'i') && (c4 == 'O' || c4 == 'O') && (c5 == 'N' || c5 == 'n')) {
+        if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i') && (c4 == 'O' || c4 == 'o') && (c5 == 'N' || c5 == 'n')) {
             while (stmt.length() > ++offset) {
                 if (ParseUtil.isSpace(stmt.charAt(offset))) {
                     continue;
@@ -338,7 +338,7 @@ public final class ServerParseShow {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
-                (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'E') &&
+                (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'e') &&
                 (c9 == 'S' || c9 == 's')) {
                 return VARIABLES;
             }

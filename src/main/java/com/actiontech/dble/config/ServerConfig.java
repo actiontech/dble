@@ -10,18 +10,16 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
-import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.StandardSocketOptions;
-import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -47,21 +45,17 @@ public class ServerConfig {
     private volatile Map<String, PhysicalDBPool> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
-    private volatile boolean dataHostWithoutWR2;
-    private long reloadTime;
-    private long rollbackTime;
-    private int status;
-    private final ReentrantLock lock;
-
-    public boolean isDataHostWithoutWR() {
-        return dataHostWithoutWR;
-    }
-
     private volatile boolean dataHostWithoutWR;
+    private volatile boolean dataHostWithoutWR2;
+    private volatile long reloadTime;
+    private volatile long rollbackTime;
+    private volatile int status;
+    private volatile boolean changing = false;
+    private final ReentrantLock lock;
 
     public ServerConfig() {
 
-        //read schema.xml,rule.xml andserver.xml
+        //read schema.xml,rule.xml and server.xml
         ConfigInitializer confInit = new ConfigInitializer(true);
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
@@ -83,58 +77,50 @@ public class ServerConfig {
         this.lock = new ReentrantLock();
     }
 
+    private void waitIfChanging() {
+        while (changing) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
+    }
+
     public SystemConfig getSystem() {
+        waitIfChanging();
         return system;
     }
 
-    public void setSocketParams(AbstractConnection con, boolean isFrontChannel) throws IOException {
-        int sorcvbuf = 0;
-        int sosndbuf = 0;
-        int soNoDelay = 0;
-        if (isFrontChannel) {
-            sorcvbuf = system.getFrontSocketSoRcvbuf();
-            sosndbuf = system.getFrontSocketSoSndbuf();
-            soNoDelay = system.getFrontSocketNoDelay();
-        } else {
-            sorcvbuf = system.getBackSocketSoRcvbuf();
-            sosndbuf = system.getBackSocketSoSndbuf();
-            soNoDelay = system.getBackSocketNoDelay();
-        }
-
-        NetworkChannel channel = con.getChannel();
-        channel.setOption(StandardSocketOptions.SO_RCVBUF, sorcvbuf);
-        channel.setOption(StandardSocketOptions.SO_SNDBUF, sosndbuf);
-        channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
-        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-
-        con.setMaxPacketSize(system.getMaxPacketSize());
-        con.setIdleTimeout(system.getIdleTimeout());
-        con.setCharacterSet(system.getCharset());
-        con.setReadBufferChunk(sorcvbuf);
+    public boolean isDataHostWithoutWR() {
+        waitIfChanging();
+        return dataHostWithoutWR;
     }
 
+
+
     public Map<String, UserConfig> getUsers() {
+        waitIfChanging();
         return users;
     }
 
     public Map<String, UserConfig> getBackupUsers() {
+        waitIfChanging();
         return users2;
     }
 
     public Map<String, SchemaConfig> getSchemas() {
+        waitIfChanging();
         return schemas;
     }
 
     public Map<String, SchemaConfig> getBackupSchemas() {
+        waitIfChanging();
         return schemas2;
     }
 
     public Map<String, PhysicalDBNode> getDataNodes() {
+        waitIfChanging();
         return dataNodes;
     }
 
-    public String[] getDataNodeSchemasOfDataHost(String dataHost) {
+    private String[] getDataNodeSchemasOfDataHost(String dataHost) {
         ArrayList<String> schemaList = new ArrayList<>(30);
         for (PhysicalDBNode dn : dataNodes.values()) {
             if (dn.getDbPool().getHostName().equals(dataHost)) {
@@ -145,30 +131,37 @@ public class ServerConfig {
     }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
+        waitIfChanging();
         return dataNodes2;
     }
 
     public Map<String, PhysicalDBPool> getDataHosts() {
+        waitIfChanging();
         return dataHosts;
     }
 
     public Map<String, PhysicalDBPool> getBackupDataHosts() {
+        waitIfChanging();
         return dataHosts2;
     }
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
+        waitIfChanging();
         return erRelations;
     }
 
     public Map<ERTable, Set<ERTable>> getBackupErRelations() {
+        waitIfChanging();
         return erRelations2;
     }
 
     public FirewallConfig getFirewall() {
+        waitIfChanging();
         return firewall;
     }
 
     public FirewallConfig getBackupFirewall() {
+        waitIfChanging();
         return firewall2;
     }
 
@@ -177,11 +170,18 @@ public class ServerConfig {
     }
 
     public long getReloadTime() {
+        waitIfChanging();
         return reloadTime;
     }
 
     public long getRollbackTime() {
+        waitIfChanging();
         return rollbackTime;
+    }
+
+    public boolean backDataHostWithoutWR() {
+        waitIfChanging();
+        return dataHostWithoutWR2;
     }
 
     public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
@@ -210,6 +210,82 @@ public class ServerConfig {
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
     }
+
+    private void apply(Map<String, UserConfig> newUsers,
+                       Map<String, SchemaConfig> newSchemas,
+                       Map<String, PhysicalDBNode> newDataNodes,
+                       Map<String, PhysicalDBPool> newDataHosts,
+                       Map<ERTable, Set<ERTable>> newErRelations,
+                       FirewallConfig newFirewall,
+                       boolean newDataHostWithoutWR, boolean isLoadAll) {
+        final ReentrantReadWriteLock metaLock = DbleServer.getInstance().getMetaLock();
+        this.changing = true;
+        try {
+            // old data host
+            // 1 stop heartbeat
+            // 2 backup
+            //--------------------------------------------
+            if (isLoadAll) {
+                Map<String, PhysicalDBPool> oldDataHosts = this.dataHosts;
+                if (oldDataHosts != null) {
+                    for (PhysicalDBPool oldDbPool : oldDataHosts.values()) {
+                        if (oldDbPool != null) {
+                            oldDbPool.stopHeartbeat();
+                        }
+                    }
+                }
+                this.dataNodes2 = this.dataNodes;
+                this.dataHosts2 = this.dataHosts;
+            }
+
+            this.users2 = this.users;
+            this.schemas2 = this.schemas;
+            this.firewall2 = this.firewall;
+            this.erRelations2 = this.erRelations;
+            this.dataHostWithoutWR2 = this.dataHostWithoutWR;
+            // TODO:comment BY huqing.yan and will reopen later
+            //if (!isLoadAll) {
+            //    DsDiff diff = dsdiff(newDataHosts);
+            //    diff.apply();
+            //}
+
+            // new data host
+            // 1 start heartbeat
+            // 2 apply the configure
+            //---------------------------------------------------
+            if (isLoadAll) {
+                if (newDataHosts != null) {
+                    for (PhysicalDBPool newDbPool : newDataHosts.values()) {
+                        if (newDbPool != null && !newDataHostWithoutWR) {
+                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
+                            newDbPool.startHeartbeat();
+                        }
+                    }
+                }
+                this.dataNodes = newDataNodes;
+                this.dataHosts = newDataHosts;
+                this.dataHostWithoutWR = newDataHostWithoutWR;
+            }
+            this.users = newUsers;
+            this.schemas = newSchemas;
+            this.firewall = newFirewall;
+            this.erRelations = newErRelations;
+            DbleServer.getInstance().getCacheService().clearCache();
+            if (!newDataHostWithoutWR) {
+                metaLock.writeLock().lock();
+            }
+        } finally {
+            this.changing = false;
+        }
+        if (!newDataHostWithoutWR) {
+            try {
+                DbleServer.getInstance().reloadMetaData(this);
+            } finally {
+                metaLock.writeLock().unlock();
+            }
+        }
+    }
+
 
     private DsDiff dsdiff(Map<String, PhysicalDBPool> newDataHosts) {
         DsDiff diff = new DsDiff();
@@ -306,88 +382,6 @@ public class ServerConfig {
             }
         }
         return false;
-    }
-
-    private void apply(Map<String, UserConfig> newUsers,
-                       Map<String, SchemaConfig> newSchemas,
-                       Map<String, PhysicalDBNode> newDataNodes,
-                       Map<String, PhysicalDBPool> newDataHosts,
-                       Map<ERTable, Set<ERTable>> newErRelations,
-                       FirewallConfig newFirewall,
-                       boolean newDataHostWithoutWR, boolean isLoadAll) {
-        boolean metaLocked = false;
-        final ReentrantReadWriteLock metaLock = DbleServer.getInstance().getMetaLock();
-        final ReentrantReadWriteLock confLock = DbleServer.getInstance().getConfLock();
-        confLock.writeLock().lock();
-        try {
-            // old data host
-            // 1 stop heartbeat
-            // 2 backup
-            //--------------------------------------------
-            if (isLoadAll) {
-                Map<String, PhysicalDBPool> oldDataHosts = this.dataHosts;
-                if (oldDataHosts != null) {
-                    for (PhysicalDBPool oldDbPool : oldDataHosts.values()) {
-                        if (oldDbPool != null) {
-                            oldDbPool.stopHeartbeat();
-                        }
-                    }
-                }
-                this.dataNodes2 = this.dataNodes;
-                this.dataHosts2 = this.dataHosts;
-            }
-
-            this.users2 = this.users;
-            this.schemas2 = this.schemas;
-            this.firewall2 = this.firewall;
-            this.erRelations2 = this.erRelations;
-            this.dataHostWithoutWR2 = this.dataHostWithoutWR;
-            // TODO:comment BY huqing.yan and will reopen later
-            //if (!isLoadAll) {
-            //    DsDiff diff = dsdiff(newDataHosts);
-            //    diff.apply();
-            //}
-
-            // new data host
-            // 1 start heartbeat
-            // 2 apply the configure
-            //---------------------------------------------------
-            if (isLoadAll) {
-                if (newDataHosts != null) {
-                    for (PhysicalDBPool newDbPool : newDataHosts.values()) {
-                        if (newDbPool != null && !newDataHostWithoutWR) {
-                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
-                            newDbPool.startHeartbeat();
-                        }
-                    }
-                }
-                this.dataNodes = newDataNodes;
-                this.dataHosts = newDataHosts;
-                this.dataHostWithoutWR = newDataHostWithoutWR;
-            }
-            this.users = newUsers;
-            this.schemas = newSchemas;
-            this.firewall = newFirewall;
-            this.erRelations = newErRelations;
-            DbleServer.getInstance().getCacheService().clearCache();
-            if (!newDataHostWithoutWR) {
-                metaLock.writeLock().lock();
-                metaLocked = true;
-            }
-        } finally {
-            confLock.writeLock().unlock();
-        }
-        if (!newDataHostWithoutWR && metaLocked) {
-            try {
-                DbleServer.getInstance().reloadMetaData(this);
-            } finally {
-                metaLock.writeLock().unlock();
-            }
-        }
-    }
-
-    public boolean backDataHostWithoutWR() {
-        return dataHostWithoutWR2;
     }
 
     private static class DsDiff {

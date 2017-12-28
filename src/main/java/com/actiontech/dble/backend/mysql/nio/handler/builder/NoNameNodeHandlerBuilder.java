@@ -44,7 +44,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
         this.canPushDown = true;
         String sql = visitor.getSql().toString();
         String schema = session.getSource().getSchema();
-        SchemaConfig schemaConfig = config.getSchemas().get(schema);
+        SchemaConfig schemaConfig = schemaConfigMap.get(schema);
         RouteResultsetNode[] rrss = getTableSources(schemaConfig.getAllDataNodes(), sql);
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),

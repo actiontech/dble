@@ -24,7 +24,7 @@ public class ServerConnectionFactory extends FrontendConnectionFactory {
     @Override
     protected FrontendConnection getConnection(NetworkChannel channel) throws IOException {
         ServerConnection c = new ServerConnection(channel);
-        DbleServer.getInstance().getConfig().setSocketParams(c, true);
+        c.setSocketParams(true);
         c.setPrivileges(ServerPrivileges.instance());
         c.setQueryHandler(new ServerQueryHandler(c));
         c.setLoadDataInfileHandler(new ServerLoadDataInfileHandler(c));

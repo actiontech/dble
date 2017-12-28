@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -56,8 +55,7 @@ public class SQLJob implements ResponseHandler, Runnable {
                 RouteResultsetNode node = new RouteResultsetNode(
                         dataNodeOrDatabase, ServerParse.SELECT, sql);
                 // create new connection
-                ServerConfig conf = DbleServer.getInstance().getConfig();
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), true, node, this, node);
             } else {
                 ds.getConnection(dataNodeOrDatabase, true, this, null);

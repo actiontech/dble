@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.plan.Order;
@@ -30,9 +29,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 abstract class BaseHandlerBuilder {
@@ -43,7 +40,7 @@ abstract class BaseHandlerBuilder {
     /* the current last handler */
     protected DMLResponseHandler currentLast;
     private PlanNode node;
-    protected ServerConfig config;
+    protected Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     /* the children can be push down */
     protected boolean canPushDown = false;
     /* need common handler? like group by,order by,limit and so on */
@@ -57,8 +54,8 @@ abstract class BaseHandlerBuilder {
         this.session = session;
         this.node = node;
         this.hBuilder = hBuilder;
-        this.config = DbleServer.getInstance().getConfig();
-        if (config.getSchemas().isEmpty())
+        this.schemaConfigMap.putAll(DbleServer.getInstance().getConfig().getSchemas());
+        if (schemaConfigMap.isEmpty())
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "current router config is empty!");
     }
 
@@ -390,7 +387,7 @@ abstract class BaseHandlerBuilder {
     }
 
     protected TableConfig getTableConfig(String schema, String table) {
-        SchemaConfig schemaConfig = this.config.getSchemas().get(schema);
+        SchemaConfig schemaConfig = schemaConfigMap.get(schema);
         if (schemaConfig == null)
             return null;
         return schemaConfig.getTables().get(table);

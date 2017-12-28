@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.CachePool;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -60,7 +59,6 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         }
 
         int totalCount = dataNodes.size();
-        ServerConfig conf = DbleServer.getInstance().getConfig();
 
         LOGGER.debug("find child node with sql:" + sql);
         for (String dn : dataNodes) {
@@ -71,7 +69,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                     return dataNode;
                 }
             }
-            PhysicalDBNode mysqlDN = conf.getDataNodes().get(dn);
+            PhysicalDBNode mysqlDN = DbleServer.getInstance().getConfig().getDataNodes().get(dn);
             try {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("execute in data_node " + dn);

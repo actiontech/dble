@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -87,12 +86,11 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             lock.unlock();
         }
 
-        ServerConfig conf = DbleServer.getInstance().getConfig();
         LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
         StringBuilder sb = new StringBuilder();
         for (final RouteResultsetNode node : rrs.getNodes()) {
             if (node.isModifySQL()) {
-                sb.append("[" + node.getName() + "]" + node.getStatement()).append(";\n");
+                sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
             }
         }
         if (sb.length() > 0) {
@@ -107,7 +105,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             } else {
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), sessionAutocommit, node, this, node);
             }
         }

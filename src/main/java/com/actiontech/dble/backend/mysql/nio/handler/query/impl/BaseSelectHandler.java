@@ -51,8 +51,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (session.tryExistsCon(exeConn, rrss)) {
             return exeConn;
         } else {
-            ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDBNode dn = conf.getDataNodes().get(rrss.getName());
+            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit);
             session.bindConnection(rrss, newConn);
             return (MySQLConnection) newConn;

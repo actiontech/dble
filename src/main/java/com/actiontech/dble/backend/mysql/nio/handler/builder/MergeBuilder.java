@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.PlanNode;
 import com.actiontech.dble.route.RouteResultset;
@@ -23,13 +22,15 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MergeBuilder {
     private boolean needCommonFlag;
     private boolean needSendMakerFlag;
     private PlanNode node;
     private NonBlockingSession session;
-    private ServerConfig config;
+    protected Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     private PushDownVisitor pdVisitor;
 
     public MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, boolean needSendMaker,
@@ -38,7 +39,7 @@ public class MergeBuilder {
         this.needCommonFlag = needCommon;
         this.needSendMakerFlag = needSendMaker;
         this.session = session;
-        this.config = DbleServer.getInstance().getConfig();
+        this.schemaConfigMap.putAll(DbleServer.getInstance().getConfig().getSchemas());
         this.pdVisitor = pdVisitor;
     }
 
@@ -62,7 +63,7 @@ public class MergeBuilder {
 
         RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
         LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-        SchemaConfig schemaConfig = config.getSchemas().get(node.getReferedTableNodes().get(0).getSchema());
+        SchemaConfig schemaConfig = schemaConfigMap.get(node.getReferedTableNodes().get(0).getSchema());
         return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource());
 
     }

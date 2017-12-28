@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -43,14 +42,13 @@ public class LockTablesHandler extends MultiNodeHandler {
 
     public void execute() throws Exception {
         super.reset(this.rrs.getNodes().length);
-        ServerConfig conf = DbleServer.getInstance().getConfig();
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
                 innerExecute(conn, node);
             } else {
                 // create new connection
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), autocommit, node, this, node);
             }
         }

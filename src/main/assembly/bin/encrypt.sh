@@ -18,17 +18,17 @@ fi
 #set HOME
 CURR_DIR=`pwd`
 cd `dirname "$0"`/..
-DBLE_HOME=`pwd`
+APP_HOME=`pwd`
 cd $CURR_DIR
-if [ -z "$DBLE_HOME" ] ; then
+if [ -z "$APP_HOME" ] ; then
     echo
-    echo "Error: DBLE_HOME environment variable is not defined correctly."
+    echo "Error: APP_HOME environment variable is not defined correctly."
     echo
     exit 1
 fi 
 
 #============run encrypt
-RUN_CMD="$JAVA_HOME/bin/java -cp $DBLE_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $@" 
+RUN_CMD="$JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $@" 
 echo $RUN_CMD
 eval $RUN_CMD
 #==============================================================================

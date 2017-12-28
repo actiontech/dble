@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -51,8 +50,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (session.tryExistsCon(exeConn, rrss)) {
             return exeConn;
         } else {
-            ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDBNode dn = conf.getDataNodes().get(rrss.getName());
+            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             //autocommit is session.getSource().isAutocommit() && !session.getSource().isTxStart()
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit);
             session.bindConnection(rrss, newConn);

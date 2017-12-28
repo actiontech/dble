@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.xa.Serializer;
 import com.actiontech.dble.backend.mysql.xa.VersionedFile;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
@@ -40,8 +39,7 @@ public class FileSystemRepository implements Repository {
 
     @Override
     public void init() {
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        SystemConfig systemConfig = config.getSystem();
+        SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
 
         String baseDir = systemConfig.getXaRecoveryLogBaseDir();
         String baseName = systemConfig.getXaRecoveryLogBaseName();

@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -84,7 +83,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             lock.unlock();
         }
 
-        ServerConfig conf = DbleServer.getInstance().getConfig();
         LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
         StringBuilder sb = new StringBuilder();
         for (final RouteResultsetNode node : rrs.getNodes()) {
@@ -104,7 +102,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             } else {
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), true, sessionAutocommit, node, this, node);
             }
         }

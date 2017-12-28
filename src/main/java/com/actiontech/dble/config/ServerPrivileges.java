@@ -37,8 +37,7 @@ public class ServerPrivileges implements FrontendPrivileges {
 
     @Override
     public boolean schemaExists(String schema) {
-        ServerConfig conf = DbleServer.getInstance().getConfig();
-        return conf.getSchemas().containsKey(schema);
+        return DbleServer.getInstance().getConfig().getSchemas().containsKey(schema);
     }
 
     @Override
@@ -169,8 +168,7 @@ public class ServerPrivileges implements FrontendPrivileges {
 
     // check SQL Privilege
     public static boolean checkPrivilege(ServerConnection source, String schema, String tableName, CheckType chekcType) {
-        ServerConfig conf = DbleServer.getInstance().getConfig();
-        UserConfig userConfig = conf.getUsers().get(source.getUser());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(source.getUser());
         if (userConfig == null) {
             return true;
         }

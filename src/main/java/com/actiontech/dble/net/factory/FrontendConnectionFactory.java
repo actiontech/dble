@@ -24,7 +24,7 @@ public abstract class FrontendConnectionFactory {
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
         FrontendConnection c = getConnection(channel);
-        DbleServer.getInstance().getConfig().setSocketParams(c, true);
+        c.setSocketParams(true);
         return c;
     }
 

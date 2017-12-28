@@ -23,7 +23,7 @@ public class ManagerConnectionFactory extends FrontendConnectionFactory {
     @Override
     protected FrontendConnection getConnection(NetworkChannel channel) throws IOException {
         ManagerConnection c = new ManagerConnection(channel);
-        DbleServer.getInstance().getConfig().setSocketParams(c, true);
+        c.setSocketParams(true);
         c.setPrivileges(ManagerPrivileges.instance());
         c.setHandler(new ManagerAuthenticator(c));
         c.setQueryHandler(new ManagerQueryHandler(c));

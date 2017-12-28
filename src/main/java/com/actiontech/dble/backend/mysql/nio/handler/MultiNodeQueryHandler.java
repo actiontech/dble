@@ -107,7 +107,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         } finally {
             lock.unlock();
         }
-        ServerConfig conf = DbleServer.getInstance().getConfig();
         startTime = System.currentTimeMillis();
         LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
         StringBuilder sb = new StringBuilder();
@@ -127,7 +126,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             } else {
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }

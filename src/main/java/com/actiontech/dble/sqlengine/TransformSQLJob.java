@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -46,8 +45,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
             if (ds == null) {
                 RouteResultsetNode node = new RouteResultsetNode(databaseName, ServerParse.SELECT, sql);
                 // create new connection
-                ServerConfig conf = DbleServer.getInstance().getConfig();
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), false, true, node, this, node);
             } else {
                 ds.getConnection(databaseName, true, this, null);

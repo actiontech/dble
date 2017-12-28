@@ -95,7 +95,6 @@ public final class DbleServer {
 
     private final AtomicLong xaIDInc = new AtomicLong();
 
-    private final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
 
     public static DbleServer getInstance() {
@@ -236,21 +235,12 @@ public final class DbleServer {
         }
     }
 
-    public ReentrantReadWriteLock getConfLock() {
-        return confLock;
-    }
-
     public ReentrantReadWriteLock getMetaLock() {
         return metaLock;
     }
 
     public ServerConfig getConfig() {
-        confLock.readLock().lock();
-        try {
-            return config;
-        } finally {
-            confLock.readLock().unlock();
-        }
+        return config;
     }
 
     public void beforeStart() {

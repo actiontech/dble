@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.util.CompressUtil;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannel;
 import java.nio.channels.NetworkChannel;
@@ -583,5 +585,32 @@ public abstract class AbstractConnection implements NIOConnection {
     }
     public void onConnectFinish() {
         LOGGER.debug("The backend conntinon has finished connecting");
+    }
+
+    public void setSocketParams(boolean isFrontChannel) throws IOException {
+        SystemConfig system = DbleServer.getInstance().getConfig().getSystem();
+        int soRcvBuf;
+        int soSndBuf;
+        int soNoDelay;
+        if (isFrontChannel) {
+            soRcvBuf = system.getFrontSocketSoRcvbuf();
+            soSndBuf = system.getFrontSocketSoSndbuf();
+            soNoDelay = system.getFrontSocketNoDelay();
+        } else {
+            soRcvBuf = system.getBackSocketSoRcvbuf();
+            soSndBuf = system.getBackSocketSoSndbuf();
+            soNoDelay = system.getBackSocketNoDelay();
+        }
+
+        channel.setOption(StandardSocketOptions.SO_RCVBUF, soRcvBuf);
+        channel.setOption(StandardSocketOptions.SO_SNDBUF, soSndBuf);
+        channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+
+        this.setMaxPacketSize(system.getMaxPacketSize());
+        this.setIdleTimeout(system.getIdleTimeout());
+        this.setCharacterSet(system.getCharset());
+        this.setReadBufferChunk(soRcvBuf);
     }
 }

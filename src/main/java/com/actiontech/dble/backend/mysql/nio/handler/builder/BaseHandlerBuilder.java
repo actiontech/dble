@@ -17,13 +17,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleR
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
@@ -32,6 +29,8 @@ import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -42,9 +41,7 @@ import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import org.apache.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,7 +58,7 @@ public abstract class BaseHandlerBuilder {
     /* the current last handler */
     protected DMLResponseHandler currentLast;
     private PlanNode node;
-    protected ServerConfig config;
+    protected Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     /* the children can be push down */
     protected boolean canPushDown = false;
     /* need common handler? like group by,order by,limit and so on */
@@ -76,9 +73,9 @@ public abstract class BaseHandlerBuilder {
         this.session = session;
         this.node = node;
         this.hBuilder = hBuilder;
-        this.config = DbleServer.getInstance().getConfig();
         this.isExplain = isExplain;
-        if (config.getSchemas().isEmpty())
+        this.schemaConfigMap.putAll(DbleServer.getInstance().getConfig().getSchemas());
+        if (schemaConfigMap.isEmpty())
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "current router config is empty!");
     }
 
@@ -421,7 +418,7 @@ public abstract class BaseHandlerBuilder {
     }
 
     protected TableConfig getTableConfig(String schema, String table) {
-        SchemaConfig schemaConfig = this.config.getSchemas().get(schema);
+        SchemaConfig schemaConfig = schemaConfigMap.get(schema);
         if (schemaConfig == null)
             return null;
         return schemaConfig.getTables().get(table);

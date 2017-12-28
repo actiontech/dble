@@ -18,10 +18,12 @@ public final class ReloadMetaData {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
 
     public static void execute(ManagerConnection c) {
-        String msg = "datahost has no write_host";
+        String msg = "data host has no write_host";
         if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
+            DbleServer.getInstance().setMetaChanging(true);
             DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig());
-            msg = "reload metadata sucess";
+            DbleServer.getInstance().setMetaChanging(false);
+            msg = "reload metadata success";
         }
         LOGGER.info(msg);
         OkPacket ok = new OkPacket();

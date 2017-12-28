@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.manager;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.factory.FrontendConnectionFactory;
 import com.actiontech.dble.net.handler.ManagerAuthenticator;

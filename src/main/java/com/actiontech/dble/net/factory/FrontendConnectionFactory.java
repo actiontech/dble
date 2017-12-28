@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.net.factory;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.FrontendConnection;
 
 import java.io.IOException;

@@ -16,7 +16,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoCommit
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;

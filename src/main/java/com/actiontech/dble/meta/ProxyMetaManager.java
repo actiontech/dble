@@ -63,9 +63,8 @@ public class ProxyMetaManager {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
     private AtomicInteger metaCount = new AtomicInteger(0);
-
-
     private Repository repository = null;
+    private AtomicInteger version = new AtomicInteger(0);
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
@@ -80,10 +79,15 @@ public class ProxyMetaManager {
         return metaCount.get();
     }
 
+    public ReentrantLock getMetaLock() {
+        return metaLock;
+    }
+
     public void addMetaLock(String schema, String tbName) throws InterruptedException {
         metaLock.lock();
         try {
             metaCount.incrementAndGet();
+            version.incrementAndGet();
             String lockKey = genLockKey(schema, tbName);
             while (lockTables.contains(lockKey)) {
                 condRelease.await();
@@ -185,18 +189,26 @@ public class ProxyMetaManager {
 
     public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) {
         while (true) {
-            metaLock.lock();
-            try {
-                if (lockTables.contains(genLockKey(schema, tbName))) {
-                    LOGGER.info("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
-                    condRelease.await();
-                } else {
-                    return getTableMeta(schema, tbName);
+            int oldVersion = version.get();
+            if (metaCount.get() == 0) {
+                StructureMeta.TableMeta meta = getTableMeta(schema, tbName);
+                if (version.get() == oldVersion) {
+                    return meta;
                 }
-            } catch (InterruptedException e) {
-                return null;
-            } finally {
-                metaLock.unlock();
+            } else {
+                metaLock.lock();
+                try {
+                    if (lockTables.contains(genLockKey(schema, tbName))) {
+                        LOGGER.warn("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
+                        condRelease.await();
+                    } else {
+                        return getTableMeta(schema, tbName);
+                    }
+                } catch (InterruptedException e) {
+                    return null;
+                } finally {
+                    metaLock.unlock();
+                }
             }
         }
     }
@@ -350,7 +362,6 @@ public class ProxyMetaManager {
             checkTaskHandler.cancel(false);
             scheduler.shutdown();
         }
-        catalogs.clear();
     }
     //Check the Consistency of table Structure
 

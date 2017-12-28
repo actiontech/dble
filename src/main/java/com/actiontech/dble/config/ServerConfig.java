@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author mycat
@@ -216,7 +215,6 @@ public class ServerConfig {
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall, SystemVariables newSystemVariables,
                        boolean newDataHostWithoutWR, boolean isLoadAll) {
-        final ReentrantReadWriteLock metaLock = DbleServer.getInstance().getMetaLock();
         this.changing = true;
         try {
             // old data host
@@ -273,7 +271,7 @@ public class ServerConfig {
             this.erRelations = newErRelations;
             DbleServer.getInstance().getCacheService().clearCache();
             if (!newDataHostWithoutWR) {
-                metaLock.writeLock().lock();
+                DbleServer.getInstance().setMetaChanging(true);
             }
         } finally {
             this.changing = false;
@@ -282,7 +280,7 @@ public class ServerConfig {
             try {
                 DbleServer.getInstance().reloadMetaData(this);
             } finally {
-                metaLock.writeLock().unlock();
+                DbleServer.getInstance().setMetaChanging(false);
             }
         }
     }

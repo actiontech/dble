@@ -59,7 +59,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -80,7 +81,7 @@ public final class DbleServer {
     private RouteService routerService;
     private CacheService cacheService;
     private Properties dnIndexProperties;
-    private ProxyMetaManager tmManager;
+    private volatile ProxyMetaManager tmManager;
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
 
@@ -94,8 +95,7 @@ public final class DbleServer {
     private boolean aio = false;
 
     private final AtomicLong xaIDInc = new AtomicLong();
-
-    private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
+    private volatile boolean metaChanging = false;
 
     public static DbleServer getInstance() {
         return INSTANCE;
@@ -235,8 +235,8 @@ public final class DbleServer {
         }
     }
 
-    public ReentrantReadWriteLock getMetaLock() {
-        return metaLock;
+    public void setMetaChanging(boolean metaChanging) {
+        this.metaChanging = metaChanging;
     }
 
     public ServerConfig getConfig() {
@@ -462,21 +462,24 @@ public final class DbleServer {
     }
 
     public void reloadMetaData(ServerConfig conf) {
+        ProxyMetaManager tmpManager = tmManager;
         for (; ; ) {
-            if (tmManager.getMetaCount() > 0) {
+            if (tmpManager.getMetaCount() > 0) {
                 continue;
             }
-            metaLock.writeLock().lock();
+            ReentrantLock lock = tmpManager.getMetaLock();
+            lock.lock();
             try {
-                if (tmManager.getMetaCount() > 0) {
+                if (tmpManager.getMetaCount() > 0) {
                     continue;
                 }
-                tmManager.terminate();
-                tmManager = new ProxyMetaManager();
-                tmManager.initMeta(conf);
+                ProxyMetaManager newManager = new ProxyMetaManager();
+                newManager.initMeta(conf);
+                tmManager = newManager;
+                tmpManager.terminate();
                 break;
             } finally {
-                metaLock.writeLock().unlock();
+                lock.unlock();
             }
         }
     }
@@ -689,12 +692,10 @@ public final class DbleServer {
     }
 
     public ProxyMetaManager getTmManager() {
-        metaLock.readLock().lock();
-        try {
-            return tmManager;
-        } finally {
-            metaLock.readLock().unlock();
+        while (metaChanging) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
+        return tmManager;
     }
 
     private Runnable updateTime() {

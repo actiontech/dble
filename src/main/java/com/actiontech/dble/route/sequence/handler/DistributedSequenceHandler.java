@@ -123,6 +123,9 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         if (zkAddress == null) {
             throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
         }
+        if (this.client != null) {
+            this.client.close();
+        }
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         try {

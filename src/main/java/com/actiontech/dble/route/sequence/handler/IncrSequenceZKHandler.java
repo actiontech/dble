@@ -78,6 +78,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     }
 
     public void initializeZK(Properties properties, String zkAddress) throws Exception {
+        if (this.client != null) {
+            this.client.close();
+        }
         this.client = CuratorFrameworkFactory.newClient(zkAddress, new ExponentialBackoffRetry(1000, 3));
         this.client.start();
         this.props = properties;

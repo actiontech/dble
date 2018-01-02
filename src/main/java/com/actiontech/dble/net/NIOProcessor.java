@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
-import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,7 +34,7 @@ public final class NIOProcessor {
 
     private final String name;
     private final BufferPool bufferPool;
-    private final NameableExecutor executor;
+    private final ExecutorService executor;
     private final ConcurrentMap<Long, FrontendConnection> frontends;
     private final ConcurrentMap<Long, BackendConnection> backends;
     private final CommandCount commands;
@@ -47,7 +47,7 @@ public final class NIOProcessor {
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
     public NIOProcessor(String name, BufferPool bufferPool,
-                        NameableExecutor executor) throws IOException {
+                        ExecutorService executor) throws IOException {
         this.name = name;
         this.bufferPool = bufferPool;
         this.executor = executor;
@@ -78,7 +78,7 @@ public final class NIOProcessor {
 
     }
 
-    public NameableExecutor getExecutor() {
+    public ExecutorService getExecutor() {
         return this.executor;
     }
 

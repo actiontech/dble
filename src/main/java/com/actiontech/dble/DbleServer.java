@@ -48,10 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,9 +105,9 @@ public final class DbleServer {
     private final long startupTime;
     private NIOProcessor[] processors;
     private SocketConnector connector;
-    private NameableExecutor businessExecutor;
-    private NameableExecutor complexQueryExecutor;
-    private NameableExecutor timerExecutor;
+    private ExecutorService businessExecutor;
+    private ExecutorService complexQueryExecutor;
+    private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
@@ -154,12 +151,12 @@ public final class DbleServer {
         return bufferPool;
     }
 
-    public NameableExecutor getTimerExecutor() {
+    public ExecutorService getTimerExecutor() {
         return timerExecutor;
     }
 
 
-    public NameableExecutor getComplexQueryExecutor() {
+    public ExecutorService getComplexQueryExecutor() {
         return complexQueryExecutor;
     }
 
@@ -648,7 +645,7 @@ public final class DbleServer {
         return cacheService;
     }
 
-    public NameableExecutor getBusinessExecutor() {
+    public ExecutorService getBusinessExecutor() {
         return businessExecutor;
     }
 

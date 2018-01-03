@@ -5,6 +5,7 @@
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
@@ -21,8 +22,8 @@ import java.util.List;
 
 public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
     private boolean isNot;
-    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot) {
-        super(currentDb, query, false);
+    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager) {
+        super(currentDb, query, false, metaManager);
         this.isNot = isNot;
         if (!this.correlatedSubQuery) {
             if ((this.planNode.getLimitFrom() == -1)) {
@@ -76,7 +77,7 @@ public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot);
+        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager);
     }
     @Override
     public SubSelectType subType() {

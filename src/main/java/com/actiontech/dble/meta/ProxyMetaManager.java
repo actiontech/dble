@@ -338,9 +338,9 @@ public class ProxyMetaManager {
 
         for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
-                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey());
+                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey(), this);
                 vm.init(true);
-                DbleServer.getInstance().getTmManager().getCatalogs().get(schemaName.getKey()).getViewMetas().put(vm.getViewName(), vm);
+                this.getCatalogs().get(schemaName.getKey()).getViewMetas().put(vm.getViewName(), vm);
             }
         }
     }

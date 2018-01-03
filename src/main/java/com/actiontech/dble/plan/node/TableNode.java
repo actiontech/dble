@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
@@ -32,12 +33,14 @@ public class TableNode extends PlanNode {
     private String tableName;
     private StructureMeta.TableMeta tableMeta;
     private List<SQLHint> hintList;
+    private ProxyMetaManager metaManager;
 
-    public TableNode(String catalog, String tableName) {
+    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
         this.schema = catalog;
         this.tableName = tableName;
+        this.metaManager = metaManager;
         ServerConfig config = DbleServer.getInstance().getConfig();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             this.schema = this.schema.toLowerCase();
@@ -47,7 +50,7 @@ public class TableNode extends PlanNode {
         if (schemaConfig == null) {
             throw new RuntimeException("schema " + this.schema + " is not exists!");
         }
-        this.tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
+        this.tableMeta = metaManager.getSyncTableMeta(this.schema, this.tableName);
         TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
             String errorMsg = "table " + this.tableName + " is not exists!";
@@ -109,7 +112,7 @@ public class TableNode extends PlanNode {
     }
 
     public TableNode copy() {
-        TableNode newTableNode = new TableNode(schema, tableName);
+        TableNode newTableNode = new TableNode(schema, tableName, metaManager);
         this.copySelfTo(newTableNode);
         newTableNode.setHintList(this.hintList);
         return newTableNode;

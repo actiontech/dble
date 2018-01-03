@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2018 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
 <dble:schema xmlns:dble="http://dble.cloud/">
 

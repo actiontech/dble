@@ -373,6 +373,10 @@ public class MySQLPlanNodeVisitor {
         if (this.tableNode == null) {
             throw new IllegalArgumentException("from expression is null,check the sql!");
         }
+        if (havingFilter.isWithSubQuery()) {
+            tableNode.setSubQuery(true);
+            tableNode.setCorrelatedSubQuery(havingFilter.isCorrelatedSubQuery());
+        }
         this.tableNode = this.tableNode.having(havingFilter);
 
     }

@@ -620,8 +620,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 initName(x);
         }
+        item.setWithSubQuery(getArgsSubQueryStatus(args));
+        item.setCorrelatedSubQuery(getArgsCorrelatedSubQueryStatus(args));
     }
-
 
     @Override
     public void endVisit(SQLListExpr x) {
@@ -790,6 +791,24 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported cast as:" + upType);
         }
         return castType;
+    }
+
+    private boolean getArgsSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isWithSubQuery()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean getArgsCorrelatedSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isCorrelatedSubQuery()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Integer> changeExprListToInt(List<SQLExpr> exprList) {

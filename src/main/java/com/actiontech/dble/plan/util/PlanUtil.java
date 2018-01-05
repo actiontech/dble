@@ -10,11 +10,8 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
-import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.*;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
-import com.actiontech.dble.plan.common.item.ItemBasicConstant;
-import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
@@ -425,6 +422,22 @@ public final class PlanUtil {
                 return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
             }
             return result.getResultItem();
+        } else if (item instanceof ItemFunc) {
+            ItemFunc func = (ItemFunc) item;
+            Item itemTmp = item.cloneItem();
+            for (int index = 0; index < func.getArgCount(); index++) {
+                Item arg = item.arguments().get(index);
+                if (arg instanceof ItemScalarSubQuery) {
+                    Item result = ((ItemScalarSubQuery) arg).getValue();
+                    if (result == null || result.getResultItem() == null) {
+                        itemTmp.arguments().set(index, new ItemNull());
+                    } else {
+                        itemTmp.arguments().set(index, result.getResultItem());
+                    }
+                }
+            }
+            itemTmp.setItemName(null);
+            return itemTmp;
         }
         return item;
     }

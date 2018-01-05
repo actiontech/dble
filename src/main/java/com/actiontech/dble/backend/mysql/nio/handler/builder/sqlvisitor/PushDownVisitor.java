@@ -6,12 +6,13 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.NoNameNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -333,7 +334,13 @@ public class PushDownVisitor extends MysqlVisitor {
 
     @Override
     protected String visitPushDownNameSel(Item item) {
-        String orgPushDownName = item.getItemName();
+        String orgPushDownName = null;
+        if (item.isWithSubQuery()) {
+            Item tmpItem = PlanUtil.rebuildSubQueryItem(item);
+            orgPushDownName = tmpItem.getItemName();
+        } else {
+            orgPushDownName = item.getItemName();
+        }
         if (item.type().equals(Item.ItemType.FIELD_ITEM)) {
             orgPushDownName = "`" + item.getTableName() + "`.`" + orgPushDownName + "`";
         }
@@ -373,5 +380,4 @@ public class PushDownVisitor extends MysqlVisitor {
         else
             return orgPushDownName + " as `" + pushAlias + "`";
     }
-
 }

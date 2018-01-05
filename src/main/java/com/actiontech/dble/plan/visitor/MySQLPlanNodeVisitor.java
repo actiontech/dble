@@ -10,6 +10,7 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
@@ -308,15 +309,25 @@ public class MySQLPlanNodeVisitor {
             MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
             expr.accept(ev);
             Item selItem = ev.getItem();
-            if (selItem instanceof ItemScalarSubQuery) {
-                ((ItemScalarSubQuery) selItem).setField(true);
-                tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
-                tableNode.setSubQuery(true);
+            if (selItem.isWithSubQuery()) {
+                setSubQueryNode(selItem);
             }
             selItem.setAlias(item.getAlias());
             selectItems.add(selItem);
         }
         return selectItems;
+    }
+
+    private void setSubQueryNode(Item selItem) {
+        if (selItem instanceof ItemScalarSubQuery) {
+            ((ItemScalarSubQuery) selItem).setField(true);
+            tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
+            tableNode.setSubQuery(true);
+        } else if (selItem instanceof ItemFunc) {
+            for (Item args : selItem.arguments()) {
+                setSubQueryNode(args);
+            }
+        }
     }
 
     private void handleWhereCondition(SQLExpr whereExpr) {

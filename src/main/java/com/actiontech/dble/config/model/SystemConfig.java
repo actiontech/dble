@@ -166,7 +166,7 @@ public final class SystemConfig {
         this.dataNodeHeartbeatPeriod = DEFAULT_DATA_NODE_HEARTBEAT_PERIOD;
         this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
         this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
-        this.txIsolation = Isolations.REPEATED_READ;
+        this.txIsolation = Isolations.REPEATABLE_READ;
         this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
         this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
         this.memoryPageSize = MEMORY_PAGE_SIZE;

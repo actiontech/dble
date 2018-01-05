@@ -56,8 +56,8 @@ public final class SessionIsolation {
             case Isolations.READ_UNCOMMITTED:
                 value = "READ-UNCOMMITTED";
                 break;
-            case Isolations.REPEATED_READ:
-                value = "REPEATED-READ";
+            case Isolations.REPEATABLE_READ:
+                value = "REPEATABLE-READ";
                 break;
             case Isolations.SERIALIZABLE:
                 value = "SERIALIZABLE";

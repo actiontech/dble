@@ -472,7 +472,7 @@ public final class SetHandler {
             case "read-committed":
                 return Isolations.READ_COMMITTED;
             case "repeatable-read":
-                return Isolations.REPEATED_READ;
+                return Isolations.REPEATABLE_READ;
             case "serializable":
                 return Isolations.SERIALIZABLE;
             default:
@@ -770,7 +770,7 @@ public final class SetHandler {
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             return true;
         } else {
-            int txIsolation = Isolations.REPEATED_READ;
+            int txIsolation = Isolations.REPEATABLE_READ;
             switch (setStatement.getIsolationLevel()) {
                 case "READ UNCOMMITTED":
                     txIsolation = Isolations.READ_UNCOMMITTED;
@@ -779,7 +779,7 @@ public final class SetHandler {
                     txIsolation = Isolations.READ_COMMITTED;
                     break;
                 case "REPEATABLE READ":
-                    txIsolation = Isolations.REPEATED_READ;
+                    txIsolation = Isolations.REPEATABLE_READ;
                     break;
                 case "SERIALIZABLE":
                     txIsolation = Isolations.SERIALIZABLE;

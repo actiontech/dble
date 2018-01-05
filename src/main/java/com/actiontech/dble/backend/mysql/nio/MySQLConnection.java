@@ -82,7 +82,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
     private static final CommandPacket READ_UNCOMMITTED = new CommandPacket();
     private static final CommandPacket READ_COMMITTED = new CommandPacket();
-    private static final CommandPacket REPEATED_READ = new CommandPacket();
+    private static final CommandPacket REPEATABLE_READ = new CommandPacket();
     private static final CommandPacket SERIALIZABLE = new CommandPacket();
     private static final CommandPacket AUTOCOMMIT_ON = new CommandPacket();
     private static final CommandPacket AUTOCOMMIT_OFF = new CommandPacket();
@@ -96,9 +96,9 @@ public class MySQLConnection extends BackendAIOConnection {
         READ_COMMITTED.setPacketId(0);
         READ_COMMITTED.setCommand(MySQLPacket.COM_QUERY);
         READ_COMMITTED.setArg("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED".getBytes());
-        REPEATED_READ.setPacketId(0);
-        REPEATED_READ.setCommand(MySQLPacket.COM_QUERY);
-        REPEATED_READ.setArg("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes());
+        REPEATABLE_READ.setPacketId(0);
+        REPEATABLE_READ.setCommand(MySQLPacket.COM_QUERY);
+        REPEATABLE_READ.setArg("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes());
         SERIALIZABLE.setPacketId(0);
         SERIALIZABLE.setCommand(MySQLPacket.COM_QUERY);
         SERIALIZABLE.setArg("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE".getBytes());
@@ -299,7 +299,7 @@ public class MySQLConnection extends BackendAIOConnection {
             case Isolations.READ_COMMITTED:
                 sb.append("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;");
                 return;
-            case Isolations.REPEATED_READ:
+            case Isolations.REPEATABLE_READ:
                 sb.append("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
                 return;
             case Isolations.SERIALIZABLE:

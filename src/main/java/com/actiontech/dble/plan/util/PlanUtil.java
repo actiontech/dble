@@ -419,6 +419,12 @@ public final class PlanUtil {
                 item.arguments().set(index, rebuildItem);
                 item.setItemName(null);
             }
+        } else if (item instanceof ItemScalarSubQuery) {
+            Item result = ((ItemScalarSubQuery) item).getValue();
+            if (result == null || result.getResultItem() == null) {
+                return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+            }
+            return result.getResultItem();
         }
         return item;
     }

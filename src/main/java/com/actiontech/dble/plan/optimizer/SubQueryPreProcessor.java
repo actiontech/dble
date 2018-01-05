@@ -16,6 +16,7 @@ import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.item.subquery.*;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
@@ -80,6 +81,8 @@ public final class SubQueryPreProcessor {
             return buildSubQueryWithOrFilter(node, qtn, (ItemCondOr) filter, childTransform);
         } else if (filter instanceof ItemCondAnd) {
             return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, isOrChild, childTransform);
+        } else if (filter instanceof ItemFuncNot) {
+            return buildSubQueryWithNotFilter(node, qtn, (ItemFuncNot) filter, isOrChild, childTransform);
         } else {
             return buildSubQueryByFilter(node, qtn, filter, isOrChild, childTransform);
         }
@@ -119,6 +122,8 @@ public final class SubQueryPreProcessor {
         } else if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
             if (filter instanceof ItemExistsSubQuery) {
                 addSubQuery(node, (ItemExistsSubQuery) filter, childTransform);
+            } else if (filter instanceof ItemScalarSubQuery) {
+                addSubQuery(node, (ItemScalarSubQuery) filter, childTransform);
             } else {
                 //todo: when happened?
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -225,7 +230,10 @@ public final class SubQueryPreProcessor {
         qtn.filter = filter;
         return qtn;
     }
-
+    private static SubQueryFilter buildSubQueryWithNotFilter(PlanNode node, SubQueryFilter qtn, ItemFuncNot filter, boolean isOrChild, BoolPtr childTransform) {
+        buildSubQuery(node, qtn, filter.arguments().get(0), isOrChild, childTransform);
+        return qtn;
+    }
     private static class SubQueryFilter {
 
         PlanNode query; // subQuery may change query node to join node

@@ -158,18 +158,9 @@ public abstract class BaseHandlerBuilder {
      */
     protected final void noShardBuild() {
         this.needCommon = false;
-        // nearly all global tables :unGlobalCount=0.
-        // Maybe the join node break the rule. eg: global1(node 0,1) join global2(node 2,3)
-        String sql = null;
-        if (node.getParent() == null) { // it's root
-            sql = node.getSql();
-        }
-        // maybe some node is view
-        if (sql == null) {
-            GlobalVisitor visitor = new GlobalVisitor(node, true);
-            visitor.visit();
-            sql = visitor.getSql().toString();
-        }
+        GlobalVisitor visitor = new GlobalVisitor(node, true);
+        visitor.visit();
+        String sql = visitor.getSql().toString();
         RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),

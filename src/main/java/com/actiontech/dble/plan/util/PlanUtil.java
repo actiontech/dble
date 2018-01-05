@@ -369,7 +369,7 @@ public final class PlanUtil {
     public static boolean isCmpFunc(Item filter) {
         return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
                 filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
-                filter instanceof ItemFuncStrictEqual;
+                filter instanceof ItemFuncStrictEqual || filter instanceof ItemFuncLike;
     }
 
     public static boolean containsSubQuery(PlanNode node) {

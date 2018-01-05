@@ -58,7 +58,8 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             String sql = null;
             if (node.getAst() != null && node.getParent() == null) { // it's root
-                sql = node.getSql();
+                pdVisitor.visit();
+                sql = pdVisitor.getSql().toString();
             }
             RouteResultsetNode[] rrssArray;
             // maybe some node is view

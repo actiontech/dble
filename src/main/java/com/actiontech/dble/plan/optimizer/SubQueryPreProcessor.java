@@ -50,6 +50,12 @@ public final class SubQueryPreProcessor {
             PlanNode child = qtn.getChildren().get(i);
             qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode(child, childTransform));
         }
+        for (Item itemSelect : qtn.getColumnsSelected()) {
+            if (itemSelect instanceof ItemScalarSubQuery) {
+                ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) itemSelect;
+                findComparisonsSubQueryToJoinNode(scalarSubQuery.getPlanNode(), childTransform);
+            }
+        }
 
         SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;

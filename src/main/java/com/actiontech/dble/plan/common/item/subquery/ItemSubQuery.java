@@ -42,7 +42,7 @@ public abstract class ItemSubQuery extends ItemResultField {
     }
 
     private void init() {
-        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager);
+        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
         if (planNode.type() != PlanNodeType.NONAME) {

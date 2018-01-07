@@ -36,11 +36,13 @@ public class MySQLPlanNodeVisitor {
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
     private boolean containSchema = false;
+    private boolean isSubQuery = false;
 
-    public MySQLPlanNodeVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager) {
+    public MySQLPlanNodeVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, boolean isSubQuery) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
         this.metaManager = metaManager;
+        this.isSubQuery = isSubQuery;
     }
 
     public PlanNode getTableNode() {
@@ -53,7 +55,7 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtv.visit(sqlSelect);
         this.tableNode = mtv.getTableNode();
         this.containSchema = mtv.isContainSchema();
@@ -70,11 +72,11 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLUnionQuery sqlSelectQuery) {
         SQLSelectQuery left = sqlSelectQuery.getLeft();
-        MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvleft.visit(left);
 
         SQLSelectQuery right = sqlSelectQuery.getRight();
-        MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvright.visit(right);
 
         MergeNode mergeNode = new MergeNode();
@@ -190,11 +192,11 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLJoinTableSource joinTables) {
         SQLTableSource left = joinTables.getLeft();
-        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvLeft.visit(left);
 
         SQLTableSource right = joinTables.getRight();
-        MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvRight.visit(right);
         JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode());
         switch (joinTables.getJoinType()) {
@@ -258,7 +260,7 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLSelect node) {
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtv.visit(node.getQuery());
         this.tableNode = mtv.getTableNode();
         this.containSchema = mtv.isContainSchema();
@@ -268,13 +270,13 @@ public class MySQLPlanNodeVisitor {
     public void visit(SQLTableSource tables) {
         if (tables instanceof SQLExprTableSource) {
             SQLExprTableSource table = (SQLExprTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(table);
             this.tableNode = mtv.getTableNode();
             this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLJoinTableSource) {
             SQLJoinTableSource joinTables = (SQLJoinTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(joinTables);
             this.tableNode = mtv.getTableNode();
             this.containSchema = mtv.isContainSchema();
@@ -283,7 +285,7 @@ public class MySQLPlanNodeVisitor {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
             }
             SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(unionTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
             this.containSchema = mtv.isContainSchema();
@@ -292,7 +294,7 @@ public class MySQLPlanNodeVisitor {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
             }
             SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
             this.containSchema = mtv.isContainSchema();
@@ -313,6 +315,9 @@ public class MySQLPlanNodeVisitor {
                 setSubQueryNode(selItem);
             }
             selItem.setAlias(item.getAlias());
+            if (isSubQuery && selItem.getAlias() == null) {
+                selItem.setAlias("autoalias_scalar");
+            }
             selectItems.add(selItem);
         }
         return selectItems;

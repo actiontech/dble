@@ -96,11 +96,12 @@ public final class SubQueryPreProcessor {
     }
 
     private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
-        if (filter instanceof ItemInSubQuery && !isOrChild) {
+        if (filter instanceof ItemInSubQuery) {
+            if (isOrChild || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem()) {
+                addSubQuery(node, (ItemInSubQuery) filter, childTransform);
+                return qtn;
+            }
             return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
-        } else if (filter instanceof ItemInSubQuery) {
-            addSubQuery(node, (ItemInSubQuery) filter, childTransform);
-            return qtn;
         } else if (PlanUtil.isCmpFunc(filter)) {
             ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
             Item arg0 = eqFilter.arguments().get(0);

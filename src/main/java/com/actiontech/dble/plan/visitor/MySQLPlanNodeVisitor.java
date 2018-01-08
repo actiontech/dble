@@ -14,6 +14,7 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.util.StringUtil;
@@ -71,22 +72,16 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLUnionQuery sqlSelectQuery) {
-        SQLSelectQuery left = sqlSelectQuery.getLeft();
-        MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
-        mtvleft.visit(left);
-
-        SQLSelectQuery right = sqlSelectQuery.getRight();
-        MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
-        mtvright.visit(right);
-
         MergeNode mergeNode = new MergeNode();
-        if (sqlSelectQuery.getOperator() == SQLUnionOperator.UNION || sqlSelectQuery.getOperator() == SQLUnionOperator.DISTINCT) {
-            mergeNode.setUnion(true);
-        }
-        mergeNode.addChild(mtvleft.getTableNode());
-        mergeNode.addChild(mtvright.getTableNode());
+        SQLSelectQuery left = sqlSelectQuery.getLeft();
+        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+        mtvLeft.visit(left);
+        mergeNode.addChild(mtvLeft.getTableNode());
+
+        BoolPtr containSchemaPtr = new BoolPtr(mtvLeft.isContainSchema());
+        mergeNode = checkRightChild(mergeNode, sqlSelectQuery.getRight(), isUnion(sqlSelectQuery.getOperator()), containSchemaPtr);
         this.tableNode = mergeNode;
-        this.containSchema = mtvleft.isContainSchema() || mtvright.isContainSchema();
+        this.containSchema = containSchemaPtr.get();
         SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
         if (orderBy != null) {
             handleOrderBy(orderBy);
@@ -380,6 +375,35 @@ public class MySQLPlanNodeVisitor {
         if (groupBy.getHaving() != null) {
             handleHavingCondition(groupBy.getHaving());
         }
+    }
+
+
+    private MergeNode checkRightChild(MergeNode mergeNode, SQLSelectQuery rightQuery, boolean isUnion, BoolPtr containSchemaPtr) {
+        if (rightQuery instanceof SQLUnionQuery) {
+            SQLUnionQuery subUnion = (SQLUnionQuery) rightQuery;
+            SQLSelectQuery subLeft = subUnion.getLeft();
+            MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+            mtvRight.visit(subLeft);
+            mergeNode.addChild(mtvRight.getTableNode());
+            containSchemaPtr.set(containSchemaPtr.get() || mtvRight.isContainSchema());
+            mergeNode.setUnion(isUnion);
+
+            MergeNode mergeParentNode = new MergeNode();
+            mergeParentNode.addChild(mergeNode);
+            return checkRightChild(mergeParentNode, subUnion.getRight(), isUnion(subUnion.getOperator()), containSchemaPtr);
+
+        } else {
+            MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+            mtvRight.visit(rightQuery);
+            mergeNode.addChild(mtvRight.getTableNode());
+            mergeNode.setUnion(isUnion);
+            containSchemaPtr.set(containSchemaPtr.get() || mtvRight.isContainSchema());
+            return mergeNode;
+        }
+    }
+
+    private boolean isUnion(SQLUnionOperator unionOperator) {
+        return unionOperator == SQLUnionOperator.UNION || unionOperator == SQLUnionOperator.DISTINCT;
     }
 
     private void handleHavingCondition(SQLExpr havingExpr) {

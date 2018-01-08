@@ -100,8 +100,9 @@ public final class SubQueryPreProcessor {
             if (isOrChild || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem()) {
                 addSubQuery(node, (ItemInSubQuery) filter, childTransform);
                 return qtn;
+            } else {
+                return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
             }
-            return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
         } else if (PlanUtil.isCmpFunc(filter)) {
             ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
             Item arg0 = eqFilter.arguments().get(0);
@@ -180,6 +181,7 @@ public final class SubQueryPreProcessor {
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
         result.query.select(newSelects);
+        qtn.query.setSubQuery(false);
         if (!qtn.query.getOrderBys().isEmpty()) {
             List<Order> orderBys = new ArrayList<>();
             orderBys.addAll(qtn.query.getOrderBys());

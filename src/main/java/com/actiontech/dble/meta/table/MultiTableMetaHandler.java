@@ -43,17 +43,23 @@ public class MultiTableMetaHandler {
 
     public void execute() {
         this.schemaMetaHandler.getTmManager().createDatabase(schema);
+        boolean existTable = false;
         if (config.getDataNode() != null) {
             List<String> tables = getSingleTables();
             singleTableCnt.set(tables.size());
             for (String table : tables) {
+                existTable = true;
                 AbstractTableMetaHandler tableHandler = new SingleTableMetaInitHandler(this, schema, table, Collections.singletonList(config.getDataNode()), selfNode);
                 tableHandler.execute();
             }
         }
         for (Entry<String, TableConfig> entry : config.getTables().entrySet()) {
+            existTable = true;
             AbstractTableMetaHandler tableHandler = new TableMetaInitHandler(this, schema, entry.getValue(), selfNode);
             tableHandler.execute();
+        }
+        if (!existTable) {
+            countDown();
         }
     }
 

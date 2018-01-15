@@ -127,6 +127,10 @@ public final class SystemConfig {
     private int mergeQueueSize;
     private int orderByQueueSize;
     private int joinQueueSize;
+
+    private int otherMemSize = 4;
+    private int orderMemSize = 4;
+    private int joinMemSize = 4;
     private int nestLoopRowsSize;
     private int nestLoopConnSize;
     private int mappedFileSize;
@@ -720,6 +724,33 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setMergeQueueSize(int mergeQueueSize) {
         this.mergeQueueSize = mergeQueueSize;
+    }
+
+    public int getOtherMemSize() {
+        return otherMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOtherMemSize(int otherMemSize) {
+        this.otherMemSize = otherMemSize;
+    }
+
+    public int getOrderMemSize() {
+        return orderMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOrderMemSize(int orderMemSize) {
+        this.orderMemSize = orderMemSize;
+    }
+
+    public int getJoinMemSize() {
+        return joinMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setJoinMemSize(int joinMemSize) {
+        this.joinMemSize = joinMemSize;
     }
 
     public int getMappedFileSize() {

@@ -6,12 +6,11 @@
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.meta.ProxyMetaManager;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemResultField;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
@@ -45,14 +44,12 @@ public abstract class ItemSubQuery extends ItemResultField {
         MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
-        if (planNode.type() != PlanNodeType.NONAME) {
-            this.withSubQuery = true;
-            PlanNode test = this.planNode.copy();
-            try {
-                test.setUpFields();
-            } catch (Exception e) {
-                this.correlatedSubQuery = true;
-            }
+        this.withSubQuery = true;
+        PlanNode test = this.planNode.copy();
+        try {
+            test.setUpFields();
+        } catch (Exception e) {
+            this.correlatedSubQuery = true;
         }
     }
 

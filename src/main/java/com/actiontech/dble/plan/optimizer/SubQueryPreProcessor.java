@@ -12,18 +12,19 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
-import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
-import com.actiontech.dble.plan.common.item.subquery.*;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
-import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -103,40 +104,23 @@ public final class SubQueryPreProcessor {
             } else {
                 return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
             }
-        } else if (PlanUtil.isCmpFunc(filter)) {
-            ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
-            Item arg0 = eqFilter.arguments().get(0);
-            if (arg0.type().equals(ItemType.SUBSELECT_ITEM)) {
-                if (arg0 instanceof ItemScalarSubQuery) {
-                    addSubQuery(node, (ItemScalarSubQuery) arg0, childTransform);
-                } else {
-                    //todo: when happened?
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
-                }
-            }
+        } else {
+            addSubQueryForExpr(node, filter, childTransform);
+            return qtn;
+        }
+    }
 
-            Item arg1 = eqFilter.arguments().get(1);
-            if (arg1.type().equals(ItemType.SUBSELECT_ITEM)) {
-                if (arg1 instanceof ItemScalarSubQuery) {
-                    addSubQuery(node, (ItemScalarSubQuery) arg1, childTransform);
-                } else if (arg1 instanceof ItemAllAnySubQuery) {
-                    addSubQuery(node, (ItemAllAnySubQuery) arg1, childTransform);
-                } else {
-                    //todo: when happened?
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+    private static void addSubQueryForExpr(PlanNode node, Item filter, BoolPtr childTransform) {
+        if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
+            addSubQuery(node, (ItemSubQuery) filter, childTransform);
+        } else if (filter.type().equals(ItemType.FUNC_ITEM)) {
+            ItemFunc func = (ItemFunc) filter;
+            for (int i = 0; i < func.getArgCount(); i++) {
+                Item arg = func.arguments().get(i);
+                if (arg.isWithSubQuery()) {
+                    addSubQueryForExpr(node, arg, childTransform);
                 }
             }
-            return qtn;
-        } else if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
-            if (filter instanceof ItemExistsSubQuery) {
-                addSubQuery(node, (ItemExistsSubQuery) filter, childTransform);
-            } else if (filter instanceof ItemScalarSubQuery) {
-                addSubQuery(node, (ItemScalarSubQuery) filter, childTransform);
-            } else {
-                //todo: when happened?
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
-            }
-            return qtn;
         } else {
             //todo: when happened?
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -239,10 +223,12 @@ public final class SubQueryPreProcessor {
         qtn.filter = filter;
         return qtn;
     }
+
     private static SubQueryFilter buildSubQueryWithNotFilter(PlanNode node, SubQueryFilter qtn, ItemFuncNot filter, boolean isOrChild, BoolPtr childTransform) {
         buildSubQuery(node, qtn, filter.arguments().get(0), isOrChild, childTransform);
         return qtn;
     }
+
     private static class SubQueryFilter {
 
         PlanNode query; // subQuery may change query node to join node

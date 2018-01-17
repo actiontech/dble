@@ -310,7 +310,7 @@ public class MySQLPlanNodeVisitor {
                 setSubQueryNode(selItem);
             }
             selItem.setAlias(item.getAlias());
-            if (isSubQuery && selItem.getAlias() == null && this.tableNode.type() != PlanNode.PlanNodeType.NONAME) {
+            if (isSubQuery && selItem.getAlias() == null) {
                 selItem.setAlias("autoalias_scalar");
             }
             selectItems.add(selItem);

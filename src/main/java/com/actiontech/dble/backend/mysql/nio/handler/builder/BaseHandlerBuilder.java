@@ -121,8 +121,10 @@ public abstract class BaseHandlerBuilder {
             schema = tbNode.getSchema();
             table = tbNode.getTableName();
         }
-        SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
-        addHandler(sh);
+        if (node.type() != PlanNodeType.NONAME) {
+            SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
+            addHandler(sh);
+        }
 
         if (preHandlers != null) {
             for (DMLResponseHandler preHandler : preHandlers) {

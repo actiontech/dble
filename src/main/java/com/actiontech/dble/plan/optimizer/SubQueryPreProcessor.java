@@ -98,7 +98,7 @@ public final class SubQueryPreProcessor {
 
     private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
         if (filter instanceof ItemInSubQuery) {
-            if (isOrChild || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem()) {
+            if (isOrChild || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem() || ((ItemInSubQuery) filter).isNeg()) {
                 addSubQuery(node, (ItemInSubQuery) filter, childTransform);
                 return qtn;
             } else {

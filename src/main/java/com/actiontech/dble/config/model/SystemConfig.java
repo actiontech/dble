@@ -37,8 +37,6 @@ public final class SystemConfig {
     private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
     private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512 * 1024 * 4;
     private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final String MEMORY_PAGE_SIZE = "1m";
-    private static final String SPILLS_FILE_BUFFER_SIZE = "2K";
     private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1000L;
     private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1000L;
@@ -114,16 +112,6 @@ public final class SystemConfig {
     private int useGlobleTableCheck = 1;
     private long glableTableCheckPeriod;
 
-    /*
-     * memoryPageSize the unit is M
-     */
-    private String memoryPageSize;
-    private String spillsFileBufferSize;
-
-    /*
-     * tmp dir for big result sorted
-     */
-    private String dataNodeSortedTempDir;
 
     private String xaRecoveryLogBaseDir;
     private String xaRecoveryLogBaseName;
@@ -166,11 +154,9 @@ public final class SystemConfig {
         this.dataNodeHeartbeatPeriod = DEFAULT_DATA_NODE_HEARTBEAT_PERIOD;
         this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
         this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
-        this.txIsolation = Isolations.REPEATED_READ;
+        this.txIsolation = Isolations.REPEATABLE_READ;
         this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
         this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
-        this.memoryPageSize = MEMORY_PAGE_SIZE;
-        this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
         this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
         this.xaRecoveryLogBaseName = "tmlog";
         this.viewPersistenceConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
@@ -185,19 +171,7 @@ public final class SystemConfig {
         this.nestLoopConnSize = DEFAULT_NEST_LOOP_CONN_SIZE;
         this.mappedFileSize = DEFAULT_MAPPED_FILE_SIZE;
         this.useJoinStrategy = DEFAULT_USE_JOIN_STRATEGY;
-        this.dataNodeSortedTempDir = SystemConfig.getHomePath() + "/sortDirs";
     }
-
-
-    public String getDataNodeSortedTempDir() {
-        return dataNodeSortedTempDir;
-    }
-
-    @SuppressWarnings("unused")
-    public void setDataNodeSortedTempDir(String dataNodeSortedTempDir) {
-        this.dataNodeSortedTempDir = dataNodeSortedTempDir;
-    }
-
 
     public int getTransactionRatateSize() {
         return transactionRatateSize;
@@ -224,24 +198,6 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setTransactionLogBaseName(String transactionLogBaseName) {
         this.transactionLogBaseName = transactionLogBaseName;
-    }
-
-    public String getMemoryPageSize() {
-        return memoryPageSize;
-    }
-
-    @SuppressWarnings("unused")
-    public void setMemoryPageSize(String memoryPageSize) {
-        this.memoryPageSize = memoryPageSize;
-    }
-
-    public String getSpillsFileBufferSize() {
-        return spillsFileBufferSize;
-    }
-
-    @SuppressWarnings("unused")
-    public void setSpillsFileBufferSize(String spillsFileBufferSize) {
-        this.spillsFileBufferSize = spillsFileBufferSize;
     }
 
     public boolean isUseZKSwitch() {
@@ -815,7 +771,6 @@ public final class SystemConfig {
                 ", usingAIO=" + usingAIO +
                 ", maxPacketSize=" + maxPacketSize +
                 ", serverNodeId=" + serverNodeId +
-                ", dataNodeSortedTempDir=" + dataNodeSortedTempDir +
                 "]";
     }
 }

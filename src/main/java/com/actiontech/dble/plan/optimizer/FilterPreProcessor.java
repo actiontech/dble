@@ -120,7 +120,7 @@ public final class FilterPreProcessor {
         if (root instanceof ItemBoolFunc2) {
             Item a = root.arguments().get(0);
             Item b = root.arguments().get(1);
-            if (a.basicConstItem() && !b.basicConstItem()) {
+            if (a.basicConstItem() && !b.basicConstItem() && !b.isWithSubQuery()) {
                 if (root instanceof ItemFuncGe) {
                     newRoot = new ItemFuncLe(b, a);
                 } else if (root instanceof ItemFuncGt) {

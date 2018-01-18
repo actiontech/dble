@@ -136,7 +136,7 @@ public final class ShowSysParam {
             "The maximum size of one packet. The default is 16MB.",
             "The max allowed time of idle connection. The connection will be closed if it is timed out after last read/write/heartbeat.The default is 30 minutes",
             "The initially charset of connection. The default is UTF8",
-            "The initially isolation level of the front end connection. The default is REPEATED_READ",
+            "The initially isolation level of the front end connection. The default is REPEATABLE_READ",
             "The max query executing time.If time out,the connection will be closed. The default is 300 seconds",
             "The period between the jobs for cleaning the closed or overtime connections. The default is 1 second",
             "The period between the heartbeat jobs for checking the health of all idle connections. The default is 300 seconds",
@@ -145,6 +145,6 @@ public final class ShowSysParam {
             "User connection port. The default number is 8066",
             "Manager connection port. The default number is 9066"};
 
-    private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATED_READ", "SERIALIZABLE"};
+    private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};
     private static final String[] SEQUENCES = {"", "Offset-Step stored in MySQL", "Local TimeStamp(like Snowflake)", "ZooKeeper/Local TimeStamp(like Snowflake)", "Offset-Step stored in ZooKeeper"};
 }

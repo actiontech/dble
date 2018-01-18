@@ -236,22 +236,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             entry.getValue().clear();
             entry.getValue().put(new HeapItem(null, null, entry.getKey()));
         }
-        synchronized (exeHandlers) {
-            for (BaseSelectHandler exeHandler : exeHandlers) {
-                terminatePreHandler(exeHandler);
-            }
-        }
+        recycleConn();
     }
 
     @Override
     protected void recycleResources() {
-        synchronized (exeHandlers) {
-            if (!terminate.get()) {
-                for (BaseSelectHandler exeHandler : exeHandlers) {
-                    terminatePreHandler(exeHandler);
-                }
-            }
-        }
         Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
         while (iterator.hasNext()) {
             Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iterator.next();
@@ -265,6 +254,13 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
+    protected void recycleConn() {
+        synchronized (exeHandlers) {
+            for (BaseSelectHandler exeHandler : exeHandlers) {
+                terminatePreHandler(exeHandler);
+            }
+        }
+    }
     /**
      * terminatePreHandler
      * @param handler handler

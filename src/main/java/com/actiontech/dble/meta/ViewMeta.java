@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -32,6 +31,7 @@ public class ViewMeta {
 
     private List<String> viewColumnMeta;
     private String schema;
+    private ProxyMetaManager tmManager;
 
 
     public ErrorPacket init(boolean isReplace) {
@@ -44,8 +44,7 @@ public class ViewMeta {
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
-
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, true);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();
@@ -77,14 +76,14 @@ public class ViewMeta {
                 throw new Exception("sql not supported ");
             }
 
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
+            tmManager.addMetaLock(schema, viewName);
 
             //check if the select part has
             this.checkDuplicate(viewParser, isReplace);
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, true);
 
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
@@ -95,7 +94,7 @@ public class ViewMeta {
 
             viewQuery = new QueryNode(selNode);
 
-            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().put(viewName, this);
+            tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
         } catch (Exception e) {
             //the select part sql is wrong & report the error
             ErrorPacket error = new ErrorPacket();
@@ -104,7 +103,7 @@ public class ViewMeta {
             error.setErrNo(CREATE_VIEW_ERROR);
             return error;
         } finally {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, viewName);
+            tmManager.removeMetaLock(schema, viewName);
         }
         return null;
     }
@@ -112,9 +111,9 @@ public class ViewMeta {
 
     private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
 
-        QueryNode viewNode = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getView(viewName);
+        QueryNode viewNode = tmManager.getCatalogs().get(schema).getView(viewName);
         //.getSyncView(schema,viewName);
-        StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(viewName);
+        StructureMeta.TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
         //if the alter table
         if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
             if (viewNode == null) {
@@ -186,9 +185,10 @@ public class ViewMeta {
         return null;
     }
 
-    public ViewMeta(String createSql, String schema) {
+    public ViewMeta(String createSql, String schema, ProxyMetaManager tmManager) {
         this.createSql = createSql;
         this.schema = schema;
+        this.tmManager = tmManager;
     }
 
     public String getCreateSql() {

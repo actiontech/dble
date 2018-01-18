@@ -9,6 +9,7 @@
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
@@ -24,8 +25,8 @@ import java.util.List;
 public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     private boolean isAll;
     private SQLBinaryOperator operator;
-    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll) {
-        super(currentDb, query);
+    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll, ProxyMetaManager metaManager) {
+        super(currentDb, query, metaManager);
         this.isAll = isAll;
         this.operator = operator;
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -52,7 +53,7 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll);
+        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager);
     }
 
     public boolean isAll() {

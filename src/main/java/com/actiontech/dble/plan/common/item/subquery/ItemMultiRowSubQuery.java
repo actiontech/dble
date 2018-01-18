@@ -9,6 +9,7 @@
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
@@ -27,8 +28,8 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
      * @param currentDb
      * @param query
      */
-    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query) {
-        super(currentDb, query);
+    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
+        super(currentDb, query, metaManager);
     }
 
     @Override

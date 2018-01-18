@@ -7,6 +7,7 @@ package com.actiontech.dble.plan.visitor;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.CastTarget;
 import com.actiontech.dble.plan.common.CastType;
@@ -62,14 +63,12 @@ import java.util.Map;
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private String currentDb;
     private final int charsetIndex;
+    private final ProxyMetaManager metaManager;
 
-    public MySQLItemVisitor(String currentDb) {
-        this(currentDb, CharsetUtil.getCharsetDefaultIndex("utf8"));
-    }
-
-    public MySQLItemVisitor(String currentDb, int charsetIndex) {
+    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
+        this.metaManager = metaManager;
     }
 
     private Item item;
@@ -79,7 +78,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private Item getItem(SQLExpr expr) {
-        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex);
+        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
         expr.accept(fv);
         return fv.getItem();
     }
@@ -91,7 +90,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -106,7 +105,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager);
         initName(x);
     }
 
@@ -621,8 +620,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 initName(x);
         }
+        item.setWithSubQuery(getArgsSubQueryStatus(args));
+        item.setCorrelatedSubQuery(getArgsCorrelatedSubQueryStatus(args));
     }
-
 
     @Override
     public void endVisit(SQLListExpr x) {
@@ -666,7 +666,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot());
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager);
     }
 
     @Override
@@ -701,7 +701,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
     }
 
 
@@ -710,26 +710,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
@@ -791,6 +791,24 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported cast as:" + upType);
         }
         return castType;
+    }
+
+    private boolean getArgsSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isWithSubQuery()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean getArgsCorrelatedSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isCorrelatedSubQuery()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Integer> changeExprListToInt(List<SQLExpr> exprList) {

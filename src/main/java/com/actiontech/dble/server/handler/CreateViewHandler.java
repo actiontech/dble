@@ -21,7 +21,7 @@ public final class CreateViewHandler {
 
     public static void handle(String stmt, ServerConnection c, boolean isReplace) {
         //create a new object of the view
-        ViewMeta vm = new ViewMeta(stmt, c.getSchema());
+        ViewMeta vm = new ViewMeta(stmt, c.getSchema(), DbleServer.getInstance().getTmManager());
         ErrorPacket error = vm.initAndSet(isReplace);
         if (error != null) {
             //if any error occurs when parse sql into view object

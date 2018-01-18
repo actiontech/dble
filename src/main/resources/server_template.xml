@@ -78,11 +78,6 @@
         <property name="bufferPoolChunkSize ">4096</property>
         <property name="bufferPoolPageNumber ">512</property>
         <property name="bufferPoolPageSize ">2097152</property>
-        <!-- off heap for merge/order/group/limit  1:enable,0:disable-->
-        <property name="useOffHeapForMerge">1</property>
-        <!--<property name="memoryPageSize">1m</property>-->
-        <!--<property name="spillsFileBufferSize">2K</property>-->
-        <!--<property name="dataNodeSortedTempDir">/sortDirs</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->

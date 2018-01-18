@@ -23,10 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -213,7 +210,14 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     outputHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
                 }
             }
-            outputHandler.rowEofResponse(null, false, queues.keySet().iterator().next());
+            Iterator<Map.Entry<BackendConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<BackendConnection, BlockingQueue<HeapItem>> entry = iterator.next();
+                entry.getValue().clear();
+                session.releaseConnectionIfSafe(entry.getKey(), false);
+                iterator.remove();
+            }
+            outputHandler.rowEofResponse(null, false, null);
             doSqlStat(session.getSource());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();

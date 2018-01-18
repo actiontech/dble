@@ -5,12 +5,12 @@
 
 package com.actiontech.dble.plan.common.item.subquery;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemResultField;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
@@ -18,6 +18,7 @@ public abstract class ItemSubQuery extends ItemResultField {
     protected SQLSelectQuery query;
     protected String currentDb;
     protected PlanNode planNode;
+    protected ProxyMetaManager metaManager;
 
     public enum SubSelectType {
         UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
@@ -27,9 +28,10 @@ public abstract class ItemSubQuery extends ItemResultField {
         return SubSelectType.UNKNOWN_SUBS;
     }
 
-    public ItemSubQuery(String currentDb, SQLSelectQuery query) {
+    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
         this.query = query;
         this.currentDb = currentDb;
+        this.metaManager = metaManager;
         init();
     }
 
@@ -39,10 +41,10 @@ public abstract class ItemSubQuery extends ItemResultField {
     }
 
     private void init() {
-        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex);
+        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
-        if (planNode.type() != PlanNodeType.NONAME) {
+        if (planNode.type() != PlanNode.PlanNodeType.NONAME) {
             this.withSubQuery = true;
             PlanNode test = this.planNode.copy();
             try {

@@ -74,7 +74,6 @@ public class SQLJob implements ResponseHandler, Runnable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        LOGGER.info("con query sql:" + sql + " to con:" + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {

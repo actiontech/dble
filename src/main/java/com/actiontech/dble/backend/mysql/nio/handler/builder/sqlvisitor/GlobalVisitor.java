@@ -6,11 +6,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.node.*;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 
 
 /**
@@ -134,13 +133,15 @@ public class GlobalVisitor extends MysqlVisitor {
         boolean isUnion = merge.isUnion();
         boolean isFirst = true;
         for (PlanNode child : merge.getChildren()) {
-            if (isFirst)
-                isFirst = false;
-            else
-                sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
             MysqlVisitor childVisitor = new GlobalVisitor(child, true);
             childVisitor.visit();
-            sqlBuilder.append("(").append(childVisitor.getSql()).append(")");
+            if (isFirst) {
+                sqlBuilder.append(childVisitor.getSql());
+                isFirst = false;
+            } else {
+                sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
+                sqlBuilder.append("(").append(childVisitor.getSql()).append(")");
+            }
         }
     }
 

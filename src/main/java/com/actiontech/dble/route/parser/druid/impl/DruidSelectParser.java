@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
@@ -209,13 +210,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (aggregateSet.contains(methodName)) {
                     rrs.setNeedOptimizer(true);
                     return;
+                } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
+                    rrs.setNeedOptimizer(true);
+                    return;
                 } else {
-                    if (isSumFunc(schema.getName(), itemExpr)) {
-                        rrs.setNeedOptimizer(true);
-                        return;
-                    } else {
-                        addToAliaColumn(aliaColumns, selectItem);
-                    }
+                    addToAliaColumn(aliaColumns, selectItem);
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
                 StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
@@ -242,7 +241,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         }
                         addToAliaColumn(aliaColumns, selectItem);
                     }
-                } else if (isSumFunc(schema.getName(), itemExpr)) {
+                } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else {
@@ -287,20 +286,23 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
         }
     }
-    private boolean isSumFunc(String schema, SQLExpr itemExpr) {
-        MySQLItemVisitor ev = new MySQLItemVisitor(schema);
+    private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
+        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8"), DbleServer.getInstance().getTmManager());
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
-        return contactSumFunc(selItem);
+        return contaisSumFuncOrSubquery(selItem);
     }
 
-    private boolean contactSumFunc(Item selItem) {
+    private boolean contaisSumFuncOrSubquery(Item selItem) {
         if (selItem.isWithSumFunc()) {
+            return true;
+        }
+        if (selItem.isWithSubQuery()) {
             return true;
         }
         if (selItem.getArgCount() > 0) {
             for (Item child : selItem.arguments()) {
-                if (contactSumFunc(child)) {
+                if (contaisSumFuncOrSubquery(child)) {
                     return true;
                 }
             }

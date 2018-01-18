@@ -322,7 +322,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLNotExpr x) {
-        item = new ItemFuncNot(getItem(x.getExpr()));
+        Item arg = getItem(x.getExpr());
+        item = new ItemFuncNot(arg);
+        item.setWithSubQuery(arg.isWithSubQuery());
+        item.setCorrelatedSubQuery(arg.isCorrelatedSubQuery());
         initName(x);
     }
 

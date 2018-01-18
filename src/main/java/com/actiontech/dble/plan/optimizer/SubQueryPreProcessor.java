@@ -79,7 +79,7 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
+    private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
         if (filter == null)
             return qtn;
         if (!filter.isWithSubQuery()) {
@@ -87,18 +87,18 @@ public final class SubQueryPreProcessor {
         } else if (filter instanceof ItemCondOr) {
             return buildSubQueryWithOrFilter(node, qtn, (ItemCondOr) filter, childTransform);
         } else if (filter instanceof ItemCondAnd) {
-            return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, isOrChild, childTransform);
+            return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, noTransform, childTransform);
         } else if (filter instanceof ItemFuncNot) {
-            return buildSubQueryWithNotFilter(node, qtn, (ItemFuncNot) filter, isOrChild, childTransform);
+            return buildSubQueryWithNotFilter(node, qtn, (ItemFuncNot) filter, childTransform);
         } else {
-            return buildSubQueryByFilter(node, qtn, filter, isOrChild, childTransform);
+            return buildSubQueryByFilter(node, qtn, filter, noTransform, childTransform);
         }
         return qtn;
     }
 
-    private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
+    private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
         if (filter instanceof ItemInSubQuery) {
-            if (isOrChild || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem() || ((ItemInSubQuery) filter).isNeg()) {
+            if (noTransform || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem() || ((ItemInSubQuery) filter).isNeg()) {
                 addSubQuery(node, (ItemInSubQuery) filter, childTransform);
                 return qtn;
             } else {
@@ -224,8 +224,8 @@ public final class SubQueryPreProcessor {
         return qtn;
     }
 
-    private static SubQueryFilter buildSubQueryWithNotFilter(PlanNode node, SubQueryFilter qtn, ItemFuncNot filter, boolean isOrChild, BoolPtr childTransform) {
-        buildSubQuery(node, qtn, filter.arguments().get(0), isOrChild, childTransform);
+    private static SubQueryFilter buildSubQueryWithNotFilter(PlanNode node, SubQueryFilter qtn, ItemFuncNot filter, BoolPtr childTransform) {
+        buildSubQuery(node, qtn, filter.arguments().get(0), true, childTransform);
         return qtn;
     }
 

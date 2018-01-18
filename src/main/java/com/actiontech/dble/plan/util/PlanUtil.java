@@ -17,6 +17,7 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
@@ -434,6 +435,18 @@ public final class PlanUtil {
                     } else {
                         itemTmp.arguments().set(index, result.getResultItem());
                     }
+                } else if (arg instanceof ItemInSubQuery && item instanceof ItemFuncNot) {
+                    ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
+                    if (inSubItem.getValue().size() == 0) {
+                        itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
+                    } else {
+                        List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
+                        args.add(inSubItem.getLeftOperand());
+                        args.addAll(inSubItem.getValue());
+                        return new ItemFuncIn(args, !inSubItem.isNeg());
+                    }
+                    itemTmp.setItemName(null);
+                    return itemTmp;
                 }
             }
             itemTmp.setItemName(null);

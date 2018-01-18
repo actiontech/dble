@@ -136,11 +136,16 @@ public class GlobalVisitor extends MysqlVisitor {
             MysqlVisitor childVisitor = new GlobalVisitor(child, true);
             childVisitor.visit();
             if (isFirst) {
-                sqlBuilder.append(childVisitor.getSql());
                 isFirst = false;
             } else {
                 sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
-                sqlBuilder.append("(").append(childVisitor.getSql()).append(")");
+            }
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append("(");
+            }
+            sqlBuilder.append(childVisitor.getSql());
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append(")");
             }
         }
     }

@@ -123,10 +123,6 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLBinaryOpExpr x) {
         Item itemLeft = getItem(x.getLeft());
         Item itemRight = getItem(x.getRight());
-        if (itemRight instanceof ItemInSubQuery) {
-            item = itemRight;
-            return;
-        }
         switch (x.getOperator()) {
             case Is:
                 // is null, or is unknown

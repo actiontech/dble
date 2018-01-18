@@ -41,7 +41,7 @@ public class ConfigInitializer {
     private volatile Map<ERTable, Set<ERTable>> erRelations;
 
 
-    private volatile boolean dataHostWithoutWH = false;
+    private volatile boolean dataHostWithoutWH = true;
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
@@ -160,9 +160,11 @@ public class ConfigInitializer {
 
     private void checkWriteHost() {
         for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
+            this.dataHostWithoutWH = false;
             if (pool.getValue().getSources() == null || pool.getValue().getSources().length == 0) {
                 LOGGER.info("dataHost " + pool.getKey() + " has no writeHost ,server will ignore it");
                 this.dataHostWithoutWH = true;
+                break;
             }
         }
     }

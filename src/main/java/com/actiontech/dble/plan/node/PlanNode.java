@@ -631,7 +631,7 @@ public abstract class PlanNode {
      * @return the exsitView
      */
     public boolean isExistView() {
-        return existView;
+        return this.type() == PlanNode.PlanNodeType.QUERY || existView;
     }
 
     public boolean existUnPushDownGroup() {

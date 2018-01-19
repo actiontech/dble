@@ -115,7 +115,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
         String escaped = escapedExpr == null ? "\\" : escapedExpr.getText();
         loadData.setEscape(escaped);
-        String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_filesystem");
+        String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
         loadData.setCharset(charset);
         loadData.setFileName(fileName);
     }

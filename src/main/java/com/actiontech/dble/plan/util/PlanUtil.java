@@ -24,6 +24,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -384,12 +385,16 @@ public final class PlanUtil {
 
 
     public static Item rebuildSubQueryItem(Item item) {
+        if (!item.isWithSubQuery()) {
+            return item;
+        }
+        BoolPtr reBuild = new BoolPtr(false);
         if (PlanUtil.isCmpFunc(item)) {
-            Item res1 = rebuildBoolSubQuery(item, 0);
+            Item res1 = rebuildBoolSubQuery(item, 0, reBuild);
             if (res1 != null) {
                 return res1;
             }
-            Item res2 = rebuildBoolSubQuery(item, 1);
+            Item res2 = rebuildBoolSubQuery(item, 1, reBuild);
             if (res2 != null) {
                 return res2;
             }
@@ -423,36 +428,43 @@ public final class PlanUtil {
                 return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
             }
             return result.getResultItem();
-        } else if (item instanceof ItemFunc) {
-            ItemFunc func = (ItemFunc) item;
-            Item itemTmp = item.cloneItem();
-            for (int index = 0; index < func.getArgCount(); index++) {
-                Item arg = item.arguments().get(index);
-                if (arg instanceof ItemScalarSubQuery) {
-                    Item result = ((ItemScalarSubQuery) arg).getValue();
-                    if (result == null || result.getResultItem() == null) {
-                        itemTmp.arguments().set(index, new ItemNull());
-                    } else {
-                        itemTmp.arguments().set(index, result.getResultItem());
-                    }
-                } else if (arg instanceof ItemInSubQuery && item instanceof ItemFuncNot) {
-                    ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
-                    if (inSubItem.getValue().size() == 0) {
-                        itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
-                    } else {
-                        List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
-                        args.add(inSubItem.getLeftOperand());
-                        args.addAll(inSubItem.getValue());
-                        return new ItemFuncIn(args, !inSubItem.isNeg());
-                    }
-                    itemTmp.setItemName(null);
-                    return itemTmp;
-                }
-            }
-            itemTmp.setItemName(null);
-            return itemTmp;
+        }
+        if (!reBuild.get() && item instanceof ItemFunc) {
+            return rebuildSubQueryFuncItem(item);
         }
         return item;
+    }
+
+    private static Item rebuildSubQueryFuncItem(Item item) {
+        ItemFunc func = (ItemFunc) item;
+        Item itemTmp = item.cloneItem();
+        for (int index = 0; index < func.getArgCount(); index++) {
+            Item arg = item.arguments().get(index);
+            if (arg instanceof ItemScalarSubQuery) {
+                Item result = ((ItemScalarSubQuery) arg).getValue();
+                if (result == null || result.getResultItem() == null) {
+                    itemTmp.arguments().set(index, new ItemNull());
+                } else {
+                    itemTmp.arguments().set(index, result.getResultItem());
+                }
+            } else if (arg instanceof ItemInSubQuery && item instanceof ItemFuncNot) {
+                ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
+                if (inSubItem.getValue().size() == 0) {
+                    itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
+                } else {
+                    List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
+                    args.add(inSubItem.getLeftOperand());
+                    args.addAll(inSubItem.getValue());
+                    return new ItemFuncIn(args, !inSubItem.isNeg());
+                }
+                itemTmp.setItemName(null);
+                return itemTmp;
+            } else if (arg instanceof ItemFunc) {
+                itemTmp.arguments().set(index, rebuildSubQueryItem(arg));
+            }
+        }
+        itemTmp.setItemName(null);
+        return itemTmp;
     }
 
 
@@ -465,9 +477,10 @@ public final class PlanUtil {
     }
 
 
-    private static Item rebuildBoolSubQuery(Item item, int index) {
+    private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
+            reBuild.set(true);
             if (arg instanceof ItemScalarSubQuery) {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {

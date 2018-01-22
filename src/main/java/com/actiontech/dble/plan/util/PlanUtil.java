@@ -447,7 +447,7 @@ public final class PlanUtil {
                 } else {
                     itemTmp.arguments().set(index, result.getResultItem());
                 }
-            } else if (arg instanceof ItemInSubQuery && item instanceof ItemFuncNot) {
+            } else if (arg instanceof ItemInSubQuery) {
                 ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
                 if (inSubItem.getValue().size() == 0) {
                     itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
@@ -455,7 +455,11 @@ public final class PlanUtil {
                     List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
                     args.add(inSubItem.getLeftOperand());
                     args.addAll(inSubItem.getValue());
-                    return new ItemFuncIn(args, !inSubItem.isNeg());
+                    boolean isNot = inSubItem.isNeg();
+                    if (item instanceof ItemFuncNot) {
+                        isNot = !isNot;
+                    }
+                    return new ItemFuncIn(args, isNot);
                 }
                 itemTmp.setItemName(null);
                 return itemTmp;
@@ -480,10 +484,10 @@ public final class PlanUtil {
     private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
-            reBuild.set(true);
             if (arg instanceof ItemScalarSubQuery) {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {
+                    reBuild.set(true);
                     return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
                 }
                 item.arguments().set(index, result.getResultItem());
@@ -491,6 +495,7 @@ public final class PlanUtil {
             } else if (arg instanceof ItemAllAnySubQuery) {
                 ItemAllAnySubQuery allAnySubItem = (ItemAllAnySubQuery) arg;
                 if (allAnySubItem.getValue().size() == 0) {
+                    reBuild.set(true);
                     return genBoolItem(allAnySubItem.isAll());
                 } else if (allAnySubItem.getValue().size() == 1) {
                     Item value = allAnySubItem.getValue().get(0);
@@ -500,6 +505,7 @@ public final class PlanUtil {
                     item.arguments().set(index, value.getResultItem());
                     item.setItemName(null);
                 } else {
+                    reBuild.set(true);
                     return genBoolItem(!allAnySubItem.isAll());
                 }
             }

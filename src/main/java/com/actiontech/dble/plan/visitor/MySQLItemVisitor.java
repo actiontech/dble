@@ -97,7 +97,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLBetweenExpr x) {
-        item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());
+        Item itemTest = getItem(x.getTestExpr());
+        Item itemBegin = getItem(x.getBeginExpr());
+        Item itemEnd = getItem(x.getEndExpr());
+        item = new ItemFuncBetweenAnd(itemTest, itemBegin, itemEnd, x.isNot());
+        item.setWithSubQuery(itemTest.isWithSubQuery() || itemBegin.isWithSubQuery() || itemEnd.isWithSubQuery());
+        item.setCorrelatedSubQuery(itemTest.isCorrelatedSubQuery() || itemBegin.isCorrelatedSubQuery() || itemEnd.isCorrelatedSubQuery());
         initName(x);
     }
 

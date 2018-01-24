@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.common.item.ItemRef;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import org.apache.log4j.Logger;
@@ -82,7 +83,15 @@ public final class HandlerTool {
         if (sel.basicConstItem())
             return sel;
         if (sel instanceof ItemScalarSubQuery) {
-            return ((ItemScalarSubQuery) sel).getValue();
+            ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) sel;
+            if (scalarSubQuery.getPlanNode().type() == PlanNode.PlanNodeType.NONAME) {
+                Item result = scalarSubQuery.getSelect();
+                result.setItemName(scalarSubQuery.getItemName());
+                result.setAlias(scalarSubQuery.getItemName());
+                return result;
+            } else {
+                return scalarSubQuery.getValue();
+            }
         }
         Item.ItemType i = sel.type();
         if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {

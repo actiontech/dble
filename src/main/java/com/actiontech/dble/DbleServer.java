@@ -17,6 +17,8 @@ import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -633,6 +635,10 @@ public final class DbleServer {
 
     public boolean isUseZK() {
         return Boolean.parseBoolean(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_FLAG));
+    }
+
+    public boolean isUseUcore() {
+        return Boolean.parseBoolean(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_FLAGE));
     }
 
     public TxnLogProcessor getTxnLogProcessor() {

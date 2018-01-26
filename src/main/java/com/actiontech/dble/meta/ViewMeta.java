@@ -64,6 +64,7 @@ public class ViewMeta {
         return null;
     }
 
+
     public ErrorPacket initAndSet(boolean isReplace) {
 
         //check the create sql is legal
@@ -111,7 +112,7 @@ public class ViewMeta {
 
     private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
 
-        QueryNode viewNode = tmManager.getCatalogs().get(schema).getView(viewName);
+        ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
         StructureMeta.TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
         //if the alter table
@@ -136,7 +137,7 @@ public class ViewMeta {
             throw new Exception("Table '" + viewName + "' already exists");
         }
 
-        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW) {
+        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
             // if the sql without replace & the view exists
             if (viewNode != null) {
                 // return error because the view is exists

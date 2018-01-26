@@ -6,6 +6,7 @@
 package com.actiontech.dble;
 
 
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
@@ -30,6 +31,7 @@ public final class DbleStartup {
     public static void main(String[] args) {
         //use zk ?
         ZkConfig.getInstance().initZk();
+        UcoreConfig.getInstance().initUcore();
         try {
             String home = SystemConfig.getHomePath();
             if (home == null) {

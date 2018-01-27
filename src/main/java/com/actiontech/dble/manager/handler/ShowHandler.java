@@ -164,6 +164,9 @@ public final class ShowHandler {
             case ManagerParseShow.BACKEND_STAT:
                 ShowBackendStat.execute(c);
                 break;
+            case ManagerParseShow.COST_TIME:
+                ShowCostTimeStat.execute(c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

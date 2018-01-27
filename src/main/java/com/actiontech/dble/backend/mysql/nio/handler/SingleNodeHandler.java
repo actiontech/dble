@@ -98,6 +98,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             return;
         }
         conn.setResponseHandler(this);
+        conn.setSession(session);
         boolean isAutocommit = session.getSource().isAutocommit() && !session.getSource().isTxStart();
         if (!isAutocommit && node.isModifySQL()) {
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
@@ -173,7 +174,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      */
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        //
         this.netOutBytes += data.length;
 
         boolean executeResponse = conn.syncAndExecute();
@@ -194,6 +194,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             source.setLastInsertId(ok.getInsertId());
             //handleSpecial
             session.releaseConnectionIfSafe(conn, false);
+            session.setResponseTime();
             ok.write(source);
             waitingResponse = false;
         }
@@ -220,6 +221,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         buffer = source.writeToBuffer(eof, allocBuffer());
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();
+        session.setResponseTime();
         source.write(buffer);
         waitingResponse = false;
 

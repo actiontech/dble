@@ -60,7 +60,6 @@ public class ServerConnection extends FrontendConnection {
     private volatile boolean isLocked = false;
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
-
     public long getAndIncrementXid() {
         return txID.getAndIncrement();
     }
@@ -169,6 +168,11 @@ public class ServerConnection extends FrontendConnection {
 
     public void setContextTask(List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask) {
         this.contextTask = contextTask;
+    }
+
+    @Override
+    protected void setRequestTime() {
+        session.setRequestTime();
     }
 
     public void executeTask() {

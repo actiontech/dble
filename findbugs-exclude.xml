@@ -175,6 +175,12 @@
     </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
+        <Class name="com.actiontech.dble.statistic.stat.QueryTimeCostContainer"/>
+        <Method name="add"/>
+        <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
+    </Match>
+    <Match>
+        <Bug category="MT_CORRECTNESS"/>
         <Class name="com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>

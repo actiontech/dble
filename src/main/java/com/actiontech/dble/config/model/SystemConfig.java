@@ -131,6 +131,9 @@ public final class SystemConfig {
 
     private boolean useJoinStrategy;
 
+    private int costTimeStat = 0;
+    private int maxCostStatSize = 100;
+    private int costSamplePercent = 1;
 
 
     public SystemConfig() {
@@ -730,6 +733,30 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setViewPersistenceConfBaseName(String viewPersistenceConfBaseName) {
         this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
+    }
+
+    public int getCostTimeStat() {
+        return costTimeStat;
+    }
+    @SuppressWarnings("unused")
+    public void setCostTimeStat(int costTimeStat) {
+        this.costTimeStat = costTimeStat;
+    }
+
+    public int getMaxCostStatSize() {
+        return maxCostStatSize;
+    }
+    @SuppressWarnings("unused")
+    public void setMaxCostStatSize(int maxCostStatSize) {
+        this.maxCostStatSize = maxCostStatSize;
+    }
+
+    public int getCostSamplePercent() {
+        return costSamplePercent;
+    }
+    @SuppressWarnings("unused")
+    public void setCostSamplePercent(int costSamplePercent) {
+        this.costSamplePercent = costSamplePercent;
     }
 
     @Override

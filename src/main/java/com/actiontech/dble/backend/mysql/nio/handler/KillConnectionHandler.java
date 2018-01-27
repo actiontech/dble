@@ -34,6 +34,7 @@ public class KillConnectionHandler implements ResponseHandler {
     @Override
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
+        conn.setSession(session);
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);

@@ -59,6 +59,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             return;
         }
         conn.setResponseHandler(this);
+        conn.setSession(session);
         conn.execute(node, session.getSource(), autocommit);
     }
 

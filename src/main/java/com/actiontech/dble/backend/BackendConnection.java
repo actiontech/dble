@@ -8,6 +8,7 @@ package com.actiontech.dble.backend;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.ClosableConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 
 import java.io.UnsupportedEncodingException;
@@ -36,6 +37,8 @@ public interface BackendConnection extends ClosableConnection {
     void release();
 
     boolean setResponseHandler(ResponseHandler commandHandler);
+
+    void setSession(NonBlockingSession session);
 
     void commit();
 

@@ -44,4 +44,9 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
         }
         super.rollback();
     }
+
+    @Override
+    protected void setResponseTime() {
+        session.setResponseTime();
+    }
 }

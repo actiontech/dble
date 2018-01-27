@@ -168,6 +168,7 @@ public class OutputHandler extends BaseDMLHandler {
             HandlerTool.terminateHandlerTree(this);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
+            session.setResponseTime();
             if (hasNext) {
                 source.write(buffer);
                 //source.executeNext(packetId, false);

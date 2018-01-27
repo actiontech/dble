@@ -98,6 +98,12 @@
         <!--<property name="frontSocketNoDelay ">1</property>-->
 
 
+        <!-- query time cost statistics-->
+        <!--<property name="costTimeStat ">0</property>-->
+        <!--<property name="maxCostStatSize">100</property>-->
+        <!--<property name="costSamplePercent ">1</property>-->
+
+
     </system>
 
     <!-- firewall config -->

@@ -61,6 +61,7 @@ public final class ManagerParseShow {
     public static final int CONNECTION_COUNT = 48;
     public static final int COMMAND_COUNT = 49;
     public static final int BACKEND_STAT = 50;
+    public static final int COST_TIME = 51;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -734,6 +735,9 @@ public final class ManagerParseShow {
                 case 'N':
                 case 'n':
                     return show2ConCheck(stmt, offset);
+                case 's':
+                case 'S':
+                    return show2CostTime(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -1054,6 +1058,25 @@ public final class ManagerParseShow {
                     return OTHER;
                 }
                 return tag;
+            }
+        }
+        return OTHER;
+    }
+    // SHOW @@COST_TIME
+    private static int show2CostTime(String stmt, int offset) {
+        if (stmt.length() > offset + "T_TIME".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 't' || c1 == 'T') && (c2 == '_') && (c3 == 't' || c3 == 'T') &&
+                    (c4 == 'i' || c4 == 'I') && (c5 == 'm' || c5 == 'M') && (c6 == 'e' || c6 == 'E')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return COST_TIME;
             }
         }
         return OTHER;
